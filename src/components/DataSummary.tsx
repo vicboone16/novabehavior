@@ -267,22 +267,40 @@ export function DataSummary() {
                               .filter(b => (b.methods || [b.type]).includes('interval'))
                               .map(behavior => {
                                 const entries = studentInt.filter(e => e.behaviorId === behavior.id);
-                                const occurred = entries.filter(e => e.occurred).length;
+                                const validEntries = entries.filter(e => !e.voided);
+                                const voidedEntries = entries.filter(e => e.voided);
+                                const occurred = validEntries.filter(e => e.occurred).length;
+                                const presentIntervals = validEntries.length;
+                                const totalIntervals = entries.length;
+                                const percentage = presentIntervals > 0 ? Math.round((occurred / presentIntervals) * 100) : 0;
+                                
                                 return (
                                   <div key={behavior.id} className="bg-secondary/30 rounded p-2 mb-1">
                                     <div className="flex items-center justify-between">
                                       <Badge variant="secondary">
-                                        {behavior.name}: {occurred}/{entries.length}
+                                        {behavior.name}: {occurred}/{presentIntervals}
                                       </Badge>
-                                      <span className="text-xs text-muted-foreground">
-                                        {entries.length > 0 ? Math.round((occurred / entries.length) * 100) : 0}%
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-primary">
+                                          {percentage}%
+                                        </span>
+                                        {voidedEntries.length > 0 && (
+                                          <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground">
+                                            {voidedEntries.length} N/A
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
+                                    {presentIntervals !== totalIntervals && (
+                                      <p className="text-[10px] text-muted-foreground mt-1">
+                                        Present: {presentIntervals}/{totalIntervals} intervals
+                                      </p>
+                                    )}
                                     {showTimestamps && entries.length > 0 && (
                                       <div className="mt-1 text-xs text-muted-foreground">
                                         {entries.slice(0, 5).map((e, idx) => (
                                           <span key={e.id}>
-                                            Int {e.intervalNumber + 1}: {e.occurred ? '✓' : '✗'} ({formatTime(e.timestamp)})
+                                            Int {e.intervalNumber + 1}: {e.voided ? '—' : e.occurred ? '✓' : '✗'} ({formatTime(e.timestamp)})
                                             {idx < Math.min(4, entries.length - 1) ? ' | ' : ''}
                                           </span>
                                         ))}
