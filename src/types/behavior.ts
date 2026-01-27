@@ -89,7 +89,8 @@ export interface IntervalEntry {
   timestamp: Date;
   markedAt?: Date; // When the occurrence was marked
   voided?: boolean; // True if this interval doesn't count (late arrival/early departure)
-  voidReason?: 'late_arrival' | 'early_departure' | 'not_present';
+  voidReason?: 'late_arrival' | 'early_departure' | 'not_present' | 'fire_drill' | 'break' | 'transition' | 'other';
+  voidReasonCustom?: string; // Custom reason text when voidReason is 'other'
   sessionId?: string;
 }
 

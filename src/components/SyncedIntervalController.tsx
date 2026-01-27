@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell, UserPlus, UserMinus, Users } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell, UserPlus, UserMinus, Users, AlertTriangle, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 
@@ -41,6 +42,13 @@ const playBeep = (frequency: number = 800, duration: number = 200) => {
   }
 };
 
+const VOID_REASONS = [
+  { value: 'fire_drill', label: 'Fire Drill' },
+  { value: 'break', label: 'Break/Lunch' },
+  { value: 'transition', label: 'Transition' },
+  { value: 'other', label: 'Other...' },
+] as const;
+
 export function SyncedIntervalController() {
   const { 
     students, 
@@ -56,6 +64,9 @@ export function SyncedIntervalController() {
     voidIntervalsForLateArrival,
     voidIntervalsForEarlyDeparture,
     studentIntervalStatus,
+    bulkVoidIntervals,
+    bulkUnvoidIntervals,
+    getBulkVoidedIntervals,
   } = useDataStore();
 
   const [currentInterval, setCurrentInterval] = useState(0);
@@ -64,6 +75,10 @@ export function SyncedIntervalController() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showLateArrival, setShowLateArrival] = useState(false);
   const [showDeparture, setShowDeparture] = useState(false);
+  const [showBulkVoid, setShowBulkVoid] = useState(false);
+  const [bulkVoidReason, setBulkVoidReason] = useState<string>('fire_drill');
+  const [bulkVoidCustomReason, setBulkVoidCustomReason] = useState('');
+  const [bulkVoidIntervalNum, setBulkVoidIntervalNum] = useState<number>(0);
   const prevIntervalRef = useRef(currentInterval);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
@@ -121,6 +136,36 @@ export function SyncedIntervalController() {
     resetStudentIntervalStatus(studentId);
     toast.info('Student interval status reset');
   };
+
+  const handleBulkVoid = () => {
+    const reason = bulkVoidReason as any;
+    const customReason = bulkVoidReason === 'other' ? bulkVoidCustomReason : undefined;
+    bulkVoidIntervals(bulkVoidIntervalNum, reason, customReason);
+    
+    const reasonLabel = bulkVoidReason === 'other' 
+      ? bulkVoidCustomReason 
+      : VOID_REASONS.find(r => r.value === bulkVoidReason)?.label || bulkVoidReason;
+    
+    toast.success(`Interval ${bulkVoidIntervalNum + 1} marked as N/A`, {
+      description: `Reason: ${reasonLabel}`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          bulkUnvoidIntervals(bulkVoidIntervalNum);
+          toast.info(`Interval ${bulkVoidIntervalNum + 1} restored`);
+        },
+      },
+    });
+    setShowBulkVoid(false);
+    setBulkVoidCustomReason('');
+  };
+
+  const handleBulkUnvoid = (intervalNumber: number) => {
+    bulkUnvoidIntervals(intervalNumber);
+    toast.info(`Interval ${intervalNumber + 1} restored for all students`);
+  };
+
+  const bulkVoidedIntervals = getBulkVoidedIntervals();
 
   // Handle interval end alerts
   useEffect(() => {
@@ -316,6 +361,89 @@ export function SyncedIntervalController() {
               </DialogContent>
             </Dialog>
 
+            {/* Bulk Void Dialog */}
+            <Dialog open={showBulkVoid} onOpenChange={setShowBulkVoid}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Mark interval N/A for all">
+                  <AlertTriangle className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Mark Interval as N/A
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Mark an interval as N/A (not applicable) for all students. Use this for fire drills, breaks, transitions, etc.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs">Interval Number</Label>
+                    <Select
+                      value={bulkVoidIntervalNum.toString()}
+                      onValueChange={(v) => setBulkVoidIntervalNum(parseInt(v))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: sessionConfig.totalIntervals }, (_, i) => (
+                          <SelectItem key={i} value={i.toString()}>
+                            Interval {i + 1}
+                            {i === currentInterval && ' (current)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs">Reason</Label>
+                    <Select
+                      value={bulkVoidReason}
+                      onValueChange={setBulkVoidReason}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VOID_REASONS.map(reason => (
+                          <SelectItem key={reason.value} value={reason.value}>
+                            {reason.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {bulkVoidReason === 'other' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Custom Reason</Label>
+                      <Input
+                        value={bulkVoidCustomReason}
+                        onChange={(e) => setBulkVoidCustomReason(e.target.value)}
+                        placeholder="Enter reason..."
+                      />
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button 
+                    onClick={handleBulkVoid}
+                    disabled={bulkVoidReason === 'other' && !bulkVoidCustomReason.trim()}
+                  >
+                    Mark as N/A
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -379,6 +507,33 @@ export function SyncedIntervalController() {
         <p className="text-xs text-muted-foreground">
           Start all interval trackers simultaneously across {intervalBehaviors.length} behavior(s)
         </p>
+
+        {/* Bulk Voided Intervals Summary */}
+        {bulkVoidedIntervals.length > 0 && (
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">N/A Intervals</Label>
+            <div className="flex flex-wrap gap-1">
+              {bulkVoidedIntervals.map(({ intervalNumber, reason }) => (
+                <Badge 
+                  key={intervalNumber}
+                  variant="outline" 
+                  className="text-xs bg-muted/50 gap-1"
+                >
+                  #{intervalNumber + 1}: {reason}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 ml-1 hover:bg-destructive/20"
+                    onClick={() => handleBulkUnvoid(intervalNumber)}
+                    title="Restore interval"
+                  >
+                    <Undo2 className="w-3 h-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Student Status Summary */}
         {studentIntervalStatus.length > 0 && (
