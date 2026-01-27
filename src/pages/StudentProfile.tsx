@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle 
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,7 @@ export default function StudentProfile() {
     archiveStudent,
     unarchiveStudent,
     permanentlyDeleteStudent,
+    updateStudentName,
   } = useDataStore();
 
   const student = students.find(s => s.id === studentId);
@@ -77,6 +78,8 @@ export default function StudentProfile() {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -277,7 +280,60 @@ export default function StudentProfile() {
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-foreground">{student.name}</h2>
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="h-9 text-xl font-bold max-w-[200px]"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editedName.trim()) {
+                      updateStudentName(student.id, editedName);
+                      setIsEditingName(false);
+                    } else if (e.key === 'Escape') {
+                      setIsEditingName(false);
+                    }
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    if (editedName.trim()) {
+                      updateStudentName(student.id, editedName);
+                    }
+                    setIsEditingName(false);
+                  }}
+                >
+                  <Check className="w-4 h-4 text-primary" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setIsEditingName(false)}
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-foreground">{student.name}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setEditedName(student.name);
+                    setIsEditingName(true);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </>
+            )}
             {student.isArchived && (
               <Badge variant="outline" className="text-xs">
                 <Archive className="w-3 h-3 mr-1" />

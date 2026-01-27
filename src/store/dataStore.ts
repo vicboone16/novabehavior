@@ -68,6 +68,7 @@ interface DataState {
   
   // Student actions
   addStudent: (name: string) => void;
+  updateStudentName: (id: string, name: string) => void;
   removeStudent: (id: string) => void;
   archiveStudent: (id: string) => void;
   unarchiveStudent: (id: string) => void;
@@ -257,6 +258,15 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           students: state.students.filter((s) => s.id !== id),
           selectedStudentIds: state.selectedStudentIds.filter((sid) => sid !== id),
+        }));
+      },
+
+      updateStudentName: (id, name) => {
+        if (!name.trim()) return;
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === id ? { ...s, name: name.trim() } : s
+          ),
         }));
       },
 
