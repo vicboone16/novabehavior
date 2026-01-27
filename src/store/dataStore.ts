@@ -161,6 +161,13 @@ interface DataState {
 
 const DEFAULT_TRACKER_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
+const DEFAULT_SESSION_FOCUS: SessionFocus = {
+  enabled: false,
+  activeBehaviors: {},
+  activeMethods: {},
+  studentMethods: {},
+};
+
 export const useDataStore = create<DataState>()(
   persist(
     (set, get) => ({
@@ -186,7 +193,7 @@ export const useDataStore = create<DataState>()(
       showTimestamps: false,
       behaviorGoals: [],
       collapsedState: { methods: {}, behaviors: {} },
-      sessionFocus: { enabled: false, activeBehaviors: {}, activeMethods: {}, studentMethods: {} },
+      sessionFocus: DEFAULT_SESSION_FOCUS,
       studentIntervalStatus: [],
 
       addStudent: (name) => {
@@ -988,7 +995,9 @@ export const useDataStore = create<DataState>()(
 
       toggleStudentMethod: (studentId, method) => {
         set((state) => {
-          const current = state.sessionFocus.studentMethods[studentId];
+          const sessionFocus = state.sessionFocus ?? DEFAULT_SESSION_FOCUS;
+          const studentMethodsMap = sessionFocus.studentMethods ?? {};
+          const current = studentMethodsMap[studentId];
           // If no custom methods set, start with all methods
           const allMethods: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
           const activeMethods = current || allMethods;
@@ -999,9 +1008,9 @@ export const useDataStore = create<DataState>()(
           
           return {
             sessionFocus: {
-              ...state.sessionFocus,
+              ...sessionFocus,
               studentMethods: {
-                ...state.sessionFocus.studentMethods,
+                ...studentMethodsMap,
                 [studentId]: newMethods,
               },
             },
@@ -1011,7 +1020,8 @@ export const useDataStore = create<DataState>()(
 
       isStudentMethodActive: (studentId, method) => {
         const state = get();
-        const studentMethods = state.sessionFocus.studentMethods[studentId];
+        const sessionFocus = state.sessionFocus ?? DEFAULT_SESSION_FOCUS;
+        const studentMethods = (sessionFocus.studentMethods ?? {})[studentId];
         // If no custom filter set, all methods are active
         if (!studentMethods) return true;
         return studentMethods.includes(method);
@@ -1020,16 +1030,18 @@ export const useDataStore = create<DataState>()(
       getActiveStudentMethods: (studentId) => {
         const state = get();
         const allMethods: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
-        return state.sessionFocus.studentMethods[studentId] || allMethods;
+        const sessionFocus = state.sessionFocus ?? DEFAULT_SESSION_FOCUS;
+        return (sessionFocus.studentMethods ?? {})[studentId] || allMethods;
       },
 
       resetStudentMethods: (studentId) => {
         set((state) => {
-          const newStudentMethods = { ...state.sessionFocus.studentMethods };
+          const sessionFocus = state.sessionFocus ?? DEFAULT_SESSION_FOCUS;
+          const newStudentMethods = { ...(sessionFocus.studentMethods ?? {}) };
           delete newStudentMethods[studentId];
           return {
             sessionFocus: {
-              ...state.sessionFocus,
+              ...sessionFocus,
               studentMethods: newStudentMethods,
             },
           };
@@ -1054,7 +1066,7 @@ export const useDataStore = create<DataState>()(
           currentSessionId: null,
           sessionStartTime: null,
           sessionLengthOverrides: [],
-          sessionFocus: { enabled: false, activeBehaviors: {}, activeMethods: {}, studentMethods: {} },
+          sessionFocus: DEFAULT_SESSION_FOCUS,
         });
       },
     }),
