@@ -1,12 +1,14 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
+import { useSync } from '@/contexts/SyncContext';
 
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isLoading } = useSync();
   
   // Determine active tab from path
   const getActiveTab = () => {
@@ -31,6 +33,16 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-lg bg-card border shadow-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Syncing your data...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container py-3">
