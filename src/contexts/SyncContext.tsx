@@ -5,6 +5,7 @@ import { useDataStore } from '@/store/dataStore';
 import { Student, Behavior, BehaviorGoal, Session } from '@/types/behavior';
 import { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface SyncContextType {
   isSyncing: boolean;
@@ -31,6 +32,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const previousStudentsRef = useRef<string>('');
   const previousGoalsRef = useRef<string>('');
   const previousSessionsRef = useRef<string>('');
+  const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
+  const isProcessingRealtimeRef = useRef(false);
   
   const students = useDataStore((state) => state.students);
   const behaviorGoals = useDataStore((state) => state.behaviorGoals);
@@ -339,10 +342,185 @@ export function SyncProvider({ children }: SyncProviderProps) {
       previousStudentsRef.current = '';
       previousGoalsRef.current = '';
       previousSessionsRef.current = '';
+      
+      // Cleanup realtime subscription
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
     }
   }, [user, loadData]);
 
-  // Auto-sync when data changes (debounced)
+  // Set up realtime subscriptions
+  useEffect(() => {
+    if (!user || !hasFetched.current) return;
+
+    // Subscribe to realtime changes on students table
+    const channel = supabase
+      .channel('db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'students',
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          if (isProcessingRealtimeRef.current) return;
+          isProcessingRealtimeRef.current = true;
+          
+          try {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const s = payload.new as any;
+              const mappedStudent: Student = {
+                id: s.id,
+                name: s.name,
+                color: s.color,
+                behaviors: (s.behaviors as unknown as Behavior[]) || [],
+                customAntecedents: (s.custom_antecedents as unknown as string[]) || [],
+                customConsequences: (s.custom_consequences as unknown as string[]) || [],
+                isArchived: s.is_archived,
+              };
+              
+              const studentGoals = ((s.goals as unknown as BehaviorGoal[]) || []).map(g => ({ ...g, studentId: s.id }));
+              
+              useDataStore.setState((state) => {
+                const existingIndex = state.students.findIndex(st => st.id === s.id);
+                const newStudents = existingIndex >= 0
+                  ? state.students.map((st, i) => i === existingIndex ? mappedStudent : st)
+                  : [...state.students, mappedStudent];
+                
+                // Update goals - remove old ones for this student and add new ones
+                const otherGoals = state.behaviorGoals.filter(g => g.studentId !== s.id);
+                
+                previousStudentsRef.current = JSON.stringify(newStudents);
+                previousGoalsRef.current = JSON.stringify([...otherGoals, ...studentGoals]);
+                
+                return { 
+                  students: newStudents,
+                  behaviorGoals: [...otherGoals, ...studentGoals],
+                };
+              });
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as any).id;
+              useDataStore.setState((state) => {
+                const newStudents = state.students.filter(s => s.id !== deletedId);
+                const newGoals = state.behaviorGoals.filter(g => g.studentId !== deletedId);
+                previousStudentsRef.current = JSON.stringify(newStudents);
+                previousGoalsRef.current = JSON.stringify(newGoals);
+                return { 
+                  students: newStudents,
+                  behaviorGoals: newGoals,
+                };
+              });
+            }
+          } finally {
+            setTimeout(() => {
+              isProcessingRealtimeRef.current = false;
+            }, 100);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sessions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          if (isProcessingRealtimeRef.current) return;
+          
+          const session = payload.new as any;
+          const existingSession = useDataStore.getState().sessions.find(s => s.id === session.id);
+          
+          if (!existingSession) {
+            // Fetch session data entries for this session
+            const { data: sessionDataEntries } = await supabase
+              .from('session_data')
+              .select('*')
+              .eq('session_id', session.id)
+              .order('timestamp', { ascending: true });
+              
+            const entries = sessionDataEntries || [];
+            
+            const mappedSession: Session = {
+              id: session.id,
+              date: new Date(session.start_time),
+              notes: session.name || '',
+              studentIds: session.student_ids || [],
+              sessionLengthMinutes: session.session_length_minutes,
+              abcEntries: entries
+                .filter(e => e.event_type === 'abc')
+                .map(e => ({
+                  id: e.id,
+                  studentId: e.student_id,
+                  behaviorId: e.behavior_id,
+                  antecedent: (e.abc_data as any)?.antecedent || '',
+                  behavior: (e.abc_data as any)?.behavior || '',
+                  consequence: (e.abc_data as any)?.consequence || '',
+                  frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
+                  timestamp: new Date(e.timestamp),
+                  sessionId: e.session_id,
+                })),
+              frequencyEntries: entries
+                .filter(e => e.event_type === 'frequency')
+                .map(e => ({
+                  id: e.id,
+                  studentId: e.student_id,
+                  behaviorId: e.behavior_id,
+                  count: (e.abc_data as any)?.count || 1,
+                  timestamp: new Date(e.timestamp),
+                  timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
+                  sessionId: e.session_id,
+                })),
+              durationEntries: entries
+                .filter(e => e.event_type === 'duration')
+                .map(e => ({
+                  id: e.id,
+                  studentId: e.student_id,
+                  behaviorId: e.behavior_id,
+                  duration: e.duration_seconds || 0,
+                  startTime: new Date(e.timestamp),
+                  endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
+                  sessionId: e.session_id,
+                })),
+              intervalEntries: entries
+                .filter(e => e.event_type === 'interval')
+                .map(e => ({
+                  id: e.id,
+                  studentId: e.student_id,
+                  behaviorId: e.behavior_id,
+                  intervalNumber: e.interval_index || 0,
+                  occurred: (e.abc_data as any)?.occurred || false,
+                  timestamp: new Date(e.timestamp),
+                  voided: (e.abc_data as any)?.voided,
+                  voidReason: (e.abc_data as any)?.voidReason,
+                  sessionId: e.session_id,
+                })),
+            };
+            
+            useDataStore.setState((state) => {
+              const newSessions = [mappedSession, ...state.sessions];
+              previousSessionsRef.current = JSON.stringify(newSessions.map(s => s.id));
+              return { sessions: newSessions };
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    realtimeChannelRef.current = channel;
+
+    return () => {
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+    };
+  }, [user, hasFetched.current]);
   useEffect(() => {
     if (!user || !hasFetched.current || isLoading) return;
     
