@@ -16,6 +16,11 @@ import {
   STUDENT_COLORS 
 } from '@/types/behavior';
 
+interface CollapsedState {
+  methods: { [studentId: string]: DataCollectionMethod[] }; // collapsed method sections
+  behaviors: { [key: string]: boolean }; // studentId-behaviorId -> collapsed
+}
+
 interface DataState {
   students: Student[];
   selectedStudentIds: string[];
@@ -34,6 +39,7 @@ interface DataState {
   sessionLengthOverrides: SessionLengthOverride[];
   showTimestamps: boolean;
   behaviorGoals: BehaviorGoal[];
+  collapsedState: CollapsedState;
   
   // Student actions
   addStudent: (name: string) => void;
@@ -103,6 +109,14 @@ interface DataState {
   removeBehaviorGoal: (goalId: string) => void;
   updateBehaviorGoal: (goalId: string, updates: Partial<BehaviorGoal>) => void;
   
+  // Collapse state
+  toggleMethodCollapsed: (studentId: string, method: DataCollectionMethod) => void;
+  isMethodCollapsed: (studentId: string, method: DataCollectionMethod) => boolean;
+  toggleBehaviorCollapsed: (studentId: string, behaviorId: string) => void;
+  isBehaviorCollapsed: (studentId: string, behaviorId: string) => boolean;
+  collapseAllForStudent: (studentId: string) => void;
+  expandAllForStudent: (studentId: string) => void;
+  
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
@@ -134,6 +148,7 @@ export const useDataStore = create<DataState>()(
       sessionLengthOverrides: [],
       showTimestamps: false,
       behaviorGoals: [],
+      collapsedState: { methods: {}, behaviors: {} },
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -614,6 +629,90 @@ export const useDataStore = create<DataState>()(
           behaviorGoals: state.behaviorGoals.map((g) =>
             g.id === goalId ? { ...g, ...updates } : g
           ),
+        }));
+      },
+
+      toggleMethodCollapsed: (studentId, method) => {
+        set((state) => {
+          const current = state.collapsedState.methods[studentId] || [];
+          const isCollapsed = current.includes(method);
+          return {
+            collapsedState: {
+              ...state.collapsedState,
+              methods: {
+                ...state.collapsedState.methods,
+                [studentId]: isCollapsed
+                  ? current.filter(m => m !== method)
+                  : [...current, method],
+              },
+            },
+          };
+        });
+      },
+
+      isMethodCollapsed: (studentId, method) => {
+        return get().collapsedState.methods[studentId]?.includes(method) || false;
+      },
+
+      toggleBehaviorCollapsed: (studentId, behaviorId) => {
+        const key = `${studentId}-${behaviorId}`;
+        set((state) => ({
+          collapsedState: {
+            ...state.collapsedState,
+            behaviors: {
+              ...state.collapsedState.behaviors,
+              [key]: !state.collapsedState.behaviors[key],
+            },
+          },
+        }));
+      },
+
+      isBehaviorCollapsed: (studentId, behaviorId) => {
+        const key = `${studentId}-${behaviorId}`;
+        return get().collapsedState.behaviors[key] || false;
+      },
+
+      collapseAllForStudent: (studentId) => {
+        const student = get().students.find(s => s.id === studentId);
+        if (!student) return;
+        
+        const allMethods: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
+        const behaviorKeys: { [key: string]: boolean } = {};
+        student.behaviors.forEach(b => {
+          behaviorKeys[`${studentId}-${b.id}`] = true;
+        });
+        
+        set((state) => ({
+          collapsedState: {
+            methods: {
+              ...state.collapsedState.methods,
+              [studentId]: allMethods,
+            },
+            behaviors: {
+              ...state.collapsedState.behaviors,
+              ...behaviorKeys,
+            },
+          },
+        }));
+      },
+
+      expandAllForStudent: (studentId) => {
+        const student = get().students.find(s => s.id === studentId);
+        if (!student) return;
+        
+        const behaviorKeys = { ...get().collapsedState.behaviors };
+        student.behaviors.forEach(b => {
+          delete behaviorKeys[`${studentId}-${b.id}`];
+        });
+        
+        set((state) => ({
+          collapsedState: {
+            methods: {
+              ...state.collapsedState.methods,
+              [studentId]: [],
+            },
+            behaviors: behaviorKeys,
+          },
         }));
       },
 
