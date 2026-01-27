@@ -88,9 +88,14 @@ interface DataState {
   // Interval actions
   recordInterval: (studentId: string, behaviorId: string, intervalNumber: number, occurred: boolean) => void;
   getIntervalData: (studentId: string, behaviorId: string) => IntervalEntry[];
-  voidInterval: (studentId: string, behaviorId: string, intervalNumber: number, reason: 'late_arrival' | 'early_departure' | 'not_present') => void;
+  voidInterval: (studentId: string, behaviorId: string, intervalNumber: number, reason: IntervalEntry['voidReason'], customReason?: string) => void;
   unvoidInterval: (studentId: string, behaviorId: string, intervalNumber: number) => void;
   isIntervalVoided: (studentId: string, behaviorId: string, intervalNumber: number) => boolean;
+  
+  // Bulk interval void actions
+  bulkVoidIntervals: (intervalNumber: number, reason: IntervalEntry['voidReason'], customReason?: string) => void;
+  bulkUnvoidIntervals: (intervalNumber: number) => void;
+  getBulkVoidedIntervals: () => { intervalNumber: number; reason: string }[];
   
   // Student interval presence
   addStudentLate: (studentId: string, joinAtInterval: number) => void;
@@ -551,7 +556,7 @@ export const useDataStore = create<DataState>()(
         );
       },
 
-      voidInterval: (studentId, behaviorId, intervalNumber, reason) => {
+      voidInterval: (studentId, behaviorId, intervalNumber, reason, customReason) => {
         set((state) => {
           const existing = state.intervalEntries.find(
             (e) =>
@@ -565,7 +570,7 @@ export const useDataStore = create<DataState>()(
                 e.studentId === studentId &&
                 e.behaviorId === behaviorId &&
                 e.intervalNumber === intervalNumber
-                  ? { ...e, voided: true, voidReason: reason }
+                  ? { ...e, voided: true, voidReason: reason, voidReasonCustom: customReason }
                   : e
               ),
             };
@@ -582,6 +587,7 @@ export const useDataStore = create<DataState>()(
                 occurred: false,
                 voided: true,
                 voidReason: reason,
+                voidReasonCustom: customReason,
                 timestamp: new Date(),
                 sessionId: state.currentSessionId || undefined,
               },
@@ -596,7 +602,7 @@ export const useDataStore = create<DataState>()(
             e.studentId === studentId &&
             e.behaviorId === behaviorId &&
             e.intervalNumber === intervalNumber
-              ? { ...e, voided: false, voidReason: undefined }
+              ? { ...e, voided: false, voidReason: undefined, voidReasonCustom: undefined }
               : e
           ),
         }));
@@ -610,6 +616,56 @@ export const useDataStore = create<DataState>()(
             e.intervalNumber === intervalNumber
         );
         return entry?.voided || false;
+      },
+
+      // Bulk void/unvoid for all students at a specific interval
+      bulkVoidIntervals: (intervalNumber, reason, customReason) => {
+        const state = get();
+        const selectedStudents = state.students.filter(s => state.selectedStudentIds.includes(s.id));
+        
+        selectedStudents.forEach(student => {
+          const intervalBehaviors = student.behaviors.filter(b => 
+            (b.methods || [b.type]).includes('interval')
+          );
+          intervalBehaviors.forEach(behavior => {
+            get().voidInterval(student.id, behavior.id, intervalNumber, reason, customReason);
+          });
+        });
+      },
+
+      bulkUnvoidIntervals: (intervalNumber) => {
+        const state = get();
+        const selectedStudents = state.students.filter(s => state.selectedStudentIds.includes(s.id));
+        
+        selectedStudents.forEach(student => {
+          const intervalBehaviors = student.behaviors.filter(b => 
+            (b.methods || [b.type]).includes('interval')
+          );
+          intervalBehaviors.forEach(behavior => {
+            get().unvoidInterval(student.id, behavior.id, intervalNumber);
+          });
+        });
+      },
+
+      getBulkVoidedIntervals: () => {
+        const state = get();
+        const voidedMap = new Map<number, string>();
+        
+        // Find intervals that are voided across all students/behaviors with bulk reasons
+        state.intervalEntries.forEach(entry => {
+          if (entry.voided && entry.voidReason && 
+              ['fire_drill', 'break', 'transition', 'other'].includes(entry.voidReason)) {
+            const reason = entry.voidReason === 'other' && entry.voidReasonCustom 
+              ? entry.voidReasonCustom 
+              : entry.voidReason;
+            voidedMap.set(entry.intervalNumber, reason);
+          }
+        });
+        
+        return Array.from(voidedMap.entries()).map(([intervalNumber, reason]) => ({
+          intervalNumber,
+          reason,
+        }));
       },
 
       addStudentLate: (studentId, joinAtInterval) => {
