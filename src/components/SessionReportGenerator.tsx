@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock, MinusCircle, UserPlus, UserMinus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useDataStore } from '@/store/dataStore';
-import { Session } from '@/types/behavior';
+import { Session, IntervalEntry } from '@/types/behavior';
 
 export function SessionReportGenerator() {
-  const { sessions, students } = useDataStore();
+  const { sessions, students, studentIntervalStatus } = useDataStore();
   const [selectedSessionId, setSelectedSessionId] = useState<string>('latest');
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +44,21 @@ export function SessionReportGenerator() {
     return ((count / sessionMinutes) * 60).toFixed(1);
   };
 
+  const getVoidReasonLabel = (reason?: IntervalEntry['voidReason'], custom?: string) => {
+    if (!reason) return 'N/A';
+    if (reason === 'other' && custom) return custom;
+    const labels: Record<string, string> = {
+      late_arrival: 'Late Arrival',
+      early_departure: 'Early Departure',
+      not_present: 'Not Present',
+      fire_drill: 'Fire Drill',
+      break: 'Break/Lunch',
+      transition: 'Transition',
+      other: 'Other',
+    };
+    return labels[reason] || reason;
+  };
+
   const handlePrint = () => {
     const printContent = reportRef.current;
     if (!printContent) return;
@@ -67,16 +82,22 @@ export function SessionReportGenerator() {
           .interval-box { width: 24px; height: 24px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; border-radius: 3px; }
           .interval-yes { background: #22c55e; color: white; }
           .interval-no { background: #ef4444; color: white; }
+          .interval-na { background: #e5e7eb; color: #9ca3af; border-style: dashed; }
           .interval-empty { background: #f5f5f5; color: #999; }
           .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px; }
           .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
           .summary-box { text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
           .summary-value { font-size: 24px; font-weight: bold; }
           .summary-label { font-size: 11px; color: #666; }
+          .void-summary { background: #f3f4f6; padding: 12px; border-radius: 5px; margin-bottom: 15px; }
+          .void-summary h4 { margin: 0 0 8px 0; font-size: 13px; }
+          .attendance-summary { background: #f3f4f6; padding: 12px; border-radius: 5px; margin-bottom: 15px; }
+          .attendance-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; }
           th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
           th { background: #f5f5f5; }
           .notes-section { background: #fffbeb; padding: 10px; border-radius: 5px; margin-top: 15px; }
+          .smart-summary { font-size: 11px; color: #666; margin-bottom: 8px; }
           @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
         </style>
       </head>
@@ -177,40 +198,134 @@ export function SessionReportGenerator() {
               </div>
 
               {/* Summary Stats */}
-              <div className="summary-grid grid grid-cols-4 gap-3">
-                <Card>
-                  <CardContent className="pt-4 text-center">
-                    <p className="text-2xl font-bold text-info">
-                      {selectedSession.frequencyEntries.reduce((sum, e) => sum + e.count, 0)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Total Frequency</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4 text-center">
-                    <p className="text-2xl font-bold text-warning">
-                      {formatDuration(selectedSession.durationEntries.reduce((sum, e) => sum + e.duration, 0))}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Total Duration</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4 text-center">
-                    <p className="text-2xl font-bold text-accent">
-                      {selectedSession.intervalEntries.length}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Intervals Recorded</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4 text-center">
-                    <p className="text-2xl font-bold text-primary">
-                      {selectedSession.abcEntries.length}
-                    </p>
-                    <p className="text-xs text-muted-foreground">ABC Entries</p>
-                  </CardContent>
-                </Card>
-              </div>
+              {(() => {
+                const allIntervals = selectedSession.intervalEntries;
+                const validIntervals = allIntervals.filter(e => !e.voided);
+                const voidedIntervals = allIntervals.filter(e => e.voided);
+                const occurredIntervals = validIntervals.filter(e => e.occurred).length;
+                const intervalPercentage = validIntervals.length > 0 
+                  ? Math.round((occurredIntervals / validIntervals.length) * 100) 
+                  : 0;
+
+                return (
+                  <>
+                    <div className="summary-grid grid grid-cols-4 gap-3">
+                      <Card>
+                        <CardContent className="pt-4 text-center">
+                          <p className="text-2xl font-bold text-info">
+                            {selectedSession.frequencyEntries.reduce((sum, e) => sum + e.count, 0)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Total Frequency</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 text-center">
+                          <p className="text-2xl font-bold text-warning">
+                            {formatDuration(selectedSession.durationEntries.reduce((sum, e) => sum + e.duration, 0))}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Total Duration</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 text-center">
+                          <p className="text-2xl font-bold text-accent">
+                            {occurredIntervals}/{validIntervals.length}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Intervals ({intervalPercentage}%)
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 text-center">
+                          <p className="text-2xl font-bold text-primary">
+                            {selectedSession.abcEntries.length}
+                          </p>
+                          <p className="text-xs text-muted-foreground">ABC Entries</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Voided Intervals Summary */}
+                    {voidedIntervals.length > 0 && (
+                      <Card className="bg-muted/30">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                            Excluded Intervals (N/A)
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              // Group by reason
+                              const byReason = voidedIntervals.reduce((acc, e) => {
+                                const reason = getVoidReasonLabel(e.voidReason, e.voidReasonCustom);
+                                if (!acc[reason]) acc[reason] = [];
+                                acc[reason].push(e.intervalNumber + 1);
+                                return acc;
+                              }, {} as Record<string, number[]>);
+
+                              return Object.entries(byReason).map(([reason, intervals]) => {
+                                const uniqueIntervals = [...new Set(intervals)].sort((a, b) => a - b);
+                                return (
+                                  <Badge key={reason} variant="outline" className="gap-1">
+                                    {reason}: #{uniqueIntervals.join(', #')}
+                                  </Badge>
+                                );
+                              });
+                            })()}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {voidedIntervals.length} interval entries excluded from percentage calculations
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Attendance Changes */}
+                    {studentIntervalStatus.length > 0 && (
+                      <Card className="bg-muted/30">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <UserPlus className="w-4 h-4 text-muted-foreground" />
+                            Attendance Changes
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-1">
+                            {studentIntervalStatus.map(status => {
+                              const student = students.find(s => s.id === status.studentId);
+                              if (!student) return null;
+                              return (
+                                <div key={status.studentId} className="flex items-center gap-2 text-sm">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: student.color }}
+                                  />
+                                  <span className="font-medium">{student.name}:</span>
+                                  {status.joinedAtInterval !== undefined && status.joinedAtInterval > 0 && (
+                                    <Badge variant="outline" className="gap-1">
+                                      <UserPlus className="w-3 h-3" />
+                                      Joined at interval {status.joinedAtInterval + 1}
+                                    </Badge>
+                                  )}
+                                  {status.departedAtInterval !== undefined && (
+                                    <Badge variant="outline" className="gap-1">
+                                      <UserMinus className="w-3 h-3" />
+                                      Left at interval {status.departedAtInterval + 1}
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Student Sections */}
               {[...new Set([
@@ -308,11 +423,11 @@ export function SessionReportGenerator() {
                         </div>
                       )}
 
-                      {/* Interval Data - Detailed Grid */}
+                      {/* Interval Data - Detailed Grid with Smart Summaries */}
                       {studentInt.length > 0 && (
                         <div className="data-section">
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                            Interval Data (Detailed)
+                            Interval Data (Smart Summary)
                           </h4>
                           {(() => {
                             const byBehavior = studentInt.reduce((acc, e) => {
@@ -323,9 +438,12 @@ export function SessionReportGenerator() {
 
                             return Object.entries(byBehavior).map(([behaviorId, entries]) => {
                               const sorted = entries.sort((a, b) => a.intervalNumber - b.intervalNumber);
-                              const occurred = sorted.filter(e => e.occurred).length;
-                              const total = sorted.length;
-                              const percentage = total > 0 ? Math.round((occurred / total) * 100) : 0;
+                              const validEntries = sorted.filter(e => !e.voided);
+                              const voidedEntries = sorted.filter(e => e.voided);
+                              const occurred = validEntries.filter(e => e.occurred).length;
+                              const presentIntervals = validEntries.length;
+                              const totalIntervals = sorted.length;
+                              const percentage = presentIntervals > 0 ? Math.round((occurred / presentIntervals) * 100) : 0;
 
                               // Get all interval numbers to show gaps
                               const maxInterval = Math.max(...sorted.map(e => e.intervalNumber));
@@ -334,31 +452,70 @@ export function SessionReportGenerator() {
                                 return { num: i + 1, entry };
                               });
 
+                              // Group voided reasons
+                              const voidReasons = voidedEntries.reduce((acc, e) => {
+                                const reason = getVoidReasonLabel(e.voidReason, e.voidReasonCustom);
+                                acc[reason] = (acc[reason] || 0) + 1;
+                                return acc;
+                              }, {} as Record<string, number>);
+
                               return (
                                 <div key={behaviorId} className="mb-4 p-3 bg-muted/30 rounded-lg">
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="font-medium">{getBehaviorName(studentId, behaviorId)}</span>
                                     <div className="flex items-center gap-2">
-                                      <Badge variant="outline">
-                                        {occurred}/{total} ({percentage}%)
+                                      <Badge variant="outline" className="font-bold">
+                                        {occurred}/{presentIntervals} ({percentage}%)
                                       </Badge>
+                                      {voidedEntries.length > 0 && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {voidedEntries.length} N/A
+                                        </Badge>
+                                      )}
                                     </div>
                                   </div>
+                                  
+                                  {/* Smart summary text */}
+                                  {presentIntervals !== totalIntervals && (
+                                    <p className="text-xs text-muted-foreground mb-2">
+                                      Present intervals: {presentIntervals} of {totalIntervals} total
+                                      {Object.entries(voidReasons).length > 0 && (
+                                        <span className="ml-2">
+                                          ({Object.entries(voidReasons).map(([reason, count], i) => (
+                                            <span key={reason}>
+                                              {count}× {reason}{i < Object.entries(voidReasons).length - 1 ? ', ' : ''}
+                                            </span>
+                                          ))})
+                                        </span>
+                                      )}
+                                    </p>
+                                  )}
+
                                   <div className="interval-grid flex flex-wrap gap-1">
                                     {intervals.map(({ num, entry }) => (
                                       <div
                                         key={num}
                                         className={`
                                           w-7 h-7 rounded flex items-center justify-center text-xs font-medium border
-                                          ${entry?.occurred 
-                                            ? 'bg-green-500 text-white border-green-600' 
-                                            : entry?.occurred === false 
-                                              ? 'bg-red-500 text-white border-red-600'
-                                              : 'bg-muted text-muted-foreground border-border'}
+                                          ${entry?.voided
+                                            ? 'bg-muted text-muted-foreground border-dashed border-muted-foreground/50'
+                                            : entry?.occurred 
+                                              ? 'bg-primary text-primary-foreground border-primary' 
+                                              : entry?.occurred === false 
+                                                ? 'bg-destructive text-destructive-foreground border-destructive'
+                                                : 'bg-muted text-muted-foreground border-border'}
                                         `}
-                                        title={entry ? `Interval ${num}: ${entry.occurred ? 'Yes' : 'No'} at ${format(new Date(entry.timestamp), 'HH:mm:ss')}` : `Interval ${num}: Not recorded`}
+                                        title={
+                                          entry?.voided 
+                                            ? `Interval ${num}: N/A (${getVoidReasonLabel(entry.voidReason, entry.voidReasonCustom)})`
+                                            : entry 
+                                              ? `Interval ${num}: ${entry.occurred ? 'Yes' : 'No'} at ${format(new Date(entry.timestamp), 'HH:mm:ss')}` 
+                                              : `Interval ${num}: Not recorded`
+                                        }
                                       >
-                                        {entry?.occurred ? (
+                                        {entry?.voided ? (
+                                          <MinusCircle className="w-4 h-4" />
+                                        ) : entry?.occurred ? (
                                           <CheckCircle className="w-4 h-4" />
                                         ) : entry?.occurred === false ? (
                                           <XCircle className="w-4 h-4" />
@@ -368,13 +525,18 @@ export function SessionReportGenerator() {
                                       </div>
                                     ))}
                                   </div>
-                                  <div className="mt-2 text-xs text-muted-foreground">
-                                    <span className="inline-flex items-center gap-1 mr-3">
-                                      <CheckCircle className="w-3 h-3 text-green-500" /> = Occurred
+                                  <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-x-3">
+                                    <span className="inline-flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3 text-primary" /> Occurred
                                     </span>
                                     <span className="inline-flex items-center gap-1">
-                                      <XCircle className="w-3 h-3 text-red-500" /> = Did not occur
+                                      <XCircle className="w-3 h-3 text-destructive" /> Did not occur
                                     </span>
+                                    {voidedEntries.length > 0 && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <MinusCircle className="w-3 h-3" /> N/A (excluded)
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               );
