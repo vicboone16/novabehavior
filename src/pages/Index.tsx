@@ -7,6 +7,8 @@ import { DataSummary } from '@/components/DataSummary';
 import { SyncedIntervalController } from '@/components/SyncedIntervalController';
 import { SessionDataReview } from '@/components/SessionDataReview';
 import { EnhancedABCPopup } from '@/components/EnhancedABCPopup';
+import { BehaviorTrendCharts } from '@/components/BehaviorTrendCharts';
+import { SessionReportGenerator } from '@/components/SessionReportGenerator';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -38,7 +40,9 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <BehaviorTrendCharts />
+              <SessionReportGenerator />
               <SessionDataReview />
               <BehaviorManager />
             </div>
