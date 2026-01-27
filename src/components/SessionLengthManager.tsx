@@ -137,15 +137,15 @@ export function SessionLengthManager() {
                 <div>
                   <Label className="text-xs">Behavior (optional)</Label>
                   <Select 
-                    value={newOverrideBehaviorId} 
-                    onValueChange={setNewOverrideBehaviorId}
+                    value={newOverrideBehaviorId || "all"} 
+                    onValueChange={(v) => setNewOverrideBehaviorId(v === "all" ? "" : v)}
                     disabled={!newOverrideStudentId}
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue placeholder="All behaviors" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All behaviors</SelectItem>
+                      <SelectItem value="all">All behaviors</SelectItem>
                       {selectedStudentForOverride?.behaviors.map(b => (
                         <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                       ))}
