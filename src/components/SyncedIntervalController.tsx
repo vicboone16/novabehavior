@@ -1,13 +1,42 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Settings, Link } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useDataStore } from '@/store/dataStore';
+import { toast } from 'sonner';
+
+// Audio context for beep sound
+let audioContext: AudioContext | null = null;
+
+const playBeep = (frequency: number = 800, duration: number = 200) => {
+  try {
+    if (!audioContext) {
+      audioContext = new AudioContext();
+    }
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration / 1000);
+  } catch (e) {
+    console.log('Audio playback failed:', e);
+  }
+};
 
 export function SyncedIntervalController() {
   const { 
@@ -21,6 +50,9 @@ export function SyncedIntervalController() {
 
   const [currentInterval, setCurrentInterval] = useState(0);
   const [timeInInterval, setTimeInInterval] = useState(0);
+  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const prevIntervalRef = useRef(currentInterval);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
   const intervalBehaviors = selectedStudents.flatMap(s => 
@@ -45,7 +77,43 @@ export function SyncedIntervalController() {
     setSyncedIntervalsRunning(false);
     setCurrentInterval(0);
     setTimeInInterval(0);
+    prevIntervalRef.current = 0;
   }, [setSyncedIntervalsRunning]);
+
+  // Handle interval end alerts
+  useEffect(() => {
+    if (currentInterval !== prevIntervalRef.current && currentInterval > 0) {
+      if (alertsEnabled) {
+        toast.info(`Interval ${currentInterval} complete`, {
+          description: `Starting interval ${currentInterval + 1} of ${sessionConfig.totalIntervals}`,
+          duration: 2000,
+        });
+      }
+      if (soundEnabled) {
+        playBeep(800, 150);
+        setTimeout(() => playBeep(1000, 150), 200);
+      }
+      prevIntervalRef.current = currentInterval;
+    }
+  }, [currentInterval, alertsEnabled, soundEnabled, sessionConfig.totalIntervals]);
+
+  // Handle session complete
+  useEffect(() => {
+    if (currentInterval >= sessionConfig.totalIntervals && prevIntervalRef.current < sessionConfig.totalIntervals) {
+      if (alertsEnabled) {
+        toast.success('All intervals complete!', {
+          description: 'Session interval recording finished.',
+          duration: 4000,
+        });
+      }
+      if (soundEnabled) {
+        playBeep(600, 100);
+        setTimeout(() => playBeep(800, 100), 150);
+        setTimeout(() => playBeep(1000, 200), 300);
+      }
+      prevIntervalRef.current = currentInterval;
+    }
+  }, [currentInterval, sessionConfig.totalIntervals, alertsEnabled, soundEnabled]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -56,7 +124,7 @@ export function SyncedIntervalController() {
             setCurrentInterval(prevInterval => {
               if (prevInterval + 1 >= sessionConfig.totalIntervals) {
                 setSyncedIntervalsRunning(false);
-                return prevInterval;
+                return prevInterval + 1;
               }
               return prevInterval + 1;
             });
@@ -110,6 +178,31 @@ export function SyncedIntervalController() {
                     min={1}
                     max={60}
                   />
+                </div>
+                
+                {/* Alert Settings */}
+                <div className="border-t pt-3 space-y-2">
+                  <Label className="text-xs font-medium">Alerts</Label>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-3 h-3" />
+                      <span className="text-xs">Visual alerts</span>
+                    </div>
+                    <Switch
+                      checked={alertsEnabled}
+                      onCheckedChange={setAlertsEnabled}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                      <span className="text-xs">Sound alerts</span>
+                    </div>
+                    <Switch
+                      checked={soundEnabled}
+                      onCheckedChange={setSoundEnabled}
+                    />
+                  </div>
                 </div>
               </div>
             </PopoverContent>
