@@ -88,7 +88,15 @@ export interface IntervalEntry {
   occurred: boolean;
   timestamp: Date;
   markedAt?: Date; // When the occurrence was marked
+  voided?: boolean; // True if this interval doesn't count (late arrival/early departure)
+  voidReason?: 'late_arrival' | 'early_departure' | 'not_present';
   sessionId?: string;
+}
+
+export interface StudentIntervalStatus {
+  studentId: string;
+  joinedAtInterval: number; // Which interval they joined (0 = start, >0 = late arrival)
+  departedAtInterval?: number; // Which interval they left (undefined = stayed till end)
 }
 
 export interface SessionConfig {
