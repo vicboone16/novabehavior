@@ -85,6 +85,8 @@ interface DataState {
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
   addEnhancedABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
+  updateABCEntry: (id: string, updates: Partial<Omit<ABCEntry, 'id' | 'timestamp'>>) => void;
+  deleteABCEntry: (id: string) => void;
   
   // Frequency actions
   incrementFrequency: (studentId: string, behaviorId: string) => void;
@@ -393,6 +395,33 @@ export const useDataStore = create<DataState>()(
         // Also add to frequency data
         const freqCount = entry.frequencyCount || 1;
         get().addFrequencyFromABC(entry.studentId, entry.behaviorId, freqCount);
+      },
+
+      updateABCEntry: (id, updates) => {
+        set((state) => ({
+          abcEntries: state.abcEntries.map((entry) =>
+            entry.id === id ? { ...entry, ...updates } : entry
+          ),
+        }));
+      },
+
+      deleteABCEntry: (id) => {
+        const state = get();
+        const entry = state.abcEntries.find(e => e.id === id);
+        if (entry) {
+          const student = state.students.find(s => s.id === entry.studentId);
+          const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+          state.moveToTrash(
+            'abc',
+            entry,
+            `ABC: ${entry.antecedent} → ${entry.behavior} → ${entry.consequence}`,
+            student?.name,
+            behavior?.name
+          );
+        }
+        set((state) => ({
+          abcEntries: state.abcEntries.filter((e) => e.id !== id),
+        }));
       },
 
       incrementFrequency: (studentId, behaviorId) => {
