@@ -1,10 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users } from 'lucide-react';
+import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useDataStore } from '@/store/dataStore';
 import { BulkAddBehavior } from '@/components/BulkAddBehavior';
 import { StudentComparison } from '@/components/StudentComparison';
@@ -13,14 +28,26 @@ type FilterType = 'active' | 'archived' | 'all';
 
 export default function Students() {
   const navigate = useNavigate();
-  const { students, addStudent, unarchiveStudent } = useDataStore();
+  const { students, addStudent, unarchiveStudent, duplicateBehaviorConfig } = useDataStore();
   const [newStudentName, setNewStudentName] = useState('');
   const [filter, setFilter] = useState<FilterType>('active');
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [sourceStudentId, setSourceStudentId] = useState('');
+  const [targetStudentId, setTargetStudentId] = useState('');
 
   const handleAddStudent = () => {
     if (newStudentName.trim()) {
       addStudent(newStudentName.trim());
       setNewStudentName('');
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (sourceStudentId && targetStudentId && sourceStudentId !== targetStudentId) {
+      duplicateBehaviorConfig(sourceStudentId, targetStudentId);
+      setShowDuplicateDialog(false);
+      setSourceStudentId('');
+      setTargetStudentId('');
     }
   };
 
@@ -30,7 +57,9 @@ export default function Students() {
     return true;
   });
 
-  const activeCount = students.filter(s => !s.isArchived).length;
+  const activeStudents = students.filter(s => !s.isArchived);
+  const studentsWithBehaviors = activeStudents.filter(s => s.behaviors.length > 0);
+  const activeCount = activeStudents.length;
   const archivedCount = students.filter(s => s.isArchived).length;
 
   return (
@@ -56,6 +85,14 @@ export default function Students() {
         <Button onClick={handleAddStudent} disabled={!newStudentName.trim()}>
           <Plus className="w-4 h-4 mr-2" />
           Add Student
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={() => setShowDuplicateDialog(true)}
+          disabled={studentsWithBehaviors.length === 0}
+        >
+          <Copy className="w-4 h-4 mr-2" />
+          Duplicate Config
         </Button>
         <BulkAddBehavior />
         <StudentComparison />
@@ -173,6 +210,87 @@ export default function Students() {
           ))
         )}
       </div>
+
+      {/* Duplicate Config Dialog */}
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="w-5 h-5" />
+              Duplicate Behavior Configuration
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Copy all behaviors and custom ABC options from one student to another.
+            </p>
+            <div className="space-y-2">
+              <Label>Copy from (source)</Label>
+              <Select value={sourceStudentId} onValueChange={setSourceStudentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source student..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {studentsWithBehaviors.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        {s.name}
+                        <span className="text-muted-foreground text-xs">
+                          ({s.behaviors.length} behaviors)
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Copy to (target)</Label>
+              <Select value={targetStudentId} onValueChange={setTargetStudentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target student..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeStudents
+                    .filter((s) => s.id !== sourceStudentId)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.name}
+                          {s.behaviors.length > 0 && (
+                            <span className="text-muted-foreground text-xs">
+                              ({s.behaviors.length} existing)
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDuplicateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDuplicate}
+              disabled={!sourceStudentId || !targetStudentId || sourceStudentId === targetStudentId}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

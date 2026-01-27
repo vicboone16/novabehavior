@@ -20,10 +20,8 @@ export default function Dashboard() {
     s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
   );
 
-  // Check if any selected student has ABC behaviors
-  const hasABCBehaviors = selectedStudents.some(s => 
-    s.behaviors.some(b => (b.methods || [b.type]).includes('abc'))
-  );
+  // Check if any selected student has behaviors (for ABC popup - can record for any student with behaviors)
+  const hasAnyBehaviors = selectedStudents.some(s => s.behaviors.length > 0);
 
   return (
     <div className="space-y-4">
@@ -38,7 +36,7 @@ export default function Dashboard() {
         <TrashRecovery />
         <SessionFocusMode />
         <NovelBehaviorRecorder />
-        {hasABCBehaviors && <EnhancedABCPopup />}
+        {hasAnyBehaviors && <EnhancedABCPopup />}
         {selectedStudentIds.length > 0 && <QuickABCCustomizer />}
       </div>
 
