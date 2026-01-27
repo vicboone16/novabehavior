@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, Grid3X3, CheckCircle, XCircle, MinusCircle, Save, X } from 'lucide-react';
+import { Calendar, Clock, Grid3X3, CheckCircle, XCircle, MinusCircle, Save, X, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ import { useDataStore } from '@/store/dataStore';
 import { Student, Behavior, IntervalEntry } from '@/types/behavior';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { BulkVoidDialog } from './BulkVoidDialog';
 
 interface HistoricalIntervalEntryProps {
   student: Student;
@@ -63,6 +64,8 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
   const [selectedBehaviors, setSelectedBehaviors] = useState<string[]>([]);
   const [intervalData, setIntervalData] = useState<Record<string, IntervalData[]>>({});
   const [step, setStep] = useState<'config' | 'mark'>('config');
+  const [showBulkVoid, setShowBulkVoid] = useState(false);
+  const [bulkVoidBehaviorId, setBulkVoidBehaviorId] = useState<string | null>(null);
 
   // Get behaviors with interval method
   const intervalBehaviors = useMemo(() => {
@@ -162,6 +165,43 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
     });
   };
 
+  const handleBulkVoid = (startInterval: number, endInterval: number, reason: IntervalEntry['voidReason'], customReason?: string) => {
+    if (!bulkVoidBehaviorId) return;
+    
+    setIntervalData(prev => {
+      const behaviorIntervals = [...(prev[bulkVoidBehaviorId] || [])];
+      for (let i = startInterval; i <= endInterval; i++) {
+        if (behaviorIntervals[i]) {
+          behaviorIntervals[i] = {
+            ...behaviorIntervals[i],
+            status: 'voided',
+            voidReason: reason,
+          };
+        }
+      }
+      return { ...prev, [bulkVoidBehaviorId]: behaviorIntervals };
+    });
+  };
+
+  const handleBulkClear = (startInterval: number, endInterval: number) => {
+    if (!bulkVoidBehaviorId) return;
+    
+    setIntervalData(prev => {
+      const behaviorIntervals = [...(prev[bulkVoidBehaviorId] || [])];
+      for (let i = startInterval; i <= endInterval; i++) {
+        if (behaviorIntervals[i]) {
+          behaviorIntervals[i] = {
+            ...behaviorIntervals[i],
+            status: 'not_occurred',
+            voidReason: undefined,
+          };
+        }
+      }
+      return { ...prev, [bulkVoidBehaviorId]: behaviorIntervals };
+    });
+  };
+
+
   const handleSave = () => {
     const sessionDate = new Date(`${date}T${time}`);
     const numIntervals = parseInt(numberOfIntervals) || 20;
@@ -238,6 +278,7 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -383,7 +424,7 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-2 flex-wrap">
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -397,6 +438,17 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
                           onClick={() => markAllAs(behaviorId, 'not_occurred')}
                         >
                           Mark All Not Occurred
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setBulkVoidBehaviorId(behaviorId);
+                            setShowBulkVoid(true);
+                          }}
+                        >
+                          <Ban className="w-3 h-3 mr-1" />
+                          Bulk Void Range
                         </Button>
                       </div>
                     </CardHeader>
@@ -473,5 +525,16 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {bulkVoidBehaviorId && (
+      <BulkVoidDialog
+        open={showBulkVoid}
+        onOpenChange={setShowBulkVoid}
+        totalIntervals={parseInt(numberOfIntervals) || 20}
+        onApply={handleBulkVoid}
+        onClear={handleBulkClear}
+      />
+    )}
+  </>
   );
 }

@@ -40,7 +40,9 @@ import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
 import { StudentFileManager } from '@/components/StudentFileManager';
 import { HistoricalIntervalEntry } from '@/components/HistoricalIntervalEntry';
+import { HistoricalSessionEditor } from '@/components/HistoricalSessionEditor';
 import { useAuth } from '@/contexts/AuthContext';
+import { Session } from '@/types/behavior';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -60,6 +62,7 @@ export default function StudentProfile() {
     abcEntries,
     durationEntries,
     intervalEntries,
+    sessions,
     addABCEntry,
     incrementFrequency,
     archiveStudent,
@@ -84,6 +87,7 @@ export default function StudentProfile() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [showHistoricalInterval, setShowHistoricalInterval] = useState(false);
+  const [editSession, setEditSession] = useState<Session | null>(null);
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -127,6 +131,11 @@ export default function StudentProfile() {
   const studentABC = abcEntries.filter(e => e.studentId === studentId);
   const studentDuration = durationEntries.filter(e => e.studentId === studentId);
   const studentIntervals = intervalEntries.filter(e => e.studentId === studentId);
+
+  // Get historical interval sessions for this student
+  const historicalIntervalSessions = sessions.filter(session => 
+    session.intervalEntries.some(e => e.studentId === studentId)
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleAddBehavior = () => {
     if (newBehaviorName.trim() && selectedMethods.length > 0) {
@@ -688,6 +697,48 @@ export default function StudentProfile() {
                 <Grid3X3 className="w-4 h-4" />
                 Add Historical Interval Data
               </Button>
+
+              {/* Historical Sessions List */}
+              {historicalIntervalSessions.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Previous Historical Sessions</Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {historicalIntervalSessions.slice(0, 5).map((session) => {
+                      const sessionIntervals = session.intervalEntries.filter(e => e.studentId === studentId);
+                      const occurredCount = sessionIntervals.filter(e => e.occurred && !e.voided).length;
+                      const totalValid = sessionIntervals.filter(e => !e.voided).length;
+                      const percentage = totalValid > 0 ? Math.round((occurredCount / totalValid) * 100) : 0;
+                      
+                      return (
+                        <div 
+                          key={session.id} 
+                          className="flex items-center justify-between p-2 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{format(new Date(session.date), 'MMM d, yyyy h:mm a')}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {sessionIntervals.length} intervals • {occurredCount}/{totalValid} ({percentage}%)
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditSession(session)}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    {historicalIntervalSessions.length > 5 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        + {historicalIntervalSessions.length - 5} more sessions
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -1075,6 +1126,16 @@ export default function StudentProfile() {
         open={showHistoricalInterval} 
         onOpenChange={setShowHistoricalInterval} 
       />
+
+      {/* Historical Session Editor Dialog */}
+      {editSession && (
+        <HistoricalSessionEditor
+          student={student}
+          session={editSession}
+          open={!!editSession}
+          onOpenChange={(open) => !open && setEditSession(null)}
+        />
+      )}
     </div>
   );
 }
