@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ClipboardList, LayoutDashboard, Users, FileBarChart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
+import { UserMenu } from '@/components/UserMenu';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -44,8 +44,9 @@ export default function MainLayout() {
                 <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <BehaviorManager />
+              <UserMenu />
             </div>
           </div>
         </div>
