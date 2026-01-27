@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell, UserPlus, UserMinus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 
@@ -46,17 +49,31 @@ export function SyncedIntervalController() {
     updateSessionConfig,
     syncedIntervalsRunning,
     setSyncedIntervalsRunning,
+    addStudentLate,
+    markStudentDeparted,
+    getStudentIntervalStatus,
+    resetStudentIntervalStatus,
+    voidIntervalsForLateArrival,
+    voidIntervalsForEarlyDeparture,
+    studentIntervalStatus,
   } = useDataStore();
 
   const [currentInterval, setCurrentInterval] = useState(0);
   const [timeInInterval, setTimeInInterval] = useState(0);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showLateArrival, setShowLateArrival] = useState(false);
+  const [showDeparture, setShowDeparture] = useState(false);
   const prevIntervalRef = useRef(currentInterval);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
   const intervalBehaviors = selectedStudents.flatMap(s => 
     s.behaviors.filter(b => (b.methods || [b.type]).includes('interval'))
+  );
+
+  // Students with interval behaviors
+  const studentsWithIntervals = selectedStudents.filter(s => 
+    s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
   );
 
   const formatTime = (seconds: number) => {
@@ -79,6 +96,31 @@ export function SyncedIntervalController() {
     setTimeInInterval(0);
     prevIntervalRef.current = 0;
   }, [setSyncedIntervalsRunning]);
+
+  const handleAddStudentLate = (studentId: string) => {
+    const nextInterval = currentInterval + (syncedIntervalsRunning ? 1 : 0);
+    addStudentLate(studentId, nextInterval);
+    voidIntervalsForLateArrival(studentId, nextInterval);
+    toast.success(`Student will join at interval ${nextInterval + 1}`, {
+      description: `Previous ${nextInterval} intervals marked as N/A`,
+    });
+    setShowLateArrival(false);
+  };
+
+  const handleMarkDeparted = (studentId: string) => {
+    const departInterval = currentInterval;
+    markStudentDeparted(studentId, departInterval);
+    voidIntervalsForEarlyDeparture(studentId, departInterval, sessionConfig.totalIntervals);
+    toast.info(`Student marked as departed`, {
+      description: `Remaining intervals marked as N/A`,
+    });
+    setShowDeparture(false);
+  };
+
+  const handleResetStudentStatus = (studentId: string) => {
+    resetStudentIntervalStatus(studentId);
+    toast.info('Student interval status reset');
+  };
 
   // Handle interval end alerts
   useEffect(() => {
@@ -151,68 +193,216 @@ export function SyncedIntervalController() {
             <Link className="w-4 h-4 text-primary" />
             Synced Interval Recording
           </CardTitle>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Interval Length (seconds)</Label>
-                  <Input
-                    type="number"
-                    value={sessionConfig.intervalLength}
-                    onChange={(e) => updateSessionConfig({ intervalLength: parseInt(e.target.value) || 10 })}
-                    min={5}
-                    max={300}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Total Intervals</Label>
-                  <Input
-                    type="number"
-                    value={sessionConfig.totalIntervals}
-                    onChange={(e) => updateSessionConfig({ totalIntervals: parseInt(e.target.value) || 6 })}
-                    min={1}
-                    max={60}
-                  />
-                </div>
-                
-                {/* Alert Settings */}
-                <div className="border-t pt-3 space-y-2">
-                  <Label className="text-xs font-medium">Alerts</Label>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bell className="w-3 h-3" />
-                      <span className="text-xs">Visual alerts</span>
+          <div className="flex gap-1">
+            {/* Late Arrival Dialog */}
+            <Dialog open={showLateArrival} onOpenChange={setShowLateArrival}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Add student late">
+                  <UserPlus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <UserPlus className="w-5 h-5" />
+                    Add Student Late
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Select students arriving late. Intervals 1-{currentInterval + (syncedIntervalsRunning ? 1 : 0)} will be marked as N/A (not counted).
+                  </p>
+                  <ScrollArea className="max-h-[200px]">
+                    <div className="space-y-2">
+                      {studentsWithIntervals.map(student => {
+                        const status = getStudentIntervalStatus(student.id);
+                        const hasJoined = status?.joinedAtInterval !== undefined;
+                        
+                        return (
+                          <div 
+                            key={student.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-secondary/30"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: student.color }}
+                              />
+                              <span className="text-sm font-medium">{student.name}</span>
+                              {hasJoined && (
+                                <Badge variant="outline" className="text-xs">
+                                  Joined at #{status.joinedAtInterval! + 1}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={hasJoined ? "outline" : "default"}
+                              className="h-7"
+                              onClick={() => hasJoined 
+                                ? handleResetStudentStatus(student.id) 
+                                : handleAddStudentLate(student.id)
+                              }
+                            >
+                              {hasJoined ? 'Reset' : 'Add Late'}
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <Switch
-                      checked={alertsEnabled}
-                      onCheckedChange={setAlertsEnabled}
+                  </ScrollArea>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Early Departure Dialog */}
+            <Dialog open={showDeparture} onOpenChange={setShowDeparture}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Mark student departed">
+                  <UserMinus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <UserMinus className="w-5 h-5" />
+                    Mark Student Departed
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Select students leaving early. Intervals {currentInterval + 1}-{sessionConfig.totalIntervals} will be marked as N/A.
+                  </p>
+                  <ScrollArea className="max-h-[200px]">
+                    <div className="space-y-2">
+                      {studentsWithIntervals.map(student => {
+                        const status = getStudentIntervalStatus(student.id);
+                        const hasDeparted = status?.departedAtInterval !== undefined;
+                        
+                        return (
+                          <div 
+                            key={student.id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-secondary/30"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: student.color }}
+                              />
+                              <span className="text-sm font-medium">{student.name}</span>
+                              {hasDeparted && (
+                                <Badge variant="outline" className="text-xs text-destructive">
+                                  Left at #{status.departedAtInterval! + 1}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={hasDeparted ? "outline" : "destructive"}
+                              className="h-7"
+                              onClick={() => hasDeparted 
+                                ? handleResetStudentStatus(student.id) 
+                                : handleMarkDeparted(student.id)
+                              }
+                            >
+                              {hasDeparted ? 'Undo' : 'Mark Left'}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Interval Length (seconds)</Label>
+                    <Input
+                      type="number"
+                      value={sessionConfig.intervalLength}
+                      onChange={(e) => updateSessionConfig({ intervalLength: parseInt(e.target.value) || 10 })}
+                      min={5}
+                      max={300}
                     />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                      <span className="text-xs">Sound alerts</span>
-                    </div>
-                    <Switch
-                      checked={soundEnabled}
-                      onCheckedChange={setSoundEnabled}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Total Intervals</Label>
+                    <Input
+                      type="number"
+                      value={sessionConfig.totalIntervals}
+                      onChange={(e) => updateSessionConfig({ totalIntervals: parseInt(e.target.value) || 6 })}
+                      min={1}
+                      max={60}
                     />
                   </div>
+                  
+                  {/* Alert Settings */}
+                  <div className="border-t pt-3 space-y-2">
+                    <Label className="text-xs font-medium">Alerts</Label>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-3 h-3" />
+                        <span className="text-xs">Visual alerts</span>
+                      </div>
+                      <Switch
+                        checked={alertsEnabled}
+                        onCheckedChange={setAlertsEnabled}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {soundEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                        <span className="text-xs">Sound alerts</span>
+                      </div>
+                      <Switch
+                        checked={soundEnabled}
+                        onCheckedChange={setSoundEnabled}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
           Start all interval trackers simultaneously across {intervalBehaviors.length} behavior(s)
         </p>
+
+        {/* Student Status Summary */}
+        {studentIntervalStatus.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {studentIntervalStatus.map(status => {
+              const student = students.find(s => s.id === status.studentId);
+              if (!student) return null;
+              return (
+                <Badge 
+                  key={status.studentId}
+                  variant="outline" 
+                  className="text-xs"
+                  style={{ borderColor: student.color, color: student.color }}
+                >
+                  {student.name}: 
+                  {status.joinedAtInterval !== undefined && status.joinedAtInterval > 0 && 
+                    ` Late (${status.joinedAtInterval})`}
+                  {status.departedAtInterval !== undefined && 
+                    ` Left (${status.departedAtInterval})`}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
 
         {/* Timer Display */}
         <div className="space-y-2">

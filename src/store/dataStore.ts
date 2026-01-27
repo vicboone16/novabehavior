@@ -13,6 +13,7 @@ import {
   DataCollectionMethod,
   SessionLengthOverride,
   BehaviorGoal,
+  StudentIntervalStatus,
   STUDENT_COLORS 
 } from '@/types/behavior';
 
@@ -48,6 +49,7 @@ interface DataState {
   behaviorGoals: BehaviorGoal[];
   collapsedState: CollapsedState;
   sessionFocus: SessionFocus;
+  studentIntervalStatus: StudentIntervalStatus[]; // Track late arrivals / early departures
   
   // Student actions
   addStudent: (name: string) => void;
@@ -86,6 +88,17 @@ interface DataState {
   // Interval actions
   recordInterval: (studentId: string, behaviorId: string, intervalNumber: number, occurred: boolean) => void;
   getIntervalData: (studentId: string, behaviorId: string) => IntervalEntry[];
+  voidInterval: (studentId: string, behaviorId: string, intervalNumber: number, reason: 'late_arrival' | 'early_departure' | 'not_present') => void;
+  unvoidInterval: (studentId: string, behaviorId: string, intervalNumber: number) => void;
+  isIntervalVoided: (studentId: string, behaviorId: string, intervalNumber: number) => boolean;
+  
+  // Student interval presence
+  addStudentLate: (studentId: string, joinAtInterval: number) => void;
+  markStudentDeparted: (studentId: string, departAtInterval: number) => void;
+  getStudentIntervalStatus: (studentId: string) => StudentIntervalStatus | undefined;
+  resetStudentIntervalStatus: (studentId: string) => void;
+  voidIntervalsForLateArrival: (studentId: string, joinAtInterval: number) => void;
+  voidIntervalsForEarlyDeparture: (studentId: string, departAtInterval: number, totalIntervals: number) => void;
   
   // Session config
   updateSessionConfig: (config: Partial<SessionConfig>) => void;
@@ -174,6 +187,7 @@ export const useDataStore = create<DataState>()(
       behaviorGoals: [],
       collapsedState: { methods: {}, behaviors: {} },
       sessionFocus: { enabled: false, activeBehaviors: {}, activeMethods: {}, studentMethods: {} },
+      studentIntervalStatus: [],
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -528,6 +542,136 @@ export const useDataStore = create<DataState>()(
         return get().intervalEntries.filter(
           (e) => e.studentId === studentId && e.behaviorId === behaviorId
         );
+      },
+
+      voidInterval: (studentId, behaviorId, intervalNumber, reason) => {
+        set((state) => {
+          const existing = state.intervalEntries.find(
+            (e) =>
+              e.studentId === studentId &&
+              e.behaviorId === behaviorId &&
+              e.intervalNumber === intervalNumber
+          );
+          if (existing) {
+            return {
+              intervalEntries: state.intervalEntries.map((e) =>
+                e.studentId === studentId &&
+                e.behaviorId === behaviorId &&
+                e.intervalNumber === intervalNumber
+                  ? { ...e, voided: true, voidReason: reason }
+                  : e
+              ),
+            };
+          }
+          // Create a voided entry if none exists
+          return {
+            intervalEntries: [
+              ...state.intervalEntries,
+              {
+                id: crypto.randomUUID(),
+                studentId,
+                behaviorId,
+                intervalNumber,
+                occurred: false,
+                voided: true,
+                voidReason: reason,
+                timestamp: new Date(),
+                sessionId: state.currentSessionId || undefined,
+              },
+            ],
+          };
+        });
+      },
+
+      unvoidInterval: (studentId, behaviorId, intervalNumber) => {
+        set((state) => ({
+          intervalEntries: state.intervalEntries.map((e) =>
+            e.studentId === studentId &&
+            e.behaviorId === behaviorId &&
+            e.intervalNumber === intervalNumber
+              ? { ...e, voided: false, voidReason: undefined }
+              : e
+          ),
+        }));
+      },
+
+      isIntervalVoided: (studentId, behaviorId, intervalNumber) => {
+        const entry = get().intervalEntries.find(
+          (e) =>
+            e.studentId === studentId &&
+            e.behaviorId === behaviorId &&
+            e.intervalNumber === intervalNumber
+        );
+        return entry?.voided || false;
+      },
+
+      addStudentLate: (studentId, joinAtInterval) => {
+        set((state) => {
+          const existing = state.studentIntervalStatus.find((s) => s.studentId === studentId);
+          if (existing) {
+            return {
+              studentIntervalStatus: state.studentIntervalStatus.map((s) =>
+                s.studentId === studentId ? { ...s, joinedAtInterval: joinAtInterval } : s
+              ),
+            };
+          }
+          return {
+            studentIntervalStatus: [
+              ...state.studentIntervalStatus,
+              { studentId, joinedAtInterval: joinAtInterval },
+            ],
+          };
+        });
+      },
+
+      markStudentDeparted: (studentId, departAtInterval) => {
+        set((state) => ({
+          studentIntervalStatus: state.studentIntervalStatus.map((s) =>
+            s.studentId === studentId ? { ...s, departedAtInterval: departAtInterval } : s
+          ),
+        }));
+      },
+
+      getStudentIntervalStatus: (studentId) => {
+        return get().studentIntervalStatus.find((s) => s.studentId === studentId);
+      },
+
+      resetStudentIntervalStatus: (studentId) => {
+        set((state) => ({
+          studentIntervalStatus: state.studentIntervalStatus.filter((s) => s.studentId !== studentId),
+        }));
+      },
+
+      voidIntervalsForLateArrival: (studentId, joinAtInterval) => {
+        const state = get();
+        const student = state.students.find((s) => s.id === studentId);
+        if (!student) return;
+
+        const intervalBehaviors = student.behaviors.filter((b) =>
+          (b.methods || [b.type]).includes('interval')
+        );
+
+        intervalBehaviors.forEach((behavior) => {
+          for (let i = 0; i < joinAtInterval; i++) {
+            get().voidInterval(studentId, behavior.id, i, 'late_arrival');
+          }
+        });
+      },
+
+      voidIntervalsForEarlyDeparture: (studentId, departAtInterval, totalIntervals) => {
+        const state = get();
+        const student = state.students.find((s) => s.id === studentId);
+        if (!student) return;
+
+        const intervalBehaviors = student.behaviors.filter((b) =>
+          (b.methods || [b.type]).includes('interval')
+        );
+
+        intervalBehaviors.forEach((behavior) => {
+          for (let i = departAtInterval; i < totalIntervals; i++) {
+            get().voidInterval(studentId, behavior.id, i, 'early_departure');
+          }
+        });
       },
 
       updateSessionConfig: (config) => {
