@@ -4,11 +4,17 @@ import { BehaviorManager } from '@/components/BehaviorManager';
 import { StudentDataCard } from '@/components/StudentDataCard';
 import { SessionTimer } from '@/components/SessionTimer';
 import { DataSummary } from '@/components/DataSummary';
+import { SyncedIntervalController } from '@/components/SyncedIntervalController';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
   const { students, selectedStudentIds } = useDataStore();
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
+
+  // Check if any selected student has interval behaviors
+  const hasIntervalBehaviors = selectedStudents.some(s => 
+    s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,6 +43,11 @@ const Index = () => {
           <SessionTimer />
           <DataSummary />
         </div>
+
+        {/* Synced Interval Controller */}
+        {hasIntervalBehaviors && (
+          <SyncedIntervalController />
+        )}
 
         {/* Student Selector */}
         <StudentSelector />
