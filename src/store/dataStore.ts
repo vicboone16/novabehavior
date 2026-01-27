@@ -11,6 +11,7 @@ import {
   Session,
   TrackerOrder,
   DataCollectionMethod,
+  SessionLengthOverride,
   STUDENT_COLORS 
 } from '@/types/behavior';
 
@@ -27,6 +28,10 @@ interface DataState {
   sessionNotes: string;
   trackerOrder: TrackerOrder;
   syncedIntervalsRunning: boolean;
+  sessionStartTime: Date | null;
+  sessionLengthMinutes: number;
+  sessionLengthOverrides: SessionLengthOverride[];
+  showTimestamps: boolean;
   
   // Student actions
   addStudent: (name: string) => void;
@@ -43,12 +48,14 @@ interface DataState {
   
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
+  addEnhancedABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
   
   // Frequency actions
   incrementFrequency: (studentId: string, behaviorId: string) => void;
   decrementFrequency: (studentId: string, behaviorId: string) => void;
   resetFrequency: (studentId: string, behaviorId: string) => void;
   getFrequencyCount: (studentId: string, behaviorId: string) => number;
+  addFrequencyFromABC: (studentId: string, behaviorId: string, count: number) => void;
   
   // Duration actions
   startDuration: (studentId: string, behaviorId: string) => void;
@@ -69,6 +76,11 @@ interface DataState {
   getSessionsByDate: (date: Date) => Session[];
   getSessionsByStudent: (studentId: string) => Session[];
   deleteSession: (sessionId: string) => void;
+  startSession: () => void;
+  setSessionLength: (minutes: number) => void;
+  setSessionLengthOverride: (override: SessionLengthOverride) => void;
+  removeSessionLengthOverride: (studentId?: string, behaviorId?: string) => void;
+  getEffectiveSessionLength: (studentId?: string, behaviorId?: string) => number;
   
   // Tracker order
   setTrackerOrder: (studentId: string, order: DataCollectionMethod[]) => void;
@@ -76,6 +88,9 @@ interface DataState {
   
   // Synced intervals
   setSyncedIntervalsRunning: (running: boolean) => void;
+  
+  // Timestamps toggle
+  setShowTimestamps: (show: boolean) => void;
   
   // Reset
   resetAllData: () => void;
@@ -103,6 +118,10 @@ export const useDataStore = create<DataState>()(
       sessionNotes: '',
       trackerOrder: {},
       syncedIntervalsRunning: false,
+      sessionStartTime: null,
+      sessionLengthMinutes: 60,
+      sessionLengthOverrides: [],
+      showTimestamps: false,
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -185,12 +204,43 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           abcEntries: [
             ...state.abcEntries,
-            { ...entry, id: crypto.randomUUID(), timestamp: new Date(), sessionId: state.currentSessionId || undefined },
+            { 
+              ...entry, 
+              id: crypto.randomUUID(), 
+              timestamp: new Date(), 
+              frequencyCount: entry.frequencyCount ?? 1,
+              sessionId: state.currentSessionId || undefined 
+            },
           ],
         }));
       },
 
+      addEnhancedABCEntry: (entry) => {
+        const state = get();
+        const now = new Date();
+        const abcId = crypto.randomUUID();
+        
+        // Add the ABC entry
+        set((s) => ({
+          abcEntries: [
+            ...s.abcEntries,
+            { 
+              ...entry, 
+              id: abcId, 
+              timestamp: now, 
+              frequencyCount: entry.frequencyCount ?? 1,
+              sessionId: s.currentSessionId || undefined 
+            },
+          ],
+        }));
+        
+        // Also add to frequency data
+        const freqCount = entry.frequencyCount || 1;
+        get().addFrequencyFromABC(entry.studentId, entry.behaviorId, freqCount);
+      },
+
       incrementFrequency: (studentId, behaviorId) => {
+        const now = new Date();
         set((state) => {
           const existing = state.frequencyEntries.find(
             (e) => e.studentId === studentId && e.behaviorId === behaviorId
@@ -199,7 +249,11 @@ export const useDataStore = create<DataState>()(
             return {
               frequencyEntries: state.frequencyEntries.map((e) =>
                 e.studentId === studentId && e.behaviorId === behaviorId
-                  ? { ...e, count: e.count + 1 }
+                  ? { 
+                      ...e, 
+                      count: e.count + 1,
+                      timestamps: [...(e.timestamps || []), now]
+                    }
                   : e
               ),
             };
@@ -212,7 +266,8 @@ export const useDataStore = create<DataState>()(
                 studentId,
                 behaviorId,
                 count: 1,
-                timestamp: new Date(),
+                timestamp: now,
+                timestamps: [now],
                 sessionId: state.currentSessionId || undefined,
               },
             ],
@@ -222,11 +277,14 @@ export const useDataStore = create<DataState>()(
 
       decrementFrequency: (studentId, behaviorId) => {
         set((state) => ({
-          frequencyEntries: state.frequencyEntries.map((e) =>
-            e.studentId === studentId && e.behaviorId === behaviorId && e.count > 0
-              ? { ...e, count: e.count - 1 }
-              : e
-          ),
+          frequencyEntries: state.frequencyEntries.map((e) => {
+            if (e.studentId === studentId && e.behaviorId === behaviorId && e.count > 0) {
+              const timestamps = e.timestamps ? [...e.timestamps] : [];
+              timestamps.pop(); // Remove last timestamp
+              return { ...e, count: e.count - 1, timestamps };
+            }
+            return e;
+          }),
         }));
       },
 
@@ -243,6 +301,43 @@ export const useDataStore = create<DataState>()(
           (e) => e.studentId === studentId && e.behaviorId === behaviorId
         );
         return entry?.count ?? 0;
+      },
+
+      addFrequencyFromABC: (studentId, behaviorId, count) => {
+        const now = new Date();
+        set((state) => {
+          const existing = state.frequencyEntries.find(
+            (e) => e.studentId === studentId && e.behaviorId === behaviorId
+          );
+          if (existing) {
+            const newTimestamps = Array(count).fill(now);
+            return {
+              frequencyEntries: state.frequencyEntries.map((e) =>
+                e.studentId === studentId && e.behaviorId === behaviorId
+                  ? { 
+                      ...e, 
+                      count: e.count + count,
+                      timestamps: [...(e.timestamps || []), ...newTimestamps]
+                    }
+                  : e
+              ),
+            };
+          }
+          return {
+            frequencyEntries: [
+              ...state.frequencyEntries,
+              {
+                id: crypto.randomUUID(),
+                studentId,
+                behaviorId,
+                count,
+                timestamp: now,
+                timestamps: Array(count).fill(now),
+                sessionId: state.currentSessionId || undefined,
+              },
+            ],
+          };
+        });
       },
 
       startDuration: (studentId, behaviorId) => {
@@ -338,6 +433,8 @@ export const useDataStore = create<DataState>()(
           date: new Date(),
           notes: state.sessionNotes,
           studentIds: state.selectedStudentIds,
+          sessionLengthMinutes: state.sessionLengthMinutes,
+          sessionLengthOverrides: [...state.sessionLengthOverrides],
           abcEntries: [...state.abcEntries],
           frequencyEntries: [...state.frequencyEntries],
           durationEntries: [...state.durationEntries],
@@ -348,6 +445,58 @@ export const useDataStore = create<DataState>()(
           currentSessionId: session.id,
         }));
         return session;
+      },
+
+      startSession: () => {
+        set({ 
+          sessionStartTime: new Date(),
+          currentSessionId: crypto.randomUUID(),
+        });
+      },
+
+      setSessionLength: (minutes) => {
+        set({ sessionLengthMinutes: minutes });
+      },
+
+      setSessionLengthOverride: (override) => {
+        set((state) => {
+          const existing = state.sessionLengthOverrides.findIndex(
+            o => o.studentId === override.studentId && o.behaviorId === override.behaviorId
+          );
+          if (existing >= 0) {
+            const newOverrides = [...state.sessionLengthOverrides];
+            newOverrides[existing] = override;
+            return { sessionLengthOverrides: newOverrides };
+          }
+          return { sessionLengthOverrides: [...state.sessionLengthOverrides, override] };
+        });
+      },
+
+      removeSessionLengthOverride: (studentId, behaviorId) => {
+        set((state) => ({
+          sessionLengthOverrides: state.sessionLengthOverrides.filter(
+            o => !(o.studentId === studentId && o.behaviorId === behaviorId)
+          ),
+        }));
+      },
+
+      getEffectiveSessionLength: (studentId, behaviorId) => {
+        const state = get();
+        // Check for specific behavior override
+        if (behaviorId) {
+          const behaviorOverride = state.sessionLengthOverrides.find(
+            o => o.behaviorId === behaviorId
+          );
+          if (behaviorOverride) return behaviorOverride.lengthMinutes;
+        }
+        // Check for student override
+        if (studentId) {
+          const studentOverride = state.sessionLengthOverrides.find(
+            o => o.studentId === studentId && !o.behaviorId
+          );
+          if (studentOverride) return studentOverride.lengthMinutes;
+        }
+        return state.sessionLengthMinutes;
       },
 
       setSessionNotes: (notes) => {
@@ -389,6 +538,10 @@ export const useDataStore = create<DataState>()(
         set({ syncedIntervalsRunning: running });
       },
 
+      setShowTimestamps: (show) => {
+        set({ showTimestamps: show });
+      },
+
       resetAllData: () => {
         set({
           abcEntries: [],
@@ -405,6 +558,8 @@ export const useDataStore = create<DataState>()(
           intervalEntries: [],
           sessionNotes: '',
           currentSessionId: null,
+          sessionStartTime: null,
+          sessionLengthOverrides: [],
         });
       },
     }),
