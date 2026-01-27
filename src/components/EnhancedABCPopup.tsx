@@ -228,7 +228,7 @@ export function EnhancedABCPopup() {
                   <SelectValue placeholder="Select student..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {students.map(s => (
+                  {students.filter(s => !s.isArchived).map(s => (
                     <SelectItem key={s.id} value={s.id}>
                       <div className="flex items-center gap-2">
                         <div 

@@ -155,6 +155,7 @@ interface DataState {
   updateBehaviorGoal: (goalId: string, updates: Partial<BehaviorGoal>) => void;
   bulkAddBehavior: (studentIds: string[], behaviorName: string, methods: DataCollectionMethod[]) => void;
   bulkAddGoal: (studentIds: string[], behaviorId: string, goalData: Partial<Omit<BehaviorGoal, 'id' | 'studentId' | 'behaviorId'>>) => void;
+  duplicateBehaviorConfig: (sourceStudentId: string, targetStudentId: string) => void;
   
   // Collapse state
   toggleMethodCollapsed: (studentId: string, method: DataCollectionMethod) => void;
@@ -1001,6 +1002,47 @@ export const useDataStore = create<DataState>()(
               dataCollectionStartDate: goalData.dataCollectionStartDate,
             })),
           ],
+        }));
+      },
+
+      duplicateBehaviorConfig: (sourceStudentId, targetStudentId) => {
+        const state = get();
+        const sourceStudent = state.students.find((s) => s.id === sourceStudentId);
+        const targetStudent = state.students.find((s) => s.id === targetStudentId);
+        
+        if (!sourceStudent || !targetStudent) return;
+
+        // Duplicate behaviors
+        const newBehaviors = sourceStudent.behaviors.map((b) => ({
+          ...b,
+          id: crypto.randomUUID(),
+        }));
+
+        // Duplicate custom antecedents and consequences
+        const newCustomAntecedents = [...(sourceStudent.customAntecedents || [])];
+        const newCustomConsequences = [...(sourceStudent.customConsequences || [])];
+
+        set((s) => ({
+          students: s.students.map((student) =>
+            student.id === targetStudentId
+              ? {
+                  ...student,
+                  behaviors: [...student.behaviors, ...newBehaviors],
+                  customAntecedents: [
+                    ...(student.customAntecedents || []),
+                    ...newCustomAntecedents.filter(
+                      (a) => !(student.customAntecedents || []).includes(a)
+                    ),
+                  ],
+                  customConsequences: [
+                    ...(student.customConsequences || []),
+                    ...newCustomConsequences.filter(
+                      (c) => !(student.customConsequences || []).includes(c)
+                    ),
+                  ],
+                }
+              : student
+          ),
         }));
       },
 
