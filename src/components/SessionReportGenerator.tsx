@@ -29,6 +29,7 @@ export function SessionReportGenerator() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>([]);
+  const [showIntervalDetailTable, setShowIntervalDetailTable] = useState<boolean>(false);
 
   const selectedSession = useMemo(() => {
     if (selectedSessionId === 'latest' && sessions.length > 0) {
@@ -415,6 +416,18 @@ export function SessionReportGenerator() {
             </PopoverContent>
           </Popover>
 
+          {/* Interval Detail Toggle */}
+          <div className="flex items-center gap-2 border-l pl-3 ml-2">
+            <Checkbox
+              id="show-interval-detail"
+              checked={showIntervalDetailTable}
+              onCheckedChange={(checked) => setShowIntervalDetailTable(checked === true)}
+            />
+            <Label htmlFor="show-interval-detail" className="text-xs cursor-pointer whitespace-nowrap">
+              Interval Audit Table
+            </Label>
+          </div>
+
           {hasFilters && (
             <Button 
               variant="ghost" 
@@ -706,7 +719,7 @@ export function SessionReportGenerator() {
                       {studentInt.length > 0 && (
                         <div className="data-section">
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                            Interval Data (Smart Summary)
+                            Interval Data ({SAMPLING_TYPE_LABELS[sessionConfig.samplingType] || 'Partial Interval'})
                           </h4>
                           {(() => {
                             const byBehavior = studentInt.reduce((acc, e) => {
@@ -817,6 +830,58 @@ export function SessionReportGenerator() {
                                       </span>
                                     )}
                                   </div>
+
+                                  {/* Detailed Audit Table */}
+                                  {showIntervalDetailTable && (
+                                    <div className="mt-3 border rounded overflow-hidden">
+                                      <table className="w-full text-xs">
+                                        <thead>
+                                          <tr className="bg-muted/50">
+                                            <th className="border-r p-1.5 text-center font-medium w-16">Interval #</th>
+                                            <th className="border-r p-1.5 text-center font-medium w-20">Status</th>
+                                            <th className="border-r p-1.5 text-left font-medium">Timestamp</th>
+                                            <th className="border-r p-1.5 text-left font-medium">Marked At</th>
+                                            <th className="p-1.5 text-left font-medium">Notes</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {sorted.map((entry, idx) => (
+                                            <tr key={entry.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                                              <td className="border-r p-1.5 text-center font-medium">
+                                                {entry.intervalNumber + 1}
+                                              </td>
+                                              <td className={`border-r p-1.5 text-center font-bold ${
+                                                entry.voided 
+                                                  ? 'text-muted-foreground' 
+                                                  : entry.occurred 
+                                                    ? 'text-primary' 
+                                                    : 'text-destructive'
+                                              }`}>
+                                                {entry.voided ? 'N/A' : entry.occurred ? 'Y' : 'N'}
+                                              </td>
+                                              <td className="border-r p-1.5 text-muted-foreground">
+                                                {format(new Date(entry.timestamp), 'MMM d, yyyy HH:mm:ss')}
+                                              </td>
+                                              <td className="border-r p-1.5 text-muted-foreground">
+                                                {entry.markedAt 
+                                                  ? format(new Date(entry.markedAt), 'HH:mm:ss')
+                                                  : format(new Date(entry.timestamp), 'HH:mm:ss')
+                                                }
+                                              </td>
+                                              <td className="p-1.5 text-muted-foreground">
+                                                {entry.voided && (
+                                                  <span className="text-warning">
+                                                    {getVoidReasonLabel(entry.voidReason, entry.voidReasonCustom)}
+                                                    {entry.voidReasonCustom && `: ${entry.voidReasonCustom}`}
+                                                  </span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             });
@@ -863,7 +928,7 @@ export function SessionReportGenerator() {
 
               {/* Session Notes */}
               {selectedSession.notes && (
-                <Card className="notes-section bg-amber-50 dark:bg-amber-950/30">
+                <Card className="notes-section bg-muted/50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Clock className="w-4 h-4" />
