@@ -39,6 +39,9 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     toggleBehaviorCollapsed,
     collapseAllForStudent,
     expandAllForStudent,
+    sessionFocus,
+    isSessionBehaviorActive,
+    getSessionBehaviorMethods,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
@@ -46,18 +49,30 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
 
-  const getBehaviorsForMethod = (method: DataCollectionMethod) => {
-    return student.behaviors.filter(b => 
-      (b.methods || [b.type]).includes(method)
-    );
+  // Filter behaviors based on session focus mode
+  const getActiveBehaviorsForMethod = (method: DataCollectionMethod) => {
+    return student.behaviors.filter(b => {
+      const behaviorMethods = b.methods || [b.type];
+      if (!behaviorMethods.includes(method)) return false;
+      
+      // Check session focus mode
+      if (sessionFocus.enabled) {
+        if (!isSessionBehaviorActive(student.id, b.id)) return false;
+        const activeMethods = getSessionBehaviorMethods(student.id, b.id);
+        if (!activeMethods.includes(method)) return false;
+      }
+      
+      return true;
+    });
   };
 
-  const frequencyBehaviors = getBehaviorsForMethod('frequency');
-  const durationBehaviors = getBehaviorsForMethod('duration');
-  const abcBehaviors = getBehaviorsForMethod('abc');
-  const intervalBehaviors = getBehaviorsForMethod('interval');
+  const frequencyBehaviors = getActiveBehaviorsForMethod('frequency');
+  const durationBehaviors = getActiveBehaviorsForMethod('duration');
+  const abcBehaviors = getActiveBehaviorsForMethod('abc');
+  const intervalBehaviors = getActiveBehaviorsForMethod('interval');
 
   const hasBehaviors = student.behaviors.length > 0;
+  const hasVisibleBehaviors = frequencyBehaviors.length + durationBehaviors.length + abcBehaviors.length + intervalBehaviors.length > 0;
 
   // Count collapsed items for summary
   const collapsedMethodsCount = DEFAULT_ORDER.filter(m => isMethodCollapsed(student.id, m)).length;
@@ -311,6 +326,14 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
             No behaviors configured.
             <br />
             Use "Manage Behaviors" to add.
+          </p>
+        )}
+
+        {hasBehaviors && !hasVisibleBehaviors && sessionFocus.enabled && (
+          <p className="text-center text-muted-foreground py-4 text-xs">
+            All behaviors hidden by Focus Mode.
+            <br />
+            Adjust settings to show behaviors.
           </p>
         )}
 

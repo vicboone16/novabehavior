@@ -13,6 +13,7 @@ import { BehaviorGoalsManager } from '@/components/BehaviorGoalsManager';
 import { ScatterplotAnalysis } from '@/components/ScatterplotAnalysis';
 import { NovelBehaviorRecorder } from '@/components/NovelBehaviorRecorder';
 import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
+import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -66,6 +67,7 @@ const Index = () => {
 
         {/* Quick Actions Row */}
         <div className="flex flex-wrap gap-2 justify-center">
+          <SessionFocusMode />
           <NovelBehaviorRecorder />
           {hasABCBehaviors && <EnhancedABCPopup />}
           {selectedStudentIds.length > 0 && <QuickABCCustomizer />}

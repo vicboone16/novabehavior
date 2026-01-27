@@ -21,6 +21,12 @@ interface CollapsedState {
   behaviors: { [key: string]: boolean }; // studentId-behaviorId -> collapsed
 }
 
+interface SessionFocus {
+  enabled: boolean;
+  activeBehaviors: { [key: string]: boolean }; // studentId-behaviorId -> active for session
+  activeMethods: { [key: string]: DataCollectionMethod[] }; // studentId-behaviorId -> active methods
+}
+
 interface DataState {
   students: Student[];
   selectedStudentIds: string[];
@@ -40,6 +46,7 @@ interface DataState {
   showTimestamps: boolean;
   behaviorGoals: BehaviorGoal[];
   collapsedState: CollapsedState;
+  sessionFocus: SessionFocus;
   
   // Student actions
   addStudent: (name: string) => void;
@@ -55,6 +62,7 @@ interface DataState {
   // Behavior actions
   addBehavior: (studentId: string, behavior: Omit<Behavior, 'id'>) => void;
   addBehaviorWithMethods: (studentId: string, name: string, methods: DataCollectionMethod[]) => void;
+  updateBehaviorMethods: (studentId: string, behaviorId: string, methods: DataCollectionMethod[]) => void;
   removeBehavior: (studentId: string, behaviorId: string) => void;
   toggleBehaviorForStudent: (studentId: string, behaviorId: string) => void;
   
@@ -117,6 +125,15 @@ interface DataState {
   collapseAllForStudent: (studentId: string) => void;
   expandAllForStudent: (studentId: string) => void;
   
+  // Session focus mode
+  setSessionFocusEnabled: (enabled: boolean) => void;
+  toggleSessionBehavior: (studentId: string, behaviorId: string) => void;
+  isSessionBehaviorActive: (studentId: string, behaviorId: string) => boolean;
+  setSessionBehaviorMethods: (studentId: string, behaviorId: string, methods: DataCollectionMethod[]) => void;
+  getSessionBehaviorMethods: (studentId: string, behaviorId: string) => DataCollectionMethod[];
+  activateAllBehaviors: () => void;
+  deactivateAllBehaviors: () => void;
+  
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
@@ -149,6 +166,7 @@ export const useDataStore = create<DataState>()(
       showTimestamps: false,
       behaviorGoals: [],
       collapsedState: { methods: {}, behaviors: {} },
+      sessionFocus: { enabled: false, activeBehaviors: {}, activeMethods: {} },
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -247,6 +265,24 @@ export const useDataStore = create<DataState>()(
               ? { 
                   ...s, 
                   behaviors: [...s.behaviors, { id, name, type: primaryType, methods }] 
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateBehaviorMethods: (studentId, behaviorId, methods) => {
+        if (methods.length === 0) return; // Must have at least one method
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { ...b, methods, type: methods[0] }
+                      : b
+                  ),
                 }
               : s
           ),
@@ -716,6 +752,89 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
+      // Session focus mode
+      setSessionFocusEnabled: (enabled) => {
+        set((state) => ({
+          sessionFocus: { ...state.sessionFocus, enabled },
+        }));
+      },
+
+      toggleSessionBehavior: (studentId, behaviorId) => {
+        const key = `${studentId}-${behaviorId}`;
+        set((state) => ({
+          sessionFocus: {
+            ...state.sessionFocus,
+            activeBehaviors: {
+              ...state.sessionFocus.activeBehaviors,
+              [key]: !state.sessionFocus.activeBehaviors[key],
+            },
+          },
+        }));
+      },
+
+      isSessionBehaviorActive: (studentId, behaviorId) => {
+        const state = get();
+        if (!state.sessionFocus.enabled) return true; // When focus mode is off, all are active
+        const key = `${studentId}-${behaviorId}`;
+        return state.sessionFocus.activeBehaviors[key] !== false; // Default to active
+      },
+
+      setSessionBehaviorMethods: (studentId, behaviorId, methods) => {
+        const key = `${studentId}-${behaviorId}`;
+        set((state) => ({
+          sessionFocus: {
+            ...state.sessionFocus,
+            activeMethods: {
+              ...state.sessionFocus.activeMethods,
+              [key]: methods,
+            },
+          },
+        }));
+      },
+
+      getSessionBehaviorMethods: (studentId, behaviorId) => {
+        const state = get();
+        const key = `${studentId}-${behaviorId}`;
+        const student = state.students.find(s => s.id === studentId);
+        const behavior = student?.behaviors.find(b => b.id === behaviorId);
+        const defaultMethods = behavior?.methods || [behavior?.type || 'frequency'];
+        
+        if (!state.sessionFocus.enabled) return defaultMethods;
+        return state.sessionFocus.activeMethods[key] || defaultMethods;
+      },
+
+      activateAllBehaviors: () => {
+        const state = get();
+        const activeBehaviors: { [key: string]: boolean } = {};
+        state.students.forEach(s => {
+          s.behaviors.forEach(b => {
+            activeBehaviors[`${s.id}-${b.id}`] = true;
+          });
+        });
+        set((state) => ({
+          sessionFocus: {
+            ...state.sessionFocus,
+            activeBehaviors,
+          },
+        }));
+      },
+
+      deactivateAllBehaviors: () => {
+        const state = get();
+        const activeBehaviors: { [key: string]: boolean } = {};
+        state.students.forEach(s => {
+          s.behaviors.forEach(b => {
+            activeBehaviors[`${s.id}-${b.id}`] = false;
+          });
+        });
+        set((state) => ({
+          sessionFocus: {
+            ...state.sessionFocus,
+            activeBehaviors,
+          },
+        }));
+      },
+
       resetAllData: () => {
         set({
           abcEntries: [],
@@ -734,6 +853,7 @@ export const useDataStore = create<DataState>()(
           currentSessionId: null,
           sessionStartTime: null,
           sessionLengthOverrides: [],
+          sessionFocus: { enabled: false, activeBehaviors: {}, activeMethods: {} },
         });
       },
     }),
