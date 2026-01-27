@@ -12,6 +12,7 @@ import {
   TrackerOrder,
   DataCollectionMethod,
   SessionLengthOverride,
+  BehaviorGoal,
   STUDENT_COLORS 
 } from '@/types/behavior';
 
@@ -32,6 +33,7 @@ interface DataState {
   sessionLengthMinutes: number;
   sessionLengthOverrides: SessionLengthOverride[];
   showTimestamps: boolean;
+  behaviorGoals: BehaviorGoal[];
   
   // Student actions
   addStudent: (name: string) => void;
@@ -96,6 +98,11 @@ interface DataState {
   // Timestamps toggle
   setShowTimestamps: (show: boolean) => void;
   
+  // Behavior goals
+  addBehaviorGoal: (goal: Omit<BehaviorGoal, 'id'>) => void;
+  removeBehaviorGoal: (goalId: string) => void;
+  updateBehaviorGoal: (goalId: string, updates: Partial<BehaviorGoal>) => void;
+  
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
@@ -126,6 +133,7 @@ export const useDataStore = create<DataState>()(
       sessionLengthMinutes: 60,
       sessionLengthOverrides: [],
       showTimestamps: false,
+      behaviorGoals: [],
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -584,6 +592,29 @@ export const useDataStore = create<DataState>()(
 
       setShowTimestamps: (show) => {
         set({ showTimestamps: show });
+      },
+
+      addBehaviorGoal: (goal) => {
+        set((state) => ({
+          behaviorGoals: [
+            ...state.behaviorGoals,
+            { ...goal, id: crypto.randomUUID() },
+          ],
+        }));
+      },
+
+      removeBehaviorGoal: (goalId) => {
+        set((state) => ({
+          behaviorGoals: state.behaviorGoals.filter((g) => g.id !== goalId),
+        }));
+      },
+
+      updateBehaviorGoal: (goalId, updates) => {
+        set((state) => ({
+          behaviorGoals: state.behaviorGoals.map((g) =>
+            g.id === goalId ? { ...g, ...updates } : g
+          ),
+        }));
       },
 
       resetAllData: () => {
