@@ -11,7 +11,7 @@ export interface BehaviorGoal {
   behaviorId: string;
   direction: GoalDirection;
   metric: GoalMetric;
-  targetValue: number;
+  targetValue?: number; // Now optional
   baseline?: number;
   startDate: Date;
   endDate?: Date;
@@ -37,6 +37,8 @@ export interface Student {
   color: string;
   customAntecedents?: string[];
   customConsequences?: string[];
+  isArchived?: boolean;
+  archivedAt?: Date;
 }
 
 export interface ABCBehaviorEntry {

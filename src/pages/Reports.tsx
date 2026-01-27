@@ -5,7 +5,8 @@ import { BehaviorGoalsManager } from '@/components/BehaviorGoalsManager';
 import { ScatterplotAnalysis } from '@/components/ScatterplotAnalysis';
 import { DataExportManager } from '@/components/DataExportManager';
 import { ABCReportGenerator } from '@/components/ABCReportGenerator';
-import { FileText } from 'lucide-react';
+import { StudentComparison } from '@/components/StudentComparison';
+import { FileText, Users } from 'lucide-react';
 
 export default function Reports() {
   return (
@@ -82,6 +83,17 @@ export default function Reports() {
             Export data in various formats
           </p>
           <DataExportManager />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Users className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Student Comparison</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Compare behavior data across students
+          </p>
+          <StudentComparison />
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X 
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +59,9 @@ export default function StudentProfile() {
     intervalEntries,
     addABCEntry,
     incrementFrequency,
+    archiveStudent,
+    unarchiveStudent,
+    permanentlyDeleteStudent,
   } = useDataStore();
 
   const student = students.find(s => s.id === studentId);
@@ -71,6 +74,9 @@ export default function StudentProfile() {
   const [showAddABC, setShowAddABC] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: string } | null>(null);
   const [editGoal, setEditGoal] = useState<BehaviorGoal | null>(null);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -125,13 +131,13 @@ export default function StudentProfile() {
   };
 
   const handleAddGoal = () => {
-    if (goalBehaviorId && goalTarget) {
+    if (goalBehaviorId) {
       const goalData: Omit<BehaviorGoal, 'id'> = {
         studentId: student.id,
         behaviorId: goalBehaviorId,
         direction: goalDirection,
         metric: goalMetric,
-        targetValue: parseFloat(goalTarget),
+        targetValue: goalTarget ? parseFloat(goalTarget) : undefined,
         baseline: goalBaseline ? parseFloat(goalBaseline) : undefined,
         startDate: new Date(),
         notes: goalNotes || undefined,
@@ -148,6 +154,20 @@ export default function StudentProfile() {
       
       resetGoalForm();
       setShowAddGoal(false);
+    }
+  };
+
+  const handleArchive = () => {
+    archiveStudent(student.id);
+    setShowArchiveConfirm(false);
+    navigate('/students');
+  };
+
+  const handlePermanentDelete = () => {
+    if (deleteInput === 'DELETE') {
+      permanentlyDeleteStudent(student.id);
+      setShowDeleteConfirm(false);
+      navigate('/students');
     }
   };
 
@@ -250,16 +270,55 @@ export default function StudentProfile() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div
-          className="w-14 h-14 rounded-full flex items-center justify-center"
+          className={`w-14 h-14 rounded-full flex items-center justify-center ${student.isArchived ? 'opacity-50' : ''}`}
           style={{ backgroundColor: `${student.color}20` }}
         >
           <User className="w-7 h-7" style={{ color: student.color }} />
         </div>
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">{student.name}</h2>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-foreground">{student.name}</h2>
+            {student.isArchived && (
+              <Badge variant="outline" className="text-xs">
+                <Archive className="w-3 h-3 mr-1" />
+                Archived
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm">
             {student.behaviors.length} behaviors configured
           </p>
+        </div>
+        
+        {/* Archive/Delete Actions */}
+        <div className="flex gap-2">
+          {student.isArchived ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  unarchiveStudent(student.id);
+                }}
+              >
+                Restore
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Permanently
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setShowArchiveConfirm(true)}
+            >
+              <Archive className="w-4 h-4 mr-2" />
+              Archive
+            </Button>
+          )}
         </div>
       </div>
 
@@ -367,7 +426,7 @@ export default function StudentProfile() {
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {goal.direction === 'increase' ? '↑' : goal.direction === 'decrease' ? '↓' : '→'}{' '}
-                            {goal.metric} to {goal.targetValue}
+                            {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
                             {goal.baseline !== undefined && ` (baseline: ${goal.baseline})`}
                           </p>
                         </div>
@@ -838,7 +897,7 @@ export default function StudentProfile() {
             <Button variant="outline" onClick={() => { setShowAddGoal(false); setEditGoal(null); }}>
               Cancel
             </Button>
-            <Button onClick={handleAddGoal} disabled={!goalBehaviorId || !goalTarget}>
+            <Button onClick={handleAddGoal} disabled={!goalBehaviorId}>
               {editGoal ? 'Save Changes' : 'Add Goal'}
             </Button>
           </DialogFooter>
@@ -855,6 +914,72 @@ export default function StudentProfile() {
         onConfirm={handleDeleteConfirm}
         variant="destructive"
       />
+
+      {/* Archive Confirmation */}
+      <ConfirmDialog
+        open={showArchiveConfirm}
+        onOpenChange={setShowArchiveConfirm}
+        title="Archive Student"
+        description={`Are you sure you want to archive "${student.name}"? They will be removed from active sessions but their data will be preserved. You can restore them later from the archived students list.`}
+        confirmLabel="Archive"
+        onConfirm={handleArchive}
+      />
+
+      {/* Permanent Delete Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={(open) => {
+        setShowDeleteConfirm(open);
+        if (!open) setDeleteInput('');
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Permanently Delete Student
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+              <p className="text-sm text-destructive font-medium">
+                This action is IRREVERSIBLE
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Permanently deleting "{student.name}" will remove:
+              </p>
+              <ul className="text-sm text-muted-foreground mt-2 list-disc list-inside space-y-1">
+                <li>All behavior configurations</li>
+                <li>All collected data (frequency, duration, interval, ABC)</li>
+                <li>All goals and progress</li>
+                <li>Custom antecedents and consequences</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <Label>Type <span className="font-mono font-bold">DELETE</span> to confirm:</Label>
+              <Input
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder="DELETE"
+                className="font-mono"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowDeleteConfirm(false);
+              setDeleteInput('');
+            }}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handlePermanentDelete}
+              disabled={deleteInput !== 'DELETE'}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

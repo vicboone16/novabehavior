@@ -67,6 +67,9 @@ interface DataState {
   // Student actions
   addStudent: (name: string) => void;
   removeStudent: (id: string) => void;
+  archiveStudent: (id: string) => void;
+  unarchiveStudent: (id: string) => void;
+  permanentlyDeleteStudent: (id: string) => void;
   toggleStudentSelection: (id: string) => void;
   selectAllStudents: () => void;
   deselectAllStudents: () => void;
@@ -150,6 +153,8 @@ interface DataState {
   addBehaviorGoal: (goal: Omit<BehaviorGoal, 'id'>) => void;
   removeBehaviorGoal: (goalId: string) => void;
   updateBehaviorGoal: (goalId: string, updates: Partial<BehaviorGoal>) => void;
+  bulkAddBehavior: (studentIds: string[], behaviorName: string, methods: DataCollectionMethod[]) => void;
+  bulkAddGoal: (studentIds: string[], behaviorId: string, goalData: Partial<Omit<BehaviorGoal, 'id' | 'studentId' | 'behaviorId'>>) => void;
   
   // Collapse state
   toggleMethodCollapsed: (studentId: string, method: DataCollectionMethod) => void;
@@ -238,6 +243,35 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           students: state.students.filter((s) => s.id !== id),
           selectedStudentIds: state.selectedStudentIds.filter((sid) => sid !== id),
+        }));
+      },
+
+      archiveStudent: (id) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === id ? { ...s, isArchived: true, archivedAt: new Date() } : s
+          ),
+          selectedStudentIds: state.selectedStudentIds.filter((sid) => sid !== id),
+        }));
+      },
+
+      unarchiveStudent: (id) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === id ? { ...s, isArchived: false, archivedAt: undefined } : s
+          ),
+        }));
+      },
+
+      permanentlyDeleteStudent: (id) => {
+        set((state) => ({
+          students: state.students.filter((s) => s.id !== id),
+          selectedStudentIds: state.selectedStudentIds.filter((sid) => sid !== id),
+          behaviorGoals: state.behaviorGoals.filter((g) => g.studentId !== id),
+          abcEntries: state.abcEntries.filter((e) => e.studentId !== id),
+          frequencyEntries: state.frequencyEntries.filter((e) => e.studentId !== id),
+          durationEntries: state.durationEntries.filter((e) => e.studentId !== id),
+          intervalEntries: state.intervalEntries.filter((e) => e.studentId !== id),
         }));
       },
 
@@ -928,6 +962,45 @@ export const useDataStore = create<DataState>()(
           behaviorGoals: state.behaviorGoals.map((g) =>
             g.id === goalId ? { ...g, ...updates } : g
           ),
+        }));
+      },
+
+      bulkAddBehavior: (studentIds, behaviorName, methods) => {
+        const primaryType = methods[0] || 'frequency';
+        set((state) => ({
+          students: state.students.map((s) =>
+            studentIds.includes(s.id)
+              ? {
+                  ...s,
+                  behaviors: [
+                    ...s.behaviors,
+                    { id: crypto.randomUUID(), name: behaviorName, type: primaryType, methods },
+                  ],
+                }
+              : s
+          ),
+        }));
+      },
+
+      bulkAddGoal: (studentIds, behaviorId, goalData) => {
+        set((state) => ({
+          behaviorGoals: [
+            ...state.behaviorGoals,
+            ...studentIds.map((studentId) => ({
+              id: crypto.randomUUID(),
+              studentId,
+              behaviorId,
+              direction: goalData.direction || ('decrease' as const),
+              metric: goalData.metric || ('frequency' as const),
+              targetValue: goalData.targetValue,
+              baseline: goalData.baseline,
+              startDate: goalData.startDate || new Date(),
+              endDate: goalData.endDate,
+              notes: goalData.notes,
+              introducedDate: goalData.introducedDate,
+              dataCollectionStartDate: goalData.dataCollectionStartDate,
+            })),
+          ],
         }));
       },
 

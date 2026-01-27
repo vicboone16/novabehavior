@@ -12,8 +12,7 @@ export function StudentSelector() {
   const { 
     students, 
     selectedStudentIds, 
-    addStudent, 
-    removeStudent,
+    addStudent,
     toggleStudentSelection,
     selectAllStudents,
     deselectAllStudents 
@@ -34,16 +33,16 @@ export function StudentSelector() {
           <Users className="w-5 h-5 text-primary" />
           <h2 className="font-semibold text-foreground">Students</h2>
           <Badge variant="secondary" className="ml-2">
-            {selectedStudentIds.length} / {students.length} selected
+            {selectedStudentIds.length} / {students.filter(s => !s.isArchived).length} selected
           </Badge>
         </div>
         <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm"
-            onClick={selectedStudentIds.length === students.length ? deselectAllStudents : selectAllStudents}
+            onClick={selectedStudentIds.length === students.filter(s => !s.isArchived).length ? deselectAllStudents : selectAllStudents}
           >
-            {selectedStudentIds.length === students.length ? 'Deselect All' : 'Select All'}
+            {selectedStudentIds.length === students.filter(s => !s.isArchived).length ? 'Deselect All' : 'Select All'}
           </Button>
           <Button 
             variant="default" 
@@ -76,7 +75,7 @@ export function StudentSelector() {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {students.map((student) => (
+        {students.filter(s => !s.isArchived).map((student) => (
           <div
             key={student.id}
             className={`
@@ -93,18 +92,21 @@ export function StudentSelector() {
               style={{ backgroundColor: student.color }}
             />
             <span className="font-medium text-sm">{student.name}</span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeStudent(student.id);
-              }}
-              className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            {selectedStudentIds.includes(student.id) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleStudentSelection(student.id);
+                }}
+                className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                title="Remove from session"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
         ))}
-        {students.length === 0 && !isAdding && (
+        {students.filter(s => !s.isArchived).length === 0 && !isAdding && (
           <p className="text-muted-foreground text-sm">
             No students added yet. Click "Add" to get started.
           </p>
