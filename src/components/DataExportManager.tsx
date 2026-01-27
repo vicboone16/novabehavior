@@ -2,15 +2,15 @@ import { useState, useMemo, useRef } from 'react';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths, isWithinInterval } from 'date-fns';
 import { 
   Download, FileSpreadsheet, FileText, Calendar, User, Activity, 
-  Filter, Printer, CalendarDays, CalendarRange 
+  Filter, Printer, CalendarDays, CalendarRange, TrendingUp, ExternalLink, BarChart3
 } from 'lucide-react';
-import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, HeadingLevel, WidthType, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, HeadingLevel, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -18,8 +18,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { useToast } from '@/hooks/use-toast';
 import { useDataStore } from '@/store/dataStore';
 import { Session, DataCollectionMethod, METHOD_LABELS, IntervalEntry } from '@/types/behavior';
+
+const CHART_COLORS = [
+  'hsl(var(--primary))',
+  'hsl(173, 58%, 49%)',
+  'hsl(262, 83%, 68%)',
+  'hsl(38, 92%, 60%)',
+  'hsl(0, 72%, 61%)',
+  'hsl(280, 65%, 70%)',
+];
 
 type DateFrame = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
@@ -31,7 +41,9 @@ const SAMPLING_TYPE_LABELS: Record<string, string> = {
 
 export function DataExportManager() {
   const { sessions, students, sessionConfig } = useDataStore();
+  const { toast } = useToast();
   const reportRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
   
   // Date frame selection
   const [dateFrame, setDateFrame] = useState<DateFrame>('thisWeek');
@@ -41,6 +53,9 @@ export function DataExportManager() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]);
   const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>([]);
+  
+  // Export options
+  const [includeTrendCharts, setIncludeTrendCharts] = useState<boolean>(true);
 
   // Get date range based on frame
   const dateRange = useMemo(() => {
@@ -150,13 +165,45 @@ export function DataExportManager() {
   // Available methods
   const availableMethods = useMemo(() => {
     const methods: DataCollectionMethod[] = [];
-    const agg = aggregatedData;
     if (filteredSessions.some(s => s.frequencyEntries.length > 0)) methods.push('frequency');
     if (filteredSessions.some(s => s.durationEntries.length > 0)) methods.push('duration');
     if (filteredSessions.some(s => s.intervalEntries.length > 0)) methods.push('interval');
     if (filteredSessions.some(s => s.abcEntries.length > 0)) methods.push('abc');
     return methods;
   }, [filteredSessions]);
+
+  // Chart data for trend visualization
+  const trendChartData = useMemo(() => {
+    return filteredSessions.map(session => {
+      const date = format(new Date(session.date), 'MM/dd');
+      
+      // Calculate totals per session
+      const freqTotal = session.frequencyEntries
+        .filter(e => (selectedStudentIds.length === 0 || selectedStudentIds.includes(e.studentId)) &&
+                     (selectedBehaviorIds.length === 0 || selectedBehaviorIds.includes(e.behaviorId)))
+        .reduce((sum, e) => sum + e.count, 0);
+      
+      const durTotal = session.durationEntries
+        .filter(e => (selectedStudentIds.length === 0 || selectedStudentIds.includes(e.studentId)) &&
+                     (selectedBehaviorIds.length === 0 || selectedBehaviorIds.includes(e.behaviorId)))
+        .reduce((sum, e) => sum + Math.round(e.duration / 60), 0);
+      
+      const intervals = session.intervalEntries
+        .filter(e => (selectedStudentIds.length === 0 || selectedStudentIds.includes(e.studentId)) &&
+                     (selectedBehaviorIds.length === 0 || selectedBehaviorIds.includes(e.behaviorId)) &&
+                     !e.voided);
+      const intPct = intervals.length > 0 
+        ? Math.round((intervals.filter(e => e.occurred).length / intervals.length) * 100)
+        : 0;
+      
+      return {
+        date,
+        Frequency: freqTotal,
+        'Duration (min)': durTotal,
+        'Interval %': intPct,
+      };
+    });
+  }, [filteredSessions, selectedStudentIds, selectedBehaviorIds]);
 
   const getStudentName = (studentId: string) => 
     students.find(s => s.id === studentId)?.name || 'Unknown';
@@ -200,6 +247,94 @@ export function DataExportManager() {
   );
 
   const hasFilters = selectedStudentIds.length > 0 || selectedBehaviorIds.length > 0 || selectedMethods.length > 0;
+
+  // Google Sheets Export (via TSV copy to clipboard)
+  const exportToGoogleSheets = async () => {
+    const rows: string[] = [];
+    
+    // Header
+    rows.push(['Date', 'Time', 'Type', 'Student', 'Behavior', 'Value', 'Interval #', 'Status', 'Voided', 'Void Reason', 'Notes'].join('\t'));
+    
+    // Data rows
+    aggregatedData.frequencyEntries.forEach(e => {
+      const session = filteredSessions.find(s => s.frequencyEntries.some(fe => fe.id === e.id));
+      rows.push([
+        format(new Date(e.timestamp), 'yyyy-MM-dd'),
+        format(new Date(e.timestamp), 'HH:mm:ss'),
+        'Frequency',
+        getStudentName(e.studentId),
+        getBehaviorName(e.studentId, e.behaviorId),
+        e.count.toString(),
+        '', '', '', '',
+        session?.notes || ''
+      ].join('\t'));
+    });
+
+    aggregatedData.durationEntries.forEach(e => {
+      const session = filteredSessions.find(s => s.durationEntries.some(de => de.id === e.id));
+      rows.push([
+        format(new Date(e.startTime), 'yyyy-MM-dd'),
+        format(new Date(e.startTime), 'HH:mm:ss'),
+        'Duration',
+        getStudentName(e.studentId),
+        getBehaviorName(e.studentId, e.behaviorId),
+        formatDuration(e.duration),
+        '', '', '', '',
+        session?.notes || ''
+      ].join('\t'));
+    });
+
+    aggregatedData.intervalEntries.forEach(e => {
+      const session = filteredSessions.find(s => s.intervalEntries.some(ie => ie.id === e.id));
+      rows.push([
+        format(new Date(e.timestamp), 'yyyy-MM-dd'),
+        format(new Date(e.timestamp), 'HH:mm:ss'),
+        'Interval',
+        getStudentName(e.studentId),
+        getBehaviorName(e.studentId, e.behaviorId),
+        e.voided ? 'N/A' : (e.occurred ? 'Yes' : 'No'),
+        (e.intervalNumber + 1).toString(),
+        e.occurred ? 'Y' : 'N',
+        e.voided ? 'Y' : 'N',
+        e.voided ? getVoidReasonLabel(e.voidReason) : '',
+        session?.notes || ''
+      ].join('\t'));
+    });
+
+    aggregatedData.abcEntries.forEach(e => {
+      const session = filteredSessions.find(s => s.abcEntries.some(ae => ae.id === e.id));
+      rows.push([
+        format(new Date(e.timestamp), 'yyyy-MM-dd'),
+        format(new Date(e.timestamp), 'HH:mm:ss'),
+        'ABC',
+        getStudentName(e.studentId),
+        e.behavior,
+        `A: ${e.antecedent} | B: ${e.behavior} | C: ${e.consequence}`,
+        '', '', '', '',
+        session?.notes || ''
+      ].join('\t'));
+    });
+
+    const tsvContent = rows.join('\n');
+    
+    try {
+      await navigator.clipboard.writeText(tsvContent);
+      toast({
+        title: 'Copied to clipboard!',
+        description: 'Open Google Sheets and paste (Ctrl/Cmd+V) to import your data.',
+      });
+      // Open Google Sheets in new tab
+      window.open('https://sheets.google.com/create', '_blank');
+    } catch (err) {
+      // Fallback: download as TSV file
+      const blob = new Blob([tsvContent], { type: 'text/tab-separated-values' });
+      saveAs(blob, `behavior-data-${format(new Date(), 'yyyy-MM-dd')}.tsv`);
+      toast({
+        title: 'Downloaded TSV file',
+        description: 'Open Google Sheets → File → Import → Upload the TSV file.',
+      });
+    }
+  };
 
   // Enhanced CSV Export
   const exportEnhancedCSV = () => {
@@ -732,20 +867,39 @@ export function DataExportManager() {
           </Badge>
         </div>
 
-        {/* Export Buttons */}
-        <div className="flex flex-wrap gap-2 py-3 border-b">
-          <Button onClick={exportEnhancedCSV} variant="outline" className="gap-2" disabled={totalEntries === 0}>
+        {/* Export Options */}
+        <div className="flex flex-wrap items-center gap-2 py-3 border-b">
+          <Button onClick={exportEnhancedCSV} variant="outline" size="sm" className="gap-2" disabled={totalEntries === 0}>
             <FileSpreadsheet className="w-4 h-4" />
-            Export CSV
+            CSV
           </Button>
-          <Button onClick={exportWordDocument} variant="outline" className="gap-2" disabled={totalEntries === 0}>
+          <Button onClick={exportToGoogleSheets} variant="outline" size="sm" className="gap-2" disabled={totalEntries === 0}>
+            <ExternalLink className="w-4 h-4" />
+            Google Sheets
+          </Button>
+          <Button onClick={exportWordDocument} variant="outline" size="sm" className="gap-2" disabled={totalEntries === 0}>
             <FileText className="w-4 h-4" />
-            Export Word (.docx)
+            Word (.docx)
           </Button>
-          <Button onClick={handlePrintPDF} className="gap-2" disabled={totalEntries === 0}>
+          <Button onClick={handlePrintPDF} size="sm" className="gap-2" disabled={totalEntries === 0}>
             <Printer className="w-4 h-4" />
-            Print / Save as PDF
+            PDF
           </Button>
+
+          <Separator orientation="vertical" className="h-6 mx-2" />
+
+          {/* Include Charts Toggle */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="include-charts"
+              checked={includeTrendCharts}
+              onCheckedChange={(checked) => setIncludeTrendCharts(checked === true)}
+            />
+            <Label htmlFor="include-charts" className="text-xs cursor-pointer flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" />
+              Include Trend Charts
+            </Label>
+          </div>
         </div>
 
         {/* Report Preview */}
@@ -814,6 +968,75 @@ export function DataExportManager() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Trend Charts */}
+                {includeTrendCharts && trendChartData.length > 1 && (
+                  <Card ref={chartRef}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        Behavior Trends
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Frequency Trend */}
+                        {aggregatedData.frequencyEntries.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">Frequency Over Time</h4>
+                            <ResponsiveContainer width="100%" height={180}>
+                              <BarChart data={trendChartData}>
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <Bar dataKey="Frequency" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+
+                        {/* Interval Percentage Trend */}
+                        {aggregatedData.intervalEntries.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">Interval % Over Time</h4>
+                            <ResponsiveContainer width="100%" height={180}>
+                              <LineChart data={trendChartData}>
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="Interval %" 
+                                  stroke={CHART_COLORS[1]} 
+                                  strokeWidth={2}
+                                  dot={{ fill: CHART_COLORS[1], r: 4 }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+
+                        {/* Duration Trend */}
+                        {aggregatedData.durationEntries.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">Duration (min) Over Time</h4>
+                            <ResponsiveContainer width="100%" height={180}>
+                              <BarChart data={trendChartData}>
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} />
+                                <Tooltip />
+                                <Bar dataKey="Duration (min)" fill={CHART_COLORS[2]} radius={[4, 4, 0, 0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Student Breakdown */}
                 {[...new Set([
