@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Settings, Trash2, Activity } from 'lucide-react';
+import { Plus, Settings, Trash2, Activity, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,21 +7,32 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useDataStore } from '@/store/dataStore';
-import { DataCollectionMethod, METHOD_LABELS } from '@/types/behavior';
+import { DataCollectionMethod, METHOD_LABELS, Behavior } from '@/types/behavior';
 
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
 export function BehaviorManager() {
-  const { students, selectedStudentIds, addBehaviorWithMethods, removeBehavior } = useDataStore();
+  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, removeBehavior } = useDataStore();
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>(['frequency']);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [editingBehavior, setEditingBehavior] = useState<{ studentId: string; behaviorId: string } | null>(null);
+  const [editMethods, setEditMethods] = useState<DataCollectionMethod[]>([]);
 
   const selectedStudents = students.filter((s) => selectedStudentIds.includes(s.id));
 
   const toggleMethod = (method: DataCollectionMethod) => {
     setSelectedMethods((prev) =>
+      prev.includes(method)
+        ? prev.filter((m) => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  const toggleEditMethod = (method: DataCollectionMethod) => {
+    setEditMethods((prev) =>
       prev.includes(method)
         ? prev.filter((m) => m !== method)
         : [...prev, method]
@@ -44,6 +55,24 @@ export function BehaviorManager() {
     }
   };
 
+  const startEditing = (studentId: string, behavior: Behavior) => {
+    setEditingBehavior({ studentId, behaviorId: behavior.id });
+    setEditMethods(behavior.methods || [behavior.type]);
+  };
+
+  const saveEdit = () => {
+    if (editingBehavior && editMethods.length > 0) {
+      updateBehaviorMethods(editingBehavior.studentId, editingBehavior.behaviorId, editMethods);
+      setEditingBehavior(null);
+      setEditMethods([]);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingBehavior(null);
+    setEditMethods([]);
+  };
+
   const getBehaviorTypeColor = (type: DataCollectionMethod) => {
     switch (type) {
       case 'frequency': return 'bg-info text-info-foreground';
@@ -53,6 +82,9 @@ export function BehaviorManager() {
       default: return 'bg-secondary';
     }
   };
+
+  const isEditing = (studentId: string, behaviorId: string) => 
+    editingBehavior?.studentId === studentId && editingBehavior?.behaviorId === behaviorId;
 
   return (
     <Dialog>
@@ -148,30 +180,88 @@ export function BehaviorManager() {
                     {student.behaviors.length} behaviors
                   </Badge>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
                   {student.behaviors.map((behavior) => (
                     <div 
                       key={behavior.id} 
-                      className="flex items-center gap-2 bg-secondary/50 rounded-md px-3 py-1.5"
+                      className="bg-secondary/50 rounded-md p-2"
                     >
-                      <div className="flex gap-1">
-                        {(behavior.methods || [behavior.type]).map((method) => (
-                          <Badge 
-                            key={method} 
-                            className={`${getBehaviorTypeColor(method)} text-xs`} 
-                            variant="secondary"
+                      {isEditing(student.id, behavior.id) ? (
+                        // Editing mode
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{behavior.name}</span>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={saveEdit}
+                                disabled={editMethods.length === 0}
+                              >
+                                <Check className="w-3 h-3 text-success" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={cancelEdit}
+                              >
+                                <X className="w-3 h-3 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {ALL_METHODS.map((method) => (
+                              <button
+                                key={method}
+                                onClick={() => toggleEditMethod(method)}
+                                className={`
+                                  px-2 py-1 text-xs rounded-md transition-all border
+                                  ${editMethods.includes(method) 
+                                    ? `${getBehaviorTypeColor(method)} border-transparent` 
+                                    : 'bg-background border-border hover:border-primary/50'}
+                                `}
+                              >
+                                {METHOD_LABELS[method]}
+                              </button>
+                            ))}
+                          </div>
+                          {editMethods.length === 0 && (
+                            <p className="text-xs text-destructive">Select at least one method</p>
+                          )}
+                        </div>
+                      ) : (
+                        // Display mode
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1 flex-wrap flex-1">
+                            {(behavior.methods || [behavior.type]).map((method) => (
+                              <Badge 
+                                key={method} 
+                                className={`${getBehaviorTypeColor(method)} text-xs`} 
+                                variant="secondary"
+                              >
+                                {METHOD_LABELS[method]}
+                              </Badge>
+                            ))}
+                            <span className="text-sm font-medium ml-1">{behavior.name}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => startEditing(student.id, behavior)}
                           >
-                            {method.charAt(0).toUpperCase()}
-                          </Badge>
-                        ))}
-                      </div>
-                      <span className="text-sm font-medium">{behavior.name}</span>
-                      <button
-                        onClick={() => removeBehavior(student.id, behavior.id)}
-                        className="text-muted-foreground hover:text-destructive ml-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                          <button
+                            onClick={() => removeBehavior(student.id, behavior.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {student.behaviors.length === 0 && (
