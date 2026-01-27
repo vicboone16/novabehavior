@@ -13,7 +13,11 @@ import {
   Minimize2, 
   Maximize2,
   Filter,
-  RotateCcw
+  RotateCcw,
+  Pause,
+  Play,
+  Square,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -24,6 +28,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useDataStore } from '@/store/dataStore';
 import { useSyncedIntervalState } from './SyncedIntervalController';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 
 interface CompactStudentCardProps {
   student: Student;
@@ -50,12 +55,24 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     toggleStudentMethod,
     getActiveStudentMethods,
     resetStudentMethods,
+    pauseStudentSession,
+    resumeStudentSession,
+    endStudentSession,
+    isStudentSessionPaused,
+    isStudentSessionEnded,
+    getStudentSessionStatus,
+    resetStudentSessionStatus,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
   const [order, setOrder] = useState<DataCollectionMethod[]>(() => 
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+
+  const isPaused = isStudentSessionPaused(student.id);
+  const hasEnded = isStudentSessionEnded(student.id);
+  const sessionStatus = getStudentSessionStatus(student.id);
 
   // Filter behaviors based on session focus mode and student method toggles
   const getActiveBehaviorsForMethod = (method: DataCollectionMethod) => {
@@ -271,8 +288,70 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     }
   });
 
+  const formatPauseDuration = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  };
+
+  const totalPauseTime = sessionStatus?.pauseDurations.reduce((sum, d) => sum + d, 0) || 0;
+
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden h-full flex flex-col">
+    <div className={`bg-card border rounded-xl overflow-hidden h-full flex flex-col ${
+      hasEnded ? 'border-muted opacity-60' : isPaused ? 'border-warning' : 'border-border'
+    }`}>
+      {/* Session Status Banner */}
+      {(isPaused || hasEnded) && (
+        <div className={`px-3 py-1.5 text-xs font-medium flex items-center justify-between ${
+          hasEnded ? 'bg-muted text-muted-foreground' : 'bg-warning/20 text-warning-foreground'
+        }`}>
+          <div className="flex items-center gap-1.5">
+            {hasEnded ? (
+              <>
+                <Square className="w-3 h-3" />
+                <span>Session Ended</span>
+                {sessionStatus?.effectiveSessionMinutes !== undefined && (
+                  <span className="text-[10px] opacity-70">
+                    ({sessionStatus.effectiveSessionMinutes.toFixed(1)} min effective)
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <Pause className="w-3 h-3" />
+                <span>Paused</span>
+                {totalPauseTime > 0 && (
+                  <span className="text-[10px] opacity-70">
+                    (total: {formatPauseDuration(totalPauseTime)})
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+          {hasEnded ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-2 text-[10px]"
+              onClick={() => resetStudentSessionStatus(student.id)}
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Reset
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-2 text-[10px]"
+              onClick={() => resumeStudentSession(student.id)}
+            >
+              <Play className="w-3 h-3 mr-1" />
+              Resume
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Sticky Header */}
       <div 
         className="sticky top-0 z-10 flex items-center gap-2 p-3 border-b bg-card"
@@ -387,6 +466,43 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
                 Expand all
               </TooltipContent>
             </Tooltip>
+
+            {/* Session Controls - Pause/End */}
+            {!hasEnded && (
+              <>
+                <div className="w-px h-4 bg-border mx-1" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={isPaused ? "default" : "ghost"}
+                      size="sm"
+                      className={`h-6 w-6 p-0 ${isPaused ? 'bg-warning text-warning-foreground' : ''}`}
+                      onClick={() => isPaused ? resumeStudentSession(student.id) : pauseStudentSession(student.id)}
+                    >
+                      {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {isPaused ? 'Resume session' : 'Pause session'}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={() => setShowEndConfirm(true)}
+                    >
+                      <Square className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    End session for this student
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
           </div>
         </TooltipProvider>
       </div>
@@ -409,8 +525,34 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
           </p>
         )}
 
-        {activeOrder.map((method, index) => renderTrackerSection(method, index))}
+        {!hasEnded && activeOrder.map((method, index) => renderTrackerSection(method, index))}
+        
+        {hasEnded && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Square className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm font-medium">Session Ended</p>
+            <p className="text-xs mt-1">
+              Data collection stopped for this student.
+              <br />
+              Click "Reset" above to resume.
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* End Session Confirmation */}
+      <ConfirmDialog
+        open={showEndConfirm}
+        onOpenChange={setShowEndConfirm}
+        title="End Session for Student"
+        description={`Are you sure you want to end the session for ${student.name}? This will stop data collection for this student. You can reset to resume later.`}
+        confirmLabel="End Session"
+        onConfirm={() => {
+          endStudentSession(student.id);
+          setShowEndConfirm(false);
+        }}
+        variant="destructive"
+      />
     </div>
   );
 }

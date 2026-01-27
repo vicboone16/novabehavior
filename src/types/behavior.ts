@@ -107,6 +107,16 @@ export interface StudentIntervalStatus {
   departedAtInterval?: number; // Which interval they left (undefined = stayed till end)
 }
 
+export interface StudentSessionStatus {
+  studentId: string;
+  isPaused: boolean;
+  pausedAt?: Date;
+  pauseDurations: number[]; // Array of pause durations in ms
+  hasEnded: boolean;
+  endedAt?: Date;
+  effectiveSessionMinutes?: number; // Actual session time minus pauses
+}
+
 export interface SessionConfig {
   intervalLength: number; // in seconds
   totalIntervals: number;

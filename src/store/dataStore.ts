@@ -14,6 +14,7 @@ import {
   SessionLengthOverride,
   BehaviorGoal,
   StudentIntervalStatus,
+  StudentSessionStatus,
   STUDENT_COLORS 
 } from '@/types/behavior';
 
@@ -62,6 +63,7 @@ interface DataState {
   collapsedState: CollapsedState;
   sessionFocus: SessionFocus;
   studentIntervalStatus: StudentIntervalStatus[]; // Track late arrivals / early departures
+  studentSessionStatus: StudentSessionStatus[]; // Track pause/end per student
   trash: TrashItem[]; // Recoverable deleted items
   
   // Student actions
@@ -122,6 +124,16 @@ interface DataState {
   resetStudentIntervalStatus: (studentId: string) => void;
   voidIntervalsForLateArrival: (studentId: string, joinAtInterval: number) => void;
   voidIntervalsForEarlyDeparture: (studentId: string, departAtInterval: number, totalIntervals: number) => void;
+  
+  // Student session status (pause/end)
+  pauseStudentSession: (studentId: string) => void;
+  resumeStudentSession: (studentId: string) => void;
+  endStudentSession: (studentId: string) => void;
+  getStudentSessionStatus: (studentId: string) => StudentSessionStatus | undefined;
+  isStudentSessionPaused: (studentId: string) => boolean;
+  isStudentSessionEnded: (studentId: string) => boolean;
+  resetStudentSessionStatus: (studentId: string) => void;
+  resetAllStudentSessionStatuses: () => void;
   
   // Session config
   updateSessionConfig: (config: Partial<SessionConfig>) => void;
@@ -227,6 +239,7 @@ export const useDataStore = create<DataState>()(
       collapsedState: { methods: {}, behaviors: {} },
       sessionFocus: DEFAULT_SESSION_FOCUS,
       studentIntervalStatus: [],
+      studentSessionStatus: [],
       trash: [],
 
       addStudent: (name) => {
@@ -819,6 +832,125 @@ export const useDataStore = create<DataState>()(
             get().voidInterval(studentId, behavior.id, i, 'early_departure');
           }
         });
+      },
+
+      // Student session status (pause/end)
+      pauseStudentSession: (studentId) => {
+        const now = new Date();
+        set((state) => {
+          const existing = state.studentSessionStatus.find((s) => s.studentId === studentId);
+          if (existing) {
+            return {
+              studentSessionStatus: state.studentSessionStatus.map((s) =>
+                s.studentId === studentId
+                  ? { ...s, isPaused: true, pausedAt: now }
+                  : s
+              ),
+            };
+          }
+          return {
+            studentSessionStatus: [
+              ...state.studentSessionStatus,
+              {
+                studentId,
+                isPaused: true,
+                pausedAt: now,
+                pauseDurations: [],
+                hasEnded: false,
+              },
+            ],
+          };
+        });
+      },
+
+      resumeStudentSession: (studentId) => {
+        const now = new Date();
+        set((state) => {
+          const existing = state.studentSessionStatus.find((s) => s.studentId === studentId);
+          if (!existing || !existing.pausedAt) return state;
+          
+          const pauseDuration = now.getTime() - new Date(existing.pausedAt).getTime();
+          return {
+            studentSessionStatus: state.studentSessionStatus.map((s) =>
+              s.studentId === studentId
+                ? {
+                    ...s,
+                    isPaused: false,
+                    pausedAt: undefined,
+                    pauseDurations: [...s.pauseDurations, pauseDuration],
+                  }
+                : s
+            ),
+          };
+        });
+      },
+
+      endStudentSession: (studentId) => {
+        const now = new Date();
+        const state = get();
+        const sessionStart = state.sessionStartTime;
+        
+        set((s) => {
+          const existing = s.studentSessionStatus.find((st) => st.studentId === studentId);
+          const totalPauseDuration = existing?.pauseDurations.reduce((sum, d) => sum + d, 0) || 0;
+          const effectiveMs = sessionStart 
+            ? now.getTime() - new Date(sessionStart).getTime() - totalPauseDuration 
+            : 0;
+          const effectiveMinutes = effectiveMs / 60000;
+
+          if (existing) {
+            return {
+              studentSessionStatus: s.studentSessionStatus.map((st) =>
+                st.studentId === studentId
+                  ? {
+                      ...st,
+                      hasEnded: true,
+                      endedAt: now,
+                      isPaused: false,
+                      effectiveSessionMinutes: effectiveMinutes,
+                    }
+                  : st
+              ),
+            };
+          }
+          return {
+            studentSessionStatus: [
+              ...s.studentSessionStatus,
+              {
+                studentId,
+                isPaused: false,
+                pauseDurations: [],
+                hasEnded: true,
+                endedAt: now,
+                effectiveSessionMinutes: effectiveMinutes,
+              },
+            ],
+          };
+        });
+      },
+
+      getStudentSessionStatus: (studentId) => {
+        return get().studentSessionStatus.find((s) => s.studentId === studentId);
+      },
+
+      isStudentSessionPaused: (studentId) => {
+        const status = get().studentSessionStatus.find((s) => s.studentId === studentId);
+        return status?.isPaused || false;
+      },
+
+      isStudentSessionEnded: (studentId) => {
+        const status = get().studentSessionStatus.find((s) => s.studentId === studentId);
+        return status?.hasEnded || false;
+      },
+
+      resetStudentSessionStatus: (studentId) => {
+        set((state) => ({
+          studentSessionStatus: state.studentSessionStatus.filter((s) => s.studentId !== studentId),
+        }));
+      },
+
+      resetAllStudentSessionStatuses: () => {
+        set({ studentSessionStatus: [] });
       },
 
       updateSessionConfig: (config) => {
