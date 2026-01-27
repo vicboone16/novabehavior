@@ -39,6 +39,10 @@ interface DataState {
   toggleStudentSelection: (id: string) => void;
   selectAllStudents: () => void;
   deselectAllStudents: () => void;
+  addCustomAntecedent: (studentId: string, antecedent: string) => void;
+  addCustomConsequence: (studentId: string, consequence: string) => void;
+  getStudentAntecedents: (studentId: string) => string[];
+  getStudentConsequences: (studentId: string) => string[];
   
   // Behavior actions
   addBehavior: (studentId: string, behavior: Omit<Behavior, 'id'>) => void;
@@ -157,6 +161,46 @@ export const useDataStore = create<DataState>()(
 
       deselectAllStudents: () => {
         set({ selectedStudentIds: [] });
+      },
+
+      addCustomAntecedent: (studentId, antecedent) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? { 
+                  ...s, 
+                  customAntecedents: [...(s.customAntecedents || []), antecedent].filter(
+                    (v, i, a) => a.indexOf(v) === i // Remove duplicates
+                  ) 
+                }
+              : s
+          ),
+        }));
+      },
+
+      addCustomConsequence: (studentId, consequence) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? { 
+                  ...s, 
+                  customConsequences: [...(s.customConsequences || []), consequence].filter(
+                    (v, i, a) => a.indexOf(v) === i
+                  ) 
+                }
+              : s
+          ),
+        }));
+      },
+
+      getStudentAntecedents: (studentId) => {
+        const student = get().students.find(s => s.id === studentId);
+        return student?.customAntecedents || [];
+      },
+
+      getStudentConsequences: (studentId) => {
+        const student = get().students.find(s => s.id === studentId);
+        return student?.customConsequences || [];
       },
 
       addBehavior: (studentId, behavior) => {
