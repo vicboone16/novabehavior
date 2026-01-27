@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
 import { StudentFileManager } from '@/components/StudentFileManager';
+import { HistoricalIntervalEntry } from '@/components/HistoricalIntervalEntry';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentProfile() {
@@ -82,6 +83,7 @@ export default function StudentProfile() {
   const [deleteInput, setDeleteInput] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [showHistoricalInterval, setShowHistoricalInterval] = useState(false);
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -677,6 +679,25 @@ export default function StudentProfile() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Historical Interval Data Button */}
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => setShowHistoricalInterval(true)}
+              >
+                <Grid3X3 className="w-4 h-4" />
+                Add Historical Interval Data
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or add frequency/ABC data</span>
+                </div>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Date</Label>
@@ -1047,6 +1068,13 @@ export default function StudentProfile() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Historical Interval Entry Dialog */}
+      <HistoricalIntervalEntry 
+        student={student} 
+        open={showHistoricalInterval} 
+        onOpenChange={setShowHistoricalInterval} 
+      />
     </div>
   );
 }
