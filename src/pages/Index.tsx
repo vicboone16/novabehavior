@@ -6,6 +6,7 @@ import { SessionTimer } from '@/components/SessionTimer';
 import { DataSummary } from '@/components/DataSummary';
 import { SyncedIntervalController } from '@/components/SyncedIntervalController';
 import { SessionDataReview } from '@/components/SessionDataReview';
+import { EnhancedABCPopup } from '@/components/EnhancedABCPopup';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -15,6 +16,11 @@ const Index = () => {
   // Check if any selected student has interval behaviors
   const hasIntervalBehaviors = selectedStudents.some(s => 
     s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
+  );
+
+  // Check if any selected student has ABC behaviors
+  const hasABCBehaviors = selectedStudents.some(s => 
+    s.behaviors.some(b => (b.methods || [b.type]).includes('abc'))
   );
 
   return (
@@ -47,6 +53,13 @@ const Index = () => {
           <SessionTimer />
           <DataSummary />
         </div>
+
+        {/* Enhanced ABC Popup - Show when ABC behaviors exist */}
+        {hasABCBehaviors && (
+          <div className="flex justify-center">
+            <EnhancedABCPopup />
+          </div>
+        )}
 
         {/* Synced Interval Controller */}
         {hasIntervalBehaviors && (

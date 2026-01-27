@@ -29,6 +29,7 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
         antecedent: selectedAntecedent,
         behavior: selectedBehavior,
         consequence: selectedConsequence,
+        frequencyCount: 1,
       });
       setSelectedAntecedent(null);
       setSelectedBehavior(null);

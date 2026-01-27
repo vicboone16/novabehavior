@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { BarChart3, FileText, Trash2, Download, Save, StickyNote } from 'lucide-react';
+import { format } from 'date-fns';
+import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useDataStore } from '@/store/dataStore';
 import { SessionHistory } from './SessionHistory';
+import { SessionLengthManager } from './SessionLengthManager';
 
 export function DataSummary() {
   const { 
@@ -17,9 +21,13 @@ export function DataSummary() {
     durationEntries, 
     intervalEntries,
     sessionNotes,
+    sessionLengthMinutes,
+    showTimestamps,
+    setShowTimestamps,
     setSessionNotes,
     saveSession,
-    resetSessionData 
+    resetSessionData,
+    getEffectiveSessionLength 
   } = useDataStore();
 
   const [showNotes, setShowNotes] = useState(false);
@@ -39,38 +47,57 @@ export function DataSummary() {
     return `${mins}m ${secs}s`;
   };
 
+  const formatTime = (date: Date) => {
+    return format(new Date(date), 'HH:mm:ss');
+  };
+
+  const calculateHourlyRate = (count: number, sessionMinutes: number) => {
+    if (sessionMinutes <= 0) return 0;
+    return ((count / sessionMinutes) * 60).toFixed(1);
+  };
+
   const handleSaveSession = () => {
     saveSession();
   };
 
   const exportToCSV = () => {
-    let csv = 'Student,Behavior,Type,Value,Timestamp\n';
+    let csv = 'Student,Behavior,Type,Value,HourlyRate,Timestamp\n';
     
-    // Frequency entries
+    // Frequency entries with hourly rate
     frequencyEntries.forEach(entry => {
       const student = students.find(s => s.id === entry.studentId);
       const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
-      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Frequency","${entry.count}","${new Date(entry.timestamp).toISOString()}"\n`;
+      const sessionLength = getEffectiveSessionLength(entry.studentId, entry.behaviorId);
+      const hourlyRate = calculateHourlyRate(entry.count, sessionLength);
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Frequency","${entry.count}","${hourlyRate}/hr","${new Date(entry.timestamp).toISOString()}"\n`;
+      
+      // Include individual timestamps if available
+      if (entry.timestamps && showTimestamps) {
+        entry.timestamps.forEach((ts, idx) => {
+          csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Frequency Event ${idx + 1}","1","","${new Date(ts).toISOString()}"\n`;
+        });
+      }
     });
 
     // Duration entries
     durationEntries.filter(e => e.endTime).forEach(entry => {
       const student = students.find(s => s.id === entry.studentId);
       const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
-      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Duration","${entry.duration}s","${new Date(entry.startTime).toISOString()}"\n`;
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Duration","${entry.duration}s","","${new Date(entry.startTime).toISOString()}"\n`;
     });
 
     // Interval entries
     intervalEntries.forEach(entry => {
       const student = students.find(s => s.id === entry.studentId);
       const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
-      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Interval ${entry.intervalNumber + 1}","${entry.occurred ? 'Yes' : 'No'}","${new Date(entry.timestamp).toISOString()}"\n`;
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Interval ${entry.intervalNumber + 1}","${entry.occurred ? 'Yes' : 'No'}","","${new Date(entry.timestamp).toISOString()}"\n`;
     });
 
     // ABC entries
     abcEntries.forEach(entry => {
       const student = students.find(s => s.id === entry.studentId);
-      csv += `"${student?.name || 'Unknown'}","${entry.behavior}","ABC","A: ${entry.antecedent} | C: ${entry.consequence}","${new Date(entry.timestamp).toISOString()}"\n`;
+      const functions = entry.functions?.join(';') || '';
+      csv += `"${student?.name || 'Unknown'}","${entry.behavior}","ABC","A: ${entry.antecedent} | C: ${entry.consequence} | F: ${functions}","${entry.frequencyCount}x","${new Date(entry.timestamp).toISOString()}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -86,11 +113,15 @@ export function DataSummary() {
     const data = {
       exportDate: new Date().toISOString(),
       notes: sessionNotes,
+      sessionLengthMinutes,
       students: selectedStudents.map(s => ({
         name: s.name,
         behaviors: s.behaviors,
       })),
-      frequencyEntries,
+      frequencyEntries: frequencyEntries.map(e => ({
+        ...e,
+        hourlyRate: calculateHourlyRate(e.count, getEffectiveSessionLength(e.studentId, e.behaviorId)),
+      })),
       durationEntries: durationEntries.filter(e => e.endTime),
       intervalEntries,
       abcEntries,
@@ -107,6 +138,9 @@ export function DataSummary() {
 
   const hasData = totalABC > 0 || totalFrequency > 0 || totalDuration > 0 || totalIntervals > 0;
 
+  // Calculate overall hourly rate
+  const overallHourlyRate = calculateHourlyRate(totalFrequency, sessionLengthMinutes);
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -115,6 +149,7 @@ export function DataSummary() {
           <h2 className="font-semibold text-foreground">Session Summary</h2>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
+          <SessionLengthManager />
           <SessionHistory />
           <Dialog>
             <DialogTrigger asChild>
@@ -127,6 +162,20 @@ export function DataSummary() {
               <DialogHeader>
                 <DialogTitle>Session Data Details</DialogTitle>
               </DialogHeader>
+              
+              {/* Timestamps Toggle */}
+              <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2">
+                  {showTimestamps ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  <Label htmlFor="show-timestamps">Show Timestamps</Label>
+                </div>
+                <Switch
+                  id="show-timestamps"
+                  checked={showTimestamps}
+                  onCheckedChange={setShowTimestamps}
+                />
+              </div>
+
               <div className="space-y-6">
                 {selectedStudents.map(student => {
                   const studentABC = abcEntries.filter(e => e.studentId === student.id);
@@ -147,13 +196,40 @@ export function DataSummary() {
                       {studentFreq.length > 0 && (
                         <div className="mb-3">
                           <h5 className="text-xs font-medium text-muted-foreground mb-1">Frequency</h5>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="space-y-2">
                             {studentFreq.map(entry => {
                               const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+                              const sessionLength = getEffectiveSessionLength(student.id, entry.behaviorId);
+                              const hourlyRate = calculateHourlyRate(entry.count, sessionLength);
                               return (
-                                <Badge key={entry.id} variant="secondary">
-                                  {behavior?.name}: {entry.count}
-                                </Badge>
+                                <div key={entry.id} className="bg-secondary/30 rounded p-2">
+                                  <div className="flex items-center justify-between">
+                                    <Badge variant="secondary">
+                                      {behavior?.name}: {entry.count}
+                                    </Badge>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <Badge variant="outline" className="gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {hourlyRate}/hr
+                                      </Badge>
+                                      {showTimestamps && (
+                                        <span className="text-muted-foreground">
+                                          Started: {formatTime(entry.timestamp)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {showTimestamps && entry.timestamps && entry.timestamps.length > 0 && (
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                      <span className="font-medium">Event times: </span>
+                                      {entry.timestamps.map((ts, idx) => (
+                                        <span key={idx}>
+                                          {formatTime(ts)}{idx < entry.timestamps!.length - 1 ? ', ' : ''}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
@@ -163,13 +239,20 @@ export function DataSummary() {
                       {studentDur.length > 0 && (
                         <div className="mb-3">
                           <h5 className="text-xs font-medium text-muted-foreground mb-1">Duration</h5>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="space-y-1">
                             {studentDur.map(entry => {
                               const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
                               return (
-                                <Badge key={entry.id} variant="secondary">
-                                  {behavior?.name}: {formatDuration(entry.duration)}
-                                </Badge>
+                                <div key={entry.id} className="flex items-center justify-between bg-secondary/30 rounded p-2">
+                                  <Badge variant="secondary">
+                                    {behavior?.name}: {formatDuration(entry.duration)}
+                                  </Badge>
+                                  {showTimestamps && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatTime(entry.startTime)} - {entry.endTime ? formatTime(entry.endTime) : 'ongoing'}
+                                    </span>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
@@ -186,9 +269,27 @@ export function DataSummary() {
                                 const entries = studentInt.filter(e => e.behaviorId === behavior.id);
                                 const occurred = entries.filter(e => e.occurred).length;
                                 return (
-                                  <Badge key={behavior.id} variant="secondary" className="mr-2">
-                                    {behavior.name}: {occurred}/{entries.length}
-                                  </Badge>
+                                  <div key={behavior.id} className="bg-secondary/30 rounded p-2 mb-1">
+                                    <div className="flex items-center justify-between">
+                                      <Badge variant="secondary">
+                                        {behavior.name}: {occurred}/{entries.length}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">
+                                        {entries.length > 0 ? Math.round((occurred / entries.length) * 100) : 0}%
+                                      </span>
+                                    </div>
+                                    {showTimestamps && entries.length > 0 && (
+                                      <div className="mt-1 text-xs text-muted-foreground">
+                                        {entries.slice(0, 5).map((e, idx) => (
+                                          <span key={e.id}>
+                                            Int {e.intervalNumber + 1}: {e.occurred ? '✓' : '✗'} ({formatTime(e.timestamp)})
+                                            {idx < Math.min(4, entries.length - 1) ? ' | ' : ''}
+                                          </span>
+                                        ))}
+                                        {entries.length > 5 && <span>... +{entries.length - 5} more</span>}
+                                      </div>
+                                    )}
+                                  </div>
                                 );
                               })}
                           </div>
@@ -201,9 +302,27 @@ export function DataSummary() {
                           <div className="space-y-1 text-sm">
                             {studentABC.map(entry => (
                               <div key={entry.id} className="bg-secondary/50 rounded p-2">
-                                <span className="text-antecedent font-medium">A:</span> {entry.antecedent} → 
-                                <span className="text-behavior font-medium ml-1">B:</span> {entry.behavior} → 
-                                <span className="text-consequence font-medium ml-1">C:</span> {entry.consequence}
+                                <div className="flex items-center justify-between mb-1">
+                                  <div>
+                                    <span className="text-antecedent font-medium">A:</span> {entry.antecedent} → 
+                                    <span className="text-behavior font-medium ml-1">B:</span> {entry.behavior} → 
+                                    <span className="text-consequence font-medium ml-1">C:</span> {entry.consequence}
+                                  </div>
+                                  {entry.frequencyCount > 1 && (
+                                    <Badge variant="outline">{entry.frequencyCount}x</Badge>
+                                  )}
+                                </div>
+                                {showTimestamps && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatTime(entry.timestamp)}
+                                    {entry.functions && entry.functions.length > 0 && (
+                                      <span className="ml-2">| Functions: {entry.functions.join(', ')}</span>
+                                    )}
+                                    {entry.hasDuration && entry.durationMinutes && (
+                                      <span className="ml-2">| Duration: {entry.durationMinutes}m</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -255,6 +374,9 @@ export function DataSummary() {
         <div className="bg-info/10 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-info">{totalFrequency}</p>
           <p className="text-xs text-muted-foreground">Frequency Events</p>
+          {totalFrequency > 0 && (
+            <p className="text-xs text-info mt-1">{overallHourlyRate}/hr</p>
+          )}
         </div>
         <div className="bg-warning/10 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-warning">{formatDuration(totalDuration)}</p>

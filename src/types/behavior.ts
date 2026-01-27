@@ -1,5 +1,7 @@
 export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc';
 
+export type BehaviorFunction = 'attention' | 'escape' | 'tangible' | 'sensory' | 'automatic' | 'unknown';
+
 export interface Behavior {
   id: string;
   name: string;
@@ -19,8 +21,15 @@ export interface ABCEntry {
   studentId: string;
   behaviorId: string;
   antecedent: string;
+  antecedents?: string[]; // Multiple antecedents
   behavior: string;
+  behaviors?: string[]; // Multiple behaviors
   consequence: string;
+  consequences?: string[]; // Multiple consequences
+  functions?: BehaviorFunction[]; // Hypothesized functions
+  frequencyCount: number; // Default 1
+  hasDuration?: boolean;
+  durationMinutes?: number; // Duration in minutes to 0.1
   timestamp: Date;
   sessionId?: string;
 }
@@ -31,6 +40,7 @@ export interface FrequencyEntry {
   behaviorId: string;
   count: number;
   timestamp: Date;
+  timestamps?: Date[]; // Individual occurrence timestamps
   sessionId?: string;
 }
 
@@ -51,6 +61,7 @@ export interface IntervalEntry {
   intervalNumber: number;
   occurred: boolean;
   timestamp: Date;
+  markedAt?: Date; // When the occurrence was marked
   sessionId?: string;
 }
 
@@ -60,11 +71,19 @@ export interface SessionConfig {
   samplingType: 'whole' | 'partial' | 'momentary';
 }
 
+export interface SessionLengthOverride {
+  studentId?: string;
+  behaviorId?: string;
+  lengthMinutes: number; // Session length in minutes for this student/behavior
+}
+
 export interface Session {
   id: string;
   date: Date;
   notes: string;
   studentIds: string[];
+  sessionLengthMinutes: number; // Total session length in minutes
+  sessionLengthOverrides?: SessionLengthOverride[]; // Per-student/behavior overrides
   abcEntries: ABCEntry[];
   frequencyEntries: FrequencyEntry[];
   durationEntries: DurationEntry[];
@@ -93,6 +112,15 @@ export const CONSEQUENCE_OPTIONS = [
   'Redirected',
   'Time out',
   'Other'
+];
+
+export const FUNCTION_OPTIONS: { value: BehaviorFunction; label: string }[] = [
+  { value: 'attention', label: 'Attention' },
+  { value: 'escape', label: 'Escape/Avoidance' },
+  { value: 'tangible', label: 'Tangible/Access' },
+  { value: 'sensory', label: 'Sensory/Automatic' },
+  { value: 'automatic', label: 'Automatic Reinforcement' },
+  { value: 'unknown', label: 'Unknown/Multiple' },
 ];
 
 export const STUDENT_COLORS = [
