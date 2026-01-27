@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff } from 'lucide-react';
+import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +33,7 @@ export function DataSummary() {
   } = useDataStore();
 
   const [showNotes, setShowNotes] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
 
@@ -142,6 +143,35 @@ export function DataSummary() {
 
   // Calculate overall hourly rate
   const overallHourlyRate = calculateHourlyRate(totalFrequency, sessionLengthMinutes);
+
+  // Minimized view
+  if (isMinimized) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-2 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Summary</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2 text-xs">
+              <Badge variant="secondary" className="h-5">{totalFrequency} freq</Badge>
+              <Badge variant="secondary" className="h-5">{totalIntervals} int</Badge>
+              <Badge variant="secondary" className="h-5">{totalABC} ABC</Badge>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsMinimized(false)}
+              className="h-6 w-6 p-0"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
@@ -368,6 +398,14 @@ export function DataSummary() {
           >
             <Trash2 className="w-4 h-4" />
             Clear
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setIsMinimized(true)}
+            className="h-8 w-8 p-0"
+          >
+            <Minimize2 className="w-4 h-4" />
           </Button>
         </div>
       </div>
