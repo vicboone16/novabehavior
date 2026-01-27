@@ -14,6 +14,7 @@ import { ScatterplotAnalysis } from '@/components/ScatterplotAnalysis';
 import { NovelBehaviorRecorder } from '@/components/NovelBehaviorRecorder';
 import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
+import { DataExportManager } from '@/components/DataExportManager';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -49,6 +50,7 @@ const Index = () => {
               <BehaviorGoalsManager />
               <ScatterplotAnalysis />
               <BehaviorTrendCharts />
+              <DataExportManager />
               <SessionReportGenerator />
               <SessionDataReview />
               <BehaviorManager />
