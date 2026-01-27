@@ -16,6 +16,11 @@ export interface BehaviorGoal {
   startDate: Date;
   endDate?: Date;
   notes?: string;
+  // New goal tracking fields
+  introducedDate?: Date;
+  dataCollectionStartDate?: Date;
+  isMastered?: boolean;
+  masteryDate?: Date;
 }
 
 export interface Behavior {
