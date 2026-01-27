@@ -472,6 +472,37 @@ export function SyncedIntervalController() {
                       max={60}
                     />
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Recording Type</Label>
+                    <Select
+                      value={sessionConfig.samplingType}
+                      onValueChange={(v) => updateSessionConfig({ samplingType: v as 'whole' | 'partial' | 'momentary' })}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="partial">
+                          <div className="flex flex-col">
+                            <span>Partial Interval</span>
+                            <span className="text-[10px] text-muted-foreground">Record if behavior occurs at any point</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="whole">
+                          <div className="flex flex-col">
+                            <span>Whole Interval</span>
+                            <span className="text-[10px] text-muted-foreground">Record only if behavior occurs entire interval</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="momentary">
+                          <div className="flex flex-col">
+                            <span>Momentary Time Sampling</span>
+                            <span className="text-[10px] text-muted-foreground">Record if behavior occurs at end of interval</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   {/* Alert Settings */}
                   <div className="border-t pt-3 space-y-2">

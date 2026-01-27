@@ -11,6 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useDataStore } from '@/store/dataStore';
 import { SessionHistory } from './SessionHistory';
 import { SessionLengthManager } from './SessionLengthManager';
+import { SessionReportGenerator } from './SessionReportGenerator';
+import { ABCReportGenerator } from './ABCReportGenerator';
 
 export function DataSummary() {
   const { 
@@ -151,6 +153,8 @@ export function DataSummary() {
         <div className="flex gap-2 flex-wrap justify-end">
           <SessionLengthManager />
           <SessionHistory />
+          <SessionReportGenerator />
+          <ABCReportGenerator />
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">

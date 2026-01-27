@@ -1,19 +1,34 @@
 import { useMemo, useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock, MinusCircle, UserPlus, UserMinus, AlertTriangle } from 'lucide-react';
+import { FileText, Download, Printer, Filter, CheckCircle, XCircle, Clock, MinusCircle, UserPlus, UserMinus, AlertTriangle, User, Activity, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
-import { Session, IntervalEntry } from '@/types/behavior';
+import { Session, IntervalEntry, DataCollectionMethod, METHOD_LABELS } from '@/types/behavior';
+
+const SAMPLING_TYPE_LABELS: Record<string, string> = {
+  partial: 'Partial Interval Recording',
+  whole: 'Whole Interval Recording',
+  momentary: 'Momentary Time Sampling',
+};
 
 export function SessionReportGenerator() {
-  const { sessions, students, studentIntervalStatus } = useDataStore();
+  const { sessions, students, studentIntervalStatus, sessionConfig } = useDataStore();
   const [selectedSessionId, setSelectedSessionId] = useState<string>('latest');
   const reportRef = useRef<HTMLDivElement>(null);
+  
+  // Filtering state
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]);
+  const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>([]);
 
   const selectedSession = useMemo(() => {
     if (selectedSessionId === 'latest' && sessions.length > 0) {
@@ -58,6 +73,102 @@ export function SessionReportGenerator() {
     };
     return labels[reason] || reason;
   };
+
+  // Get unique students from selected session
+  const sessionStudentIds = useMemo(() => {
+    if (!selectedSession) return [];
+    return [...new Set([
+      ...selectedSession.frequencyEntries.map(e => e.studentId),
+      ...selectedSession.durationEntries.map(e => e.studentId),
+      ...selectedSession.intervalEntries.map(e => e.studentId),
+      ...selectedSession.abcEntries.map(e => e.studentId),
+    ])];
+  }, [selectedSession]);
+
+  // Get unique behaviors from selected session
+  const sessionBehaviors = useMemo(() => {
+    if (!selectedSession) return [];
+    const behaviors = new Map<string, { id: string; name: string; studentId: string }>();
+    
+    selectedSession.frequencyEntries.forEach(e => {
+      behaviors.set(e.behaviorId, { id: e.behaviorId, name: getBehaviorName(e.studentId, e.behaviorId), studentId: e.studentId });
+    });
+    selectedSession.durationEntries.forEach(e => {
+      behaviors.set(e.behaviorId, { id: e.behaviorId, name: getBehaviorName(e.studentId, e.behaviorId), studentId: e.studentId });
+    });
+    selectedSession.intervalEntries.forEach(e => {
+      behaviors.set(e.behaviorId, { id: e.behaviorId, name: getBehaviorName(e.studentId, e.behaviorId), studentId: e.studentId });
+    });
+    
+    return Array.from(behaviors.values());
+  }, [selectedSession, students]);
+
+  // Available methods in session
+  const sessionMethods = useMemo(() => {
+    if (!selectedSession) return [];
+    const methods: DataCollectionMethod[] = [];
+    if (selectedSession.frequencyEntries.length > 0) methods.push('frequency');
+    if (selectedSession.durationEntries.length > 0) methods.push('duration');
+    if (selectedSession.intervalEntries.length > 0) methods.push('interval');
+    if (selectedSession.abcEntries.length > 0) methods.push('abc');
+    return methods;
+  }, [selectedSession]);
+
+  // Filter helpers
+  const toggleStudent = (studentId: string) => {
+    setSelectedStudentIds(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const toggleBehavior = (behaviorId: string) => {
+    setSelectedBehaviorIds(prev => 
+      prev.includes(behaviorId) 
+        ? prev.filter(id => id !== behaviorId)
+        : [...prev, behaviorId]
+    );
+  };
+
+  const toggleMethod = (method: DataCollectionMethod) => {
+    setSelectedMethods(prev => 
+      prev.includes(method) 
+        ? prev.filter(m => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  // Apply filters to session data
+  const filteredData = useMemo(() => {
+    if (!selectedSession) return null;
+
+    const filterByStudent = (entry: { studentId: string }) => 
+      selectedStudentIds.length === 0 || selectedStudentIds.includes(entry.studentId);
+    
+    const filterByBehavior = (entry: { behaviorId: string }) => 
+      selectedBehaviorIds.length === 0 || selectedBehaviorIds.includes(entry.behaviorId);
+
+    const includeMethod = (method: DataCollectionMethod) =>
+      selectedMethods.length === 0 || selectedMethods.includes(method);
+
+    return {
+      frequencyEntries: includeMethod('frequency') 
+        ? selectedSession.frequencyEntries.filter(e => filterByStudent(e) && filterByBehavior(e))
+        : [],
+      durationEntries: includeMethod('duration')
+        ? selectedSession.durationEntries.filter(e => filterByStudent(e) && filterByBehavior(e))
+        : [],
+      intervalEntries: includeMethod('interval')
+        ? selectedSession.intervalEntries.filter(e => filterByStudent(e) && filterByBehavior(e))
+        : [],
+      abcEntries: includeMethod('abc')
+        ? selectedSession.abcEntries.filter(e => filterByStudent(e) && filterByBehavior(e))
+        : [],
+    };
+  }, [selectedSession, selectedStudentIds, selectedBehaviorIds, selectedMethods]);
+
+  const hasFilters = selectedStudentIds.length > 0 || selectedBehaviorIds.length > 0 || selectedMethods.length > 0;
 
   const handlePrint = () => {
     const printContent = reportRef.current;
@@ -154,11 +265,10 @@ export function SessionReportGenerator() {
           </DialogTitle>
         </DialogHeader>
 
-        {/* Controls */}
-        <div className="flex items-center gap-3 py-2 border-b">
-          <Filter className="w-4 h-4 text-muted-foreground" />
+        {/* Controls Row 1 - Session Selection */}
+        <div className="flex flex-wrap items-center gap-2 py-2 border-b">
           <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-            <SelectTrigger className="w-[250px]">
+            <SelectTrigger className="w-[200px] h-8">
               <SelectValue placeholder="Select session" />
             </SelectTrigger>
             <SelectContent>
@@ -170,6 +280,156 @@ export function SessionReportGenerator() {
               ))}
             </SelectContent>
           </Select>
+
+          {/* Student Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                <User className="w-3 h-3" />
+                Students
+                {selectedStudentIds.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1">
+                    {selectedStudentIds.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Filter by Student</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => setSelectedStudentIds([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <ScrollArea className="max-h-[200px]">
+                  {sessionStudentIds.map(studentId => (
+                    <div key={studentId} className="flex items-center gap-2 py-1">
+                      <Checkbox
+                        id={`report-student-${studentId}`}
+                        checked={selectedStudentIds.includes(studentId)}
+                        onCheckedChange={() => toggleStudent(studentId)}
+                      />
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getStudentColor(studentId) }}
+                      />
+                      <Label htmlFor={`report-student-${studentId}`} className="text-sm cursor-pointer">
+                        {getStudentName(studentId)}
+                      </Label>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Behavior Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                <Activity className="w-3 h-3" />
+                Behaviors
+                {selectedBehaviorIds.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1">
+                    {selectedBehaviorIds.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Filter by Behavior</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => setSelectedBehaviorIds([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <ScrollArea className="max-h-[200px]">
+                  {sessionBehaviors.map(({ id, name }) => (
+                    <div key={id} className="flex items-center gap-2 py-1">
+                      <Checkbox
+                        id={`report-behavior-${id}`}
+                        checked={selectedBehaviorIds.includes(id)}
+                        onCheckedChange={() => toggleBehavior(id)}
+                      />
+                      <Label htmlFor={`report-behavior-${id}`} className="text-sm cursor-pointer">
+                        {name}
+                      </Label>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Method Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                <SlidersHorizontal className="w-3 h-3" />
+                Methods
+                {selectedMethods.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1">
+                    {selectedMethods.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium">Filter by Method</Label>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => setSelectedMethods([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                {sessionMethods.map(method => (
+                  <div key={method} className="flex items-center gap-2 py-1">
+                    <Checkbox
+                      id={`report-method-${method}`}
+                      checked={selectedMethods.includes(method)}
+                      onCheckedChange={() => toggleMethod(method)}
+                    />
+                    <Label htmlFor={`report-method-${method}`} className="text-sm cursor-pointer">
+                      {METHOD_LABELS[method]}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {hasFilters && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-xs"
+              onClick={() => {
+                setSelectedStudentIds([]);
+                setSelectedBehaviorIds([]);
+                setSelectedMethods([]);
+              }}
+            >
+              Clear All Filters
+            </Button>
+          )}
+
           <div className="ml-auto flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
               <Printer className="w-4 h-4" />
@@ -194,12 +454,31 @@ export function SessionReportGenerator() {
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Session Length: {selectedSession.sessionLengthMinutes || 60} minutes
+                  {selectedSession.intervalEntries.length > 0 && (
+                    <span> • {SAMPLING_TYPE_LABELS[sessionConfig.samplingType] || 'Partial Interval Recording'}</span>
+                  )}
                 </p>
               </div>
 
+              {/* Filter Summary */}
+              {hasFilters && (
+                <div className="filter-summary bg-muted/50 p-3 rounded-lg text-sm">
+                  <span className="font-medium">Report Filters: </span>
+                  {selectedStudentIds.length > 0 && (
+                    <span>Students: {selectedStudentIds.map(id => getStudentName(id)).join(', ')}; </span>
+                  )}
+                  {selectedBehaviorIds.length > 0 && (
+                    <span>Behaviors: {sessionBehaviors.filter(b => selectedBehaviorIds.includes(b.id)).map(b => b.name).join(', ')}; </span>
+                  )}
+                  {selectedMethods.length > 0 && (
+                    <span>Methods: {selectedMethods.map(m => METHOD_LABELS[m]).join(', ')}; </span>
+                  )}
+                </div>
+              )}
+
               {/* Summary Stats */}
-              {(() => {
-                const allIntervals = selectedSession.intervalEntries;
+              {filteredData && (() => {
+                const allIntervals = filteredData.intervalEntries;
                 const validIntervals = allIntervals.filter(e => !e.voided);
                 const voidedIntervals = allIntervals.filter(e => e.voided);
                 const occurredIntervals = validIntervals.filter(e => e.occurred).length;
@@ -213,7 +492,7 @@ export function SessionReportGenerator() {
                       <Card>
                         <CardContent className="pt-4 text-center">
                           <p className="text-2xl font-bold text-info">
-                            {selectedSession.frequencyEntries.reduce((sum, e) => sum + e.count, 0)}
+                            {filteredData.frequencyEntries.reduce((sum, e) => sum + e.count, 0)}
                           </p>
                           <p className="text-xs text-muted-foreground">Total Frequency</p>
                         </CardContent>
@@ -221,7 +500,7 @@ export function SessionReportGenerator() {
                       <Card>
                         <CardContent className="pt-4 text-center">
                           <p className="text-2xl font-bold text-warning">
-                            {formatDuration(selectedSession.durationEntries.reduce((sum, e) => sum + e.duration, 0))}
+                            {formatDuration(filteredData.durationEntries.reduce((sum, e) => sum + e.duration, 0))}
                           </p>
                           <p className="text-xs text-muted-foreground">Total Duration</p>
                         </CardContent>
@@ -239,7 +518,7 @@ export function SessionReportGenerator() {
                       <Card>
                         <CardContent className="pt-4 text-center">
                           <p className="text-2xl font-bold text-primary">
-                            {selectedSession.abcEntries.length}
+                            {filteredData.abcEntries.length}
                           </p>
                           <p className="text-xs text-muted-foreground">ABC Entries</p>
                         </CardContent>
@@ -328,16 +607,16 @@ export function SessionReportGenerator() {
               })()}
 
               {/* Student Sections */}
-              {[...new Set([
-                ...selectedSession.frequencyEntries.map(e => e.studentId),
-                ...selectedSession.durationEntries.map(e => e.studentId),
-                ...selectedSession.intervalEntries.map(e => e.studentId),
-                ...selectedSession.abcEntries.map(e => e.studentId),
+              {filteredData && [...new Set([
+                ...filteredData.frequencyEntries.map(e => e.studentId),
+                ...filteredData.durationEntries.map(e => e.studentId),
+                ...filteredData.intervalEntries.map(e => e.studentId),
+                ...filteredData.abcEntries.map(e => e.studentId),
               ])].map(studentId => {
-                const studentFreq = selectedSession.frequencyEntries.filter(e => e.studentId === studentId);
-                const studentDur = selectedSession.durationEntries.filter(e => e.studentId === studentId);
-                const studentInt = selectedSession.intervalEntries.filter(e => e.studentId === studentId);
-                const studentABC = selectedSession.abcEntries.filter(e => e.studentId === studentId);
+                const studentFreq = filteredData.frequencyEntries.filter(e => e.studentId === studentId);
+                const studentDur = filteredData.durationEntries.filter(e => e.studentId === studentId);
+                const studentInt = filteredData.intervalEntries.filter(e => e.studentId === studentId);
+                const studentABC = filteredData.abcEntries.filter(e => e.studentId === studentId);
                 const sessionLength = selectedSession.sessionLengthMinutes || 60;
 
                 return (
