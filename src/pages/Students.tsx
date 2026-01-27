@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plus, ChevronRight, Trash2 } from 'lucide-react';
+import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDataStore } from '@/store/dataStore';
-import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
+import { BulkAddBehavior } from '@/components/BulkAddBehavior';
+import { StudentComparison } from '@/components/StudentComparison';
+
+type FilterType = 'active' | 'archived' | 'all';
 
 export default function Students() {
   const navigate = useNavigate();
-  const { students, addStudent, removeStudent } = useDataStore();
+  const { students, addStudent, unarchiveStudent } = useDataStore();
   const [newStudentName, setNewStudentName] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterType>('active');
 
   const handleAddStudent = () => {
     if (newStudentName.trim()) {
@@ -20,10 +24,14 @@ export default function Students() {
     }
   };
 
-  const handleDeleteStudent = (id: string) => {
-    removeStudent(id);
-    setDeleteConfirm(null);
-  };
+  const filteredStudents = students.filter(s => {
+    if (filter === 'active') return !s.isArchived;
+    if (filter === 'archived') return s.isArchived;
+    return true;
+  });
+
+  const activeCount = students.filter(s => !s.isArchived).length;
+  const archivedCount = students.filter(s => s.isArchived).length;
 
   return (
     <div className="space-y-6">
@@ -37,7 +45,7 @@ export default function Students() {
       </div>
 
       {/* Add Student */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input
           placeholder="Enter student name..."
           value={newStudentName}
@@ -49,38 +57,86 @@ export default function Students() {
           <Plus className="w-4 h-4 mr-2" />
           Add Student
         </Button>
+        <BulkAddBehavior />
+        <StudentComparison />
       </div>
+
+      {/* Filter Tabs */}
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+        <TabsList>
+          <TabsTrigger value="active" className="gap-2">
+            <Users className="w-4 h-4" />
+            Active
+            <Badge variant="secondary" className="ml-1">{activeCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="gap-2">
+            <Archive className="w-4 h-4" />
+            Archived
+            <Badge variant="secondary" className="ml-1">{archivedCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="all" className="gap-2">
+            All
+            <Badge variant="secondary" className="ml-1">{students.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Student List */}
       <div className="grid gap-3">
-        {students.length === 0 ? (
+        {filteredStudents.length === 0 ? (
           <div className="bg-card border border-border rounded-xl p-8 text-center">
-            <User className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-foreground mb-2">
-              No Students Yet
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Add a student above to get started with behavior tracking.
-            </p>
+            {filter === 'archived' ? (
+              <>
+                <Archive className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-foreground mb-2">
+                  No Archived Students
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Students you archive will appear here.
+                </p>
+              </>
+            ) : (
+              <>
+                <User className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-foreground mb-2">
+                  No Students Yet
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Add a student above to get started with behavior tracking.
+                </p>
+              </>
+            )}
           </div>
         ) : (
-          students.map((student) => (
+          filteredStudents.map((student) => (
             <div
               key={student.id}
-              className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer"
+              className={`bg-card border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer ${
+                student.isArchived ? 'border-muted bg-muted/30' : 'border-border'
+              }`}
               onClick={() => navigate(`/students/${student.id}`)}
             >
               <div className="flex items-center gap-4">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    student.isArchived ? 'opacity-50' : ''
+                  }`}
                   style={{ backgroundColor: `${student.color}20` }}
                 >
                   <User className="w-6 h-6" style={{ color: student.color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {student.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">
+                      {student.name}
+                    </h3>
+                    {student.isArchived && (
+                      <Badge variant="outline" className="text-xs">
+                        <Archive className="w-3 h-3 mr-1" />
+                        Archived
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="secondary" className="text-xs">
                       {student.behaviors.length} behaviors
@@ -97,34 +153,26 @@ export default function Students() {
                     ) : null}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteConfirm(student.id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {student.isArchived && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      unarchiveStudent(student.id);
+                    }}
+                  >
+                    <ArchiveRestore className="w-4 h-4" />
+                    Restore
+                  </Button>
+                )}
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </div>
             </div>
           ))
         )}
       </div>
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        open={!!deleteConfirm}
-        onOpenChange={() => setDeleteConfirm(null)}
-        title="Delete Student"
-        description="Are you sure you want to delete this student? All their data, behaviors, and goals will be permanently removed. This action cannot be undone."
-        confirmLabel="Delete"
-        onConfirm={() => deleteConfirm && handleDeleteStudent(deleteConfirm)}
-        variant="destructive"
-      />
     </div>
   );
 }
