@@ -9,6 +9,10 @@ import { SessionDataReview } from '@/components/SessionDataReview';
 import { EnhancedABCPopup } from '@/components/EnhancedABCPopup';
 import { BehaviorTrendCharts } from '@/components/BehaviorTrendCharts';
 import { SessionReportGenerator } from '@/components/SessionReportGenerator';
+import { BehaviorGoalsManager } from '@/components/BehaviorGoalsManager';
+import { ScatterplotAnalysis } from '@/components/ScatterplotAnalysis';
+import { NovelBehaviorRecorder } from '@/components/NovelBehaviorRecorder';
+import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -41,6 +45,8 @@ const Index = () => {
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <BehaviorGoalsManager />
+              <ScatterplotAnalysis />
               <BehaviorTrendCharts />
               <SessionReportGenerator />
               <SessionDataReview />
@@ -58,12 +64,12 @@ const Index = () => {
           <DataSummary />
         </div>
 
-        {/* Enhanced ABC Popup - Show when ABC behaviors exist */}
-        {hasABCBehaviors && (
-          <div className="flex justify-center">
-            <EnhancedABCPopup />
-          </div>
-        )}
+        {/* Quick Actions Row */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          <NovelBehaviorRecorder />
+          {hasABCBehaviors && <EnhancedABCPopup />}
+          {selectedStudentIds.length > 0 && <QuickABCCustomizer />}
+        </div>
 
         {/* Synced Interval Controller */}
         {hasIntervalBehaviors && (

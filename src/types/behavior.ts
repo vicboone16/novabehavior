@@ -2,6 +2,22 @@ export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc'
 
 export type BehaviorFunction = 'attention' | 'escape' | 'tangible' | 'sensory' | 'automatic' | 'unknown';
 
+export type GoalDirection = 'increase' | 'decrease' | 'maintain';
+export type GoalMetric = 'frequency' | 'percentage' | 'duration' | 'rate';
+
+export interface BehaviorGoal {
+  id: string;
+  studentId: string;
+  behaviorId: string;
+  direction: GoalDirection;
+  metric: GoalMetric;
+  targetValue: number;
+  baseline?: number;
+  startDate: Date;
+  endDate?: Date;
+  notes?: string;
+}
+
 export interface Behavior {
   id: string;
   name: string;
