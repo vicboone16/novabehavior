@@ -22,6 +22,18 @@ interface CollapsedState {
   behaviors: { [key: string]: boolean }; // studentId-behaviorId -> collapsed
 }
 
+interface TrashItem {
+  id: string;
+  type: 'frequency' | 'duration' | 'interval' | 'abc' | 'session';
+  data: any;
+  deletedAt: Date;
+  studentName?: string;
+  behaviorName?: string;
+  description: string;
+}
+
+const TRASH_EXPIRY_MS = 20 * 60 * 1000; // 20 minutes
+
 interface SessionFocus {
   enabled: boolean;
   activeBehaviors: { [key: string]: boolean }; // studentId-behaviorId -> active for session
@@ -50,6 +62,7 @@ interface DataState {
   collapsedState: CollapsedState;
   sessionFocus: SessionFocus;
   studentIntervalStatus: StudentIntervalStatus[]; // Track late arrivals / early departures
+  trash: TrashItem[]; // Recoverable deleted items
   
   // Student actions
   addStudent: (name: string) => void;
@@ -159,6 +172,12 @@ interface DataState {
   getActiveStudentMethods: (studentId: string) => DataCollectionMethod[];
   resetStudentMethods: (studentId: string) => void;
   
+  // Trash/Recovery actions
+  moveToTrash: (type: TrashItem['type'], data: any, description: string, studentName?: string, behaviorName?: string) => void;
+  restoreFromTrash: (id: string) => void;
+  clearTrashItem: (id: string) => void;
+  clearExpiredTrash: () => void;
+  
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
@@ -200,6 +219,7 @@ export const useDataStore = create<DataState>()(
       collapsedState: { methods: {}, behaviors: {} },
       sessionFocus: DEFAULT_SESSION_FOCUS,
       studentIntervalStatus: [],
+      trash: [],
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -1114,6 +1134,62 @@ export const useDataStore = create<DataState>()(
       },
 
       resetSessionData: () => {
+        // Move current session data to trash before clearing
+        const state = get();
+        const now = new Date();
+        
+        // Add frequency entries to trash
+        state.frequencyEntries.forEach((entry) => {
+          const student = state.students.find(s => s.id === entry.studentId);
+          const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+          if (entry.count > 0) {
+            get().moveToTrash(
+              'frequency',
+              entry,
+              `${behavior?.name || 'Unknown'}: ${entry.count} occurrences`,
+              student?.name,
+              behavior?.name
+            );
+          }
+        });
+
+        // Add duration entries to trash
+        state.durationEntries.filter(e => e.endTime).forEach((entry) => {
+          const student = state.students.find(s => s.id === entry.studentId);
+          const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+          get().moveToTrash(
+            'duration',
+            entry,
+            `${behavior?.name || 'Unknown'}: ${entry.duration}s duration`,
+            student?.name,
+            behavior?.name
+          );
+        });
+
+        // Add interval entries to trash (grouped by student/behavior)
+        const intervalGroups = new Map<string, IntervalEntry[]>();
+        state.intervalEntries.forEach((entry) => {
+          const key = `${entry.studentId}-${entry.behaviorId}`;
+          if (!intervalGroups.has(key)) {
+            intervalGroups.set(key, []);
+          }
+          intervalGroups.get(key)!.push(entry);
+        });
+        intervalGroups.forEach((entries, key) => {
+          const [studentId, behaviorId] = key.split('-');
+          const student = state.students.find(s => s.id === studentId);
+          const behavior = student?.behaviors.find(b => b.id === behaviorId);
+          const occurred = entries.filter(e => e.occurred && !e.voided).length;
+          const total = entries.filter(e => !e.voided).length;
+          get().moveToTrash(
+            'interval',
+            entries,
+            `${behavior?.name || 'Unknown'}: ${occurred}/${total} intervals`,
+            student?.name,
+            behavior?.name
+          );
+        });
+
         set({
           frequencyEntries: [],
           durationEntries: [],
@@ -1124,6 +1200,76 @@ export const useDataStore = create<DataState>()(
           sessionLengthOverrides: [],
           sessionFocus: DEFAULT_SESSION_FOCUS,
         });
+      },
+
+      // Trash/Recovery functions
+      moveToTrash: (type, data, description, studentName, behaviorName) => {
+        set((state) => ({
+          trash: [
+            ...state.trash,
+            {
+              id: crypto.randomUUID(),
+              type,
+              data,
+              deletedAt: new Date(),
+              studentName,
+              behaviorName,
+              description,
+            },
+          ],
+        }));
+      },
+
+      restoreFromTrash: (id) => {
+        const state = get();
+        const item = state.trash.find((t) => t.id === id);
+        if (!item) return;
+
+        set((s) => {
+          const newTrash = s.trash.filter((t) => t.id !== id);
+          
+          switch (item.type) {
+            case 'frequency':
+              return {
+                trash: newTrash,
+                frequencyEntries: [...s.frequencyEntries, item.data],
+              };
+            case 'duration':
+              return {
+                trash: newTrash,
+                durationEntries: [...s.durationEntries, item.data],
+              };
+            case 'interval':
+              // item.data is an array of IntervalEntry
+              return {
+                trash: newTrash,
+                intervalEntries: [...s.intervalEntries, ...item.data],
+              };
+            case 'abc':
+              return {
+                trash: newTrash,
+                abcEntries: [...s.abcEntries, item.data],
+              };
+            default:
+              return { trash: newTrash };
+          }
+        });
+      },
+
+      clearTrashItem: (id) => {
+        set((state) => ({
+          trash: state.trash.filter((t) => t.id !== id),
+        }));
+      },
+
+      clearExpiredTrash: () => {
+        const now = Date.now();
+        set((state) => ({
+          trash: state.trash.filter((t) => {
+            const deletedTime = new Date(t.deletedAt).getTime();
+            return now - deletedTime < TRASH_EXPIRY_MS;
+          }),
+        }));
       },
     }),
     {

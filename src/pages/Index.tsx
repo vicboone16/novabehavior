@@ -15,6 +15,7 @@ import { NovelBehaviorRecorder } from '@/components/NovelBehaviorRecorder';
 import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { DataExportManager } from '@/components/DataExportManager';
+import { TrashRecovery } from '@/components/TrashRecovery';
 import { useDataStore } from '@/store/dataStore';
 
 const Index = () => {
@@ -47,6 +48,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <TrashRecovery />
               <BehaviorGoalsManager />
               <ScatterplotAnalysis />
               <BehaviorTrendCharts />
