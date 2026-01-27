@@ -246,6 +246,7 @@ export function CompactIntervalTracker({
         totalIntervals={sessionConfig.totalIntervals}
         currentInterval={effectiveInterval}
         isRunning={effectiveRunning}
+        showBulkVoidButton={true}
       />
     </div>
   );
