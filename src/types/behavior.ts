@@ -14,6 +14,16 @@ export interface Student {
   name: string;
   behaviors: Behavior[];
   color: string;
+  customAntecedents?: string[];
+  customConsequences?: string[];
+}
+
+export interface ABCBehaviorEntry {
+  behaviorId: string;
+  behaviorName: string;
+  frequencyCount: number;
+  hasDuration?: boolean;
+  durationMinutes?: number;
 }
 
 export interface ABCEntry {
@@ -23,13 +33,13 @@ export interface ABCEntry {
   antecedent: string;
   antecedents?: string[]; // Multiple antecedents
   behavior: string;
-  behaviors?: string[]; // Multiple behaviors
+  behaviors?: ABCBehaviorEntry[]; // Multiple behaviors with individual counts/durations
   consequence: string;
   consequences?: string[]; // Multiple consequences
   functions?: BehaviorFunction[]; // Hypothesized functions
-  frequencyCount: number; // Default 1
+  frequencyCount: number; // Legacy - total count
   hasDuration?: boolean;
-  durationMinutes?: number; // Duration in minutes to 0.1
+  durationMinutes?: number; // Legacy - total duration
   timestamp: Date;
   sessionId?: string;
 }
