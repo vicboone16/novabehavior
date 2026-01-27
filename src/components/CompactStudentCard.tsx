@@ -12,13 +12,16 @@ import {
   GripVertical, 
   Minimize2, 
   Maximize2,
-  Eye,
-  EyeOff 
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useDataStore } from '@/store/dataStore';
 import { useSyncedIntervalState } from './SyncedIntervalController';
 
@@ -27,6 +30,7 @@ interface CompactStudentCardProps {
 }
 
 const DEFAULT_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
+const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
 export function CompactStudentCard({ student }: CompactStudentCardProps) {
   const { 
@@ -42,6 +46,10 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     sessionFocus,
     isSessionBehaviorActive,
     getSessionBehaviorMethods,
+    isStudentMethodActive,
+    toggleStudentMethod,
+    getActiveStudentMethods,
+    resetStudentMethods,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
@@ -49,8 +57,11 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
 
-  // Filter behaviors based on session focus mode
+  // Filter behaviors based on session focus mode and student method toggles
   const getActiveBehaviorsForMethod = (method: DataCollectionMethod) => {
+    // First check if this method is enabled for this student
+    if (!isStudentMethodActive(student.id, method)) return [];
+    
     return student.behaviors.filter(b => {
       const behaviorMethods = b.methods || [b.type];
       if (!behaviorMethods.includes(method)) return false;
@@ -65,6 +76,9 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
       return true;
     });
   };
+
+  const activeStudentMethods = getActiveStudentMethods(student.id);
+  const hasMethodFilter = activeStudentMethods.length < ALL_METHODS.length;
 
   const frequencyBehaviors = getActiveBehaviorsForMethod('frequency');
   const durationBehaviors = getActiveBehaviorsForMethod('duration');
@@ -282,9 +296,67 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
           </p>
         </div>
         
-        {/* Collapse/Expand All buttons */}
+        {/* Method Filter & Collapse/Expand buttons */}
         <TooltipProvider>
           <div className="flex gap-1">
+            {/* Method Filter Popover */}
+            <Popover>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={hasMethodFilter ? "default" : "ghost"}
+                      size="sm"
+                      className={`h-6 w-6 p-0 ${hasMethodFilter ? 'bg-primary/80' : ''}`}
+                    >
+                      <Filter className="w-3 h-3" />
+                    </Button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Filter methods
+                </TooltipContent>
+              </Tooltip>
+              <PopoverContent className="w-48 p-2" align="end">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Methods</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-1 text-xs"
+                      onClick={() => resetStudentMethods(student.id)}
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      Reset
+                    </Button>
+                  </div>
+                  {ALL_METHODS.map(method => {
+                    const isActive = isStudentMethodActive(student.id, method);
+                    const hasBehaviorsForMethod = student.behaviors.some(b => 
+                      (b.methods || [b.type]).includes(method)
+                    );
+                    
+                    if (!hasBehaviorsForMethod) return null;
+                    
+                    return (
+                      <div key={method} className="flex items-center justify-between">
+                        <Label className="text-xs cursor-pointer" htmlFor={`method-${student.id}-${method}`}>
+                          {METHOD_LABELS[method]}
+                        </Label>
+                        <Switch
+                          id={`method-${student.id}-${method}`}
+                          checked={isActive}
+                          onCheckedChange={() => toggleStudentMethod(student.id, method)}
+                          className="scale-75"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
