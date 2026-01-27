@@ -1,21 +1,155 @@
-import { Student } from '@/types/behavior';
+import { useState } from 'react';
+import { Student, DataCollectionMethod, METHOD_LABELS } from '@/types/behavior';
 import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
 import { IntervalTracker } from './IntervalTracker';
-import { User } from 'lucide-react';
+import { User, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useDataStore } from '@/store/dataStore';
+import { useSyncedIntervalState } from './SyncedIntervalController';
 
 interface StudentDataCardProps {
   student: Student;
 }
 
+const DEFAULT_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
+
 export function StudentDataCard({ student }: StudentDataCardProps) {
-  const frequencyBehaviors = student.behaviors.filter(b => b.type === 'frequency');
-  const durationBehaviors = student.behaviors.filter(b => b.type === 'duration');
-  const abcBehaviors = student.behaviors.filter(b => b.type === 'abc');
-  const intervalBehaviors = student.behaviors.filter(b => b.type === 'interval');
+  const { getTrackerOrder, setTrackerOrder, syncedIntervalsRunning } = useDataStore();
+  const { syncedInterval, syncedTime } = useSyncedIntervalState();
+  
+  const [order, setOrder] = useState<DataCollectionMethod[]>(() => 
+    getTrackerOrder(student.id) || DEFAULT_ORDER
+  );
+
+  // Get behaviors by method type (accounting for multi-method behaviors)
+  const getBehaviorsForMethod = (method: DataCollectionMethod) => {
+    return student.behaviors.filter(b => 
+      (b.methods || [b.type]).includes(method)
+    );
+  };
+
+  const frequencyBehaviors = getBehaviorsForMethod('frequency');
+  const durationBehaviors = getBehaviorsForMethod('duration');
+  const abcBehaviors = getBehaviorsForMethod('abc');
+  const intervalBehaviors = getBehaviorsForMethod('interval');
 
   const hasBehaviors = student.behaviors.length > 0;
+
+  const moveUp = (method: DataCollectionMethod) => {
+    const idx = order.indexOf(method);
+    if (idx > 0) {
+      const newOrder = [...order];
+      [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+      setOrder(newOrder);
+      setTrackerOrder(student.id, newOrder);
+    }
+  };
+
+  const moveDown = (method: DataCollectionMethod) => {
+    const idx = order.indexOf(method);
+    if (idx < order.length - 1) {
+      const newOrder = [...order];
+      [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+      setOrder(newOrder);
+      setTrackerOrder(student.id, newOrder);
+    }
+  };
+
+  const renderTrackerSection = (method: DataCollectionMethod, index: number) => {
+    let behaviors: typeof student.behaviors = [];
+    let TrackerComponent: React.ComponentType<any> | null = null;
+    
+    switch (method) {
+      case 'frequency':
+        behaviors = frequencyBehaviors;
+        TrackerComponent = FrequencyTracker;
+        break;
+      case 'duration':
+        behaviors = durationBehaviors;
+        TrackerComponent = DurationTracker;
+        break;
+      case 'interval':
+        behaviors = intervalBehaviors;
+        break;
+      case 'abc':
+        behaviors = abcBehaviors;
+        TrackerComponent = ABCTracker;
+        break;
+    }
+
+    if (behaviors.length === 0) return null;
+
+    return (
+      <div key={method} className="space-y-2 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <GripVertical className="w-3 h-3 text-muted-foreground" />
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {METHOD_LABELS[method]}
+            </h4>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0"
+              onClick={() => moveUp(method)}
+              disabled={index === 0}
+            >
+              <ChevronUp className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0"
+              onClick={() => moveDown(method)}
+              disabled={index === order.length - 1}
+            >
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+        {method === 'interval' ? (
+          behaviors.map(behavior => (
+            <IntervalTracker 
+              key={behavior.id}
+              studentId={student.id}
+              behavior={behavior}
+              studentColor={student.color}
+              syncedMode={syncedIntervalsRunning}
+              syncedRunning={syncedIntervalsRunning}
+              syncedInterval={syncedInterval}
+              syncedTime={syncedTime}
+            />
+          ))
+        ) : (
+          behaviors.map(behavior => (
+            TrackerComponent && (
+              <TrackerComponent 
+                key={behavior.id}
+                studentId={student.id}
+                behavior={behavior}
+                studentColor={student.color}
+              />
+            )
+          ))
+        )}
+      </div>
+    );
+  };
+
+  // Filter order to only show methods that have behaviors
+  const activeOrder = order.filter(method => {
+    switch (method) {
+      case 'frequency': return frequencyBehaviors.length > 0;
+      case 'duration': return durationBehaviors.length > 0;
+      case 'interval': return intervalBehaviors.length > 0;
+      case 'abc': return abcBehaviors.length > 0;
+      default: return false;
+    }
+  });
 
   return (
     <div className="student-card">
@@ -46,73 +180,8 @@ export function StudentDataCard({ student }: StudentDataCardProps) {
         </p>
       )}
 
-      {/* Frequency Behaviors */}
-      {frequencyBehaviors.length > 0 && (
-        <div className="space-y-2 mb-4">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Frequency
-          </h4>
-          {frequencyBehaviors.map(behavior => (
-            <FrequencyTracker 
-              key={behavior.id}
-              studentId={student.id}
-              behavior={behavior}
-              studentColor={student.color}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Duration Behaviors */}
-      {durationBehaviors.length > 0 && (
-        <div className="space-y-2 mb-4">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Duration
-          </h4>
-          {durationBehaviors.map(behavior => (
-            <DurationTracker 
-              key={behavior.id}
-              studentId={student.id}
-              behavior={behavior}
-              studentColor={student.color}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Interval Behaviors */}
-      {intervalBehaviors.length > 0 && (
-        <div className="space-y-2 mb-4">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Interval Sampling
-          </h4>
-          {intervalBehaviors.map(behavior => (
-            <IntervalTracker 
-              key={behavior.id}
-              studentId={student.id}
-              behavior={behavior}
-              studentColor={student.color}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* ABC Behaviors */}
-      {abcBehaviors.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            ABC Data
-          </h4>
-          {abcBehaviors.map(behavior => (
-            <ABCTracker 
-              key={behavior.id}
-              studentId={student.id}
-              behavior={behavior}
-              studentColor={student.color}
-            />
-          ))}
-        </div>
-      )}
+      {/* Render trackers in order */}
+      {activeOrder.map((method, index) => renderTrackerSection(method, index))}
     </div>
   );
 }

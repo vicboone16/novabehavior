@@ -1,7 +1,10 @@
+export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc';
+
 export interface Behavior {
   id: string;
   name: string;
-  type: 'frequency' | 'duration' | 'interval' | 'abc';
+  type: DataCollectionMethod; // For backwards compat, this is the primary method
+  methods: DataCollectionMethod[]; // Multiple methods per behavior
 }
 
 export interface Student {
@@ -19,6 +22,7 @@ export interface ABCEntry {
   behavior: string;
   consequence: string;
   timestamp: Date;
+  sessionId?: string;
 }
 
 export interface FrequencyEntry {
@@ -27,6 +31,7 @@ export interface FrequencyEntry {
   behaviorId: string;
   count: number;
   timestamp: Date;
+  sessionId?: string;
 }
 
 export interface DurationEntry {
@@ -36,6 +41,7 @@ export interface DurationEntry {
   duration: number; // in seconds
   startTime: Date;
   endTime?: Date;
+  sessionId?: string;
 }
 
 export interface IntervalEntry {
@@ -45,12 +51,28 @@ export interface IntervalEntry {
   intervalNumber: number;
   occurred: boolean;
   timestamp: Date;
+  sessionId?: string;
 }
 
 export interface SessionConfig {
   intervalLength: number; // in seconds
   totalIntervals: number;
   samplingType: 'whole' | 'partial' | 'momentary';
+}
+
+export interface Session {
+  id: string;
+  date: Date;
+  notes: string;
+  studentIds: string[];
+  abcEntries: ABCEntry[];
+  frequencyEntries: FrequencyEntry[];
+  durationEntries: DurationEntry[];
+  intervalEntries: IntervalEntry[];
+}
+
+export interface TrackerOrder {
+  [studentId: string]: DataCollectionMethod[];
 }
 
 export const ANTECEDENT_OPTIONS = [
@@ -83,3 +105,10 @@ export const STUDENT_COLORS = [
   'hsl(160, 84%, 39%)',
   'hsl(45, 93%, 47%)',
 ];
+
+export const METHOD_LABELS: Record<DataCollectionMethod, string> = {
+  frequency: 'Frequency',
+  duration: 'Duration',
+  interval: 'Interval',
+  abc: 'ABC'
+};

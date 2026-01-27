@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Student, Behavior, ABCEntry, FrequencyEntry, DurationEntry, IntervalEntry, SessionConfig, STUDENT_COLORS } from '@/types/behavior';
+import { 
+  Student, 
+  Behavior, 
+  ABCEntry, 
+  FrequencyEntry, 
+  DurationEntry, 
+  IntervalEntry, 
+  SessionConfig, 
+  Session,
+  TrackerOrder,
+  DataCollectionMethod,
+  STUDENT_COLORS 
+} from '@/types/behavior';
 
 interface DataState {
   students: Student[];
@@ -10,6 +22,11 @@ interface DataState {
   durationEntries: DurationEntry[];
   intervalEntries: IntervalEntry[];
   sessionConfig: SessionConfig;
+  sessions: Session[];
+  currentSessionId: string | null;
+  sessionNotes: string;
+  trackerOrder: TrackerOrder;
+  syncedIntervalsRunning: boolean;
   
   // Student actions
   addStudent: (name: string) => void;
@@ -20,6 +37,7 @@ interface DataState {
   
   // Behavior actions
   addBehavior: (studentId: string, behavior: Omit<Behavior, 'id'>) => void;
+  addBehaviorWithMethods: (studentId: string, name: string, methods: DataCollectionMethod[]) => void;
   removeBehavior: (studentId: string, behaviorId: string) => void;
   toggleBehaviorForStudent: (studentId: string, behaviorId: string) => void;
   
@@ -44,10 +62,27 @@ interface DataState {
   // Session config
   updateSessionConfig: (config: Partial<SessionConfig>) => void;
   
+  // Session management
+  saveSession: () => void;
+  setSessionNotes: (notes: string) => void;
+  getSessions: () => Session[];
+  getSessionsByDate: (date: Date) => Session[];
+  getSessionsByStudent: (studentId: string) => Session[];
+  deleteSession: (sessionId: string) => void;
+  
+  // Tracker order
+  setTrackerOrder: (studentId: string, order: DataCollectionMethod[]) => void;
+  getTrackerOrder: (studentId: string) => DataCollectionMethod[];
+  
+  // Synced intervals
+  setSyncedIntervalsRunning: (running: boolean) => void;
+  
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
 }
+
+const DEFAULT_TRACKER_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
 export const useDataStore = create<DataState>()(
   persist(
@@ -63,6 +98,11 @@ export const useDataStore = create<DataState>()(
         totalIntervals: 6,
         samplingType: 'partial',
       },
+      sessions: [],
+      currentSessionId: null,
+      sessionNotes: '',
+      trackerOrder: {},
+      syncedIntervalsRunning: false,
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -102,10 +142,26 @@ export const useDataStore = create<DataState>()(
 
       addBehavior: (studentId, behavior) => {
         const id = crypto.randomUUID();
+        const methods = behavior.methods?.length ? behavior.methods : [behavior.type];
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
-              ? { ...s, behaviors: [...s.behaviors, { ...behavior, id }] }
+              ? { ...s, behaviors: [...s.behaviors, { ...behavior, id, methods }] }
+              : s
+          ),
+        }));
+      },
+
+      addBehaviorWithMethods: (studentId, name, methods) => {
+        const id = crypto.randomUUID();
+        const primaryType = methods[0] || 'frequency';
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? { 
+                  ...s, 
+                  behaviors: [...s.behaviors, { id, name, type: primaryType, methods }] 
+                }
               : s
           ),
         }));
@@ -129,7 +185,7 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           abcEntries: [
             ...state.abcEntries,
-            { ...entry, id: crypto.randomUUID(), timestamp: new Date() },
+            { ...entry, id: crypto.randomUUID(), timestamp: new Date(), sessionId: state.currentSessionId || undefined },
           ],
         }));
       },
@@ -157,6 +213,7 @@ export const useDataStore = create<DataState>()(
                 behaviorId,
                 count: 1,
                 timestamp: new Date(),
+                sessionId: state.currentSessionId || undefined,
               },
             ],
           };
@@ -198,6 +255,7 @@ export const useDataStore = create<DataState>()(
               behaviorId,
               duration: 0,
               startTime: new Date(),
+              sessionId: state.currentSessionId || undefined,
             },
           ],
         }));
@@ -254,6 +312,7 @@ export const useDataStore = create<DataState>()(
                 intervalNumber,
                 occurred,
                 timestamp: new Date(),
+                sessionId: state.currentSessionId || undefined,
               },
             ],
           };
@@ -272,6 +331,64 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
+      saveSession: () => {
+        const state = get();
+        const session: Session = {
+          id: crypto.randomUUID(),
+          date: new Date(),
+          notes: state.sessionNotes,
+          studentIds: state.selectedStudentIds,
+          abcEntries: [...state.abcEntries],
+          frequencyEntries: [...state.frequencyEntries],
+          durationEntries: [...state.durationEntries],
+          intervalEntries: [...state.intervalEntries],
+        };
+        set((state) => ({
+          sessions: [...state.sessions, session],
+          currentSessionId: session.id,
+        }));
+        return session;
+      },
+
+      setSessionNotes: (notes) => {
+        set({ sessionNotes: notes });
+      },
+
+      getSessions: () => {
+        return get().sessions;
+      },
+
+      getSessionsByDate: (date) => {
+        return get().sessions.filter((s) => {
+          const sessionDate = new Date(s.date);
+          return sessionDate.toDateString() === date.toDateString();
+        });
+      },
+
+      getSessionsByStudent: (studentId) => {
+        return get().sessions.filter((s) => s.studentIds.includes(studentId));
+      },
+
+      deleteSession: (sessionId) => {
+        set((state) => ({
+          sessions: state.sessions.filter((s) => s.id !== sessionId),
+        }));
+      },
+
+      setTrackerOrder: (studentId, order) => {
+        set((state) => ({
+          trackerOrder: { ...state.trackerOrder, [studentId]: order },
+        }));
+      },
+
+      getTrackerOrder: (studentId) => {
+        return get().trackerOrder[studentId] || DEFAULT_TRACKER_ORDER;
+      },
+
+      setSyncedIntervalsRunning: (running) => {
+        set({ syncedIntervalsRunning: running });
+      },
+
       resetAllData: () => {
         set({
           abcEntries: [],
@@ -286,6 +403,8 @@ export const useDataStore = create<DataState>()(
           frequencyEntries: [],
           durationEntries: [],
           intervalEntries: [],
+          sessionNotes: '',
+          currentSessionId: null,
         });
       },
     }),

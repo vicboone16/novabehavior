@@ -1,8 +1,12 @@
-import { BarChart3, FileText, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, FileText, Trash2, Download, Save, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useDataStore } from '@/store/dataStore';
+import { SessionHistory } from './SessionHistory';
 
 export function DataSummary() {
   const { 
@@ -12,8 +16,13 @@ export function DataSummary() {
     frequencyEntries, 
     durationEntries, 
     intervalEntries,
+    sessionNotes,
+    setSessionNotes,
+    saveSession,
     resetSessionData 
   } = useDataStore();
+
+  const [showNotes, setShowNotes] = useState(false);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
 
@@ -30,6 +39,74 @@ export function DataSummary() {
     return `${mins}m ${secs}s`;
   };
 
+  const handleSaveSession = () => {
+    saveSession();
+  };
+
+  const exportToCSV = () => {
+    let csv = 'Student,Behavior,Type,Value,Timestamp\n';
+    
+    // Frequency entries
+    frequencyEntries.forEach(entry => {
+      const student = students.find(s => s.id === entry.studentId);
+      const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Frequency","${entry.count}","${new Date(entry.timestamp).toISOString()}"\n`;
+    });
+
+    // Duration entries
+    durationEntries.filter(e => e.endTime).forEach(entry => {
+      const student = students.find(s => s.id === entry.studentId);
+      const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Duration","${entry.duration}s","${new Date(entry.startTime).toISOString()}"\n`;
+    });
+
+    // Interval entries
+    intervalEntries.forEach(entry => {
+      const student = students.find(s => s.id === entry.studentId);
+      const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+      csv += `"${student?.name || 'Unknown'}","${behavior?.name || 'Unknown'}","Interval ${entry.intervalNumber + 1}","${entry.occurred ? 'Yes' : 'No'}","${new Date(entry.timestamp).toISOString()}"\n`;
+    });
+
+    // ABC entries
+    abcEntries.forEach(entry => {
+      const student = students.find(s => s.id === entry.studentId);
+      csv += `"${student?.name || 'Unknown'}","${entry.behavior}","ABC","A: ${entry.antecedent} | C: ${entry.consequence}","${new Date(entry.timestamp).toISOString()}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `behavior-data-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToJSON = () => {
+    const data = {
+      exportDate: new Date().toISOString(),
+      notes: sessionNotes,
+      students: selectedStudents.map(s => ({
+        name: s.name,
+        behaviors: s.behaviors,
+      })),
+      frequencyEntries,
+      durationEntries: durationEntries.filter(e => e.endTime),
+      intervalEntries,
+      abcEntries,
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `behavior-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasData = totalABC > 0 || totalFrequency > 0 || totalDuration > 0 || totalIntervals > 0;
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -37,7 +114,8 @@ export function DataSummary() {
           <BarChart3 className="w-5 h-5 text-primary" />
           <h2 className="font-semibold text-foreground">Session Summary</h2>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
+          <SessionHistory />
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -103,7 +181,7 @@ export function DataSummary() {
                           <h5 className="text-xs font-medium text-muted-foreground mb-1">Interval</h5>
                           <div className="text-sm">
                             {student.behaviors
-                              .filter(b => b.type === 'interval')
+                              .filter(b => (b.methods || [b.type]).includes('interval'))
                               .map(behavior => {
                                 const entries = studentInt.filter(e => e.behaviorId === behavior.id);
                                 const occurred = entries.filter(e => e.occurred).length;
@@ -148,12 +226,32 @@ export function DataSummary() {
             onClick={resetSessionData}
           >
             <Trash2 className="w-4 h-4" />
-            Clear Session
+            Clear
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Session Notes */}
+      <Collapsible open={showNotes} onOpenChange={setShowNotes} className="mb-4">
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="gap-2 w-full justify-start">
+            <StickyNote className="w-4 h-4" />
+            Session Notes
+            {sessionNotes && <Badge variant="secondary" className="ml-2">Has notes</Badge>}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <Textarea
+            placeholder="Add notes about this session..."
+            value={sessionNotes}
+            onChange={(e) => setSessionNotes(e.target.value)}
+            className="min-h-[80px]"
+          />
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="bg-info/10 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-info">{totalFrequency}</p>
           <p className="text-xs text-muted-foreground">Frequency Events</p>
@@ -171,6 +269,24 @@ export function DataSummary() {
           <p className="text-xs text-muted-foreground">ABC Entries</p>
         </div>
       </div>
+
+      {/* Export & Save Actions */}
+      {hasData && (
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" onClick={handleSaveSession} className="gap-2">
+            <Save className="w-4 h-4" />
+            Save Session
+          </Button>
+          <Button size="sm" variant="outline" onClick={exportToCSV} className="gap-2">
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Button size="sm" variant="outline" onClick={exportToJSON} className="gap-2">
+            <Download className="w-4 h-4" />
+            Export JSON
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
