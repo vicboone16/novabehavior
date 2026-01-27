@@ -88,6 +88,8 @@ export default function StudentProfile() {
   const [editedName, setEditedName] = useState('');
   const [showHistoricalInterval, setShowHistoricalInterval] = useState(false);
   const [editSession, setEditSession] = useState<Session | null>(null);
+  const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<string | null>(null);
+  const { deleteSession } = useDataStore();
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -720,14 +722,24 @@ export default function StudentProfile() {
                               {sessionIntervals.length} intervals • {occurredCount}/{totalValid} ({percentage}%)
                             </p>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditSession(session)}
-                          >
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditSession(session)}
+                            >
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteSessionConfirm(session.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1054,7 +1066,22 @@ export default function StudentProfile() {
         variant="destructive"
       />
 
-      {/* Archive Confirmation */}
+      {/* Delete Historical Session Confirmation */}
+      <ConfirmDialog
+        open={!!deleteSessionConfirm}
+        onOpenChange={() => setDeleteSessionConfirm(null)}
+        title="Delete Historical Session"
+        description="Are you sure you want to delete this historical session? All interval data for this session will be permanently removed."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deleteSessionConfirm) {
+            deleteSession(deleteSessionConfirm);
+            setDeleteSessionConfirm(null);
+          }
+        }}
+        variant="destructive"
+      />
+
       <ConfirmDialog
         open={showArchiveConfirm}
         onOpenChange={setShowArchiveConfirm}
