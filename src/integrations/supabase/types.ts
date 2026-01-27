@@ -14,7 +14,212 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      session_data: {
+        Row: {
+          abc_data: Json | null
+          behavior_id: string
+          created_at: string
+          duration_seconds: number | null
+          event_type: string
+          id: string
+          interval_index: number | null
+          session_id: string
+          student_id: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          abc_data?: Json | null
+          behavior_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          event_type: string
+          id?: string
+          interval_index?: number | null
+          session_id: string
+          student_id: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          abc_data?: Json | null
+          behavior_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          event_type?: string
+          id?: string
+          interval_index?: number | null
+          session_id?: string
+          student_id?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_data_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          id: string
+          interval_length_seconds: number
+          name: string
+          session_length_minutes: number
+          start_time: string
+          student_ids: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          interval_length_seconds?: number
+          name: string
+          session_length_minutes?: number
+          start_time: string
+          student_ids?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          interval_length_seconds?: number
+          name?: string
+          session_length_minutes?: number
+          start_time?: string
+          student_ids?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_files: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          student_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          student_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          student_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_files_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          behaviors: Json | null
+          color: string
+          created_at: string
+          custom_antecedents: Json | null
+          custom_consequences: Json | null
+          goals: Json | null
+          id: string
+          is_archived: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          behaviors?: Json | null
+          color?: string
+          created_at?: string
+          custom_antecedents?: Json | null
+          custom_consequences?: Json | null
+          goals?: Json | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          behaviors?: Json | null
+          color?: string
+          created_at?: string
+          custom_antecedents?: Json | null
+          custom_consequences?: Json | null
+          goals?: Json | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

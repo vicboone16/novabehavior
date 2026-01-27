@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check 
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,8 @@ import {
 } from '@/types/behavior';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
+import { StudentFileManager } from '@/components/StudentFileManager';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -379,7 +381,7 @@ export default function StudentProfile() {
       </div>
 
       <Tabs defaultValue="behaviors" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="behaviors" className="gap-2">
             <Activity className="w-4 h-4" />
             Behaviors
@@ -395,6 +397,10 @@ export default function StudentProfile() {
           <TabsTrigger value="data" className="gap-2">
             <Clock className="w-4 h-4" />
             Add Data
+          </TabsTrigger>
+          <TabsTrigger value="files" className="gap-2">
+            <FolderOpen className="w-4 h-4" />
+            Files
           </TabsTrigger>
         </TabsList>
 
@@ -799,6 +805,11 @@ export default function StudentProfile() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Files Tab */}
+        <TabsContent value="files" className="space-y-4">
+          <StudentFileManager studentId={student.id} studentName={student.name} />
         </TabsContent>
       </Tabs>
 
