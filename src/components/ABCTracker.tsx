@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
 
 interface ABCTrackerProps {
@@ -26,6 +27,7 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
   const [selectedConsequence, setSelectedConsequence] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [showEntries, setShowEntries] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const student = students.find(s => s.id === studentId);
   const customAntecedents = getStudentAntecedents(studentId);
@@ -90,8 +92,11 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
     setSelectedConsequence(null);
   };
 
-  const handleDelete = (entryId: string) => {
-    deleteABCEntry(entryId);
+  const handleDelete = () => {
+    if (deleteConfirm) {
+      deleteABCEntry(deleteConfirm);
+      setDeleteConfirm(null);
+    }
   };
 
   const isComplete = selectedAntecedent && selectedBehavior && selectedConsequence;
@@ -237,7 +242,7 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(entry.id)}
+                          onClick={() => setDeleteConfirm(entry.id)}
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -268,6 +273,17 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={() => setDeleteConfirm(null)}
+        title="Delete ABC Entry"
+        description="Are you sure you want to delete this ABC entry? It will be moved to the recovery trash for 20 minutes."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
     </div>
   );
 }
