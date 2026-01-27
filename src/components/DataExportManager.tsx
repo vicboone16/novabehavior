@@ -1,12 +1,12 @@
 import { useState, useMemo, useRef } from 'react';
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, subWeeks, subMonths, isWithinInterval, getHours, getDay } from 'date-fns';
 import { 
   Download, FileSpreadsheet, FileText, Calendar, User, Activity, 
-  Filter, Printer, CalendarDays, CalendarRange, TrendingUp, ExternalLink, BarChart3
+  Filter, Printer, CalendarDays, CalendarRange, TrendingUp, ExternalLink, BarChart3, Clock
 } from 'lucide-react';
 import { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, HeadingLevel, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -56,6 +56,10 @@ export function DataExportManager() {
   
   // Export options
   const [includeTrendCharts, setIncludeTrendCharts] = useState<boolean>(true);
+  const [includeHeatmap, setIncludeHeatmap] = useState<boolean>(true);
+
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
   // Get date range based on frame
   const dateRange = useMemo(() => {
@@ -204,6 +208,71 @@ export function DataExportManager() {
       };
     });
   }, [filteredSessions, selectedStudentIds, selectedBehaviorIds]);
+
+  // Heatmap data for time-based analysis
+  const heatmapData = useMemo(() => {
+    const slots: Map<string, { day: number; hour: number; count: number; behaviors: string[] }> = new Map();
+    
+    // Process all frequency entries from filtered sessions
+    aggregatedData.frequencyEntries.forEach(entry => {
+      const student = students.find(s => s.id === entry.studentId);
+      const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+      if (!behavior) return;
+
+      (entry.timestamps || [new Date(entry.timestamp)]).forEach(ts => {
+        const date = new Date(ts);
+        const day = getDay(date);
+        const hour = getHours(date);
+        const key = `${day}-${hour}`;
+        
+        const existing = slots.get(key) || { day, hour, count: 0, behaviors: [] };
+        existing.count += 1;
+        if (!existing.behaviors.includes(behavior.name)) {
+          existing.behaviors.push(behavior.name);
+        }
+        slots.set(key, existing);
+      });
+    });
+
+    // Process ABC entries
+    aggregatedData.abcEntries.forEach(entry => {
+      const date = new Date(entry.timestamp);
+      const day = getDay(date);
+      const hour = getHours(date);
+      const key = `${day}-${hour}`;
+      
+      const existing = slots.get(key) || { day, hour, count: 0, behaviors: [] };
+      existing.count += entry.frequencyCount || 1;
+      const behaviorNames = entry.behaviors?.map(b => b.behaviorName) || [entry.behavior];
+      behaviorNames.forEach(name => {
+        if (!existing.behaviors.includes(name)) {
+          existing.behaviors.push(name);
+        }
+      });
+      slots.set(key, existing);
+    });
+
+    return Array.from(slots.values());
+  }, [aggregatedData, students]);
+
+  const heatmapMatrix = useMemo(() => {
+    const matrix: number[][] = Array(7).fill(null).map(() => Array(24).fill(0));
+    heatmapData.forEach(slot => {
+      matrix[slot.day][slot.hour] = slot.count;
+    });
+    return matrix;
+  }, [heatmapData]);
+
+  const maxHeatmapCount = useMemo(() => Math.max(...heatmapData.map(t => t.count), 1), [heatmapData]);
+
+  const getHeatColor = (count: number) => {
+    if (count === 0) return 'hsl(var(--muted))';
+    const intensity = count / maxHeatmapCount;
+    if (intensity < 0.25) return 'hsl(199, 89%, 80%)';
+    if (intensity < 0.5) return 'hsl(199, 89%, 60%)';
+    if (intensity < 0.75) return 'hsl(38, 92%, 50%)';
+    return 'hsl(0, 72%, 51%)';
+  };
 
   const getStudentName = (studentId: string) => 
     students.find(s => s.id === studentId)?.name || 'Unknown';
@@ -900,6 +969,19 @@ export function DataExportManager() {
               Include Trend Charts
             </Label>
           </div>
+
+          {/* Include Heatmap Toggle */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="include-heatmap"
+              checked={includeHeatmap}
+              onCheckedChange={(checked) => setIncludeHeatmap(checked === true)}
+            />
+            <Label htmlFor="include-heatmap" className="text-xs cursor-pointer flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Include Heatmap
+            </Label>
+          </div>
         </div>
 
         {/* Report Preview */}
@@ -1033,6 +1115,104 @@ export function DataExportManager() {
                             </ResponsiveContainer>
                           </div>
                         )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Time-Based Heatmap */}
+                {includeHeatmap && heatmapData.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Time-Based Behavior Heatmap
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Shows when behaviors occur most frequently by day and hour
+                      </p>
+                      
+                      {/* Legend */}
+                      <div className="flex items-center gap-4 text-xs mb-3">
+                        <span className="text-muted-foreground">Frequency:</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(var(--muted))' }} />
+                          <span>None</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(199, 89%, 80%)' }} />
+                          <span>Low</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(199, 89%, 60%)' }} />
+                          <span>Medium</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(38, 92%, 50%)' }} />
+                          <span>High</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(0, 72%, 51%)' }} />
+                          <span>Very High</span>
+                        </div>
+                      </div>
+
+                      {/* Heatmap Grid */}
+                      <div className="overflow-x-auto">
+                        <div className="min-w-[600px]">
+                          {/* Hour labels */}
+                          <div className="flex mb-1">
+                            <div className="w-12" />
+                            {HOURS.filter(h => h % 2 === 0).map(hour => (
+                              <div key={hour} className="flex-1 text-center text-[10px] text-muted-foreground">
+                                {hour === 0 ? '12a' : hour < 12 ? `${hour}a` : hour === 12 ? '12p' : `${hour - 12}p`}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Grid rows */}
+                          {DAYS.map((day, dayIdx) => (
+                            <div key={day} className="flex items-center gap-0.5 mb-0.5">
+                              <div className="w-12 text-xs text-muted-foreground font-medium">{day}</div>
+                              <div className="flex-1 flex gap-0.5">
+                                {HOURS.map(hour => {
+                                  const count = heatmapMatrix[dayIdx][hour];
+                                  return (
+                                    <div
+                                      key={hour}
+                                      className="flex-1 h-6 rounded-sm transition-colors"
+                                      style={{ backgroundColor: getHeatColor(count) }}
+                                      title={`${day} ${hour}:00 - ${count} occurrence${count !== 1 ? 's' : ''}`}
+                                    >
+                                      {count > 0 && (
+                                        <span className="flex items-center justify-center h-full text-[9px] font-medium text-white">
+                                          {count}
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Peak Times Summary */}
+                      <div className="mt-3 text-xs">
+                        <span className="font-medium">Peak Times: </span>
+                        {(() => {
+                          const sorted = [...heatmapData].sort((a, b) => b.count - a.count).slice(0, 3);
+                          if (sorted.length === 0) return <span className="text-muted-foreground">No data</span>;
+                          return sorted.map((slot, i) => (
+                            <span key={i}>
+                              {DAYS[slot.day]} {slot.hour}:00 ({slot.count})
+                              {i < sorted.length - 1 ? ', ' : ''}
+                            </span>
+                          ));
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
