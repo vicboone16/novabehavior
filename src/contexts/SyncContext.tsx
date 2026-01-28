@@ -114,6 +114,17 @@ export function SyncProvider({ children }: SyncProviderProps) {
             ...d,
             uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
           })),
+          // Historical data for frequency/duration entries
+          historicalData: s.historical_data ? {
+            frequencyEntries: ((s.historical_data as any).frequencyEntries || []).map((e: any) => ({
+              ...e,
+              timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+            })),
+            durationEntries: ((s.historical_data as any).durationEntries || []).map((e: any) => ({
+              ...e,
+              timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+            })),
+          } : { frequencyEntries: [], durationEntries: [] },
         }));
 
         const goals = studentsData.flatMap((s) => {
@@ -121,9 +132,39 @@ export function SyncProvider({ children }: SyncProviderProps) {
           return studentGoals.map(g => ({ ...g, studentId: s.id }));
         });
 
+        // Hydrate historical frequency entries from student data
+        const historicalFrequencyEntries = mappedStudents.flatMap((student) => {
+          const entries = student.historicalData?.frequencyEntries || [];
+          return entries.map((e) => ({
+            id: e.id,
+            studentId: student.id,
+            behaviorId: e.behaviorId,
+            count: e.count,
+            timestamp: e.timestamp,
+            timestamps: Array(e.count).fill(e.timestamp),
+            observationDurationMinutes: e.observationDurationMinutes,
+            isHistorical: true,
+          }));
+        });
+
+        // Hydrate historical duration entries from student data
+        const historicalDurationEntries = mappedStudents.flatMap((student) => {
+          const entries = student.historicalData?.durationEntries || [];
+          return entries.map((e) => ({
+            id: e.id,
+            studentId: student.id,
+            behaviorId: e.behaviorId,
+            duration: e.durationSeconds,
+            startTime: e.timestamp,
+            endTime: new Date(new Date(e.timestamp).getTime() + e.durationSeconds * 1000),
+          }));
+        });
+
         useDataStore.setState({ 
           students: mappedStudents,
           behaviorGoals: goals,
+          frequencyEntries: historicalFrequencyEntries,
+          durationEntries: historicalDurationEntries,
         });
 
         previousStudentsRef.current = JSON.stringify(mappedStudents);
@@ -306,6 +347,17 @@ export function SyncProvider({ children }: SyncProviderProps) {
               ...d,
               uploadedAt: d.uploadedAt ? new Date(d.uploadedAt).toISOString() : new Date().toISOString(),
             })),
+            // Historical data for frequency/duration entries
+            historical_data: student.historicalData ? {
+              frequencyEntries: (student.historicalData.frequencyEntries || []).map(e => ({
+                ...e,
+                timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
+              })),
+              durationEntries: (student.historicalData.durationEntries || []).map(e => ({
+                ...e,
+                timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
+              })),
+            } : { frequencyEntries: [], durationEntries: [] },
           } as any, { onConflict: 'id' });
       }
 
@@ -508,9 +560,41 @@ export function SyncProvider({ children }: SyncProviderProps) {
                   ...d,
                   uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
                 })),
+                // Historical data for frequency/duration entries
+                historicalData: s.historical_data ? {
+                  frequencyEntries: ((s.historical_data as any).frequencyEntries || []).map((e: any) => ({
+                    ...e,
+                    timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+                  })),
+                  durationEntries: ((s.historical_data as any).durationEntries || []).map((e: any) => ({
+                    ...e,
+                    timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+                  })),
+                } : { frequencyEntries: [], durationEntries: [] },
               };
               
               const studentGoals = ((s.goals as unknown as BehaviorGoal[]) || []).map(g => ({ ...g, studentId: s.id }));
+              
+              // Hydrate historical entries for this student
+              const studentHistoricalFreq = (mappedStudent.historicalData?.frequencyEntries || []).map((e: any) => ({
+                id: e.id,
+                studentId: s.id,
+                behaviorId: e.behaviorId,
+                count: e.count,
+                timestamp: e.timestamp,
+                timestamps: Array(e.count).fill(e.timestamp),
+                observationDurationMinutes: e.observationDurationMinutes,
+                isHistorical: true,
+              }));
+              
+              const studentHistoricalDur = (mappedStudent.historicalData?.durationEntries || []).map((e: any) => ({
+                id: e.id,
+                studentId: s.id,
+                behaviorId: e.behaviorId,
+                duration: e.durationSeconds,
+                startTime: e.timestamp,
+                endTime: new Date(new Date(e.timestamp).getTime() + e.durationSeconds * 1000),
+              }));
               
               useDataStore.setState((state) => {
                 const existingIndex = state.students.findIndex(st => st.id === s.id);
@@ -521,12 +605,24 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 // Update goals - remove old ones for this student and add new ones
                 const otherGoals = state.behaviorGoals.filter(g => g.studentId !== s.id);
                 
+                // Update frequency entries - keep non-historical and other students, add new historical
+                const otherFreq = state.frequencyEntries.filter(e => 
+                  !e.isHistorical || e.studentId !== s.id
+                );
+                
+                // Update duration entries - keep session-based and other students
+                const otherDur = state.durationEntries.filter(e => 
+                  e.sessionId || e.studentId !== s.id
+                );
+                
                 previousStudentsRef.current = JSON.stringify(newStudents);
                 previousGoalsRef.current = JSON.stringify([...otherGoals, ...studentGoals]);
                 
                 return { 
                   students: newStudents,
                   behaviorGoals: [...otherGoals, ...studentGoals],
+                  frequencyEntries: [...otherFreq, ...studentHistoricalFreq],
+                  durationEntries: [...otherDur, ...studentHistoricalDur],
                 };
               });
             } else if (payload.eventType === 'DELETE') {

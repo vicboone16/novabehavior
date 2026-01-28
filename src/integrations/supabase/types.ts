@@ -196,6 +196,7 @@ export type Database = {
           fba_workflow_progress: Json | null
           goals: Json | null
           grade: string | null
+          historical_data: Json | null
           id: string
           indirect_assessments: Json | null
           is_archived: boolean
@@ -222,6 +223,7 @@ export type Database = {
           fba_workflow_progress?: Json | null
           goals?: Json | null
           grade?: string | null
+          historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
           is_archived?: boolean
@@ -248,6 +250,7 @@ export type Database = {
           fba_workflow_progress?: Json | null
           goals?: Json | null
           grade?: string | null
+          historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
           is_archived?: boolean

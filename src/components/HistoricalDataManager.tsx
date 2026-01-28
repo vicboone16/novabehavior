@@ -45,6 +45,7 @@ export function HistoricalDataManager({ studentId }: HistoricalDataManagerProps)
     deleteFrequencyEntry,
     updateFrequencyEntry,
     durationEntries,
+    deleteDurationEntry,
     intervalEntries,
     latencyEntries,
   } = useDataStore();
@@ -124,9 +125,11 @@ export function HistoricalDataManager({ studentId }: HistoricalDataManagerProps)
     
     if (confirmDelete.type === 'frequency') {
       deleteFrequencyEntry(confirmDelete.id);
-      toast.success('Entry deleted');
+      toast.success('Frequency entry deleted');
+    } else if (confirmDelete.type === 'duration') {
+      deleteDurationEntry(confirmDelete.id);
+      toast.success('Duration entry deleted');
     }
-    // Add other types as needed
     
     setConfirmDelete(null);
   };

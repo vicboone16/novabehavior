@@ -259,6 +259,8 @@ export interface Student {
   bipData?: BIPData;
   // FBA Workflow progress (per student)
   fbaWorkflowProgress?: FBAWorkflowProgress;
+  // Historical data (synced to cloud)
+  historicalData?: StudentHistoricalData;
 }
 
 export interface ABCBehaviorEntry {
@@ -297,6 +299,27 @@ export interface FrequencyEntry {
   sessionId?: string;
   observationDurationMinutes?: number; // For historical entries - allows rate calculation
   isHistorical?: boolean; // Flag to identify manually-entered historical data
+}
+
+// Historical data stored per student for cloud sync
+export interface HistoricalFrequencyEntry {
+  id: string;
+  behaviorId: string;
+  count: number;
+  timestamp: Date;
+  observationDurationMinutes?: number;
+}
+
+export interface HistoricalDurationEntry {
+  id: string;
+  behaviorId: string;
+  durationSeconds: number;
+  timestamp: Date;
+}
+
+export interface StudentHistoricalData {
+  frequencyEntries: HistoricalFrequencyEntry[];
+  durationEntries: HistoricalDurationEntry[];
 }
 
 export interface DurationEntry {
