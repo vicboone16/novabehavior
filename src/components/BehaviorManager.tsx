@@ -118,10 +118,16 @@ export function BehaviorManager() {
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Select student" />
                 </SelectTrigger>
-                <SelectContent>
-                  {selectedStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
+                <SelectContent className="z-[9999] bg-popover">
+                  {selectedStudents.length > 0 ? (
+                    selectedStudents.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      No students selected. Please select students from the dashboard first.
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
