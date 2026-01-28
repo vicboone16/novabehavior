@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Shield, Users, Tag, Settings, Plus, Trash2, Edit2, 
-  UserCheck, School, Check, X, Loader2, ChevronDown 
+  Shield, Users, Tag, Settings, Plus, Trash2, 
+  UserCheck, School, Check, X, Loader2, ChevronDown,
+  Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -42,6 +44,16 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
@@ -50,11 +62,16 @@ interface UserWithRole {
   id: string;
   email: string | null;
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  pin_hash: string | null;
+  is_approved: boolean;
   roles: AppRole[];
   created_at: string;
 }
 
-interface Tag {
+interface TagType {
   id: string;
   name: string;
   tag_type: 'school' | 'site' | 'team' | 'custom';
@@ -74,6 +91,7 @@ interface StudentAccess {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -81,13 +99,17 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [tags, setTags] = useState<TagType[]>([]);
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'pending');
   
   // Dialogs
   const [showAddTag, setShowAddTag] = useState(false);
   const [showManageAccess, setShowManageAccess] = useState<UserWithRole | null>(null);
   const [showAssignRole, setShowAssignRole] = useState<UserWithRole | null>(null);
+  const [showEditUser, setShowEditUser] = useState<UserWithRole | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState<UserWithRole | null>(null);
   
   // Form state
   const [newTagName, setNewTagName] = useState('');
@@ -95,6 +117,23 @@ export default function Admin() {
   const [newTagColor, setNewTagColor] = useState('#3B82F6');
   const [selectedRole, setSelectedRole] = useState<AppRole>('staff');
   const [userStudentAccess, setUserStudentAccess] = useState<StudentAccess[]>([]);
+  
+  // Edit user form
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPin, setNewPin] = useState('');
+  
+  // Add user form
+  const [addEmail, setAddEmail] = useState('');
+  const [addFirstName, setAddFirstName] = useState('');
+  const [addLastName, setAddLastName] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addPin, setAddPin] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
   
   useEffect(() => {
     checkAdminStatus();
@@ -107,7 +146,6 @@ export default function Admin() {
     }
 
     try {
-      // Check if user is admin
       const { data: adminCheck } = await supabase.rpc('is_admin', { _user_id: user.id });
       const { data: superAdminCheck } = await supabase.rpc('is_super_admin', { _user_id: user.id });
       
@@ -126,10 +164,10 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      // Load users with their roles
+      // Load users with their profiles and roles
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, email, display_name, created_at');
+        .select('user_id, email, display_name, first_name, last_name, phone, pin_hash, is_approved, created_at');
       
       const { data: roles } = await supabase
         .from('user_roles')
@@ -140,6 +178,11 @@ export default function Admin() {
           id: profile.user_id,
           email: profile.email,
           display_name: profile.display_name,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone,
+          pin_hash: profile.pin_hash,
+          is_approved: profile.is_approved ?? false,
           roles: roles?.filter(r => r.user_id === profile.user_id).map(r => r.role as AppRole) || [],
           created_at: profile.created_at,
         }));
@@ -153,10 +196,10 @@ export default function Admin() {
         .order('tag_type', { ascending: true });
       
       if (tagsData) {
-        setTags(tagsData as Tag[]);
+        setTags(tagsData as TagType[]);
       }
 
-      // Load all students (admin can see all)
+      // Load all students
       const { data: studentsData } = await supabase
         .from('students')
         .select('id, name')
@@ -168,6 +211,43 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Error loading admin data:', error);
+    }
+  };
+
+  const pendingUsers = users.filter(u => !u.is_approved);
+  const approvedUsers = users.filter(u => u.is_approved);
+
+  const handleApproveUser = async (userId: string) => {
+    try {
+      const { error } = await supabase.rpc('approve_user', { 
+        _user_id: userId, 
+        _approved_by: user?.id 
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'User approved successfully' });
+      await loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to approve user', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleRevokeAccess = async () => {
+    if (!showRevokeConfirm) return;
+    
+    try {
+      const { error } = await supabase.rpc('revoke_user_access', { 
+        _user_id: showRevokeConfirm.id 
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'User access revoked' });
+      setShowRevokeConfirm(null);
+      await loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to revoke access', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -207,6 +287,92 @@ export default function Admin() {
       await loadData();
     } catch (error: any) {
       toast({ title: 'Failed to remove role', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const openEditUser = (u: UserWithRole) => {
+    setShowEditUser(u);
+    setEditFirstName(u.first_name || '');
+    setEditLastName(u.last_name || '');
+    setEditPhone(u.phone || '');
+    setEditEmail(u.email || '');
+    setNewPassword('');
+    setNewPin('');
+    setShowPin(false);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!showEditUser) return;
+
+    try {
+      // Update profile
+      const displayName = editFirstName && editLastName 
+        ? `${editFirstName} ${editLastName.charAt(0)}.`
+        : editFirstName || showEditUser.display_name;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: editFirstName || null,
+          last_name: editLastName || null,
+          display_name: displayName,
+          phone: editPhone || null,
+        })
+        .eq('user_id', showEditUser.id);
+
+      if (profileError) throw profileError;
+
+      // Update PIN if provided
+      if (newPin && /^\d{6}$/.test(newPin)) {
+        const { error: pinError } = await supabase.rpc('set_user_pin', {
+          _user_id: showEditUser.id,
+          _pin: newPin
+        });
+        if (pinError) throw pinError;
+      }
+
+      toast({ title: 'User updated successfully' });
+      setShowEditUser(null);
+      await loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to update user', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!addEmail || !addPassword || !addFirstName || !addLastName) {
+      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    if (addPassword.length < 6) {
+      toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+
+    if (addPin && !/^\d{6}$/.test(addPin)) {
+      toast({ title: 'PIN must be exactly 6 digits', variant: 'destructive' });
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      // Note: Creating users requires admin API or the user to sign up themselves
+      // For now, we'll just show the invitation flow message
+      toast({ 
+        title: 'User invitation', 
+        description: 'Ask the user to sign up at the login page. You can then approve their account here.' 
+      });
+      setShowAddUser(false);
+      setAddEmail('');
+      setAddFirstName('');
+      setAddLastName('');
+      setAddPassword('');
+      setAddPin('');
+    } catch (error: any) {
+      toast({ title: 'Failed to add user', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -292,14 +458,12 @@ export default function Admin() {
       const newAccess = { ...current, ...updates };
 
       if (newAccess.permission_level === 'none') {
-        // Delete access record
         await supabase
           .from('user_student_access')
           .delete()
           .eq('user_id', showManageAccess.id)
           .eq('student_id', studentId);
       } else {
-        // Upsert access record
         await supabase
           .from('user_student_access')
           .upsert({
@@ -325,12 +489,18 @@ export default function Admin() {
 
   const getRoleBadgeColor = (role: AppRole) => {
     switch (role) {
-      case 'super_admin': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'admin': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
-      case 'staff': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'viewer': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      case 'super_admin': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'admin': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+      case 'staff': return 'bg-primary/10 text-primary border-primary/20';
+      case 'viewer': return 'bg-muted text-muted-foreground border-border';
       default: return '';
     }
+  };
+
+  // Helper to show PIN (only first 2 and last 2 digits for security)
+  const formatPinDisplay = (pinHash: string | null) => {
+    if (!pinHash) return 'Not set';
+    return '●●●●●●'; // Always show masked
   };
 
   if (loading) {
@@ -378,8 +548,17 @@ export default function Admin() {
 
       {/* Main Content */}
       <main className="container py-6">
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-4">
+            <TabsTrigger value="pending" className="gap-2 relative">
+              <Clock className="w-4 h-4" />
+              Pending
+              {pendingUsers.length > 0 && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {pendingUsers.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               Users
@@ -394,14 +573,95 @@ export default function Admin() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Pending Approvals Tab */}
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Pending Approvals</CardTitle>
+                    <CardDescription>
+                      Review and approve new user registrations
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {pendingUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
+                    <p className="text-muted-foreground">No pending approvals</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[400px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Registered</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingUsers.map((u) => (
+                          <TableRow key={u.id}>
+                            <TableCell>
+                              <p className="font-medium">{u.display_name || 'No name'}</p>
+                              {u.first_name && u.last_name && (
+                                <p className="text-xs text-muted-foreground">
+                                  {u.first_name} {u.last_name}
+                                </p>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(u.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  size="sm"
+                                  onClick={() => handleApproveUser(u.id)}
+                                >
+                                  <Check className="w-4 h-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openEditUser(u)}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Users Tab */}
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  Manage user roles and student access permissions
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>
+                      Manage user roles, access, and permissions
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setShowAddUser(true)}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
@@ -410,17 +670,21 @@ export default function Admin() {
                       <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Roles</TableHead>
-                        <TableHead>Joined</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>PIN</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((u) => (
+                      {approvedUsers.map((u) => (
                         <TableRow key={u.id}>
                           <TableCell>
                             <div>
                               <p className="font-medium">{u.display_name || 'No name'}</p>
                               <p className="text-sm text-muted-foreground">{u.email}</p>
+                              {u.phone && (
+                                <p className="text-xs text-muted-foreground">{u.phone}</p>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -435,7 +699,7 @@ export default function Admin() {
                                   className={`text-xs ${getRoleBadgeColor(role)}`}
                                 >
                                   {role.replace('_', ' ')}
-                                  {(isSuperAdmin || (isAdmin && role !== 'super_admin')) && (
+                                  {(isSuperAdmin || (isAdmin && role !== 'super_admin')) && u.id !== user?.id && (
                                     <button
                                       className="ml-1 hover:text-destructive"
                                       onClick={() => handleRemoveRole(u.id, role)}
@@ -447,11 +711,25 @@ export default function Admin() {
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(u.created_at).toLocaleDateString()}
+                          <TableCell>
+                            <Badge variant={u.is_approved ? 'default' : 'secondary'}>
+                              {u.is_approved ? 'Active' : 'Pending'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {formatPinDisplay(u.pin_hash)}
+                            </span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openEditUser(u)}
+                              >
+                                Edit
+                              </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
@@ -468,6 +746,16 @@ export default function Admin() {
                                 <UserCheck className="w-3 h-3 mr-1" />
                                 Access
                               </Button>
+                              {u.id !== user?.id && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setShowRevokeConfirm(u)}
+                                >
+                                  <Ban className="w-3 h-3" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -566,6 +854,106 @@ export default function Admin() {
         </Tabs>
       </main>
 
+      {/* Edit User Dialog */}
+      <Dialog open={!!showEditUser} onOpenChange={(open) => !open && setShowEditUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and credentials
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="First"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Last"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                value={editEmail}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                placeholder="(555) 555-5555"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Current PIN</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={showEditUser?.pin_hash ? '●●●●●●' : 'Not set'}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Set New PIN (6 digits)</Label>
+              <Input
+                type="text"
+                maxLength={6}
+                pattern="\d{6}"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 6-digit PIN"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditUser(null)}>Cancel</Button>
+            <Button onClick={handleUpdateUser}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Users must sign up through the login page. You can then approve their account here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              To add a new user:
+            </p>
+            <ol className="list-decimal list-inside mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>Ask the user to sign up at the login page</li>
+              <li>Their account will appear in the "Pending" tab</li>
+              <li>Review their information and click "Approve"</li>
+              <li>Assign roles and student access as needed</li>
+            </ol>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowAddUser(false)}>Got it</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Assign Role Dialog */}
       <Dialog open={!!showAssignRole} onOpenChange={(open) => !open && setShowAssignRole(null)}>
         <DialogContent>
@@ -594,6 +982,25 @@ export default function Admin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Revoke Access Confirm Dialog */}
+      <AlertDialog open={!!showRevokeConfirm} onOpenChange={(open) => !open && setShowRevokeConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke User Access</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to revoke access for <strong>{showRevokeConfirm?.display_name || showRevokeConfirm?.email}</strong>? 
+              They will need to be re-approved to access the application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRevokeAccess} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Revoke Access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add Tag Dialog */}
       <Dialog open={showAddTag} onOpenChange={setShowAddTag}>

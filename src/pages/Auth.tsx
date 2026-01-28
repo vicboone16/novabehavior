@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Users, ClipboardList, Target, Smartphone } from 'lucide-react';
 import { PinLogin } from '@/components/PinLogin';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +22,8 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loginMethod, setLoginMethod] = useState<'password' | 'pin'>('password');
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,6 +34,14 @@ export default function Auth() {
     }
 
     setIsLoading(true);
+    
+    // First check if user is approved
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_approved')
+      .eq('email', loginEmail.toLowerCase())
+      .single();
+
     const { error } = await signIn(loginEmail, loginPassword);
     setIsLoading(false);
 
@@ -39,14 +49,19 @@ export default function Auth() {
       toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Welcome back!' });
-      navigate('/');
+      // Check if approved after login
+      if (profile && !profile.is_approved) {
+        navigate('/pending-approval');
+      } else {
+        navigate('/');
+      }
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupEmail || !signupPassword || !signupConfirmPassword) {
-      toast({ title: 'Please fill in all fields', variant: 'destructive' });
+    if (!signupEmail || !signupPassword || !signupConfirmPassword || !firstName || !lastName) {
+      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
 
@@ -61,14 +76,30 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, displayName);
+    
+    const { error } = await supabase.auth.signUp({
+      email: signupEmail,
+      password: signupPassword,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          display_name: `${firstName.trim()} ${lastName.trim().charAt(0)}.`,
+        },
+      },
+    });
+    
     setIsLoading(false);
 
     if (error) {
       toast({ title: 'Signup failed', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Account created!', description: 'You are now signed in.' });
-      navigate('/');
+      toast({ 
+        title: 'Account created!', 
+        description: 'Your account is pending approval by an administrator.' 
+      });
+      navigate('/pending-approval');
     }
   };
 
@@ -161,19 +192,34 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={handleSignup}>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="display-name">Display Name (optional)</Label>
-                    <Input
-                      id="display-name"
-                      type="text"
-                      placeholder="Your name"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      disabled={isLoading}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">First Name *</Label>
+                      <Input
+                        id="first-name"
+                        type="text"
+                        placeholder="First"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        disabled={isLoading}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Last Name *</Label>
+                      <Input
+                        id="last-name"
+                        type="text"
+                        placeholder="Last"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        disabled={isLoading}
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">Email *</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -181,10 +227,11 @@ export default function Auth() {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       disabled={isLoading}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">Password *</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -192,10 +239,11 @@ export default function Auth() {
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       disabled={isLoading}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Label htmlFor="confirm-password">Confirm Password *</Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -203,8 +251,12 @@ export default function Auth() {
                       value={signupConfirmPassword}
                       onChange={(e) => setSignupConfirmPassword(e.target.value)}
                       disabled={isLoading}
+                      required
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    * Your account will need to be approved by an administrator before you can access the app.
+                  </p>
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" className="w-full" disabled={isLoading}>

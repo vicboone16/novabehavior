@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     // Find user by email
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("user_id, pin_hash")
+      .select("user_id, pin_hash, is_approved")
       .eq("email", email.toLowerCase())
       .single();
 
@@ -56,6 +56,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if user is approved
+    if (!profile.is_approved) {
+      return new Response(
+        JSON.stringify({ error: "Account pending approval", pending: true }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Verify PIN using the database function
     const { data: isValid, error: verifyError } = await supabaseAdmin
       .rpc("verify_pin", { _user_id: profile.user_id, _pin: pin });
@@ -67,57 +75,115 @@ Deno.serve(async (req) => {
       );
     }
 
-    // PIN is valid - generate a session for the user
-    // Use admin API to generate tokens
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.generateLink({
+    // PIN is valid - get the user from auth
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
+    
+    if (userError || !userData.user) {
+      console.error("User lookup error:", userError);
+      return new Response(
+        JSON.stringify({ error: "User lookup failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Generate a new session for this user using the admin API
+    // We need to generate tokens for the user - use a custom token generation
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email.toLowerCase(),
+      options: {
+        redirectTo: Deno.env.get("SUPABASE_URL"),
+      }
     });
 
-    if (authError) {
-      console.error("Auth error:", authError);
+    if (sessionError) {
+      console.error("Session generation error:", sessionError);
+      return new Response(
+        JSON.stringify({ error: "Session generation failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Extract the token from the generated link
+    // The properties.hashed_token can be used directly with verifyOtp
+    const token = sessionData.properties?.hashed_token;
+    const tokenType = sessionData.properties?.email_otp;
+
+    if (!token) {
+      // Alternative approach: Sign in the user using admin privilege
+      // Create a temporary password-like token based on the verified PIN
+      // Since PIN was verified, we trust this session
+      
+      // Use a workaround: generate a short-lived access token by creating a magic link
+      // and immediately verifying it
+      const redirectUrl = new URL(sessionData.properties?.action_link || "");
+      const verificationToken = redirectUrl.searchParams.get("token");
+      const type = redirectUrl.searchParams.get("type");
+
+      if (verificationToken && type) {
+        // Verify the OTP to get a session
+        const anonClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!
+        );
+
+        const { data: verifyData, error: verifyOtpError } = await anonClient.auth.verifyOtp({
+          token_hash: verificationToken,
+          type: type as any,
+        });
+
+        if (verifyOtpError || !verifyData.session) {
+          console.error("OTP verification error:", verifyOtpError);
+          return new Response(
+            JSON.stringify({ error: "Authentication failed" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            access_token: verifyData.session.access_token,
+            refresh_token: verifyData.session.refresh_token,
+            expires_in: verifyData.session.expires_in,
+            token_type: "bearer",
+            user: verifyData.user,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: "Token generation failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use verifyOtp with the hashed token
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!
+    );
+
+    const { data: otpData, error: otpError } = await anonClient.auth.verifyOtp({
+      token_hash: token,
+      type: "magiclink",
+    });
+
+    if (otpError || !otpData.session) {
+      console.error("OTP verification error:", otpError);
       return new Response(
         JSON.stringify({ error: "Authentication failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Extract the token from the magic link and verify it to get a session
-    const token = authData.properties?.hashed_token;
-    if (!token) {
-      // Fallback: Use a different approach - sign in with OTP
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
-      
-      if (userError || !userData.user) {
-        return new Response(
-          JSON.stringify({ error: "User lookup failed" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Generate session tokens directly
-      const { data: session, error: sessionError } = await supabaseAdmin.auth.admin.createUser({
-        email: email.toLowerCase(),
-        email_confirm: true,
-        user_metadata: userData.user.user_metadata,
-      });
-
-      // Since we can't easily generate tokens, we'll use a workaround:
-      // Create a short-lived magic link and return instructions
-      return new Response(
-        JSON.stringify({ 
-          error: "PIN login requires magic link",
-          fallback: true,
-          message: "Please use password login for now"
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: "PIN verified. Completing authentication..."
+      JSON.stringify({
+        access_token: otpData.session.access_token,
+        refresh_token: otpData.session.refresh_token,
+        expires_in: otpData.session.expires_in,
+        token_type: "bearer",
+        user: otpData.user,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
