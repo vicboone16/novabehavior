@@ -5,6 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper to get client IP from request headers
+function getClientIP(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+         req.headers.get("x-real-ip") ||
+         req.headers.get("cf-connecting-ip") ||
+         "unknown";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -12,6 +20,7 @@ Deno.serve(async (req) => {
 
   try {
     const { email, pin } = await req.json();
+    const clientIP = getClientIP(req);
 
     if (!pin) {
       return new Response(
@@ -36,6 +45,26 @@ Deno.serve(async (req) => {
     );
 
     const normalizedEmail = typeof email === "string" ? email.toLowerCase().trim() : "";
+
+    // Check rate limiting before proceeding
+    const { data: isAllowed, error: rateLimitError } = await supabaseAdmin.rpc(
+      "check_pin_rate_limit",
+      { _email: normalizedEmail || "unknown", _ip_address: clientIP }
+    );
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (isAllowed === false) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Too many failed attempts. Please try again later.",
+          rateLimited: true 
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // PIN hash for PIN-only lookup
     const pinHashBuf = await crypto.subtle.digest(
@@ -70,6 +99,13 @@ Deno.serve(async (req) => {
         if (!res.data || res.data.length === 0) {
           profile = null;
         } else if (res.data.length > 1) {
+          // Record failed attempt for non-unique PIN
+          await supabaseAdmin.rpc("record_pin_attempt", {
+            _user_id: null,
+            _email: normalizedEmail || "unknown",
+            _ip_address: clientIP,
+            _success: false
+          });
           return new Response(
             JSON.stringify({ error: "PIN is not unique. Please use email + password login." }),
             { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -81,6 +117,13 @@ Deno.serve(async (req) => {
     }
 
     if (profileError || !profile) {
+      // Record failed attempt
+      await supabaseAdmin.rpc("record_pin_attempt", {
+        _user_id: null,
+        _email: normalizedEmail || "unknown",
+        _ip_address: clientIP,
+        _success: false
+      });
       return new Response(
         JSON.stringify({ error: "User not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -88,6 +131,13 @@ Deno.serve(async (req) => {
     }
 
     if (!profile.pin_hash) {
+      // Record failed attempt
+      await supabaseAdmin.rpc("record_pin_attempt", {
+        _user_id: profile.user_id,
+        _email: profile.email || normalizedEmail || "unknown",
+        _ip_address: clientIP,
+        _success: false
+      });
       return new Response(
         JSON.stringify({ error: "PIN not set for this user" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -107,11 +157,26 @@ Deno.serve(async (req) => {
       .rpc("verify_pin", { _user_id: profile.user_id, _pin: pin });
 
     if (verifyError || !isValid) {
+      // Record failed attempt
+      await supabaseAdmin.rpc("record_pin_attempt", {
+        _user_id: profile.user_id,
+        _email: profile.email || normalizedEmail || "unknown",
+        _ip_address: clientIP,
+        _success: false
+      });
       return new Response(
         JSON.stringify({ error: "Invalid PIN" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Record successful attempt
+    await supabaseAdmin.rpc("record_pin_attempt", {
+      _user_id: profile.user_id,
+      _email: profile.email || normalizedEmail || "unknown",
+      _ip_address: clientIP,
+      _success: true
+    });
 
     // PIN is valid - get the user from auth
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
@@ -127,7 +192,6 @@ Deno.serve(async (req) => {
     const emailForAuth = (profile.email || normalizedEmail).toLowerCase();
 
     // Generate a new session for this user using the admin API
-    // We need to generate tokens for the user - use a custom token generation
     const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: emailForAuth,
@@ -145,23 +209,14 @@ Deno.serve(async (req) => {
     }
 
     // Extract the token from the generated link
-    // The properties.hashed_token can be used directly with verifyOtp
     const token = sessionData.properties?.hashed_token;
-    const tokenType = sessionData.properties?.email_otp;
 
     if (!token) {
-      // Alternative approach: Sign in the user using admin privilege
-      // Create a temporary password-like token based on the verified PIN
-      // Since PIN was verified, we trust this session
-      
-      // Use a workaround: generate a short-lived access token by creating a magic link
-      // and immediately verifying it
-       const redirectUrl = new URL(sessionData.properties?.action_link || "");
+      const redirectUrl = new URL(sessionData.properties?.action_link || "");
       const verificationToken = redirectUrl.searchParams.get("token");
       const type = redirectUrl.searchParams.get("type");
 
       if (verificationToken && type) {
-        // Verify the OTP to get a session
         const anonClient = createClient(
           Deno.env.get("SUPABASE_URL")!,
           Deno.env.get("SUPABASE_ANON_KEY")!

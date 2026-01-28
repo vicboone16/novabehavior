@@ -94,6 +94,33 @@ export type Database = {
           },
         ]
       }
+      pin_auth_attempts: {
+        Row: {
+          attempted_at: string
+          email: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved_at: string | null
@@ -672,10 +699,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_user: {
-        Args: { _approved_by: string; _user_id: string }
+      approve_user:
+        | { Args: { _user_id: string }; Returns: boolean }
+        | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
+      check_pin_rate_limit: {
+        Args: { _email: string; _ip_address: string }
         Returns: boolean
       }
+      cleanup_old_pin_attempts: { Args: never; Returns: undefined }
       get_pending_approval_count: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -686,6 +717,15 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      record_pin_attempt: {
+        Args: {
+          _email: string
+          _ip_address: string
+          _success: boolean
+          _user_id: string
+        }
+        Returns: undefined
+      }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       set_user_pin: {
         Args: { _pin: string; _user_id: string }
