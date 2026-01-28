@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ClipboardList, Save, RotateCcw, ChevronDown, ChevronUp, 
-  CheckCircle2, AlertCircle, Brain, TrendingUp, Users
+  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,23 +15,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Student, BehaviorFunction } from '@/types/behavior';
+import { useDataStore } from '@/store/dataStore';
+import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
+import { format } from 'date-fns';
 
 interface IndirectAssessmentToolsProps {
   student: Student;
-  onSaveAssessment?: (assessment: AssessmentResult) => void;
-}
-
-interface AssessmentResult {
-  type: 'FAST' | 'MAS' | 'QABF';
-  studentId: string;
-  completedBy: string;
-  completedAt: Date;
-  targetBehavior: string;
-  responses: Record<string, number>;
-  scores: FunctionScores;
-  primaryFunction: BehaviorFunction;
-  notes?: string;
+  onSaveAssessment?: (assessment: IndirectAssessmentResult) => void;
 }
 
 interface FunctionScores {
@@ -132,6 +122,7 @@ const RATING_OPTIONS = [
 ];
 
 export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectAssessmentToolsProps) {
+  const { addIndirectAssessment, deleteIndirectAssessment } = useDataStore();
   const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF'>('FAST');
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [targetBehavior, setTargetBehavior] = useState('');
@@ -139,6 +130,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [notes, setNotes] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [showSavedAssessments, setShowSavedAssessments] = useState(false);
 
   const currentItems = useMemo(() => {
     switch (activeAssessment) {
@@ -212,7 +204,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       return;
     }
 
-    const result: AssessmentResult = {
+    const result: Omit<IndirectAssessmentResult, 'id'> = {
       type: activeAssessment,
       studentId: student.id,
       completedBy: completedBy || 'Unknown',
@@ -224,9 +216,18 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       notes,
     };
 
-    onSaveAssessment?.(result);
-    toast.success(`${activeAssessment} assessment saved`);
+    // Save to student profile
+    addIndirectAssessment(student.id, result);
+    
+    // Also call the optional callback
+    onSaveAssessment?.({ ...result, id: '' } as IndirectAssessmentResult);
+    toast.success(`${activeAssessment} assessment saved to profile`);
     setShowResults(true);
+  };
+
+  const handleDeleteAssessment = (assessmentId: string) => {
+    deleteIndirectAssessment(student.id, assessmentId);
+    toast.success('Assessment deleted');
   };
 
   const getFunctionColor = (fn: string) => {
@@ -249,8 +250,64 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
     return labels[fn] || fn;
   };
 
+  const savedAssessments = student.indirectAssessments || [];
+
   return (
     <div className="space-y-4">
+      {/* Saved Assessments Summary */}
+      {savedAssessments.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                Saved Assessments ({savedAssessments.length})
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowSavedAssessments(!showSavedAssessments)}
+              >
+                {showSavedAssessments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {showSavedAssessments && (
+            <CardContent className="space-y-2">
+              {savedAssessments.map(assessment => (
+                <div 
+                  key={assessment.id} 
+                  className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary">{assessment.type}</Badge>
+                    <div>
+                      <p className="text-sm font-medium">{assessment.targetBehavior}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(assessment.completedAt), 'MMM dd, yyyy')} by {assessment.completedBy}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getFunctionColor(assessment.primaryFunction)}>
+                      {getFunctionLabel(assessment.primaryFunction)}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleDeleteAssessment(assessment.id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Assessment Header */}
       <Card>
         <CardHeader className="pb-3">

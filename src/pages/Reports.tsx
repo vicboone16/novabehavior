@@ -8,7 +8,9 @@ import { ABCReportGenerator } from '@/components/ABCReportGenerator';
 import { StudentComparison } from '@/components/StudentComparison';
 import { EnhancedExportOptions } from '@/components/EnhancedExportOptions';
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
-import { FileText, Users, Download, BarChart3, ClipboardCheck } from 'lucide-react';
+import { BIPGenerator } from '@/components/BIPGenerator';
+import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
+import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart } from 'lucide-react';
 
 export default function Reports() {
   return (
@@ -121,6 +123,28 @@ export default function Reports() {
             Comprehensive FBA with recommendations
           </p>
           <FBAReportGenerator />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Shield className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">BIP Generator</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Create behavior intervention plans from FBA
+          </p>
+          <BIPGenerator />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Heart className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Parent Summary</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Family-friendly FBA summary with home strategies
+          </p>
+          <ParentFriendlyFBASummary />
         </div>
       </div>
     </div>

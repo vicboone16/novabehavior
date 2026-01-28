@@ -91,6 +91,10 @@ interface DataState {
   updateNarrativeNote: (studentId: string, noteId: string, updates: Partial<NarrativeNote>) => void;
   deleteNarrativeNote: (studentId: string, noteId: string) => void;
   
+  // Indirect assessments
+  addIndirectAssessment: (studentId: string, assessment: Omit<import('@/types/behavior').IndirectAssessmentResult, 'id'>) => void;
+  deleteIndirectAssessment: (studentId: string, assessmentId: string) => void;
+  
   // Latency actions
   addLatencyEntry: (entry: Omit<LatencyEntry, 'id'>) => void;
   getLatencyEntries: (studentId: string, behaviorId: string) => LatencyEntry[];
@@ -285,6 +289,33 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
+      // Indirect Assessments
+      addIndirectAssessment: (studentId, assessment) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  indirectAssessments: [...(s.indirectAssessments || []), { ...assessment, id }],
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteIndirectAssessment: (studentId, assessmentId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  indirectAssessments: (s.indirectAssessments || []).filter((a) => a.id !== assessmentId),
+                }
+              : s
+          ),
+        }));
+      },
 
       updateStudentProfile: (id, updates) => {
         set((state) => ({
