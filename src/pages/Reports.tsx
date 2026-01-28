@@ -6,16 +6,20 @@ import { ScatterplotAnalysis } from '@/components/ScatterplotAnalysis';
 import { DataExportManager } from '@/components/DataExportManager';
 import { ABCReportGenerator } from '@/components/ABCReportGenerator';
 import { StudentComparison } from '@/components/StudentComparison';
-import { FileText, Users } from 'lucide-react';
+import { EnhancedExportOptions } from '@/components/EnhancedExportOptions';
+import { FileText, Users, Download, BarChart3 } from 'lucide-react';
 
 export default function Reports() {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Reports & Analysis</h2>
-        <p className="text-muted-foreground text-sm">
-          View session history, generate reports, and analyze behavior trends
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Reports & Analysis</h2>
+          <p className="text-muted-foreground text-sm">
+            View session history, generate reports, and analyze behavior trends
+          </p>
+        </div>
+        <EnhancedExportOptions />
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -32,7 +36,7 @@ export default function Reports() {
 
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-primary" />
+            <BarChart3 className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">Behavior Trends</h3>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -76,7 +80,7 @@ export default function Reports() {
 
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5 text-primary" />
+            <Download className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">Export Data</h3>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -94,6 +98,17 @@ export default function Reports() {
             Compare behavior data across students
           </p>
           <StudentComparison />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">ABC Report</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Generate ABC data analysis reports
+          </p>
+          <ABCReportGenerator />
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,9 @@ import { HistoricalIntervalEntry } from '@/components/HistoricalIntervalEntry';
 import { HistoricalSessionEditor } from '@/components/HistoricalSessionEditor';
 import { StudentProfileInfo } from '@/components/StudentProfileInfo';
 import { NarrativeNotesManager } from '@/components/NarrativeNotesManager';
+import { FBAModeTools } from '@/components/FBAModeTools';
+import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
+import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
 
@@ -401,34 +404,44 @@ export default function StudentProfile() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
-          <TabsTrigger value="profile" className="gap-2">
-            <Info className="w-4 h-4" />
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-5xl">
+          <TabsTrigger value="profile" className="gap-1 text-xs">
+            <Info className="w-3 h-3" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="behaviors" className="gap-2">
-            <Activity className="w-4 h-4" />
+          <TabsTrigger value="behaviors" className="gap-1 text-xs">
+            <Activity className="w-3 h-3" />
             Behaviors
           </TabsTrigger>
-          <TabsTrigger value="goals" className="gap-2">
-            <Target className="w-4 h-4" />
+          <TabsTrigger value="goals" className="gap-1 text-xs">
+            <Target className="w-3 h-3" />
             Goals
           </TabsTrigger>
-          <TabsTrigger value="abc" className="gap-2">
-            <FileText className="w-4 h-4" />
+          <TabsTrigger value="abc" className="gap-1 text-xs">
+            <FileText className="w-3 h-3" />
             ABC Options
           </TabsTrigger>
-          <TabsTrigger value="data" className="gap-2">
-            <Clock className="w-4 h-4" />
+          <TabsTrigger value="data" className="gap-1 text-xs">
+            <Clock className="w-3 h-3" />
             Add Data
           </TabsTrigger>
-          <TabsTrigger value="notes" className="gap-2">
-            <StickyNote className="w-4 h-4" />
+          <TabsTrigger value="notes" className="gap-1 text-xs">
+            <StickyNote className="w-3 h-3" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="files" className="gap-2">
-            <FolderOpen className="w-4 h-4" />
+          <TabsTrigger value="files" className="gap-1 text-xs">
+            <FolderOpen className="w-3 h-3" />
             Files
+          </TabsTrigger>
+          {student.assessmentModeEnabled && (
+            <TabsTrigger value="fba" className="gap-1 text-xs">
+              <ClipboardCheck className="w-3 h-3" />
+              FBA Tools
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="teacher" className="gap-1 text-xs">
+            <UserCheck className="w-3 h-3" />
+            Teacher View
           </TabsTrigger>
         </TabsList>
 
@@ -929,6 +942,44 @@ export default function StudentProfile() {
         {/* Files Tab */}
         <TabsContent value="files" className="space-y-4">
           <StudentFileManager studentId={student.id} studentName={student.name} />
+        </TabsContent>
+
+        {/* FBA Tools Tab - Only visible when Assessment Mode is ON */}
+        {student.assessmentModeEnabled && (
+          <TabsContent value="fba" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ClipboardCheck className="w-5 h-5 text-primary" />
+                  FBA / Assessment Tools
+                </CardTitle>
+                <CardDescription>
+                  Pattern detection, function analysis, and FBA report generation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FBAModeTools student={student} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Teacher-Friendly View Tab */}
+        <TabsContent value="teacher" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-primary" />
+                Teacher-Friendly View
+              </CardTitle>
+              <CardDescription>
+                Simplified interface with large touch targets for quick data entry
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TeacherFriendlyView student={student} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
