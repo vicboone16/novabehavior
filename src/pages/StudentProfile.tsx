@@ -57,6 +57,7 @@ import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
 import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
+import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
@@ -1171,7 +1172,16 @@ export default function StudentProfile() {
         </TabsContent>
 
         {/* Skills Tab - Skill Acquisition */}
-        <TabsContent value="skills" className="space-y-4">
+        <TabsContent value="skills" className="space-y-6">
+          {/* Skills Overview Dashboard */}
+          <StudentSkillsOverview
+            studentName={student.name}
+            skillTargets={student.skillTargets || []}
+            dttSessions={student.dttSessions || []}
+            studentColor={student.color}
+          />
+
+          {/* Skill Target Management & Data Collection */}
           <div className="grid lg:grid-cols-2 gap-4">
             {/* Skill Target Manager */}
             <SkillTargetManager
