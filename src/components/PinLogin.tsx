@@ -203,7 +203,15 @@ export function SetupPinDialog({ open, onOpenChange, userId }: SetupPinDialogPro
         _pin: pin
       });
 
-      if (error || !data) {
+      if (error) {
+        // Check for uniqueness error
+        if (error.message?.includes('already in use')) {
+          throw new Error('This PIN is already in use. Please choose a different PIN.');
+        }
+        throw error;
+      }
+
+      if (!data) {
         throw new Error('Failed to set PIN');
       }
 
@@ -212,12 +220,16 @@ export function SetupPinDialog({ open, onOpenChange, userId }: SetupPinDialogPro
       setPin('');
       setConfirmPin('');
       setStep('create');
-    } catch (error) {
+    } catch (error: any) {
       toast({ 
         title: 'Failed to set PIN', 
-        description: 'Please try again',
+        description: error.message || 'Please try again',
         variant: 'destructive' 
       });
+      // Reset to allow trying a new PIN
+      setPin('');
+      setConfirmPin('');
+      setStep('create');
     } finally {
       setIsLoading(false);
     }
