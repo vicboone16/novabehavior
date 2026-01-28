@@ -291,11 +291,31 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     const studentFrequency = frequencyEntries.filter(e => e.studentId === selectedStudentId);
     const studentSessions = sessions.filter(s => s.studentIds?.includes(selectedStudentId));
 
+    // Calculate total observation time and rate
+    const totalFrequency = studentFrequency.reduce((sum, e) => sum + e.count, 0);
+    const totalObservationMinutes = studentFrequency.reduce((sum, e) => {
+      return sum + ((e as any).observationDurationMinutes || 30); // Default 30 min
+    }, 0);
+    const averageRatePerHour = totalObservationMinutes > 0 
+      ? (totalFrequency / (totalObservationMinutes / 60)) 
+      : 0;
+
+    // Historical entries with rates
+    const entriesWithRates = studentFrequency
+      .filter(e => (e as any).observationDurationMinutes)
+      .map(e => ({
+        ...e,
+        ratePerHour: e.count / (((e as any).observationDurationMinutes || 30) / 60)
+      }));
+
     if (studentABC.length === 0) {
       return {
         abcCount: 0,
         sessionCount: studentSessions.length,
-        frequencyTotal: studentFrequency.reduce((sum, e) => sum + e.count, 0),
+        frequencyTotal: totalFrequency,
+        totalObservationMinutes,
+        averageRatePerHour,
+        entriesWithRates,
         topAntecedents: [],
         topConsequences: [],
         functionStrengths: [],
@@ -409,7 +429,10 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     return {
       abcCount: studentABC.length,
       sessionCount: studentSessions.length,
-      frequencyTotal: studentFrequency.reduce((sum, e) => sum + e.count, 0),
+      frequencyTotal: totalFrequency,
+      totalObservationMinutes,
+      averageRatePerHour,
+      entriesWithRates,
       topAntecedents,
       topConsequences,
       functionStrengths,
@@ -1304,28 +1327,67 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                           )}
                         </h2>
                         {analysisData.abcCount > 0 ? (
-                          <table className="data-table w-full border-collapse">
-                            <thead>
-                              <tr>
-                                <th className="border p-2 bg-gray-100">Metric</th>
-                                <th className="border p-2 bg-gray-100">Value</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td className="border p-2">Total ABC Entries</td>
-                                <td className="border p-2">{analysisData.abcCount}</td>
-                              </tr>
-                              <tr>
-                                <td className="border p-2">Observation Sessions</td>
-                                <td className="border p-2">{analysisData.sessionCount}</td>
-                              </tr>
-                              <tr>
-                                <td className="border p-2">Total Frequency Count</td>
-                                <td className="border p-2">{analysisData.frequencyTotal}</td>
-                              </tr>
-                            </tbody>
-                          </table>
+                          <div>
+                            <table className="data-table w-full border-collapse">
+                              <thead>
+                                <tr>
+                                  <th className="border p-2 bg-gray-100">Metric</th>
+                                  <th className="border p-2 bg-gray-100">Value</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td className="border p-2">Total ABC Entries</td>
+                                  <td className="border p-2">{analysisData.abcCount}</td>
+                                </tr>
+                                <tr>
+                                  <td className="border p-2">Observation Sessions</td>
+                                  <td className="border p-2">{analysisData.sessionCount}</td>
+                                </tr>
+                                <tr>
+                                  <td className="border p-2">Total Frequency Count</td>
+                                  <td className="border p-2">{analysisData.frequencyTotal}</td>
+                                </tr>
+                                {analysisData.totalObservationMinutes > 0 && (
+                                  <>
+                                    <tr>
+                                      <td className="border p-2">Total Observation Time</td>
+                                      <td className="border p-2">{Math.round(analysisData.totalObservationMinutes)} minutes</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="border p-2 font-medium">Average Rate per Hour</td>
+                                      <td className="border p-2 font-medium">{analysisData.averageRatePerHour.toFixed(2)} behaviors/hr</td>
+                                    </tr>
+                                  </>
+                                )}
+                              </tbody>
+                            </table>
+                            {analysisData.entriesWithRates && analysisData.entriesWithRates.length > 0 && (
+                              <div className="mt-4">
+                                <h3 className="font-medium text-sm mb-2">Rate Data by Observation</h3>
+                                <table className="data-table w-full border-collapse text-sm">
+                                  <thead>
+                                    <tr>
+                                      <th className="border p-1 bg-gray-100">Date</th>
+                                      <th className="border p-1 bg-gray-100">Count</th>
+                                      <th className="border p-1 bg-gray-100">Duration</th>
+                                      <th className="border p-1 bg-gray-100">Rate/hr</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {analysisData.entriesWithRates.slice(0, 5).map((entry: any) => (
+                                      <tr key={entry.id}>
+                                        <td className="border p-1">{format(new Date(entry.timestamp), 'MM/dd/yy')}</td>
+                                        <td className="border p-1 text-center">{entry.count}</td>
+                                        <td className="border p-1 text-center">{entry.observationDurationMinutes}m</td>
+                                        <td className="border p-1 text-center font-medium">{entry.ratePerHour.toFixed(2)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
                             {showDraftIndicators && <span className="font-medium">[PENDING] </span>}
