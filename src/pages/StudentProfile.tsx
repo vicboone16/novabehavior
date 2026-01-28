@@ -48,6 +48,7 @@ import { FBAModeTools } from '@/components/FBAModeTools';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
 import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
+import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
 import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
@@ -1040,6 +1041,15 @@ export default function StudentProfile() {
         {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
         <TabsContent value="assessment" className="space-y-4">
           <div className="grid gap-4">
+            {/* FBA Workflow Progress - shows completed steps and navigation */}
+            <FBAWorkflowProgress student={student} />
+
+            {/* Editable Background Information for FBA */}
+            <StudentBackgroundEditor
+              student={student}
+              onUpdate={(updates) => updateStudentProfile(student.id, updates)}
+            />
+
             {/* FBA Findings */}
             <FBAFindingsDisplay student={student} />
 
