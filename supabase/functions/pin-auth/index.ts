@@ -13,9 +13,9 @@ Deno.serve(async (req) => {
   try {
     const { email, pin } = await req.json();
 
-    if (!email || !pin) {
+    if (!pin) {
       return new Response(
-        JSON.stringify({ error: "Email and PIN are required" }),
+        JSON.stringify({ error: "PIN is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -35,12 +35,50 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Find user by email
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id, pin_hash, is_approved")
-      .eq("email", email.toLowerCase())
-      .single();
+    const normalizedEmail = typeof email === "string" ? email.toLowerCase().trim() : "";
+
+    // PIN hash for PIN-only lookup
+    const pinHashBuf = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(pin),
+    );
+    const pinHash = Array.from(new Uint8Array(pinHashBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Find user by email (optional) OR by PIN hash
+    let profile: { user_id: string; pin_hash: string | null; is_approved: boolean | null; email: string | null } | null = null;
+    let profileError: any = null;
+
+    if (normalizedEmail) {
+      const res = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, pin_hash, is_approved, email")
+        .eq("email", normalizedEmail)
+        .single();
+      profile = res.data as any;
+      profileError = res.error;
+    } else {
+      const res = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, pin_hash, is_approved, email")
+        .eq("pin_hash", pinHash)
+        .limit(2);
+
+      profileError = res.error;
+      if (!profileError) {
+        if (!res.data || res.data.length === 0) {
+          profile = null;
+        } else if (res.data.length > 1) {
+          return new Response(
+            JSON.stringify({ error: "PIN is not unique. Please use email + password login." }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        } else {
+          profile = res.data[0] as any;
+        }
+      }
+    }
 
     if (profileError || !profile) {
       return new Response(
@@ -86,11 +124,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    const emailForAuth = (profile.email || normalizedEmail).toLowerCase();
+
     // Generate a new session for this user using the admin API
     // We need to generate tokens for the user - use a custom token generation
     const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
-      email: email.toLowerCase(),
+      email: emailForAuth,
       options: {
         redirectTo: Deno.env.get("SUPABASE_URL"),
       }
@@ -116,7 +156,7 @@ Deno.serve(async (req) => {
       
       // Use a workaround: generate a short-lived access token by creating a magic link
       // and immediately verifying it
-      const redirectUrl = new URL(sessionData.properties?.action_link || "");
+       const redirectUrl = new URL(sessionData.properties?.action_link || "");
       const verificationToken = redirectUrl.searchParams.get("token");
       const type = redirectUrl.searchParams.get("type");
 
