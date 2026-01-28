@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { 
   ClipboardCheck, Users, FileText, BarChart3, Brain, Eye, 
   Target, AlertTriangle, CheckCircle2, ArrowRight, ChevronRight,
-  FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar
+  FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar, ClipboardList
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import { useDataStore } from '@/store/dataStore';
 import { FBAModeTools } from '@/components/FBAModeTools';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { ABCTracker } from '@/components/ABCTracker';
+import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
+import { CollaborationPanel } from '@/components/CollaborationPanel';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -293,14 +295,18 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs defaultValue="workflow" className="space-y-4">
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
             </TabsTrigger>
+            <TabsTrigger value="indirect" className="gap-1 text-xs">
+              <ClipboardList className="w-3 h-3" />
+              Indirect
+            </TabsTrigger>
             <TabsTrigger value="collect" className="gap-1 text-xs">
               <Eye className="w-3 h-3" />
-              Collect Data
+              Direct
             </TabsTrigger>
             <TabsTrigger value="analysis" className="gap-1 text-xs">
               <Brain className="w-3 h-3" />
@@ -426,6 +432,14 @@ export default function AssessmentDashboard() {
               </Card>
             </div>
 
+            {/* Collaboration Panel - shown on workflow tab */}
+            {selectedStudent && (
+              <CollaborationPanel 
+                studentId={selectedStudentId}
+                studentName={selectedStudent.name}
+              />
+            )}
+
             {/* Quick Actions */}
             <Card>
               <CardHeader className="pb-2">
@@ -455,6 +469,39 @@ export default function AssessmentDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Indirect Assessment Tab */}
+          <TabsContent value="indirect" className="space-y-4">
+            {selectedStudent && (
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <IndirectAssessmentTools 
+                    student={selectedStudent}
+                    onSaveAssessment={(result) => {
+                      console.log('Assessment saved:', result);
+                    }}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <CollaborationPanel 
+                    studentId={selectedStudentId}
+                    studentName={selectedStudent.name}
+                  />
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Assessment Tips</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs text-muted-foreground">
+                      <p>• <strong>FAST</strong> - Quick 16-item screening tool for initial function identification</p>
+                      <p>• <strong>MAS</strong> - 16-item scale providing more detailed function analysis</p>
+                      <p>• <strong>QABF</strong> - Comprehensive 25-item assessment with 5 items per function</p>
+                      <p className="pt-2">Consider interviewing multiple informants (teachers, parents, staff) to get a complete picture.</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Collect Data Tab */}

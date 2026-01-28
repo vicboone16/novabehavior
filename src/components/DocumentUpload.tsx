@@ -320,30 +320,61 @@ export function DocumentUpload({
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Document Type</Label>
+              <Label>Document Type <span className="text-destructive">*</span></Label>
               <Select value={selectedType} onValueChange={(v) => setSelectedType(v as DocumentType)}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select document type..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(DOCUMENT_TYPE_LABELS).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Primary Assessment Documents
+                  </div>
+                  <SelectItem value="fba">{DOCUMENT_TYPE_LABELS['fba']}</SelectItem>
+                  <SelectItem value="bip">{DOCUMENT_TYPE_LABELS['bip']}</SelectItem>
+                  <SelectItem value="iep">{DOCUMENT_TYPE_LABELS['iep']}</SelectItem>
+                  
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                    Evaluation Reports
+                  </div>
+                  <SelectItem value="psycho-ed">{DOCUMENT_TYPE_LABELS['psycho-ed']}</SelectItem>
+                  <SelectItem value="medical">{DOCUMENT_TYPE_LABELS['medical']}</SelectItem>
+                  
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                    Interviews & Observations
+                  </div>
+                  <SelectItem value="teacher-interview">{DOCUMENT_TYPE_LABELS['teacher-interview']}</SelectItem>
+                  <SelectItem value="parent-interview">{DOCUMENT_TYPE_LABELS['parent-interview']}</SelectItem>
+                  <SelectItem value="observation-notes">{DOCUMENT_TYPE_LABELS['observation-notes']}</SelectItem>
+                  
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
+                    Other Documents
+                  </div>
+                  <SelectItem value="intake">{DOCUMENT_TYPE_LABELS['intake']}</SelectItem>
+                  <SelectItem value="progress-report">{DOCUMENT_TYPE_LABELS['progress-report']}</SelectItem>
+                  <SelectItem value="other">{DOCUMENT_TYPE_LABELS['other']}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Known types (FBA, BIP, IEP) will be automatically analyzed to extract key information.
+                {selectedType === 'fba' || selectedType === 'bip' || selectedType === 'iep' 
+                  ? '✨ AI will automatically extract key information from this document type.'
+                  : selectedType === 'other'
+                  ? 'Specify the document type below for better organization.'
+                  : 'Document will be stored for reference. Select FBA, BIP, or IEP for automatic extraction.'}
               </p>
             </div>
 
             {selectedType === 'other' && (
               <div className="space-y-2">
-                <Label>Document Description</Label>
+                <Label>Custom Document Type <span className="text-destructive">*</span></Label>
                 <Input
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
-                  placeholder="e.g., Medical Report, Observation Notes"
+                  placeholder="e.g., Psychiatric Evaluation, Speech Assessment, OT Report..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Examples: Psychiatric Evaluation, Speech/Language Assessment, OT/PT Report, 
+                  Previous School Records, Crisis Plan, Safety Plan, etc.
+                </p>
               </div>
             )}
 

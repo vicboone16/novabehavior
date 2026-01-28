@@ -7,7 +7,7 @@ export type GoalMetric = 'frequency' | 'percentage' | 'duration' | 'rate' | 'lat
 
 export type CaseType = 'school-based' | 'fba-only' | 'direct-services' | 'consultation';
 
-export type DocumentType = 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'other';
+export type DocumentType = 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'medical' | 'intake' | 'teacher-interview' | 'parent-interview' | 'observation-notes' | 'other';
 
 export interface BehaviorGoal {
   id: string;
@@ -289,12 +289,17 @@ export const CASE_TYPE_LABELS: Record<CaseType, string> = {
 };
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
-  'fba': 'FBA',
-  'bip': 'BIP',
-  'iep': 'IEP',
-  'psycho-ed': 'Psycho-ed / Eligibility Report',
+  'fba': 'FBA (Functional Behavior Assessment)',
+  'bip': 'BIP (Behavior Intervention Plan)',
+  'iep': 'IEP (Individualized Education Program)',
+  'psycho-ed': 'Psycho-educational / Eligibility Report',
   'progress-report': 'Progress Report',
-  'other': 'Other'
+  'medical': 'Medical Report',
+  'intake': 'Intake / Referral Form',
+  'teacher-interview': 'Teacher Interview',
+  'parent-interview': 'Parent / Caregiver Interview',
+  'observation-notes': 'Observation Notes',
+  'other': 'Other (specify)',
 };
 
 export const BEHAVIOR_CATEGORIES = [
