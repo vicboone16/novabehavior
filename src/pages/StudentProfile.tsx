@@ -58,6 +58,7 @@ import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
 import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
 import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
+import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
@@ -507,23 +508,39 @@ export default function StudentProfile() {
             </Button>
           </div>
 
-          <div className="grid gap-3">
-            {student.behaviors.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No behaviors configured. Add one to start tracking.
-                </CardContent>
-              </Card>
-            ) : (
-              student.behaviors.map((behavior) => (
-                <Card key={behavior.id}>
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
+          {/* Behavior Overview with Charts */}
+          <StudentBehaviorsOverview
+            studentId={student.id}
+            studentName={student.name}
+            studentColor={student.color}
+            behaviors={student.behaviors}
+            frequencyEntries={studentFrequency}
+            durationEntries={studentDuration}
+            abcEntries={studentABC}
+            intervalEntries={studentIntervals}
+            sessions={sessions}
+            historicalData={student.historicalData?.frequencyEntries || []}
+          />
+
+          {/* Behavior List (for management) */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Manage Behaviors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {student.behaviors.length === 0 ? (
+                  <div className="py-4 text-center text-muted-foreground text-sm">
+                    No behaviors configured. Add one to start tracking.
+                  </div>
+                ) : (
+                  student.behaviors.map((behavior) => (
+                    <div key={behavior.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                       <div>
-                        <h4 className="font-medium">{behavior.name}</h4>
-                        <div className="flex gap-1 mt-1">
+                        <span className="font-medium text-sm">{behavior.name}</span>
+                        <div className="flex gap-1 mt-0.5">
                           {(behavior.methods || [behavior.type]).map((method) => (
-                            <Badge key={method} variant="secondary" className="text-xs">
+                            <Badge key={method} variant="secondary" className="text-xs py-0">
                               {METHOD_LABELS[method]}
                             </Badge>
                           ))}
@@ -532,17 +549,17 @@ export default function StudentProfile() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-destructive hover:text-destructive"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => setDeleteConfirm({ type: 'behavior', id: behavior.id })}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Goals Tab */}
