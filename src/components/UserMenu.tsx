@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSync } from '@/contexts/SyncContext';
 import { Button } from '@/components/ui/button';
@@ -10,16 +11,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, RefreshCw, Cloud, CloudOff, Check, Loader2 } from 'lucide-react';
+import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, Smartphone, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { SetupPinDialog } from '@/components/PinLogin';
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
   const { isSyncing, isLoading, lastSyncTime, syncNow, syncStatus } = useSync();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showPinSetup, setShowPinSetup] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
+        setIsAdmin(!!data);
+      }
+    };
+    checkAdmin();
+  }, [user]);
 
   if (!user) return null;
 
@@ -113,12 +128,36 @@ export function UserMenu() {
             Sync Now
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate('/behaviors')}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            Behavior Library
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowPinSetup(true)}>
+            <Smartphone className="mr-2 h-4 w-4" />
+            Set Up Quick PIN
+          </DropdownMenuItem>
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/admin')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Admin Panel
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <SetupPinDialog
+        open={showPinSetup}
+        onOpenChange={setShowPinSetup}
+        userId={user.id}
+      />
     </div>
   );
 }

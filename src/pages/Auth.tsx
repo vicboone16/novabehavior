@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, ClipboardList, Target } from 'lucide-react';
+import { Loader2, Users, ClipboardList, Target, Smartphone } from 'lucide-react';
+import { PinLogin } from '@/components/PinLogin';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'pin'>('password');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,38 +107,55 @@ export default function Auth() {
             </CardHeader>
 
             <TabsContent value="login">
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
+              {loginMethod === 'password' ? (
+                <form onSubmit={handleLogin}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="login-password">Password</Label>
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex-col gap-3">
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Sign In
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                      onClick={() => setLoginMethod('pin')}
+                    >
+                      <Smartphone className="w-4 h-4" />
+                      Use PIN login instead
+                    </button>
+                  </CardFooter>
+                </form>
+              ) : (
+                <CardContent>
+                  <PinLogin
+                    onSuccess={() => navigate('/')}
+                    onSwitchToPassword={() => setLoginMethod('password')}
+                  />
                 </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Sign In
-                  </Button>
-                </CardFooter>
-              </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">

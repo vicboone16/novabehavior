@@ -14,12 +14,55 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_permissions: {
+        Row: {
+          can_assign_admin: boolean | null
+          can_manage_roles: boolean | null
+          can_manage_students: boolean | null
+          can_manage_tags: boolean | null
+          can_manage_users: boolean | null
+          can_view_all_users: boolean | null
+          created_at: string
+          id: string
+          scope_tag_ids: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_assign_admin?: boolean | null
+          can_manage_roles?: boolean | null
+          can_manage_students?: boolean | null
+          can_manage_tags?: boolean | null
+          can_manage_users?: boolean | null
+          can_view_all_users?: boolean | null
+          created_at?: string
+          id?: string
+          scope_tag_ids?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_assign_admin?: boolean | null
+          can_manage_roles?: boolean | null
+          can_manage_students?: boolean | null
+          can_manage_tags?: boolean | null
+          can_manage_users?: boolean | null
+          can_view_all_users?: boolean | null
+          created_at?: string
+          id?: string
+          scope_tag_ids?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           display_name: string | null
           email: string | null
           id: string
+          pin_hash: string | null
           updated_at: string
           user_id: string
         }
@@ -28,6 +71,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          pin_hash?: string | null
           updated_at?: string
           user_id: string
         }
@@ -36,6 +80,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          pin_hash?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -178,6 +223,42 @@ export type Database = {
           },
         ]
       }
+      student_tags: {
+        Row: {
+          created_at: string
+          id: string
+          student_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          student_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          student_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_tags_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           archived_at: string | null
@@ -262,15 +343,161 @@ export type Database = {
         }
         Relationships: []
       }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          tag_type: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          tag_type: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          tag_type?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_student_access: {
+        Row: {
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          created_at: string
+          granted_by: string | null
+          id: string
+          permission_level: string
+          student_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_collect_data?: boolean | null
+          can_edit_profile?: boolean | null
+          can_generate_reports?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_notes?: boolean | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_level: string
+          student_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_collect_data?: boolean | null
+          can_edit_profile?: boolean | null
+          can_generate_reports?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_notes?: boolean | null
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_level?: string
+          student_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_student_access_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      set_user_pin: {
+        Args: { _pin: string; _user_id: string }
+        Returns: boolean
+      }
+      verify_pin: { Args: { _pin: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "admin" | "staff" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -397,6 +624,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "admin", "staff", "viewer"],
+    },
   },
 } as const
