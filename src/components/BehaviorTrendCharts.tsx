@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
+import { toast } from 'sonner';
 
 const CHART_COLORS = [
   'hsl(199, 89%, 48%)',
@@ -20,9 +24,18 @@ const CHART_COLORS = [
 ];
 
 export function BehaviorTrendCharts() {
-  const { sessions, students } = useDataStore();
+  const { sessions, students, frequencyEntries, addHistoricalFrequency } = useDataStore();
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
+  const [showRatePerHour, setShowRatePerHour] = useState(false);
+  const [showAddHistorical, setShowAddHistorical] = useState(false);
+  
+  // Historical entry form state
+  const [histDate, setHistDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [histStudentId, setHistStudentId] = useState('');
+  const [histBehaviorId, setHistBehaviorId] = useState('');
+  const [histCount, setHistCount] = useState('1');
+  const [histDuration, setHistDuration] = useState('30');
 
   const allBehaviors = useMemo(() => {
     const behaviors: { id: string; name: string }[] = [];
@@ -41,9 +54,11 @@ export function BehaviorTrendCharts() {
     const sessionData = sessions.map(session => {
       const date = format(new Date(session.date), 'MM/dd');
       const dateTime = format(new Date(session.date), 'MM/dd HH:mm');
+      const sessionLengthMinutes = session.sessionLengthMinutes || 30;
       
       // Frequency data per session
       const frequencyByBehavior: Record<string, number> = {};
+      const rateByBehavior: Record<string, number> = {};
       session.frequencyEntries.forEach(entry => {
         if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
@@ -51,6 +66,11 @@ export function BehaviorTrendCharts() {
         const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
         const key = behavior?.name || 'Unknown';
         frequencyByBehavior[key] = (frequencyByBehavior[key] || 0) + entry.count;
+        
+        // Calculate rate per hour using observation duration or session length
+        const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
+        const ratePerHour = entry.count / (durationMinutes / 60);
+        rateByBehavior[key] = (rateByBehavior[key] || 0) + ratePerHour;
       });
 
       // Interval data per session
@@ -87,7 +107,11 @@ export function BehaviorTrendCharts() {
         date,
         dateTime,
         sessionId: session.id,
+        sessionLengthMinutes,
         ...frequencyByBehavior,
+        ...Object.fromEntries(
+          Object.entries(rateByBehavior).map(([k, v]) => [`${k} (/hr)`, parseFloat(v.toFixed(2))])
+        ),
         ...Object.fromEntries(
           Object.entries(intervalPercentages).map(([k, v]) => [`${k} (%)`, v])
         ),
@@ -127,13 +151,45 @@ export function BehaviorTrendCharts() {
     const names = new Set<string>();
     chartData.forEach(d => {
       Object.keys(d).forEach(key => {
-        if (!['date', 'dateTime', 'sessionId'].includes(key)) {
+        if (!['date', 'dateTime', 'sessionId', 'sessionLengthMinutes'].includes(key)) {
           names.add(key);
         }
       });
     });
     return Array.from(names);
   }, [chartData]);
+
+  // Handle adding historical frequency entry
+  const handleAddHistoricalEntry = () => {
+    if (!histStudentId || !histBehaviorId) {
+      toast.error('Please select a student and behavior');
+      return;
+    }
+    
+    const count = parseInt(histCount) || 1;
+    const durationMinutes = parseFloat(histDuration) || 30;
+    const timestamp = new Date(`${histDate}T12:00:00`);
+    
+    addHistoricalFrequency({
+      studentId: histStudentId,
+      behaviorId: histBehaviorId,
+      count,
+      timestamp,
+      observationDurationMinutes: durationMinutes,
+    });
+    
+    toast.success(`Added ${count} occurrences (${(count / (durationMinutes / 60)).toFixed(2)}/hr)`);
+    setShowAddHistorical(false);
+    setHistCount('1');
+    setHistDuration('30');
+  };
+
+  // Get behaviors for selected student
+  const studentBehaviors = useMemo(() => {
+    if (!histStudentId) return [];
+    const student = students.find(s => s.id === histStudentId);
+    return student?.behaviors || [];
+  }, [histStudentId, students]);
 
   if (sessions.length === 0) {
     return (
@@ -174,8 +230,8 @@ export function BehaviorTrendCharts() {
           </DialogTitle>
         </DialogHeader>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 py-2 border-b">
+        {/* Filters and Controls */}
+        <div className="flex flex-wrap gap-3 py-2 border-b items-center">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -202,15 +258,130 @@ export function BehaviorTrendCharts() {
             </SelectContent>
           </Select>
           <Badge variant="outline">{sessions.length} sessions</Badge>
+          
+          <div className="flex items-center gap-2 ml-auto">
+            <Switch
+              id="show-rate"
+              checked={showRatePerHour}
+              onCheckedChange={setShowRatePerHour}
+            />
+            <Label htmlFor="show-rate" className="text-xs cursor-pointer">
+              Rate/hr
+            </Label>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddHistorical(true)}
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add Historical
+          </Button>
         </div>
+
+        {/* Add Historical Entry Dialog */}
+        {showAddHistorical && (
+          <Card className="mx-2 my-2 border-primary/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Add Historical Frequency Entry
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Enter data collected outside of sessions with observation duration for rate calculation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Date</Label>
+                  <Input
+                    type="date"
+                    value={histDate}
+                    onChange={(e) => setHistDate(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Student</Label>
+                  <Select value={histStudentId} onValueChange={(v) => { setHistStudentId(v); setHistBehaviorId(''); }}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.filter(s => !s.isArchived).map(s => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Behavior</Label>
+                  <Select value={histBehaviorId} onValueChange={setHistBehaviorId} disabled={!histStudentId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {studentBehaviors.map(b => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Count</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={histCount}
+                    onChange={(e) => setHistCount(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Observation Duration (minutes)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={histDuration}
+                    onChange={(e) => setHistDuration(e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Calculated Rate</Label>
+                  <div className="h-8 px-3 flex items-center bg-muted rounded-md text-sm font-medium">
+                    {((parseInt(histCount) || 0) / ((parseFloat(histDuration) || 30) / 60)).toFixed(2)} per hour
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddHistoricalEntry}>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Entry
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowAddHistorical(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Charts */}
         <div className="flex-1 overflow-y-auto py-2">
           <Tabs defaultValue="frequency">
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="frequency" className="gap-1">
                 <BarChart3 className="w-3 h-3" />
                 Frequency
+              </TabsTrigger>
+              <TabsTrigger value="rate" className="gap-1">
+                <Clock className="w-3 h-3" />
+                Rate/Hour
               </TabsTrigger>
               <TabsTrigger value="trends" className="gap-1">
                 <TrendingUp className="w-3 h-3" />
@@ -225,7 +396,7 @@ export function BehaviorTrendCharts() {
             <TabsContent value="frequency" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Frequency by Session</CardTitle>
+                  <CardTitle className="text-sm">Frequency by Session (Raw Counts)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -236,7 +407,7 @@ export function BehaviorTrendCharts() {
                       <Tooltip />
                       <Legend />
                       {behaviorNames
-                        .filter(n => !n.includes('(%)') && !n.includes('(sec)'))
+                        .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
                         .map((name, idx) => (
                           <Bar 
                             key={name} 
@@ -278,6 +449,69 @@ export function BehaviorTrendCharts() {
               </Card>
             </TabsContent>
 
+            {/* Rate Per Hour Tab */}
+            <TabsContent value="rate" className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Behavior Rate Per Hour</CardTitle>
+                  <CardDescription className="text-xs">
+                    Frequency normalized by observation duration for accurate comparison
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip formatter={(value: number) => `${value.toFixed(2)}/hr`} />
+                      <Legend />
+                      {behaviorNames
+                        .filter(n => n.includes('(/hr)'))
+                        .map((name, idx) => (
+                          <Bar 
+                            key={name} 
+                            dataKey={name} 
+                            fill={CHART_COLORS[idx % CHART_COLORS.length]} 
+                          />
+                        ))
+                      }
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Rate Trends Over Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip formatter={(value: number) => `${value.toFixed(2)}/hr`} />
+                      <Legend />
+                      {behaviorNames
+                        .filter(n => n.includes('(/hr)'))
+                        .map((name, idx) => (
+                          <Line 
+                            key={name} 
+                            type="monotone"
+                            dataKey={name} 
+                            stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                            strokeWidth={2}
+                            dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          />
+                        ))
+                      }
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="trends" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -292,7 +526,7 @@ export function BehaviorTrendCharts() {
                       <Tooltip />
                       <Legend />
                       {behaviorNames
-                        .filter(n => !n.includes('(%)') && !n.includes('(sec)'))
+                        .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
                         .map((name, idx) => (
                           <Line 
                             key={name} 
