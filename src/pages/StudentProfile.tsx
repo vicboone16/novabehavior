@@ -56,6 +56,7 @@ import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
+import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -1248,6 +1249,12 @@ export default function StudentProfile() {
               )}
             </div>
           </div>
+
+          {/* Historical Skill Data Editor */}
+          <HistoricalSkillDataEditor
+            studentId={student.id}
+            studentName={student.name}
+          />
         </TabsContent>
 
         {/* Teacher-Friendly View Tab */}

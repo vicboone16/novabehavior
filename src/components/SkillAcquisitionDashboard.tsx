@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Target, TrendingUp, Download, BarChart3, CheckCircle2, 
-  Clock, Calendar, Filter, FileText, ChevronDown
+  Clock, Calendar, Filter, FileText, ChevronDown, Plus, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +49,7 @@ interface DateRange {
 }
 
 export function SkillAcquisitionDashboard() {
+  const navigate = useNavigate();
   const { students, selectedStudentIds } = useDataStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -220,6 +222,16 @@ export function SkillAcquisitionDashboard() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
+
+          {selectedStudentId !== 'all' && (
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/students/${selectedStudentId}`)}
+            >
+              <History className="w-4 h-4 mr-2" />
+              Add Historical Data
+            </Button>
+          )}
         </div>
       </div>
 
