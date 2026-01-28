@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2 } from 'lucide-react';
+import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,8 @@ import { SessionHistory } from './SessionHistory';
 import { SessionLengthManager } from './SessionLengthManager';
 import { SessionReportGenerator } from './SessionReportGenerator';
 import { ABCReportGenerator } from './ABCReportGenerator';
+import { toast } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 
 export function DataSummary() {
   const { 
@@ -28,12 +30,14 @@ export function DataSummary() {
     setShowTimestamps,
     setSessionNotes,
     saveSession,
+    hasUnsavedChanges,
     resetSessionData,
     getEffectiveSessionLength 
   } = useDataStore();
 
   const [showNotes, setShowNotes] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [showNoChangesWarning, setShowNoChangesWarning] = useState(false);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
 
@@ -60,7 +64,34 @@ export function DataSummary() {
   };
 
   const handleSaveSession = () => {
-    saveSession();
+    const result = saveSession();
+    
+    if (!result.hasChanges) {
+      // No changes since last save - show warning
+      setShowNoChangesWarning(true);
+      return;
+    }
+    
+    if (result.saved) {
+      // Successfully saved - show confirmation toast
+      toast({
+        title: "Session Saved",
+        description: (
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-primary" />
+            <span>Your session data has been saved successfully.</span>
+          </div>
+        ),
+        duration: 4000,
+      });
+    } else {
+      // No data to save
+      toast({
+        title: "No Data to Save",
+        description: "There is no session data to save.",
+        variant: "destructive",
+      });
+    }
   };
 
   const exportToCSV = () => {
@@ -454,10 +485,19 @@ export function DataSummary() {
 
       {/* Export & Save Actions */}
       {hasData && (
-        <div className="flex gap-2 flex-wrap">
-          <Button size="sm" onClick={handleSaveSession} className="gap-2">
-            <Save className="w-4 h-4" />
-            Save Session
+        <div className="flex gap-2 flex-wrap items-center">
+          <Button 
+            size="sm" 
+            onClick={handleSaveSession} 
+            className="gap-2"
+            variant={hasUnsavedChanges() ? "default" : "outline"}
+          >
+            {hasUnsavedChanges() ? (
+              <Save className="w-4 h-4" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-primary" />
+            )}
+            {hasUnsavedChanges() ? "Save Session" : "Saved"}
           </Button>
           <Button size="sm" variant="outline" onClick={exportToCSV} className="gap-2">
             <Download className="w-4 h-4" />
@@ -469,6 +509,17 @@ export function DataSummary() {
           </Button>
         </div>
       )}
+
+      {/* No Changes Warning Dialog */}
+      <ConfirmDialog
+        open={showNoChangesWarning}
+        onOpenChange={setShowNoChangesWarning}
+        title="No Changes to Save"
+        description="You haven't made any changes since your last save. Your data is already saved."
+        confirmLabel="OK"
+        cancelLabel="Close"
+        onConfirm={() => setShowNoChangesWarning(false)}
+      />
     </div>
   );
 }
