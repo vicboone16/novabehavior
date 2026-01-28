@@ -107,6 +107,46 @@ export interface ExtractedDocumentData {
   reviewDates?: { date: string; added?: boolean }[];
 }
 
+export interface IndirectAssessmentResult {
+  id: string;
+  type: 'FAST' | 'MAS' | 'QABF';
+  studentId: string;
+  completedBy: string;
+  completedAt: Date;
+  targetBehavior: string;
+  responses: Record<string, number>;
+  scores: {
+    attention: number;
+    escape: number;
+    tangible: number;
+    sensory: number;
+  };
+  primaryFunction: BehaviorFunction;
+  notes?: string;
+}
+
+export interface BIPData {
+  id: string;
+  studentId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  // From FBA
+  targetBehaviors: { name: string; definition: string }[];
+  hypothesisStatements: string[];
+  primaryFunction: BehaviorFunction;
+  // BIP specific
+  replacementBehaviors: { name: string; definition: string; teachingPlan?: string }[];
+  preventativeStrategies: string[];
+  teachingStrategies: string[];
+  reinforcementStrategies: string[];
+  reactiveStrategies: string[];
+  crisisPlan?: string;
+  monitoringPlan?: string;
+  reviewDate?: Date;
+  teamMembers?: string[];
+  status: 'draft' | 'active' | 'archived';
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -126,6 +166,10 @@ export interface Student {
   narrativeNotes?: NarrativeNote[];
   // Documents
   documents?: StudentDocument[];
+  // Indirect assessments (FAST, MAS, QABF)
+  indirectAssessments?: IndirectAssessmentResult[];
+  // BIP data
+  bipData?: BIPData;
 }
 
 export interface ABCBehaviorEntry {

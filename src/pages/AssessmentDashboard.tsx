@@ -18,6 +18,8 @@ import { ABCTracker } from '@/components/ABCTracker';
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
 import { CollaborationPanel } from '@/components/CollaborationPanel';
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
+import { BIPGenerator } from '@/components/BIPGenerator';
+import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -665,9 +667,13 @@ export default function AssessmentDashboard() {
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {selectedStudent && (
-                    <FBAReportGenerator student={selectedStudent} />
+                    <>
+                      <FBAReportGenerator student={selectedStudent} />
+                      <ParentFriendlyFBASummary student={selectedStudent} />
+                      <BIPGenerator student={selectedStudent} />
+                    </>
                   )}
                 </div>
               </CardContent>
