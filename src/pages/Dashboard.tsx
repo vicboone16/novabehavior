@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ClipboardList } from 'lucide-react';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
+import { ExpandedStudentView } from '@/components/ExpandedStudentView';
 import { SessionTimer } from '@/components/SessionTimer';
 import { DataSummary } from '@/components/DataSummary';
 import { SyncedIntervalController } from '@/components/SyncedIntervalController';
@@ -15,6 +17,7 @@ import { useDataStore } from '@/store/dataStore';
 export default function Dashboard() {
   const { students, selectedStudentIds } = useDataStore();
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   // Check if any selected student has interval behaviors
   const hasIntervalBehaviors = selectedStudents.some(s => 
@@ -23,6 +26,20 @@ export default function Dashboard() {
 
   // Check if any selected student has behaviors (for ABC popup - can record for any student with behaviors)
   const hasAnyBehaviors = selectedStudents.some(s => s.behaviors.length > 0);
+
+  const expandedStudent = expandedStudentId 
+    ? students.find(s => s.id === expandedStudentId)
+    : null;
+
+  // Show expanded view if a student is selected for expansion
+  if (expandedStudent) {
+    return (
+      <ExpandedStudentView
+        student={expandedStudent}
+        onClose={() => setExpandedStudentId(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -54,7 +71,11 @@ export default function Dashboard() {
       {selectedStudents.length > 0 ? (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {selectedStudents.map(student => (
-            <CompactStudentCard key={student.id} student={student} />
+            <CompactStudentCard 
+              key={student.id} 
+              student={student}
+              onExpand={() => setExpandedStudentId(student.id)}
+            />
           ))}
         </div>
       ) : (
