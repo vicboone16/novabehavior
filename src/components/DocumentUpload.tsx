@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { 
   Upload, FileText, FileCheck, Trash2, Check, X, Eye, Loader2, 
-  AlertCircle, Plus, ChevronDown, ChevronUp 
+  AlertCircle, Plus, ChevronDown, ChevronUp, Download 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,7 @@ export function DocumentUpload({
   onAddExtractedConsequence,
   onImportBackgroundInfo,
 }: DocumentUploadProps) {
+  const { user } = useAuth();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedType, setSelectedType] = useState<DocumentType>('other');
   const [customType, setCustomType] = useState('');
@@ -74,11 +76,100 @@ export function DocumentUpload({
   const [showExtractedData, setShowExtractedData] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [showBackgroundImportPreview, setShowBackgroundImportPreview] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
+
+  // Download document handler
+  const handleDownload = async (doc: StudentDocument) => {
+    if (!doc.filePath) {
+      toast.error('No file path available for download');
+      return;
+    }
+
+    setIsDownloading(doc.id);
+    try {
+      // Try to download from student-documents bucket first
+      const { data, error } = await supabase.storage
+        .from('student-documents')
+        .download(doc.filePath);
+
+      if (error) {
+        // Fall back to trying the path without the documents prefix
+        const simplePath = doc.filePath.replace('documents/', '');
+        const { data: data2, error: error2 } = await supabase.storage
+          .from('student-documents')
+          .download(simplePath);
+
+        if (error2) {
+          console.error('Download error:', error, error2);
+          toast.error('Failed to download file');
+          return;
+        }
+        
+        // Create download link
+        const url = URL.createObjectURL(data2);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('File downloaded');
+        return;
+      }
+
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('File downloaded');
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Failed to download file');
+    } finally {
+      setIsDownloading(null);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+    }
+  };
+
+  // Helper to sync document to student_files table for profile view
+  const syncToStudentFiles = async (filePath: string, fileName: string, fileType: string, fileSize: number, description: string) => {
+    if (!user) return;
+    
+    try {
+      // Check if already exists to avoid duplicates
+      const { data: existing } = await supabase
+        .from('student_files')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('file_path', filePath)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from('student_files').insert({
+          user_id: user.id,
+          student_id: studentId,
+          file_name: fileName,
+          file_path: filePath,
+          file_type: fileType,
+          file_size: fileSize,
+          description: description,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync to student_files:', err);
+      // Don't fail the upload if sync fails
     }
   };
 
@@ -98,6 +189,11 @@ export function DocumentUpload({
         uploadedAt: new Date(),
         isProcessed: false,
       };
+
+      // Document description for student_files sync
+      const docDescription = selectedType === 'other' 
+        ? customType || 'Document' 
+        : DOCUMENT_TYPE_LABELS[selectedType];
 
       // Determine if we should attempt AI extraction
       const shouldExtract = selectedType !== 'other';
@@ -128,6 +224,9 @@ export function DocumentUpload({
               // Fall back to reading as text (won't work for PDFs but better than nothing)
               documentText = await selectedFile.text();
             } else {
+              // Sync to student_files for profile view
+              await syncToStudentFiles(filePath, selectedFile.name, selectedFile.type, selectedFile.size, docDescription);
+              
               // Get public URL for the file
               const { data: urlData } = supabase.storage
                 .from('student-documents')
@@ -198,6 +297,22 @@ export function DocumentUpload({
         }
         
         setIsExtracting(false);
+      } else {
+        // For non-extractable documents, still upload to storage
+        const filePath = `${studentId}/${Date.now()}-${selectedFile.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('student-documents')
+          .upload(filePath, selectedFile, {
+            contentType: selectedFile.type,
+            upsert: false,
+          });
+
+        if (!uploadError) {
+          docData.filePath = filePath;
+          // Sync to student_files
+          await syncToStudentFiles(filePath, selectedFile.name, selectedFile.type, selectedFile.size, docDescription);
+        }
       }
 
       onUploadComplete(docData);
@@ -344,6 +459,21 @@ export function DocumentUpload({
                     </div>
                   </div>
                   <div className="flex gap-1">
+                    {/* Download button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleDownload(doc)}
+                      disabled={isDownloading === doc.id}
+                      title="Download file"
+                    >
+                      {isDownloading === doc.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                    </Button>
                     {doc.extractedData && (
                       <Button
                         variant="ghost"
@@ -353,6 +483,7 @@ export function DocumentUpload({
                           setExtractedData(doc.extractedData!);
                           setShowExtractedData(true);
                         }}
+                        title="View extracted data"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -362,6 +493,7 @@ export function DocumentUpload({
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => onDeleteDocument(doc.id)}
+                      title="Delete document"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
