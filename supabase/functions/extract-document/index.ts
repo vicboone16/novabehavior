@@ -233,14 +233,17 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log('User authenticated:', user.id);
 
     const { documentType, documentText, fileUrl, fileName }: ExtractionRequest = await req.json();
 

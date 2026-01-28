@@ -148,11 +148,22 @@ export function StudentFileManager({ studentId, studentName }: StudentFileManage
 
   const handleDownload = async (file: StudentFile) => {
     try {
-      const { data, error } = await supabase.storage
+      // Try student-files bucket first
+      let { data, error } = await supabase.storage
         .from('student-files')
         .download(file.file_path);
 
-      if (error) throw error;
+      // If not found in student-files, try student-documents bucket (for assessment docs)
+      if (error) {
+        const result = await supabase.storage
+          .from('student-documents')
+          .download(file.file_path);
+        
+        if (result.error) {
+          throw result.error;
+        }
+        data = result.data;
+      }
 
       // Create download link
       const url = URL.createObjectURL(data);
