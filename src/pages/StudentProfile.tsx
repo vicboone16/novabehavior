@@ -57,6 +57,7 @@ import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
 import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
+import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -393,9 +394,12 @@ export default function StudentProfile() {
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">
-            {student.behaviors.length} behaviors configured
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-muted-foreground text-sm">
+              {student.behaviors.length} behaviors configured
+            </p>
+            <StudentTagSelector studentId={student.id} showLabel={false} compact />
+          </div>
         </div>
         
         {/* Archive/Delete Actions */}
