@@ -21,6 +21,9 @@ import {
   CaseType,
   HistoricalFrequencyEntry,
   HistoricalDurationEntry,
+  SkillTarget,
+  DTTSession,
+  DTTTrial,
 } from '@/types/behavior';
 
 interface CollapsedState {
@@ -238,6 +241,15 @@ interface DataState {
   restoreFromTrash: (id: string) => void;
   clearTrashItem: (id: string) => void;
   clearExpiredTrash: () => void;
+  
+  // Skill Acquisition / DTT actions
+  addSkillTarget: (studentId: string, target: Omit<SkillTarget, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateSkillTarget: (studentId: string, targetId: string, updates: Partial<SkillTarget>) => void;
+  deleteSkillTarget: (studentId: string, targetId: string) => void;
+  addDTTSession: (studentId: string, session: Omit<DTTSession, 'id'>) => void;
+  updateDTTSession: (studentId: string, sessionId: string, updates: Partial<DTTSession>) => void;
+  deleteDTTSession: (studentId: string, sessionId: string) => void;
+  addHistoricalDTTSession: (studentId: string, session: Omit<DTTSession, 'id'>) => void;
   
   // Reset
   resetAllData: () => void;
@@ -1899,6 +1911,114 @@ export const useDataStore = create<DataState>()(
             const deletedTime = new Date(t.deletedAt).getTime();
             return now - deletedTime < TRASH_EXPIRY_MS;
           }),
+        }));
+      },
+
+      // Skill Acquisition / DTT actions
+      addSkillTarget: (studentId, target) => {
+        const id = crypto.randomUUID();
+        const now = new Date();
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  skillTargets: [
+                    ...(s.skillTargets || []),
+                    { ...target, id, createdAt: now, updatedAt: now },
+                  ],
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateSkillTarget: (studentId, targetId, updates) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  skillTargets: (s.skillTargets || []).map((t) =>
+                    t.id === targetId
+                      ? { ...t, ...updates, updatedAt: new Date() }
+                      : t
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteSkillTarget: (studentId, targetId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  skillTargets: (s.skillTargets || []).filter((t) => t.id !== targetId),
+                  // Also remove associated DTT sessions
+                  dttSessions: (s.dttSessions || []).filter((sess) => sess.skillTargetId !== targetId),
+                }
+              : s
+          ),
+        }));
+      },
+
+      addDTTSession: (studentId, session) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  dttSessions: [...(s.dttSessions || []), { ...session, id }],
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateDTTSession: (studentId, sessionId, updates) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  dttSessions: (s.dttSessions || []).map((sess) =>
+                    sess.id === sessionId ? { ...sess, ...updates } : sess
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteDTTSession: (studentId, sessionId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  dttSessions: (s.dttSessions || []).filter((sess) => sess.id !== sessionId),
+                }
+              : s
+          ),
+        }));
+      },
+
+      addHistoricalDTTSession: (studentId, session) => {
+        // Same as addDTTSession but allows setting custom date
+        const id = crypto.randomUUID();
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  dttSessions: [...(s.dttSessions || []), { ...session, id }],
+                }
+              : s
+          ),
         }));
       },
     }),
