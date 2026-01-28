@@ -715,6 +715,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_tag_based_access: {
+        Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       record_pin_attempt: {
