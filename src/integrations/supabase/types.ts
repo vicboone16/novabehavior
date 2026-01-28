@@ -56,6 +56,44 @@ export type Database = {
         }
         Relationships: []
       }
+      note_requirements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes_required: boolean
+          role: string | null
+          setting: string | null
+          student_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes_required?: boolean
+          role?: string | null
+          setting?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes_required?: boolean
+          role?: string | null
+          setting?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_requirements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved_at: string | null
@@ -161,6 +199,78 @@ export type Database = {
           },
         ]
       }
+      session_notes: {
+        Row: {
+          content: Json
+          created_at: string
+          fidelity_met: boolean | null
+          id: string
+          last_edited_at: string | null
+          last_edited_by: string | null
+          note_type: string
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_comments: string | null
+          session_id: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          fidelity_met?: boolean | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          note_type: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_comments?: string | null
+          session_id: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          fidelity_met?: boolean | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          note_type?: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_comments?: string | null
+          session_id?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
@@ -170,6 +280,7 @@ export type Database = {
           name: string
           session_length_minutes: number
           start_time: string
+          status: string | null
           student_ids: string[] | null
           user_id: string
         }
@@ -181,6 +292,7 @@ export type Database = {
           name: string
           session_length_minutes?: number
           start_time: string
+          status?: string | null
           student_ids?: string[] | null
           user_id: string
         }
@@ -192,6 +304,7 @@ export type Database = {
           name?: string
           session_length_minutes?: number
           start_time?: string
+          status?: string | null
           student_ids?: string[] | null
           user_id?: string
         }
@@ -234,6 +347,63 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_files_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_session_status: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          notes_submitted: boolean | null
+          paused_at: string | null
+          session_id: string
+          started_at: string
+          status: string
+          student_id: string
+          total_active_duration_seconds: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes_submitted?: boolean | null
+          paused_at?: string | null
+          session_id: string
+          started_at?: string
+          status?: string
+          student_id: string
+          total_active_duration_seconds?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes_submitted?: boolean | null
+          paused_at?: string | null
+          session_id?: string
+          started_at?: string
+          status?: string
+          student_id?: string
+          total_active_duration_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_session_status_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -301,6 +471,7 @@ export type Database = {
           is_archived: boolean
           name: string
           narrative_notes: Json | null
+          notes_required: boolean | null
           school: string | null
           updated_at: string
           user_id: string
@@ -328,6 +499,7 @@ export type Database = {
           is_archived?: boolean
           name: string
           narrative_notes?: Json | null
+          notes_required?: boolean | null
           school?: string | null
           updated_at?: string
           user_id: string
@@ -355,6 +527,7 @@ export type Database = {
           is_archived?: boolean
           name?: string
           narrative_notes?: Json | null
+          notes_required?: boolean | null
           school?: string | null
           updated_at?: string
           user_id?: string

@@ -9,6 +9,7 @@ import { NovelBehaviorRecorder } from '@/components/NovelBehaviorRecorder';
 import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { TrashRecovery } from '@/components/TrashRecovery';
+import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 import { useDataStore } from '@/store/dataStore';
 
 export default function Dashboard() {
@@ -38,6 +39,7 @@ export default function Dashboard() {
         <NovelBehaviorRecorder />
         {hasAnyBehaviors && <EnhancedABCPopup />}
         {selectedStudentIds.length > 0 && <QuickABCCustomizer />}
+        <EndAllSessionsButton />
       </div>
 
       {/* Synced Interval Controller */}

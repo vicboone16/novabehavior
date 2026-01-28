@@ -4,6 +4,7 @@ import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
+import { SessionEndFlow } from './SessionEndFlow';
 import { 
   User, 
   ChevronUp, 
@@ -28,7 +29,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useDataStore } from '@/store/dataStore';
 import { useSyncedIntervalState } from './SyncedIntervalController';
-import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
+import { toast } from '@/hooks/use-toast';
 
 interface CompactStudentCardProps {
   student: Student;
@@ -540,18 +541,18 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
         )}
       </div>
 
-      {/* End Session Confirmation */}
-      <ConfirmDialog
+      {/* End Session Flow */}
+      <SessionEndFlow
         open={showEndConfirm}
         onOpenChange={setShowEndConfirm}
-        title="End Session for Student"
-        description={`Are you sure you want to end the session for ${student.name}? This will stop data collection for this student. You can reset to resume later.`}
-        confirmLabel="End Session"
-        onConfirm={() => {
-          endStudentSession(student.id);
-          setShowEndConfirm(false);
+        mode="single"
+        singleStudentId={student.id}
+        onComplete={() => {
+          toast({
+            title: 'Session Ended',
+            description: `Session for ${student.name} has been completed.`,
+          });
         }}
-        variant="destructive"
       />
     </div>
   );
