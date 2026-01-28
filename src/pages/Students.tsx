@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { useDataStore } from '@/store/dataStore';
 import { BulkAddBehavior } from '@/components/BulkAddBehavior';
 import { StudentComparison } from '@/components/StudentComparison';
+import { StudentTagsDisplay } from '@/components/StudentTagSelector';
 
 type FilterType = 'active' | 'archived' | 'all';
 
@@ -174,7 +175,7 @@ export default function Students() {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="secondary" className="text-xs">
                       {student.behaviors.length} behaviors
                     </Badge>
@@ -188,6 +189,7 @@ export default function Students() {
                         {student.customConsequences.length} custom C's
                       </Badge>
                     ) : null}
+                    <StudentTagsDisplay studentId={student.id} />
                   </div>
                 </div>
                 {student.isArchived && (
