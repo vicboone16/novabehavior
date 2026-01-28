@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell, UserPlus, UserMinus, Users, AlertTriangle, Undo2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings, Link, Volume2, VolumeX, Bell, UserPlus, UserMinus, Users, AlertTriangle, Undo2, Minimize2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +79,7 @@ export function SyncedIntervalController() {
   const [bulkVoidReason, setBulkVoidReason] = useState<string>('fire_drill');
   const [bulkVoidCustomReason, setBulkVoidCustomReason] = useState('');
   const [bulkVoidIntervalNum, setBulkVoidIntervalNum] = useState<number>(0);
+  const [isMinimized, setIsMinimized] = useState(false);
   const prevIntervalRef = useRef(currentInterval);
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
@@ -229,6 +230,27 @@ export function SyncedIntervalController() {
   const isComplete = currentInterval >= sessionConfig.totalIntervals;
 
   if (intervalBehaviors.length === 0) return null;
+
+  // Minimized view
+  if (isMinimized) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsMinimized(false)}
+        className="gap-2 h-9 border-primary/30 bg-primary/5"
+      >
+        <Link className="w-4 h-4 text-primary" />
+        <span className="text-xs font-medium">Interval</span>
+        <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+          {currentInterval + 1}/{sessionConfig.totalIntervals}
+        </Badge>
+        <span className="font-mono text-xs">{formatTime(timeInInterval)}</span>
+        {syncedIntervalsRunning && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+        <Maximize2 className="w-3 h-3 text-muted-foreground" />
+      </Button>
+    );
+  }
 
   return (
     <Card className="border-primary/30 bg-primary/5">
@@ -531,6 +553,17 @@ export function SyncedIntervalController() {
                 </div>
               </PopoverContent>
             </Popover>
+            
+            {/* Minimize Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setIsMinimized(true)}
+              title="Minimize"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </CardHeader>
