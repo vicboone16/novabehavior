@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,7 @@ import { NarrativeNotesManager } from '@/components/NarrativeNotesManager';
 import { FBAModeTools } from '@/components/FBAModeTools';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
+import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
 
@@ -439,6 +440,10 @@ export default function StudentProfile() {
               FBA Tools
             </TabsTrigger>
           )}
+          <TabsTrigger value="assessment" className="gap-1 text-xs">
+            <Brain className="w-3 h-3" />
+            Assessment
+          </TabsTrigger>
           <TabsTrigger value="teacher" className="gap-1 text-xs">
             <UserCheck className="w-3 h-3" />
             Teacher View
@@ -963,6 +968,101 @@ export default function StudentProfile() {
             </Card>
           </TabsContent>
         )}
+
+        {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
+        <TabsContent value="assessment" className="space-y-4">
+          <div className="grid gap-4">
+            {/* FBA Findings */}
+            <FBAFindingsDisplay student={student} />
+
+            {/* Indirect Assessments Summary */}
+            {student.indirectAssessments && student.indirectAssessments.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <ClipboardCheck className="w-4 h-4" />
+                    Saved Indirect Assessments ({student.indirectAssessments.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {student.indirectAssessments.map(assessment => (
+                      <div key={assessment.id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary">{assessment.type}</Badge>
+                          <div>
+                            <p className="text-sm font-medium">{assessment.targetBehavior}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(assessment.completedAt), 'MMM dd, yyyy')} by {assessment.completedBy}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline">
+                          Primary: {assessment.primaryFunction}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* BIP Summary */}
+            {student.bipData && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Target className="w-4 h-4" />
+                    Behavior Intervention Plan
+                    <Badge variant={student.bipData.status === 'active' ? 'default' : 'secondary'}>
+                      {student.bipData.status}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div className="p-2 bg-muted rounded">
+                      <p className="text-lg font-bold">{student.bipData.targetBehaviors.length}</p>
+                      <p className="text-xs text-muted-foreground">Target Behaviors</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded">
+                      <p className="text-lg font-bold">{student.bipData.replacementBehaviors.length}</p>
+                      <p className="text-xs text-muted-foreground">Replacements</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded">
+                      <p className="text-lg font-bold">
+                        {(student.bipData.preventativeStrategies?.length || 0) + 
+                         (student.bipData.teachingStrategies?.length || 0) +
+                         (student.bipData.reactiveStrategies?.length || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Strategies</p>
+                    </div>
+                    <div className="p-2 bg-muted rounded">
+                      <p className="text-lg font-bold">{student.bipData.teamMembers?.length || 0}</p>
+                      <p className="text-xs text-muted-foreground">Team Members</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Last updated: {format(new Date(student.bipData.updatedAt), 'MMM dd, yyyy')}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Empty State */}
+            {!student.fbaFindings && (!student.indirectAssessments || student.indirectAssessments.length === 0) && !student.bipData && (
+              <Card className="border-dashed">
+                <CardContent className="py-8 text-center">
+                  <Brain className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-muted-foreground">No assessment data saved yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Complete FBA assessments and generate reports to save findings here
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
 
         {/* Teacher-Friendly View Tab */}
         <TabsContent value="teacher" className="space-y-4">

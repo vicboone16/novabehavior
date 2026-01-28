@@ -125,6 +125,36 @@ export interface IndirectAssessmentResult {
   notes?: string;
 }
 
+export interface FBAFindings {
+  id: string;
+  studentId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  status: 'draft' | 'complete';
+  // Analysis results
+  primaryFunction?: BehaviorFunction;
+  secondaryFunctions?: BehaviorFunction[];
+  functionStrengths?: { function: BehaviorFunction; percentage: number }[];
+  // Patterns
+  topAntecedents?: { value: string; count: number; percentage: number }[];
+  topConsequences?: { value: string; count: number; percentage: number }[];
+  // Hypothesis
+  hypothesisStatements?: string[];
+  // Data summary
+  abcEntriesCount?: number;
+  sessionsCount?: number;
+  frequencyTotal?: number;
+  dateRangeStart?: Date;
+  dateRangeEnd?: Date;
+  // Recommendations
+  recommendations?: string[];
+  ageRange?: string;
+  // Assessor info
+  assessorName?: string;
+  assessorTitle?: string;
+  notes?: string;
+}
+
 export interface BIPData {
   id: string;
   studentId: string;
@@ -168,6 +198,8 @@ export interface Student {
   documents?: StudentDocument[];
   // Indirect assessments (FAST, MAS, QABF)
   indirectAssessments?: IndirectAssessmentResult[];
+  // FBA findings (saved analysis)
+  fbaFindings?: FBAFindings;
   // BIP data
   bipData?: BIPData;
 }
