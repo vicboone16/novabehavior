@@ -4,7 +4,7 @@ import {
   FileText, Download, Printer, FileCheck, FileDown, 
   Brain, Target, AlertTriangle, CheckCircle2, Users,
   Calendar, Clock, ClipboardList, Lightbulb, BookOpen, 
-  Shield, Sparkles, ChevronDown, ChevronUp, Eye, Save
+  Shield, Sparkles, ChevronDown, ChevronUp, Eye, Save, Plus, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { 
   Student, 
@@ -261,6 +262,17 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['preview']));
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // Manual section overrides (for external data)
+  const [manualOverrides, setManualOverrides] = useState<Record<string, { complete: boolean; note?: string }>>({});
+  
+  // Custom sections with narratives
+  const [customSections, setCustomSections] = useState<Array<{
+    id: string;
+    title: string;
+    content: string;
+    position: 'beginning' | 'middle' | 'end';
+  }>>([]);
+
   const activeStudents = useMemo(() => 
     students.filter(s => !s.isArchived), 
     [students]
@@ -425,39 +437,61 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     const hasIndirectAssessments = (selectedStudent.indirectAssessments || []).length > 0;
     const hasRecommendations = recommendations.length > 0;
 
+    // Helper to check manual override
+    const isOverridden = (key: string) => manualOverrides[key]?.complete === true;
+    const getOverrideNote = (key: string) => manualOverrides[key]?.note;
+
     return {
       targetBehaviors: { 
-        complete: hasBehaviors && hasDefinitions, 
-        partial: hasBehaviors && !hasDefinitions,
-        message: hasBehaviors ? (hasDefinitions ? 'Complete' : 'Missing definitions') : 'No behaviors defined'
+        complete: (hasBehaviors && hasDefinitions) || isOverridden('targetBehaviors'), 
+        partial: hasBehaviors && !hasDefinitions && !isOverridden('targetBehaviors'),
+        message: isOverridden('targetBehaviors') 
+          ? `✓ External${getOverrideNote('targetBehaviors') ? `: ${getOverrideNote('targetBehaviors')}` : ''}`
+          : (hasBehaviors ? (hasDefinitions ? 'Complete' : 'Missing definitions') : 'No behaviors defined'),
+        overridden: isOverridden('targetBehaviors'),
       },
       directResults: { 
-        complete: hasABCData, 
+        complete: hasABCData || isOverridden('directResults'), 
         partial: false,
-        message: hasABCData ? `${analysisData?.abcCount} entries` : 'No ABC data collected'
+        message: isOverridden('directResults')
+          ? `✓ External${getOverrideNote('directResults') ? `: ${getOverrideNote('directResults')}` : ''}`
+          : (hasABCData ? `${analysisData?.abcCount} entries` : 'No ABC data collected'),
+        overridden: isOverridden('directResults'),
       },
       indirectResults: { 
-        complete: hasIndirectAssessments, 
+        complete: hasIndirectAssessments || isOverridden('indirectResults'), 
         partial: false,
-        message: hasIndirectAssessments ? `${selectedStudent.indirectAssessments?.length} assessments` : 'No indirect assessments'
+        message: isOverridden('indirectResults')
+          ? `✓ External${getOverrideNote('indirectResults') ? `: ${getOverrideNote('indirectResults')}` : ''}`
+          : (hasIndirectAssessments ? `${selectedStudent.indirectAssessments?.length} assessments` : 'No indirect assessments'),
+        overridden: isOverridden('indirectResults'),
       },
       patterns: { 
-        complete: hasPatterns, 
+        complete: hasPatterns || isOverridden('patterns'), 
         partial: false,
-        message: hasPatterns ? 'Patterns identified' : 'Insufficient data'
+        message: isOverridden('patterns')
+          ? `✓ External${getOverrideNote('patterns') ? `: ${getOverrideNote('patterns')}` : ''}`
+          : (hasPatterns ? 'Patterns identified' : 'Insufficient data'),
+        overridden: isOverridden('patterns'),
       },
       hypothesis: { 
-        complete: hasHypothesis, 
-        partial: hasABCData && !hasHypothesis,
-        message: hasHypothesis ? 'Generated' : (hasABCData ? 'Pending analysis' : 'Needs ABC data')
+        complete: hasHypothesis || isOverridden('hypothesis'), 
+        partial: hasABCData && !hasHypothesis && !isOverridden('hypothesis'),
+        message: isOverridden('hypothesis')
+          ? `✓ External${getOverrideNote('hypothesis') ? `: ${getOverrideNote('hypothesis')}` : ''}`
+          : (hasHypothesis ? 'Generated' : (hasABCData ? 'Pending analysis' : 'Needs ABC data')),
+        overridden: isOverridden('hypothesis'),
       },
       recommendations: { 
-        complete: hasRecommendations && hasHypothesis, 
-        partial: hasRecommendations && !hasHypothesis,
-        message: hasRecommendations ? `${recommendations.length} recommendations` : 'Select function to generate'
+        complete: (hasRecommendations && hasHypothesis) || isOverridden('recommendations'), 
+        partial: hasRecommendations && !hasHypothesis && !isOverridden('recommendations'),
+        message: isOverridden('recommendations')
+          ? `✓ External${getOverrideNote('recommendations') ? `: ${getOverrideNote('recommendations')}` : ''}`
+          : (hasRecommendations ? `${recommendations.length} recommendations` : 'Select function to generate'),
+        overridden: isOverridden('recommendations'),
       },
     };
-  }, [selectedStudent, analysisData, recommendations]);
+  }, [selectedStudent, analysisData, recommendations, manualOverrides]);
 
   const completionPercentage = useMemo(() => {
     const statuses = Object.values(sectionStatus);
@@ -943,7 +977,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               </CardContent>
             </Card>
 
-            {/* Section Completion Status */}
+            {/* Section Completion Status with Manual Overrides */}
             {selectedStudent && (
               <Card>
                 <CardHeader className="pb-2">
@@ -953,24 +987,57 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                       {completionPercentage}% Complete
                     </Badge>
                   </CardTitle>
+                  <CardDescription className="text-xs">
+                    Click toggle to manually mark sections complete (for external data)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {Object.entries(sectionStatus).map(([key, status]) => (
-                      <div key={key} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          {status.complete ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          ) : status.partial ? (
-                            <AlertTriangle className="w-4 h-4 text-amber-500" />
-                          ) : (
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                          )}
-                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <div key={key} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            {status.complete ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : status.partial ? (
+                              <AlertTriangle className="w-4 h-4 text-amber-500" />
+                            ) : (
+                              <Clock className="w-4 h-4 text-muted-foreground" />
+                            )}
+                            <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                            {(status as any).overridden && (
+                              <Badge variant="outline" className="text-xs h-5">External</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs ${status.complete ? 'text-green-600' : status.partial ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                              {status.message}
+                            </span>
+                            <Switch
+                              checked={manualOverrides[key]?.complete || false}
+                              onCheckedChange={(checked) => {
+                                setManualOverrides(prev => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], complete: checked }
+                                }));
+                              }}
+                              className="scale-75"
+                            />
+                          </div>
                         </div>
-                        <span className={`text-xs ${status.complete ? 'text-green-600' : status.partial ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                          {status.message}
-                        </span>
+                        {manualOverrides[key]?.complete && (
+                          <Input
+                            placeholder="Add note about external data source..."
+                            value={manualOverrides[key]?.note || ''}
+                            onChange={(e) => {
+                              setManualOverrides(prev => ({
+                                ...prev,
+                                [key]: { ...prev[key], note: e.target.value }
+                              }));
+                            }}
+                            className="text-xs h-7 ml-6"
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -978,6 +1045,93 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 </CardContent>
               </Card>
             )}
+
+            {/* Custom Sections */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm">Custom Sections</CardTitle>
+                    <CardDescription className="text-xs">
+                      Add narrative sections for context, observations, or summaries
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCustomSections(prev => [...prev, {
+                        id: crypto.randomUUID(),
+                        title: '',
+                        content: '',
+                        position: 'end'
+                      }]);
+                    }}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Section
+                  </Button>
+                </div>
+              </CardHeader>
+              {customSections.length > 0 && (
+                <CardContent className="space-y-4">
+                  {customSections.map((section, index) => (
+                    <div key={section.id} className="border rounded-lg p-3 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Section title..."
+                          value={section.title}
+                          onChange={(e) => {
+                            setCustomSections(prev => prev.map(s => 
+                              s.id === section.id ? { ...s, title: e.target.value } : s
+                            ));
+                          }}
+                          className="flex-1 text-sm"
+                        />
+                        <Select
+                          value={section.position}
+                          onValueChange={(v) => {
+                            setCustomSections(prev => prev.map(s => 
+                              s.id === section.id ? { ...s, position: v as 'beginning' | 'middle' | 'end' } : s
+                            ));
+                          }}
+                        >
+                          <SelectTrigger className="w-28 text-xs h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginning">Beginning</SelectItem>
+                            <SelectItem value="middle">Middle</SelectItem>
+                            <SelectItem value="end">End</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setCustomSections(prev => prev.filter(s => s.id !== section.id));
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <Textarea
+                        placeholder="Write your narrative, summary, or observations here..."
+                        value={section.content}
+                        onChange={(e) => {
+                          setCustomSections(prev => prev.map(s => 
+                            s.id === section.id ? { ...s, content: e.target.value } : s
+                          ));
+                        }}
+                        rows={4}
+                        className="text-sm"
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              )}
+            </Card>
 
             {/* Additional Notes */}
             <div className="space-y-2">
@@ -1054,6 +1208,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                     </div>
 
                     <Separator />
+
+                    {/* Custom Sections - Beginning */}
+                    {customSections.filter(s => s.position === 'beginning' && s.title && s.content).map(section => (
+                      <div key={section.id} className="section">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                          {section.title.toUpperCase()}
+                        </h2>
+                        <div className="whitespace-pre-wrap text-sm">{section.content}</div>
+                      </div>
+                    ))}
 
                     {/* Target Behaviors */}
                     {includeSections.targetBehaviors && (
@@ -1188,6 +1352,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                       </div>
                     )}
 
+                    {/* Custom Sections - Middle */}
+                    {customSections.filter(s => s.position === 'middle' && s.title && s.content).map(section => (
+                      <div key={section.id} className="section">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                          {section.title.toUpperCase()}
+                        </h2>
+                        <div className="whitespace-pre-wrap text-sm">{section.content}</div>
+                      </div>
+                    ))}
+
                     {/* Function Analysis */}
                     {includeSections.hypothesis && analysisData && (
                       <div className="section">
@@ -1283,6 +1457,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                     )}
 
                     {/* Additional Notes */}
+                    {/* Additional Notes */}
                     {additionalNotes && (
                       <div className="section">
                         <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
@@ -1291,6 +1466,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                         <p className="whitespace-pre-wrap">{additionalNotes}</p>
                       </div>
                     )}
+
+                    {/* Custom Sections - End */}
+                    {customSections.filter(s => s.position === 'end' && s.title && s.content).map(section => (
+                      <div key={section.id} className="section">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                          {section.title.toUpperCase()}
+                        </h2>
+                        <div className="whitespace-pre-wrap text-sm">{section.content}</div>
+                      </div>
+                    ))}
 
                     {/* Signature */}
                     <div className="signature-line border-t border-gray-800 pt-2 mt-10">
