@@ -11,6 +11,26 @@ interface ExtractionRequest {
   documentText: string;
 }
 
+// Background info extraction prompt (shared across all document types)
+const BACKGROUND_INFO_PROMPT = `
+Additionally, extract any background information about the student that you find in the document. Include this in a "backgroundInfo" object with these fields (only include fields that have data):
+- referralReason: Why the student was referred
+- referralSource: Who made the referral (teacher, parent, etc.)
+- presentingConcerns: Primary concerns from the referral
+- educationalHistory: Schools attended, grade retention, academic performance
+- previousPlacements: Special education placements, alternative schools
+- diagnoses: Any diagnoses mentioned (ADHD, ASD, learning disabilities, etc.)
+- medicalInfo: Relevant medical history, medications, sensory needs
+- previousBIPs: Summary of previous behavior intervention plans
+- strategiesTried: Interventions and strategies previously attempted
+- whatWorked: Effective strategies from the past
+- whatDidntWork: Ineffective strategies
+- homeEnvironment: Relevant home environment factors
+- familyStructure: Family composition, caregivers, siblings
+- culturalConsiderations: Cultural, linguistic, or religious considerations
+- behaviorsOfConcernSummary: Narrative summary of behavioral concerns
+`;
+
 const EXTRACTION_PROMPTS: Record<string, string> = {
   fba: `You are an expert at analyzing Functional Behavior Assessments (FBAs). Extract the following information from the document text provided:
 
@@ -20,6 +40,7 @@ const EXTRACTION_PROMPTS: Record<string, string> = {
 4. Hypothesized Functions: The hypothesized function(s) of the behavior (attention, escape, tangible, sensory)
 5. Setting Events: Environmental or contextual factors
 6. Assessment Tools Used: Any assessment tools mentioned (FAST, QABF, MAS, etc.)
+${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
@@ -28,7 +49,8 @@ Return the data as a JSON object with the following structure:
   "consequences": [{"value": "string"}],
   "hypothesizedFunctions": [{"value": "string"}],
   "settingEvents": [{"value": "string"}],
-  "assessmentTools": [{"value": "string"}]
+  "assessmentTools": [{"value": "string"}],
+  "backgroundInfo": { ... }
 }
 
 Only include fields that are found in the document. If a field is not found, omit it or use an empty array.`,
@@ -40,6 +62,7 @@ Only include fields that are found in the document. If a field is not found, omi
 3. Teaching Strategies: How replacement behaviors will be taught
 4. Reactive Strategies: Response procedures when problem behavior occurs
 5. Crisis Procedures: Emergency or crisis management procedures
+${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
@@ -47,7 +70,8 @@ Return the data as a JSON object with the following structure:
   "preventativeStrategies": [{"value": "string"}],
   "teachingStrategies": [{"value": "string"}],
   "reactiveStrategies": [{"value": "string"}],
-  "crisisProcedures": [{"value": "string"}]
+  "crisisProcedures": [{"value": "string"}],
+  "backgroundInfo": { ... }
 }
 
 Only include fields that are found in the document. If a field is not found, omit it or use an empty array.`,
@@ -59,6 +83,7 @@ Only include fields that are found in the document. If a field is not found, omi
 3. Behavior Supports: Any behavior support plans or strategies
 4. Service Minutes: Related services and their frequency/duration
 5. Review Dates: Important dates for review or reassessment
+${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
@@ -66,7 +91,8 @@ Return the data as a JSON object with the following structure:
   "accommodations": [{"value": "string"}],
   "behaviorSupports": [{"value": "string"}],
   "serviceMinutes": [{"service": "string", "minutes": number}],
-  "reviewDates": [{"date": "string"}]
+  "reviewDates": [{"date": "string"}],
+  "backgroundInfo": { ... }
 }
 
 Only include fields that are found in the document. If a field is not found, omit it or use an empty array.`,
@@ -78,8 +104,9 @@ Only include fields that are found in the document. If a field is not found, omi
 3. Diagnoses
 4. Recommendations
 5. Eligibility Determinations
+${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document.`,
+Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`,
 
   'progress-report': `You are an expert at analyzing progress reports. Extract key information including:
 
@@ -87,8 +114,14 @@ Return the data as a JSON object with relevant fields found in the document.`,
 2. Data Trends
 3. Recommendations
 4. Next Steps
+${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document.`,
+Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`,
+
+  intake: `You are an expert at analyzing client intake documents. Extract key background information from the document.
+${BACKGROUND_INFO_PROMPT}
+
+Return the data as a JSON object with the backgroundInfo object containing all relevant fields found in the document.`,
 
   other: `Extract any relevant educational or behavioral information from this document. Look for:
 
@@ -97,8 +130,9 @@ Return the data as a JSON object with relevant fields found in the document.`,
 3. Behavioral data
 4. Recommendations
 5. Services or supports
+${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document.`
+Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`
 };
 
 serve(async (req) => {
