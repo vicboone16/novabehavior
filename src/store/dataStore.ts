@@ -19,6 +19,8 @@ import {
   NarrativeNote,
   LatencyEntry,
   CaseType,
+  HistoricalFrequencyEntry,
+  HistoricalDurationEntry,
 } from '@/types/behavior';
 
 interface CollapsedState {
@@ -126,13 +128,23 @@ interface DataState {
     observationDurationMinutes?: number;
   }) => void;
   deleteFrequencyEntry: (id: string) => void;
+  deleteHistoricalFrequency: (studentId: string, entryId: string) => void;
   updateFrequencyEntry: (id: string, updates: Partial<Omit<FrequencyEntry, 'id'>>) => void;
+  updateHistoricalFrequency: (studentId: string, entryId: string, updates: Partial<Omit<HistoricalFrequencyEntry, 'id'>>) => void;
   getFrequencyEntries: (studentId: string, behaviorId?: string) => FrequencyEntry[];
   
   // Duration actions
   startDuration: (studentId: string, behaviorId: string) => void;
   stopDuration: (studentId: string, behaviorId: string) => number;
   getActiveDuration: (studentId: string, behaviorId: string) => DurationEntry | undefined;
+  addHistoricalDuration: (entry: {
+    studentId: string;
+    behaviorId: string;
+    durationSeconds: number;
+    timestamp: Date;
+  }) => void;
+  deleteHistoricalDuration: (studentId: string, entryId: string) => void;
+  deleteDurationEntry: (id: string) => void;
   
   // Interval actions
   recordInterval: (studentId: string, behaviorId: string, intervalNumber: number, occurred: boolean) => void;
@@ -709,11 +721,13 @@ export const useDataStore = create<DataState>()(
       },
 
       addHistoricalFrequency: (entry) => {
+        const id = crypto.randomUUID();
+        // Add to local state for immediate display
         set((state) => ({
           frequencyEntries: [
             ...state.frequencyEntries,
             {
-              id: crypto.randomUUID(),
+              id,
               studentId: entry.studentId,
               behaviorId: entry.behaviorId,
               count: entry.count,
@@ -723,6 +737,27 @@ export const useDataStore = create<DataState>()(
               isHistorical: true,
             },
           ],
+          // Also add to student's historicalData for cloud sync
+          students: state.students.map((s) =>
+            s.id === entry.studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: [
+                      ...(s.historicalData?.frequencyEntries || []),
+                      {
+                        id,
+                        behaviorId: entry.behaviorId,
+                        count: entry.count,
+                        timestamp: entry.timestamp,
+                        observationDurationMinutes: entry.observationDurationMinutes,
+                      },
+                    ],
+                    durationEntries: s.historicalData?.durationEntries || [],
+                  },
+                }
+              : s
+          ),
         }));
       },
 
@@ -742,6 +777,35 @@ export const useDataStore = create<DataState>()(
         }
         set((state) => ({
           frequencyEntries: state.frequencyEntries.filter((e) => e.id !== id),
+          // Also remove from student's historicalData
+          students: state.students.map((s) =>
+            entry && s.id === entry.studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: (s.historicalData?.frequencyEntries || []).filter(e => e.id !== id),
+                    durationEntries: s.historicalData?.durationEntries || [],
+                  },
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteHistoricalFrequency: (studentId, entryId) => {
+        set((state) => ({
+          frequencyEntries: state.frequencyEntries.filter((e) => e.id !== entryId),
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: (s.historicalData?.frequencyEntries || []).filter(e => e.id !== entryId),
+                    durationEntries: s.historicalData?.durationEntries || [],
+                  },
+                }
+              : s
+          ),
         }));
       },
 
@@ -749,6 +813,27 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           frequencyEntries: state.frequencyEntries.map((e) =>
             e.id === id ? { ...e, ...updates } : e
+          ),
+        }));
+      },
+
+      updateHistoricalFrequency: (studentId, entryId, updates) => {
+        set((state) => ({
+          frequencyEntries: state.frequencyEntries.map((e) =>
+            e.id === entryId ? { ...e, ...updates } : e
+          ),
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: (s.historicalData?.frequencyEntries || []).map(e =>
+                      e.id === entryId ? { ...e, ...updates } : e
+                    ),
+                    durationEntries: s.historicalData?.durationEntries || [],
+                  },
+                }
+              : s
           ),
         }));
       },
@@ -795,6 +880,89 @@ export const useDataStore = create<DataState>()(
         return get().durationEntries.find(
           (e) => e.studentId === studentId && e.behaviorId === behaviorId && !e.endTime
         );
+      },
+
+      addHistoricalDuration: (entry) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          durationEntries: [
+            ...state.durationEntries,
+            {
+              id,
+              studentId: entry.studentId,
+              behaviorId: entry.behaviorId,
+              duration: entry.durationSeconds,
+              startTime: entry.timestamp,
+              endTime: new Date(new Date(entry.timestamp).getTime() + entry.durationSeconds * 1000),
+            },
+          ],
+          students: state.students.map((s) =>
+            s.id === entry.studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: s.historicalData?.frequencyEntries || [],
+                    durationEntries: [
+                      ...(s.historicalData?.durationEntries || []),
+                      {
+                        id,
+                        behaviorId: entry.behaviorId,
+                        durationSeconds: entry.durationSeconds,
+                        timestamp: entry.timestamp,
+                      },
+                    ],
+                  },
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteHistoricalDuration: (studentId, entryId) => {
+        set((state) => ({
+          durationEntries: state.durationEntries.filter((e) => e.id !== entryId),
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: s.historicalData?.frequencyEntries || [],
+                    durationEntries: (s.historicalData?.durationEntries || []).filter(e => e.id !== entryId),
+                  },
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteDurationEntry: (id) => {
+        const state = get();
+        const entry = state.durationEntries.find(e => e.id === id);
+        if (entry) {
+          const student = state.students.find(s => s.id === entry.studentId);
+          const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+          state.moveToTrash(
+            'duration',
+            entry,
+            `Duration: ${Math.floor(entry.duration / 60)}m ${entry.duration % 60}s`,
+            student?.name,
+            behavior?.name
+          );
+        }
+        set((state) => ({
+          durationEntries: state.durationEntries.filter((e) => e.id !== id),
+          students: state.students.map((s) =>
+            entry && s.id === entry.studentId
+              ? {
+                  ...s,
+                  historicalData: {
+                    frequencyEntries: s.historicalData?.frequencyEntries || [],
+                    durationEntries: (s.historicalData?.durationEntries || []).filter(e => e.id !== id),
+                  },
+                }
+              : s
+          ),
+        }));
       },
 
       recordInterval: (studentId, behaviorId, intervalNumber, occurred) => {

@@ -1,0 +1,2 @@
+-- Add historical_data column to students table for storing historical frequency and duration entries
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS historical_data jsonb DEFAULT '{"frequencyEntries": [], "durationEntries": []}'::jsonb;
