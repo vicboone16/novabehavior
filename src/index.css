@@ -20,13 +20,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 4% 12.9%;
 
-    --primary: 214 31.8182% 91.3725%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 266 4% 20.8%;
+    --primary-foreground: 248 0.3% 98.4%;
 
-    --secondary: 214 31.8182% 91.3725%;
+    --secondary: 248 0.7% 96.8%;
     --secondary-foreground: 266 4% 20.8%;
 
-    --muted: 214 31.8182% 91.3725%;
+    --muted: 248 0.7% 96.8%;
     --muted-foreground: 257 4.6% 55.4%;
 
     --accent: 248 0.7% 96.8%;
@@ -81,8 +81,8 @@
     --chart-4: 84 18.9% 82.8%;
     --chart-5: 70 18.8% 76.9%;
     --sidebar: 248 0.3% 98.4%;
-    --font-sans: Montserrat, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, Times New Roman, Times, serif;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
