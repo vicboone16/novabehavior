@@ -66,7 +66,7 @@ export function NarrativeNotesManager({
     if (editingNote) {
       onUpdateNote(editingNote.id, {
         content: content.trim(),
-        behaviorId: selectedBehaviorId || undefined,
+        behaviorId: selectedBehaviorId && selectedBehaviorId !== 'none' ? selectedBehaviorId : undefined,
         tags: tags.length > 0 ? tags : undefined,
       });
     } else {
@@ -74,7 +74,7 @@ export function NarrativeNotesManager({
         studentId,
         content: content.trim(),
         timestamp: new Date(),
-        behaviorId: selectedBehaviorId || undefined,
+        behaviorId: selectedBehaviorId && selectedBehaviorId !== 'none' ? selectedBehaviorId : undefined,
         tags: tags.length > 0 ? tags : undefined,
       });
     }
@@ -231,7 +231,7 @@ export function NarrativeNotesManager({
                   <SelectValue placeholder="Select a behavior (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {behaviors.map((b) => (
                     <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                   ))}

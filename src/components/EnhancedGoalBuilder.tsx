@@ -197,7 +197,7 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
       dataCollectionStartDate: dataStartDate ? new Date(dataStartDate) : undefined,
       linkedBehaviorData,
       linkedABCData,
-      linkedReplacementSkill: linkedReplacementSkill || undefined,
+      linkedReplacementSkill: linkedReplacementSkill && linkedReplacementSkill !== 'none' ? linkedReplacementSkill : undefined,
       linkedInterventionFidelity,
     };
 
@@ -306,7 +306,7 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
                 <SelectValue placeholder="Select replacement skill (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {replacementSkillCandidates.map(b => (
                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
