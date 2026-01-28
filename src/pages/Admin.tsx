@@ -328,7 +328,18 @@ export default function Admin() {
           _user_id: showEditUser.id,
           _pin: newPin
         });
-        if (pinError) throw pinError;
+        if (pinError) {
+          // Check for uniqueness error
+          if (pinError.message?.includes('already in use')) {
+            toast({ 
+              title: 'PIN already in use', 
+              description: 'This PIN is already assigned to another user. Please choose a different PIN.',
+              variant: 'destructive' 
+            });
+            return;
+          }
+          throw pinError;
+        }
       }
 
       toast({ title: 'User updated successfully' });
