@@ -1423,6 +1423,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                                   <thead>
                                     <tr>
                                       <th className="border p-1 bg-gray-100">Date</th>
+                                      <th className="border p-1 bg-gray-100">Behavior</th>
                                       <th className="border p-1 bg-gray-100">Count</th>
                                       <th className="border p-1 bg-gray-100">Duration</th>
                                       <th className="border p-1 bg-gray-100">Rate/hr</th>
@@ -1432,6 +1433,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                                     {analysisData.entriesWithRates.slice(0, 5).map((entry: any) => (
                                       <tr key={entry.id}>
                                         <td className="border p-1">{format(new Date(entry.timestamp), 'MM/dd/yy')}</td>
+                                        <td className="border p-1">{entry.behaviorName || 'Unknown'}</td>
                                         <td className="border p-1 text-center">{entry.count}</td>
                                         <td className="border p-1 text-center">{entry.observationDurationMinutes}m</td>
                                         <td className="border p-1 text-center font-medium">{entry.ratePerHour.toFixed(2)}</td>
