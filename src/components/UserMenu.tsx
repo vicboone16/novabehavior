@@ -63,6 +63,14 @@ export function UserMenu() {
     await syncNow();
   };
 
+  const handleForceRefresh = async () => {
+    // Clear local storage cache
+    localStorage.removeItem('behavior-data-storage');
+    toast({ title: 'Clearing cache...', description: 'Reloading data from cloud' });
+    // Reload the page to get fresh data
+    window.location.reload();
+  };
+
   const getSyncIcon = () => {
     if (isSyncing || isLoading) {
       return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
@@ -142,6 +150,10 @@ export function UserMenu() {
           <DropdownMenuItem onClick={handleSyncNow} disabled={isSyncing || isLoading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
             Sync Now
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleForceRefresh}>
+            <CloudOff className="mr-2 h-4 w-4" />
+            Force Refresh (Clear Cache)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => navigate('/profile')}>

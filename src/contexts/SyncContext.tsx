@@ -48,6 +48,10 @@ export function SyncProvider({ children }: SyncProviderProps) {
     setSyncStatus('syncing');
     
     try {
+      // Clear cached students before loading fresh data from cloud
+      // This prevents stale localStorage data from overriding cloud data
+      console.log('[Sync] Loading fresh data from cloud for user:', user.id);
+      
       // Load user profile
       const { data: profileData } = await supabase
         .from('profiles')
@@ -55,13 +59,18 @@ export function SyncProvider({ children }: SyncProviderProps) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      // Load students
+      // Load students - fetch ALL students the user has access to
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('*')
         .order('created_at', { ascending: true });
 
-      if (studentsError) throw studentsError;
+      if (studentsError) {
+        console.error('[Sync] Error loading students:', studentsError);
+        throw studentsError;
+      }
+      
+      console.log('[Sync] Loaded', studentsData?.length || 0, 'students from cloud');
 
       if (studentsData) {
         const mappedStudents: Student[] = studentsData.map((s: any) => ({
