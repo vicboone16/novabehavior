@@ -30,6 +30,7 @@ interface NarrativeNotesManagerProps {
   onAddNote: (note: Omit<NarrativeNote, 'id'>) => void;
   onUpdateNote: (id: string, updates: Partial<NarrativeNote>) => void;
   onDeleteNote: (id: string) => void;
+  canViewNotes?: boolean; // Permission to view notes - if false, shows restricted message
 }
 
 export function NarrativeNotesManager({
@@ -39,6 +40,7 @@ export function NarrativeNotesManager({
   onAddNote,
   onUpdateNote,
   onDeleteNote,
+  canViewNotes = true,
 }: NarrativeNotesManagerProps) {
   const [showAddNote, setShowAddNote] = useState(false);
   const [editingNote, setEditingNote] = useState<NarrativeNote | null>(null);
@@ -100,6 +102,31 @@ export function NarrativeNotesManager({
   const sortedNotes = [...notes].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+
+  // If user doesn't have permission to view notes, show restricted message
+  if (!canViewNotes) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            Narrative Notes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">Notes Access Restricted</p>
+            <p className="text-xs mt-1">
+              You don't have permission to view notes for this student.
+              <br />
+              Contact an administrator to request access.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <>

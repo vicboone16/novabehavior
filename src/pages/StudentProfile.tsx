@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,10 @@ import {
   GoalDirection,
   GoalMetric,
   BehaviorGoal,
-  Student
+  Student,
+  SkillTarget,
+  DTTSession,
+  DTTTrial,
 } from '@/types/behavior';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
@@ -51,7 +54,10 @@ import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
 import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
 import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
+import { SkillTargetManager } from '@/components/SkillTargetManager';
+import { DTTTracker } from '@/components/DTTTracker';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
 
 export default function StudentProfile() {
@@ -88,6 +94,9 @@ export default function StudentProfile() {
 
   const student = students.find(s => s.id === studentId);
   const studentGoals = behaviorGoals.filter(g => g.studentId === studentId);
+  
+  // Check user permissions for this student
+  const studentAccess = useStudentAccess(studentId);
 
   // State for dialogs
   const [showAddBehavior, setShowAddBehavior] = useState(false);
@@ -105,6 +114,9 @@ export default function StudentProfile() {
   const [editSession, setEditSession] = useState<Session | null>(null);
   const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<string | null>(null);
   const { deleteSession } = useDataStore();
+  
+  // Skill target state
+  const [selectedSkillTarget, setSelectedSkillTarget] = useState<SkillTarget | null>(null);
 
   // Form states
   const [newBehaviorName, setNewBehaviorName] = useState('');
@@ -456,6 +468,10 @@ export default function StudentProfile() {
           <TabsTrigger value="assessment" className="gap-1 text-xs">
             <Brain className="w-3 h-3" />
             Assessment
+          </TabsTrigger>
+          <TabsTrigger value="skills" className="gap-1 text-xs">
+            <GraduationCap className="w-3 h-3" />
+            Skills
           </TabsTrigger>
           <TabsTrigger value="teacher" className="gap-1 text-xs">
             <UserCheck className="w-3 h-3" />
@@ -1016,6 +1032,7 @@ export default function StudentProfile() {
             onAddNote={(note) => addNarrativeNote(student.id, note)}
             onUpdateNote={(noteId, updates) => updateNarrativeNote(student.id, noteId, updates)}
             onDeleteNote={(noteId) => deleteNarrativeNote(student.id, noteId)}
+            canViewNotes={studentAccess.canViewNotes}
           />
         </TabsContent>
 
@@ -1145,6 +1162,91 @@ export default function StudentProfile() {
                 </CardContent>
               </Card>
             )}
+          </div>
+        </TabsContent>
+
+        {/* Skills Tab - Skill Acquisition */}
+        <TabsContent value="skills" className="space-y-4">
+          <div className="grid lg:grid-cols-2 gap-4">
+            {/* Skill Target Manager */}
+            <SkillTargetManager
+              studentId={student.id}
+              skillTargets={student.skillTargets || []}
+              onAddTarget={(target) => {
+                const newTarget: SkillTarget = {
+                  ...target,
+                  id: crypto.randomUUID(),
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                };
+                updateStudentProfile(student.id, {
+                  skillTargets: [...(student.skillTargets || []), newTarget],
+                });
+              }}
+              onUpdateTarget={(targetId, updates) => {
+                updateStudentProfile(student.id, {
+                  skillTargets: (student.skillTargets || []).map(t =>
+                    t.id === targetId ? { ...t, ...updates, updatedAt: new Date() } : t
+                  ),
+                });
+              }}
+              onDeleteTarget={(targetId) => {
+                updateStudentProfile(student.id, {
+                  skillTargets: (student.skillTargets || []).filter(t => t.id !== targetId),
+                  dttSessions: (student.dttSessions || []).filter(s => s.skillTargetId !== targetId),
+                });
+                if (selectedSkillTarget?.id === targetId) {
+                  setSelectedSkillTarget(null);
+                }
+              }}
+              onSelectTarget={setSelectedSkillTarget}
+            />
+
+            {/* DTT Tracker for selected target */}
+            <div className="space-y-4">
+              {selectedSkillTarget ? (
+                <DTTTracker
+                  studentId={student.id}
+                  skillTarget={selectedSkillTarget}
+                  studentColor={student.color}
+                  sessions={student.dttSessions || []}
+                  customPromptLevels={student.customPromptLevels}
+                  onAddTrial={(skillTargetId, trial) => {
+                    // Trials are tracked within the component, saved on session save
+                  }}
+                  onSaveSession={(session) => {
+                    const newSession: DTTSession = {
+                      ...session,
+                      id: crypto.randomUUID(),
+                    };
+                    updateStudentProfile(student.id, {
+                      dttSessions: [...(student.dttSessions || []), newSession],
+                    });
+                  }}
+                  onUpdateTarget={(targetId, updates) => {
+                    updateStudentProfile(student.id, {
+                      skillTargets: (student.skillTargets || []).map(t =>
+                        t.id === targetId ? { ...t, ...updates, updatedAt: new Date() } : t
+                      ),
+                    });
+                    // Update local state if this is the selected target
+                    if (selectedSkillTarget?.id === targetId) {
+                      setSelectedSkillTarget(prev => prev ? { ...prev, ...updates } : null);
+                    }
+                  }}
+                />
+              ) : (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center">
+                    <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-muted-foreground font-medium">Select a Skill Target</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Choose a target from the list to begin data collection
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </TabsContent>
 
