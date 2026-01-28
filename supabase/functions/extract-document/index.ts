@@ -7,8 +7,10 @@ const corsHeaders = {
 };
 
 interface ExtractionRequest {
-  documentType: 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'other';
-  documentText: string;
+  documentType: 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'intake' | 'other';
+  documentText?: string;
+  fileUrl?: string;
+  fileName?: string;
 }
 
 // Background info extraction prompt (shared across all document types)
@@ -135,6 +137,81 @@ ${BACKGROUND_INFO_PROMPT}
 Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`
 };
 
+async function extractTextFromPdf(fileUrl: string, apiKey: string): Promise<string> {
+  console.log('Fetching PDF from URL:', fileUrl);
+  
+  // Fetch the PDF file
+  const pdfResponse = await fetch(fileUrl);
+  if (!pdfResponse.ok) {
+    throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
+  }
+
+  // Get the PDF as base64
+  const pdfBuffer = await pdfResponse.arrayBuffer();
+  const pdfBytes = new Uint8Array(pdfBuffer);
+  
+  // Convert to base64 in chunks to avoid stack overflow
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+    const chunk = pdfBytes.subarray(i, Math.min(i + chunkSize, pdfBytes.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  const pdfBase64 = btoa(binary);
+
+  console.log('PDF size:', pdfBytes.length, 'bytes');
+
+  // Use Gemini's vision capability to extract text from PDF
+  const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { 
+          role: "user", 
+          content: [
+            {
+              type: "text",
+              text: "Extract ALL text content from this PDF document. Maintain the structure and organization of the content as much as possible. Include all sections, headers, bullet points, tables, and data. Return only the extracted text content, nothing else."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:application/pdf;base64,${pdfBase64}`
+              }
+            }
+          ]
+        }
+      ],
+    }),
+  });
+
+  if (!extractionResponse.ok) {
+    const errorText = await extractionResponse.text();
+    console.error("PDF extraction error:", extractionResponse.status, errorText);
+    
+    if (extractionResponse.status === 429) {
+      throw new Error("RATE_LIMIT");
+    }
+    if (extractionResponse.status === 402) {
+      throw new Error("CREDITS_EXHAUSTED");
+    }
+    
+    throw new Error("Failed to extract text from PDF");
+  }
+
+  const extractionResult = await extractionResponse.json();
+  const extractedText = extractionResult.choices?.[0]?.message?.content || '';
+  
+  console.log('Extracted text length:', extractedText.length);
+  
+  return extractedText;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -165,20 +242,19 @@ serve(async (req) => {
       );
     }
 
-    const { documentType, documentText }: ExtractionRequest = await req.json();
+    const { documentType, documentText, fileUrl, fileName }: ExtractionRequest = await req.json();
 
-    if (!documentText || !documentType) {
+    if (!documentType) {
       return new Response(
-        JSON.stringify({ error: "Document text and type are required" }),
+        JSON.stringify({ error: "Document type is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Input validation - limit document text size to prevent abuse
-    const MAX_DOCUMENT_SIZE = 100000; // 100KB limit
-    if (documentText.length > MAX_DOCUMENT_SIZE) {
+    // We need either documentText or fileUrl
+    if (!documentText && !fileUrl) {
       return new Response(
-        JSON.stringify({ error: "Document text exceeds maximum allowed size" }),
+        JSON.stringify({ error: "Document text or file URL is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -186,6 +262,50 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    let textToProcess = documentText || '';
+
+    // If we have a file URL (for PDFs), extract text first
+    if (fileUrl && !documentText) {
+      try {
+        textToProcess = await extractTextFromPdf(fileUrl, LOVABLE_API_KEY);
+        
+        if (!textToProcess || textToProcess.length < 50) {
+          return new Response(
+            JSON.stringify({ error: "Could not extract sufficient text from the PDF. The document may be empty, scanned without OCR, or in an unsupported format." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (err) {
+        console.error('PDF processing error:', err);
+        
+        if (err instanceof Error) {
+          if (err.message === "RATE_LIMIT") {
+            return new Response(
+              JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          if (err.message === "CREDITS_EXHAUSTED") {
+            return new Response(
+              JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
+              { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+        
+        return new Response(
+          JSON.stringify({ error: "Failed to process PDF file. Please try uploading a text-based document or a clearer PDF." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Limit document text size
+    const MAX_DOCUMENT_SIZE = 100000;
+    if (textToProcess.length > MAX_DOCUMENT_SIZE) {
+      textToProcess = textToProcess.substring(0, MAX_DOCUMENT_SIZE);
     }
 
     const systemPrompt = EXTRACTION_PROMPTS[documentType] || EXTRACTION_PROMPTS.other;
@@ -200,7 +320,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Here is the document text to analyze:\n\n${documentText}` }
+          { role: "user", content: `Here is the document text to analyze:\n\n${textToProcess}` }
         ],
         response_format: { type: "json_object" },
       }),
