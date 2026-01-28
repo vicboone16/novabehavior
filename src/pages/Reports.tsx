@@ -7,7 +7,8 @@ import { DataExportManager } from '@/components/DataExportManager';
 import { ABCReportGenerator } from '@/components/ABCReportGenerator';
 import { StudentComparison } from '@/components/StudentComparison';
 import { EnhancedExportOptions } from '@/components/EnhancedExportOptions';
-import { FileText, Users, Download, BarChart3 } from 'lucide-react';
+import { FBAReportGenerator } from '@/components/FBAReportGenerator';
+import { FileText, Users, Download, BarChart3, ClipboardCheck } from 'lucide-react';
 
 export default function Reports() {
   return (
@@ -109,6 +110,17 @@ export default function Reports() {
             Generate ABC data analysis reports
           </p>
           <ABCReportGenerator />
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <ClipboardCheck className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">FBA Report</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Comprehensive FBA with recommendations
+          </p>
+          <FBAReportGenerator />
         </div>
       </div>
     </div>
