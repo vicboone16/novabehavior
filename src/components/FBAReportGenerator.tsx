@@ -4,7 +4,7 @@ import {
   FileText, Download, Printer, FileCheck, FileDown, 
   Brain, Target, AlertTriangle, CheckCircle2, Users,
   Calendar, Clock, ClipboardList, Lightbulb, BookOpen, 
-  Shield, Sparkles, ChevronDown, ChevronUp, Eye
+  Shield, Sparkles, ChevronDown, ChevronUp, Eye, Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -237,7 +237,7 @@ const AGE_RANGE_OPTIONS = [
 ];
 
 export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportGeneratorProps) {
-  const { students, abcEntries, frequencyEntries, sessions, behaviorGoals } = useDataStore();
+  const { students, abcEntries, frequencyEntries, sessions, behaviorGoals, updateStudentProfile } = useDataStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string>(propStudent?.id || '');
   const [reportType, setReportType] = useState<'comprehensive' | 'simplified'>('comprehensive');
   const [ageRange, setAgeRange] = useState<string>('elementary');
@@ -476,6 +476,45 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       }
       return next;
     });
+  };
+
+  // Save FBA findings to student profile
+  const saveFBAFindings = () => {
+    if (!selectedStudent || !analysisData) return;
+
+    const findings = {
+      id: selectedStudent.fbaFindings?.id || crypto.randomUUID(),
+      studentId: selectedStudentId,
+      createdAt: selectedStudent.fbaFindings?.createdAt || new Date(),
+      updatedAt: new Date(),
+      status: completionPercentage === 100 ? 'complete' as const : 'draft' as const,
+      primaryFunction: analysisData.primaryFunction?.function,
+      secondaryFunctions: analysisData.functionStrengths
+        .slice(1)
+        .map(fs => fs.function),
+      functionStrengths: analysisData.functionStrengths.map(fs => ({
+        function: fs.function,
+        percentage: fs.percentage,
+      })),
+      topAntecedents: analysisData.topAntecedents,
+      topConsequences: analysisData.topConsequences,
+      hypothesisStatements: analysisData.hypothesisStatement 
+        ? [analysisData.hypothesisStatement] 
+        : [],
+      abcEntriesCount: analysisData.abcCount,
+      sessionsCount: analysisData.sessionCount,
+      frequencyTotal: analysisData.frequencyTotal,
+      dateRangeStart: new Date(),
+      dateRangeEnd: new Date(),
+      recommendations,
+      ageRange,
+      assessorName,
+      assessorTitle,
+      notes: additionalNotes,
+    };
+
+    updateStudentProfile(selectedStudentId, { fbaFindings: findings });
+    toast.success('FBA findings saved to student profile');
   };
 
   const getFunctionColor = (fn: BehaviorFunction) => {
@@ -1301,7 +1340,28 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               </Card>
             )}
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* Save to Profile */}
+              <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={saveFBAFindings}>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Save className="w-4 h-4" />
+                    Save to Profile
+                    {selectedStudent?.fbaFindings && (
+                      <Badge variant="outline" className="text-xs">Update</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Save findings to student profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" disabled={!selectedStudent}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {selectedStudent?.fbaFindings ? 'Update Profile' : 'Save to Profile'}
+                  </Button>
+                </CardContent>
+              </Card>
               <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={handlePrint}>
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
