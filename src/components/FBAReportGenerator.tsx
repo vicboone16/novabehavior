@@ -720,6 +720,84 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
             text: `Assessment Dates: ${assessmentDates}`,
             spacing: { after: 200 },
           }),
+          // Background Information from student profile
+          includeSections.background && selectedStudent.backgroundInfo && new Paragraph({
+            text: 'BACKGROUND INFORMATION',
+            heading: HeadingLevel.HEADING_1,
+            spacing: { before: 400, after: 200 },
+          }),
+          // Referral Info
+          includeSections.background && selectedStudent.backgroundInfo?.referralReason && new Paragraph({
+            children: [
+              new TextRun({ text: 'Referral Information', bold: true }),
+            ],
+            spacing: { after: 100 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.referralSource && new Paragraph({
+            text: `Referral Source: ${selectedStudent.backgroundInfo.referralSource}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.referralReason && new Paragraph({
+            text: `Reason for Referral: ${selectedStudent.backgroundInfo.referralReason}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.presentingConcerns && new Paragraph({
+            text: `Presenting Concerns: ${selectedStudent.backgroundInfo.presentingConcerns}`,
+            spacing: { after: 100 },
+          }),
+          // Student History
+          includeSections.background && (selectedStudent.backgroundInfo?.educationalHistory || selectedStudent.backgroundInfo?.diagnoses) && new Paragraph({
+            children: [
+              new TextRun({ text: 'Student History', bold: true }),
+            ],
+            spacing: { before: 100, after: 100 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.educationalHistory && new Paragraph({
+            text: `Educational History: ${selectedStudent.backgroundInfo.educationalHistory}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.diagnoses && new Paragraph({
+            text: `Diagnoses: ${selectedStudent.backgroundInfo.diagnoses}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.medicalInfo && new Paragraph({
+            text: `Medical Information: ${selectedStudent.backgroundInfo.medicalInfo}`,
+            spacing: { after: 100 },
+          }),
+          // Previous Interventions
+          includeSections.background && (selectedStudent.backgroundInfo?.previousBIPs || selectedStudent.backgroundInfo?.strategiesTried) && new Paragraph({
+            children: [
+              new TextRun({ text: 'Previous Interventions', bold: true }),
+            ],
+            spacing: { before: 100, after: 100 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.previousBIPs && new Paragraph({
+            text: `Previous BIPs: ${selectedStudent.backgroundInfo.previousBIPs}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.strategiesTried && new Paragraph({
+            text: `Strategies Tried: ${selectedStudent.backgroundInfo.strategiesTried}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.whatWorked && new Paragraph({
+            text: `What Has Worked: ${selectedStudent.backgroundInfo.whatWorked}`,
+            spacing: { after: 50 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.whatDidntWork && new Paragraph({
+            text: `What Hasn't Worked: ${selectedStudent.backgroundInfo.whatDidntWork}`,
+            spacing: { after: 100 },
+          }),
+          // Behaviors of Concern Summary
+          includeSections.background && selectedStudent.backgroundInfo?.behaviorsOfConcernSummary && new Paragraph({
+            children: [
+              new TextRun({ text: 'Behaviors of Concern', bold: true }),
+            ],
+            spacing: { before: 100, after: 100 },
+          }),
+          includeSections.background && selectedStudent.backgroundInfo?.behaviorsOfConcernSummary && new Paragraph({
+            text: selectedStudent.backgroundInfo.behaviorsOfConcernSummary,
+            spacing: { after: 200 },
+          }),
           // Target Behaviors
           includeSections.targetBehaviors && new Paragraph({
             text: 'TARGET BEHAVIORS',
@@ -1338,6 +1416,119 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                         <div className="whitespace-pre-wrap text-sm">{section.content}</div>
                       </div>
                     ))}
+
+                    {/* Background Information (from student profile) */}
+                    {includeSections.background && selectedStudent.backgroundInfo && (
+                      Object.values(selectedStudent.backgroundInfo).some(v => v && typeof v === 'string' && v.trim())
+                    ) && (
+                      <div className="section">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                          BACKGROUND INFORMATION
+                        </h2>
+                        <div className="space-y-4 text-sm">
+                          {/* Referral Information */}
+                          {(selectedStudent.backgroundInfo.referralReason || 
+                            selectedStudent.backgroundInfo.referralSource || 
+                            selectedStudent.backgroundInfo.presentingConcerns) && (
+                            <div>
+                              <h3 className="font-semibold mb-2">Referral Information</h3>
+                              {selectedStudent.backgroundInfo.referralSource && (
+                                <p><strong>Referral Source:</strong> {selectedStudent.backgroundInfo.referralSource}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.referralDate && (
+                                <p><strong>Referral Date:</strong> {format(new Date(selectedStudent.backgroundInfo.referralDate), 'MMMM d, yyyy')}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.referralReason && (
+                                <p><strong>Reason for Referral:</strong> {selectedStudent.backgroundInfo.referralReason}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.presentingConcerns && (
+                                <p><strong>Presenting Concerns:</strong> {selectedStudent.backgroundInfo.presentingConcerns}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Student History */}
+                          {(selectedStudent.backgroundInfo.educationalHistory || 
+                            selectedStudent.backgroundInfo.diagnoses || 
+                            selectedStudent.backgroundInfo.medicalInfo) && (
+                            <div>
+                              <h3 className="font-semibold mb-2">Student History</h3>
+                              {selectedStudent.backgroundInfo.educationalHistory && (
+                                <p><strong>Educational History:</strong> {selectedStudent.backgroundInfo.educationalHistory}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.previousPlacements && (
+                                <p><strong>Previous Placements:</strong> {selectedStudent.backgroundInfo.previousPlacements}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.diagnoses && (
+                                <p><strong>Diagnoses:</strong> {selectedStudent.backgroundInfo.diagnoses}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.medicalInfo && (
+                                <p><strong>Medical Information:</strong> {selectedStudent.backgroundInfo.medicalInfo}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Previous Interventions */}
+                          {(selectedStudent.backgroundInfo.previousBIPs || 
+                            selectedStudent.backgroundInfo.strategiesTried) && (
+                            <div>
+                              <h3 className="font-semibold mb-2">Previous Interventions</h3>
+                              {selectedStudent.backgroundInfo.previousBIPs && (
+                                <p><strong>Previous BIPs:</strong> {selectedStudent.backgroundInfo.previousBIPs}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.strategiesTried && (
+                                <p><strong>Strategies Tried:</strong> {selectedStudent.backgroundInfo.strategiesTried}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.whatWorked && (
+                                <p><strong>What Has Worked:</strong> {selectedStudent.backgroundInfo.whatWorked}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.whatDidntWork && (
+                                <p><strong>What Hasn't Worked:</strong> {selectedStudent.backgroundInfo.whatDidntWork}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Family/Home Context */}
+                          {(selectedStudent.backgroundInfo.homeEnvironment || 
+                            selectedStudent.backgroundInfo.familyStructure || 
+                            selectedStudent.backgroundInfo.culturalConsiderations) && (
+                            <div>
+                              <h3 className="font-semibold mb-2">Family/Home Context</h3>
+                              {selectedStudent.backgroundInfo.homeEnvironment && (
+                                <p><strong>Home Environment:</strong> {selectedStudent.backgroundInfo.homeEnvironment}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.familyStructure && (
+                                <p><strong>Family Structure:</strong> {selectedStudent.backgroundInfo.familyStructure}</p>
+                              )}
+                              {selectedStudent.backgroundInfo.culturalConsiderations && (
+                                <p><strong>Cultural Considerations:</strong> {selectedStudent.backgroundInfo.culturalConsiderations}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Behaviors of Concern Summary */}
+                          {selectedStudent.backgroundInfo.behaviorsOfConcernSummary && (
+                            <div>
+                              <h3 className="font-semibold mb-2">Behaviors of Concern</h3>
+                              <p>{selectedStudent.backgroundInfo.behaviorsOfConcernSummary}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No background info warning */}
+                    {includeSections.background && !selectedStudent.backgroundInfo && showDraftIndicators && (
+                      <div className="section">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                          BACKGROUND INFORMATION
+                        </h2>
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                          <span className="font-medium">[PENDING] </span>
+                          No background information entered. Add background details in the student's Profile tab.
+                        </div>
+                      </div>
+                    )}
 
                     {/* Target Behaviors */}
                     {includeSections.targetBehaviors && (
