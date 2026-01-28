@@ -85,6 +85,7 @@ export function SkillTargetManager({
   const [name, setName] = useState('');
   const [definition, setDefinition] = useState('');
   const [domain, setDomain] = useState('');
+  const [customDomain, setCustomDomain] = useState('');
   const [program, setProgram] = useState('');
   const [method, setMethod] = useState<SkillAcquisitionMethod>('dtt');
   const [status, setStatus] = useState<SkillTarget['status']>('acquisition');
@@ -99,6 +100,7 @@ export function SkillTargetManager({
     setName('');
     setDefinition('');
     setDomain('');
+    setCustomDomain('');
     setProgram('');
     setMethod('dtt');
     setStatus('acquisition');
@@ -114,7 +116,15 @@ export function SkillTargetManager({
     setEditTarget(target);
     setName(target.name);
     setDefinition(target.operationalDefinition || '');
-    setDomain(target.domain || '');
+    // Check if domain is a custom one (not in DOMAIN_OPTIONS)
+    const isCustomDomain = target.domain && !DOMAIN_OPTIONS.includes(target.domain);
+    if (isCustomDomain) {
+      setDomain('Other');
+      setCustomDomain(target.domain || '');
+    } else {
+      setDomain(target.domain || '');
+      setCustomDomain('');
+    }
     setProgram(target.program || '');
     setMethod(target.method);
     setStatus(target.status);
@@ -140,11 +150,16 @@ export function SkillTargetManager({
       consecutiveSessions: parseInt(consecutiveSessions) || 3,
     } : undefined;
 
+    // Use custom domain if "Other" is selected
+    const finalDomain = domain === 'Other' && customDomain.trim() 
+      ? customDomain.trim() 
+      : (domain && domain !== 'Other' ? domain : undefined);
+
     if (editTarget) {
       onUpdateTarget(editTarget.id, {
         name: name.trim(),
         operationalDefinition: definition.trim() || undefined,
-        domain: domain || undefined,
+        domain: finalDomain,
         program: program.trim() || undefined,
         method,
         status,
@@ -156,7 +171,7 @@ export function SkillTargetManager({
         studentId,
         name: name.trim(),
         operationalDefinition: definition.trim() || undefined,
-        domain: domain || undefined,
+        domain: finalDomain,
         program: program.trim() || undefined,
         method,
         status,
@@ -324,7 +339,10 @@ export function SkillTargetManager({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Domain</Label>
-                <Select value={domain} onValueChange={setDomain}>
+                <Select value={domain} onValueChange={(val) => {
+                  setDomain(val);
+                  if (val !== 'Other') setCustomDomain('');
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select domain" />
                   </SelectTrigger>
@@ -334,6 +352,14 @@ export function SkillTargetManager({
                     ))}
                   </SelectContent>
                 </Select>
+                {domain === 'Other' && (
+                  <Input
+                    value={customDomain}
+                    onChange={(e) => setCustomDomain(e.target.value)}
+                    placeholder="Enter custom domain..."
+                    className="mt-2"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">

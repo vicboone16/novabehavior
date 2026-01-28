@@ -4,6 +4,8 @@ import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
+import { CompactSkillTracker } from './CompactSkillTracker';
+import { SkillTargetSessionSelector } from './SkillTargetSessionSelector';
 import { SessionEndFlow } from './SessionEndFlow';
 import { 
   User, 
@@ -18,7 +20,9 @@ import {
   Pause,
   Play,
   Square,
-  Clock
+  Clock,
+  Target,
+  Expand
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -33,12 +37,13 @@ import { toast } from '@/hooks/use-toast';
 
 interface CompactStudentCardProps {
   student: Student;
+  onExpand?: () => void;
 }
 
 const DEFAULT_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
-export function CompactStudentCard({ student }: CompactStudentCardProps) {
+export function CompactStudentCard({ student, onExpand }: CompactStudentCardProps) {
   const { 
     getTrackerOrder, 
     setTrackerOrder, 
@@ -63,6 +68,7 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     isStudentSessionEnded,
     getStudentSessionStatus,
     resetStudentSessionStatus,
+    addDTTSession,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
@@ -70,6 +76,12 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
+    () => (student.skillTargets || []).map(t => t.id)
+  );
+
+  const skillTargets = student.skillTargets || [];
+  const dttSessions = student.dttSessions || [];
 
   const isPaused = isStudentSessionPaused(student.id);
   const hasEnded = isStudentSessionEnded(student.id);
@@ -368,6 +380,7 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
           <h3 className="font-semibold text-foreground text-sm truncate">{student.name}</h3>
           <p className="text-[10px] text-muted-foreground">
             {student.behaviors.length} behaviors
+            {skillTargets.length > 0 && ` • ${skillTargets.length} skills`}
             {(collapsedMethodsCount > 0 || collapsedBehaviorsCount > 0) && (
               <span className="ml-1 text-warning">
                 ({collapsedBehaviorsCount} hidden)
@@ -468,6 +481,25 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
               </TooltipContent>
             </Tooltip>
 
+            {/* Expand to Full View */}
+            {onExpand && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={onExpand}
+                  >
+                    <Expand className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Expand to full view
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             {/* Session Controls - Pause/End */}
             {!hasEnded && (
               <>
@@ -510,9 +542,57 @@ export function CompactStudentCard({ student }: CompactStudentCardProps) {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {!hasBehaviors && (
+        {/* Skill Acquisition Section */}
+        {!hasEnded && skillTargets.length > 0 && (
+          <Collapsible defaultOpen={activeSkillTargetIds.length > 0}>
+            <div className="flex items-center justify-between bg-primary/10 rounded-md px-2 py-1">
+              <div className="flex items-center gap-1">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                    <ChevronRight className="w-3 h-3 transition-transform data-[state=open]:rotate-90" />
+                  </Button>
+                </CollapsibleTrigger>
+                <Target className="w-3 h-3 text-primary" />
+                <h4 className="text-[10px] font-semibold text-primary uppercase tracking-wide">
+                  Skills
+                </h4>
+                <Badge variant="outline" className="text-[9px] h-4 px-1 ml-1">
+                  {activeSkillTargetIds.length}/{skillTargets.length}
+                </Badge>
+              </div>
+              <SkillTargetSessionSelector
+                skillTargets={skillTargets}
+                activeTargetIds={activeSkillTargetIds}
+                onToggleTarget={(id) => setActiveSkillTargetIds(prev => 
+                  prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                )}
+                onSelectAll={() => setActiveSkillTargetIds(skillTargets.map(t => t.id))}
+                onDeselectAll={() => setActiveSkillTargetIds([])}
+              />
+            </div>
+            <CollapsibleContent className="space-y-1 mt-1">
+              {skillTargets.map(target => (
+                <CompactSkillTracker
+                  key={target.id}
+                  studentId={student.id}
+                  skillTarget={target}
+                  studentColor={student.color}
+                  sessions={dttSessions.filter(s => s.skillTargetId === target.id)}
+                  activeTargetIds={activeSkillTargetIds}
+                  onToggleActive={(id) => setActiveSkillTargetIds(prev => 
+                    prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                  )}
+                  onAddTrial={() => {}}
+                  onSaveSession={(session) => addDTTSession(student.id, session)}
+                />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {!hasBehaviors && skillTargets.length === 0 && (
           <p className="text-center text-muted-foreground py-4 text-xs">
-            No behaviors configured.
+            No behaviors or skills configured.
             <br />
             Use "Manage Behaviors" to add.
           </p>
