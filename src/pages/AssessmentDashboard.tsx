@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   ClipboardCheck, Users, FileText, BarChart3, Brain, Eye, 
   Target, AlertTriangle, CheckCircle2, ArrowRight, ChevronRight,
@@ -69,10 +69,11 @@ const FBA_WORKFLOW_STEPS = [
 ];
 
 export default function AssessmentDashboard() {
-  const { students, abcEntries, frequencyEntries, sessions } = useDataStore();
+  const { students, abcEntries, frequencyEntries, sessions, updateStudentProfile } = useDataStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [isInitializing, setIsInitializing] = useState(false);
 
   // Filter to students with assessment mode enabled
   const assessmentStudents = useMemo(() => {
@@ -86,6 +87,44 @@ export default function AssessmentDashboard() {
   const selectedStudent = useMemo(() => {
     return students.find(s => s.id === selectedStudentId);
   }, [students, selectedStudentId]);
+
+  // Load workflow progress when student changes
+  useEffect(() => {
+    if (selectedStudentId && selectedStudent) {
+      setIsInitializing(true);
+      const progress = selectedStudent.fbaWorkflowProgress;
+      if (progress) {
+        setCompletedSteps(new Set(progress.completedSteps));
+        setCurrentStep(progress.currentStep);
+      } else {
+        // Reset for new student with no saved progress
+        setCompletedSteps(new Set());
+        setCurrentStep(0);
+      }
+      setIsInitializing(false);
+    } else {
+      // No student selected - reset
+      setCompletedSteps(new Set());
+      setCurrentStep(0);
+    }
+  }, [selectedStudentId, selectedStudent?.id]); // Only re-run when student ID changes
+
+  // Auto-save workflow progress when it changes
+  useEffect(() => {
+    if (!selectedStudentId || isInitializing) return;
+    
+    const timeoutId = setTimeout(() => {
+      updateStudentProfile(selectedStudentId, {
+        fbaWorkflowProgress: {
+          completedSteps: Array.from(completedSteps),
+          currentStep,
+          updatedAt: new Date(),
+        }
+      });
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [completedSteps, currentStep, selectedStudentId, isInitializing, updateStudentProfile]);
 
   // Assessment overview stats
   const assessmentStats = useMemo(() => {
@@ -140,7 +179,7 @@ export default function AssessmentDashboard() {
     };
   }, [selectedStudent, selectedStudentId, abcEntries, sessions]);
 
-  const toggleStepComplete = (stepIndex: number) => {
+  const toggleStepComplete = useCallback((stepIndex: number) => {
     setCompletedSteps(prev => {
       const next = new Set(prev);
       if (next.has(stepIndex)) {
@@ -150,7 +189,7 @@ export default function AssessmentDashboard() {
       }
       return next;
     });
-  };
+  }, []);
 
   const getFunctionColor = (fn: BehaviorFunction) => {
     const colors: Record<BehaviorFunction, string> = {

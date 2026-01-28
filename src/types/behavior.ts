@@ -177,6 +177,12 @@ export interface BIPData {
   status: 'draft' | 'active' | 'archived';
 }
 
+export interface FBAWorkflowProgress {
+  completedSteps: number[]; // Array of completed step indices
+  currentStep: number;
+  updatedAt: Date;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -202,6 +208,8 @@ export interface Student {
   fbaFindings?: FBAFindings;
   // BIP data
   bipData?: BIPData;
+  // FBA Workflow progress (per student)
+  fbaWorkflowProgress?: FBAWorkflowProgress;
 }
 
 export interface ABCBehaviorEntry {
