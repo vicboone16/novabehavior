@@ -40,6 +40,15 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const behaviorGoals = useDataStore((state) => state.behaviorGoals);
   const sessions = useDataStore((state) => state.sessions);
   const sessionNotes = useDataStore((state) => state.sessionNotes);
+  
+  // Live session data that needs real-time sync
+  const frequencyEntries = useDataStore((state) => state.frequencyEntries);
+  const durationEntries = useDataStore((state) => state.durationEntries);
+  const intervalEntries = useDataStore((state) => state.intervalEntries);
+  const abcEntries = useDataStore((state) => state.abcEntries);
+  const currentSessionId = useDataStore((state) => state.currentSessionId);
+  const sessionStartTime = useDataStore((state) => state.sessionStartTime);
+  const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
 
   const clearLocalCache = useCallback(() => {
     // On some mobile browsers / privacy modes, localStorage can throw.
@@ -268,6 +277,118 @@ export function SyncProvider({ children }: SyncProviderProps) {
         previousSessionsRef.current = JSON.stringify(mappedSessions.map(s => s.id));
       }
 
+      // Load LIVE session data (active session from another device)
+      // Look for sessions with status = 'active' to get live data
+      const { data: activeSessionData } = await supabase
+        .from('sessions')
+        .select('id, student_ids, start_time')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('start_time', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSessionData) {
+        console.log('[Sync] Found active session, loading live data...');
+        
+        // Load live session data entries
+        const { data: liveEntries } = await supabase
+          .from('session_data')
+          .select('*')
+          .eq('session_id', activeSessionData.id)
+          .order('timestamp', { ascending: true });
+
+        if (liveEntries && liveEntries.length > 0) {
+          console.log('[Sync] Loading', liveEntries.length, 'live session entries');
+          
+          // Map to live frequency entries
+          const liveFrequency = liveEntries
+            .filter(e => e.event_type === 'frequency')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              count: (e.abc_data as any)?.count || 1,
+              timestamp: new Date(e.timestamp),
+              timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
+              sessionId: e.session_id,
+            }));
+
+          // Map to live duration entries
+          const liveDuration = liveEntries
+            .filter(e => e.event_type === 'duration')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              duration: e.duration_seconds || 0,
+              startTime: new Date(e.timestamp),
+              endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
+              sessionId: e.session_id,
+            }));
+
+          // Map to live interval entries
+          const liveInterval = liveEntries
+            .filter(e => e.event_type === 'interval')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              intervalNumber: e.interval_index || 0,
+              occurred: (e.abc_data as any)?.occurred || false,
+              timestamp: new Date(e.timestamp),
+              voided: (e.abc_data as any)?.voided,
+              voidReason: (e.abc_data as any)?.voidReason,
+              sessionId: e.session_id,
+            }));
+
+          // Map to live ABC entries
+          const liveABC = liveEntries
+            .filter(e => e.event_type === 'abc')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              antecedent: (e.abc_data as any)?.antecedent || '',
+              antecedents: (e.abc_data as any)?.antecedents,
+              behavior: (e.abc_data as any)?.behavior || '',
+              behaviors: (e.abc_data as any)?.behaviors,
+              consequence: (e.abc_data as any)?.consequence || '',
+              consequences: (e.abc_data as any)?.consequences,
+              functions: (e.abc_data as any)?.functions,
+              frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
+              hasDuration: (e.abc_data as any)?.hasDuration,
+              durationMinutes: (e.abc_data as any)?.durationMinutes,
+              timestamp: new Date(e.timestamp),
+              sessionId: e.session_id,
+            }));
+
+          // Merge with existing entries (don't overwrite if local has more recent data)
+          const currentState = useDataStore.getState();
+          
+          // Only load live data if local data is empty (fresh load scenario)
+          if (currentState.frequencyEntries.length === 0 && 
+              currentState.durationEntries.length === 0 && 
+              currentState.intervalEntries.length === 0 &&
+              currentState.abcEntries.length === 0) {
+            
+            useDataStore.setState({
+              frequencyEntries: liveFrequency,
+              durationEntries: liveDuration,
+              intervalEntries: liveInterval,
+              abcEntries: liveABC,
+              currentSessionId: activeSessionData.id,
+              sessionStartTime: new Date(activeSessionData.start_time),
+              selectedStudentIds: activeSessionData.student_ids || [],
+            });
+            
+            console.log('[Sync] Live session data loaded into active counters');
+          } else {
+            console.log('[Sync] Local data exists, skipping live data load to prevent overwrite');
+          }
+        }
+      }
+
       setLastSyncTime(new Date());
       setSyncStatus('success');
       hasFetched.current = true;
@@ -488,6 +609,105 @@ export function SyncProvider({ children }: SyncProviderProps) {
         }
       }
 
+      // Sync LIVE session data (current unsaved session)
+      // This enables real-time sync between devices during active data collection
+      const liveSessionId = currentSessionId || 'live-session';
+      const hasLiveData = frequencyEntries.some(e => e.count > 0) || 
+                          durationEntries.length > 0 || 
+                          intervalEntries.length > 0 ||
+                          abcEntries.length > 0;
+
+      if (hasLiveData) {
+        console.log('[Sync] Syncing live session data...');
+        
+        // Create or update the live session record
+        await supabase.from('sessions').upsert({
+          id: liveSessionId,
+          user_id: user.id,
+          name: 'Active Session',
+          start_time: sessionStartTime ? new Date(sessionStartTime).toISOString() : new Date().toISOString(),
+          session_length_minutes: 60,
+          interval_length_seconds: 15,
+          student_ids: selectedStudentIds,
+          status: 'active',
+        }, { onConflict: 'id' });
+
+        // Build live session data entries
+        const liveEntries = [
+          ...abcEntries.map(e => ({
+            id: e.id,
+            user_id: user.id,
+            session_id: liveSessionId,
+            student_id: e.studentId,
+            behavior_id: e.behaviorId,
+            event_type: 'abc',
+            timestamp: new Date(e.timestamp).toISOString(),
+            abc_data: {
+              antecedent: e.antecedent,
+              antecedents: e.antecedents,
+              behavior: e.behavior,
+              behaviors: e.behaviors as unknown as Json,
+              consequence: e.consequence,
+              consequences: e.consequences,
+              functions: e.functions,
+              frequencyCount: e.frequencyCount,
+              hasDuration: e.hasDuration,
+              durationMinutes: e.durationMinutes,
+            } as Json,
+          })),
+          ...frequencyEntries.filter(e => e.count > 0).map(e => ({
+            id: e.id,
+            user_id: user.id,
+            session_id: liveSessionId,
+            student_id: e.studentId,
+            behavior_id: e.behaviorId,
+            event_type: 'frequency',
+            timestamp: new Date(e.timestamp).toISOString(),
+            abc_data: {
+              count: e.count,
+              timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
+            } as Json,
+          })),
+          ...durationEntries.filter(e => e.duration > 0 || e.endTime).map(e => ({
+            id: e.id,
+            user_id: user.id,
+            session_id: liveSessionId,
+            student_id: e.studentId,
+            behavior_id: e.behaviorId,
+            event_type: 'duration',
+            timestamp: new Date(e.startTime).toISOString(),
+            duration_seconds: e.duration,
+            abc_data: {
+              endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
+            } as Json,
+          })),
+          ...intervalEntries.map(e => ({
+            id: e.id,
+            user_id: user.id,
+            session_id: liveSessionId,
+            student_id: e.studentId,
+            behavior_id: e.behaviorId,
+            event_type: 'interval',
+            timestamp: new Date(e.timestamp).toISOString(),
+            interval_index: e.intervalNumber,
+            abc_data: {
+              occurred: e.occurred,
+              voided: e.voided,
+              voidReason: e.voidReason,
+              markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
+            } as Json,
+          })),
+        ];
+
+        // Insert live entries
+        for (let i = 0; i < liveEntries.length; i += 50) {
+          const batch = liveEntries.slice(i, i + 50);
+          await supabase.from('session_data').upsert(batch, { onConflict: 'id' });
+        }
+        
+        console.log('[Sync] Live session data synced:', liveEntries.length, 'entries');
+      }
+
       previousStudentsRef.current = JSON.stringify(students);
       previousGoalsRef.current = JSON.stringify(behaviorGoals);
       previousSessionsRef.current = JSON.stringify(sessions.map(s => s.id));
@@ -502,7 +722,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     } finally {
       setIsSyncing(false);
     }
-  }, [user, students, behaviorGoals, sessions]);
+  }, [user, students, behaviorGoals, sessions, frequencyEntries, durationEntries, intervalEntries, abcEntries, currentSessionId, sessionStartTime, selectedStudentIds]);
 
   // Manual sync function
   const syncNow = useCallback(async () => {
