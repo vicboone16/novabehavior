@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { BarChart3, LineChart as LineChartIcon } from 'lucide-react';
 import { SkillTarget, DTTSession } from '@/types/behavior';
 import { format, startOfDay, eachDayOfInterval, isWithinInterval } from 'date-fns';
 
@@ -31,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function SkillProgressCharts({ targets, dateRange }: SkillProgressChartsProps) {
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   // Progress over time chart data
   const progressData = useMemo(() => {
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
@@ -146,13 +149,28 @@ export function SkillProgressCharts({ targets, dateRange }: SkillProgressChartsP
   }
 
   return (
-    <Tabs defaultValue="progress" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="progress">Progress Over Time</TabsTrigger>
-        <TabsTrigger value="targets">By Target</TabsTrigger>
-        <TabsTrigger value="mastery">Mastery Progress</TabsTrigger>
-        <TabsTrigger value="distribution">Distribution</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      {/* Chart Type Toggle */}
+      <div className="flex justify-end">
+        <ToggleGroup type="single" value={chartType} onValueChange={(v) => v && setChartType(v as 'line' | 'bar')} size="sm">
+          <ToggleGroupItem value="line" aria-label="Line chart" className="gap-1 h-7 px-2">
+            <LineChartIcon className="w-3 h-3" />
+            <span className="text-xs">Line</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="bar" aria-label="Bar chart" className="gap-1 h-7 px-2">
+            <BarChart3 className="w-3 h-3" />
+            <span className="text-xs">Bar</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      
+      <Tabs defaultValue="progress" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="progress">Progress Over Time</TabsTrigger>
+          <TabsTrigger value="targets">By Target</TabsTrigger>
+          <TabsTrigger value="mastery">Mastery Progress</TabsTrigger>
+          <TabsTrigger value="distribution">Distribution</TabsTrigger>
+        </TabsList>
 
       <TabsContent value="progress" className="mt-4">
         <Card>
@@ -162,44 +180,79 @@ export function SkillProgressCharts({ targets, dateRange }: SkillProgressChartsP
           <CardContent>
             {progressData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={progressData}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }} 
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="percentCorrect" 
-                    name="% Correct"
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="percentIndependent" 
-                    name="% Independent"
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    dot={{ fill: '#10b981' }}
-                  />
-                </LineChart>
+                {chartType === 'line' ? (
+                  <LineChart data={progressData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }} 
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="percentCorrect" 
+                      name="% Correct"
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="percentIndependent" 
+                      name="% Independent"
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      dot={{ fill: '#10b981' }}
+                    />
+                  </LineChart>
+                ) : (
+                  <BarChart data={progressData}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }} 
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      domain={[0, 100]} 
+                      tick={{ fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="percentCorrect" 
+                      name="% Correct"
+                      fill="hsl(var(--primary))" 
+                    />
+                    <Bar 
+                      dataKey="percentIndependent" 
+                      name="% Independent"
+                      fill="#10b981" 
+                    />
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -366,5 +419,6 @@ export function SkillProgressCharts({ targets, dateRange }: SkillProgressChartsP
         </div>
       </TabsContent>
     </Tabs>
+    </div>
   );
 }

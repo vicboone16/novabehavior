@@ -36,6 +36,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Behavior, FrequencyEntry, DurationEntry, ABCEntry, IntervalEntry, Session, METHOD_LABELS } from '@/types/behavior';
@@ -105,6 +106,7 @@ export function StudentBehaviorsOverview({
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
   const [selectedBehavior, setSelectedBehavior] = useState<string>('all');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
 
   // Calculate date range
   const dateRange = useMemo(() => {
@@ -470,6 +472,18 @@ export function StudentBehaviorsOverview({
           </div>
         )}
 
+        {/* Chart Type Toggle */}
+        <ToggleGroup type="single" value={chartType} onValueChange={(v) => v && setChartType(v as 'line' | 'bar')} size="sm">
+          <ToggleGroupItem value="line" aria-label="Line chart" className="gap-1 h-7 px-2">
+            <LineChartIcon className="w-3 h-3" />
+            <span className="text-xs hidden sm:inline">Line</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="bar" aria-label="Bar chart" className="gap-1 h-7 px-2">
+            <BarChart3 className="w-3 h-3" />
+            <span className="text-xs hidden sm:inline">Bar</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 ml-auto">
@@ -550,27 +564,53 @@ export function StudentBehaviorsOverview({
             <CardContent>
               {frequencyChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={frequencyChartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend />
-                    {filteredBehaviors.map((behavior, idx) => (
-                      <Bar
-                        key={behavior.id}
-                        dataKey={behavior.name}
-                        fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                        radius={[2, 2, 0, 0]}
+                  {chartType === 'line' ? (
+                    <LineChart data={frequencyChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
                       />
-                    ))}
-                  </BarChart>
+                      <Legend />
+                      {filteredBehaviors.map((behavior, idx) => (
+                        <Line
+                          key={behavior.id}
+                          type="monotone"
+                          dataKey={behavior.name}
+                          stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                          strokeWidth={2}
+                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                        />
+                      ))}
+                    </LineChart>
+                  ) : (
+                    <BarChart data={frequencyChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      {filteredBehaviors.map((behavior, idx) => (
+                        <Bar
+                          key={behavior.id}
+                          dataKey={behavior.name}
+                          fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                          radius={[2, 2, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -590,29 +630,53 @@ export function StudentBehaviorsOverview({
             <CardContent>
               {durationChartData.some(d => Object.keys(d).length > 1) ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={durationChartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend />
-                    {filteredBehaviors.map((behavior, idx) => (
-                      <Line
-                        key={behavior.id}
-                        type="monotone"
-                        dataKey={`${behavior.name} (sec)`}
-                        stroke={CHART_COLORS[idx % CHART_COLORS.length]}
-                        strokeWidth={2}
-                        dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                  {chartType === 'line' ? (
+                    <LineChart data={durationChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
                       />
-                    ))}
-                  </LineChart>
+                      <Legend />
+                      {filteredBehaviors.map((behavior, idx) => (
+                        <Line
+                          key={behavior.id}
+                          type="monotone"
+                          dataKey={`${behavior.name} (sec)`}
+                          stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                          strokeWidth={2}
+                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                        />
+                      ))}
+                    </LineChart>
+                  ) : (
+                    <BarChart data={durationChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      {filteredBehaviors.map((behavior, idx) => (
+                        <Bar
+                          key={behavior.id}
+                          dataKey={`${behavior.name} (sec)`}
+                          fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                          radius={[2, 2, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -632,26 +696,47 @@ export function StudentBehaviorsOverview({
             <CardContent>
               {intervalChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={intervalChartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="Interval %"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))' }}
-                    />
-                  </LineChart>
+                  {chartType === 'line' ? (
+                    <LineChart data={intervalChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="Interval %"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--primary))' }}
+                      />
+                    </LineChart>
+                  ) : (
+                    <BarChart data={intervalChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      <Bar
+                        dataKey="Interval %"
+                        fill="hsl(var(--primary))"
+                        radius={[2, 2, 0, 0]}
+                      />
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">

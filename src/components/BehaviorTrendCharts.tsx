@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,6 +30,7 @@ export function BehaviorTrendCharts() {
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
   const [showRatePerHour, setShowRatePerHour] = useState(false);
   const [showAddHistorical, setShowAddHistorical] = useState(false);
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   
   // Historical entry form state
   const [histDate, setHistDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -259,6 +261,18 @@ export function BehaviorTrendCharts() {
           </Select>
           <Badge variant="outline">{sessions.length} sessions</Badge>
           
+          {/* Chart Type Toggle */}
+          <ToggleGroup type="single" value={chartType} onValueChange={(v) => v && setChartType(v as 'line' | 'bar')} size="sm">
+            <ToggleGroupItem value="line" aria-label="Line chart" className="gap-1 h-7 px-2">
+              <LineChartIcon className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Line</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="bar" aria-label="Bar chart" className="gap-1 h-7 px-2">
+              <BarChart3 className="w-3 h-3" />
+              <span className="text-xs hidden sm:inline">Bar</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
           <div className="flex items-center gap-2 ml-auto">
             <Switch
               id="show-rate"
@@ -400,23 +414,46 @@ export function BehaviorTrendCharts() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Legend />
-                      {behaviorNames
-                        .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
-                        .map((name, idx) => (
-                          <Bar 
-                            key={name} 
-                            dataKey={name} 
-                            fill={CHART_COLORS[idx % CHART_COLORS.length]} 
-                          />
-                        ))
-                      }
-                    </BarChart>
+                    {chartType === 'line' ? (
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <Tooltip />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
+                          .map((name, idx) => (
+                            <Line 
+                              key={name} 
+                              type="monotone"
+                              dataKey={name} 
+                              stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                            />
+                          ))
+                        }
+                      </LineChart>
+                    ) : (
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <Tooltip />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => !n.includes('(%)') && !n.includes('(sec)') && !n.includes('(/hr)'))
+                          .map((name, idx) => (
+                            <Bar 
+                              key={name} 
+                              dataKey={name} 
+                              fill={CHART_COLORS[idx % CHART_COLORS.length]} 
+                            />
+                          ))
+                        }
+                      </BarChart>
+                    )}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
@@ -427,23 +464,46 @@ export function BehaviorTrendCharts() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis fontSize={12} domain={[0, 100]} />
-                      <Tooltip />
-                      <Legend />
-                      {behaviorNames
-                        .filter(n => n.includes('(%)'))
-                        .map((name, idx) => (
-                          <Bar 
-                            key={name} 
-                            dataKey={name} 
-                            fill={CHART_COLORS[(idx + 2) % CHART_COLORS.length]} 
-                          />
-                        ))
-                      }
-                    </BarChart>
+                    {chartType === 'line' ? (
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} domain={[0, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => n.includes('(%)'))
+                          .map((name, idx) => (
+                            <Line 
+                              key={name} 
+                              type="monotone"
+                              dataKey={name} 
+                              stroke={CHART_COLORS[(idx + 2) % CHART_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ fill: CHART_COLORS[(idx + 2) % CHART_COLORS.length] }}
+                            />
+                          ))
+                        }
+                      </LineChart>
+                    ) : (
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} domain={[0, 100]} />
+                        <Tooltip />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => n.includes('(%)'))
+                          .map((name, idx) => (
+                            <Bar 
+                              key={name} 
+                              dataKey={name} 
+                              fill={CHART_COLORS[(idx + 2) % CHART_COLORS.length]} 
+                            />
+                          ))
+                        }
+                      </BarChart>
+                    )}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
@@ -460,23 +520,46 @@ export function BehaviorTrendCharts() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip formatter={(value: number) => `${value.toFixed(2)}/hr`} />
-                      <Legend />
-                      {behaviorNames
-                        .filter(n => n.includes('(/hr)'))
-                        .map((name, idx) => (
-                          <Bar 
-                            key={name} 
-                            dataKey={name} 
-                            fill={CHART_COLORS[idx % CHART_COLORS.length]} 
-                          />
-                        ))
-                      }
-                    </BarChart>
+                    {chartType === 'line' ? (
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <Tooltip formatter={(value: number) => `${value.toFixed(2)}/hr`} />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => n.includes('(/hr)'))
+                          .map((name, idx) => (
+                            <Line 
+                              key={name} 
+                              type="monotone"
+                              dataKey={name} 
+                              stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                              strokeWidth={2}
+                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                            />
+                          ))
+                        }
+                      </LineChart>
+                    ) : (
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <Tooltip formatter={(value: number) => `${value.toFixed(2)}/hr`} />
+                        <Legend />
+                        {behaviorNames
+                          .filter(n => n.includes('(/hr)'))
+                          .map((name, idx) => (
+                            <Bar 
+                              key={name} 
+                              dataKey={name} 
+                              fill={CHART_COLORS[idx % CHART_COLORS.length]} 
+                            />
+                          ))
+                        }
+                      </BarChart>
+                    )}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
