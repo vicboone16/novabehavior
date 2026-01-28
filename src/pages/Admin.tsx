@@ -6,7 +6,7 @@ import {
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
-  FileText
+  FileText, UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +57,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { SupervisorNoteReview } from '@/components/SupervisorNoteReview';
+import { UserTagManager } from '@/components/admin/UserTagManager';
+import { StudentTagManager } from '@/components/admin/StudentTagManager';
+import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
+
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
 interface UserWithRole {
@@ -111,6 +115,7 @@ export default function Admin() {
   const [showEditUser, setShowEditUser] = useState<UserWithRole | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState<UserWithRole | null>(null);
+  const [showApproveDialog, setShowApproveDialog] = useState<UserWithRole | null>(null);
   
   // Form state
   const [newTagName, setNewTagName] = useState('');
@@ -127,14 +132,6 @@ export default function Admin() {
   const [showPin, setShowPin] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [newPin, setNewPin] = useState('');
-  
-  // Add user form
-  const [addEmail, setAddEmail] = useState('');
-  const [addFirstName, setAddFirstName] = useState('');
-  const [addLastName, setAddLastName] = useState('');
-  const [addPassword, setAddPassword] = useState('');
-  const [addPin, setAddPin] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
   
   useEffect(() => {
     checkAdminStatus();
@@ -217,22 +214,6 @@ export default function Admin() {
 
   const pendingUsers = users.filter(u => !u.is_approved);
   const approvedUsers = users.filter(u => u.is_approved);
-
-  const handleApproveUser = async (userId: string) => {
-    try {
-      // Note: approve_user now uses auth.uid() for approved_by, no need to pass it
-      const { error } = await supabase.rpc('approve_user', { 
-        _user_id: userId
-      });
-
-      if (error) throw error;
-
-      toast({ title: 'User approved successfully' });
-      await loadData();
-    } catch (error: any) {
-      toast({ title: 'Failed to approve user', description: error.message, variant: 'destructive' });
-    }
-  };
 
   const handleRevokeAccess = async () => {
     if (!showRevokeConfirm) return;
@@ -348,43 +329,6 @@ export default function Admin() {
       await loadData();
     } catch (error: any) {
       toast({ title: 'Failed to update user', description: error.message, variant: 'destructive' });
-    }
-  };
-
-  const handleAddUser = async () => {
-    if (!addEmail || !addPassword || !addFirstName || !addLastName) {
-      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
-      return;
-    }
-
-    if (addPassword.length < 6) {
-      toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
-      return;
-    }
-
-    if (addPin && !/^\d{6}$/.test(addPin)) {
-      toast({ title: 'PIN must be exactly 6 digits', variant: 'destructive' });
-      return;
-    }
-
-    setIsAdding(true);
-    try {
-      // Note: Creating users requires admin API or the user to sign up themselves
-      // For now, we'll just show the invitation flow message
-      toast({ 
-        title: 'User invitation', 
-        description: 'Ask the user to sign up at the login page. You can then approve their account here.' 
-      });
-      setShowAddUser(false);
-      setAddEmail('');
-      setAddFirstName('');
-      setAddLastName('');
-      setAddPassword('');
-      setAddPin('');
-    } catch (error: any) {
-      toast({ title: 'Failed to add user', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsAdding(false);
     }
   };
 
@@ -561,10 +505,10 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
+          <TabsList className="grid w-full max-w-3xl grid-cols-6">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
-              Pending
+              <span className="hidden sm:inline">Pending</span>
               {pendingUsers.length > 0 && (
                 <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
                   {pendingUsers.length}
@@ -573,19 +517,23 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
-              Users
+              <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
             <TabsTrigger value="notes" className="gap-2">
               <FileText className="w-4 h-4" />
-              Notes
+              <span className="hidden sm:inline">Notes</span>
             </TabsTrigger>
             <TabsTrigger value="tags" className="gap-2">
               <Tag className="w-4 h-4" />
-              Tags
+              <span className="hidden sm:inline">Tags</span>
+            </TabsTrigger>
+            <TabsTrigger value="students" className="gap-2">
+              <UserCog className="w-4 h-4" />
+              <span className="hidden sm:inline">Students</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="w-4 h-4" />
-              Settings
+              <span className="hidden sm:inline">Settings</span>
             </TabsTrigger>
           </TabsList>
 
@@ -638,7 +586,7 @@ export default function Admin() {
                               <div className="flex justify-end gap-2">
                                 <Button 
                                   size="sm"
-                                  onClick={() => handleApproveUser(u.id)}
+                                  onClick={() => setShowApproveDialog(u)}
                                 >
                                   <Check className="w-4 h-4 mr-1" />
                                   Approve
@@ -670,13 +618,9 @@ export default function Admin() {
                   <div>
                     <CardTitle>User Management</CardTitle>
                     <CardDescription>
-                      Manage user roles, access, and permissions
+                      Manage user roles, tags, and permissions
                     </CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddUser(true)}>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add User
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -686,7 +630,7 @@ export default function Admin() {
                       <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Roles</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Tags</TableHead>
                         <TableHead>PIN</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -698,9 +642,6 @@ export default function Admin() {
                             <div>
                               <p className="font-medium">{u.display_name || 'No name'}</p>
                               <p className="text-sm text-muted-foreground">{u.email}</p>
-                              {u.phone && (
-                                <p className="text-xs text-muted-foreground">{u.phone}</p>
-                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -728,9 +669,12 @@ export default function Admin() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={u.is_approved ? 'default' : 'secondary'}>
-                              {u.is_approved ? 'Active' : 'Pending'}
-                            </Badge>
+                            <UserTagManager
+                              userId={u.id}
+                              userName={u.display_name || u.email || 'User'}
+                              availableTags={tags}
+                              onTagsChange={loadData}
+                            />
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
@@ -738,7 +682,7 @@ export default function Admin() {
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-1">
                               <Button 
                                 variant="outline" 
                                 size="sm"
@@ -796,7 +740,7 @@ export default function Admin() {
                   <div>
                     <CardTitle>Tags & Groups</CardTitle>
                     <CardDescription>
-                      Organize users and students by school, site, or team
+                      Create tags to organize users and students by school, site, or team. Users can only access students with matching tags.
                     </CardDescription>
                   </div>
                   <Button onClick={() => setShowAddTag(true)}>
@@ -806,7 +750,7 @@ export default function Admin() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {['school', 'site', 'team', 'custom'].map((type) => {
                     const typeTags = tags.filter(t => t.tag_type === type);
                     return (
@@ -858,6 +802,14 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
+          {/* Students Tab - Tag Assignment */}
+          <TabsContent value="students">
+            <StudentTagManager 
+              availableTags={tags} 
+              onTagsChange={loadData}
+            />
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings">
             <Card>
@@ -867,13 +819,50 @@ export default function Admin() {
                   Configure system-wide settings
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">More settings coming soon...</p>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <h3 className="font-medium mb-2">Tag-Based Access Control</h3>
+                  <p className="text-sm text-muted-foreground">
+                    When you assign tags to both users and students, users will automatically be able to access students with matching tags. This allows you to organize access by school, site, or team without manually configuring individual student access for each user.
+                  </p>
+                </div>
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <h3 className="font-medium mb-2">Permission Hierarchy</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li><strong>Super Admin:</strong> Full system access, can manage other admins</li>
+                    <li><strong>Admin:</strong> Can manage users, students, and settings</li>
+                    <li><strong>Staff:</strong> Can collect data and view assigned students</li>
+                    <li><strong>Viewer:</strong> View-only access to assigned students</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <h3 className="font-medium mb-2">Granular Permissions</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Even with tag-based access, you can still configure granular permissions for each user-student combination via the "Access" button in User Management. This allows you to:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Toggle view notes permission</li>
+                    <li>Toggle view documents permission</li>
+                    <li>Toggle data collection permission</li>
+                    <li>Toggle profile editing permission</li>
+                    <li>Toggle report generation permission</li>
+                  </ul>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Approve User Dialog */}
+      <ApproveUserDialog
+        user={showApproveDialog}
+        isOpen={!!showApproveDialog}
+        onClose={() => setShowApproveDialog(null)}
+        onApproved={loadData}
+        availableTags={tags}
+        isSuperAdmin={isSuperAdmin}
+      />
 
       {/* Edit User Dialog */}
       <Dialog open={!!showEditUser} onOpenChange={(open) => !open && setShowEditUser(null)}>
@@ -981,32 +970,6 @@ export default function Admin() {
         </DialogContent>
       </Dialog>
 
-      {/* Add User Dialog */}
-      <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>
-              Users must sign up through the login page. You can then approve their account here.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              To add a new user:
-            </p>
-            <ol className="list-decimal list-inside mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>Ask the user to sign up at the login page</li>
-              <li>Their account will appear in the "Pending" tab</li>
-              <li>Review their information and click "Approve"</li>
-              <li>Assign roles and student access as needed</li>
-            </ol>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowAddUser(false)}>Got it</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Assign Role Dialog */}
       <Dialog open={!!showAssignRole} onOpenChange={(open) => !open && setShowAssignRole(null)}>
         <DialogContent>
@@ -1108,6 +1071,9 @@ export default function Admin() {
             <DialogTitle>
               Manage Student Access for {showManageAccess?.display_name || showManageAccess?.email}
             </DialogTitle>
+            <DialogDescription>
+              Configure which students this user can access and what actions they can perform. Note: Users also get access to students through matching tags.
+            </DialogDescription>
           </DialogHeader>
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-3">
