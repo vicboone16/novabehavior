@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { 
   TrendingUp, TrendingDown, Minus, CheckCircle2, Target, Calendar, 
-  BarChart3, Activity, AlertCircle, Clock
+  BarChart3, Activity, AlertCircle, Clock, Filter
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { SkillTarget, DTTSession } from '@/types/behavior';
 
 interface StudentSkillsOverviewProps {
@@ -46,6 +53,16 @@ export function StudentSkillsOverview({
   dttSessions, 
   studentColor 
 }: StudentSkillsOverviewProps) {
+  // Filter state
+  const [domainFilter, setDomainFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Get unique domains for filter dropdown
+  const uniqueDomains = useMemo(() => {
+    const domains = new Set(skillTargets.map(t => t.domain || 'General'));
+    return Array.from(domains).sort();
+  }, [skillTargets]);
+
   // Calculate stats for each target
   const targetsWithStats: TargetWithStats[] = useMemo(() => {
     return skillTargets.map(target => {
@@ -97,13 +114,31 @@ export function StudentSkillsOverview({
     });
   }, [skillTargets, dttSessions]);
 
-  // Group targets by trend
-  const trendingUp = targetsWithStats.filter(t => t.recentTrend === 'up' && t.status !== 'mastered');
-  const trendingFlat = targetsWithStats.filter(t => t.recentTrend === 'flat' && t.status !== 'mastered');
-  const trendingDown = targetsWithStats.filter(t => t.recentTrend === 'down' && t.status !== 'mastered');
-  const recentlyMastered = targetsWithStats.filter(t => t.status === 'mastered');
-  const inBaseline = targetsWithStats.filter(t => t.status === 'baseline');
-  const noData = targetsWithStats.filter(t => t.sessions.length === 0 && t.status !== 'mastered');
+  // Apply filters
+  const filteredTargets = useMemo(() => {
+    return targetsWithStats.filter(target => {
+      // Domain filter
+      if (domainFilter !== 'all') {
+        const targetDomain = target.domain || 'General';
+        if (targetDomain !== domainFilter) return false;
+      }
+      // Status filter
+      if (statusFilter !== 'all' && target.status !== statusFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [targetsWithStats, domainFilter, statusFilter]);
+
+  // Group targets by trend (using filtered targets)
+  const trendingUp = filteredTargets.filter(t => t.recentTrend === 'up' && t.status !== 'mastered');
+  const trendingFlat = filteredTargets.filter(t => t.recentTrend === 'flat' && t.status !== 'mastered');
+  const trendingDown = filteredTargets.filter(t => t.recentTrend === 'down' && t.status !== 'mastered');
+  const recentlyMastered = filteredTargets.filter(t => t.status === 'mastered');
+  const inBaseline = filteredTargets.filter(t => t.status === 'baseline');
+  const noData = filteredTargets.filter(t => t.sessions.length === 0 && t.status !== 'mastered');
+  
+  const isFiltered = domainFilter !== 'all' || statusFilter !== 'all';
 
   // Summary statistics
   const summaryStats = useMemo(() => {
@@ -201,6 +236,53 @@ export function StudentSkillsOverview({
 
   return (
     <div className="space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Skills Overview Filters
+            </CardTitle>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Domain:</span>
+                <Select value={domainFilter} onValueChange={setDomainFilter}>
+                  <SelectTrigger className="w-[150px] h-8">
+                    <SelectValue placeholder="All Domains" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {uniqueDomains.map(domain => (
+                      <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[150px] h-8">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          {isFiltered && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Showing {filteredTargets.length} of {targetsWithStats.length} targets
+            </p>
+          )}
+        </CardHeader>
+      </Card>
+
       {/* Daily Snapshot Header */}
       <Card style={{ borderColor: `${studentColor}40` }}>
         <CardHeader className="pb-3">
