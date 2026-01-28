@@ -755,6 +755,54 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                   new TableCell({ children: [new Paragraph(String(analysisData.sessionCount))] }),
                 ],
               }),
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph('Total Frequency Count')] }),
+                  new TableCell({ children: [new Paragraph(String(analysisData.frequencyTotal))] }),
+                ],
+              }),
+              ...(analysisData.totalObservationMinutes > 0 ? [
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph('Total Observation Time')] }),
+                    new TableCell({ children: [new Paragraph(`${Math.round(analysisData.totalObservationMinutes)} minutes`)] }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Average Rate per Hour', bold: true })] })] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${analysisData.averageRatePerHour.toFixed(2)} behaviors/hr`, bold: true })] })] }),
+                  ],
+                }),
+              ] : []),
+            ],
+          }),
+          // Rate breakdown table if historical data with rates exists
+          includeSections.directResults && analysisData.entriesWithRates && analysisData.entriesWithRates.length > 0 && new Paragraph({
+            children: [new TextRun({ text: 'Rate Data by Observation:', bold: true })],
+            spacing: { before: 200, after: 100 },
+          }),
+          includeSections.directResults && analysisData.entriesWithRates && analysisData.entriesWithRates.length > 0 && new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph('Date')], shading: { fill: 'f5f5f5' } }),
+                  new TableCell({ children: [new Paragraph('Count')], shading: { fill: 'f5f5f5' } }),
+                  new TableCell({ children: [new Paragraph('Duration')], shading: { fill: 'f5f5f5' } }),
+                  new TableCell({ children: [new Paragraph('Rate/hr')], shading: { fill: 'f5f5f5' } }),
+                ],
+              }),
+              ...analysisData.entriesWithRates.map((entry: any) => 
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph(format(new Date(entry.timestamp), 'MM/dd/yyyy'))] }),
+                    new TableCell({ children: [new Paragraph(String(entry.count))] }),
+                    new TableCell({ children: [new Paragraph(`${entry.observationDurationMinutes}m`)] }),
+                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: entry.ratePerHour.toFixed(2), bold: true })] })] }),
+                  ],
+                })
+              ),
             ],
           }),
           // Patterns
