@@ -15,7 +15,10 @@ import {
   BehaviorGoal,
   StudentIntervalStatus,
   StudentSessionStatus,
-  STUDENT_COLORS 
+  STUDENT_COLORS,
+  NarrativeNote,
+  LatencyEntry,
+  CaseType,
 } from '@/types/behavior';
 
 interface CollapsedState {
@@ -49,6 +52,7 @@ interface DataState {
   frequencyEntries: FrequencyEntry[];
   durationEntries: DurationEntry[];
   intervalEntries: IntervalEntry[];
+  latencyEntries: LatencyEntry[];
   sessionConfig: SessionConfig;
   sessions: Session[];
   currentSessionId: string | null;
@@ -69,6 +73,7 @@ interface DataState {
   // Student actions
   addStudent: (name: string) => void;
   updateStudentName: (id: string, name: string) => void;
+  updateStudentProfile: (id: string, updates: Partial<Student>) => void;
   removeStudent: (id: string) => void;
   archiveStudent: (id: string) => void;
   unarchiveStudent: (id: string) => void;
@@ -80,6 +85,15 @@ interface DataState {
   addCustomConsequence: (studentId: string, consequence: string) => void;
   getStudentAntecedents: (studentId: string) => string[];
   getStudentConsequences: (studentId: string) => string[];
+  
+  // Narrative notes
+  addNarrativeNote: (studentId: string, note: Omit<NarrativeNote, 'id'>) => void;
+  updateNarrativeNote: (studentId: string, noteId: string, updates: Partial<NarrativeNote>) => void;
+  deleteNarrativeNote: (studentId: string, noteId: string) => void;
+  
+  // Latency actions
+  addLatencyEntry: (entry: Omit<LatencyEntry, 'id'>) => void;
+  getLatencyEntries: (studentId: string, behaviorId: string) => LatencyEntry[];
   
   // Behavior actions
   addBehavior: (studentId: string, behavior: Omit<Behavior, 'id'>) => void;
@@ -222,6 +236,7 @@ export const useDataStore = create<DataState>()(
       frequencyEntries: [],
       durationEntries: [],
       intervalEntries: [],
+      latencyEntries: [],
       sessionConfig: {
         intervalLength: 10,
         totalIntervals: 6,
@@ -266,6 +281,15 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           students: state.students.map((s) =>
             s.id === id ? { ...s, name: name.trim() } : s
+          ),
+        }));
+      },
+
+
+      updateStudentProfile: (id, updates) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === id ? { ...s, ...updates } : s
           ),
         }));
       },
@@ -355,6 +379,66 @@ export const useDataStore = create<DataState>()(
       getStudentConsequences: (studentId) => {
         const student = get().students.find(s => s.id === studentId);
         return student?.customConsequences || [];
+      },
+
+      // Narrative Notes
+      addNarrativeNote: (studentId, note) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  narrativeNotes: [...(s.narrativeNotes || []), { ...note, id }],
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateNarrativeNote: (studentId, noteId, updates) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  narrativeNotes: (s.narrativeNotes || []).map((n) =>
+                    n.id === noteId ? { ...n, ...updates } : n
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      deleteNarrativeNote: (studentId, noteId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  narrativeNotes: (s.narrativeNotes || []).filter((n) => n.id !== noteId),
+                }
+              : s
+          ),
+        }));
+      },
+
+      // Latency Entries
+      addLatencyEntry: (entry) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          latencyEntries: [
+            ...state.latencyEntries,
+            { ...entry, id },
+          ],
+        }));
+      },
+
+      getLatencyEntries: (studentId, behaviorId) => {
+        return get().latencyEntries.filter(
+          (e) => e.studentId === studentId && e.behaviorId === behaviorId
+        );
       },
 
       addBehavior: (studentId, behavior) => {

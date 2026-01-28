@@ -1,9 +1,13 @@
-export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc';
+export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc' | 'latency';
 
 export type BehaviorFunction = 'attention' | 'escape' | 'tangible' | 'sensory' | 'automatic' | 'unknown';
 
 export type GoalDirection = 'increase' | 'decrease' | 'maintain';
-export type GoalMetric = 'frequency' | 'percentage' | 'duration' | 'rate';
+export type GoalMetric = 'frequency' | 'percentage' | 'duration' | 'rate' | 'latency';
+
+export type CaseType = 'school-based' | 'fba-only' | 'direct-services' | 'consultation';
+
+export type DocumentType = 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'other';
 
 export interface BehaviorGoal {
   id: string;
@@ -11,23 +15,96 @@ export interface BehaviorGoal {
   behaviorId: string;
   direction: GoalDirection;
   metric: GoalMetric;
-  targetValue?: number; // Now optional
+  targetValue?: number;
   baseline?: number;
   startDate: Date;
   endDate?: Date;
   notes?: string;
-  // New goal tracking fields
   introducedDate?: Date;
   dataCollectionStartDate?: Date;
   isMastered?: boolean;
   masteryDate?: Date;
+  // Smart linking
+  linkedBehaviorData?: string[]; // IDs of linked behavior entries
+  linkedABCData?: string[]; // IDs of linked ABC entries
+  linkedReplacementSkill?: string; // Behavior ID for replacement skill
+  linkedInterventionFidelity?: string[]; // IDs of fidelity checks
+  masteryCriteria?: string;
+  measurementType?: string;
+  reviewDate?: Date;
+}
+
+export interface BehaviorDefinition {
+  id: string;
+  name: string;
+  operationalDefinition: string;
+  category: string;
+  isGlobal?: boolean; // Part of global behavior bank
+  createdBy?: string; // User who created it
 }
 
 export interface Behavior {
   id: string;
   name: string;
-  type: DataCollectionMethod; // For backwards compat, this is the primary method
-  methods: DataCollectionMethod[]; // Multiple methods per behavior
+  type: DataCollectionMethod;
+  methods: DataCollectionMethod[];
+  operationalDefinition?: string; // Student-specific definition
+  baseBehaviorId?: string; // If pulled from behavior bank
+  category?: string;
+}
+
+export interface NarrativeNote {
+  id: string;
+  studentId: string;
+  content: string;
+  timestamp: Date;
+  behaviorId?: string; // Optional - can be tied to a behavior
+  tags?: string[];
+}
+
+export interface LatencyEntry {
+  id: string;
+  studentId: string;
+  behaviorId: string;
+  antecedentTime: Date; // When instruction/antecedent occurred
+  behaviorOnsetTime: Date; // When behavior started
+  latencySeconds: number; // Calculated
+  sessionId?: string;
+  notes?: string;
+}
+
+export interface StudentDocument {
+  id: string;
+  studentId: string;
+  type: DocumentType;
+  customType?: string; // For 'other' type
+  fileName: string;
+  filePath: string;
+  uploadedAt: Date;
+  extractedData?: ExtractedDocumentData;
+  isProcessed?: boolean;
+}
+
+export interface ExtractedDocumentData {
+  // From FBAs
+  targetBehaviors?: { name: string; definition: string; added?: boolean }[];
+  antecedents?: { value: string; added?: boolean }[];
+  consequences?: { value: string; added?: boolean }[];
+  hypothesizedFunctions?: { value: string; added?: boolean }[];
+  settingEvents?: { value: string; added?: boolean }[];
+  assessmentTools?: { value: string; added?: boolean }[];
+  // From BIPs
+  replacementBehaviors?: { name: string; definition?: string; added?: boolean }[];
+  preventativeStrategies?: { value: string; added?: boolean }[];
+  teachingStrategies?: { value: string; added?: boolean }[];
+  reactiveStrategies?: { value: string; added?: boolean }[];
+  crisisProcedures?: { value: string; added?: boolean }[];
+  // From IEPs
+  goals?: { text: string; type: 'academic' | 'behavioral' | 'sel'; added?: boolean }[];
+  accommodations?: { value: string; added?: boolean }[];
+  behaviorSupports?: { value: string; added?: boolean }[];
+  serviceMinutes?: { service: string; minutes: number; added?: boolean }[];
+  reviewDates?: { date: string; added?: boolean }[];
 }
 
 export interface Student {
@@ -39,6 +116,16 @@ export interface Student {
   customConsequences?: string[];
   isArchived?: boolean;
   archivedAt?: Date;
+  // New profile fields
+  dateOfBirth?: Date;
+  grade?: string;
+  school?: string;
+  caseTypes?: CaseType[];
+  assessmentModeEnabled?: boolean;
+  // Narrative notes (not session-tied)
+  narrativeNotes?: NarrativeNote[];
+  // Documents
+  documents?: StudentDocument[];
 }
 
 export interface ABCBehaviorEntry {
@@ -190,5 +277,36 @@ export const METHOD_LABELS: Record<DataCollectionMethod, string> = {
   frequency: 'Frequency',
   duration: 'Duration',
   interval: 'Interval',
-  abc: 'ABC'
+  abc: 'ABC',
+  latency: 'Latency'
 };
+
+export const CASE_TYPE_LABELS: Record<CaseType, string> = {
+  'school-based': 'School-Based',
+  'fba-only': 'FBA Only',
+  'direct-services': 'Direct Services',
+  'consultation': 'Consultation'
+};
+
+export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
+  'fba': 'FBA',
+  'bip': 'BIP',
+  'iep': 'IEP',
+  'psycho-ed': 'Psycho-ed / Eligibility Report',
+  'progress-report': 'Progress Report',
+  'other': 'Other'
+};
+
+export const BEHAVIOR_CATEGORIES = [
+  'Aggression',
+  'Self-Injury',
+  'Property Destruction',
+  'Elopement',
+  'Non-Compliance',
+  'Verbal Disruption',
+  'Stereotypy',
+  'Social Skills',
+  'Communication',
+  'Academic',
+  'Other'
+];

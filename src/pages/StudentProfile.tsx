@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,13 +34,16 @@ import {
   CONSEQUENCE_OPTIONS,
   GoalDirection,
   GoalMetric,
-  BehaviorGoal
+  BehaviorGoal,
+  Student
 } from '@/types/behavior';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
 import { StudentFileManager } from '@/components/StudentFileManager';
 import { HistoricalIntervalEntry } from '@/components/HistoricalIntervalEntry';
 import { HistoricalSessionEditor } from '@/components/HistoricalSessionEditor';
+import { StudentProfileInfo } from '@/components/StudentProfileInfo';
+import { NarrativeNotesManager } from '@/components/NarrativeNotesManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
 
@@ -69,6 +72,10 @@ export default function StudentProfile() {
     unarchiveStudent,
     permanentlyDeleteStudent,
     updateStudentName,
+    updateStudentProfile,
+    addNarrativeNote,
+    updateNarrativeNote,
+    deleteNarrativeNote,
   } = useDataStore();
 
   const student = students.find(s => s.id === studentId);
@@ -393,8 +400,12 @@ export default function StudentProfile() {
         </div>
       </div>
 
-      <Tabs defaultValue="behaviors" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+          <TabsTrigger value="profile" className="gap-2">
+            <Info className="w-4 h-4" />
+            Profile
+          </TabsTrigger>
           <TabsTrigger value="behaviors" className="gap-2">
             <Activity className="w-4 h-4" />
             Behaviors
@@ -411,11 +422,23 @@ export default function StudentProfile() {
             <Clock className="w-4 h-4" />
             Add Data
           </TabsTrigger>
+          <TabsTrigger value="notes" className="gap-2">
+            <StickyNote className="w-4 h-4" />
+            Notes
+          </TabsTrigger>
           <TabsTrigger value="files" className="gap-2">
             <FolderOpen className="w-4 h-4" />
             Files
           </TabsTrigger>
         </TabsList>
+
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-4">
+          <StudentProfileInfo
+            student={student}
+            onUpdate={(updates) => updateStudentProfile(student.id, updates)}
+          />
+        </TabsContent>
 
         {/* Behaviors Tab */}
         <TabsContent value="behaviors" className="space-y-4">
@@ -891,6 +914,18 @@ export default function StudentProfile() {
           </Card>
         </TabsContent>
 
+        {/* Notes Tab */}
+        <TabsContent value="notes" className="space-y-4">
+          <NarrativeNotesManager
+            studentId={student.id}
+            notes={student.narrativeNotes || []}
+            behaviors={student.behaviors}
+            onAddNote={(note) => addNarrativeNote(student.id, note)}
+            onUpdateNote={(noteId, updates) => updateNarrativeNote(student.id, noteId, updates)}
+            onDeleteNote={(noteId) => deleteNarrativeNote(student.id, noteId)}
+          />
+        </TabsContent>
+
         {/* Files Tab */}
         <TabsContent value="files" className="space-y-4">
           <StudentFileManager studentId={student.id} studentName={student.name} />
@@ -915,7 +950,7 @@ export default function StudentProfile() {
             <div className="space-y-2">
               <Label>Data Collection Methods</Label>
               <div className="grid grid-cols-2 gap-2">
-                {(['frequency', 'duration', 'interval', 'abc'] as DataCollectionMethod[]).map((method) => (
+                {(['frequency', 'duration', 'interval', 'abc', 'latency'] as DataCollectionMethod[]).map((method) => (
                   <div key={method} className="flex items-center gap-2">
                     <Checkbox
                       id={method}
