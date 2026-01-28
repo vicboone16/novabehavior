@@ -17,6 +17,7 @@ import { DocumentUpload } from '@/components/DocumentUpload';
 import { ABCTracker } from '@/components/ABCTracker';
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
 import { CollaborationPanel } from '@/components/CollaborationPanel';
+import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -665,13 +666,9 @@ export default function AssessmentDashboard() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button className="flex-1">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Preview Report
-                  </Button>
-                  <Button variant="outline">
-                    Export as DOCX
-                  </Button>
+                  {selectedStudent && (
+                    <FBAReportGenerator student={selectedStudent} />
+                  )}
                 </div>
               </CardContent>
             </Card>
