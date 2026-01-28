@@ -22,6 +22,7 @@ const METRIC_LABELS: Record<GoalMetric, string> = {
   percentage: 'Interval percentage',
   duration: 'Duration (minutes)',
   rate: 'Rate per hour',
+  latency: 'Latency (seconds)',
 };
 
 export function BehaviorGoalsManager() {

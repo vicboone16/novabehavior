@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useDataStore } from '@/store/dataStore';
 import { DataCollectionMethod, METHOD_LABELS, Behavior } from '@/types/behavior';
 
-const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
+const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
 
 export function BehaviorManager() {
   const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, removeBehavior } = useDataStore();
