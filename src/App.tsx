@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ApprovalCheck } from "@/components/ApprovalCheck";
 import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
@@ -15,6 +16,8 @@ import AssessmentDashboard from "./pages/AssessmentDashboard";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
+import PendingApproval from "./pages/PendingApproval";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,25 +31,45 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/pending-approval" element={
+              <ProtectedRoute>
+                <PendingApproval />
+              </ProtectedRoute>
+            } />
             <Route path="/admin" element={
               <ProtectedRoute>
-                <SyncProvider>
-                  <Admin />
-                </SyncProvider>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Admin />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <UserProfile />
+                  </SyncProvider>
+                </ApprovalCheck>
               </ProtectedRoute>
             } />
             <Route path="/behaviors" element={
               <ProtectedRoute>
-                <SyncProvider>
-                  <BehaviorLibrary />
-                </SyncProvider>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <BehaviorLibrary />
+                  </SyncProvider>
+                </ApprovalCheck>
               </ProtectedRoute>
             } />
             <Route element={
               <ProtectedRoute>
-                <SyncProvider>
-                  <MainLayout />
-                </SyncProvider>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <MainLayout />
+                  </SyncProvider>
+                </ApprovalCheck>
               </ProtectedRoute>
             }>
               <Route path="/" element={<Dashboard />} />

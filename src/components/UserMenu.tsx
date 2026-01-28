@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, Smartphone, BookOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, Smartphone, BookOpen, User, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -25,15 +26,21 @@ export function UserMenu() {
   const { toast } = useToast();
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAdminAndPending = async () => {
       if (user) {
         const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
         setIsAdmin(!!data);
+        
+        if (data) {
+          const { data: count } = await supabase.rpc('get_pending_approval_count');
+          setPendingCount(count || 0);
+        }
       }
     };
-    checkAdmin();
+    checkAdminAndPending();
   }, [user]);
 
   if (!user) return null;
@@ -107,6 +114,15 @@ export function UserMenu() {
                 {initials}
               </AvatarFallback>
             </Avatar>
+            {/* Pending approvals badge */}
+            {isAdmin && pendingCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+              >
+                {pendingCount > 9 ? '9+' : pendingCount}
+              </Badge>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -128,6 +144,10 @@ export function UserMenu() {
             Sync Now
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate('/profile')}>
+            <User className="mr-2 h-4 w-4" />
+            My Profile
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/behaviors')}>
             <BookOpen className="mr-2 h-4 w-4" />
             Behavior Library
@@ -142,6 +162,11 @@ export function UserMenu() {
               <DropdownMenuItem onClick={() => navigate('/admin')}>
                 <Shield className="mr-2 h-4 w-4" />
                 Admin Panel
+                {pendingCount > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {pendingCount} pending
+                  </Badge>
+                )}
               </DropdownMenuItem>
             </>
           )}

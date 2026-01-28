@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
 import { useSync } from '@/contexts/SyncContext';
+import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -37,6 +38,9 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Pending Approvals Notification for Admins */}
+      <PendingApprovalsNotification />
+
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">

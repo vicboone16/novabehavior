@@ -58,28 +58,46 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           display_name: string | null
           email: string | null
+          first_name: string | null
           id: string
+          is_approved: boolean | null
+          last_name: string | null
+          phone: string | null
           pin_hash: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          is_approved?: boolean | null
+          last_name?: string | null
+          phone?: string | null
           pin_hash?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          is_approved?: boolean | null
+          last_name?: string | null
+          phone?: string | null
           pin_hash?: string | null
           updated_at?: string
           user_id?: string
@@ -481,6 +499,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_user: {
+        Args: { _approved_by: string; _user_id: string }
+        Returns: boolean
+      }
+      get_pending_approval_count: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -490,6 +513,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       set_user_pin: {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
