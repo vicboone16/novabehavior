@@ -188,11 +188,38 @@ export function SyncProvider({ children }: SyncProviderProps) {
           }));
         });
 
+        // Get current live session data to preserve during reload
+        const currentState = useDataStore.getState();
+        const currentSessionId = currentState.currentSessionId;
+        
+        // Filter out historical entries that might already be in the store
+        // and preserve any live session entries that aren't historical
+        const liveFrequency = currentState.frequencyEntries.filter(e => 
+          !e.isHistorical && e.sessionId === currentSessionId
+        );
+        const liveDuration = currentState.durationEntries.filter(e => 
+          e.sessionId === currentSessionId
+        );
+        
+        // Merge historical entries with live session entries
+        const mergedFrequency = [
+          ...historicalFrequencyEntries,
+          ...liveFrequency.filter(live => 
+            !historicalFrequencyEntries.some(h => h.id === live.id)
+          ),
+        ];
+        const mergedDuration = [
+          ...historicalDurationEntries,
+          ...liveDuration.filter(live => 
+            !historicalDurationEntries.some(h => h.id === live.id)
+          ),
+        ];
+        
         useDataStore.setState({ 
           students: mappedStudents,
           behaviorGoals: goals,
-          frequencyEntries: historicalFrequencyEntries,
-          durationEntries: historicalDurationEntries,
+          frequencyEntries: mergedFrequency,
+          durationEntries: mergedDuration,
         });
 
         previousStudentsRef.current = JSON.stringify(mappedStudents);
@@ -403,10 +430,93 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
   const reloadFromCloud = useCallback(async () => {
     if (!user) return;
+    
+    // CRITICAL: Store current data as backup before clearing cache
+    const currentStudents = useDataStore.getState().students;
+    const currentFrequency = useDataStore.getState().frequencyEntries;
+    const currentDuration = useDataStore.getState().durationEntries;
+    const currentInterval = useDataStore.getState().intervalEntries;
+    const currentABC = useDataStore.getState().abcEntries;
+    const hadData = currentStudents.length > 0;
+    
     clearLocalCache();
     // Ensure the next effect cycle doesn't skip load.
     hasFetched.current = false;
-    await loadData();
+    
+    try {
+      await loadData();
+      
+      // Verify we got data back - if cloud returned nothing but we had data, restore it
+      const newStudents = useDataStore.getState().students;
+      if (hadData && newStudents.length === 0) {
+        console.warn('[Sync] Cloud returned empty data but we had local data - restoring backup');
+        useDataStore.setState({
+          students: currentStudents,
+          frequencyEntries: currentFrequency,
+          durationEntries: currentDuration,
+          intervalEntries: currentInterval,
+          abcEntries: currentABC,
+        });
+        toast.error('Could not load from cloud - local data preserved');
+        return;
+      }
+      
+      // If we had live session data that wasn't in cloud, merge it back
+      const newFrequency = useDataStore.getState().frequencyEntries;
+      const newDuration = useDataStore.getState().durationEntries;
+      const newInterval = useDataStore.getState().intervalEntries;
+      const newABC = useDataStore.getState().abcEntries;
+      
+      // Merge live session entries that aren't in the loaded data
+      const currentSessionId = useDataStore.getState().currentSessionId;
+      if (currentSessionId) {
+        // Merge frequency entries from current session
+        const liveFrequency = currentFrequency.filter(e => 
+          e.sessionId === currentSessionId && 
+          !newFrequency.some(nf => nf.id === e.id)
+        );
+        
+        const liveDuration = currentDuration.filter(e => 
+          e.sessionId === currentSessionId && 
+          !newDuration.some(nd => nd.id === e.id)
+        );
+        
+        const liveInterval = currentInterval.filter(e => 
+          e.sessionId === currentSessionId && 
+          !newInterval.some(ni => ni.id === e.id)
+        );
+        
+        const liveABC = currentABC.filter(e => 
+          e.sessionId === currentSessionId && 
+          !newABC.some(na => na.id === e.id)
+        );
+        
+        if (liveFrequency.length > 0 || liveDuration.length > 0 || liveInterval.length > 0 || liveABC.length > 0) {
+          console.log('[Sync] Restoring live session data after reload');
+          useDataStore.setState({
+            frequencyEntries: [...newFrequency, ...liveFrequency],
+            durationEntries: [...newDuration, ...liveDuration],
+            intervalEntries: [...newInterval, ...liveInterval],
+            abcEntries: [...newABC, ...liveABC],
+          });
+        }
+      }
+      
+      toast.success('Data refreshed from cloud');
+    } catch (error) {
+      console.error('[Sync] Force refresh failed:', error);
+      // Restore backup data on failure
+      if (hadData) {
+        useDataStore.setState({
+          students: currentStudents,
+          frequencyEntries: currentFrequency,
+          durationEntries: currentDuration,
+          intervalEntries: currentInterval,
+          abcEntries: currentABC,
+        });
+        toast.error('Refresh failed - local data preserved');
+      }
+    }
   }, [user, clearLocalCache, loadData]);
 
   // Sync all data to Supabase
