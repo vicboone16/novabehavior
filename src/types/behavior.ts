@@ -183,6 +183,33 @@ export interface FBAWorkflowProgress {
   updatedAt: Date;
 }
 
+// Background information for reports
+export interface StudentBackgroundInfo {
+  // Referral Information
+  referralReason?: string;
+  referralSource?: string;
+  referralDate?: Date;
+  presentingConcerns?: string;
+  // Student History
+  educationalHistory?: string;
+  previousPlacements?: string;
+  diagnoses?: string;
+  medicalInfo?: string;
+  // Previous Interventions
+  previousBIPs?: string;
+  strategiesTried?: string;
+  whatWorked?: string;
+  whatDidntWork?: string;
+  // Family/Home Context
+  homeEnvironment?: string;
+  familyStructure?: string;
+  culturalConsiderations?: string;
+  // Behaviors of Concern (for report)
+  behaviorsOfConcernSummary?: string;
+  // Last updated
+  updatedAt?: Date;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -198,6 +225,8 @@ export interface Student {
   school?: string;
   caseTypes?: CaseType[];
   assessmentModeEnabled?: boolean;
+  // Background information for reports
+  backgroundInfo?: StudentBackgroundInfo;
   // Narrative notes (not session-tied)
   narrativeNotes?: NarrativeNote[];
   // Documents

@@ -95,6 +95,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
             updatedAt: s.bip_data.updatedAt ? new Date(s.bip_data.updatedAt) : new Date(),
             reviewDate: s.bip_data.reviewDate ? new Date(s.bip_data.reviewDate) : undefined,
           } : undefined,
+          // Background information for reports
+          backgroundInfo: s.background_info ? {
+            ...s.background_info,
+            referralDate: s.background_info.referralDate ? new Date(s.background_info.referralDate) : undefined,
+            updatedAt: s.background_info.updatedAt ? new Date(s.background_info.updatedAt) : undefined,
+          } : undefined,
           // Notes and assessments
           narrativeNotes: ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
             ...n,
@@ -280,6 +286,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
               createdAt: student.bipData.createdAt ? new Date(student.bipData.createdAt).toISOString() : new Date().toISOString(),
               updatedAt: student.bipData.updatedAt ? new Date(student.bipData.updatedAt).toISOString() : new Date().toISOString(),
               reviewDate: student.bipData.reviewDate ? new Date(student.bipData.reviewDate).toISOString() : null,
+            } : null,
+            // Background information for reports
+            background_info: student.backgroundInfo ? {
+              ...student.backgroundInfo,
+              referralDate: student.backgroundInfo.referralDate ? new Date(student.backgroundInfo.referralDate).toISOString() : null,
+              updatedAt: student.backgroundInfo.updatedAt ? new Date(student.backgroundInfo.updatedAt).toISOString() : new Date().toISOString(),
             } : null,
             // Notes and assessments
             narrative_notes: (student.narrativeNotes || []).map(n => ({
@@ -476,6 +488,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
                   createdAt: s.bip_data.createdAt ? new Date(s.bip_data.createdAt) : new Date(),
                   updatedAt: s.bip_data.updatedAt ? new Date(s.bip_data.updatedAt) : new Date(),
                   reviewDate: s.bip_data.reviewDate ? new Date(s.bip_data.reviewDate) : undefined,
+                } : undefined,
+                // Background information for reports
+                backgroundInfo: s.background_info ? {
+                  ...s.background_info,
+                  referralDate: s.background_info.referralDate ? new Date(s.background_info.referralDate) : undefined,
+                  updatedAt: s.background_info.updatedAt ? new Date(s.background_info.updatedAt) : undefined,
                 } : undefined,
                 // Notes and assessments
                 narrativeNotes: ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({

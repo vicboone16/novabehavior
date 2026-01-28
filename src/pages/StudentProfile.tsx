@@ -48,6 +48,7 @@ import { FBAModeTools } from '@/components/FBAModeTools';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
 import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
+import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
 
@@ -463,6 +464,10 @@ export default function StudentProfile() {
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-4">
           <StudentProfileInfo
+            student={student}
+            onUpdate={(updates) => updateStudentProfile(student.id, updates)}
+          />
+          <StudentBackgroundEditor
             student={student}
             onUpdate={(updates) => updateStudentProfile(student.id, updates)}
           />

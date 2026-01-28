@@ -448,6 +448,30 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
           }),
           new Paragraph({ text: `Date: ${format(new Date(), 'MMMM dd, yyyy')}`, spacing: { after: 200 } }),
           
+          // Student Background (from profile)
+          ...(selectedStudent.backgroundInfo ? [
+            new Paragraph({
+              text: 'STUDENT BACKGROUND',
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 400, after: 200 },
+            }),
+            ...(selectedStudent.backgroundInfo.diagnoses ? [
+              new Paragraph({ children: [new TextRun({ text: 'Diagnoses: ', bold: true }), new TextRun(selectedStudent.backgroundInfo.diagnoses)], spacing: { after: 100 } }),
+            ] : []),
+            ...(selectedStudent.backgroundInfo.medicalInfo ? [
+              new Paragraph({ children: [new TextRun({ text: 'Medical Information: ', bold: true }), new TextRun(selectedStudent.backgroundInfo.medicalInfo)], spacing: { after: 100 } }),
+            ] : []),
+            ...(selectedStudent.backgroundInfo.previousBIPs ? [
+              new Paragraph({ children: [new TextRun({ text: 'Previous BIPs: ', bold: true }), new TextRun(selectedStudent.backgroundInfo.previousBIPs)], spacing: { after: 100 } }),
+            ] : []),
+            ...(selectedStudent.backgroundInfo.whatWorked ? [
+              new Paragraph({ children: [new TextRun({ text: 'Previous Strategies That Worked: ', bold: true }), new TextRun(selectedStudent.backgroundInfo.whatWorked)], spacing: { after: 100 } }),
+            ] : []),
+            ...(selectedStudent.backgroundInfo.whatDidntWork ? [
+              new Paragraph({ children: [new TextRun({ text: 'Previous Strategies That Did Not Work: ', bold: true }), new TextRun(selectedStudent.backgroundInfo.whatDidntWork)], spacing: { after: 200 } }),
+            ] : []),
+          ] : []),
+          
           // Target Behaviors
           new Paragraph({
             text: 'TARGET BEHAVIORS',

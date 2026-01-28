@@ -182,6 +182,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           assessment_mode_enabled: boolean | null
+          background_info: Json | null
           behaviors: Json | null
           bip_data: Json | null
           case_types: Json | null
@@ -207,6 +208,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
+          background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
           case_types?: Json | null
@@ -232,6 +234,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
+          background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
           case_types?: Json | null
