@@ -13,6 +13,8 @@ import StudentProfile from "./pages/StudentProfile";
 import Reports from "./pages/Reports";
 import AssessmentDashboard from "./pages/AssessmentDashboard";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
+import BehaviorLibrary from "./pages/BehaviorLibrary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,20 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <SyncProvider>
+                  <Admin />
+                </SyncProvider>
+              </ProtectedRoute>
+            } />
+            <Route path="/behaviors" element={
+              <ProtectedRoute>
+                <SyncProvider>
+                  <BehaviorLibrary />
+                </SyncProvider>
+              </ProtectedRoute>
+            } />
             <Route element={
               <ProtectedRoute>
                 <SyncProvider>
