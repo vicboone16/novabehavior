@@ -901,13 +901,42 @@ export default function Admin() {
             </div>
             <div className="space-y-2">
               <Label>Current PIN</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Input
                   value={showEditUser?.pin_hash ? '●●●●●●' : 'Not set'}
                   disabled
-                  className="bg-muted"
+                  className="bg-muted flex-1"
                 />
+                {showEditUser?.pin_hash && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={async () => {
+                      if (!showEditUser) return;
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ pin_hash: null })
+                          .eq('user_id', showEditUser.id);
+                        if (error) throw error;
+                        toast({ title: 'PIN reset', description: 'User will need to set a new PIN' });
+                        setShowEditUser({ ...showEditUser, pin_hash: null });
+                        await loadData();
+                      } catch (error: any) {
+                        toast({ title: 'Failed to reset PIN', description: error.message, variant: 'destructive' });
+                      }
+                    }}
+                  >
+                    Reset PIN
+                  </Button>
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                {showEditUser?.pin_hash 
+                  ? 'PIN is set. Reset to require user to set a new one.'
+                  : 'No PIN set. User cannot use PIN login until one is configured.'}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Set New PIN (6 digits)</Label>
@@ -919,6 +948,9 @@ export default function Admin() {
                 onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter 6-digit PIN"
               />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to keep current PIN, or enter 6 digits to set a new one.
+              </p>
             </div>
           </div>
           <DialogFooter>
