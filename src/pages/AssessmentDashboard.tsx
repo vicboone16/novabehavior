@@ -656,6 +656,7 @@ export default function AssessmentDashboard() {
               <DocumentUpload 
                 studentId={selectedStudent.id}
                 documents={selectedStudent.documents || []}
+                existingBackgroundInfo={selectedStudent.backgroundInfo}
                 onUploadComplete={(doc) => {
                   const updatedDocs = [...(selectedStudent.documents || []), { ...doc, id: crypto.randomUUID() }];
                   updateStudentProfile(selectedStudent.id, { documents: updatedDocs });

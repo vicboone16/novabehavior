@@ -125,6 +125,9 @@ interface DataState {
     timestamp: Date;
     observationDurationMinutes?: number;
   }) => void;
+  deleteFrequencyEntry: (id: string) => void;
+  updateFrequencyEntry: (id: string, updates: Partial<Omit<FrequencyEntry, 'id'>>) => void;
+  getFrequencyEntries: (studentId: string, behaviorId?: string) => FrequencyEntry[];
   
   // Duration actions
   startDuration: (studentId: string, behaviorId: string) => void;
@@ -721,6 +724,39 @@ export const useDataStore = create<DataState>()(
             },
           ],
         }));
+      },
+
+      deleteFrequencyEntry: (id) => {
+        const state = get();
+        const entry = state.frequencyEntries.find(e => e.id === id);
+        if (entry) {
+          const student = state.students.find(s => s.id === entry.studentId);
+          const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
+          state.moveToTrash(
+            'frequency',
+            entry,
+            `Frequency: ${entry.count} occurrences${entry.isHistorical ? ' (historical)' : ''}`,
+            student?.name,
+            behavior?.name
+          );
+        }
+        set((state) => ({
+          frequencyEntries: state.frequencyEntries.filter((e) => e.id !== id),
+        }));
+      },
+
+      updateFrequencyEntry: (id, updates) => {
+        set((state) => ({
+          frequencyEntries: state.frequencyEntries.map((e) =>
+            e.id === id ? { ...e, ...updates } : e
+          ),
+        }));
+      },
+
+      getFrequencyEntries: (studentId, behaviorId) => {
+        return get().frequencyEntries.filter(
+          (e) => e.studentId === studentId && (behaviorId ? e.behaviorId === behaviorId : true)
+        );
       },
 
       startDuration: (studentId, behaviorId) => {

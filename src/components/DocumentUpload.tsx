@@ -39,10 +39,12 @@ import {
   StudentDocument,
   StudentBackgroundInfo 
 } from '@/types/behavior';
+import { BackgroundImportPreview } from './BackgroundImportPreview';
 
 interface DocumentUploadProps {
   studentId: string;
   documents: StudentDocument[];
+  existingBackgroundInfo?: StudentBackgroundInfo;
   onUploadComplete: (doc: Omit<StudentDocument, 'id'>) => void;
   onDeleteDocument: (id: string) => void;
   onAddExtractedBehavior?: (name: string, definition: string) => void;
@@ -54,6 +56,7 @@ interface DocumentUploadProps {
 export function DocumentUpload({
   studentId,
   documents,
+  existingBackgroundInfo,
   onUploadComplete,
   onDeleteDocument,
   onAddExtractedBehavior,
@@ -70,6 +73,7 @@ export function DocumentUpload({
   const [extractedData, setExtractedData] = useState<ExtractedDocumentData | null>(null);
   const [showExtractedData, setShowExtractedData] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [showBackgroundImportPreview, setShowBackgroundImportPreview] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -626,16 +630,10 @@ export function DocumentUpload({
                       <Button
                         size="sm"
                         className="w-full mt-2"
-                        onClick={() => {
-                          onImportBackgroundInfo({
-                            ...extractedData.backgroundInfo,
-                            updatedAt: new Date(),
-                          });
-                          toast.success('Background information imported to student profile');
-                        }}
+                        onClick={() => setShowBackgroundImportPreview(true)}
                       >
                         <Plus className="w-3 h-3 mr-1" />
-                        Import All to Student Profile
+                        Review & Import to Student Profile
                       </Button>
                     )}
                   </CollapsibleContent>
@@ -651,6 +649,17 @@ export function DocumentUpload({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Background Import Preview Dialog */}
+      {extractedData?.backgroundInfo && onImportBackgroundInfo && (
+        <BackgroundImportPreview
+          open={showBackgroundImportPreview}
+          onOpenChange={setShowBackgroundImportPreview}
+          extractedData={extractedData.backgroundInfo}
+          existingData={existingBackgroundInfo}
+          onImport={onImportBackgroundInfo}
+        />
+      )}
     </>
   );
 }

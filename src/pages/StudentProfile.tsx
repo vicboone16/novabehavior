@@ -50,6 +50,7 @@ import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
 import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
 import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
 import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
+import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { Session } from '@/types/behavior';
 
@@ -741,10 +742,15 @@ export default function StudentProfile() {
         <TabsContent value="data" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Add Historical / External Data</CardTitle>
-              <CardDescription>
-                Manually add data collected outside the system or from past sessions
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Add Historical / External Data</CardTitle>
+                  <CardDescription>
+                    Manually add data collected outside the system or from past sessions
+                  </CardDescription>
+                </div>
+                <HistoricalDataManager studentId={student.id} />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Historical Interval Data Button */}
