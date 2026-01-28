@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
 import Reports from "./pages/Reports";
+import AssessmentDashboard from "./pages/AssessmentDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/students" element={<Students />} />
               <Route path="/students/:studentId" element={<StudentProfile />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/assessment" element={<AssessmentDashboard />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
