@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
@@ -16,6 +16,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/students')) return 'students';
     if (location.pathname.startsWith('/reports')) return 'reports';
     if (location.pathname.startsWith('/assessment')) return 'assessment';
+    if (location.pathname.startsWith('/skills')) return 'skills';
     return 'dashboard';
   };
 
@@ -32,6 +33,9 @@ export default function MainLayout() {
         break;
       case 'assessment':
         navigate('/assessment');
+        break;
+      case 'skills':
+        navigate('/skills');
         break;
     }
   };
@@ -97,6 +101,13 @@ export default function MainLayout() {
               >
                 <ClipboardCheck className="w-4 h-4" />
                 Assessment
+              </TabsTrigger>
+              <TabsTrigger 
+                value="skills" 
+                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+              >
+                <Target className="w-4 h-4" />
+                Skills
               </TabsTrigger>
               <TabsTrigger 
                 value="reports" 
