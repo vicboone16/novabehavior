@@ -220,9 +220,9 @@ export default function Admin() {
 
   const handleApproveUser = async (userId: string) => {
     try {
+      // Note: approve_user now uses auth.uid() for approved_by, no need to pass it
       const { error } = await supabase.rpc('approve_user', { 
-        _user_id: userId, 
-        _approved_by: user?.id 
+        _user_id: userId
       });
 
       if (error) throw error;
