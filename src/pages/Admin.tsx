@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
-  Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle
+  Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +56,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-
+import { SupervisorNoteReview } from '@/components/SupervisorNoteReview';
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
 interface UserWithRole {
@@ -560,7 +561,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               Pending
@@ -573,6 +574,10 @@ export default function Admin() {
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Notes
             </TabsTrigger>
             <TabsTrigger value="tags" className="gap-2">
               <Tag className="w-4 h-4" />
@@ -776,6 +781,11 @@ export default function Admin() {
                 </ScrollArea>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Notes Review Tab */}
+          <TabsContent value="notes">
+            <SupervisorNoteReview />
           </TabsContent>
 
           {/* Tags Tab */}
