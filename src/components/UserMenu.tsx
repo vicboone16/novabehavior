@@ -21,7 +21,7 @@ import { SetupPinDialog } from '@/components/PinLogin';
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
-  const { isSyncing, isLoading, lastSyncTime, syncNow, syncStatus } = useSync();
+  const { isSyncing, isLoading, lastSyncTime, syncNow, reloadFromCloud, syncStatus } = useSync();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPinSetup, setShowPinSetup] = useState(false);
@@ -54,9 +54,13 @@ export function UserMenu() {
     .slice(0, 2);
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({ title: 'Signed out successfully' });
-    navigate('/auth');
+    try {
+      await signOut();
+      toast({ title: 'Signed out successfully' });
+      navigate('/auth');
+    } catch (e: any) {
+      toast({ title: 'Sign out failed', description: e?.message ?? 'Please try again', variant: 'destructive' });
+    }
   };
 
   const handleSyncNow = async () => {
@@ -64,11 +68,8 @@ export function UserMenu() {
   };
 
   const handleForceRefresh = async () => {
-    // Clear local storage cache
-    localStorage.removeItem('behavior-data-storage');
-    toast({ title: 'Clearing cache...', description: 'Reloading data from cloud' });
-    // Reload the page to get fresh data
-    window.location.reload();
+    toast({ title: 'Refreshing…', description: 'Reloading students from cloud' });
+    await reloadFromCloud();
   };
 
   const getSyncIcon = () => {
@@ -147,31 +148,62 @@ export function UserMenu() {
               <span>{getSyncText()}</span>
             </div>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleSyncNow} disabled={isSyncing || isLoading}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              handleSyncNow();
+            }}
+            disabled={isSyncing || isLoading}
+          >
             <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
             Sync Now
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleForceRefresh}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              handleForceRefresh();
+            }}
+          >
             <CloudOff className="mr-2 h-4 w-4" />
             Force Refresh (Clear Cache)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate('/profile')}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              navigate('/profile');
+            }}
+          >
             <User className="mr-2 h-4 w-4" />
             My Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate('/behaviors')}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              navigate('/behaviors');
+            }}
+          >
             <BookOpen className="mr-2 h-4 w-4" />
             Behavior Library
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowPinSetup(true)}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setShowPinSetup(true);
+            }}
+          >
             <Smartphone className="mr-2 h-4 w-4" />
             Set Up Quick PIN
           </DropdownMenuItem>
           {isAdmin && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/admin')}>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  navigate('/admin');
+                }}
+              >
                 <Shield className="mr-2 h-4 w-4" />
                 Admin Panel
                 {pendingCount > 0 && (
@@ -183,7 +215,13 @@ export function UserMenu() {
             </>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              handleSignOut();
+            }}
+            className="text-destructive focus:text-destructive"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign out
           </DropdownMenuItem>
