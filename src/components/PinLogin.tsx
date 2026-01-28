@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { Loader2, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +14,11 @@ import {
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface PinLoginProps {
   onSuccess: () => void;
@@ -26,48 +30,67 @@ export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
   const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'email' | 'pin'>('email');
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [savedEmail, setSavedEmail] = useState('');
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setStep('pin');
+  // Load saved email from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('pin_login_email');
+    if (stored) {
+      setSavedEmail(stored);
+      setEmail(stored);
     }
-  };
+  }, []);
 
   const handlePinComplete = async (value: string) => {
     if (value.length !== 6) return;
     
+    const emailToUse = email.trim().toLowerCase();
+    
+    if (!emailToUse) {
+      setShowEmailInput(true);
+      toast({ 
+        title: 'Email required', 
+        description: 'Please enter your email to continue',
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      // First, find the user by email
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('email', email.toLowerCase())
-        .single();
+      // Call the edge function to verify PIN and get session
+      const { data, error } = await supabase.functions.invoke('pin-auth', {
+        body: { email: emailToUse, pin: value }
+      });
 
-      if (profileError || !profile) {
-        toast({ 
-          title: 'User not found', 
-          description: 'No account found with this email',
-          variant: 'destructive' 
-        });
+      if (error) {
+        throw new Error(error.message || 'PIN verification failed');
+      }
+
+      if (data?.error) {
+        if (data.pending) {
+          toast({ 
+            title: 'Account pending approval', 
+            description: 'Your account is awaiting administrator approval',
+            variant: 'destructive' 
+          });
+        } else {
+          toast({ 
+            title: 'Login failed', 
+            description: data.error,
+            variant: 'destructive' 
+          });
+        }
+        setPin('');
         setIsLoading(false);
         return;
       }
 
-      // Verify PIN using the database function
-      const { data: isValid, error: pinError } = await supabase
-        .rpc('verify_pin', { 
-          _user_id: profile.user_id, 
-          _pin: value 
-        });
-
-      if (pinError || !isValid) {
+      if (!data?.access_token) {
         toast({ 
-          title: 'Invalid PIN', 
-          description: 'The PIN you entered is incorrect',
+          title: 'Login failed', 
+          description: 'Unable to complete PIN login. Try password login instead.',
           variant: 'destructive' 
         });
         setPin('');
@@ -75,21 +98,8 @@ export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
         return;
       }
 
-      // PIN is valid - sign in with a special method
-      // We'll use a server-side approach via edge function
-      const { data, error } = await supabase.functions.invoke('pin-auth', {
-        body: { email: email.toLowerCase(), pin: value }
-      });
-
-      if (error || !data?.access_token) {
-        toast({ 
-          title: 'Login failed', 
-          description: 'Unable to complete PIN login. Try password login instead.',
-          variant: 'destructive' 
-        });
-        setIsLoading(false);
-        return;
-      }
+      // Save email for future logins
+      localStorage.setItem('pin_login_email', emailToUse);
 
       // Set the session
       await supabase.auth.setSession({
@@ -106,88 +116,124 @@ export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
         description: 'An error occurred. Please try again.',
         variant: 'destructive' 
       });
+      setPin('');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {step === 'email' ? (
-        <form onSubmit={handleEmailSubmit}>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pin-email">Email</Label>
-              <Input
-                id="pin-email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={!email.trim()}>
-              Continue with PIN
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">{email}</p>
-            <button 
-              className="text-xs text-primary hover:underline"
-              onClick={() => setStep('email')}
-            >
-              Change email
-            </button>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-center block">Enter your 6-digit PIN</Label>
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={pin}
-                onChange={(value) => {
-                  setPin(value);
-                  if (value.length === 6) {
-                    handlePinComplete(value);
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                </InputOTPGroup>
-                <InputOTPSeparator />
-                <InputOTPGroup>
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-          </div>
+  const handleEmailSave = () => {
+    if (email.trim()) {
+      localStorage.setItem('pin_login_email', email.trim().toLowerCase());
+      setSavedEmail(email.trim().toLowerCase());
+      setShowEmailInput(false);
+      toast({ title: 'Email saved', description: 'Now enter your PIN' });
+    }
+  };
 
-          {isLoading && (
-            <div className="flex justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
+  return (
+    <div className="space-y-6">
+      {/* PIN Input - Primary focus */}
+      <div className="space-y-4">
+        <div className="text-center">
+          <Smartphone className="w-12 h-12 mx-auto text-primary mb-2" />
+          <h3 className="text-lg font-semibold">Quick PIN Login</h3>
+          {savedEmail && !showEmailInput && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Logging in as <span className="font-medium">{savedEmail}</span>
+            </p>
           )}
         </div>
-      )}
+        
+        <div className="space-y-2">
+          <Label className="text-center block text-muted-foreground">Enter your 6-digit PIN</Label>
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={pin}
+              onChange={(value) => {
+                setPin(value);
+                if (value.length === 6) {
+                  handlePinComplete(value);
+                }
+              }}
+              disabled={isLoading}
+              autoFocus
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+        </div>
 
-      <div className="text-center">
+        {isLoading && (
+          <div className="flex justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+      </div>
+
+      {/* Collapsible Email Input */}
+      <Collapsible open={showEmailInput} onOpenChange={setShowEmailInput}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground py-2"
+          >
+            {showEmailInput ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Hide email
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                {savedEmail ? 'Change email' : 'Enter your email first'}
+              </>
+            )}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-3 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="pin-email">Email</Label>
+            <Input
+              id="pin-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            className="w-full"
+            onClick={handleEmailSave}
+            disabled={!email.trim()}
+          >
+            Save & Continue
+          </Button>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Switch to password login */}
+      <div className="text-center pt-2 border-t">
         <button
           type="button"
           className="text-sm text-muted-foreground hover:text-foreground"
           onClick={onSwitchToPassword}
         >
-          Use password instead
+          Use email & password instead
         </button>
       </div>
     </div>
