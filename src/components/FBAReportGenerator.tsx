@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   FileText, Download, Printer, FileCheck, FileDown, 
@@ -550,6 +550,49 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     updateStudentProfile(selectedStudentId, { fbaFindings: findings });
     toast.success('FBA findings saved to student profile');
   };
+
+  // Auto-save FBA findings when analysis data changes
+  useEffect(() => {
+    if (!selectedStudent || !analysisData || analysisData.abcCount === 0) return;
+    
+    // Debounce auto-save
+    const timeout = setTimeout(() => {
+      const findings = {
+        id: selectedStudent.fbaFindings?.id || crypto.randomUUID(),
+        studentId: selectedStudentId,
+        createdAt: selectedStudent.fbaFindings?.createdAt || new Date(),
+        updatedAt: new Date(),
+        status: completionPercentage === 100 ? 'complete' as const : 'draft' as const,
+        primaryFunction: analysisData.primaryFunction?.function,
+        secondaryFunctions: analysisData.functionStrengths
+          .slice(1)
+          .map(fs => fs.function),
+        functionStrengths: analysisData.functionStrengths.map(fs => ({
+          function: fs.function,
+          percentage: fs.percentage,
+        })),
+        topAntecedents: analysisData.topAntecedents,
+        topConsequences: analysisData.topConsequences,
+        hypothesisStatements: analysisData.hypothesisStatement 
+          ? [analysisData.hypothesisStatement] 
+          : [],
+        abcEntriesCount: analysisData.abcCount,
+        sessionsCount: analysisData.sessionCount,
+        frequencyTotal: analysisData.frequencyTotal,
+        dateRangeStart: new Date(),
+        dateRangeEnd: new Date(),
+        recommendations,
+        ageRange,
+        assessorName: assessorName || selectedStudent.fbaFindings?.assessorName,
+        assessorTitle: assessorTitle || selectedStudent.fbaFindings?.assessorTitle,
+        notes: additionalNotes || selectedStudent.fbaFindings?.notes,
+      };
+
+      updateStudentProfile(selectedStudentId, { fbaFindings: findings });
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeout);
+  }, [selectedStudentId, analysisData, recommendations, ageRange, completionPercentage]);
 
   const getFunctionColor = (fn: BehaviorFunction) => {
     const colors: Record<BehaviorFunction, string> = {

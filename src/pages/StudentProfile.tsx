@@ -72,6 +72,7 @@ export default function StudentProfile() {
     sessions,
     addABCEntry,
     incrementFrequency,
+    addHistoricalFrequency,
     archiveStudent,
     unarchiveStudent,
     permanentlyDeleteStudent,
@@ -124,6 +125,7 @@ export default function StudentProfile() {
   const [dataBehaviorId, setDataBehaviorId] = useState('');
   const [dataType, setDataType] = useState<'frequency' | 'abc'>('frequency');
   const [dataCount, setDataCount] = useState('1');
+  const [dataObservationDuration, setDataObservationDuration] = useState(''); // in minutes for rate calc
   const [dataAntecedent, setDataAntecedent] = useState('');
   const [dataBehavior, setDataBehavior] = useState('');
   const [dataConsequence, setDataConsequence] = useState('');
@@ -245,13 +247,21 @@ export default function StudentProfile() {
     if (!behavior) return;
 
     const count = parseInt(dataCount) || 1;
+    const durationMinutes = dataObservationDuration ? parseFloat(dataObservationDuration) : undefined;
+    const timestamp = new Date(`${dataDate}T${dataTime}`);
     
-    for (let i = 0; i < count; i++) {
-      incrementFrequency(student.id, dataBehaviorId);
-    }
+    // Use historical frequency entry to preserve observation duration
+    addHistoricalFrequency({
+      studentId: student.id,
+      behaviorId: dataBehaviorId,
+      count,
+      timestamp,
+      observationDurationMinutes: durationMinutes,
+    });
     
     setShowAddData(false);
     setDataCount('1');
+    setDataObservationDuration('');
     setDataBehaviorId('');
   };
 
@@ -851,14 +861,38 @@ export default function StudentProfile() {
               </div>
 
               {dataType === 'frequency' ? (
-                <div className="space-y-2">
-                  <Label>Count</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={dataCount}
-                    onChange={(e) => setDataCount(e.target.value)}
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Count</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={dataCount}
+                      onChange={(e) => setDataCount(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center justify-between">
+                      <span>Observation Duration (optional)</span>
+                      <span className="text-xs text-muted-foreground font-normal">For rate calculation</span>
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="e.g., 30"
+                        value={dataObservationDuration}
+                        onChange={(e) => setDataObservationDuration(e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="flex items-center text-sm text-muted-foreground">minutes</span>
+                    </div>
+                    {dataObservationDuration && parseInt(dataCount) > 0 && parseFloat(dataObservationDuration) > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Rate: {((parseInt(dataCount) || 0) / (parseFloat(dataObservationDuration) / 60)).toFixed(2)} per hour
+                      </p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -907,7 +941,7 @@ export default function StudentProfile() {
             <CardHeader>
               <CardTitle className="text-lg">Data Summary</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div className="p-3 bg-secondary/30 rounded-lg">
                   <p className="text-2xl font-bold text-primary">
@@ -928,6 +962,35 @@ export default function StudentProfile() {
                   <p className="text-xs text-muted-foreground">Interval Records</p>
                 </div>
               </div>
+
+              {/* Historical entries with rates */}
+              {studentFrequency.filter(e => e.observationDurationMinutes).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Historical Entries with Rate Data</Label>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {studentFrequency
+                      .filter(e => e.observationDurationMinutes)
+                      .map((entry) => {
+                        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+                        const ratePerHour = entry.count / ((entry.observationDurationMinutes || 60) / 60);
+                        return (
+                          <div key={entry.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                            <div>
+                              <span className="font-medium">{behavior?.name || 'Unknown'}</span>
+                              <span className="text-muted-foreground ml-2">
+                                {format(new Date(entry.timestamp), 'MMM d, yyyy')}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant="secondary">{entry.count} in {entry.observationDurationMinutes}m</Badge>
+                              <span className="ml-2 text-primary font-medium">{ratePerHour.toFixed(2)}/hr</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

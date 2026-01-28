@@ -238,6 +238,8 @@ export interface FrequencyEntry {
   timestamp: Date;
   timestamps?: Date[]; // Individual occurrence timestamps
   sessionId?: string;
+  observationDurationMinutes?: number; // For historical entries - allows rate calculation
+  isHistorical?: boolean; // Flag to identify manually-entered historical data
 }
 
 export interface DurationEntry {
