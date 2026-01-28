@@ -1,5 +1,7 @@
 export type DataCollectionMethod = 'frequency' | 'duration' | 'interval' | 'abc' | 'latency';
 
+export type SkillAcquisitionMethod = 'dtt' | 'net' | 'task_analysis' | 'probe';
+
 export type BehaviorFunction = 'attention' | 'escape' | 'tangible' | 'sensory' | 'automatic' | 'unknown';
 
 export type GoalDirection = 'increase' | 'decrease' | 'maintain';
@@ -8,6 +10,90 @@ export type GoalMetric = 'frequency' | 'percentage' | 'duration' | 'rate' | 'lat
 export type CaseType = 'school-based' | 'fba-only' | 'direct-services' | 'consultation';
 
 export type DocumentType = 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'medical' | 'intake' | 'teacher-interview' | 'parent-interview' | 'observation-notes' | 'other';
+
+// DTT Prompt levels - ordered from most intrusive to least
+export type PromptLevel = 'full_physical' | 'partial_physical' | 'model' | 'gestural' | 'verbal' | 'independent';
+
+export const PROMPT_LEVEL_LABELS: Record<PromptLevel, string> = {
+  full_physical: 'Full Physical (FP)',
+  partial_physical: 'Partial Physical (PP)',
+  model: 'Model (M)',
+  gestural: 'Gestural (G)',
+  verbal: 'Verbal (V)',
+  independent: 'Independent (I)',
+};
+
+export const PROMPT_LEVEL_ORDER: PromptLevel[] = [
+  'full_physical',
+  'partial_physical',
+  'model',
+  'gestural',
+  'verbal',
+  'independent',
+];
+
+// Error types for DTT
+export type ErrorType = 'no_response' | 'incorrect' | 'prompted_error' | 'self_corrected';
+
+export const ERROR_TYPE_LABELS: Record<ErrorType, string> = {
+  no_response: 'No Response',
+  incorrect: 'Incorrect',
+  prompted_error: 'Prompted Error',
+  self_corrected: 'Self-Corrected',
+};
+
+// Mastery criteria options
+export type MasteryCriteriaType = 'percent_correct' | 'consecutive_sessions' | 'trend_stability';
+
+export interface MasteryCriteria {
+  type: MasteryCriteriaType;
+  percentCorrect?: number; // e.g., 80%
+  consecutiveSessions?: number; // e.g., 3 sessions
+  minTrials?: number; // Minimum trials per session
+}
+
+// DTT Trial entry
+export interface DTTTrial {
+  id: string;
+  timestamp: Date;
+  isCorrect: boolean;
+  promptLevel: PromptLevel;
+  errorType?: ErrorType;
+  notes?: string;
+}
+
+// DTT Session for a skill target
+export interface DTTSession {
+  id: string;
+  skillTargetId: string;
+  studentId: string;
+  date: Date;
+  trials: DTTTrial[];
+  percentCorrect: number;
+  percentIndependent: number;
+  notes?: string;
+}
+
+// Skill Target (what's being taught)
+export interface SkillTarget {
+  id: string;
+  studentId: string;
+  name: string;
+  operationalDefinition?: string;
+  domain?: string; // e.g., "Communication", "Social", "Academic"
+  program?: string; // Parent program/skill area
+  method: SkillAcquisitionMethod;
+  status: 'baseline' | 'acquisition' | 'maintenance' | 'generalization' | 'mastered';
+  masteryCriteria?: MasteryCriteria;
+  masteredDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  // Custom prompt levels (user can add more)
+  customPromptLevels?: string[];
+  // For task analysis
+  steps?: string[];
+  chainingMethod?: 'forward' | 'backward' | 'total_task';
+}
 
 export interface BehaviorGoal {
   id: string;
@@ -261,6 +347,12 @@ export interface Student {
   fbaWorkflowProgress?: FBAWorkflowProgress;
   // Historical data (synced to cloud)
   historicalData?: StudentHistoricalData;
+  // Skill acquisition targets
+  skillTargets?: SkillTarget[];
+  // DTT Sessions
+  dttSessions?: DTTSession[];
+  // Custom prompt levels (additions to default hierarchy)
+  customPromptLevels?: string[];
 }
 
 export interface ABCBehaviorEntry {
