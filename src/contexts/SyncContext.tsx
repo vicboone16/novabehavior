@@ -12,6 +12,7 @@ interface SyncContextType {
   isLoading: boolean;
   lastSyncTime: Date | null;
   syncNow: () => Promise<void>;
+  reloadFromCloud: () => Promise<void>;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
 }
 
@@ -39,6 +40,15 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const behaviorGoals = useDataStore((state) => state.behaviorGoals);
   const sessions = useDataStore((state) => state.sessions);
   const sessionNotes = useDataStore((state) => state.sessionNotes);
+
+  const clearLocalCache = useCallback(() => {
+    // On some mobile browsers / privacy modes, localStorage can throw.
+    try {
+      localStorage.removeItem('behavior-data-storage');
+    } catch (e) {
+      console.warn('[Sync] Unable to clear local cache:', e);
+    }
+  }, []);
 
   // Load all data from Supabase
   const loadData = useCallback(async () => {
@@ -269,6 +279,14 @@ export function SyncProvider({ children }: SyncProviderProps) {
       setIsLoading(false);
     }
   }, [user]);
+
+  const reloadFromCloud = useCallback(async () => {
+    if (!user) return;
+    clearLocalCache();
+    // Ensure the next effect cycle doesn't skip load.
+    hasFetched.current = false;
+    await loadData();
+  }, [user, clearLocalCache, loadData]);
 
   // Sync all data to Supabase
   const syncToCloud = useCallback(async () => {
@@ -794,7 +812,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
   }, [user, sessions, isLoading, syncToCloud]);
 
   return (
-    <SyncContext.Provider value={{ isSyncing, isLoading, lastSyncTime, syncNow, syncStatus }}>
+    <SyncContext.Provider value={{ isSyncing, isLoading, lastSyncTime, syncNow, reloadFromCloud, syncStatus }}>
       {children}
     </SyncContext.Provider>
   );
