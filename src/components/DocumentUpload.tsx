@@ -88,33 +88,94 @@ export function DocumentUpload({
     setIsUploading(true);
     
     try {
-      // For now, just simulate file processing
-      // In production, you'd upload to storage and extract text from PDFs
-      const reader = new FileReader();
-      
-      reader.onload = async (event) => {
-        const fileContent = event.target?.result as string;
-        
-        // Create document record
-        const docData: Omit<StudentDocument, 'id'> = {
-          studentId,
-          type: selectedType,
-          customType: selectedType === 'other' ? customType : undefined,
-          fileName: selectedFile.name,
-          filePath: `documents/${studentId}/${Date.now()}-${selectedFile.name}`,
-          uploadedAt: new Date(),
-          isProcessed: false,
-        };
+      // Create document record
+      const docData: Omit<StudentDocument, 'id'> = {
+        studentId,
+        type: selectedType,
+        customType: selectedType === 'other' ? customType : undefined,
+        fileName: selectedFile.name,
+        filePath: `documents/${studentId}/${Date.now()}-${selectedFile.name}`,
+        uploadedAt: new Date(),
+        isProcessed: false,
+      };
 
-        // If it's a known type, attempt AI extraction
-        if (selectedType !== 'other' && fileContent.length > 0) {
-          setIsExtracting(true);
+      // Determine if we should attempt AI extraction
+      const shouldExtract = selectedType !== 'other';
+      
+      if (shouldExtract) {
+        setIsExtracting(true);
+        
+        try {
+          // Check if it's a PDF file - needs special handling
+          const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
           
-          try {
+          let documentText = '';
+          
+          if (isPdf) {
+            // For PDFs, upload to storage and use edge function with file processing
+            const filePath = `${studentId}/${Date.now()}-${selectedFile.name}`;
+            
+            // Upload file to storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('student-documents')
+              .upload(filePath, selectedFile, {
+                contentType: selectedFile.type,
+                upsert: false,
+              });
+
+            if (uploadError) {
+              console.error('Storage upload error:', uploadError);
+              // Fall back to reading as text (won't work for PDFs but better than nothing)
+              documentText = await selectedFile.text();
+            } else {
+              // Get public URL for the file
+              const { data: urlData } = supabase.storage
+                .from('student-documents')
+                .getPublicUrl(filePath);
+
+              // Call edge function with file URL for PDF processing
+              const { data, error } = await supabase.functions.invoke('extract-document', {
+                body: {
+                  documentType: selectedType,
+                  fileUrl: urlData.publicUrl,
+                  fileName: selectedFile.name,
+                }
+              });
+
+              if (error) {
+                console.error('Extraction error:', error);
+                toast.error('Could not extract data from PDF. Please try a text-based document.');
+              } else if (data?.extractedData) {
+                docData.extractedData = data.extractedData;
+                docData.isProcessed = true;
+                docData.filePath = filePath;
+                setExtractedData(data.extractedData);
+                setShowExtractedData(true);
+                toast.success('Document analyzed successfully');
+              } else if (data?.error) {
+                toast.error(data.error);
+              }
+              
+              setIsExtracting(false);
+              onUploadComplete(docData);
+              setIsUploading(false);
+              
+              if (!showExtractedData) {
+                resetForm();
+              }
+              return;
+            }
+          } else {
+            // For text-based files, read as text
+            documentText = await selectedFile.text();
+          }
+          
+          // Process text-based documents
+          if (documentText.length > 0) {
             const { data, error } = await supabase.functions.invoke('extract-document', {
               body: {
                 documentType: selectedType,
-                documentText: fileContent.substring(0, 50000), // Limit text length
+                documentText: documentText.substring(0, 100000), // Limit text length
               }
             });
 
@@ -127,31 +188,24 @@ export function DocumentUpload({
               setExtractedData(data.extractedData);
               setShowExtractedData(true);
               toast.success('Document analyzed successfully');
+            } else if (data?.error) {
+              toast.error(data.error);
             }
-          } catch (err) {
-            console.error('Extraction failed:', err);
-            toast.error('Document analysis failed');
           }
-          
-          setIsExtracting(false);
+        } catch (err) {
+          console.error('Extraction failed:', err);
+          toast.error('Document analysis failed');
         }
-
-        onUploadComplete(docData);
-        setIsUploading(false);
         
-        if (!showExtractedData) {
-          resetForm();
-        }
-      };
+        setIsExtracting(false);
+      }
 
-      reader.onerror = () => {
-        toast.error('Failed to read file');
-        setIsUploading(false);
-      };
-
-      // Read as text for now (would need PDF parsing library for real PDFs)
-      reader.readAsText(selectedFile);
+      onUploadComplete(docData);
+      setIsUploading(false);
       
+      if (!showExtractedData) {
+        resetForm();
+      }
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Upload failed');
