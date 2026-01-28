@@ -118,6 +118,13 @@ interface DataState {
   resetFrequency: (studentId: string, behaviorId: string) => void;
   getFrequencyCount: (studentId: string, behaviorId: string) => number;
   addFrequencyFromABC: (studentId: string, behaviorId: string, count: number) => void;
+  addHistoricalFrequency: (entry: { 
+    studentId: string; 
+    behaviorId: string; 
+    count: number; 
+    timestamp: Date;
+    observationDurationMinutes?: number;
+  }) => void;
   
   // Duration actions
   startDuration: (studentId: string, behaviorId: string) => void;
@@ -696,6 +703,24 @@ export const useDataStore = create<DataState>()(
             ],
           };
         });
+      },
+
+      addHistoricalFrequency: (entry) => {
+        set((state) => ({
+          frequencyEntries: [
+            ...state.frequencyEntries,
+            {
+              id: crypto.randomUUID(),
+              studentId: entry.studentId,
+              behaviorId: entry.behaviorId,
+              count: entry.count,
+              timestamp: entry.timestamp,
+              timestamps: Array(entry.count).fill(entry.timestamp),
+              observationDurationMinutes: entry.observationDurationMinutes,
+              isHistorical: true,
+            },
+          ],
+        }));
       },
 
       startDuration: (studentId, behaviorId) => {
