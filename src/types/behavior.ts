@@ -85,6 +85,24 @@ export interface StudentDocument {
   isProcessed?: boolean;
 }
 
+export interface ExtractedBackgroundInfo {
+  referralReason?: string;
+  referralSource?: string;
+  presentingConcerns?: string;
+  educationalHistory?: string;
+  previousPlacements?: string;
+  diagnoses?: string;
+  medicalInfo?: string;
+  previousBIPs?: string;
+  strategiesTried?: string;
+  whatWorked?: string;
+  whatDidntWork?: string;
+  homeEnvironment?: string;
+  familyStructure?: string;
+  culturalConsiderations?: string;
+  behaviorsOfConcernSummary?: string;
+}
+
 export interface ExtractedDocumentData {
   // From FBAs
   targetBehaviors?: { name: string; definition: string; added?: boolean }[];
@@ -105,6 +123,8 @@ export interface ExtractedDocumentData {
   behaviorSupports?: { value: string; added?: boolean }[];
   serviceMinutes?: { service: string; minutes: number; added?: boolean }[];
   reviewDates?: { date: string; added?: boolean }[];
+  // Background Information (from any document type)
+  backgroundInfo?: ExtractedBackgroundInfo;
 }
 
 export interface IndirectAssessmentResult {

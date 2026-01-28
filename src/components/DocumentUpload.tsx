@@ -35,7 +35,9 @@ import {
   DocumentType, 
   DOCUMENT_TYPE_LABELS, 
   ExtractedDocumentData,
-  StudentDocument 
+  ExtractedBackgroundInfo,
+  StudentDocument,
+  StudentBackgroundInfo 
 } from '@/types/behavior';
 
 interface DocumentUploadProps {
@@ -46,6 +48,7 @@ interface DocumentUploadProps {
   onAddExtractedBehavior?: (name: string, definition: string) => void;
   onAddExtractedAntecedent?: (value: string) => void;
   onAddExtractedConsequence?: (value: string) => void;
+  onImportBackgroundInfo?: (backgroundInfo: Partial<StudentBackgroundInfo>) => void;
 }
 
 export function DocumentUpload({
@@ -56,6 +59,7 @@ export function DocumentUpload({
   onAddExtractedBehavior,
   onAddExtractedAntecedent,
   onAddExtractedConsequence,
+  onImportBackgroundInfo,
 }: DocumentUploadProps) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedType, setSelectedType] = useState<DocumentType>('other');
@@ -523,6 +527,119 @@ export function DocumentUpload({
                   'service',
                   (item) => `${item.service}: ${item.minutes} minutes`
                 )
+              )}
+
+              {/* Background Information Section */}
+              {extractedData?.backgroundInfo && Object.values(extractedData.backgroundInfo).some(v => v) && (
+                <Collapsible
+                  open={expandedSections['backgroundInfo']}
+                  onOpenChange={() => toggleSection('backgroundInfo')}
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-2 hover:bg-secondary/50 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">Background Information</span>
+                      <Badge variant="secondary" className="text-xs bg-primary/20 text-primary">
+                        Auto-extracted
+                      </Badge>
+                    </div>
+                    {expandedSections['backgroundInfo'] ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pl-2 pt-2">
+                    <div className="space-y-2 text-sm">
+                      {extractedData.backgroundInfo.referralReason && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Referral Reason:</span> {extractedData.backgroundInfo.referralReason}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.referralSource && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Referral Source:</span> {extractedData.backgroundInfo.referralSource}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.presentingConcerns && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Presenting Concerns:</span> {extractedData.backgroundInfo.presentingConcerns}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.educationalHistory && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Educational History:</span> {extractedData.backgroundInfo.educationalHistory}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.diagnoses && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Diagnoses:</span> {extractedData.backgroundInfo.diagnoses}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.medicalInfo && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Medical Info:</span> {extractedData.backgroundInfo.medicalInfo}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.previousBIPs && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Previous BIPs:</span> {extractedData.backgroundInfo.previousBIPs}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.strategiesTried && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Strategies Tried:</span> {extractedData.backgroundInfo.strategiesTried}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.whatWorked && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">What Worked:</span> {extractedData.backgroundInfo.whatWorked}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.whatDidntWork && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">What Didn't Work:</span> {extractedData.backgroundInfo.whatDidntWork}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.homeEnvironment && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Home Environment:</span> {extractedData.backgroundInfo.homeEnvironment}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.familyStructure && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Family Structure:</span> {extractedData.backgroundInfo.familyStructure}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.culturalConsiderations && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Cultural Considerations:</span> {extractedData.backgroundInfo.culturalConsiderations}
+                        </div>
+                      )}
+                      {extractedData.backgroundInfo.behaviorsOfConcernSummary && (
+                        <div className="p-2 bg-secondary/30 rounded">
+                          <span className="font-medium">Behaviors of Concern:</span> {extractedData.backgroundInfo.behaviorsOfConcernSummary}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {onImportBackgroundInfo && (
+                      <Button
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => {
+                          onImportBackgroundInfo({
+                            ...extractedData.backgroundInfo,
+                            updatedAt: new Date(),
+                          });
+                          toast.success('Background information imported to student profile');
+                        }}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Import All to Student Profile
+                      </Button>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </div>
           </ScrollArea>

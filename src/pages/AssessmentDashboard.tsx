@@ -657,12 +657,23 @@ export default function AssessmentDashboard() {
                 studentId={selectedStudent.id}
                 documents={selectedStudent.documents || []}
                 onUploadComplete={(doc) => {
-                  // In a real implementation, this would update the student's documents
-                  console.log('Document uploaded:', doc);
+                  const updatedDocs = [...(selectedStudent.documents || []), { ...doc, id: crypto.randomUUID() }];
+                  updateStudentProfile(selectedStudent.id, { documents: updatedDocs });
                 }}
                 onDeleteDocument={(id) => {
-                  // In a real implementation, this would delete the document
-                  console.log('Delete document:', id);
+                  const updatedDocs = (selectedStudent.documents || []).filter(d => d.id !== id);
+                  updateStudentProfile(selectedStudent.id, { documents: updatedDocs });
+                }}
+                onImportBackgroundInfo={(backgroundInfo) => {
+                  // Merge with existing background info
+                  const existingInfo = selectedStudent.backgroundInfo || {};
+                  updateStudentProfile(selectedStudent.id, {
+                    backgroundInfo: {
+                      ...existingInfo,
+                      ...backgroundInfo,
+                      updatedAt: new Date(),
+                    }
+                  });
                 }}
               />
             )}
