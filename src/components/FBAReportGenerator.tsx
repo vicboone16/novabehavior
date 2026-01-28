@@ -245,6 +245,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const [assessorTitle, setAssessorTitle] = useState('');
   const [assessmentDates, setAssessmentDates] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
+  const [allowPartialExport, setAllowPartialExport] = useState(true);
+  const [showDraftIndicators, setShowDraftIndicators] = useState(true);
   const [includeSections, setIncludeSections] = useState({
     background: true,
     procedures: true,
@@ -410,6 +412,59 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     const fnKey = analysisData.primaryFunction.function;
     return RECOMMENDATIONS_DATABASE[fnKey]?.[ageRange] || RECOMMENDATIONS_DATABASE.unknown[ageRange];
   }, [analysisData, ageRange]);
+
+  // Section completion status
+  const sectionStatus = useMemo(() => {
+    if (!selectedStudent) return {};
+    
+    const hasBehaviors = selectedStudent.behaviors.length > 0;
+    const hasDefinitions = selectedStudent.behaviors.some(b => b.operationalDefinition);
+    const hasABCData = analysisData?.abcCount ? analysisData.abcCount > 0 : false;
+    const hasPatterns = analysisData?.topAntecedents && analysisData.topAntecedents.length > 0;
+    const hasHypothesis = !!analysisData?.hypothesisStatement;
+    const hasIndirectAssessments = (selectedStudent.indirectAssessments || []).length > 0;
+    const hasRecommendations = recommendations.length > 0;
+
+    return {
+      targetBehaviors: { 
+        complete: hasBehaviors && hasDefinitions, 
+        partial: hasBehaviors && !hasDefinitions,
+        message: hasBehaviors ? (hasDefinitions ? 'Complete' : 'Missing definitions') : 'No behaviors defined'
+      },
+      directResults: { 
+        complete: hasABCData, 
+        partial: false,
+        message: hasABCData ? `${analysisData?.abcCount} entries` : 'No ABC data collected'
+      },
+      indirectResults: { 
+        complete: hasIndirectAssessments, 
+        partial: false,
+        message: hasIndirectAssessments ? `${selectedStudent.indirectAssessments?.length} assessments` : 'No indirect assessments'
+      },
+      patterns: { 
+        complete: hasPatterns, 
+        partial: false,
+        message: hasPatterns ? 'Patterns identified' : 'Insufficient data'
+      },
+      hypothesis: { 
+        complete: hasHypothesis, 
+        partial: hasABCData && !hasHypothesis,
+        message: hasHypothesis ? 'Generated' : (hasABCData ? 'Pending analysis' : 'Needs ABC data')
+      },
+      recommendations: { 
+        complete: hasRecommendations && hasHypothesis, 
+        partial: hasRecommendations && !hasHypothesis,
+        message: hasRecommendations ? `${recommendations.length} recommendations` : 'Select function to generate'
+      },
+    };
+  }, [selectedStudent, analysisData, recommendations]);
+
+  const completionPercentage = useMemo(() => {
+    const statuses = Object.values(sectionStatus);
+    if (statuses.length === 0) return 0;
+    const complete = statuses.filter(s => s.complete).length;
+    return Math.round((complete / statuses.length) * 100);
+  }, [sectionStatus]);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -820,6 +875,71 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               </CardContent>
             </Card>
 
+            {/* Export Options */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Export Options</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="allow-partial"
+                    checked={allowPartialExport}
+                    onCheckedChange={(checked) => setAllowPartialExport(!!checked)}
+                  />
+                  <Label htmlFor="allow-partial" className="text-sm cursor-pointer">
+                    Allow export with incomplete sections
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-draft"
+                    checked={showDraftIndicators}
+                    onCheckedChange={(checked) => setShowDraftIndicators(!!checked)}
+                  />
+                  <Label htmlFor="show-draft" className="text-sm cursor-pointer">
+                    Show draft/pending indicators in export
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Completion Status */}
+            {selectedStudent && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span>Section Completion Status</span>
+                    <Badge variant={completionPercentage === 100 ? 'default' : 'secondary'}>
+                      {completionPercentage}% Complete
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {Object.entries(sectionStatus).map(([key, status]) => (
+                      <div key={key} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          {status.complete ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : status.partial ? (
+                            <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          ) : (
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                        </div>
+                        <span className={`text-xs ${status.complete ? 'text-green-600' : status.partial ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                          {status.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <Progress value={completionPercentage} className="mt-3 h-2" />
+                </CardContent>
+              </Card>
+            )}
+
             {/* Additional Notes */}
             <div className="space-y-2">
               <Label>Additional Notes</Label>
@@ -843,12 +963,24 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {/* Draft Indicator Banner */}
+                    {showDraftIndicators && completionPercentage < 100 && (
+                      <div className="draft-banner bg-amber-50 border border-amber-200 rounded-lg p-3 text-center print:block">
+                        <p className="text-amber-800 text-sm font-medium">
+                          ⚠️ DRAFT - {completionPercentage}% Complete - Some sections pending data collection
+                        </p>
+                      </div>
+                    )}
+
                     {/* Report Header */}
                     <div className="report-header text-center border-b-2 border-gray-800 pb-4">
                       <h1 className="text-2xl font-bold mb-1">
                         {reportType === 'comprehensive' 
                           ? 'FUNCTIONAL BEHAVIOR ASSESSMENT REPORT' 
                           : 'FBA SUMMARY REPORT'}
+                        {showDraftIndicators && completionPercentage < 100 && (
+                          <span className="text-amber-600 text-base ml-2">(DRAFT)</span>
+                        )}
                       </h1>
                       <p className="text-lg font-semibold">{selectedStudent.name}</p>
                       <p className="text-sm text-gray-600 subtitle">
@@ -899,10 +1031,18 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                                   <strong>Definition:</strong> {b.operationalDefinition}
                                 </p>
                               )}
+                              {!b.operationalDefinition && showDraftIndicators && (
+                                <p className="text-sm text-amber-600 italic">
+                                  [Definition pending]
+                                </p>
+                              )}
                             </div>
                           ))}
                           {selectedStudent.behaviors.length === 0 && (
-                            <p className="text-gray-500 italic">No behaviors defined</p>
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                              {showDraftIndicators && <span className="font-medium">[PENDING] </span>}
+                              No behaviors defined - add target behaviors to complete this section
+                            </div>
                           )}
                         </div>
                       </div>
@@ -911,39 +1051,52 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                     {/* Direct Observation Data */}
                     {includeSections.directResults && analysisData && (
                       <div className="section">
-                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3 flex items-center gap-2">
                           DIRECT OBSERVATION DATA
+                          {showDraftIndicators && !sectionStatus.directResults?.complete && (
+                            <span className="text-amber-600 text-sm font-normal">(Pending)</span>
+                          )}
                         </h2>
-                        <table className="data-table w-full border-collapse">
-                          <thead>
-                            <tr>
-                              <th className="border p-2 bg-gray-100">Metric</th>
-                              <th className="border p-2 bg-gray-100">Value</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="border p-2">Total ABC Entries</td>
-                              <td className="border p-2">{analysisData.abcCount}</td>
-                            </tr>
-                            <tr>
-                              <td className="border p-2">Observation Sessions</td>
-                              <td className="border p-2">{analysisData.sessionCount}</td>
-                            </tr>
-                            <tr>
-                              <td className="border p-2">Total Frequency Count</td>
-                              <td className="border p-2">{analysisData.frequencyTotal}</td>
-                            </tr>
-                          </tbody>
-                        </table>
+                        {analysisData.abcCount > 0 ? (
+                          <table className="data-table w-full border-collapse">
+                            <thead>
+                              <tr>
+                                <th className="border p-2 bg-gray-100">Metric</th>
+                                <th className="border p-2 bg-gray-100">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="border p-2">Total ABC Entries</td>
+                                <td className="border p-2">{analysisData.abcCount}</td>
+                              </tr>
+                              <tr>
+                                <td className="border p-2">Observation Sessions</td>
+                                <td className="border p-2">{analysisData.sessionCount}</td>
+                              </tr>
+                              <tr>
+                                <td className="border p-2">Total Frequency Count</td>
+                                <td className="border p-2">{analysisData.frequencyTotal}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        ) : (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                            {showDraftIndicators && <span className="font-medium">[PENDING] </span>}
+                            No direct observation data collected yet. Collect ABC data to populate this section.
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Pattern Analysis */}
                     {includeSections.patterns && analysisData && (
                       <div className="section">
-                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3 flex items-center gap-2">
                           PATTERN ANALYSIS
+                          {showDraftIndicators && !sectionStatus.patterns?.complete && (
+                            <span className="text-amber-600 text-sm font-normal">(Pending)</span>
+                          )}
                         </h2>
                         <div className="pattern-grid grid md:grid-cols-2 gap-6">
                           <div className="pattern-item bg-gray-50 p-4 rounded">
@@ -999,8 +1152,11 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                     {/* Function Analysis */}
                     {includeSections.hypothesis && analysisData && (
                       <div className="section">
-                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3 flex items-center gap-2">
                           FUNCTION ANALYSIS
+                          {showDraftIndicators && !sectionStatus.hypothesis?.complete && (
+                            <span className="text-amber-600 text-sm font-normal">(Pending)</span>
+                          )}
                         </h2>
                         {analysisData.functionStrengths.length > 0 ? (
                           <>
@@ -1036,20 +1192,33 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                             )}
                           </>
                         ) : (
-                          <p className="text-gray-500 italic">Insufficient data for function analysis</p>
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                            {showDraftIndicators && <span className="font-medium">[PENDING] </span>}
+                            Insufficient data for function analysis. Collect more ABC data with function tags.
+                          </div>
                         )}
                       </div>
                     )}
 
                     {/* Hypothesis Statement */}
-                    {includeSections.hypothesis && analysisData?.hypothesisStatement && (
+                    {includeSections.hypothesis && (
                       <div className="section">
-                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3">
+                        <h2 className="section-title text-lg font-bold border-b pb-2 mb-3 flex items-center gap-2">
                           HYPOTHESIS STATEMENT
+                          {showDraftIndicators && !analysisData?.hypothesisStatement && (
+                            <span className="text-amber-600 text-sm font-normal">(Pending)</span>
+                          )}
                         </h2>
-                        <div className="hypothesis-box bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                          <p className="italic">{analysisData.hypothesisStatement}</p>
-                        </div>
+                        {analysisData?.hypothesisStatement ? (
+                          <div className="hypothesis-box bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                            <p className="italic">{analysisData.hypothesisStatement}</p>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-sm">
+                            {showDraftIndicators && <span className="font-medium">[PENDING] </span>}
+                            Hypothesis will be auto-generated after collecting sufficient ABC data.
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1100,12 +1269,47 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
 
           {/* Export Tab */}
           <TabsContent value="export" className="flex-1 overflow-auto py-4">
+            {/* Completion Status Banner */}
+            {selectedStudent && (
+              <Card className={`mb-4 ${completionPercentage === 100 ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+                <CardContent className="py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {completionPercentage === 100 ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      )}
+                      <div>
+                        <p className={`font-medium ${completionPercentage === 100 ? 'text-green-800' : 'text-amber-800'}`}>
+                          {completionPercentage === 100 
+                            ? 'Report Complete - Ready to Export' 
+                            : `Draft Report - ${completionPercentage}% Complete`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {completionPercentage < 100 
+                            ? 'You can still export with pending sections marked as drafts' 
+                            : 'All sections have data'}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={completionPercentage === 100 ? 'default' : 'secondary'}>
+                      {completionPercentage}%
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid md:grid-cols-2 gap-4">
               <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={handlePrint}>
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Printer className="w-4 h-4" />
                     Print / PDF
+                    {completionPercentage < 100 && showDraftIndicators && (
+                      <Badge variant="outline" className="text-xs">Draft</Badge>
+                    )}
                   </CardTitle>
                   <CardDescription className="text-xs">
                     Print directly or save as PDF using print dialog
@@ -1114,7 +1318,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 <CardContent>
                   <Button variant="outline" className="w-full" disabled={!selectedStudent}>
                     <Printer className="w-4 h-4 mr-2" />
-                    Print Report
+                    {completionPercentage < 100 ? 'Print Draft Report' : 'Print Report'}
                   </Button>
                 </CardContent>
               </Card>
@@ -1124,15 +1328,18 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileDown className="w-4 h-4" />
                     Word Document
+                    {completionPercentage < 100 && showDraftIndicators && (
+                      <Badge variant="outline" className="text-xs">Draft</Badge>
+                    )}
                   </CardTitle>
                   <CardDescription className="text-xs">
                     Download as editable .docx file
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" className="w-full" disabled={!selectedStudent || !analysisData}>
+                  <Button variant="outline" className="w-full" disabled={!selectedStudent}>
                     <Download className="w-4 h-4 mr-2" />
-                    Download .docx
+                    {completionPercentage < 100 ? 'Download Draft .docx' : 'Download .docx'}
                   </Button>
                 </CardContent>
               </Card>
@@ -1146,21 +1353,33 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className={`p-3 rounded-lg ${analysisData.abcCount > 0 ? 'bg-green-50' : 'bg-amber-50'}`}>
                       <p className="text-2xl font-bold">{analysisData.abcCount}</p>
                       <p className="text-xs text-muted-foreground">ABC Entries</p>
+                      {analysisData.abcCount === 0 && (
+                        <Badge variant="outline" className="text-xs mt-1">Pending</Badge>
+                      )}
                     </div>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className={`p-3 rounded-lg ${analysisData.sessionCount > 0 ? 'bg-green-50' : 'bg-amber-50'}`}>
                       <p className="text-2xl font-bold">{analysisData.sessionCount}</p>
                       <p className="text-xs text-muted-foreground">Sessions</p>
+                      {analysisData.sessionCount === 0 && (
+                        <Badge variant="outline" className="text-xs mt-1">Pending</Badge>
+                      )}
                     </div>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className={`p-3 rounded-lg ${analysisData.functionStrengths.length > 0 ? 'bg-green-50' : 'bg-amber-50'}`}>
                       <p className="text-2xl font-bold">{analysisData.functionStrengths.length}</p>
                       <p className="text-xs text-muted-foreground">Functions Identified</p>
+                      {analysisData.functionStrengths.length === 0 && (
+                        <Badge variant="outline" className="text-xs mt-1">Pending</Badge>
+                      )}
                     </div>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className={`p-3 rounded-lg ${recommendations.length > 0 ? 'bg-green-50' : 'bg-amber-50'}`}>
                       <p className="text-2xl font-bold">{recommendations.length}</p>
                       <p className="text-xs text-muted-foreground">Recommendations</p>
+                      {recommendations.length === 0 && (
+                        <Badge variant="outline" className="text-xs mt-1">Pending</Badge>
+                      )}
                     </div>
                   </div>
                 </CardContent>
