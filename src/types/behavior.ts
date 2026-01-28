@@ -353,6 +353,8 @@ export interface Student {
   dttSessions?: DTTSession[];
   // Custom prompt levels (additions to default hierarchy)
   customPromptLevels?: string[];
+  // Note requirements
+  notesRequired?: boolean;
 }
 
 export interface ABCBehaviorEntry {
