@@ -64,7 +64,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
       if (studentsError) throw studentsError;
 
       if (studentsData) {
-        const mappedStudents: Student[] = studentsData.map((s) => ({
+        const mappedStudents: Student[] = studentsData.map((s: any) => ({
           id: s.id,
           name: s.name,
           color: s.color,
@@ -72,6 +72,42 @@ export function SyncProvider({ children }: SyncProviderProps) {
           customAntecedents: (s.custom_antecedents as unknown as string[]) || [],
           customConsequences: (s.custom_consequences as unknown as string[]) || [],
           isArchived: s.is_archived,
+          archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
+          // Extended profile fields
+          dateOfBirth: s.date_of_birth ? new Date(s.date_of_birth) : undefined,
+          grade: s.grade || undefined,
+          school: s.school || undefined,
+          caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
+          assessmentModeEnabled: s.assessment_mode_enabled || false,
+          // FBA/Assessment data
+          fbaWorkflowProgress: s.fba_workflow_progress ? {
+            ...s.fba_workflow_progress,
+            updatedAt: s.fba_workflow_progress.updatedAt ? new Date(s.fba_workflow_progress.updatedAt) : new Date(),
+          } : undefined,
+          fbaFindings: s.fba_findings ? {
+            ...s.fba_findings,
+            createdAt: s.fba_findings.createdAt ? new Date(s.fba_findings.createdAt) : new Date(),
+            updatedAt: s.fba_findings.updatedAt ? new Date(s.fba_findings.updatedAt) : new Date(),
+          } : undefined,
+          bipData: s.bip_data ? {
+            ...s.bip_data,
+            createdAt: s.bip_data.createdAt ? new Date(s.bip_data.createdAt) : new Date(),
+            updatedAt: s.bip_data.updatedAt ? new Date(s.bip_data.updatedAt) : new Date(),
+            reviewDate: s.bip_data.reviewDate ? new Date(s.bip_data.reviewDate) : undefined,
+          } : undefined,
+          // Notes and assessments
+          narrativeNotes: ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
+            ...n,
+            timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
+          })),
+          indirectAssessments: ((s.indirect_assessments as unknown as import('@/types/behavior').IndirectAssessmentResult[]) || []).map((a: any) => ({
+            ...a,
+            completedAt: a.completedAt ? new Date(a.completedAt) : new Date(),
+          })),
+          documents: ((s.documents as unknown as import('@/types/behavior').StudentDocument[]) || []).map((d: any) => ({
+            ...d,
+            uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
+          })),
         }));
 
         const goals = studentsData.flatMap((s) => {
@@ -209,6 +245,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
       for (const student of students) {
         const studentGoals = behaviorGoals.filter(g => g.studentId === student.id);
         
+        // Cast to any to handle extended columns not yet in auto-generated types
         await supabase
           .from('students')
           .upsert({
@@ -221,7 +258,43 @@ export function SyncProvider({ children }: SyncProviderProps) {
             custom_consequences: student.customConsequences as any,
             goals: studentGoals as any,
             is_archived: student.isArchived || false,
-          }, { onConflict: 'id' });
+            archived_at: student.archivedAt ? new Date(student.archivedAt).toISOString() : null,
+            // Extended profile fields
+            date_of_birth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : null,
+            grade: student.grade || null,
+            school: student.school || null,
+            case_types: student.caseTypes || [],
+            assessment_mode_enabled: student.assessmentModeEnabled || false,
+            // FBA/Assessment data
+            fba_workflow_progress: student.fbaWorkflowProgress ? {
+              ...student.fbaWorkflowProgress,
+              updatedAt: student.fbaWorkflowProgress.updatedAt ? new Date(student.fbaWorkflowProgress.updatedAt).toISOString() : new Date().toISOString(),
+            } : null,
+            fba_findings: student.fbaFindings ? {
+              ...student.fbaFindings,
+              createdAt: student.fbaFindings.createdAt ? new Date(student.fbaFindings.createdAt).toISOString() : new Date().toISOString(),
+              updatedAt: student.fbaFindings.updatedAt ? new Date(student.fbaFindings.updatedAt).toISOString() : new Date().toISOString(),
+            } : null,
+            bip_data: student.bipData ? {
+              ...student.bipData,
+              createdAt: student.bipData.createdAt ? new Date(student.bipData.createdAt).toISOString() : new Date().toISOString(),
+              updatedAt: student.bipData.updatedAt ? new Date(student.bipData.updatedAt).toISOString() : new Date().toISOString(),
+              reviewDate: student.bipData.reviewDate ? new Date(student.bipData.reviewDate).toISOString() : null,
+            } : null,
+            // Notes and assessments
+            narrative_notes: (student.narrativeNotes || []).map(n => ({
+              ...n,
+              timestamp: n.timestamp ? new Date(n.timestamp).toISOString() : new Date().toISOString(),
+            })),
+            indirect_assessments: (student.indirectAssessments || []).map(a => ({
+              ...a,
+              completedAt: a.completedAt ? new Date(a.completedAt).toISOString() : new Date().toISOString(),
+            })),
+            documents: (student.documents || []).map(d => ({
+              ...d,
+              uploadedAt: d.uploadedAt ? new Date(d.uploadedAt).toISOString() : new Date().toISOString(),
+            })),
+          } as any, { onConflict: 'id' });
       }
 
       // Sync sessions
@@ -381,6 +454,42 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 customAntecedents: (s.custom_antecedents as unknown as string[]) || [],
                 customConsequences: (s.custom_consequences as unknown as string[]) || [],
                 isArchived: s.is_archived,
+                archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
+                // Extended profile fields
+                dateOfBirth: s.date_of_birth ? new Date(s.date_of_birth) : undefined,
+                grade: s.grade || undefined,
+                school: s.school || undefined,
+                caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
+                assessmentModeEnabled: s.assessment_mode_enabled || false,
+                // FBA/Assessment data
+                fbaWorkflowProgress: s.fba_workflow_progress ? {
+                  ...s.fba_workflow_progress,
+                  updatedAt: s.fba_workflow_progress.updatedAt ? new Date(s.fba_workflow_progress.updatedAt) : new Date(),
+                } : undefined,
+                fbaFindings: s.fba_findings ? {
+                  ...s.fba_findings,
+                  createdAt: s.fba_findings.createdAt ? new Date(s.fba_findings.createdAt) : new Date(),
+                  updatedAt: s.fba_findings.updatedAt ? new Date(s.fba_findings.updatedAt) : new Date(),
+                } : undefined,
+                bipData: s.bip_data ? {
+                  ...s.bip_data,
+                  createdAt: s.bip_data.createdAt ? new Date(s.bip_data.createdAt) : new Date(),
+                  updatedAt: s.bip_data.updatedAt ? new Date(s.bip_data.updatedAt) : new Date(),
+                  reviewDate: s.bip_data.reviewDate ? new Date(s.bip_data.reviewDate) : undefined,
+                } : undefined,
+                // Notes and assessments
+                narrativeNotes: ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
+                  ...n,
+                  timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
+                })),
+                indirectAssessments: ((s.indirect_assessments as unknown as import('@/types/behavior').IndirectAssessmentResult[]) || []).map((a: any) => ({
+                  ...a,
+                  completedAt: a.completedAt ? new Date(a.completedAt) : new Date(),
+                })),
+                documents: ((s.documents as unknown as import('@/types/behavior').StudentDocument[]) || []).map((d: any) => ({
+                  ...d,
+                  uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
+                })),
               };
               
               const studentGoals = ((s.goals as unknown as BehaviorGoal[]) || []).map(g => ({ ...g, studentId: s.id }));

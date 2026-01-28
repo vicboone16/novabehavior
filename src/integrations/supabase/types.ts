@@ -180,41 +180,77 @@ export type Database = {
       }
       students: {
         Row: {
+          archived_at: string | null
+          assessment_mode_enabled: boolean | null
           behaviors: Json | null
+          bip_data: Json | null
+          case_types: Json | null
           color: string
           created_at: string
           custom_antecedents: Json | null
           custom_consequences: Json | null
+          date_of_birth: string | null
+          documents: Json | null
+          fba_findings: Json | null
+          fba_workflow_progress: Json | null
           goals: Json | null
+          grade: string | null
           id: string
+          indirect_assessments: Json | null
           is_archived: boolean
           name: string
+          narrative_notes: Json | null
+          school: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
+          assessment_mode_enabled?: boolean | null
           behaviors?: Json | null
+          bip_data?: Json | null
+          case_types?: Json | null
           color?: string
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          fba_findings?: Json | null
+          fba_workflow_progress?: Json | null
           goals?: Json | null
+          grade?: string | null
           id?: string
+          indirect_assessments?: Json | null
           is_archived?: boolean
           name: string
+          narrative_notes?: Json | null
+          school?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          archived_at?: string | null
+          assessment_mode_enabled?: boolean | null
           behaviors?: Json | null
+          bip_data?: Json | null
+          case_types?: Json | null
           color?: string
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
+          date_of_birth?: string | null
+          documents?: Json | null
+          fba_findings?: Json | null
+          fba_workflow_progress?: Json | null
           goals?: Json | null
+          grade?: string | null
           id?: string
+          indirect_assessments?: Json | null
           is_archived?: boolean
           name?: string
+          narrative_notes?: Json | null
+          school?: string | null
           updated_at?: string
           user_id?: string
         }
