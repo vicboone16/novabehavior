@@ -303,10 +303,14 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     // Historical entries with rates
     const entriesWithRates = studentFrequency
       .filter(e => (e as any).observationDurationMinutes)
-      .map(e => ({
-        ...e,
-        ratePerHour: e.count / (((e as any).observationDurationMinutes || 30) / 60)
-      }));
+      .map(e => {
+        const behavior = selectedStudent?.behaviors.find(b => b.id === e.behaviorId);
+        return {
+          ...e,
+          behaviorName: behavior?.name || 'Unknown',
+          ratePerHour: e.count / (((e as any).observationDurationMinutes || 30) / 60)
+        };
+      });
 
     if (studentABC.length === 0) {
       return {
@@ -788,6 +792,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               new TableRow({
                 children: [
                   new TableCell({ children: [new Paragraph('Date')], shading: { fill: 'f5f5f5' } }),
+                  new TableCell({ children: [new Paragraph('Behavior')], shading: { fill: 'f5f5f5' } }),
                   new TableCell({ children: [new Paragraph('Count')], shading: { fill: 'f5f5f5' } }),
                   new TableCell({ children: [new Paragraph('Duration')], shading: { fill: 'f5f5f5' } }),
                   new TableCell({ children: [new Paragraph('Rate/hr')], shading: { fill: 'f5f5f5' } }),
@@ -797,6 +802,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 new TableRow({
                   children: [
                     new TableCell({ children: [new Paragraph(format(new Date(entry.timestamp), 'MM/dd/yyyy'))] }),
+                    new TableCell({ children: [new Paragraph(entry.behaviorName || 'Unknown')] }),
                     new TableCell({ children: [new Paragraph(String(entry.count))] }),
                     new TableCell({ children: [new Paragraph(`${entry.observationDurationMinutes}m`)] }),
                     new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: entry.ratePerHour.toFixed(2), bold: true })] })] }),
