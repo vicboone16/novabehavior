@@ -74,6 +74,7 @@ interface DataState {
   studentIntervalStatus: StudentIntervalStatus[]; // Track late arrivals / early departures
   studentSessionStatus: StudentSessionStatus[]; // Track pause/end per student
   trash: TrashItem[]; // Recoverable deleted items
+  lastSavedDataHash: string | null; // Track when data was last saved to prevent duplicates
   
   // Student actions
   addStudent: (name: string) => void;
@@ -183,7 +184,9 @@ interface DataState {
   updateSessionConfig: (config: Partial<SessionConfig>) => void;
   
   // Session management
-  saveSession: () => void;
+  saveSession: () => { saved: boolean; isNew: boolean; hasChanges: boolean };
+  getSessionDataHash: () => string;
+  hasUnsavedChanges: () => boolean;
   setSessionNotes: (notes: string) => void;
   getSessions: () => Session[];
   getSessionsByDate: (date: Date) => Session[];
@@ -295,6 +298,7 @@ export const useDataStore = create<DataState>()(
       studentIntervalStatus: [],
       studentSessionStatus: [],
       trash: [],
+      lastSavedDataHash: null,
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -1325,8 +1329,56 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
+      getSessionDataHash: () => {
+        const state = get();
+        // Create a hash of current session data to detect changes
+        const dataToHash = {
+          notes: state.sessionNotes,
+          studentIds: [...state.selectedStudentIds].sort(),
+          abc: state.abcEntries.map(e => ({ id: e.id, ts: e.timestamp })),
+          freq: state.frequencyEntries.map(e => ({ id: e.id, count: e.count })),
+          dur: state.durationEntries.map(e => ({ id: e.id, dur: e.duration })),
+          int: state.intervalEntries.map(e => ({ id: e.id, occurred: e.occurred, voided: e.voided })),
+        };
+        return JSON.stringify(dataToHash);
+      },
+
+      hasUnsavedChanges: () => {
+        const state = get();
+        const currentHash = get().getSessionDataHash();
+        // If no data at all, no unsaved changes
+        const hasData = state.abcEntries.length > 0 || 
+                        state.frequencyEntries.some(e => e.count > 0) || 
+                        state.durationEntries.some(e => e.duration > 0) || 
+                        state.intervalEntries.length > 0;
+        if (!hasData) return false;
+        // If never saved, there are unsaved changes
+        if (!state.lastSavedDataHash) return true;
+        // Compare current state to last saved state
+        return currentHash !== state.lastSavedDataHash;
+      },
+
       saveSession: () => {
         const state = get();
+        const currentHash = get().getSessionDataHash();
+        
+        // Check if there's any data to save
+        const hasData = state.abcEntries.length > 0 || 
+                        state.frequencyEntries.some(e => e.count > 0) || 
+                        state.durationEntries.some(e => e.duration > 0) || 
+                        state.intervalEntries.length > 0;
+        
+        if (!hasData) {
+          return { saved: false, isNew: false, hasChanges: false };
+        }
+        
+        // Check if data has changed since last save
+        const hasChanges = !state.lastSavedDataHash || currentHash !== state.lastSavedDataHash;
+        
+        if (!hasChanges) {
+          return { saved: false, isNew: false, hasChanges: false };
+        }
+        
         const session: Session = {
           id: crypto.randomUUID(),
           date: new Date(),
@@ -1342,8 +1394,9 @@ export const useDataStore = create<DataState>()(
         set((state) => ({
           sessions: [...state.sessions, session],
           currentSessionId: session.id,
+          lastSavedDataHash: currentHash,
         }));
-        return session;
+        return { saved: true, isNew: true, hasChanges: true };
       },
 
       startSession: () => {
@@ -1841,6 +1894,7 @@ export const useDataStore = create<DataState>()(
           sessionStartTime: null,
           sessionLengthOverrides: [],
           sessionFocus: DEFAULT_SESSION_FOCUS,
+          lastSavedDataHash: null, // Reset the hash when session is cleared
         });
       },
 
