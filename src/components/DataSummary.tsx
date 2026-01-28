@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,7 @@ import { SessionReportGenerator } from './SessionReportGenerator';
 import { ABCReportGenerator } from './ABCReportGenerator';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 export function DataSummary() {
   const { 
@@ -38,6 +39,9 @@ export function DataSummary() {
   const [showNotes, setShowNotes] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showNoChangesWarning, setShowNoChangesWarning] = useState(false);
+  
+  // Auto-save hook
+  const { lastAutoSave, isAutoSaving } = useAutoSave();
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
 
@@ -485,28 +489,49 @@ export function DataSummary() {
 
       {/* Export & Save Actions */}
       {hasData && (
-        <div className="flex gap-2 flex-wrap items-center">
-          <Button 
-            size="sm" 
-            onClick={handleSaveSession} 
-            className="gap-2"
-            variant={hasUnsavedChanges() ? "default" : "outline"}
-          >
-            {hasUnsavedChanges() ? (
-              <Save className="w-4 h-4" />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-primary" />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 flex-wrap items-center">
+            <Button 
+              size="sm" 
+              onClick={handleSaveSession} 
+              className="gap-2"
+              variant={hasUnsavedChanges() ? "default" : "outline"}
+              disabled={isAutoSaving}
+            >
+              {isAutoSaving ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : hasUnsavedChanges() ? (
+                <Save className="w-4 h-4" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+              )}
+              {isAutoSaving ? "Saving..." : hasUnsavedChanges() ? "Save Session" : "Saved"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportToJSON} className="gap-2">
+              <Download className="w-4 h-4" />
+              Export JSON
+            </Button>
+          </div>
+          
+          {/* Auto-save status */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <RefreshCw className="w-3 h-3" />
+            <span>
+              Auto-save: {lastAutoSave 
+                ? `Last saved ${formatDistanceToNow(lastAutoSave, { addSuffix: true })}` 
+                : 'Enabled (every 2 min)'}
+            </span>
+            {!hasUnsavedChanges() && hasData && (
+              <Badge variant="outline" className="text-[10px] h-4 px-1 gap-1">
+                <CheckCircle2 className="w-2 h-2" />
+                Up to date
+              </Badge>
             )}
-            {hasUnsavedChanges() ? "Save Session" : "Saved"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={exportToCSV} className="gap-2">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
-          <Button size="sm" variant="outline" onClick={exportToJSON} className="gap-2">
-            <Download className="w-4 h-4" />
-            Export JSON
-          </Button>
+          </div>
         </div>
       )}
 
