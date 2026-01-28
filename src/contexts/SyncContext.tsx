@@ -292,6 +292,20 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const syncToCloud = useCallback(async () => {
     if (!user) return;
     
+    // CRITICAL: Never sync if we haven't loaded cloud data first
+    // This prevents wiping cloud data with an empty local store
+    if (!hasFetched.current) {
+      console.warn('[Sync] Skipping sync - cloud data not yet loaded');
+      return;
+    }
+    
+    // Also skip if students array is empty but we know cloud has data
+    // This is a safety check to prevent accidental deletion
+    if (students.length === 0) {
+      console.warn('[Sync] Skipping sync - local students empty, would delete cloud data');
+      return;
+    }
+    
     setIsSyncing(true);
     setSyncStatus('syncing');
     
