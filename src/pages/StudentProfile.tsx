@@ -1316,7 +1316,11 @@ export default function StudentProfile() {
         </TabsContent>
 
         {/* Appointments Tab */}
-        <TabsContent value="appointments">
+        <TabsContent value="appointments" className="space-y-4">
+          <StudentAttendanceDashboard
+            studentId={student.id}
+            studentName={student.name}
+          />
           <StudentAppointments
             studentId={student.id}
             studentName={student.name}

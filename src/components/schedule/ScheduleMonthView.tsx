@@ -3,8 +3,10 @@ import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
   addDays, isSameMonth, isSameDay, isToday 
 } from 'date-fns';
+import { CheckCircle2, Clock, XCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
@@ -17,6 +19,35 @@ interface ScheduleMonthViewProps {
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Status-based colors for calendar display
+const getStatusColors = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return { bg: 'hsl(var(--primary) / 0.2)', text: 'hsl(var(--primary))' };
+    case 'canceled':
+      return { bg: 'hsl(var(--muted))', text: 'hsl(var(--muted-foreground))' };
+    case 'rescheduled':
+      return { bg: 'hsl(280, 70%, 50%, 0.2)', text: 'hsl(280, 70%, 50%)' };
+    case 'no_show':
+    case 'did_not_occur':
+      return { bg: 'hsl(var(--destructive) / 0.2)', text: 'hsl(var(--destructive))' };
+    case 'pending_verification':
+      return { bg: 'hsl(var(--warning) / 0.2)', text: 'hsl(var(--warning))' };
+    default: // scheduled
+      return null; // Use student color
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'completed': return <CheckCircle2 className="w-2.5 h-2.5 flex-shrink-0" />;
+    case 'canceled': return <XCircle className="w-2.5 h-2.5 flex-shrink-0" />;
+    case 'no_show': return <AlertTriangle className="w-2.5 h-2.5 flex-shrink-0" />;
+    case 'pending_verification': return <Clock className="w-2.5 h-2.5 flex-shrink-0" />;
+    default: return null;
+  }
+};
 
 export function ScheduleMonthView({
   date,
@@ -120,10 +151,16 @@ export function ScheduleMonthView({
                   <div className="space-y-0.5 overflow-hidden">
                     {dayAppointments.slice(0, 3).map(appointment => {
                       const studentColor = getStudentColor(appointment.student_id);
+                      const statusColors = getStatusColors(appointment.status);
                       const isRetroactive = appointment.appointment_type === 'retroactive';
                       const displayTitle = getDisplayTitle(appointment);
                       const staffNames = getStaffNames(appointment);
                       const studentName = getStudentName(appointment.student_id);
+                      const statusIcon = getStatusIcon(appointment.status);
+
+                      // Use status colors if available, otherwise student color
+                      const bgColor = statusColors?.bg || `${studentColor}20`;
+                      const textColor = statusColors?.text || studentColor;
 
                       return (
                         <Tooltip key={appointment.id}>
@@ -131,22 +168,30 @@ export function ScheduleMonthView({
                             <div
                               onClick={() => onAppointmentClick(appointment)}
                               className={cn(
-                                "text-[10px] px-1 py-0.5 rounded truncate cursor-pointer",
+                                "text-[10px] px-1 py-0.5 rounded truncate cursor-pointer flex items-center gap-0.5",
                                 "hover:opacity-80 transition-opacity",
-                                isRetroactive && "border border-dashed"
+                                isRetroactive && "border border-dashed",
+                                appointment.status === 'canceled' && "line-through opacity-60"
                               )}
                               style={{
-                                backgroundColor: `${studentColor}20`,
-                                color: studentColor,
+                                backgroundColor: bgColor,
+                                color: textColor,
                                 borderColor: isRetroactive ? studentColor : undefined
                               }}
                             >
+                              {statusIcon}
                               {format(new Date(appointment.start_time), 'h:mma')} {displayTitle}
                             </div>
                           </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
+                          <TooltipContent className="max-w-xs">
                             <div className="space-y-1 text-sm">
-                              <p className="font-medium">{displayTitle}</p>
+                              <p className="font-medium flex items-center gap-1">
+                                {statusIcon}
+                                {displayTitle}
+                              </p>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {appointment.status.replace(/_/g, ' ')}
+                              </Badge>
                               {getCategoryLabel(appointment.appointment_type) && (
                                 <p className="text-muted-foreground">Type: {getCategoryLabel(appointment.appointment_type)}</p>
                               )}
