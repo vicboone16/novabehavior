@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Clock, Minimize2, Maximize2, Square } from 'lucide-react';
+import { Play, Pause, RotateCcw, Clock, Minimize2, Maximize2, Square, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
 import { SessionEndFlow } from './SessionEndFlow';
 import { toast } from '@/hooks/use-toast';
@@ -140,9 +141,17 @@ export function SessionTimer() {
               <Clock className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                {currentSessionId ? 'Session Time' : 'No Active Session'}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {currentSessionId ? 'Session Time' : 'No Active Session'}
+                </p>
+                {activeStudents.length > 0 && (
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+                    <Users className="w-3 h-3 mr-1" />
+                    {activeStudents.length}
+                  </Badge>
+                )}
+              </div>
               <p className="timer-display text-foreground">{formattedTime}</p>
             </div>
           </div>
