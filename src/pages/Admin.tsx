@@ -59,6 +59,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SupervisorNoteReview } from '@/components/SupervisorNoteReview';
 import { UserTagManager } from '@/components/admin/UserTagManager';
 import { StudentTagManager } from '@/components/admin/StudentTagManager';
+import { BulkStudentManager } from '@/components/admin/BulkStudentManager';
 import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
@@ -802,8 +803,12 @@ export default function Admin() {
             </Card>
           </TabsContent>
 
-          {/* Students Tab - Tag Assignment */}
-          <TabsContent value="students">
+          {/* Students Tab - Tag Assignment & Bulk Operations */}
+          <TabsContent value="students" className="space-y-6">
+            <BulkStudentManager 
+              availableTags={tags} 
+              onDataChange={loadData}
+            />
             <StudentTagManager 
               availableTags={tags} 
               onTagsChange={loadData}

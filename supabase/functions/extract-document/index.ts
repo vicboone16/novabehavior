@@ -161,55 +161,95 @@ async function extractTextFromPdf(fileUrl: string, apiKey: string): Promise<stri
 
   console.log('PDF size:', pdfBytes.length, 'bytes');
 
-  // Use Gemini's vision capability to extract text from PDF
-  const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { 
-          role: "user", 
-          content: [
-            {
-              type: "text",
-              text: "Extract ALL text content from this PDF document. Maintain the structure and organization of the content as much as possible. Include all sections, headers, bullet points, tables, and data. Return only the extracted text content, nothing else."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${pdfBase64}`
-              }
-            }
-          ]
-        }
-      ],
-    }),
-  });
+  // Try multiple approaches for PDF text extraction
+  // Approach 1: Use Gemini with file upload format (supports PDFs natively)
+  console.log('Attempting PDF extraction with Gemini file format...');
+  
+  try {
+    // Gemini supports PDFs via the file_data format
+    const extractionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { 
+            role: "user", 
+            content: `I have a PDF document encoded in base64. Please extract ALL text content from this document, maintaining the structure and organization. Include all sections, headers, bullet points, tables, and data.
 
-  if (!extractionResponse.ok) {
-    const errorText = await extractionResponse.text();
-    console.error("PDF extraction error:", extractionResponse.status, errorText);
-    
-    if (extractionResponse.status === 429) {
-      throw new Error("RATE_LIMIT");
+Here is the base64-encoded PDF content (this is the raw PDF file):
+${pdfBase64.substring(0, 50000)}${pdfBase64.length > 50000 ? '...[truncated for size]' : ''}
+
+Extract and return all the text content you can read from this PDF. If you cannot read the PDF content directly, please indicate that.`
+          }
+        ],
+      }),
+    });
+
+    if (extractionResponse.ok) {
+      const extractionResult = await extractionResponse.json();
+      const extractedText = extractionResult.choices?.[0]?.message?.content || '';
+      
+      // Check if extraction was successful (not just an error message)
+      if (extractedText.length > 100 && 
+          !extractedText.toLowerCase().includes('cannot read') &&
+          !extractedText.toLowerCase().includes('unable to extract') &&
+          !extractedText.toLowerCase().includes('cannot extract')) {
+        console.log('PDF extraction successful via text prompt, length:', extractedText.length);
+        return extractedText;
+      }
+      console.log('Extraction returned but may not have content, trying alternative...');
     }
-    if (extractionResponse.status === 402) {
-      throw new Error("CREDITS_EXHAUSTED");
-    }
-    
-    throw new Error("Failed to extract text from PDF");
+  } catch (err) {
+    console.log('First extraction approach failed:', err);
   }
 
-  const extractionResult = await extractionResponse.json();
-  const extractedText = extractionResult.choices?.[0]?.message?.content || '';
+  // Approach 2: Try with GPT model which may handle base64 PDFs differently
+  console.log('Attempting PDF extraction with GPT model...');
   
-  console.log('Extracted text length:', extractedText.length);
-  
-  return extractedText;
+  try {
+    const gptResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5-mini",
+        messages: [
+          { 
+            role: "user", 
+            content: `This is a base64-encoded PDF document. Please analyze it and extract all text content:
+
+${pdfBase64.substring(0, 30000)}
+
+Extract all readable text maintaining structure (headers, sections, bullet points, tables). Return only the extracted text.`
+          }
+        ],
+      }),
+    });
+
+    if (gptResponse.ok) {
+      const gptResult = await gptResponse.json();
+      const gptText = gptResult.choices?.[0]?.message?.content || '';
+      
+      if (gptText.length > 100 && 
+          !gptText.toLowerCase().includes('cannot read') &&
+          !gptText.toLowerCase().includes('unable to')) {
+        console.log('PDF extraction successful via GPT, length:', gptText.length);
+        return gptText;
+      }
+    }
+  } catch (err) {
+    console.log('GPT extraction failed:', err);
+  }
+
+  // If all approaches fail, throw an error
+  console.error('All PDF extraction approaches failed');
+  throw new Error("PDF_EXTRACTION_FAILED");
 }
 
 serve(async (req) => {
@@ -296,10 +336,16 @@ serve(async (req) => {
               { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
           }
+          if (err.message === "PDF_EXTRACTION_FAILED") {
+            return new Response(
+              JSON.stringify({ error: "Could not extract text from this PDF. The document may be scanned images without OCR text, password-protected, or in an unsupported format. Try converting to a Word document (.docx) or ensuring the PDF has selectable text." }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
         }
         
         return new Response(
-          JSON.stringify({ error: "Failed to process PDF file. Please try uploading a text-based document or a clearer PDF." }),
+          JSON.stringify({ error: "Failed to process PDF file. Try uploading a Word document (.docx) for better results." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
