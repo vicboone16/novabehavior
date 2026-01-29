@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Plus, Users, User, Clock, Loader2 
+  Plus, Users, User, Clock, Loader2, Download 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleTimeline } from '@/components/schedule/ScheduleTimeline';
@@ -39,6 +42,8 @@ export default function Schedule() {
   const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [showSessionPrompt, setShowSessionPrompt] = useState<Appointment | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const scheduleRef = useRef<HTMLDivElement>(null);
 
   // Check admin status and set appropriate filter mode for non-admins
   useEffect(() => {
@@ -295,6 +300,66 @@ export default function Schedule() {
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+      setShowDatePicker(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const { start, end } = getDateRange();
+      
+      // Build the PDF content
+      const appointmentList = filteredAppointments
+        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+        .map(apt => {
+          const studentName = apt.student_id 
+            ? (visibleStudents.find(s => s.id === apt.student_id)?.name || 'Unknown Student')
+            : 'Staff Only';
+          const staffName = apt.staff_user_id
+            ? (staff.find(s => s.id === apt.staff_user_id)?.name || 'Unknown Staff')
+            : 'Unassigned';
+          const startTime = format(new Date(apt.start_time), 'EEE, MMM d, yyyy h:mm a');
+          const endTime = format(new Date(apt.end_time), 'h:mm a');
+          const status = apt.status.charAt(0).toUpperCase() + apt.status.slice(1);
+          const type = apt.appointment_type === 'retroactive' ? ' (Retroactive)' : '';
+          
+          return `${startTime} - ${endTime}\n  ${studentName} | ${staffName}\n  Status: ${status}${type}`;
+        })
+        .join('\n\n');
+
+      const title = `Schedule Export - ${getDateLabel()}`;
+      const exportDate = format(new Date(), 'MMMM d, yyyy h:mm a');
+      
+      const content = `
+${title}
+${'='.repeat(50)}
+Exported: ${exportDate}
+Total Appointments: ${filteredAppointments.length}
+${'='.repeat(50)}
+
+${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled for this period.'}
+      `.trim();
+
+      // Create and download as text file (simple PDF alternative)
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `schedule-${format(start, 'yyyy-MM-dd')}-to-${format(end, 'yyyy-MM-dd')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({ title: 'Schedule exported successfully' });
+    } catch (error: any) {
+      toast({ title: 'Export failed', description: error.message, variant: 'destructive' });
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -381,10 +446,10 @@ export default function Schedule() {
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4" ref={scheduleRef}>
           {/* Navigation and view controls */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -394,17 +459,43 @@ export default function Schedule() {
               <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
-              <span className="ml-2 font-medium">{getDateLabel()}</span>
+              
+              {/* Date picker for jumping to specific date */}
+              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <CalendarIcon className="w-4 h-4" />
+                    {getDateLabel()}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
-            <Tabs value={viewType} onValueChange={(v) => setViewType(v as ScheduleViewType)}>
-              <TabsList>
-                <TabsTrigger value="day">Day</TabsTrigger>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center gap-2">
+              <Tabs value={viewType} onValueChange={(v) => setViewType(v as ScheduleViewType)}>
+                <TabsList>
+                  <TabsTrigger value="day">Day</TabsTrigger>
+                  <TabsTrigger value="week">Week</TabsTrigger>
+                  <TabsTrigger value="month">Month</TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              {/* Export PDF button */}
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+            </div>
           </div>
 
           {/* Calendar views */}
