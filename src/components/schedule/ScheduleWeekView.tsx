@@ -32,8 +32,8 @@ export function ScheduleWeekView({
   const weekStart = startOfWeek(date);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const getStudentName = (id: string) => students.find(s => s.id === id)?.name || 'Unknown';
-  const getStudentColor = (id: string) => students.find(s => s.id === id)?.color || '#3B82F6';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
+  const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
 
   const getAppointmentsByDay = (day: Date) =>
     appointments.filter(a => isSameDay(new Date(a.start_time), day));
