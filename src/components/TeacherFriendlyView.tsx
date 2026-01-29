@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ThumbsUp, ThumbsDown, Minus, MessageSquare, Plus,
-  User, Clock, Check, X, Settings2, PlusCircle, Save, Timer
+  User, Clock, Check, X, Settings2, PlusCircle, Save, Timer,
+  Play, Square, FileDown, BarChart3, Edit2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,12 @@ interface RecordedEntry {
   count: number;
   durationSeconds?: number;
   timestamp: Date;
+  type: 'frequency' | 'duration';
+}
+
+interface ActiveTimer {
+  behaviorId: string;
+  startTime: Date;
 }
 
 export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
@@ -50,6 +57,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     addCustomConsequence,
     addHistoricalFrequency,
     addHistoricalDuration,
+    resetFrequency,
   } = useDataStore();
 
   const [dayRating, setDayRating] = useState<DayRating>(null);
@@ -78,6 +86,24 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   // Record Now tracking
   const [recordedEntries, setRecordedEntries] = useState<RecordedEntry[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  
+  // Live duration timer state
+  const [activeTimers, setActiveTimers] = useState<ActiveTimer[]>([]);
+  const [timerDisplays, setTimerDisplays] = useState<Record<string, number>>({});
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Duration confirmation dialog
+  const [showDurationConfirm, setShowDurationConfirm] = useState(false);
+  const [pendingDuration, setPendingDuration] = useState<{ behaviorId: string; seconds: number } | null>(null);
+  const [editedMinutes, setEditedMinutes] = useState('');
+  const [editedSeconds, setEditedSeconds] = useState('');
+  
+  // Multi-behavior selection for frequency
+  const [multiBehaviorMode, setMultiBehaviorMode] = useState(false);
+  const [selectedMultiBehaviors, setSelectedMultiBehaviors] = useState<string[]>([]);
+  
+  // Daily summary view
+  const [showDailySummary, setShowDailySummary] = useState(false);
 
   const allAntecedents = [...ANTECEDENT_OPTIONS, ...(student.customAntecedents || [])];
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
@@ -86,6 +112,38 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   const quickABCBehaviors = preselectedBehaviorIds.length > 0 
     ? student.behaviors.filter(b => preselectedBehaviorIds.includes(b.id))
     : student.behaviors.slice(0, 3);
+
+  // Update timer displays every second
+  useEffect(() => {
+    if (activeTimers.length > 0) {
+      timerIntervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const displays: Record<string, number> = {};
+        activeTimers.forEach(timer => {
+          displays[timer.behaviorId] = Math.floor((now - timer.startTime.getTime()) / 1000);
+        });
+        setTimerDisplays(displays);
+      }, 100);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      setTimerDisplays({});
+    }
+    
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, [activeTimers]);
+
+  const formatTimerDisplay = useCallback((seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, []);
 
   const handleBehaviorTap = (behaviorId: string) => {
     incrementFrequency(student.id, behaviorId);
@@ -128,6 +186,55 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       return [...prev, behaviorId];
     });
   };
+  
+  // Toggle multi-behavior selection
+  const toggleMultiBehavior = (behaviorId: string) => {
+    setSelectedMultiBehaviors(prev => {
+      if (prev.includes(behaviorId)) {
+        return prev.filter(id => id !== behaviorId);
+      }
+      return [...prev, behaviorId];
+    });
+  };
+  
+  // Record multiple behaviors at once with frequency 1
+  const handleRecordMultipleBehaviors = () => {
+    if (selectedMultiBehaviors.length === 0) return;
+    
+    const now = new Date();
+    const entries: RecordedEntry[] = [];
+    
+    selectedMultiBehaviors.forEach(behaviorId => {
+      const behavior = student.behaviors.find(b => b.id === behaviorId);
+      if (!behavior) return;
+      
+      // Add to historical with count of 1
+      addHistoricalFrequency({
+        studentId: student.id,
+        behaviorId,
+        count: 1,
+        timestamp: now,
+      });
+      
+      entries.push({
+        behaviorId,
+        behaviorName: behavior.name,
+        count: 1,
+        timestamp: now,
+        type: 'frequency',
+      });
+    });
+    
+    setRecordedEntries(prev => [...entries, ...prev]);
+    
+    toast({
+      title: 'Behaviors Recorded',
+      description: `${selectedMultiBehaviors.length} behavior(s) recorded at ${format(now, 'h:mm a')}`,
+    });
+    
+    setSelectedMultiBehaviors([]);
+    setMultiBehaviorMode(false);
+  };
 
   const handleQuickABC = () => {
     if (selectedBehaviors.length === 0 || !selectedAntecedent || !selectedConsequence) {
@@ -139,7 +246,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       return;
     }
 
-    // Record ABC for each selected behavior
+    // Record ABC for each selected behavior with frequency 1
     selectedBehaviors.forEach(behaviorId => {
       const behavior = student.behaviors.find(b => b.id === behaviorId);
       if (!behavior) return;
@@ -150,13 +257,13 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
         antecedent: selectedAntecedent,
         behavior: behavior.name,
         consequence: selectedConsequence,
-        frequencyCount: 1,
+        frequencyCount: 1, // Default frequency 1 for multi-select
       });
     });
 
     toast({ 
       title: 'ABC Recorded', 
-      description: `${selectedBehaviors.length} behavior(s) saved successfully` 
+      description: `${selectedBehaviors.length} behavior(s) saved with frequency 1` 
     });
     setSelectedBehaviors([]);
     setSelectedAntecedent(null);
@@ -253,7 +360,11 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             behaviorName: behavior.name,
             count,
             timestamp: now,
+            type: 'frequency',
           });
+          
+          // Reset the count after recording
+          resetFrequency(student.id, behavior.id);
         }
       }
       
@@ -275,7 +386,79 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     }
   };
 
-  // Handle duration entry
+  // Start/Stop live duration timer
+  const handleToggleTimer = (behaviorId: string) => {
+    const existingTimer = activeTimers.find(t => t.behaviorId === behaviorId);
+    
+    if (existingTimer) {
+      // Stop timer - show confirmation dialog
+      const elapsed = Math.floor((Date.now() - existingTimer.startTime.getTime()) / 1000);
+      setPendingDuration({ behaviorId, seconds: elapsed });
+      setEditedMinutes(Math.floor(elapsed / 60).toString());
+      setEditedSeconds((elapsed % 60).toString());
+      setShowDurationConfirm(true);
+      
+      // Remove from active timers
+      setActiveTimers(prev => prev.filter(t => t.behaviorId !== behaviorId));
+    } else {
+      // Start timer
+      setActiveTimers(prev => [...prev, { behaviorId, startTime: new Date() }]);
+      toast({
+        title: 'Timer Started',
+        description: `Recording duration for ${student.behaviors.find(b => b.id === behaviorId)?.name}`,
+      });
+    }
+  };
+  
+  // Confirm and save duration
+  const handleConfirmDuration = () => {
+    if (!pendingDuration) return;
+    
+    const mins = parseInt(editedMinutes) || 0;
+    const secs = parseInt(editedSeconds) || 0;
+    const totalSeconds = mins * 60 + secs;
+    
+    if (totalSeconds <= 0) {
+      toast({
+        title: 'Duration discarded',
+        description: 'Duration was 0 seconds',
+      });
+      setShowDurationConfirm(false);
+      setPendingDuration(null);
+      return;
+    }
+    
+    const behavior = student.behaviors.find(b => b.id === pendingDuration.behaviorId);
+    const now = new Date();
+    
+    addHistoricalDuration({
+      studentId: student.id,
+      behaviorId: pendingDuration.behaviorId,
+      durationSeconds: totalSeconds,
+      timestamp: now,
+    });
+    
+    setRecordedEntries(prev => [{
+      behaviorId: pendingDuration.behaviorId,
+      behaviorName: behavior?.name || 'Unknown',
+      count: 0,
+      durationSeconds: totalSeconds,
+      timestamp: now,
+      type: 'duration',
+    }, ...prev]);
+    
+    toast({
+      title: 'Duration Recorded',
+      description: `${behavior?.name}: ${formatTimerDisplay(totalSeconds)} at ${format(now, 'h:mm a')}`,
+    });
+    
+    setShowDurationConfirm(false);
+    setPendingDuration(null);
+    setEditedMinutes('');
+    setEditedSeconds('');
+  };
+
+  // Handle duration entry (manual)
   const handleOpenDurationEntry = (behaviorId: string) => {
     setSelectedDurationBehavior(behaviorId);
     setDurationMinutes('');
@@ -316,6 +499,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       count: 0,
       durationSeconds: totalSeconds,
       timestamp: now,
+      type: 'duration',
     }, ...prev]);
     
     toast({
@@ -343,6 +527,75 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       default: return '';
     }
   };
+  
+  // Get today's recorded data summary
+  const getTodaySummary = () => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayEntries = recordedEntries.filter(
+      e => format(e.timestamp, 'yyyy-MM-dd') === today
+    );
+    
+    // Group by behavior
+    const behaviorSummary: Record<string, { frequency: number; duration: number; entries: RecordedEntry[] }> = {};
+    
+    todayEntries.forEach(entry => {
+      if (!behaviorSummary[entry.behaviorId]) {
+        behaviorSummary[entry.behaviorId] = { frequency: 0, duration: 0, entries: [] };
+      }
+      if (entry.type === 'frequency') {
+        behaviorSummary[entry.behaviorId].frequency += entry.count;
+      } else if (entry.durationSeconds) {
+        behaviorSummary[entry.behaviorId].duration += entry.durationSeconds;
+      }
+      behaviorSummary[entry.behaviorId].entries.push(entry);
+    });
+    
+    return { behaviorSummary, todayEntries };
+  };
+  
+  // Export daily summary as CSV
+  const handleExportSummary = () => {
+    const { todayEntries } = getTodaySummary();
+    
+    if (todayEntries.length === 0) {
+      toast({
+        title: 'No data to export',
+        description: 'Record some data first',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const headers = ['Behavior', 'Type', 'Value', 'Time'];
+    const rows = todayEntries.map(entry => [
+      entry.behaviorName,
+      entry.type,
+      entry.type === 'frequency' ? entry.count.toString() : formatDuration(entry.durationSeconds || 0),
+      format(entry.timestamp, 'h:mm a'),
+    ]);
+    
+    const csvContent = [
+      `Daily Summary for ${student.name} - ${format(new Date(), 'MMMM d, yyyy')}`,
+      '',
+      headers.join(','),
+      ...rows.map(row => row.join(',')),
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${student.name}_${format(new Date(), 'yyyy-MM-dd')}_summary.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Exported',
+      description: 'Daily summary downloaded',
+    });
+  };
+
+  const { behaviorSummary, todayEntries } = getTodaySummary();
 
   return (
     <div className="space-y-4 max-w-md mx-auto">
@@ -356,12 +609,20 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             >
               <User className="w-6 h-6" style={{ color: student.color }} />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg font-bold">{student.name}</h2>
               <p className="text-xs text-muted-foreground">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDailySummary(true)}
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              Summary
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -406,45 +667,81 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Quick Behavior Counts</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowAddBehavior(true)}
-            >
-              <PlusCircle className="w-4 h-4 mr-1" />
-              Add
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                variant={multiBehaviorMode ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setMultiBehaviorMode(!multiBehaviorMode);
+                  setSelectedMultiBehaviors([]);
+                }}
+                title="Select multiple behaviors"
+              >
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddBehavior(true)}
+              >
+                <PlusCircle className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
+          {multiBehaviorMode && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Select multiple behaviors to record with frequency 1
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {student.behaviors.slice(0, 6).map((behavior) => {
               const count = getFrequencyCount(student.id, behavior.id);
               const supportsDuration = behavior.methods?.includes('duration');
+              const isSelected = selectedMultiBehaviors.includes(behavior.id);
+              const isTimerActive = activeTimers.some(t => t.behaviorId === behavior.id);
+              const timerSeconds = timerDisplays[behavior.id] || 0;
+              
               return (
                 <div key={behavior.id} className="relative">
-                  <Button
-                    variant="outline"
-                    className="w-full h-16 flex-col gap-1"
-                    onClick={() => handleBehaviorTap(behavior.id)}
-                  >
-                    <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {count}
-                    </Badge>
-                  </Button>
-                  {supportsDuration && (
+                  {multiBehaviorMode ? (
                     <Button
-                      variant="ghost"
+                      variant={isSelected ? 'default' : 'outline'}
+                      className="w-full h-16 flex-col gap-1"
+                      onClick={() => toggleMultiBehavior(behavior.id)}
+                    >
+                      <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
+                      {isSelected && <Check className="w-4 h-4" />}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full h-16 flex-col gap-1"
+                      onClick={() => handleBehaviorTap(behavior.id)}
+                    >
+                      <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {count}
+                      </Badge>
+                    </Button>
+                  )}
+                  {!multiBehaviorMode && supportsDuration && (
+                    <Button
+                      variant={isTimerActive ? 'default' : 'ghost'}
                       size="sm"
-                      className="absolute -top-1 -right-1 h-6 w-6 p-0 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground"
+                      className={`absolute -top-1 -right-1 h-6 w-6 p-0 rounded-full ${
+                        isTimerActive 
+                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+                          : 'bg-muted hover:bg-primary hover:text-primary-foreground'
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenDurationEntry(behavior.id);
+                        handleToggleTimer(behavior.id);
                       }}
-                      title="Add duration"
+                      title={isTimerActive ? `Stop timer (${formatTimerDisplay(timerSeconds)})` : 'Start timer'}
                     >
-                      <Timer className="w-3 h-3" />
+                      {isTimerActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                     </Button>
                   )}
                 </div>
@@ -452,11 +749,59 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             })}
           </div>
           
+          {multiBehaviorMode && selectedMultiBehaviors.length > 0 && (
+            <Button 
+              className="w-full" 
+              onClick={handleRecordMultipleBehaviors}
+            >
+              <Check className="w-4 h-4 mr-1" />
+              Record {selectedMultiBehaviors.length} Behavior(s) with Frequency 1
+            </Button>
+          )}
+          
+      {/* Active Timers Display */}
+          {activeTimers.length > 0 && (
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                <Timer className="w-3 h-3 text-destructive" />
+                Active Timers
+              </p>
+              <div className="space-y-1">
+                {activeTimers.map(timer => {
+                  const behavior = student.behaviors.find(b => b.id === timer.behaviorId);
+                  const seconds = timerDisplays[timer.behaviorId] || 0;
+                  return (
+                    <div 
+                      key={timer.behaviorId} 
+                      className="flex items-center justify-between bg-destructive/10 rounded px-3 py-2"
+                    >
+                      <span className="text-sm font-medium">{behavior?.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-lg font-bold text-destructive">
+                          {formatTimerDisplay(seconds)}</span>
+                        
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 px-2"
+                          onClick={() => handleToggleTimer(timer.behaviorId)}
+                        >
+                          <Square className="w-3 h-3 mr-1" />
+                          Stop
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
           {/* Duration Entry Section */}
           <div className="pt-2 border-t">
             <p className="text-xs font-medium mb-2 flex items-center gap-1">
               <Timer className="w-3 h-3" />
-              Record Duration
+              Manual Duration Entry
             </p>
             <div className="flex flex-wrap gap-1">
               {student.behaviors.slice(0, 6).map((behavior) => (
@@ -519,7 +864,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             {/* Behavior Selection - Multi-select up to 3 */}
             <div>
               <p className="text-xs font-medium mb-2">
-                Behavior(s) <span className="text-muted-foreground">(select up to 3)</span>
+                Behavior(s) <span className="text-muted-foreground">(select up to 3, frequency = 1)</span>
               </p>
               <div className="flex flex-wrap gap-1">
                 {quickABCBehaviors.map((b) => (
@@ -536,7 +881,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               </div>
               {selectedBehaviors.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {selectedBehaviors.length} selected
+                  {selectedBehaviors.length} selected (each with frequency 1)
                 </p>
               )}
             </div>
@@ -635,9 +980,14 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       {recordedEntries.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Recently Recorded
+            <CardTitle className="text-base flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Recently Recorded
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleExportSummary}>
+                <FileDown className="w-4 h-4" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -646,8 +996,11 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                 <div key={idx} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1">
                   <span className="font-medium truncate flex-1">{entry.behaviorName}</span>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    {entry.durationSeconds ? (
-                      <span>{formatDuration(entry.durationSeconds)}</span>
+                    {entry.type === 'duration' ? (
+                      <Badge variant="outline" className="text-xs">
+                        <Timer className="w-3 h-3 mr-1" />
+                        {formatDuration(entry.durationSeconds || 0)}
+                      </Badge>
                     ) : (
                       <span>×{entry.count}</span>
                     )}
@@ -680,6 +1033,92 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
           Save Day
         </Button>
       </div>
+
+      {/* Daily Summary Dialog */}
+      <Dialog open={showDailySummary} onOpenChange={setShowDailySummary}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Today's Summary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              {format(new Date(), 'EEEE, MMMM d, yyyy')}
+            </div>
+            
+            {Object.keys(behaviorSummary).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No data recorded today</p>
+                <p className="text-xs mt-1">Start recording behaviors to see your summary</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+              {Object.entries(behaviorSummary).map(([behaviorId, data]) => {
+                  const behavior = student.behaviors.find(b => b.id === behaviorId);
+                  return (
+                    <div key={behaviorId} className="border border-border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">{behavior?.name || 'Unknown'}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {data.frequency > 0 && (
+                          <div className="bg-muted rounded p-2">
+                            <div className="text-xs text-muted-foreground">Frequency</div>
+                            <div className="text-lg font-bold">{data.frequency}</div>
+                          </div>
+                        )}
+                        {data.duration > 0 && (
+                          <div className="bg-muted rounded p-2">
+                            <div className="text-xs text-muted-foreground">Duration</div>
+                            <div className="text-lg font-bold">{formatDuration(data.duration)}</div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        {data.entries.length} recording{data.entries.length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* All entries timeline */}
+            {todayEntries.length > 0 && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium mb-2">Timeline</h4>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {todayEntries.map((entry, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1.5">
+                      <span className="font-medium">{entry.behaviorName}</span>
+                      <div className="flex items-center gap-2">
+                        {entry.type === 'duration' ? (
+                          <span>{formatDuration(entry.durationSeconds || 0)}</span>
+                        ) : (
+                          <span>×{entry.count}</span>
+                        )}
+                        <span className="text-muted-foreground">{format(entry.timestamp, 'h:mm a')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleExportSummary} disabled={todayEntries.length === 0}>
+              <FileDown className="w-4 h-4 mr-1" />
+              Export CSV
+            </Button>
+            <Button onClick={() => setShowDailySummary(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Behavior Dialog */}
       <Dialog open={showAddBehavior} onOpenChange={setShowAddBehavior}>
@@ -805,7 +1244,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Duration Entry Dialog */}
+      {/* Duration Entry Dialog (Manual) */}
       <Dialog open={showDurationEntry} onOpenChange={setShowDurationEntry}>
         <DialogContent className="max-w-xs">
           <DialogHeader>
@@ -857,6 +1296,70 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             <Button onClick={handleSaveDuration}>
               <Save className="w-4 h-4 mr-1" />
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duration Confirmation Dialog (After Timer Stop) */}
+      <Dialog open={showDurationConfirm} onOpenChange={setShowDurationConfirm}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="w-4 h-4" />
+              Confirm Duration
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {pendingDuration && 
+                student.behaviors.find(b => b.id === pendingDuration.behaviorId)?.name
+              }
+            </p>
+            <div className="text-center text-2xl font-bold text-primary">
+              {pendingDuration && formatTimerDisplay(pendingDuration.seconds)}
+            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              Edit if needed:
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Minutes</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={editedMinutes}
+                  onChange={(e) => setEditedMinutes(e.target.value)}
+                  className="text-center text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Seconds</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={editedSeconds}
+                  onChange={(e) => setEditedSeconds(e.target.value)}
+                  className="text-center text-lg"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDurationConfirm(false);
+                setPendingDuration(null);
+              }}
+            >
+              Discard
+            </Button>
+            <Button onClick={handleConfirmDuration}>
+              <Check className="w-4 h-4 mr-1" />
+              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>
