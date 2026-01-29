@@ -51,79 +51,115 @@ export function BehaviorTrendCharts() {
     return behaviors;
   }, [students]);
 
-  // Process data for charts
+  // Process data for charts - use null for missing data (no data collected) vs 0 for zero occurrences
   const chartData = useMemo(() => {
-    const sessionData = sessions.map(session => {
-      const date = format(new Date(session.date), 'MM/dd');
-      const dateTime = format(new Date(session.date), 'MM/dd HH:mm');
-      const sessionLengthMinutes = session.sessionLengthMinutes || 30;
+    // Get unique dates from all sessions
+    const sessionsByDate = new Map<string, typeof sessions[0][]>();
+    sessions.forEach(session => {
+      const date = format(new Date(session.date), 'yyyy-MM-dd');
+      if (!sessionsByDate.has(date)) {
+        sessionsByDate.set(date, []);
+      }
+      sessionsByDate.get(date)!.push(session);
+    });
+
+    const sessionData = Array.from(sessionsByDate.entries()).map(([dateKey, dateSessions]) => {
+      const date = format(new Date(dateKey), 'MM/dd');
       
-      // Frequency data per session
-      const frequencyByBehavior: Record<string, number> = {};
-      const rateByBehavior: Record<string, number> = {};
-      session.frequencyEntries.forEach(entry => {
-        if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-        if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
-        
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-        const key = behavior?.name || 'Unknown';
-        frequencyByBehavior[key] = (frequencyByBehavior[key] || 0) + entry.count;
-        
-        // Calculate rate per hour using observation duration or session length
-        const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
-        const ratePerHour = entry.count / (durationMinutes / 60);
-        rateByBehavior[key] = (rateByBehavior[key] || 0) + ratePerHour;
-      });
-
-      // Interval data per session
+      // Aggregate data across all sessions for this date
+      const frequencyByBehavior: Record<string, number | null> = {};
+      const rateByBehavior: Record<string, number | null> = {};
       const intervalByBehavior: Record<string, { occurred: number; total: number }> = {};
-      session.intervalEntries.forEach(entry => {
-        if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-        if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
+      const durationByBehavior: Record<string, number | null> = {};
+      
+      // Track which behaviors had data collected on this date
+      const behaviorsWithData = new Set<string>();
+      
+      dateSessions.forEach(session => {
+        const sessionLengthMinutes = session.sessionLengthMinutes || 30;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-        const key = behavior?.name || 'Unknown';
-        if (!intervalByBehavior[key]) intervalByBehavior[key] = { occurred: 0, total: 0 };
-        intervalByBehavior[key].total++;
-        if (entry.occurred) intervalByBehavior[key].occurred++;
+        // Process frequency entries
+        session.frequencyEntries.forEach(entry => {
+          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
+          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
+          
+          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
+          const key = behavior?.name || 'Unknown';
+          behaviorsWithData.add(key);
+          
+          // Use actual count value (including 0)
+          frequencyByBehavior[key] = (frequencyByBehavior[key] ?? 0) + entry.count;
+          
+          // Calculate rate per hour
+          const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
+          const ratePerHour = entry.count / (durationMinutes / 60);
+          rateByBehavior[key] = (rateByBehavior[key] ?? 0) + ratePerHour;
+        });
+
+        // Process interval data
+        session.intervalEntries.forEach(entry => {
+          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
+          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
+          
+          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
+          const key = behavior?.name || 'Unknown';
+          behaviorsWithData.add(key);
+          
+          if (!intervalByBehavior[key]) intervalByBehavior[key] = { occurred: 0, total: 0 };
+          intervalByBehavior[key].total++;
+          if (entry.occurred) intervalByBehavior[key].occurred++;
+        });
+
+        // Process duration data
+        session.durationEntries.forEach(entry => {
+          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
+          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
+          
+          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
+          const key = behavior?.name || 'Unknown';
+          behaviorsWithData.add(key);
+          
+          durationByBehavior[key] = (durationByBehavior[key] ?? 0) + entry.duration;
+        });
       });
 
-      // Duration data per session
-      const durationByBehavior: Record<string, number> = {};
-      session.durationEntries.forEach(entry => {
-        if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-        if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
-        
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-        const key = behavior?.name || 'Unknown';
-        durationByBehavior[key] = (durationByBehavior[key] || 0) + entry.duration;
-      });
-
-      // Calculate interval percentages
-      const intervalPercentages: Record<string, number> = {};
+      // Calculate interval percentages (only for behaviors with interval data)
+      const intervalPercentages: Record<string, number | null> = {};
       Object.entries(intervalByBehavior).forEach(([key, value]) => {
         intervalPercentages[key] = value.total > 0 ? Math.round((value.occurred / value.total) * 100) : 0;
       });
 
-      return {
+      // Build the data point - only include values for behaviors that had data collected
+      const dataPoint: Record<string, any> = {
         date,
-        dateTime,
-        sessionId: session.id,
-        sessionLengthMinutes,
-        ...frequencyByBehavior,
-        ...Object.fromEntries(
-          Object.entries(rateByBehavior).map(([k, v]) => [`${k} (/hr)`, parseFloat(v.toFixed(2))])
-        ),
-        ...Object.fromEntries(
-          Object.entries(intervalPercentages).map(([k, v]) => [`${k} (%)`, v])
-        ),
-        ...Object.fromEntries(
-          Object.entries(durationByBehavior).map(([k, v]) => [`${k} (sec)`, v])
-        ),
+        dateKey,
       };
+      
+      // Add frequency data - null if no data was collected for that behavior
+      Object.entries(frequencyByBehavior).forEach(([key, value]) => {
+        dataPoint[key] = value;
+      });
+      
+      // Add rate data
+      Object.entries(rateByBehavior).forEach(([key, value]) => {
+        dataPoint[`${key} (/hr)`] = value !== null ? parseFloat(value.toFixed(2)) : null;
+      });
+      
+      // Add interval percentages
+      Object.entries(intervalPercentages).forEach(([key, value]) => {
+        dataPoint[`${key} (%)`] = value;
+      });
+      
+      // Add duration data
+      Object.entries(durationByBehavior).forEach(([key, value]) => {
+        dataPoint[`${key} (sec)`] = value;
+      });
+
+      return dataPoint;
     });
 
-    return sessionData;
+    // Sort by date
+    return sessionData.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
   }, [sessions, students, filterStudent, filterBehavior]);
 
   // Aggregate data for pie chart
@@ -153,7 +189,7 @@ export function BehaviorTrendCharts() {
     const names = new Set<string>();
     chartData.forEach(d => {
       Object.keys(d).forEach(key => {
-        if (!['date', 'dateTime', 'sessionId', 'sessionLengthMinutes'].includes(key)) {
+        if (!['date', 'dateKey', 'dateTime', 'sessionId', 'sessionLengthMinutes'].includes(key)) {
           names.add(key);
         }
       });
@@ -430,7 +466,8 @@ export function BehaviorTrendCharts() {
                               dataKey={name} 
                               stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                               strokeWidth={2}
-                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                              connectNulls={false}
                             />
                           ))
                         }
@@ -480,7 +517,8 @@ export function BehaviorTrendCharts() {
                               dataKey={name} 
                               stroke={CHART_COLORS[(idx + 2) % CHART_COLORS.length]}
                               strokeWidth={2}
-                              dot={{ fill: CHART_COLORS[(idx + 2) % CHART_COLORS.length] }}
+                              dot={{ fill: CHART_COLORS[(idx + 2) % CHART_COLORS.length], r: 4 }}
+                              connectNulls={false}
                             />
                           ))
                         }
@@ -536,7 +574,8 @@ export function BehaviorTrendCharts() {
                               dataKey={name} 
                               stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                               strokeWidth={2}
-                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                              dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                              connectNulls={false}
                             />
                           ))
                         }
@@ -585,7 +624,8 @@ export function BehaviorTrendCharts() {
                             dataKey={name} 
                             stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                             strokeWidth={2}
-                            dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                            dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                            connectNulls={false}
                           />
                         ))
                       }
@@ -617,7 +657,8 @@ export function BehaviorTrendCharts() {
                             dataKey={name} 
                             stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                             strokeWidth={2}
-                            dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                            dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                            connectNulls={false}
                           />
                         ))
                       }
@@ -647,6 +688,8 @@ export function BehaviorTrendCharts() {
                             dataKey={name} 
                             stroke={CHART_COLORS[(idx + 3) % CHART_COLORS.length]}
                             strokeWidth={2}
+                            dot={{ fill: CHART_COLORS[(idx + 3) % CHART_COLORS.length], r: 4 }}
+                            connectNulls={false}
                           />
                         ))
                       }

@@ -112,6 +112,10 @@ interface DataState {
   updateBehaviorDefinition: (studentId: string, behaviorId: string, operationalDefinition: string) => void;
   removeBehavior: (studentId: string, behaviorId: string) => void;
   toggleBehaviorForStudent: (studentId: string, behaviorId: string) => void;
+  setBehaviorMastered: (studentId: string, behaviorId: string, isMastered: boolean) => void;
+  archiveBehavior: (studentId: string, behaviorId: string) => void;
+  unarchiveBehavior: (studentId: string, behaviorId: string) => void;
+  mergeBehaviors: (sourceBehaviorName: string, targetBehaviorId: string) => void;
   
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
@@ -594,6 +598,85 @@ export const useDataStore = create<DataState>()(
 
       toggleBehaviorForStudent: (studentId, behaviorId) => {
         // This could be used for enabling/disabling specific behaviors during a session
+      },
+
+      setBehaviorMastered: (studentId, behaviorId, isMastered) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { 
+                          ...b, 
+                          isMastered, 
+                          masteredAt: isMastered ? new Date() : undefined 
+                        }
+                      : b
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      archiveBehavior: (studentId, behaviorId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { ...b, isArchived: true }
+                      : b
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      unarchiveBehavior: (studentId, behaviorId) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { ...b, isArchived: false, isMastered: false, masteredAt: undefined }
+                      : b
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      mergeBehaviors: (sourceBehaviorName, targetBehaviorId) => {
+        // Merge all behaviors with sourceBehaviorName into the target behavior from the bank
+        // This updates the baseBehaviorId for all matching behaviors while preserving custom definitions
+        const state = get();
+        const normalizedName = sourceBehaviorName.toLowerCase().trim();
+        
+        set((s) => ({
+          students: s.students.map((student) => ({
+            ...student,
+            behaviors: student.behaviors.map((behavior) => {
+              const behaviorNameMatch = behavior.name.toLowerCase().trim() === normalizedName;
+              if (behaviorNameMatch && !behavior.baseBehaviorId) {
+                // Link this behavior to the bank behavior, preserving any custom definition
+                return {
+                  ...behavior,
+                  baseBehaviorId: targetBehaviorId,
+                };
+              }
+              return behavior;
+            }),
+          })),
+        }));
       },
 
       addABCEntry: (entry) => {

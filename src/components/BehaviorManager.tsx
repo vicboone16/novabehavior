@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown, FileText } from 'lucide-react';
+import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown, FileText, Trophy, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
 import { DataCollectionMethod, METHOD_LABELS, Behavior, BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
+import { toast } from 'sonner';
 
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
 
@@ -32,7 +33,7 @@ const BEHAVIOR_BANK: BehaviorDefinition[] = [
 ];
 
 export function BehaviorManager() {
-  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior } = useDataStore();
+  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior, setBehaviorMastered, unarchiveBehavior } = useDataStore();
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [newBehaviorDefinition, setNewBehaviorDefinition] = useState('');
   const [newBehaviorCategory, setNewBehaviorCategory] = useState('');
@@ -42,6 +43,7 @@ export function BehaviorManager() {
   const [editMethods, setEditMethods] = useState<DataCollectionMethod[]>([]);
   const [editingDefinition, setEditingDefinition] = useState<{ studentId: string; behaviorId: string } | null>(null);
   const [editDefinitionText, setEditDefinitionText] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
 
   const selectedStudents = students.filter((s) => selectedStudentIds.includes(s.id));
 
@@ -271,7 +273,11 @@ export function BehaviorManager() {
 
           {/* Behaviors per student */}
           <div className="space-y-4">
-            {selectedStudents.map((student) => (
+            {selectedStudents.map((student) => {
+              const activeBehaviors = student.behaviors.filter(b => !b.isMastered && !b.isArchived);
+              const masteredBehaviors = student.behaviors.filter(b => b.isMastered || b.isArchived);
+              
+              return (
               <div key={student.id} className="border border-border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div 
@@ -280,11 +286,20 @@ export function BehaviorManager() {
                   />
                   <h4 className="font-semibold">{student.name}</h4>
                   <Badge variant="outline" className="ml-auto">
-                    {student.behaviors.length} behaviors
+                    {activeBehaviors.length} active
                   </Badge>
+                  {masteredBehaviors.length > 0 && (
+                    <Badge 
+                      variant="secondary" 
+                      className="cursor-pointer"
+                      onClick={() => setShowArchived(!showArchived)}
+                    >
+                      {masteredBehaviors.length} mastered/archived
+                    </Badge>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  {student.behaviors.map((behavior) => (
+                  {activeBehaviors.map((behavior) => (
                     <div 
                       key={behavior.id} 
                       className="bg-secondary/50 rounded-md p-2"
@@ -387,6 +402,18 @@ export function BehaviorManager() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700"
+                              onClick={() => {
+                                setBehaviorMastered(student.id, behavior.id, true);
+                                toast.success(`${behavior.name} marked as mastered`);
+                              }}
+                              title="Mark as mastered (archive)"
+                            >
+                              <Trophy className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="h-6 w-6 p-0"
                               onClick={() => startEditingDefinition(student.id, behavior)}
                               title="Edit definition for this student"
@@ -418,12 +445,60 @@ export function BehaviorManager() {
                       )}
                     </div>
                   ))}
-                  {student.behaviors.length === 0 && (
+                  
+                  {/* Mastered/Archived behaviors section */}
+                  {showArchived && masteredBehaviors.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                        <Trophy className="w-3 h-3" /> Mastered / Archived
+                      </p>
+                      {masteredBehaviors.map((behavior) => (
+                        <div 
+                          key={behavior.id} 
+                          className="bg-muted/30 rounded-md p-2 opacity-60 hover:opacity-100 transition-opacity"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1 flex-wrap flex-1">
+                              {(behavior.methods || [behavior.type]).map((method) => (
+                                <Badge 
+                                  key={method} 
+                                  className="bg-muted text-muted-foreground text-xs" 
+                                  variant="secondary"
+                                >
+                                  {METHOD_LABELS[method]}
+                                </Badge>
+                              ))}
+                              <span className="text-sm font-medium ml-1 text-muted-foreground">{behavior.name}</span>
+                              {behavior.isMastered && (
+                                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                  Mastered
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-primary"
+                              onClick={() => {
+                                unarchiveBehavior(student.id, behavior.id);
+                                toast.success(`${behavior.name} reactivated for data collection`);
+                              }}
+                              title="Unarchive / Resume tracking"
+                            >
+                              <ArchiveRestore className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {activeBehaviors.length === 0 && masteredBehaviors.length === 0 && (
                     <p className="text-muted-foreground text-sm">No behaviors configured</p>
                   )}
                 </div>
               </div>
-            ))}
+            )})}
             {selectedStudents.length === 0 && (
               <p className="text-center text-muted-foreground py-8">
                 Select students to configure their behaviors

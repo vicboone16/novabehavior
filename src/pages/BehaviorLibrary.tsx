@@ -1,19 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search, Edit2, Trash2, Copy, ArrowLeft, Save, X } from 'lucide-react';
+import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
 import { useDataStore } from '@/store/dataStore';
 
@@ -140,11 +141,15 @@ export default function BehaviorLibrary() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const students = useDataStore((state) => state.students);
+  const mergeBehaviors = useDataStore((state) => state.mergeBehaviors);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAddBehavior, setShowAddBehavior] = useState(false);
   const [editingBehavior, setEditingBehavior] = useState<BehaviorDefinition | null>(null);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [mergeSource, setMergeSource] = useState<{ name: string; studentNames: string[] } | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<string>('');
   
   // Form state
   const [newName, setNewName] = useState('');
@@ -216,6 +221,35 @@ export default function BehaviorLibrary() {
     setNewCategory('Other');
     setShowAddBehavior(false);
     setEditingBehavior(null);
+  };
+
+  // Find mergeable behaviors (custom behaviors that match a bank behavior name)
+  const mergeableBehaviors = useMemo(() => {
+    const result: { custom: { name: string; studentNames: string[] }; bankBehavior: BehaviorDefinition }[] = [];
+    
+    customBehaviors.forEach(custom => {
+      const matchingBank = DEFAULT_BEHAVIORS.find(
+        bank => bank.name.toLowerCase().trim() === custom.name.toLowerCase().trim()
+      );
+      if (matchingBank) {
+        result.push({ custom, bankBehavior: matchingBank });
+      }
+    });
+    
+    return result;
+  }, [customBehaviors]);
+
+  const handleMergeBehavior = () => {
+    if (!mergeSource || !mergeTarget) return;
+    
+    mergeBehaviors(mergeSource.name, mergeTarget);
+    toast({ 
+      title: 'Behaviors merged', 
+      description: `Linked ${mergeSource.studentNames.length} student behaviors to the library definition. Custom definitions preserved.` 
+    });
+    setShowMergeDialog(false);
+    setMergeSource(null);
+    setMergeTarget('');
   };
 
   return (
@@ -303,6 +337,47 @@ export default function BehaviorLibrary() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Merge duplicates card */}
+            {mergeableBehaviors.length > 0 && (
+              <Card className="border-amber-500/50 bg-amber-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Merge className="w-4 h-4 text-amber-600" />
+                    Merge Duplicates
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {mergeableBehaviors.length} custom behavior{mergeableBehaviors.length > 1 ? 's' : ''} can be linked to library definitions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {mergeableBehaviors.map(({ custom, bankBehavior }) => (
+                    <div key={custom.name} className="flex items-center justify-between p-2 bg-background rounded border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{custom.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {custom.studentNames.length} student{custom.studentNames.length > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => {
+                          setMergeSource(custom);
+                          setMergeTarget(bankBehavior.id);
+                          setShowMergeDialog(true);
+                        }}
+                      >
+                        <Merge className="w-3 h-3" />
+                        Merge
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Behavior List */}
@@ -427,6 +502,52 @@ export default function BehaviorLibrary() {
             </Button>
             <Button disabled={!newName.trim() || !newDefinition.trim()}>
               Add to Library
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge Confirmation Dialog */}
+      <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Merge className="w-5 h-5" />
+              Merge Behaviors
+            </DialogTitle>
+            <DialogDescription>
+              This will link all "{mergeSource?.name}" behaviors to the library definition.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {mergeSource && (
+            <div className="space-y-4">
+              <div className="p-3 bg-secondary/50 rounded-lg">
+                <p className="text-sm font-medium mb-1">Students affected:</p>
+                <p className="text-sm text-muted-foreground">
+                  {mergeSource.studentNames.join(', ')}
+                </p>
+              </div>
+              
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <p className="text-sm font-medium text-primary mb-1">What happens:</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Behaviors are linked to the library definition</li>
+                  <li>• <strong>Custom definitions on individual students are preserved</strong></li>
+                  <li>• All collected data remains intact</li>
+                  <li>• Duplicate entries in the library are removed</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMergeDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleMergeBehavior}>
+              <Merge className="w-4 h-4 mr-2" />
+              Merge Behaviors
             </Button>
           </DialogFooter>
         </DialogContent>
