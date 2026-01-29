@@ -255,6 +255,105 @@ export type Database = {
           },
         ]
       }
+      enhanced_session_notes: {
+        Row: {
+          author_role: string
+          author_user_id: string
+          auto_pull_enabled: boolean | null
+          billable: boolean | null
+          clinician_signature_name: string | null
+          created_at: string | null
+          credential: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string
+          location_detail: string | null
+          locked_at: string | null
+          locked_by: string | null
+          note_content: Json | null
+          note_type: string
+          pulled_data_snapshot: Json | null
+          service_setting: string | null
+          session_id: string | null
+          signed_at: string | null
+          start_time: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          subtype: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_role?: string
+          author_user_id: string
+          auto_pull_enabled?: boolean | null
+          billable?: boolean | null
+          clinician_signature_name?: string | null
+          created_at?: string | null
+          credential?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location_detail?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          note_content?: Json | null
+          note_type?: string
+          pulled_data_snapshot?: Json | null
+          service_setting?: string | null
+          session_id?: string | null
+          signed_at?: string | null
+          start_time?: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          subtype?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_role?: string
+          author_user_id?: string
+          auto_pull_enabled?: boolean | null
+          billable?: boolean | null
+          clinician_signature_name?: string | null
+          created_at?: string | null
+          credential?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          id?: string
+          location_detail?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          note_content?: Json | null
+          note_type?: string
+          pulled_data_snapshot?: Json | null
+          service_setting?: string | null
+          session_id?: string | null
+          signed_at?: string | null
+          start_time?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          subtype?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_requirements: {
         Row: {
           created_at: string
@@ -289,6 +388,89 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          note_type: string
+          template_fields: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          note_type: string
+          template_fields?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          note_type?: string
+          template_fields?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      note_versions: {
+        Row: {
+          changes_summary: string | null
+          edit_reason: string | null
+          edited_at: string | null
+          edited_by: string
+          id: string
+          note_id: string
+          previous_content: Json
+          previous_status: string | null
+          version_number: number
+        }
+        Insert: {
+          changes_summary?: string | null
+          edit_reason?: string | null
+          edited_at?: string | null
+          edited_by: string
+          id?: string
+          note_id: string
+          previous_content: Json
+          previous_status?: string | null
+          version_number?: number
+        }
+        Update: {
+          changes_summary?: string | null
+          edit_reason?: string | null
+          edited_at?: string | null
+          edited_by?: string
+          id?: string
+          note_id?: string
+          previous_content?: Json
+          previous_status?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_versions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "enhanced_session_notes"
             referencedColumns: ["id"]
           },
         ]
@@ -967,6 +1149,72 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_reviews: {
+        Row: {
+          action_completed: boolean | null
+          action_completed_at: string | null
+          action_notes: string | null
+          author_user_id: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          note_id: string
+          required_action: string | null
+          review_date: string | null
+          review_outcome: string
+          reviewer_user_id: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_completed?: boolean | null
+          action_completed_at?: string | null
+          action_notes?: string | null
+          author_user_id: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          note_id: string
+          required_action?: string | null
+          review_date?: string | null
+          review_outcome?: string
+          reviewer_user_id: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_completed?: boolean | null
+          action_completed_at?: string | null
+          action_notes?: string | null
+          author_user_id?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          note_id?: string
+          required_action?: string | null
+          review_date?: string | null
+          review_outcome?: string
+          reviewer_user_id?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisor_reviews_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "enhanced_session_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisor_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           color: string | null
@@ -1173,6 +1421,14 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "staff" | "viewer"
+      note_subtype: "clinical_only" | "parent_training_only" | "combined"
+      service_setting: "school" | "home" | "telehealth" | "clinic" | "community"
+      session_note_type:
+        | "therapist"
+        | "assessment"
+        | "clinical"
+        | "parent_training"
+        | "supervision_revision"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1301,6 +1557,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "staff", "viewer"],
+      note_subtype: ["clinical_only", "parent_training_only", "combined"],
+      service_setting: ["school", "home", "telehealth", "clinic", "community"],
+      session_note_type: [
+        "therapist",
+        "assessment",
+        "clinical",
+        "parent_training",
+        "supervision_revision",
+      ],
     },
   },
 } as const
