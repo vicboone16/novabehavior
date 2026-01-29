@@ -144,9 +144,12 @@ export function ScheduleMonthView({
                               {format(new Date(appointment.start_time), 'h:mma')} {displayTitle}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
+                        <TooltipContent className="max-w-xs">
                             <div className="space-y-1 text-sm">
                               <p className="font-medium">{displayTitle}</p>
+                              {getCategoryLabel(appointment.appointment_type) && (
+                                <p className="text-muted-foreground">Type: {getCategoryLabel(appointment.appointment_type)}</p>
+                              )}
                               {staffNames && <p>Staff: {staffNames}</p>}
                               {studentName && <p>Student: {studentName}</p>}
                               <p>{format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}</p>
