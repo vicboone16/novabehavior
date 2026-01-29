@@ -3,6 +3,7 @@ import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, Clipboard
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useSync } from '@/contexts/SyncContext';
 import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
 
@@ -74,6 +75,7 @@ export default function MainLayout() {
             </div>
             <div className="flex items-center gap-3">
               <BehaviorManager />
+              <NotificationBell />
               <UserMenu />
             </div>
           </div>

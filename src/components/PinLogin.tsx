@@ -16,13 +16,15 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PinLoginProps {
   onSuccess: () => void;
+  onTeacherModeSuccess?: () => void;
   onSwitchToPassword: () => void;
 }
 
-export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
+export function PinLogin({ onSuccess, onTeacherModeSuccess, onSwitchToPassword }: PinLoginProps) {
   const { toast } = useToast();
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [teacherModeSelected, setTeacherModeSelected] = useState(false);
 
   const handlePinComplete = async (value: string) => {
     if (value.length !== 6) return;
@@ -86,7 +88,13 @@ export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
       });
 
       toast({ title: 'Welcome back!' });
-      onSuccess();
+      
+      // Check if teacher mode was selected
+      if (teacherModeSelected && onTeacherModeSuccess) {
+        onTeacherModeSuccess();
+      } else {
+        onSuccess();
+      }
     } catch (error) {
       console.error('PIN login error:', error);
       toast({ 
@@ -143,6 +151,22 @@ export function PinLogin({ onSuccess, onSwitchToPassword }: PinLoginProps) {
         {isLoading && (
           <div className="flex justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Teacher Mode Toggle */}
+        {onTeacherModeSuccess && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <input
+              type="checkbox"
+              id="teacher-mode-pin"
+              checked={teacherModeSelected}
+              onChange={(e) => setTeacherModeSelected(e.target.checked)}
+              className="rounded border-input"
+            />
+            <Label htmlFor="teacher-mode-pin" className="text-sm cursor-pointer">
+              Login to Teacher Mode
+            </Label>
           </div>
         )}
       </div>

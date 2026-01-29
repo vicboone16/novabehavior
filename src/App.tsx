@@ -22,6 +22,8 @@ import PendingApproval from "./pages/PendingApproval";
 import UserProfile from "./pages/UserProfile";
 import Schedule from "./pages/Schedule";
 import SecuritySettings from "./pages/SecuritySettings";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import QuestionnaireForm from "./pages/QuestionnaireForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,9 +38,19 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* Public questionnaire form - no auth required */}
+            <Route path="/questionnaire/:token" element={<QuestionnaireForm />} />
             <Route path="/pending-approval" element={
               <ProtectedRoute>
                 <PendingApproval />
+              </ProtectedRoute>
+            } />
+            {/* Teacher Dashboard - protected but no SyncProvider needed */}
+            <Route path="/teacher-dashboard" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <TeacherDashboard />
+                </ApprovalCheck>
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
