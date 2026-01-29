@@ -883,6 +883,8 @@ export type Database = {
           bip_data: Json | null
           case_types: Json | null
           color: string
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           custom_antecedents: Json | null
           custom_consequences: Json | null
@@ -911,6 +913,8 @@ export type Database = {
           bip_data?: Json | null
           case_types?: Json | null
           color?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
@@ -939,6 +943,8 @@ export type Database = {
           bip_data?: Json | null
           case_types?: Json | null
           color?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null

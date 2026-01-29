@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { useSync } from '@/contexts/SyncContext';
 import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
 
@@ -75,6 +76,7 @@ export default function MainLayout() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <GlobalSearch />
               <Button
                 variant="outline"
                 size="sm"

@@ -334,6 +334,9 @@ export interface Student {
   school?: string;
   caseTypes?: CaseType[];
   assessmentModeEnabled?: boolean;
+  // Contact info
+  contactEmail?: string;
+  contactPhone?: string;
   // Background information for reports
   backgroundInfo?: StudentBackgroundInfo;
   // Narrative notes (not session-tied)

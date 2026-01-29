@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy } from 'lucide-react';
+import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy, Mail, Phone, School, CalendarDays, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,8 @@ import { useDataStore } from '@/store/dataStore';
 import { BulkAddBehavior } from '@/components/BulkAddBehavior';
 import { StudentComparison } from '@/components/StudentComparison';
 import { StudentTagsDisplay } from '@/components/StudentTagSelector';
+import { format } from 'date-fns';
+import { CaseType } from '@/types/behavior';
 
 type FilterType = 'active' | 'archived' | 'all';
 
@@ -146,70 +148,119 @@ export default function Students() {
             )}
           </div>
         ) : (
-          filteredStudents.map((student) => (
-            <div
-              key={student.id}
-              className={`bg-card border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer ${
-                student.isArchived ? 'border-muted bg-muted/30' : 'border-border'
-              }`}
-              onClick={() => navigate(`/students/${student.id}`)}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    student.isArchived ? 'opacity-50' : ''
-                  }`}
-                  style={{ backgroundColor: `${student.color}20` }}
-                >
-                  <User className="w-6 h-6" style={{ color: student.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {student.name}
-                    </h3>
-                    {student.isArchived && (
-                      <Badge variant="outline" className="text-xs">
-                        <Archive className="w-3 h-3 mr-1" />
-                        Archived
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="secondary" className="text-xs">
-                      {student.behaviors.length} behaviors
-                    </Badge>
-                    {student.customAntecedents?.length ? (
-                      <Badge variant="outline" className="text-xs">
-                        {student.customAntecedents.length} custom A's
-                      </Badge>
-                    ) : null}
-                    {student.customConsequences?.length ? (
-                      <Badge variant="outline" className="text-xs">
-                        {student.customConsequences.length} custom C's
-                      </Badge>
-                    ) : null}
-                    <StudentTagsDisplay studentId={student.id} />
-                  </div>
-                </div>
-                {student.isArchived && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      unarchiveStudent(student.id);
-                    }}
+          filteredStudents.map((student) => {
+            const caseTypeLabels: Record<CaseType, string> = {
+              'school-based': 'School-Based',
+              'fba-only': 'FBA Only',
+              'direct-services': 'Direct Services',
+              'consultation': 'Consultation',
+            };
+
+            return (
+              <div
+                key={student.id}
+                className={`bg-card border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer ${
+                  student.isArchived ? 'border-muted bg-muted/30' : 'border-border'
+                }`}
+                onClick={() => navigate(`/students/${student.id}`)}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                      student.isArchived ? 'opacity-50' : ''
+                    }`}
+                    style={{ backgroundColor: `${student.color}20` }}
                   >
-                    <ArchiveRestore className="w-4 h-4" />
-                    Restore
-                  </Button>
-                )}
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    <User className="w-6 h-6" style={{ color: student.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground truncate">
+                        {student.name}
+                      </h3>
+                      {student.isArchived && (
+                        <Badge variant="outline" className="text-xs">
+                          <Archive className="w-3 h-3 mr-1" />
+                          Archived
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Profile Info Row */}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                      {student.dateOfBirth && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
+                          DOB: {format(new Date(student.dateOfBirth), 'MM/dd/yyyy')}
+                        </span>
+                      )}
+                      {student.grade && (
+                        <span className="flex items-center gap-1">
+                          <GraduationCap className="w-3 h-3" />
+                          Grade {student.grade}
+                        </span>
+                      )}
+                      {student.school && (
+                        <span className="flex items-center gap-1">
+                          <School className="w-3 h-3" />
+                          {student.school}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Case Types */}
+                    {student.caseTypes && student.caseTypes.length > 0 && (
+                      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                        {student.caseTypes.map((caseType) => (
+                          <Badge key={caseType} variant="secondary" className="text-xs">
+                            {caseTypeLabels[caseType]}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Contact Info */}
+                    {(student.contactEmail || student.contactPhone) && (
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                        {student.contactEmail && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {student.contactEmail}
+                          </span>
+                        )}
+                        {student.contactPhone && (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {student.contactPhone}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Tags */}
+                    <div className="mt-1.5">
+                      <StudentTagsDisplay studentId={student.id} />
+                    </div>
+                  </div>
+                  {student.isArchived && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unarchiveStudent(student.id);
+                      }}
+                    >
+                      <ArchiveRestore className="w-4 h-4" />
+                      Restore
+                    </Button>
+                  )}
+                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

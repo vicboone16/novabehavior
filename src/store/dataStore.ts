@@ -215,6 +215,7 @@ interface DataState {
   getSessionsByStudent: (studentId: string) => Session[];
   deleteSession: (sessionId: string) => void;
   startSession: () => void;
+  resetSession: () => void;
   setSessionLength: (minutes: number) => void;
   setSessionLengthOverride: (override: SessionLengthOverride) => void;
   removeSessionLengthOverride: (studentId?: string, behaviorId?: string) => void;
@@ -1726,6 +1727,13 @@ export const useDataStore = create<DataState>()(
         set({ 
           sessionStartTime: new Date(),
           currentSessionId: crypto.randomUUID(),
+        });
+      },
+
+      resetSession: () => {
+        set({ 
+          sessionStartTime: null,
+          currentSessionId: null,
         });
       },
 
