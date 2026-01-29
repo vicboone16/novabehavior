@@ -137,8 +137,68 @@ ${BACKGROUND_INFO_PROMPT}
 Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`
 };
 
+// Validate file URL to prevent SSRF attacks
+function validateFileUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    
+    // Only allow HTTPS
+    if (parsed.protocol !== 'https:') {
+      console.error('URL validation failed: not HTTPS');
+      return false;
+    }
+    
+    // Get Supabase URL to validate against
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    if (!supabaseUrl) {
+      console.error('URL validation failed: SUPABASE_URL not set');
+      return false;
+    }
+    
+    // Check if URL is from Supabase storage (allow signed URLs from our project)
+    const supabaseDomain = new URL(supabaseUrl).hostname;
+    if (!parsed.hostname.endsWith(supabaseDomain) && !parsed.hostname.includes('supabase')) {
+      console.error('URL validation failed: not a Supabase URL');
+      return false;
+    }
+    
+    // Block private IP ranges and localhost
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || 
+        hostname === '127.0.0.1' ||
+        hostname.match(/^127\./) ||
+        hostname.match(/^10\./) ||
+        hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./) ||
+        hostname.match(/^192\.168\./) ||
+        hostname.match(/^169\.254\./) ||
+        hostname.match(/^0\./) ||
+        hostname === '[::1]') {
+      console.error('URL validation failed: private IP range');
+      return false;
+    }
+    
+    // Block cloud metadata endpoints
+    if (hostname === '169.254.169.254' || 
+        hostname.includes('metadata.google') ||
+        hostname.includes('metadata.aws')) {
+      console.error('URL validation failed: cloud metadata endpoint');
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('URL validation failed: invalid URL', err);
+    return false;
+  }
+}
+
 async function extractTextFromPdf(fileUrl: string, apiKey: string): Promise<string> {
   console.log('Fetching PDF from URL:', fileUrl);
+  
+  // Validate URL to prevent SSRF attacks
+  if (!validateFileUrl(fileUrl)) {
+    throw new Error('Invalid file URL: only Supabase storage URLs are allowed');
+  }
   
   // Fetch the PDF file
   const pdfResponse = await fetch(fileUrl);
