@@ -31,9 +31,17 @@ export function ScheduleDayView({
     [appointments, date]
   );
 
-  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Meeting';
   const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
-  const getStaffName = (id?: string | null) => id ? staff.find(s => s.id === id)?.name : undefined;
+  
+  const getStaffNames = (appointment: Appointment) => {
+    const staffIds = appointment.staff_user_ids?.length 
+      ? appointment.staff_user_ids 
+      : appointment.staff_user_id ? [appointment.staff_user_id] : [];
+    
+    if (staffIds.length === 0) return undefined;
+    return staffIds.map(id => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
+  };
 
   const getAppointmentStyle = (appointment: Appointment) => {
     const start = new Date(appointment.start_time);
@@ -150,9 +158,9 @@ export function ScheduleDayView({
                   <p className="text-[10px] text-muted-foreground truncate">
                     {format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}
                   </p>
-                  {getStaffName(appointment.staff_user_id) && height > 50 && (
+                  {getStaffNames(appointment) && height > 50 && (
                     <p className="text-[10px] text-muted-foreground truncate">
-                      Staff: {getStaffName(appointment.staff_user_id)}
+                      Staff: {getStaffNames(appointment)}
                     </p>
                   )}
                 </div>

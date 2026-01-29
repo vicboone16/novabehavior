@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { format, addMinutes, setHours, setMinutes, parse } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { CalendarIcon, Trash2, X, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
@@ -75,8 +77,9 @@ export function AppointmentDialog({
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(30);
   const [studentId, setStudentId] = useState('');
-  const [staffId, setStaffId] = useState('');
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [showStaffSelector, setShowStaffSelector] = useState(false);
 
   useEffect(() => {
     if (appointment) {
@@ -85,7 +88,16 @@ export function AppointmentDialog({
       setStartTime(format(start, 'HH:mm'));
       setDuration(appointment.duration_minutes);
       setStudentId(appointment.student_id || '');
-      setStaffId(appointment.staff_user_id || '');
+      
+      // Load staff from array or single value
+      if (appointment.staff_user_ids && appointment.staff_user_ids.length > 0) {
+        setSelectedStaffIds(appointment.staff_user_ids);
+      } else if (appointment.staff_user_id) {
+        setSelectedStaffIds([appointment.staff_user_id]);
+      } else {
+        setSelectedStaffIds([]);
+      }
+      
       setNotes(appointment.notes || '');
     } else {
       // Reset to defaults
@@ -93,10 +105,24 @@ export function AppointmentDialog({
       setStartTime('09:00');
       setDuration(30);
       setStudentId(defaultStudentId || '');
-      setStaffId('');
+      setSelectedStaffIds([]);
       setNotes('');
     }
   }, [appointment, open, defaultStudentId]);
+
+  const handleStaffToggle = (staffId: string) => {
+    setSelectedStaffIds(prev => 
+      prev.includes(staffId) 
+        ? prev.filter(id => id !== staffId)
+        : [...prev, staffId]
+    );
+  };
+
+  const removeStaff = (staffId: string) => {
+    setSelectedStaffIds(prev => prev.filter(id => id !== staffId));
+  };
+
+  const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || 'Unknown';
 
   const handleSave = () => {
     if (!selectedDate) return;
@@ -107,7 +133,8 @@ export function AppointmentDialog({
 
     onSave({
       student_id: studentId || null,
-      staff_user_id: staffId || null,
+      staff_user_id: selectedStaffIds[0] || null, // Keep primary staff for backwards compatibility
+      staff_user_ids: selectedStaffIds,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
       duration_minutes: duration,
@@ -119,7 +146,7 @@ export function AppointmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {appointment ? 'Edit Appointment' : 'New Appointment'}
@@ -127,46 +154,6 @@ export function AppointmentDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Student selection (optional for staff-only appointments) */}
-          <div className="space-y-2">
-            <Label>Student (optional for staff-only)</Label>
-            <Select value={studentId} onValueChange={setStudentId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select student or leave empty..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No student (staff only)</SelectItem>
-                {students.map(s => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: s.color }} 
-                      />
-                      {s.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Staff selection (optional) */}
-          <div className="space-y-2">
-            <Label>Staff (optional)</Label>
-            <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Assign staff..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">None</SelectItem>
-                {staff.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Date picker */}
           <div className="space-y-2">
             <Label>Date *</Label>
@@ -224,6 +211,91 @@ export function AppointmentDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Staff selection - Multiple */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Staff Members
+            </Label>
+            
+            {/* Selected staff badges */}
+            {selectedStaffIds.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {selectedStaffIds.map(id => (
+                  <Badge key={id} variant="secondary" className="gap-1">
+                    {getStaffName(id)}
+                    <button onClick={() => removeStaff(id)} className="ml-1 hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            {/* Staff selector popover */}
+            <Popover open={showStaffSelector} onOpenChange={setShowStaffSelector}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start">
+                  {selectedStaffIds.length === 0 
+                    ? 'Select staff members...' 
+                    : `${selectedStaffIds.length} staff selected`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <ScrollArea className="h-[200px]">
+                  <div className="p-2 space-y-1">
+                    {staff.map(s => (
+                      <div 
+                        key={s.id} 
+                        className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                        onClick={() => handleStaffToggle(s.id)}
+                      >
+                        <Checkbox 
+                          checked={selectedStaffIds.includes(s.id)}
+                          onCheckedChange={() => handleStaffToggle(s.id)}
+                        />
+                        <span className="text-sm">{s.name}</span>
+                      </div>
+                    ))}
+                    {staff.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-2">No staff available</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              Select one or more staff members. Leave empty for unassigned.
+            </p>
+          </div>
+
+          {/* Student selection (optional) */}
+          <div className="space-y-2">
+            <Label>Student (optional)</Label>
+            <Select value={studentId} onValueChange={setStudentId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select student or leave empty..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No student (staff-only meeting)</SelectItem>
+                {students.map(s => (
+                  <SelectItem key={s.id} value={s.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: s.color }} 
+                      />
+                      {s.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Leave empty for staff meetings without a student.
+            </p>
           </div>
 
           {/* Notes */}

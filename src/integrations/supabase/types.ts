@@ -70,6 +70,7 @@ export type Database = {
           notes: string | null
           recurrence_rule: Json | null
           staff_user_id: string | null
+          staff_user_ids: string[] | null
           start_time: string
           status: string
           student_id: string | null
@@ -89,6 +90,7 @@ export type Database = {
           notes?: string | null
           recurrence_rule?: Json | null
           staff_user_id?: string | null
+          staff_user_ids?: string[] | null
           start_time: string
           status?: string
           student_id?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           notes?: string | null
           recurrence_rule?: Json | null
           staff_user_id?: string | null
+          staff_user_ids?: string[] | null
           start_time?: string
           status?: string
           student_id?: string | null

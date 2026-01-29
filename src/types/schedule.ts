@@ -5,6 +5,7 @@ export interface Appointment {
   title?: string | null;
   student_id?: string | null;
   staff_user_id?: string | null;
+  staff_user_ids?: string[];
   created_by: string;
   start_time: string;
   end_time: string;
