@@ -1829,8 +1829,25 @@ export const useDataStore = create<DataState>()(
       },
 
       resetSessionData: () => {
-        // Move current session data to trash before clearing
+        // Only clear UI display state - DO NOT delete already-saved data
+        // If data has been saved (lastSavedDataHash exists), keep it and just reset display
         const state = get();
+        const hasBeenSaved = state.lastSavedDataHash !== null;
+        
+        if (hasBeenSaved) {
+          // Data was already saved - just reset display state, don't touch entries
+          set({
+            sessionNotes: '',
+            currentSessionId: null,
+            sessionStartTime: null,
+            sessionLengthOverrides: [],
+            sessionFocus: DEFAULT_SESSION_FOCUS,
+            lastSavedDataHash: null,
+          });
+          return;
+        }
+        
+        // Data NOT saved yet - move to trash for recovery
         const now = new Date();
         
         // Add frequency entries to trash
@@ -1894,7 +1911,7 @@ export const useDataStore = create<DataState>()(
           sessionStartTime: null,
           sessionLengthOverrides: [],
           sessionFocus: DEFAULT_SESSION_FOCUS,
-          lastSavedDataHash: null, // Reset the hash when session is cleared
+          lastSavedDataHash: null,
         });
       },
 

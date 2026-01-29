@@ -39,6 +39,7 @@ export function DataSummary() {
   const [showNotes, setShowNotes] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showNoChangesWarning, setShowNoChangesWarning] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   
   // Auto-save hook
   const { lastAutoSave, isAutoSaving } = useAutoSave();
@@ -429,7 +430,14 @@ export function DataSummary() {
             variant="outline" 
             size="sm" 
             className="gap-2 text-destructive hover:text-destructive"
-            onClick={resetSessionData}
+            onClick={() => {
+              // If data is saved, just clear display; if unsaved, ask for confirmation
+              if (hasUnsavedChanges()) {
+                setShowClearConfirm(true);
+              } else {
+                resetSessionData();
+              }
+            }}
           >
             <Trash2 className="w-4 h-4" />
             Clear
@@ -544,6 +552,20 @@ export function DataSummary() {
         confirmLabel="OK"
         cancelLabel="Close"
         onConfirm={() => setShowNoChangesWarning(false)}
+      />
+      
+      {/* Clear Confirmation Dialog */}
+      <ConfirmDialog
+        open={showClearConfirm}
+        onOpenChange={setShowClearConfirm}
+        title="Clear Unsaved Data?"
+        description="You have unsaved data that will be moved to the trash. Already-saved data will NOT be affected. Continue?"
+        confirmLabel="Clear Display"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          resetSessionData();
+          setShowClearConfirm(false);
+        }}
       />
     </div>
   );
