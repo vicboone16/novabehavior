@@ -496,9 +496,15 @@ export default function Admin() {
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate('/')}>
-              Back to App
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate('/security')}>
+                <Shield className="w-4 h-4 mr-2" />
+                Security Settings
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                Back to App
+              </Button>
+            </div>
           </div>
         </div>
       </header>

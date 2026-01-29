@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ApprovalCheck } from "@/components/ApprovalCheck";
+import { SessionTimeoutWarning } from "@/components/SessionTimeoutWarning";
 import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Students from "./pages/Students";
@@ -20,6 +21,7 @@ import BehaviorLibrary from "./pages/BehaviorLibrary";
 import PendingApproval from "./pages/PendingApproval";
 import UserProfile from "./pages/UserProfile";
 import Schedule from "./pages/Schedule";
+import SecuritySettings from "./pages/SecuritySettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <SessionTimeoutWarning />
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -43,6 +46,15 @@ const App = () => (
                 <ApprovalCheck>
                   <SyncProvider>
                     <Admin />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/security" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SecuritySettings />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
