@@ -61,6 +61,8 @@ import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
+import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
+import { SessionNotesTab } from '@/components/session-notes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -469,7 +471,11 @@ export default function StudentProfile() {
           </TabsTrigger>
           <TabsTrigger value="notes" className="gap-1 text-xs">
             <StickyNote className="w-3 h-3" />
-            Notes
+            Narrative
+          </TabsTrigger>
+          <TabsTrigger value="session-notes" className="gap-1 text-xs">
+            <FileText className="w-3 h-3" />
+            Session Notes
           </TabsTrigger>
           <TabsTrigger value="files" className="gap-1 text-xs">
             <FolderOpen className="w-3 h-3" />
@@ -1069,6 +1075,14 @@ export default function StudentProfile() {
             onUpdateNote={(noteId, updates) => updateNarrativeNote(student.id, noteId, updates)}
             onDeleteNote={(noteId) => deleteNarrativeNote(student.id, noteId)}
             canViewNotes={studentAccess.canViewNotes}
+          />
+        </TabsContent>
+
+        {/* Session Notes Tab */}
+        <TabsContent value="session-notes" className="space-y-4">
+          <SessionNotesTab
+            studentId={student.id}
+            studentName={student.name}
           />
         </TabsContent>
 
