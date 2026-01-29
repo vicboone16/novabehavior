@@ -19,6 +19,14 @@ export interface Appointment {
   color?: string | null;
   created_at: string;
   updated_at: string;
+  // New verification fields
+  service_type?: string;
+  service_setting?: string;
+  location_detail?: string;
+  verification_status?: string;
+  verification_required?: boolean;
+  verified_at?: string;
+  verified_by?: string;
 }
 
 export type ScheduleViewType = 'day' | 'week' | 'month' | 'timeline';

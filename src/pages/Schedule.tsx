@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, startOfDay, endOfDay, isPast, differenceInMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Plus, Users, User, Clock, Loader2, Download 
+  Plus, Users, User, Clock, Loader2, Download, AlertTriangle 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleTimeline } from '@/components/schedule/ScheduleTimeline';
@@ -21,6 +23,8 @@ import { ScheduleWeekView } from '@/components/schedule/ScheduleWeekView';
 import { ScheduleMonthView } from '@/components/schedule/ScheduleMonthView';
 import { AppointmentDialog } from '@/components/schedule/AppointmentDialog';
 import { SessionPromptDialog } from '@/components/schedule/SessionPromptDialog';
+import { VerificationDialog } from '@/components/schedule/VerificationDialog';
+import { NeedsVerificationQueue } from '@/components/schedule/NeedsVerificationQueue';
 import type { Appointment, ScheduleViewType, FilterMode } from '@/types/schedule';
 
 export default function Schedule() {
@@ -42,6 +46,8 @@ export default function Schedule() {
   const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [showSessionPrompt, setShowSessionPrompt] = useState<Appointment | null>(null);
+  const [showVerificationDialog, setShowVerificationDialog] = useState<Appointment | null>(null);
+  const [showVerificationQueue, setShowVerificationQueue] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -223,19 +229,24 @@ export default function Schedule() {
   };
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    // Check if it's time to start the session
     const now = new Date();
     const startTime = new Date(appointment.start_time);
-    const timeDiff = (startTime.getTime() - now.getTime()) / (1000 * 60); // minutes
+    const endTime = new Date(appointment.end_time);
+    const timeDiffStart = differenceInMinutes(startTime, now); // minutes until start
+    const isPastEnd = isPast(endTime);
     
-    // If within 15 minutes of start time or past start time, offer to start session
-    if (timeDiff <= 15 && appointment.status === 'scheduled' && !appointment.linked_session_id) {
+    // If past the appointment end time and unverified, show verification dialog
+    if (isPastEnd && appointment.status === 'scheduled' && 
+        (!appointment.verification_status || appointment.verification_status === 'unverified')) {
+      setShowVerificationDialog(appointment);
+    }
+    // If within 15 minutes of start time or past start time but before end, offer to start session
+    else if (timeDiffStart <= 15 && !isPast(endTime) && appointment.status === 'scheduled' && !appointment.linked_session_id) {
       setShowSessionPrompt(appointment);
     } else if (isAdmin) {
       // Only admins can edit appointments
       handleEditAppointment(appointment);
     }
-    // Non-admins clicking outside the session prompt window does nothing
   };
 
   const handleSaveAppointment = async (data: Partial<Appointment>) => {
@@ -454,6 +465,21 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
                 </Badge>
               )}
 
+              {/* Verification queue toggle - Admin only */}
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-verification"
+                    checked={showVerificationQueue}
+                    onCheckedChange={setShowVerificationQueue}
+                  />
+                  <Label htmlFor="show-verification" className="text-sm flex items-center gap-1 cursor-pointer">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    Needs Verification
+                  </Label>
+                </div>
+              )}
+
               {/* Only admins can create new appointments */}
               {isAdmin && (
                 <Button onClick={handleCreateAppointment} size="sm">
@@ -587,6 +613,28 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
         students={students}
         staff={staff}
       />
+
+      {/* Verification Dialog */}
+      <VerificationDialog
+        appointment={showVerificationDialog}
+        open={!!showVerificationDialog}
+        onOpenChange={(open) => !open && setShowVerificationDialog(null)}
+        studentName={students.find(s => s.id === showVerificationDialog?.student_id)?.name}
+        staffName={staff.find(s => s.id === showVerificationDialog?.staff_user_id)?.name}
+        onVerified={() => {
+          loadAppointments();
+          setShowVerificationDialog(null);
+        }}
+      />
+
+      {/* Needs Verification Queue - Admin only */}
+      {isAdmin && showVerificationQueue && (
+        <NeedsVerificationQueue
+          students={students}
+          staff={staff}
+          onRefresh={loadAppointments}
+        />
+      )}
     </div>
   );
 }

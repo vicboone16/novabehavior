@@ -67,8 +67,11 @@ export type Database = {
           id: string
           is_recurring: boolean | null
           linked_session_id: string | null
+          location_detail: string | null
           notes: string | null
           recurrence_rule: Json | null
+          service_setting: string | null
+          service_type: string | null
           staff_user_id: string | null
           staff_user_ids: string[] | null
           start_time: string
@@ -76,6 +79,10 @@ export type Database = {
           student_id: string | null
           title: string | null
           updated_at: string
+          verification_required: boolean | null
+          verification_status: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           appointment_type?: string
@@ -87,8 +94,11 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           linked_session_id?: string | null
+          location_detail?: string | null
           notes?: string | null
           recurrence_rule?: Json | null
+          service_setting?: string | null
+          service_type?: string | null
           staff_user_id?: string | null
           staff_user_ids?: string[] | null
           start_time: string
@@ -96,6 +106,10 @@ export type Database = {
           student_id?: string | null
           title?: string | null
           updated_at?: string
+          verification_required?: boolean | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           appointment_type?: string
@@ -107,8 +121,11 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           linked_session_id?: string | null
+          location_detail?: string | null
           notes?: string | null
           recurrence_rule?: Json | null
+          service_setting?: string | null
+          service_type?: string | null
           staff_user_id?: string | null
           staff_user_ids?: string[] | null
           start_time?: string
@@ -116,6 +133,10 @@ export type Database = {
           student_id?: string | null
           title?: string | null
           updated_at?: string
+          verification_required?: boolean | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -127,6 +148,88 @@ export type Database = {
           },
           {
             foreignKeyName: "appointments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_logs: {
+        Row: {
+          appointment_id: string | null
+          created_at: string | null
+          date: string
+          follow_up_completed: boolean | null
+          follow_up_completed_at: string | null
+          follow_up_date: string | null
+          follow_up_needed: boolean | null
+          follow_up_notes: string | null
+          id: string
+          marked_at: string | null
+          marked_by_user_id: string
+          outcome: string
+          reason_code: string | null
+          reason_detail: string | null
+          session_id: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string | null
+          date?: string
+          follow_up_completed?: boolean | null
+          follow_up_completed_at?: string | null
+          follow_up_date?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          marked_at?: string | null
+          marked_by_user_id: string
+          outcome?: string
+          reason_code?: string | null
+          reason_detail?: string | null
+          session_id?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string | null
+          date?: string
+          follow_up_completed?: boolean | null
+          follow_up_completed_at?: string | null
+          follow_up_date?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          marked_at?: string | null
+          marked_by_user_id?: string
+          outcome?: string
+          reason_code?: string | null
+          reason_detail?: string | null
+          session_id?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_logs_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -882,42 +985,80 @@ export type Database = {
       }
       sessions: {
         Row: {
+          appointment_id: string | null
+          attendance_outcome: string | null
+          attendance_reason_code: string | null
+          attendance_reason_detail: string | null
           created_at: string
           end_time: string | null
+          has_data: boolean | null
           id: string
           interval_length_seconds: number
+          location_detail: string | null
           name: string
+          provider_id: string | null
+          service_setting: string | null
+          service_type: string | null
           session_length_minutes: number
           start_time: string
           status: string | null
           student_ids: string[] | null
           user_id: string
+          verification_source: string | null
         }
         Insert: {
+          appointment_id?: string | null
+          attendance_outcome?: string | null
+          attendance_reason_code?: string | null
+          attendance_reason_detail?: string | null
           created_at?: string
           end_time?: string | null
+          has_data?: boolean | null
           id?: string
           interval_length_seconds?: number
+          location_detail?: string | null
           name: string
+          provider_id?: string | null
+          service_setting?: string | null
+          service_type?: string | null
           session_length_minutes?: number
           start_time: string
           status?: string | null
           student_ids?: string[] | null
           user_id: string
+          verification_source?: string | null
         }
         Update: {
+          appointment_id?: string | null
+          attendance_outcome?: string | null
+          attendance_reason_code?: string | null
+          attendance_reason_detail?: string | null
           created_at?: string
           end_time?: string | null
+          has_data?: boolean | null
           id?: string
           interval_length_seconds?: number
+          location_detail?: string | null
           name?: string
+          provider_id?: string | null
+          service_setting?: string | null
+          service_type?: string | null
           session_length_minutes?: number
           start_time?: string
           status?: string | null
           student_ids?: string[] | null
           user_id?: string
+          verification_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sessions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_files: {
         Row: {
