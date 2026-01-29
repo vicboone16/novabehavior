@@ -56,6 +56,81 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          appointment_type: string
+          color: string | null
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          end_time: string
+          id: string
+          is_recurring: boolean | null
+          linked_session_id: string | null
+          notes: string | null
+          recurrence_rule: Json | null
+          staff_user_id: string | null
+          start_time: string
+          status: string
+          student_id: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_type?: string
+          color?: string | null
+          created_at?: string
+          created_by: string
+          duration_minutes?: number
+          end_time: string
+          id?: string
+          is_recurring?: boolean | null
+          linked_session_id?: string | null
+          notes?: string | null
+          recurrence_rule?: Json | null
+          staff_user_id?: string | null
+          start_time: string
+          status?: string
+          student_id: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_type?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          end_time?: string
+          id?: string
+          is_recurring?: boolean | null
+          linked_session_id?: string | null
+          notes?: string | null
+          recurrence_rule?: Json | null
+          staff_user_id?: string | null
+          start_time?: string
+          status?: string
+          student_id?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_requirements: {
         Row: {
           created_at: string
