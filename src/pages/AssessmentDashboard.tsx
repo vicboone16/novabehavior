@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDataStore } from '@/store/dataStore';
 import { FBAModeTools } from '@/components/FBAModeTools';
 import { DocumentUpload } from '@/components/DocumentUpload';
-import { ABCTracker } from '@/components/ABCTracker';
+import { AssessmentDataCollection } from '@/components/AssessmentDataCollection';
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
 import { CollaborationPanel } from '@/components/CollaborationPanel';
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
@@ -74,6 +74,7 @@ export default function AssessmentDashboard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isInitializing, setIsInitializing] = useState(false);
+  const [activeTab, setActiveTab] = useState('workflow');
 
   // Filter to students with assessment mode enabled
   const assessmentStudents = useMemo(() => {
@@ -336,7 +337,7 @@ export default function AssessmentDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="workflow" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
@@ -492,19 +493,35 @@ export default function AssessmentDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-3 flex-col gap-1"
+                    onClick={() => setActiveTab('collect')}
+                  >
                     <Eye className="w-4 h-4" />
                     <span className="text-xs">Start Observation</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-3 flex-col gap-1"
+                    onClick={() => setActiveTab('documents')}
+                  >
                     <FileUp className="w-4 h-4" />
                     <span className="text-xs">Upload Document</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-3 flex-col gap-1"
+                    onClick={() => setActiveTab('analysis')}
+                  >
                     <Brain className="w-4 h-4" />
                     <span className="text-xs">View Analysis</span>
                   </Button>
-                  <Button variant="outline" className="h-auto py-3 flex-col gap-1">
+                  <Button 
+                    variant="outline" 
+                    className="h-auto py-3 flex-col gap-1"
+                    onClick={() => setActiveTab('report')}
+                  >
                     <FileText className="w-4 h-4" />
                     <span className="text-xs">Generate Report</span>
                   </Button>
@@ -546,101 +563,103 @@ export default function AssessmentDashboard() {
             )}
           </TabsContent>
 
-          {/* Collect Data Tab */}
+          {/* Collect Data Tab - Now with full data collection capabilities */}
           <TabsContent value="collect" className="space-y-4">
             {selectedStudent && (
-              <div className="grid lg:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">ABC Data Collection</CardTitle>
-                    <CardDescription className="text-xs">
-                      Record antecedent-behavior-consequence observations
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedStudent.behaviors.length > 0 ? (
-                      <ABCTracker 
-                        studentId={selectedStudentId}
-                        behavior={selectedStudent.behaviors[0]}
-                        studentColor={selectedStudent.color}
-                      />
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No behaviors defined</p>
-                        <p className="text-xs">Add behaviors to the student profile first</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Session Summary</CardTitle>
-                    <CardDescription className="text-xs">
-                      Today's data collection summary
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-muted rounded-lg text-center">
-                          <Clock className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                          <p className="text-lg font-bold">
-                            {abcEntries.filter(e => 
-                              e.studentId === selectedStudentId && 
-                              new Date(e.timestamp).toDateString() === new Date().toDateString()
-                            ).length}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Today's ABC</p>
-                        </div>
-                        <div className="p-3 bg-muted rounded-lg text-center">
-                          <Calendar className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                          <p className="text-lg font-bold">
-                            {studentStats?.abcCount || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Total ABC</p>
-                        </div>
-                      </div>
-
-                      {/* Recent entries */}
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Recent Entries</p>
-                        <ScrollArea className="h-[200px]">
-                          {abcEntries
-                            .filter(e => e.studentId === selectedStudentId)
-                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                            .slice(0, 5)
-                            .map(entry => (
-                              <div key={entry.id} className="p-2 border-b last:border-0 text-xs">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Badge variant="outline" className="text-xs">
-                                    {entry.antecedent || entry.antecedents?.[0]}
-                                  </Badge>
-                                  <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                                  <Badge className="text-xs">
-                                    {entry.behavior}
-                                  </Badge>
-                                  <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                                  <Badge variant="secondary" className="text-xs">
-                                    {entry.consequence || entry.consequences?.[0]}
-                                  </Badge>
-                                </div>
-                                <p className="text-muted-foreground">
-                                  {new Date(entry.timestamp).toLocaleString()}
-                                </p>
-                              </div>
-                            ))}
-                          {abcEntries.filter(e => e.studentId === selectedStudentId).length === 0 && (
-                            <p className="text-muted-foreground text-center py-4">
-                              No ABC entries yet
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <AssessmentDataCollection student={selectedStudent} />
+                </div>
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Session Summary</CardTitle>
+                      <CardDescription className="text-xs">
+                        Today's data collection summary
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-3 bg-muted rounded-lg text-center">
+                            <Clock className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-lg font-bold">
+                              {abcEntries.filter(e => 
+                                e.studentId === selectedStudentId && 
+                                new Date(e.timestamp).toDateString() === new Date().toDateString()
+                              ).length}
                             </p>
-                          )}
-                        </ScrollArea>
+                            <p className="text-xs text-muted-foreground">Today's ABC</p>
+                          </div>
+                          <div className="p-3 bg-muted rounded-lg text-center">
+                            <Calendar className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-lg font-bold">
+                              {studentStats?.abcCount || 0}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Total ABC</p>
+                          </div>
+                        </div>
+
+                        {/* Recent entries */}
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Recent Entries</p>
+                          <ScrollArea className="h-[200px]">
+                            {abcEntries
+                              .filter(e => e.studentId === selectedStudentId)
+                              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                              .slice(0, 5)
+                              .map(entry => (
+                                <div key={entry.id} className="p-2 border-b last:border-0 text-xs">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {entry.antecedent || entry.antecedents?.[0]}
+                                    </Badge>
+                                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                    <Badge className="text-xs">
+                                      {entry.behavior}
+                                    </Badge>
+                                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                                    <Badge variant="secondary" className="text-xs">
+                                      {entry.consequence || entry.consequences?.[0]}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-muted-foreground">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                            {abcEntries.filter(e => e.studentId === selectedStudentId).length === 0 && (
+                              <p className="text-muted-foreground text-center py-4">
+                                No ABC entries yet
+                              </p>
+                            )}
+                          </ScrollArea>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+
+                  {/* Behavior List */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Student Behaviors</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {selectedStudent.behaviors.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No behaviors defined yet</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {selectedStudent.behaviors.map(b => (
+                            <div key={b.id} className="flex items-center gap-2 text-xs p-2 bg-muted/50 rounded">
+                              <div className="w-2 h-2 rounded-full bg-primary" />
+                              {b.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
           </TabsContent>
