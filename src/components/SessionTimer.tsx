@@ -2,27 +2,33 @@ import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Clock, Minimize2, Maximize2, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDataStore } from '@/store/dataStore';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { SessionEndFlow } from './SessionEndFlow';
+import { toast } from '@/hooks/use-toast';
 
 export function SessionTimer() {
-  const { sessionStartTime, startSession, currentSessionId } = useDataStore();
+  const { 
+    sessionStartTime, 
+    startSession, 
+    currentSessionId,
+    selectedStudentIds,
+    students,
+    getStudentSessionStatus
+  } = useDataStore();
+  
   const [isMinimized, setIsMinimized] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [pausedTime, setPausedTime] = useState(0);
   const [pausedAt, setPausedAt] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [showEndFlow, setShowEndFlow] = useState(false);
   
   const isRunning = !!sessionStartTime && !isPaused;
+
+  // Count active students (not already ended)
+  const activeStudents = students.filter(s => 
+    selectedStudentIds.includes(s.id) && 
+    !getStudentSessionStatus(s.id)?.hasEnded
+  );
 
   // Calculate elapsed time
   useEffect(() => {
@@ -86,13 +92,25 @@ export function SessionTimer() {
   };
 
   const handleEndSession = () => {
-    setShowEndConfirm(true);
+    if (activeStudents.length === 0) {
+      toast({
+        title: 'No active students',
+        description: 'Select students to end their sessions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setShowEndFlow(true);
   };
 
-  const confirmEndSession = () => {
-    // Reset local state - session data is preserved in the store
+  const handleEndFlowComplete = () => {
+    // Reset timer state after session ends
     setIsPaused(true);
-    setShowEndConfirm(false);
+    setPausedAt(null);
+    toast({
+      title: 'Sessions Ended',
+      description: 'All student sessions have been completed.',
+    });
   };
 
   const formattedTime = formatTime(elapsed);
@@ -152,7 +170,7 @@ export function SessionTimer() {
                 </>
               )}
             </Button>
-            {sessionStartTime && (
+            {sessionStartTime && activeStudents.length > 0 && (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -178,23 +196,12 @@ export function SessionTimer() {
         </div>
       </div>
 
-      <AlertDialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>End Session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will stop the session timer. Your collected data will be preserved.
-              You can save the session from the Session History or use End All Sessions for a complete session workflow.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmEndSession}>
-              End Session
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <SessionEndFlow
+        open={showEndFlow}
+        onOpenChange={setShowEndFlow}
+        mode="all"
+        onComplete={handleEndFlowComplete}
+      />
     </>
   );
 }
