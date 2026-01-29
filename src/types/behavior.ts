@@ -396,6 +396,7 @@ export interface FrequencyEntry {
   sessionId?: string;
   observationDurationMinutes?: number; // For historical entries - allows rate calculation
   isHistorical?: boolean; // Flag to identify manually-entered historical data
+  dataCollected?: boolean; // Explicitly marked as data was collected (distinguishes 0 from no data)
 }
 
 // Historical data stored per student for cloud sync

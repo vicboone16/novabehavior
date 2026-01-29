@@ -128,6 +128,8 @@ interface DataState {
   decrementFrequency: (studentId: string, behaviorId: string) => void;
   resetFrequency: (studentId: string, behaviorId: string) => void;
   getFrequencyCount: (studentId: string, behaviorId: string) => number;
+  markDataCollected: (studentId: string, behaviorId: string, collected: boolean) => void;
+  isDataCollected: (studentId: string, behaviorId: string) => boolean;
   addFrequencyFromABC: (studentId: string, behaviorId: string, count: number) => void;
   addHistoricalFrequency: (entry: { 
     studentId: string; 
@@ -807,6 +809,49 @@ export const useDataStore = create<DataState>()(
           (e) => e.studentId === studentId && e.behaviorId === behaviorId
         );
         return entry?.count ?? 0;
+      },
+
+      markDataCollected: (studentId, behaviorId, collected) => {
+        const now = new Date();
+        set((state) => {
+          const existing = state.frequencyEntries.find(
+            (e) => e.studentId === studentId && e.behaviorId === behaviorId
+          );
+          if (existing) {
+            return {
+              frequencyEntries: state.frequencyEntries.map((e) =>
+                e.studentId === studentId && e.behaviorId === behaviorId
+                  ? { ...e, dataCollected: collected }
+                  : e
+              ),
+            };
+          }
+          // Create a new entry with 0 count but marked as data collected
+          return {
+            frequencyEntries: [
+              ...state.frequencyEntries,
+              {
+                id: crypto.randomUUID(),
+                studentId,
+                behaviorId,
+                count: 0,
+                timestamp: now,
+                timestamps: [],
+                sessionId: state.currentSessionId || undefined,
+                dataCollected: collected,
+              },
+            ],
+          };
+        });
+      },
+
+      isDataCollected: (studentId, behaviorId) => {
+        const entry = get().frequencyEntries.find(
+          (e) => e.studentId === studentId && e.behaviorId === behaviorId
+        );
+        // If count > 0, data was definitely collected
+        // If count === 0, check the dataCollected flag
+        return entry ? (entry.count > 0 || entry.dataCollected === true) : false;
       },
 
       addFrequencyFromABC: (studentId, behaviorId, count) => {

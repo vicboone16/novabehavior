@@ -85,15 +85,24 @@ export function BehaviorTrendCharts() {
           
           const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
           const key = behavior?.name || 'Unknown';
-          behaviorsWithData.add(key);
           
-          // Use actual count value (including 0)
-          frequencyByBehavior[key] = (frequencyByBehavior[key] ?? 0) + entry.count;
+          // Only count as data collected if:
+          // 1. count > 0 (data was definitely collected), or
+          // 2. dataCollected flag is true (explicitly marked as zero recorded)
+          const wasDataCollected = entry.count > 0 || (entry as any).dataCollected === true;
           
-          // Calculate rate per hour
-          const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
-          const ratePerHour = entry.count / (durationMinutes / 60);
-          rateByBehavior[key] = (rateByBehavior[key] ?? 0) + ratePerHour;
+          if (wasDataCollected) {
+            behaviorsWithData.add(key);
+            
+            // Use actual count value (including 0)
+            frequencyByBehavior[key] = (frequencyByBehavior[key] ?? 0) + entry.count;
+            
+            // Calculate rate per hour
+            const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
+            const ratePerHour = entry.count / (durationMinutes / 60);
+            rateByBehavior[key] = (rateByBehavior[key] ?? 0) + ratePerHour;
+          }
+          // If dataCollected is false/undefined and count is 0, this day will have null (gap in chart)
         });
 
         // Process interval data
