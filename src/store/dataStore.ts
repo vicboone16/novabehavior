@@ -1829,13 +1829,27 @@ export const useDataStore = create<DataState>()(
       },
 
       resetSessionData: () => {
-        // Only clear UI display state - DO NOT delete already-saved data
-        // If data has been saved (lastSavedDataHash exists), keep it and just reset display
+        // CRITICAL: This function ONLY clears the UI display for the CURRENT session.
+        // It NEVER deletes data that has been saved to the cloud or historical data.
         const state = get();
+        const currentSessionId = state.currentSessionId;
         const hasBeenSaved = state.lastSavedDataHash !== null;
         
+        // Separate current session entries from historical/other session entries
+        const currentFrequency = state.frequencyEntries.filter(e => e.sessionId === currentSessionId && !e.isHistorical);
+        const currentDuration = state.durationEntries.filter(e => e.sessionId === currentSessionId);
+        const currentInterval = state.intervalEntries.filter(e => e.sessionId === currentSessionId);
+        const currentABC = state.abcEntries.filter(e => e.sessionId === currentSessionId);
+        
+        // Entries from OTHER sessions or historical data - ALWAYS PRESERVED
+        const otherFrequency = state.frequencyEntries.filter(e => e.sessionId !== currentSessionId || e.isHistorical);
+        const otherDuration = state.durationEntries.filter(e => e.sessionId !== currentSessionId);
+        const otherInterval = state.intervalEntries.filter(e => e.sessionId !== currentSessionId);
+        const otherABC = state.abcEntries.filter(e => e.sessionId !== currentSessionId);
+        
         if (hasBeenSaved) {
-          // Data was already saved - just reset display state, don't touch entries
+          // Current session data was saved - just reset UI state, keep ALL entries
+          // (the saved entries will be reloaded from cloud on next sync)
           set({
             sessionNotes: '',
             currentSessionId: null,
@@ -1843,15 +1857,17 @@ export const useDataStore = create<DataState>()(
             sessionLengthOverrides: [],
             sessionFocus: DEFAULT_SESSION_FOCUS,
             lastSavedDataHash: null,
+            // Keep other sessions' data, clear only current session from UI
+            frequencyEntries: otherFrequency,
+            durationEntries: otherDuration,
+            intervalEntries: otherInterval,
+            abcEntries: otherABC,
           });
           return;
         }
         
-        // Data NOT saved yet - move to trash for recovery
-        const now = new Date();
-        
-        // Add frequency entries to trash
-        state.frequencyEntries.forEach((entry) => {
+        // Current session data NOT saved yet - move current session entries to trash
+        currentFrequency.forEach((entry) => {
           const student = state.students.find(s => s.id === entry.studentId);
           const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
           if (entry.count > 0) {
@@ -1865,8 +1881,7 @@ export const useDataStore = create<DataState>()(
           }
         });
 
-        // Add duration entries to trash
-        state.durationEntries.filter(e => e.endTime).forEach((entry) => {
+        currentDuration.filter(e => e.endTime).forEach((entry) => {
           const student = state.students.find(s => s.id === entry.studentId);
           const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
           get().moveToTrash(
@@ -1878,9 +1893,9 @@ export const useDataStore = create<DataState>()(
           );
         });
 
-        // Add interval entries to trash (grouped by student/behavior)
+        // Group current interval entries by student/behavior for trash
         const intervalGroups = new Map<string, IntervalEntry[]>();
-        state.intervalEntries.forEach((entry) => {
+        currentInterval.forEach((entry) => {
           const key = `${entry.studentId}-${entry.behaviorId}`;
           if (!intervalGroups.has(key)) {
             intervalGroups.set(key, []);
@@ -1902,10 +1917,24 @@ export const useDataStore = create<DataState>()(
           );
         });
 
+        // Add current ABC entries to trash
+        currentABC.forEach((entry) => {
+          const student = state.students.find(s => s.id === entry.studentId);
+          get().moveToTrash(
+            'abc',
+            entry,
+            `ABC: ${entry.behavior}`,
+            student?.name,
+            entry.behavior
+          );
+        });
+
+        // Only clear current session entries, preserve everything else
         set({
-          frequencyEntries: [],
-          durationEntries: [],
-          intervalEntries: [],
+          frequencyEntries: otherFrequency,
+          durationEntries: otherDuration,
+          intervalEntries: otherInterval,
+          abcEntries: otherABC,
           sessionNotes: '',
           currentSessionId: null,
           sessionStartTime: null,

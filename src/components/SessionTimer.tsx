@@ -94,10 +94,11 @@ export function SessionTimer() {
   };
 
   const handleEndSession = () => {
-    if (activeStudents.length === 0) {
+    // If no students selected at all, show a helpful message
+    if (selectedStudentIds.length === 0) {
       toast({
-        title: 'No active students',
-        description: 'Select students to end their sessions.',
+        title: 'No students selected',
+        description: 'Select students to end their sessions, or use Reset to clear the timer.',
         variant: 'destructive',
       });
       return;
@@ -174,7 +175,7 @@ export function SessionTimer() {
               <p className="timer-display text-foreground">{formattedTime}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+        <div className="flex gap-2">
             <Button
               variant={isRunning ? 'default' : 'outline'}
               size="sm"
@@ -198,15 +199,16 @@ export function SessionTimer() {
                 </>
               )}
             </Button>
-            {sessionStartTime && activeStudents.length > 0 && (
+            {/* Always show End Session button when a session is active */}
+            {sessionStartTime && (
               <Button 
-                variant="outline" 
+                variant="destructive" 
                 size="sm" 
                 onClick={handleEndSession}
-                className="gap-1 text-destructive hover:text-destructive"
+                className="gap-1"
               >
                 <Square className="w-4 h-4" />
-                End
+                End Session
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleReset}>
