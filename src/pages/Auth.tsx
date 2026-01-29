@@ -25,8 +25,9 @@ export default function Auth() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loginMethod, setLoginMethod] = useState<'password' | 'pin'>('password');
+  const [teacherMode, setTeacherMode] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent, isTeacherMode: boolean = false) => {
     e.preventDefault();
     if (!loginEmail || !loginPassword) {
       toast({ title: 'Please fill in all fields', variant: 'destructive' });
@@ -34,6 +35,7 @@ export default function Auth() {
     }
 
     setIsLoading(true);
+    setTeacherMode(isTeacherMode);
     
     // First check if user is approved
     const { data: profile } = await supabase
@@ -53,7 +55,8 @@ export default function Auth() {
       if (profile && !profile.is_approved) {
         navigate('/pending-approval');
       } else {
-        navigate('/');
+        // Route based on mode
+        navigate(isTeacherMode ? '/teacher-dashboard' : '/');
       }
     }
   };
@@ -139,7 +142,7 @@ export default function Auth() {
 
             <TabsContent value="login">
               {loginMethod === 'password' ? (
-                <form onSubmit={handleLogin}>
+                <form onSubmit={(e) => handleLogin(e, false)}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="login-email">Email</Label>
@@ -165,10 +168,22 @@ export default function Auth() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex-col gap-3">
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                      Sign In
-                    </Button>
+                    <div className="flex gap-2 w-full">
+                      <Button type="submit" className="flex-1" disabled={isLoading}>
+                        {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Sign In
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        className="flex-1" 
+                        disabled={isLoading}
+                        onClick={(e) => handleLogin(e as unknown as React.FormEvent, true)}
+                      >
+                        {isLoading && teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Teacher Mode
+                      </Button>
+                    </div>
                     <button
                       type="button"
                       className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
@@ -183,6 +198,7 @@ export default function Auth() {
                 <CardContent>
                   <PinLogin
                     onSuccess={() => navigate('/')}
+                    onTeacherModeSuccess={() => navigate('/teacher-dashboard')}
                     onSwitchToPassword={() => setLoginMethod('password')}
                   />
                 </CardContent>

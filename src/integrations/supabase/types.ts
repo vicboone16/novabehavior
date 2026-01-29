@@ -173,6 +173,47 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_summaries: {
+        Row: {
+          comments: string | null
+          created_at: string
+          day_rating: string | null
+          id: string
+          student_id: string
+          summary_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          day_rating?: string | null
+          id?: string
+          student_id: string
+          summary_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          day_rating?: string | null
+          id?: string
+          student_id?: string
+          summary_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_summaries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_access_logs: {
         Row: {
           access_type: string
@@ -252,6 +293,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pin_auth_attempts: {
         Row: {
           attempted_at: string
@@ -322,6 +396,144 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           pin_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      questionnaire_invitations: {
+        Row: {
+          access_token: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          recipient_email: string
+          recipient_name: string
+          recipient_type: string
+          sent_at: string | null
+          status: string
+          student_id: string
+          template_id: string
+        }
+        Insert: {
+          access_token?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          recipient_email: string
+          recipient_name: string
+          recipient_type: string
+          sent_at?: string | null
+          status?: string
+          student_id: string
+          template_id: string
+        }
+        Update: {
+          access_token?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          recipient_email?: string
+          recipient_name?: string
+          recipient_type?: string
+          sent_at?: string | null
+          status?: string
+          student_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_invitations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_invitations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questionnaire_responses: {
+        Row: {
+          id: string
+          invitation_id: string
+          respondent_info: Json | null
+          responses: Json
+          student_id: string
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          invitation_id: string
+          respondent_info?: Json | null
+          responses?: Json
+          student_id: string
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          invitation_id?: string
+          respondent_info?: Json | null
+          responses?: Json
+          student_id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_responses_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_responses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questionnaire_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          questions: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          questions?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          questions?: Json
           updated_at?: string
           user_id?: string
         }
