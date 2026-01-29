@@ -4,6 +4,8 @@ import {
   addDays, isSameMonth, isSameDay, isToday 
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface ScheduleMonthViewProps {
@@ -39,8 +41,30 @@ export function ScheduleMonthView({
     return days;
   }, [calendarStart, calendarEnd]);
 
-  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : null;
   const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
+
+  const getStaffNames = (appointment: Appointment) => {
+    const staffIds = appointment.staff_user_ids?.length 
+      ? appointment.staff_user_ids 
+      : appointment.staff_user_id ? [appointment.staff_user_id] : [];
+    
+    if (staffIds.length === 0) return undefined;
+    return staffIds.map(id => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
+  };
+
+  const getCategoryLabel = (type: string) => {
+    if (type === 'scheduled' || type === 'retroactive') return null;
+    const cat = APPOINTMENT_CATEGORIES.find(c => c.value === type);
+    return cat?.label || type;
+  };
+
+  const getDisplayTitle = (appointment: Appointment) => {
+    if (appointment.title) return appointment.title;
+    const catLabel = getCategoryLabel(appointment.appointment_type);
+    if (catLabel) return catLabel;
+    return 'Appointment';
+  };
 
   const getAppointmentsByDay = (day: Date) =>
     appointments.filter(a => isSameDay(new Date(a.start_time), day));
@@ -97,24 +121,39 @@ export function ScheduleMonthView({
                     {dayAppointments.slice(0, 3).map(appointment => {
                       const studentColor = getStudentColor(appointment.student_id);
                       const isRetroactive = appointment.appointment_type === 'retroactive';
+                      const displayTitle = getDisplayTitle(appointment);
+                      const staffNames = getStaffNames(appointment);
+                      const studentName = getStudentName(appointment.student_id);
 
                       return (
-                        <div
-                          key={appointment.id}
-                          onClick={() => onAppointmentClick(appointment)}
-                          className={cn(
-                            "text-[10px] px-1 py-0.5 rounded truncate cursor-pointer",
-                            "hover:opacity-80 transition-opacity",
-                            isRetroactive && "border border-dashed"
-                          )}
-                          style={{
-                            backgroundColor: `${studentColor}20`,
-                            color: studentColor,
-                            borderColor: isRetroactive ? studentColor : undefined
-                          }}
-                        >
-                          {format(new Date(appointment.start_time), 'h:mma')} {getStudentName(appointment.student_id)}
-                        </div>
+                        <Tooltip key={appointment.id}>
+                          <TooltipTrigger asChild>
+                            <div
+                              onClick={() => onAppointmentClick(appointment)}
+                              className={cn(
+                                "text-[10px] px-1 py-0.5 rounded truncate cursor-pointer",
+                                "hover:opacity-80 transition-opacity",
+                                isRetroactive && "border border-dashed"
+                              )}
+                              style={{
+                                backgroundColor: `${studentColor}20`,
+                                color: studentColor,
+                                borderColor: isRetroactive ? studentColor : undefined
+                              }}
+                            >
+                              {format(new Date(appointment.start_time), 'h:mma')} {displayTitle}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-1 text-sm">
+                              <p className="font-medium">{displayTitle}</p>
+                              {staffNames && <p>Staff: {staffNames}</p>}
+                              {studentName && <p>Student: {studentName}</p>}
+                              <p>{format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}</p>
+                              {appointment.notes && <p className="text-muted-foreground italic">{appointment.notes}</p>}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
                       );
                     })}
                     {dayAppointments.length > 3 && (

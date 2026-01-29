@@ -4,6 +4,8 @@ import {
   differenceInMinutes, startOfDay, isToday 
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface ScheduleWeekViewProps {
@@ -32,8 +34,30 @@ export function ScheduleWeekView({
   const weekStart = startOfWeek(date);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Meeting';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : null;
   const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
+
+  const getStaffNames = (appointment: Appointment) => {
+    const staffIds = appointment.staff_user_ids?.length 
+      ? appointment.staff_user_ids 
+      : appointment.staff_user_id ? [appointment.staff_user_id] : [];
+    
+    if (staffIds.length === 0) return undefined;
+    return staffIds.map(id => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
+  };
+
+  const getCategoryLabel = (type: string) => {
+    if (type === 'scheduled' || type === 'retroactive') return null;
+    const cat = APPOINTMENT_CATEGORIES.find(c => c.value === type);
+    return cat?.label || type;
+  };
+
+  const getDisplayTitle = (appointment: Appointment) => {
+    if (appointment.title) return appointment.title;
+    const catLabel = getCategoryLabel(appointment.appointment_type);
+    if (catLabel) return catLabel;
+    return 'Appointment';
+  };
 
   const getAppointmentsByDay = (day: Date) =>
     appointments.filter(a => isSameDay(new Date(a.start_time), day));
@@ -151,35 +175,58 @@ export function ScheduleWeekView({
               const { top, height } = getAppointmentStyle(appointment, day);
               const studentColor = getStudentColor(appointment.student_id);
               const isRetroactive = appointment.appointment_type === 'retroactive';
+              const displayTitle = getDisplayTitle(appointment);
+              const staffNames = getStaffNames(appointment);
+              const studentName = getStudentName(appointment.student_id);
 
               return (
-                <div
-                  key={appointment.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, appointment)}
-                  onClick={() => onAppointmentClick(appointment)}
-                  className={cn(
-                    "absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-pointer",
-                    "text-[10px] overflow-hidden hover:z-10 hover:shadow-md transition-shadow",
-                    draggedId === appointment.id && "opacity-50"
-                  )}
-                  style={{
-                    top,
-                    height,
-                    backgroundColor: `${studentColor}25`,
-                    borderLeft: `3px solid ${studentColor}`,
-                    borderStyle: isRetroactive ? 'dashed' : 'solid'
-                  }}
-                >
-                  <p className="font-medium truncate" style={{ color: studentColor }}>
-                    {getStudentName(appointment.student_id)}
-                  </p>
-                  {height > 24 && (
-                    <p className="text-muted-foreground truncate">
-                      {format(new Date(appointment.start_time), 'h:mma')}
-                    </p>
-                  )}
-                </div>
+                <Tooltip key={appointment.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, appointment)}
+                      onClick={() => onAppointmentClick(appointment)}
+                      className={cn(
+                        "absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-pointer",
+                        "text-[10px] overflow-hidden hover:z-10 hover:shadow-md transition-shadow",
+                        draggedId === appointment.id && "opacity-50"
+                      )}
+                      style={{
+                        top,
+                        height,
+                        backgroundColor: `${studentColor}25`,
+                        borderLeft: `3px solid ${studentColor}`,
+                        borderStyle: isRetroactive ? 'dashed' : 'solid'
+                      }}
+                    >
+                      <p className="font-medium truncate" style={{ color: studentColor }}>
+                        {displayTitle}
+                      </p>
+                      {height > 24 && staffNames && (
+                        <p className="text-muted-foreground truncate">
+                          {staffNames}
+                        </p>
+                      )}
+                      {height > 36 && (
+                        <p className="text-muted-foreground truncate">
+                          {format(new Date(appointment.start_time), 'h:mma')}
+                        </p>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    <div className="space-y-1 text-sm">
+                      <p className="font-medium">{displayTitle}</p>
+                      {staffNames && <p>Staff: {staffNames}</p>}
+                      {studentName && <p>Student: {studentName}</p>}
+                      <p>{format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}</p>
+                      {getCategoryLabel(appointment.appointment_type) && (
+                        <p className="text-muted-foreground">Type: {getCategoryLabel(appointment.appointment_type)}</p>
+                      )}
+                      {appointment.notes && <p className="text-muted-foreground italic">{appointment.notes}</p>}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
 
