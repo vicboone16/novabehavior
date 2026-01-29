@@ -107,8 +107,9 @@ interface DataState {
   
   // Behavior actions
   addBehavior: (studentId: string, behavior: Omit<Behavior, 'id'>) => void;
-  addBehaviorWithMethods: (studentId: string, name: string, methods: DataCollectionMethod[]) => void;
+  addBehaviorWithMethods: (studentId: string, name: string, methods: DataCollectionMethod[], options?: { operationalDefinition?: string; category?: string; baseBehaviorId?: string }) => void;
   updateBehaviorMethods: (studentId: string, behaviorId: string, methods: DataCollectionMethod[]) => void;
+  updateBehaviorDefinition: (studentId: string, behaviorId: string, operationalDefinition: string) => void;
   removeBehavior: (studentId: string, behaviorId: string) => void;
   toggleBehaviorForStudent: (studentId: string, behaviorId: string) => void;
   
@@ -522,15 +523,24 @@ export const useDataStore = create<DataState>()(
         }));
       },
 
-      addBehaviorWithMethods: (studentId, name, methods) => {
+      addBehaviorWithMethods: (studentId, name, methods, options) => {
         const id = crypto.randomUUID();
         const primaryType = methods[0] || 'frequency';
+        const newBehavior: Behavior = { 
+          id, 
+          name, 
+          type: primaryType, 
+          methods,
+          operationalDefinition: options?.operationalDefinition,
+          category: options?.category,
+          baseBehaviorId: options?.baseBehaviorId,
+        };
         set((state) => ({
           students: state.students.map((s) =>
             s.id === studentId
               ? { 
                   ...s, 
-                  behaviors: [...s.behaviors, { id, name, type: primaryType, methods }] 
+                  behaviors: [...s.behaviors, newBehavior] 
                 }
               : s
           ),
@@ -547,6 +557,23 @@ export const useDataStore = create<DataState>()(
                   behaviors: s.behaviors.map((b) =>
                     b.id === behaviorId
                       ? { ...b, methods, type: methods[0] }
+                      : b
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateBehaviorDefinition: (studentId, behaviorId, operationalDefinition) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { ...b, operationalDefinition }
                       : b
                   ),
                 }

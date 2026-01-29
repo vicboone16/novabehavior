@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown } from 'lucide-react';
+import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,12 +32,16 @@ const BEHAVIOR_BANK: BehaviorDefinition[] = [
 ];
 
 export function BehaviorManager() {
-  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, removeBehavior } = useDataStore();
+  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior } = useDataStore();
   const [newBehaviorName, setNewBehaviorName] = useState('');
+  const [newBehaviorDefinition, setNewBehaviorDefinition] = useState('');
+  const [newBehaviorCategory, setNewBehaviorCategory] = useState('');
   const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>(['frequency']);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [editingBehavior, setEditingBehavior] = useState<{ studentId: string; behaviorId: string } | null>(null);
   const [editMethods, setEditMethods] = useState<DataCollectionMethod[]>([]);
+  const [editingDefinition, setEditingDefinition] = useState<{ studentId: string; behaviorId: string } | null>(null);
+  const [editDefinitionText, setEditDefinitionText] = useState('');
 
   const selectedStudents = students.filter((s) => selectedStudentIds.includes(s.id));
 
@@ -59,17 +63,27 @@ export function BehaviorManager() {
 
   const handleAddBehavior = () => {
     if (newBehaviorName.trim() && selectedStudentId && selectedMethods.length > 0) {
-      addBehaviorWithMethods(selectedStudentId, newBehaviorName.trim(), selectedMethods);
+      addBehaviorWithMethods(selectedStudentId, newBehaviorName.trim(), selectedMethods, {
+        operationalDefinition: newBehaviorDefinition.trim() || undefined,
+        category: newBehaviorCategory || undefined,
+      });
       setNewBehaviorName('');
+      setNewBehaviorDefinition('');
+      setNewBehaviorCategory('');
     }
   };
 
   const addBehaviorToAll = () => {
     if (newBehaviorName.trim() && selectedMethods.length > 0) {
       selectedStudentIds.forEach((studentId) => {
-        addBehaviorWithMethods(studentId, newBehaviorName.trim(), selectedMethods);
+        addBehaviorWithMethods(studentId, newBehaviorName.trim(), selectedMethods, {
+          operationalDefinition: newBehaviorDefinition.trim() || undefined,
+          category: newBehaviorCategory || undefined,
+        });
       });
       setNewBehaviorName('');
+      setNewBehaviorDefinition('');
+      setNewBehaviorCategory('');
     }
   };
 
@@ -89,6 +103,30 @@ export function BehaviorManager() {
   const cancelEdit = () => {
     setEditingBehavior(null);
     setEditMethods([]);
+  };
+
+  const startEditingDefinition = (studentId: string, behavior: Behavior) => {
+    setEditingDefinition({ studentId, behaviorId: behavior.id });
+    setEditDefinitionText(behavior.operationalDefinition || '');
+  };
+
+  const saveDefinition = () => {
+    if (editingDefinition) {
+      updateBehaviorDefinition(editingDefinition.studentId, editingDefinition.behaviorId, editDefinitionText);
+      setEditingDefinition(null);
+      setEditDefinitionText('');
+    }
+  };
+
+  const cancelDefinitionEdit = () => {
+    setEditingDefinition(null);
+    setEditDefinitionText('');
+  };
+
+  const selectFromBank = (b: typeof BEHAVIOR_BANK[0]) => {
+    setNewBehaviorName(b.name);
+    setNewBehaviorDefinition(b.operationalDefinition);
+    setNewBehaviorCategory(b.category);
   };
 
   const getBehaviorTypeColor = (type: DataCollectionMethod) => {
@@ -150,7 +188,7 @@ export function BehaviorManager() {
                         <button
                           key={b.id}
                           className="w-full text-left px-2 py-1.5 rounded hover:bg-secondary text-sm"
-                          onClick={() => setNewBehaviorName(b.name)}
+                          onClick={() => selectFromBank(b)}
                         >
                           <span className="font-medium">{b.name}</span>
                           <span className="text-xs text-muted-foreground block">{b.category}</span>
@@ -177,6 +215,19 @@ export function BehaviorManager() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Operational Definition (shown when behavior is selected) */}
+            {newBehaviorName && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Operational Definition (can be customized per student later)</Label>
+                <textarea
+                  placeholder="Define the behavior in observable, measurable terms..."
+                  value={newBehaviorDefinition}
+                  onChange={(e) => setNewBehaviorDefinition(e.target.value)}
+                  className="w-full min-h-[60px] p-2 text-sm border border-border rounded-md bg-background resize-y"
+                />
+              </div>
+            )}
 
             {/* Method Selection */}
             <div className="space-y-2">
@@ -283,35 +334,86 @@ export function BehaviorManager() {
                             <p className="text-xs text-destructive">Select at least one method</p>
                           )}
                         </div>
+                      ) : editingDefinition?.studentId === student.id && editingDefinition?.behaviorId === behavior.id ? (
+                        // Editing definition mode
+                        <div className="space-y-2 w-full">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{behavior.name}</span>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={saveDefinition}
+                              >
+                                <Check className="w-3 h-3 text-success" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={cancelDefinitionEdit}
+                              >
+                                <X className="w-3 h-3 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                          <textarea
+                            placeholder="Enter student-specific operational definition..."
+                            value={editDefinitionText}
+                            onChange={(e) => setEditDefinitionText(e.target.value)}
+                            className="w-full min-h-[80px] p-2 text-sm border border-border rounded-md bg-background resize-y"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            This definition is specific to {student.name} and won't affect the library.
+                          </p>
+                        </div>
                       ) : (
                         // Display mode
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1 flex-wrap flex-1">
-                            {(behavior.methods || [behavior.type]).map((method) => (
-                              <Badge 
-                                key={method} 
-                                className={`${getBehaviorTypeColor(method)} text-xs`} 
-                                variant="secondary"
-                              >
-                                {METHOD_LABELS[method]}
-                              </Badge>
-                            ))}
-                            <span className="text-sm font-medium ml-1">{behavior.name}</span>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1 flex-wrap flex-1">
+                              {(behavior.methods || [behavior.type]).map((method) => (
+                                <Badge 
+                                  key={method} 
+                                  className={`${getBehaviorTypeColor(method)} text-xs`} 
+                                  variant="secondary"
+                                >
+                                  {METHOD_LABELS[method]}
+                                </Badge>
+                              ))}
+                              <span className="text-sm font-medium ml-1">{behavior.name}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => startEditingDefinition(student.id, behavior)}
+                              title="Edit definition for this student"
+                            >
+                              <FileText className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => startEditing(student.id, behavior)}
+                              title="Edit data collection methods"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                            <button
+                              onClick={() => removeBehavior(student.id, behavior.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => startEditing(student.id, behavior)}
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                          <button
-                            onClick={() => removeBehavior(student.id, behavior.id)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                          {behavior.operationalDefinition && (
+                            <p className="text-xs text-muted-foreground pl-1 line-clamp-2">
+                              {behavior.operationalDefinition}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
