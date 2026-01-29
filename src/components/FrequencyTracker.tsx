@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Plus, Minus, RotateCcw, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Minus, RotateCcw, Clock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useDataStore } from '@/store/dataStore';
 import { Behavior } from '@/types/behavior';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
@@ -13,6 +14,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { format } from 'date-fns';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface FrequencyTrackerProps {
   studentId: string;
@@ -27,9 +34,12 @@ export function FrequencyTracker({ studentId, behavior, studentColor }: Frequenc
     resetFrequency, 
     getFrequencyCount,
     frequencyEntries,
+    markDataCollected,
+    isDataCollected,
   } = useDataStore();
   
   const count = getFrequencyCount(studentId, behavior.id);
+  const dataCollected = isDataCollected(studentId, behavior.id);
   const [showEntries, setShowEntries] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -47,6 +57,10 @@ export function FrequencyTracker({ studentId, behavior, studentColor }: Frequenc
   const handleRemoveTimestamp = (index: number) => {
     // Remove one occurrence by decrementing
     decrementFrequency(studentId, behavior.id);
+  };
+
+  const handleDataCollectedToggle = (checked: boolean) => {
+    markDataCollected(studentId, behavior.id, checked);
   };
 
   return (
@@ -108,6 +122,37 @@ export function FrequencyTracker({ studentId, behavior, studentColor }: Frequenc
           <Plus className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Data Collected Toggle - only show when count is 0 */}
+      {count === 0 && (
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`data-collected-${behavior.id}`}
+                    checked={dataCollected}
+                    onCheckedChange={handleDataCollectedToggle}
+                  />
+                  <label 
+                    htmlFor={`data-collected-${behavior.id}`}
+                    className="text-xs text-muted-foreground cursor-pointer"
+                  >
+                    Zero recorded (data collected)
+                  </label>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px]">
+                <p className="text-xs">
+                  Check this if you collected data and zero instances occurred. 
+                  Leave unchecked if no data was collected for this behavior.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
 
       {/* Entries Dialog */}
       <Dialog open={showEntries} onOpenChange={setShowEntries}>
