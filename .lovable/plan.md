@@ -1,293 +1,207 @@
 
-
-# Teacher Mode & Questionnaire System Implementation Plan
+# Implementation Plan: Questionnaire Access, Timer Behavior, Global Search, and Student Card Updates
 
 ## Overview
-This plan implements two major features:
-1. **Teacher Mode Login**: A streamlined login option that routes users to a simplified data collection interface showing only their assigned students
-2. **Questionnaire System**: Create, send, and collect responses from questionnaires sent to teachers, parents, and collaborators
+This plan addresses 5 main issues/requests:
+1. **Questionnaire option not visible** - Add questionnaire tab to Assessment Dashboard
+2. **Session timer auto-starts on reset** - Change reset/refresh behavior to require manual start
+3. **Global search** - Add search functionality in header to find students/users
+4. **Student card info** - Show DOB, school, tags, contact info instead of behavior count
+5. **User tracking** - Already partially implemented, will verify coverage
 
 ---
 
-## Feature 1: Teacher Mode Login
+## Issue 1: Questionnaire Not Visible
 
-### Login Flow Changes
+**Problem**: The QuestionnaireManager and QuestionnaireBuilder components exist but aren't integrated into the AssessmentDashboard.
 
-**Update Auth.tsx - Two buttons side by side:**
+**Solution**: Add a "Questionnaires" tab to the Assessment Dashboard
+
+**Files to Modify**:
+- `src/pages/AssessmentDashboard.tsx`
+
+**Changes**:
+- Import `QuestionnaireManager` from `@/components/questionnaire/QuestionnaireManager`
+- Add a 7th tab "Questionnaires" to the TabsList
+- Add TabsContent for questionnaires that renders `QuestionnaireManager` with the selected student
+
+---
+
+## Issue 2: Session Timer Auto-Starts on Reset
+
+**Problem**: When clicking the reset button, the timer immediately starts a new session. Users want manual control.
+
+**Solution**: Modify `handleReset` to only clear timer state without auto-starting
+
+**Files to Modify**:
+- `src/components/SessionTimer.tsx`
+
+**Changes**:
+- Update `handleReset` function:
+  - Clear state: `setIsPaused(false)`, `setPausedTime(0)`, `setPausedAt(null)`, `setElapsed(0)`
+  - Remove the `startSession()` call from reset
+  - Add a store action `resetSession()` that clears `sessionStartTime` and `currentSessionId` without starting
+- Update `src/store/dataStore.ts` to add `resetSession` function
+
+```text
+Current behavior:
+  Reset → startSession() → Timer running at 00:00
+
+Desired behavior:
+  Reset → Clear state → Timer shows 00:00 (stopped)
+  User must click "Start" to begin
+```
+
+---
+
+## Issue 3: Global Search for Students/Users
+
+**Problem**: No way to quickly search for a student or user by typing a few letters.
+
+**Solution**: Add a command-palette style search in the header
+
+**Files to Create**:
+- `src/components/GlobalSearch.tsx`
+
+**Features**:
+- Search icon in header that opens a search dialog (using cmdk which is already installed)
+- As user types, filter students by name (first 2-3 letters)
+- Only show students the user has access to (owner, has_student_access, or admin)
+- Show user profiles if the current user is admin
+- Clicking a result navigates to the student profile or user profile
+- Keyboard shortcut: Cmd/Ctrl+K to open
+
+**Files to Modify**:
+- `src/components/MainLayout.tsx` - Add GlobalSearch to header
+- `src/pages/TeacherDashboard.tsx` - Add GlobalSearch to header
+- `src/pages/Admin.tsx` - Ensure user search works here
+
+**Access Rules**:
+- Students: Show if `student.user_id = current_user` OR `user_student_access` exists with `can_collect_data` OR user is admin
+- Users: Only show to admins
+
+---
+
+## Issue 4: Student Card Information
+
+**Problem**: Student cards in the Students list show behavior count. User wants: name, DOB, school, tags, contact info.
+
+**Solution**: Update the student card display
+
+**Files to Modify**:
+- `src/pages/Students.tsx`
+
+**Current Display**:
+```
+[Avatar] John Smith
+         3 behaviors | 2 custom A's | Tags
+```
+
+**New Display**:
+```
+[Avatar] John Smith
+         DOB: 01/15/2015 | Grade 5 | Lincoln Elementary
+         School-Based, Direct Services
+         Contact: parent@email.com | (555) 123-4567
+         [Tags displayed]
+```
+
+**Changes**:
+- Replace behavior count badge with profile info
+- Show date of birth formatted (if available)
+- Show grade (if available)
+- Show school/site (if available)
+- Show case type badges
+- Show tags (already displayed via StudentTagsDisplay)
+- Add contact fields to Student type: `contactEmail`, `contactPhone`
+
+**Database Changes**:
+- Add `contact_email` and `contact_phone` columns to students table JSONB or as separate columns
+
+---
+
+## Issue 5: User Tracking for Notes/Data
+
+**Status**: Partially implemented in types (recordedBy, recordedByName, modifiedBy, modifiedAt)
+
+**Solution**: Ensure all data entry points capture user information
+
+**Files to Verify/Update**:
+- `src/components/TeacherFriendlyView.tsx` - Already has user tracking
+- `src/store/dataStore.ts` - Ensure addHistoricalFrequency/Duration capture user
+- Session notes, ABC entries, etc.
+
+---
+
+## Implementation Details
+
+### Database Migration
+
+Add contact fields to students table:
+
+```sql
+-- Add contact fields to students table
+ALTER TABLE students 
+ADD COLUMN IF NOT EXISTS contact_email text,
+ADD COLUMN IF NOT EXISTS contact_phone text;
+```
+
+### GlobalSearch Component Structure
+
 ```text
 +------------------------------------------+
-|                                          |
-|  [Email field                          ] |
-|  [Password field                       ] |
-|                                          |
-|  [ Sign In ]  [ Teacher Mode ]           |
-|                                          |
-|  "Use PIN login instead"                 |
-|                                          |
+| [Search icon]                             |
++------------------------------------------+
+| Opens dialog:                             |
+| ┌────────────────────────────────────────┐|
+| │ 🔍 Search students or users...        │|
+| ├────────────────────────────────────────┤|
+| │ Students                               │|
+| │ ├─ John Smith (Lincoln Elementary)    │|
+| │ ├─ Jane Doe (Washington High)         │|
+| │                                        │|
+| │ Users (admin only)                     │|
+| │ ├─ Mary Johnson (Staff)               │|
+| └────────────────────────────────────────┘|
 +------------------------------------------+
 ```
 
-- Both buttons use same authentication logic
-- "Sign In" routes to `/` (main dashboard)
-- "Teacher Mode" routes to `/teacher-dashboard`
-- PIN login also supports Teacher Mode option
-- **All roles can use it**: Admin, Super Admin, Staff - anyone with student access
+### StudentCard Updated Layout
 
-### New Page: Teacher Dashboard (`/teacher-dashboard`)
-
-**What users see:**
-1. **Header** - App name, current date, Exit button (to main dashboard), Logout button
-2. **Student Grid** - Cards for each accessible student
-3. **Expanded View** - When student clicked, shows simplified TeacherFriendlyView inline
-
-**Student Access Rules:**
-- Students where `user_id = auth.uid()` (owner)
-- Students where user has `user_student_access.can_collect_data = true`
-- Admins see all accessible students
-
-**Layout:**
 ```text
-+------------------------------------------+
-| Behavior Data Collector   [Exit] [Logout]|
-+------------------------------------------+
-| Wednesday, January 29, 2026              |
-+------------------------------------------+
-| Your Students:                           |
-| +--------+  +--------+  +--------+       |
-| | John S |  | Emma T |  | Alex P |       |
-| +--------+  +--------+  +--------+       |
-+------------------------------------------+
-|                                          |
-| [When student selected:]                 |
-|                                          |
-| ← Back to Students                       |
-|                                          |
-| John Smith - Today's Session             |
-| ┌────────────────────────────────────┐   |
-| │ Day Rating: ○ Good  ○ OK  ○ Hard  │   |
-| ├────────────────────────────────────┤   |
-| │ Quick Behavior Counts:             │   |
-| │ [Aggression: 2] [SIB: 0] [+Add]    │   |
-| ├────────────────────────────────────┤   |
-| │ Quick ABC Entry                    │   |
-| │ [Select behaviors] [A] [B] [C]     │   |
-| ├────────────────────────────────────┤   |
-| │ Comments: ________________________ │   |
-| ├────────────────────────────────────┤   |
-| │ [Record Now]    [Save Day Summary] │   |
-| └────────────────────────────────────┘   |
-+------------------------------------------+
+┌─────────────────────────────────────────────────────┐
+│ [Avatar]  John Smith                            → │
+│           DOB: Jan 15, 2015 | Grade: 5             │
+│           School: Lincoln Elementary                │
+│           [School-Based] [Direct Services]          │
+│           📧 parent@email.com | 📞 (555) 123-4567  │
+│           [Tag1] [Tag2]                             │
+└─────────────────────────────────────────────────────┘
 ```
-
-### Two Submission Options
-
-**"Record Now" Button:**
-- Confirms current frequency counts and ABC entries are saved
-- Shows toast: "Data recorded at 2:35 PM"
-- Does NOT require day rating
-- Allows multiple recordings throughout the day
-
-**"Save Day Summary" Button:**
-- Requires day rating selection (Good/OK/Hard)
-- Saves to `daily_summaries` table
-- Shows confirmation: "Day summary saved for John"
-- One summary per student per day per user (updates if exists)
-
-### Database: daily_summaries Table
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| student_id | uuid | FK to students |
-| user_id | uuid | Who submitted |
-| summary_date | date | Date of summary |
-| day_rating | text | 'good', 'ok', 'hard' |
-| comments | text | Teacher notes |
-| created_at | timestamp | When saved |
-
-**RLS Policies:**
-- Users can insert/update their own summaries
-- Users can read summaries for students they have access to
-- Admins can read all summaries
 
 ---
 
-## Feature 2: Questionnaire System
+## Files Summary
 
-### Purpose
-Allow BCBAs to create questionnaires (preference assessments, functional behavior questionnaires, parent interviews), send them to external collaborators via email, and collect responses linked to specific students.
-
-### Database Schema
-
-**Table: questionnaire_templates**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Creator |
-| name | text | Template name |
-| description | text | Optional description |
-| questions | jsonb | Array of question objects |
-| is_archived | boolean | Soft delete |
-| created_at | timestamp | When created |
-| updated_at | timestamp | When modified |
-
-Question structure:
-```json
-{
-  "id": "uuid",
-  "text": "Question text",
-  "type": "text | multiple_choice | rating | yes_no",
-  "options": ["Option 1", "Option 2"],
-  "required": true
-}
-```
-
-**Table: questionnaire_invitations**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| template_id | uuid | FK to templates |
-| student_id | uuid | FK to students |
-| recipient_email | text | Who to send to |
-| recipient_name | text | Recipient name |
-| recipient_type | text | 'teacher', 'parent', 'caregiver', 'other' |
-| access_token | text | Unique URL token |
-| status | text | 'pending', 'completed', 'expired' |
-| sent_at | timestamp | When email sent |
-| expires_at | timestamp | Expiration date |
-| completed_at | timestamp | When submitted |
-| created_by | uuid | Who created |
-
-**Table: questionnaire_responses**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| invitation_id | uuid | FK to invitations |
-| student_id | uuid | FK to students |
-| responses | jsonb | Answer data |
-| submitted_at | timestamp | When submitted |
-| respondent_info | jsonb | Optional metadata |
-
-**Table: notifications**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Who to notify |
-| type | text | Notification type |
-| title | text | Title |
-| message | text | Message body |
-| data | jsonb | Related data |
-| read | boolean | Read status |
-| created_at | timestamp | When created |
-
-### User Flows
-
-**Creating a Questionnaire:**
-1. Navigate to Assessment tab → Questionnaires section
-2. Click "Create Template"
-3. Add questions using form builder (text, multiple choice, rating scales, yes/no)
-4. Save template for reuse
-
-**Sending a Questionnaire:**
-1. Select a student
-2. Click "Send Questionnaire"
-3. Choose template or create new
-4. Enter recipient email and name
-5. Select recipient type (teacher, parent, caregiver, other)
-6. Click "Send" - email dispatched with unique link
-
-**Recipient Experience:**
-1. Receives email with branded invitation
-2. Clicks secure link → opens public form (no login required)
-3. Completes questions
-4. Submits → sees confirmation message
-
-**Viewing Responses:**
-1. User gets in-app notification when response received
-2. View in student's Assessment tab → Questionnaire Responses
-3. Can export or include in reports
-
-### Technical Components
-
-**Edge Function: send-questionnaire**
-- Uses Resend for email delivery
-- Requires `RESEND_API_KEY` secret
-- Sends branded email with secure unique link
-- Updates invitation `sent_at` timestamp
-
-**Public Form Route: `/questionnaire/:token`**
-- No authentication required
-- Validates token exists and not expired
-- Renders form based on template questions
-- Submits responses to database
-- Shows success confirmation
-
-**RLS Policies:**
-- `questionnaire_templates`: Owner can CRUD, admins can view
-- `questionnaire_invitations`: Owner can CRUD
-- `questionnaire_responses`: Insert allowed with valid token, owner/admin can read
-- `notifications`: Users can only see their own
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/pages/TeacherDashboard.tsx` | Teacher mode page with student list and data entry |
-| `src/pages/QuestionnaireForm.tsx` | Public questionnaire submission form |
-| `src/components/questionnaire/QuestionnaireBuilder.tsx` | Build questionnaire templates |
-| `src/components/questionnaire/QuestionnaireManager.tsx` | View/send questionnaires for a student |
-| `src/components/questionnaire/ResponseViewer.tsx` | View submitted responses |
-| `src/components/NotificationBell.tsx` | Header notification indicator |
-| `supabase/functions/send-questionnaire/index.ts` | Email sending edge function |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Auth.tsx` | Add "Teacher Mode" button next to "Sign In" |
-| `src/components/PinLogin.tsx` | Support teacher mode callback |
-| `src/components/TeacherFriendlyView.tsx` | Add "Record Now" button, enhance submission |
-| `src/App.tsx` | Add routes: `/teacher-dashboard`, `/questionnaire/:token` |
-| `src/pages/AssessmentDashboard.tsx` | Add questionnaire management section |
-| `src/components/MainLayout.tsx` | Add notification bell to header |
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/pages/AssessmentDashboard.tsx` | Modify | Add Questionnaires tab |
+| `src/components/SessionTimer.tsx` | Modify | Remove auto-start on reset |
+| `src/store/dataStore.ts` | Modify | Add resetSession function |
+| `src/components/GlobalSearch.tsx` | Create | Global search component |
+| `src/components/MainLayout.tsx` | Modify | Add GlobalSearch to header |
+| `src/pages/TeacherDashboard.tsx` | Modify | Add GlobalSearch to header |
+| `src/pages/Students.tsx` | Modify | Update student card info |
+| `src/types/behavior.ts` | Modify | Add contactEmail, contactPhone to Student |
+| Database migration | Create | Add contact columns |
 
 ---
 
 ## Implementation Order
 
-### Phase 1: Database Setup
-- Create `daily_summaries` table with RLS
-- Create questionnaire tables with RLS
-- Create `notifications` table with RLS
-
-### Phase 2: Teacher Mode
-- Update Auth.tsx with Teacher Mode button
-- Update PinLogin.tsx to support teacher mode
-- Create TeacherDashboard.tsx page
-- Enhance TeacherFriendlyView with Record Now button
-- Add route to App.tsx
-
-### Phase 3: Questionnaire System
-- Create QuestionnaireBuilder component
-- Create QuestionnaireManager component
-- Create public QuestionnaireForm page
-- Create send-questionnaire edge function (requires RESEND_API_KEY)
-- Add to AssessmentDashboard
-
-### Phase 4: Notifications
-- Create notifications table trigger
-- Create NotificationBell component
-- Add to MainLayout header
-- Create ResponseViewer component
-
----
-
-## External Dependencies
-
-**Email Sending:**
-- Requires `RESEND_API_KEY` secret to be configured
-- User will need a Resend account with verified domain
-- Will prompt for this when implementing email functionality
-
+1. **Database Migration** - Add contact fields to students
+2. **Session Timer Fix** - Quick fix for reset behavior
+3. **Questionnaire Tab** - Add to Assessment Dashboard
+4. **Student Card Update** - Update display with profile info
+5. **Global Search** - Create and integrate search component
+6. **User Tracking Verification** - Ensure all data points capture user info
