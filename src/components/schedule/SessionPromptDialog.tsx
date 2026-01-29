@@ -1,0 +1,123 @@
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDataStore } from '@/store/dataStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Play, Calendar, Clock, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
+
+interface SessionPromptDialogProps {
+  appointment: Appointment | null;
+  onClose: () => void;
+  students: CalendarStudent[];
+  staff: CalendarStaff[];
+}
+
+export function SessionPromptDialog({
+  appointment,
+  onClose,
+  students,
+  staff
+}: SessionPromptDialogProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { deselectAllStudents, toggleStudentSelection, startSession } = useDataStore();
+  const [starting, setStarting] = useState(false);
+
+  if (!appointment) return null;
+
+  const student = students.find(s => s.id === appointment.student_id);
+  const staffMember = appointment.staff_user_id 
+    ? staff.find(s => s.id === appointment.staff_user_id)
+    : null;
+
+  const handleStartSession = async () => {
+    setStarting(true);
+    try {
+      // Start the session in the data store - deselect all first, then select this student
+      deselectAllStudents();
+      toggleStudentSelection(appointment.student_id);
+      startSession();
+
+      // Update appointment status
+      await supabase
+        .from('appointments')
+        .update({ status: 'in_progress' })
+        .eq('id', appointment.id);
+
+      toast({ title: 'Session started', description: `Starting session for ${student?.name}` });
+      onClose();
+      navigate('/'); // Go to dashboard for data collection
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!appointment} onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Play className="w-5 h-5 text-primary" />
+            Start Session?
+          </DialogTitle>
+          <DialogDescription>
+            This appointment is ready to begin.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4 space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: `${student?.color}20` }}
+            >
+              <User className="w-5 h-5" style={{ color: student?.color }} />
+            </div>
+            <div>
+              <p className="font-medium">{student?.name}</p>
+              {staffMember && (
+                <p className="text-sm text-muted-foreground">with {staffMember.name}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            {format(new Date(appointment.start_time), 'EEEE, MMMM d, yyyy')}
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            {format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}
+            <span>({appointment.duration_minutes} min)</span>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Not Now
+          </Button>
+          <Button onClick={handleStartSession} disabled={starting} className="flex-1">
+            <Play className="w-4 h-4 mr-1" />
+            Start Session
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

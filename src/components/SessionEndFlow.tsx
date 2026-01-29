@@ -129,6 +129,35 @@ export function SessionEndFlow({
           }, {
             onConflict: 'session_id,student_id',
           });
+
+          // Check if there's an existing appointment for this session
+          // If not, create a retroactive appointment
+          const { data: existingAppointment } = await supabase
+            .from('appointments')
+            .select('id')
+            .eq('student_id', student.id)
+            .eq('linked_session_id', currentSessionId)
+            .maybeSingle();
+
+          if (!existingAppointment) {
+            // Create retroactive appointment to show the session on the calendar
+            await supabase.from('appointments').insert({
+              student_id: student.id,
+              created_by: user?.id,
+              start_time: sessionStart.toISOString(),
+              end_time: now.toISOString(),
+              duration_minutes: Math.round(effectiveMinutes),
+              status: 'completed',
+              appointment_type: 'retroactive',
+              linked_session_id: currentSessionId,
+              notes: 'Auto-created from completed session',
+            });
+          } else {
+            // Update existing appointment status
+            await supabase.from('appointments')
+              .update({ status: 'completed' })
+              .eq('id', existingAppointment.id);
+          }
         }
       }
 

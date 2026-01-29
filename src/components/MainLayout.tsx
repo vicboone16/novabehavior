@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
@@ -17,6 +17,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/reports')) return 'reports';
     if (location.pathname.startsWith('/assessment')) return 'assessment';
     if (location.pathname.startsWith('/skills')) return 'skills';
+    if (location.pathname.startsWith('/schedule')) return 'schedule';
     return 'dashboard';
   };
 
@@ -36,6 +37,9 @@ export default function MainLayout() {
         break;
       case 'skills':
         navigate('/skills');
+        break;
+      case 'schedule':
+        navigate('/schedule');
         break;
     }
   };
@@ -115,6 +119,13 @@ export default function MainLayout() {
               >
                 <FileBarChart className="w-4 h-4" />
                 Reports
+              </TabsTrigger>
+              <TabsTrigger 
+                value="schedule" 
+                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+              >
+                <Calendar className="w-4 h-4" />
+                Schedule
               </TabsTrigger>
             </TabsList>
           </Tabs>

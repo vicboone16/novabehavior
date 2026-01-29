@@ -19,6 +19,7 @@ import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
 import PendingApproval from "./pages/PendingApproval";
 import UserProfile from "./pages/UserProfile";
+import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/reports" element={<Reports />} />
               <Route path="/assessment" element={<AssessmentDashboard />} />
               <Route path="/skills" element={<SkillAcquisition />} />
+              <Route path="/schedule" element={<Schedule />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
