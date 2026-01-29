@@ -54,16 +54,11 @@ export default function UserProfile() {
 
       if (error) throw error;
 
-      // Check if user has PIN set using verify_pin with empty string (will return false if no PIN, but we catch this)
-      // We don't expose the actual hash - just check if one exists via a separate query
-      const { data: pinCheck } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .not('pin_hash', 'is', null)
-        .maybeSingle();
+      // Check if user has PIN set using secure server-side function
+      // This prevents exposing pin_hash column to clients
+      const { data: hasPin } = await supabase.rpc('user_has_pin', { _user_id: user.id });
       
-      setProfile({ ...data, has_pin: !!pinCheck });
+      setProfile({ ...data, has_pin: !!hasPin });
       setPhone(data.phone || '');
     } catch (error) {
       console.error('Error loading profile:', error);

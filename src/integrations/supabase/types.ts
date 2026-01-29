@@ -950,6 +950,7 @@ export type Database = {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
       }
+      user_has_pin: { Args: { _user_id: string }; Returns: boolean }
       verify_pin: { Args: { _pin: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
