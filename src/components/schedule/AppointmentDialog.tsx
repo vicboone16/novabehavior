@@ -73,6 +73,8 @@ export function AppointmentDialog({
   onDelete,
   defaultStudentId
 }: AppointmentDialogProps) {
+  const NO_STUDENT_VALUE = '__no_student__';
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(30);
@@ -176,7 +178,7 @@ export function AppointmentDialog({
                   selected={selectedDate}
                   onSelect={(d) => d && setSelectedDate(d)}
                   initialFocus
-                  className="pointer-events-auto"
+                  className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
             </Popover>
@@ -254,7 +256,9 @@ export function AppointmentDialog({
                       >
                         <Checkbox 
                           checked={selectedStaffIds.includes(s.id)}
-                          onCheckedChange={() => handleStaffToggle(s.id)}
+                          // Row click handles toggling; prevent double-toggle.
+                          onCheckedChange={() => {}}
+                          className="pointer-events-none"
                         />
                         <span className="text-sm">{s.name}</span>
                       </div>
@@ -274,12 +278,16 @@ export function AppointmentDialog({
           {/* Student selection (optional) */}
           <div className="space-y-2">
             <Label>Student (optional)</Label>
-            <Select value={studentId} onValueChange={setStudentId}>
+            <Select
+              value={studentId || NO_STUDENT_VALUE}
+              onValueChange={(v) => setStudentId(v === NO_STUDENT_VALUE ? '' : v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select student or leave empty..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No student (staff-only meeting)</SelectItem>
+                {/* Radix SelectItem value cannot be an empty string */}
+                <SelectItem value={NO_STUDENT_VALUE}>No student (staff-only meeting)</SelectItem>
                 {students.map(s => (
                   <SelectItem key={s.id} value={s.id}>
                     <div className="flex items-center gap-2">
