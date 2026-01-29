@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
-  ThumbsUp, ThumbsDown, Minus, MessageSquare, Plus, Activity,
-  User, Clock, Check, X, Settings2, PlusCircle
+  ThumbsUp, ThumbsDown, Minus, MessageSquare, Plus,
+  User, Clock, Check, X, Settings2, PlusCircle, Save, Timer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useDataStore } from '@/store/dataStore';
 import { Student, ANTECEDENT_OPTIONS, CONSEQUENCE_OPTIONS } from '@/types/behavior';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
 interface TeacherFriendlyViewProps {
@@ -28,8 +30,17 @@ interface TeacherFriendlyViewProps {
 
 type DayRating = 'good' | 'ok' | 'hard' | null;
 
+interface RecordedEntry {
+  behaviorId: string;
+  behaviorName: string;
+  count: number;
+  durationSeconds?: number;
+  timestamp: Date;
+}
+
 export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { 
     incrementFrequency, 
     getFrequencyCount, 
@@ -37,6 +48,8 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     addBehaviorWithMethods,
     addCustomAntecedent,
     addCustomConsequence,
+    addHistoricalFrequency,
+    addHistoricalDuration,
   } = useDataStore();
 
   const [dayRating, setDayRating] = useState<DayRating>(null);
@@ -55,6 +68,16 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   // Pre-selected behaviors for Quick ABC (up to 3)
   const [preselectedBehaviorIds, setPreselectedBehaviorIds] = useState<string[]>([]);
   const [showBehaviorSettings, setShowBehaviorSettings] = useState(false);
+  
+  // Duration entry state
+  const [showDurationEntry, setShowDurationEntry] = useState(false);
+  const [selectedDurationBehavior, setSelectedDurationBehavior] = useState<string | null>(null);
+  const [durationMinutes, setDurationMinutes] = useState('');
+  const [durationSeconds, setDurationSeconds] = useState('');
+  
+  // Record Now tracking
+  const [recordedEntries, setRecordedEntries] = useState<RecordedEntry[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
 
   const allAntecedents = [...ANTECEDENT_OPTIONS, ...(student.customAntecedents || [])];
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
@@ -171,13 +194,145 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     toast({ title: 'Consequence Added' });
   };
 
-  const handleSaveDay = () => {
-    toast({
-      title: 'Day Summary Saved',
-      description: `${format(new Date(), 'MMM d')}: ${dayRating || 'No rating'} day`,
+  const handleSaveDay = async () => {
+    if (!user) return;
+    
+    try {
+      // Upsert to daily_summaries
+      const { error } = await supabase
+        .from('daily_summaries')
+        .upsert({
+          student_id: student.id,
+          user_id: user.id,
+          summary_date: format(new Date(), 'yyyy-MM-dd'),
+          day_rating: dayRating,
+          comments: comments.trim() || null,
+        }, {
+          onConflict: 'student_id,user_id,summary_date'
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Day Summary Saved',
+        description: `${format(new Date(), 'MMM d')}: ${dayRating || 'No rating'} day`,
+      });
+      setComments('');
+      setDayRating(null);
+    } catch (error) {
+      console.error('Error saving day summary:', error);
+      toast({
+        title: 'Error saving summary',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Record Now - save current behavior data immediately with timestamp
+  const handleRecordNow = async () => {
+    setIsRecording(true);
+    const now = new Date();
+    const entries: RecordedEntry[] = [];
+    
+    try {
+      // Record frequency data for each behavior
+      for (const behavior of student.behaviors) {
+        const count = getFrequencyCount(student.id, behavior.id);
+        if (count > 0) {
+          // Add to historical frequency with timestamp
+          addHistoricalFrequency({
+            studentId: student.id,
+            behaviorId: behavior.id,
+            count,
+            timestamp: now,
+          });
+          
+          entries.push({
+            behaviorId: behavior.id,
+            behaviorName: behavior.name,
+            count,
+            timestamp: now,
+          });
+        }
+      }
+      
+      setRecordedEntries(prev => [...entries, ...prev]);
+      
+      toast({
+        title: 'Data Recorded',
+        description: `${entries.length} behavior(s) saved at ${format(now, 'h:mm a')}`,
+      });
+    } catch (error) {
+      console.error('Error recording data:', error);
+      toast({
+        title: 'Error recording',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRecording(false);
+    }
+  };
+
+  // Handle duration entry
+  const handleOpenDurationEntry = (behaviorId: string) => {
+    setSelectedDurationBehavior(behaviorId);
+    setDurationMinutes('');
+    setDurationSeconds('');
+    setShowDurationEntry(true);
+  };
+
+  const handleSaveDuration = () => {
+    if (!selectedDurationBehavior) return;
+    
+    const mins = parseInt(durationMinutes) || 0;
+    const secs = parseInt(durationSeconds) || 0;
+    const totalSeconds = mins * 60 + secs;
+    
+    if (totalSeconds <= 0) {
+      toast({
+        title: 'Invalid duration',
+        description: 'Please enter a duration greater than 0',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const behavior = student.behaviors.find(b => b.id === selectedDurationBehavior);
+    const now = new Date();
+    
+    // Add historical duration
+    addHistoricalDuration({
+      studentId: student.id,
+      behaviorId: selectedDurationBehavior,
+      durationSeconds: totalSeconds,
+      timestamp: now,
     });
-    setComments('');
-    setDayRating(null);
+    
+    setRecordedEntries(prev => [{
+      behaviorId: selectedDurationBehavior,
+      behaviorName: behavior?.name || 'Unknown',
+      count: 0,
+      durationSeconds: totalSeconds,
+      timestamp: now,
+    }, ...prev]);
+    
+    toast({
+      title: 'Duration Recorded',
+      description: `${behavior?.name}: ${mins}m ${secs}s at ${format(now, 'h:mm a')}`,
+    });
+    
+    setShowDurationEntry(false);
+    setSelectedDurationBehavior(null);
+    setDurationMinutes('');
+    setDurationSeconds('');
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
   const getDayRatingColor = (rating: DayRating) => {
@@ -261,25 +416,62 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             {student.behaviors.slice(0, 6).map((behavior) => {
               const count = getFrequencyCount(student.id, behavior.id);
+              const supportsDuration = behavior.methods?.includes('duration');
               return (
-                <Button
-                  key={behavior.id}
-                  variant="outline"
-                  className="h-16 flex-col gap-1 relative"
-                  onClick={() => handleBehaviorTap(behavior.id)}
-                >
-                  <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {count}
-                  </Badge>
-                </Button>
+                <div key={behavior.id} className="relative">
+                  <Button
+                    variant="outline"
+                    className="w-full h-16 flex-col gap-1"
+                    onClick={() => handleBehaviorTap(behavior.id)}
+                  >
+                    <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {count}
+                    </Badge>
+                  </Button>
+                  {supportsDuration && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute -top-1 -right-1 h-6 w-6 p-0 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDurationEntry(behavior.id);
+                      }}
+                      title="Add duration"
+                    >
+                      <Timer className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               );
             })}
           </div>
+          
+          {/* Duration Entry Section */}
+          <div className="pt-2 border-t">
+            <p className="text-xs font-medium mb-2 flex items-center gap-1">
+              <Timer className="w-3 h-3" />
+              Record Duration
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {student.behaviors.slice(0, 6).map((behavior) => (
+                <Badge
+                  key={behavior.id}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => handleOpenDurationEntry(behavior.id)}
+                >
+                  {behavior.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          
           {student.behaviors.length === 0 && (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground mb-2">
@@ -439,15 +631,55 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
         </CardContent>
       </Card>
 
-      {/* Save Button */}
-      <Button 
-        className="w-full h-14 text-lg" 
-        onClick={handleSaveDay}
-        disabled={!dayRating && !comments.trim()}
-      >
-        <Check className="w-5 h-5 mr-2" />
-        Save Day Summary
-      </Button>
+      {/* Recently Recorded Entries */}
+      {recordedEntries.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Recently Recorded
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {recordedEntries.slice(0, 5).map((entry, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1">
+                  <span className="font-medium truncate flex-1">{entry.behaviorName}</span>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    {entry.durationSeconds ? (
+                      <span>{formatDuration(entry.durationSeconds)}</span>
+                    ) : (
+                      <span>×{entry.count}</span>
+                    )}
+                    <span className="text-xs">{format(entry.timestamp, 'h:mm a')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button 
+          variant="outline"
+          className="h-14 text-base" 
+          onClick={handleRecordNow}
+          disabled={isRecording || student.behaviors.every(b => getFrequencyCount(student.id, b.id) === 0)}
+        >
+          <Save className="w-5 h-5 mr-2" />
+          Record Now
+        </Button>
+        <Button 
+          className="h-14 text-base" 
+          onClick={handleSaveDay}
+          disabled={!dayRating && !comments.trim()}
+        >
+          <Check className="w-5 h-5 mr-2" />
+          Save Day
+        </Button>
+      </div>
 
       {/* Add Behavior Dialog */}
       <Dialog open={showAddBehavior} onOpenChange={setShowAddBehavior}>
@@ -568,6 +800,63 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             </Button>
             <Button onClick={() => setShowBehaviorSettings(false)}>
               Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duration Entry Dialog */}
+      <Dialog open={showDurationEntry} onOpenChange={setShowDurationEntry}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Timer className="w-4 h-4" />
+              Record Duration
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedDurationBehavior && 
+                student.behaviors.find(b => b.id === selectedDurationBehavior)?.name
+              }
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Minutes</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                  placeholder="0"
+                  className="text-center text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Seconds</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={durationSeconds}
+                  onChange={(e) => setDurationSeconds(e.target.value)}
+                  placeholder="0"
+                  className="text-center text-lg"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Recorded at {format(new Date(), 'h:mm a')}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDurationEntry(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveDuration}>
+              <Save className="w-4 h-4 mr-1" />
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
