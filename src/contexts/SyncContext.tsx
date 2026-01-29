@@ -240,6 +240,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
           .select('*')
           .order('timestamp', { ascending: true });
 
+        console.log('[Sync] Loaded', sessionDataEntries?.length || 0, 'session_data entries from cloud');
+
         const mappedSessions: Session[] = sessionsData.map((session) => {
           const entries = sessionDataEntries?.filter(e => e.session_id === session.id) || [];
           
@@ -300,7 +302,101 @@ export function SyncProvider({ children }: SyncProviderProps) {
           };
         });
 
-        useDataStore.setState({ sessions: mappedSessions });
+        // CRITICAL: Also populate the top-level entry arrays from ALL session data
+        // This ensures the UI can access the data from any session, not just active ones
+        if (sessionDataEntries && sessionDataEntries.length > 0) {
+          const allFrequencyEntries = sessionDataEntries
+            .filter(e => e.event_type === 'frequency')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              count: (e.abc_data as any)?.count || 1,
+              timestamp: new Date(e.timestamp),
+              timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
+              sessionId: e.session_id,
+            }));
+
+          const allDurationEntries = sessionDataEntries
+            .filter(e => e.event_type === 'duration')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              duration: e.duration_seconds || 0,
+              startTime: new Date(e.timestamp),
+              endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
+              sessionId: e.session_id,
+            }));
+
+          const allIntervalEntries = sessionDataEntries
+            .filter(e => e.event_type === 'interval')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              intervalNumber: e.interval_index || 0,
+              occurred: (e.abc_data as any)?.occurred || false,
+              timestamp: new Date(e.timestamp),
+              voided: (e.abc_data as any)?.voided,
+              voidReason: (e.abc_data as any)?.voidReason,
+              sessionId: e.session_id,
+            }));
+
+          const allAbcEntries = sessionDataEntries
+            .filter(e => e.event_type === 'abc')
+            .map(e => ({
+              id: e.id,
+              studentId: e.student_id,
+              behaviorId: e.behavior_id,
+              antecedent: (e.abc_data as any)?.antecedent || '',
+              antecedents: (e.abc_data as any)?.antecedents,
+              behavior: (e.abc_data as any)?.behavior || '',
+              behaviors: (e.abc_data as any)?.behaviors,
+              consequence: (e.abc_data as any)?.consequence || '',
+              consequences: (e.abc_data as any)?.consequences,
+              functions: (e.abc_data as any)?.functions,
+              frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
+              hasDuration: (e.abc_data as any)?.hasDuration,
+              durationMinutes: (e.abc_data as any)?.durationMinutes,
+              timestamp: new Date(e.timestamp),
+              sessionId: e.session_id,
+            }));
+
+          // Merge cloud session data with any existing historical data
+          const currentState = useDataStore.getState();
+          const historicalFrequency = currentState.frequencyEntries.filter(e => e.isHistorical);
+          const historicalDuration = currentState.durationEntries.filter(e => !e.sessionId);
+
+          // Deduplicate by ID
+          const mergedFrequency = [
+            ...historicalFrequency,
+            ...allFrequencyEntries.filter(cloud => 
+              !historicalFrequency.some(h => h.id === cloud.id)
+            ),
+          ];
+          const mergedDuration = [
+            ...historicalDuration,
+            ...allDurationEntries.filter(cloud => 
+              !historicalDuration.some(h => h.id === cloud.id)
+            ),
+          ];
+
+          console.log('[Sync] Populating UI store with', mergedFrequency.length, 'frequency,', 
+            mergedDuration.length, 'duration,', allIntervalEntries.length, 'interval,', 
+            allAbcEntries.length, 'ABC entries');
+
+          useDataStore.setState({ 
+            sessions: mappedSessions,
+            frequencyEntries: mergedFrequency,
+            durationEntries: mergedDuration,
+            intervalEntries: allIntervalEntries,
+            abcEntries: allAbcEntries,
+          });
+        } else {
+          useDataStore.setState({ sessions: mappedSessions });
+        }
+
         previousSessionsRef.current = JSON.stringify(mappedSessions.map(s => s.id));
       }
 
