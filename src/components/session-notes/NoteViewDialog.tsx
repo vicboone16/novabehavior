@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
   FileText, 
@@ -9,6 +10,7 @@ import {
   Download,
   Copy,
   History,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +32,7 @@ import {
   SERVICE_SETTING_LABELS,
 } from '@/types/sessionNotes';
 import { toast } from '@/hooks/use-toast';
+import { exportNoteToDocx, generateNoteText } from '@/lib/pdfExport';
 
 interface NoteViewDialogProps {
   note: EnhancedSessionNote;
@@ -38,6 +41,8 @@ interface NoteViewDialogProps {
 }
 
 export function NoteViewDialog({ note, open, onOpenChange }: NoteViewDialogProps) {
+  const [exporting, setExporting] = useState(false);
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -45,97 +50,22 @@ export function NoteViewDialog({ note, open, onOpenChange }: NoteViewDialogProps
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
   };
 
-  const generateNoteText = (): string => {
-    const lines: string[] = [];
-    
-    // Header
-    lines.push(`SESSION NOTE - ${NOTE_TYPE_LABELS[note.note_type]}`);
-    lines.push(`Date: ${format(new Date(note.start_time), 'MMMM d, yyyy')}`);
-    lines.push(`Time: ${format(new Date(note.start_time), 'h:mm a')}${note.end_time ? ` - ${format(new Date(note.end_time), 'h:mm a')}` : ''}`);
-    if (note.duration_minutes) {
-      lines.push(`Duration: ${note.duration_minutes} minutes`);
-    }
-    lines.push(`Setting: ${SERVICE_SETTING_LABELS[note.service_setting]}`);
-    if (note.location_detail) {
-      lines.push(`Location: ${note.location_detail}`);
-    }
-    lines.push('');
-
-    // Session Data Summary
-    if (note.pulled_data_snapshot) {
-      lines.push('--- SESSION DATA SUMMARY ---');
-      
-      if (note.pulled_data_snapshot.behaviors?.length > 0) {
-        lines.push('');
-        lines.push('Behavior Data:');
-        note.pulled_data_snapshot.behaviors.forEach(b => {
-          const parts: string[] = [];
-          if (b.frequencyCount > 0) parts.push(`${b.frequencyCount} occurrences`);
-          if (b.durationSeconds > 0) parts.push(`${formatDuration(b.durationSeconds)} total`);
-          if (b.intervalPercentage > 0) parts.push(`${b.intervalPercentage}% of intervals`);
-          if (b.abcCount > 0) parts.push(`${b.abcCount} ABC records`);
-          lines.push(`  • ${b.behaviorName}: ${parts.join(', ')}`);
-        });
-      }
-
-      if (note.pulled_data_snapshot.skills?.length > 0) {
-        lines.push('');
-        lines.push('Skill Acquisition:');
-        note.pulled_data_snapshot.skills.forEach(s => {
-          lines.push(`  • ${s.targetName}: ${s.trialsCompleted} trials, ${s.percentCorrect}% correct`);
-        });
-      }
-      lines.push('');
-    }
-
-    // Note Content
-    if (note.note_content && Object.keys(note.note_content).length > 0) {
-      lines.push('--- NOTE CONTENT ---');
-      lines.push('');
-      
-      Object.entries(note.note_content).forEach(([key, value]) => {
-        if (value) {
-          const label = key
-            .replace(/_/g, ' ')
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase());
-          
-          if (Array.isArray(value)) {
-            lines.push(`${label}: ${value.join(', ')}`);
-          } else {
-            lines.push(`${label}:`);
-            lines.push(String(value));
-          }
-          lines.push('');
-        }
-      });
-    }
-
-    // Signature
-    lines.push('---');
-    if (note.clinician_signature_name) {
-      lines.push(`Clinician: ${note.clinician_signature_name}`);
-    }
-    if (note.credential) {
-      lines.push(`Credential: ${note.credential}`);
-    }
-    lines.push(`Status: ${note.status.toUpperCase()}`);
-
-    return lines.join('\n');
-  };
-
   const handleCopy = () => {
-    navigator.clipboard.writeText(generateNoteText());
+    navigator.clipboard.writeText(generateNoteText(note));
     toast({ title: 'Copied', description: 'Note text copied to clipboard.' });
   };
 
-  const handleExportPDF = () => {
-    // For now, just copy - PDF export would require a library like jsPDF
-    handleCopy();
-    toast({ 
-      title: 'Export', 
-      description: 'Note text copied. PDF export coming soon.',
-    });
+  const handleExportDocx = async () => {
+    setExporting(true);
+    try {
+      await exportNoteToDocx(note);
+      toast({ title: 'Exported', description: 'Session note downloaded as Word document.' });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({ title: 'Export failed', description: 'Could not export document.', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -369,9 +299,13 @@ export function NoteViewDialog({ note, open, onOpenChange }: NoteViewDialogProps
             Copy Text
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Download className="w-4 h-4 mr-2" />
-              Export PDF
+            <Button variant="outline" onClick={handleExportDocx} disabled={exporting}>
+              {exporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Export Word
             </Button>
             <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>

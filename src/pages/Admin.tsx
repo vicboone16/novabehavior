@@ -56,7 +56,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { SupervisorNoteReview } from '@/components/SupervisorNoteReview';
+import { SupervisorReviewDashboard } from '@/components/admin/SupervisorReviewDashboard';
 import { UserTagManager } from '@/components/admin/UserTagManager';
 import { StudentTagManager } from '@/components/admin/StudentTagManager';
 import { BulkStudentManager } from '@/components/admin/BulkStudentManager';
@@ -735,7 +735,7 @@ export default function Admin() {
 
           {/* Notes Review Tab */}
           <TabsContent value="notes">
-            <SupervisorNoteReview />
+            <SupervisorReviewDashboard />
           </TabsContent>
 
           {/* Tags Tab */}
