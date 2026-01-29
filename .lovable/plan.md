@@ -1,174 +1,293 @@
 
-# Enhanced Behavior Bank Management Plan
+
+# Teacher Mode & Questionnaire System Implementation Plan
 
 ## Overview
-This plan implements three major enhancements to the Behavior Bank system:
-1. **Promote Custom to Standard**: Allow migrating custom behaviors to become permanent bank behaviors
-2. **Edit Built-in Definitions**: Allow editing the definitions of default/built-in behaviors
-3. **Advanced Merge with Name Selection**: Allow merging any two behaviors (even with different names) and choosing which name appears on student graphs
+This plan implements two major features:
+1. **Teacher Mode Login**: A streamlined login option that routes users to a simplified data collection interface showing only their assigned students
+2. **Questionnaire System**: Create, send, and collect responses from questionnaires sent to teachers, parents, and collaborators
 
 ---
 
-## Current Architecture
+## Feature 1: Teacher Mode Login
 
-The behavior bank currently has two sources:
-- **DEFAULT_BEHAVIORS**: A hardcoded array in `BehaviorBank.tsx` and `BehaviorLibrary.tsx` (15 built-in behaviors)
-- **Custom Behaviors**: Derived dynamically from student behavior arrays (not persisted globally)
+### Login Flow Changes
 
-Key limitation: There's no persistent storage for organization-level custom behaviors or edits to default behaviors.
+**Update Auth.tsx - Two buttons side by side:**
+```text
++------------------------------------------+
+|                                          |
+|  [Email field                          ] |
+|  [Password field                       ] |
+|                                          |
+|  [ Sign In ]  [ Teacher Mode ]           |
+|                                          |
+|  "Use PIN login instead"                 |
+|                                          |
++------------------------------------------+
+```
+
+- Both buttons use same authentication logic
+- "Sign In" routes to `/` (main dashboard)
+- "Teacher Mode" routes to `/teacher-dashboard`
+- PIN login also supports Teacher Mode option
+- **All roles can use it**: Admin, Super Admin, Staff - anyone with student access
+
+### New Page: Teacher Dashboard (`/teacher-dashboard`)
+
+**What users see:**
+1. **Header** - App name, current date, Exit button (to main dashboard), Logout button
+2. **Student Grid** - Cards for each accessible student
+3. **Expanded View** - When student clicked, shows simplified TeacherFriendlyView inline
+
+**Student Access Rules:**
+- Students where `user_id = auth.uid()` (owner)
+- Students where user has `user_student_access.can_collect_data = true`
+- Admins see all accessible students
+
+**Layout:**
+```text
++------------------------------------------+
+| Behavior Data Collector   [Exit] [Logout]|
++------------------------------------------+
+| Wednesday, January 29, 2026              |
++------------------------------------------+
+| Your Students:                           |
+| +--------+  +--------+  +--------+       |
+| | John S |  | Emma T |  | Alex P |       |
+| +--------+  +--------+  +--------+       |
++------------------------------------------+
+|                                          |
+| [When student selected:]                 |
+|                                          |
+| ← Back to Students                       |
+|                                          |
+| John Smith - Today's Session             |
+| ┌────────────────────────────────────┐   |
+| │ Day Rating: ○ Good  ○ OK  ○ Hard  │   |
+| ├────────────────────────────────────┤   |
+| │ Quick Behavior Counts:             │   |
+| │ [Aggression: 2] [SIB: 0] [+Add]    │   |
+| ├────────────────────────────────────┤   |
+| │ Quick ABC Entry                    │   |
+| │ [Select behaviors] [A] [B] [C]     │   |
+| ├────────────────────────────────────┤   |
+| │ Comments: ________________________ │   |
+| ├────────────────────────────────────┤   |
+| │ [Record Now]    [Save Day Summary] │   |
+| └────────────────────────────────────┘   |
++------------------------------------------+
+```
+
+### Two Submission Options
+
+**"Record Now" Button:**
+- Confirms current frequency counts and ABC entries are saved
+- Shows toast: "Data recorded at 2:35 PM"
+- Does NOT require day rating
+- Allows multiple recordings throughout the day
+
+**"Save Day Summary" Button:**
+- Requires day rating selection (Good/OK/Hard)
+- Saves to `daily_summaries` table
+- Shows confirmation: "Day summary saved for John"
+- One summary per student per day per user (updates if exists)
+
+### Database: daily_summaries Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| student_id | uuid | FK to students |
+| user_id | uuid | Who submitted |
+| summary_date | date | Date of summary |
+| day_rating | text | 'good', 'ok', 'hard' |
+| comments | text | Teacher notes |
+| created_at | timestamp | When saved |
+
+**RLS Policies:**
+- Users can insert/update their own summaries
+- Users can read summaries for students they have access to
+- Admins can read all summaries
 
 ---
 
-## Implementation Plan
+## Feature 2: Questionnaire System
 
-### Phase 1: Add Persistent Behavior Bank Storage
+### Purpose
+Allow BCBAs to create questionnaires (preference assessments, functional behavior questionnaires, parent interviews), send them to external collaborators via email, and collect responses linked to specific students.
 
-**Create a new global behavior bank state in the data store**
+### Database Schema
 
-Add to `src/store/dataStore.ts`:
-- `globalBehaviorBank: BehaviorDefinition[]` - Persistent custom behaviors promoted to global
-- `behaviorDefinitionOverrides: Record<string, Partial<BehaviorDefinition>>` - Edits to built-in definitions
+**Table: questionnaire_templates**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Creator |
+| name | text | Template name |
+| description | text | Optional description |
+| questions | jsonb | Array of question objects |
+| is_archived | boolean | Soft delete |
+| created_at | timestamp | When created |
+| updated_at | timestamp | When modified |
 
-New store actions:
-- `addToBehaviorBank(behavior)` - Promote a custom behavior to the global bank
-- `updateBankBehaviorDefinition(id, operationalDefinition)` - Edit any bank behavior's definition
-- `removeBankBehavior(id)` - Remove a promoted behavior from the bank
-- `advancedMergeBehaviors(options)` - New merge function with name selection
-
-### Phase 2: Update BehaviorLibrary Page
-
-Add new UI elements to `src/pages/BehaviorLibrary.tsx`:
-
-**For Promoting Custom Behaviors:**
-- Add a "Make Standard" button next to custom behaviors
-- Clicking opens a confirmation dialog explaining the behavior will now appear for all future use
-- Promoted behaviors get an "Organization" badge instead of "Custom"
-
-**For Editing Built-in Definitions:**
-- Add an "Edit" icon button next to every behavior (including defaults)
-- Opens a dialog to edit the operational definition
-- Edited defaults show an "Edited" badge
-- Option to "Reset to Default" for edited built-ins
-
-**For Advanced Merge:**
-- New "Merge Behaviors" button in sidebar
-- Opens a multi-step dialog:
-  1. Select the first behavior (source)
-  2. Select the second behavior (target) 
-  3. Choose which name to keep for student display
-  4. Preview affected students
-  5. Confirm merge
-
-### Phase 3: Update Merge Logic
-
-Enhance `mergeBehaviors` in the store to support:
-- Merging any two behaviors regardless of name
-- Renaming behaviors on student profiles when a different name is selected
-- Preserving all historical data (frequency, duration, interval, ABC entries)
-- Preserving custom student-specific definitions
-- Updating all data entries to point to the surviving behavior ID
-
----
-
-## Technical Details
-
-### Data Structure Changes
-
-```typescript
-// In dataStore.ts state
-interface DataState {
-  // ... existing fields
-  
-  // New: Persisted custom behaviors promoted to org-level
-  globalBehaviorBank: BehaviorDefinition[];
-  
-  // New: Overrides for built-in behavior definitions
-  behaviorDefinitionOverrides: Record<string, {
-    operationalDefinition?: string;
-    category?: string;
-    updatedAt?: Date;
-  }>;
+Question structure:
+```json
+{
+  "id": "uuid",
+  "text": "Question text",
+  "type": "text | multiple_choice | rating | yes_no",
+  "options": ["Option 1", "Option 2"],
+  "required": true
 }
 ```
 
-### New Store Actions
+**Table: questionnaire_invitations**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| template_id | uuid | FK to templates |
+| student_id | uuid | FK to students |
+| recipient_email | text | Who to send to |
+| recipient_name | text | Recipient name |
+| recipient_type | text | 'teacher', 'parent', 'caregiver', 'other' |
+| access_token | text | Unique URL token |
+| status | text | 'pending', 'completed', 'expired' |
+| sent_at | timestamp | When email sent |
+| expires_at | timestamp | Expiration date |
+| completed_at | timestamp | When submitted |
+| created_by | uuid | Who created |
 
-```typescript
-// Promote custom behavior to global bank
-addToBehaviorBank: (behavior: Omit<BehaviorDefinition, 'id' | 'isGlobal'>) => void;
+**Table: questionnaire_responses**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| invitation_id | uuid | FK to invitations |
+| student_id | uuid | FK to students |
+| responses | jsonb | Answer data |
+| submitted_at | timestamp | When submitted |
+| respondent_info | jsonb | Optional metadata |
 
-// Edit any behavior's definition (works for defaults and custom)
-updateBankBehaviorDefinition: (behaviorId: string, definition: string) => void;
+**Table: notifications**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Who to notify |
+| type | text | Notification type |
+| title | text | Title |
+| message | text | Message body |
+| data | jsonb | Related data |
+| read | boolean | Read status |
+| created_at | timestamp | When created |
 
-// Reset an edited default back to original
-resetBehaviorDefinition: (behaviorId: string) => void;
+### User Flows
 
-// Remove a promoted behavior from the bank
-removeBankBehavior: (id: string) => void;
+**Creating a Questionnaire:**
+1. Navigate to Assessment tab → Questionnaires section
+2. Click "Create Template"
+3. Add questions using form builder (text, multiple choice, rating scales, yes/no)
+4. Save template for reuse
 
-// Advanced merge with name selection
-advancedMergeBehaviors: (options: {
-  sourceBehaviorId: string;  // Behavior to merge FROM
-  targetBehaviorId: string;  // Behavior to merge INTO
-  useSourceName: boolean;    // If true, rename target to source's name
-}) => void;
-```
+**Sending a Questionnaire:**
+1. Select a student
+2. Click "Send Questionnaire"
+3. Choose template or create new
+4. Enter recipient email and name
+5. Select recipient type (teacher, parent, caregiver, other)
+6. Click "Send" - email dispatched with unique link
 
-### UI Components
+**Recipient Experience:**
+1. Receives email with branded invitation
+2. Clicks secure link → opens public form (no login required)
+3. Completes questions
+4. Submits → sees confirmation message
 
-**Edit Behavior Dialog (new)**
-- Fields: Name, Category, Operational Definition
-- For built-ins: Shows "Reset to Default" button
-- Saves to `behaviorDefinitionOverrides` for built-ins, or updates `globalBehaviorBank` for custom
+**Viewing Responses:**
+1. User gets in-app notification when response received
+2. View in student's Assessment tab → Questionnaire Responses
+3. Can export or include in reports
 
-**Promote to Standard Dialog (new)**
-- Confirmation message explaining the behavior will be available organization-wide
-- Shows current student count using this behavior
-- Moves behavior from student-derived list to `globalBehaviorBank`
+### Technical Components
 
-**Advanced Merge Dialog (enhanced)**
-- Step 1: Select behaviors to merge (shows all behaviors with student counts)
-- Step 2: Choose surviving name
-- Step 3: Review affected students and data points
-- Step 4: Confirm with "Merge" button
+**Edge Function: send-questionnaire**
+- Uses Resend for email delivery
+- Requires `RESEND_API_KEY` secret
+- Sends branded email with secure unique link
+- Updates invitation `sent_at` timestamp
+
+**Public Form Route: `/questionnaire/:token`**
+- No authentication required
+- Validates token exists and not expired
+- Renders form based on template questions
+- Submits responses to database
+- Shows success confirmation
+
+**RLS Policies:**
+- `questionnaire_templates`: Owner can CRUD, admins can view
+- `questionnaire_invitations`: Owner can CRUD
+- `questionnaire_responses`: Insert allowed with valid token, owner/admin can read
+- `notifications`: Users can only see their own
 
 ---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/pages/TeacherDashboard.tsx` | Teacher mode page with student list and data entry |
+| `src/pages/QuestionnaireForm.tsx` | Public questionnaire submission form |
+| `src/components/questionnaire/QuestionnaireBuilder.tsx` | Build questionnaire templates |
+| `src/components/questionnaire/QuestionnaireManager.tsx` | View/send questionnaires for a student |
+| `src/components/questionnaire/ResponseViewer.tsx` | View submitted responses |
+| `src/components/NotificationBell.tsx` | Header notification indicator |
+| `supabase/functions/send-questionnaire/index.ts` | Email sending edge function |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/store/dataStore.ts` | Add new state fields, new actions for bank management |
-| `src/pages/BehaviorLibrary.tsx` | Add edit buttons, promote buttons, advanced merge UI |
-| `src/components/BehaviorBank.tsx` | Read from combined default + global bank, show edited badges |
-| `src/types/behavior.ts` | Add any new type definitions if needed |
+| `src/pages/Auth.tsx` | Add "Teacher Mode" button next to "Sign In" |
+| `src/components/PinLogin.tsx` | Support teacher mode callback |
+| `src/components/TeacherFriendlyView.tsx` | Add "Record Now" button, enhance submission |
+| `src/App.tsx` | Add routes: `/teacher-dashboard`, `/questionnaire/:token` |
+| `src/pages/AssessmentDashboard.tsx` | Add questionnaire management section |
+| `src/components/MainLayout.tsx` | Add notification bell to header |
 
 ---
 
-## User Flow Examples
+## Implementation Order
 
-**Promoting a Custom Behavior:**
-1. User goes to Behavior Library
-2. Sees a custom behavior "Hand Flapping" used by 5 students
-3. Clicks "Make Standard" button
-4. Confirms in dialog
-5. Behavior now shows "Organization" badge and appears in bank for new additions
+### Phase 1: Database Setup
+- Create `daily_summaries` table with RLS
+- Create questionnaire tables with RLS
+- Create `notifications` table with RLS
 
-**Editing a Built-in Definition:**
-1. User goes to Behavior Library
-2. Clicks edit icon next to "Physical Aggression"
-3. Updates the operational definition to match their organization's standards
-4. Saves changes
-5. Behavior shows "Edited" badge; new students get updated definition
-6. Existing student-specific definitions remain unchanged
+### Phase 2: Teacher Mode
+- Update Auth.tsx with Teacher Mode button
+- Update PinLogin.tsx to support teacher mode
+- Create TeacherDashboard.tsx page
+- Enhance TeacherFriendlyView with Record Now button
+- Add route to App.tsx
 
-**Merging Differently-Named Behaviors:**
-1. User has "Hitting" (custom) and "Physical Aggression" (built-in)
-2. Clicks "Merge Behaviors" 
-3. Selects "Hitting" as source, "Physical Aggression" as target
-4. Chooses to keep "Physical Aggression" as the display name
-5. Reviews: 3 students affected, 47 data points preserved
-6. Confirms merge
-7. All students now show "Physical Aggression" on graphs
-8. Student-specific definitions preserved
-9. "Hitting" removed from custom list
+### Phase 3: Questionnaire System
+- Create QuestionnaireBuilder component
+- Create QuestionnaireManager component
+- Create public QuestionnaireForm page
+- Create send-questionnaire edge function (requires RESEND_API_KEY)
+- Add to AssessmentDashboard
+
+### Phase 4: Notifications
+- Create notifications table trigger
+- Create NotificationBell component
+- Add to MainLayout header
+- Create ResponseViewer component
+
+---
+
+## External Dependencies
+
+**Email Sending:**
+- Requires `RESEND_API_KEY` secret to be configured
+- User will need a Resend account with verified domain
+- Will prompt for this when implementing email functionality
+
