@@ -72,7 +72,7 @@ export type Database = {
           staff_user_id: string | null
           start_time: string
           status: string
-          student_id: string
+          student_id: string | null
           title: string | null
           updated_at: string
         }
@@ -91,7 +91,7 @@ export type Database = {
           staff_user_id?: string | null
           start_time: string
           status?: string
-          student_id: string
+          student_id?: string | null
           title?: string | null
           updated_at?: string
         }
@@ -110,7 +110,7 @@ export type Database = {
           staff_user_id?: string | null
           start_time?: string
           status?: string
-          student_id?: string
+          student_id?: string | null
           title?: string | null
           updated_at?: string
         }

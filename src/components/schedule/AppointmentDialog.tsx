@@ -36,6 +36,7 @@ interface AppointmentDialogProps {
   staff: CalendarStaff[];
   onSave: (data: Partial<Appointment>) => void;
   onDelete?: () => void;
+  defaultStudentId?: string;
 }
 
 const DURATION_OPTIONS = [
@@ -67,7 +68,8 @@ export function AppointmentDialog({
   students,
   staff,
   onSave,
-  onDelete
+  onDelete,
+  defaultStudentId
 }: AppointmentDialogProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState('09:00');
@@ -82,7 +84,7 @@ export function AppointmentDialog({
       setSelectedDate(start);
       setStartTime(format(start, 'HH:mm'));
       setDuration(appointment.duration_minutes);
-      setStudentId(appointment.student_id);
+      setStudentId(appointment.student_id || '');
       setStaffId(appointment.staff_user_id || '');
       setNotes(appointment.notes || '');
     } else {
@@ -90,21 +92,21 @@ export function AppointmentDialog({
       setSelectedDate(new Date());
       setStartTime('09:00');
       setDuration(30);
-      setStudentId('');
+      setStudentId(defaultStudentId || '');
       setStaffId('');
       setNotes('');
     }
-  }, [appointment, open]);
+  }, [appointment, open, defaultStudentId]);
 
   const handleSave = () => {
-    if (!studentId || !selectedDate) return;
+    if (!selectedDate) return;
 
     const [hours, minutes] = startTime.split(':').map(Number);
     const startDateTime = setMinutes(setHours(selectedDate, hours), minutes);
     const endDateTime = addMinutes(startDateTime, duration);
 
     onSave({
-      student_id: studentId,
+      student_id: studentId || null,
       staff_user_id: staffId || null,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
@@ -125,14 +127,15 @@ export function AppointmentDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Student selection */}
+          {/* Student selection (optional for staff-only appointments) */}
           <div className="space-y-2">
-            <Label>Student *</Label>
+            <Label>Student (optional for staff-only)</Label>
             <Select value={studentId} onValueChange={setStudentId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select student..." />
+                <SelectValue placeholder="Select student or leave empty..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">No student (staff only)</SelectItem>
                 {students.map(s => (
                   <SelectItem key={s.id} value={s.id}>
                     <div className="flex items-center gap-2">
@@ -245,7 +248,7 @@ export function AppointmentDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!studentId}>
+          <Button onClick={handleSave}>
             {appointment ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>

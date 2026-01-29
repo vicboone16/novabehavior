@@ -60,6 +60,7 @@ import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEdito
 import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
+import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -479,6 +480,10 @@ export default function StudentProfile() {
           <TabsTrigger value="skills" className="gap-1 text-xs">
             <GraduationCap className="w-3 h-3" />
             Skills
+          </TabsTrigger>
+          <TabsTrigger value="appointments" className="gap-1 text-xs">
+            <Calendar className="w-3 h-3" />
+            Appointments
           </TabsTrigger>
           <TabsTrigger value="teacher" className="gap-1 text-xs">
             <UserCheck className="w-3 h-3" />
@@ -1285,6 +1290,15 @@ export default function StudentProfile() {
           <HistoricalSkillDataEditor
             studentId={student.id}
             studentName={student.name}
+          />
+        </TabsContent>
+
+        {/* Appointments Tab */}
+        <TabsContent value="appointments">
+          <StudentAppointments
+            studentId={student.id}
+            studentName={student.name}
+            studentColor={student.color}
           />
         </TabsContent>
 

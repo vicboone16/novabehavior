@@ -3,7 +3,7 @@ import type { Json } from '@/integrations/supabase/types';
 export interface Appointment {
   id: string;
   title?: string | null;
-  student_id: string;
+  student_id?: string | null;
   staff_user_id?: string | null;
   created_by: string;
   start_time: string;

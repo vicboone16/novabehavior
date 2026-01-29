@@ -54,8 +54,8 @@ export function ScheduleTimeline({
     }
   }, [filterMode, staff, students, dayAppointments]);
 
-  const getStudentColor = (id: string) => students.find(s => s.id === id)?.color || '#3B82F6';
-  const getStudentName = (id: string) => students.find(s => s.id === id)?.name || 'Unknown';
+  const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
 
   const getAppointmentsForRow = (rowId: string, rowType: 'staff' | 'student') => {
     if (rowType === 'staff') {

@@ -31,9 +31,9 @@ export function ScheduleDayView({
     [appointments, date]
   );
 
-  const getStudentName = (id: string) => students.find(s => s.id === id)?.name || 'Unknown';
-  const getStudentColor = (id: string) => students.find(s => s.id === id)?.color || '#3B82F6';
-  const getStaffName = (id?: string) => id ? staff.find(s => s.id === id)?.name : undefined;
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
+  const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
+  const getStaffName = (id?: string | null) => id ? staff.find(s => s.id === id)?.name : undefined;
 
   const getAppointmentStyle = (appointment: Appointment) => {
     const start = new Date(appointment.start_time);
