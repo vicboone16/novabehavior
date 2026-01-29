@@ -24,7 +24,9 @@ import {
   SkillTarget,
   DTTSession,
   DTTTrial,
+  BehaviorDefinition,
 } from '@/types/behavior';
+import { BehaviorDefinitionOverride, GlobalBankBehavior } from '@/types/behaviorBank';
 
 interface CollapsedState {
   methods: { [studentId: string]: DataCollectionMethod[] }; // collapsed method sections
@@ -76,6 +78,11 @@ interface DataState {
   trash: TrashItem[]; // Recoverable deleted items
   lastSavedDataHash: string | null; // Track when data was last saved to prevent duplicates
   
+  // Global Behavior Bank - persisted custom behaviors promoted to org level
+  globalBehaviorBank: GlobalBankBehavior[];
+  // Overrides for built-in behavior definitions
+  behaviorDefinitionOverrides: Record<string, BehaviorDefinitionOverride>;
+  
   // Student actions
   addStudent: (name: string) => void;
   updateStudentName: (id: string, name: string) => void;
@@ -116,6 +123,14 @@ interface DataState {
   archiveBehavior: (studentId: string, behaviorId: string) => void;
   unarchiveBehavior: (studentId: string, behaviorId: string) => void;
   mergeBehaviors: (sourceBehaviorName: string, targetBehaviorId: string) => void;
+  
+  // Global Behavior Bank actions
+  addToBehaviorBank: (behavior: Omit<GlobalBankBehavior, 'id' | 'promotedAt'>) => void;
+  removeBankBehavior: (id: string) => void;
+  updateBankBehaviorDefinition: (behaviorId: string, definition: string, category?: string) => void;
+  resetBehaviorDefinition: (behaviorId: string) => void;
+  advancedMergeBehaviors: (options: { sourceBehaviorId: string; targetBehaviorId: string; useSourceName: boolean }) => void;
+  getBehaviorBankDefinition: (behaviorId: string) => BehaviorDefinition | undefined;
   
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
@@ -306,6 +321,8 @@ export const useDataStore = create<DataState>()(
       studentSessionStatus: [],
       trash: [],
       lastSavedDataHash: null,
+      globalBehaviorBank: [],
+      behaviorDefinitionOverrides: {},
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -679,6 +696,157 @@ export const useDataStore = create<DataState>()(
             }),
           })),
         }));
+      },
+
+      // Global Behavior Bank actions
+      addToBehaviorBank: (behavior) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          globalBehaviorBank: [
+            ...state.globalBehaviorBank,
+            { ...behavior, id, promotedAt: new Date() },
+          ],
+        }));
+      },
+
+      removeBankBehavior: (id) => {
+        set((state) => ({
+          globalBehaviorBank: state.globalBehaviorBank.filter((b) => b.id !== id),
+        }));
+      },
+
+      updateBankBehaviorDefinition: (behaviorId, definition, category) => {
+        const state = get();
+        
+        // Check if this is a global bank behavior (promoted custom)
+        const isGlobalBankBehavior = state.globalBehaviorBank.some((b) => b.id === behaviorId);
+        
+        if (isGlobalBankBehavior) {
+          // Update the global bank behavior directly
+          set((s) => ({
+            globalBehaviorBank: s.globalBehaviorBank.map((b) =>
+              b.id === behaviorId
+                ? { ...b, operationalDefinition: definition, ...(category && { category }) }
+                : b
+            ),
+          }));
+        } else {
+          // This is a built-in behavior - add/update override
+          set((s) => ({
+            behaviorDefinitionOverrides: {
+              ...s.behaviorDefinitionOverrides,
+              [behaviorId]: {
+                operationalDefinition: definition,
+                ...(category && { category }),
+                updatedAt: new Date(),
+              },
+            },
+          }));
+        }
+      },
+
+      resetBehaviorDefinition: (behaviorId) => {
+        // Remove the override for a built-in behavior
+        set((state) => {
+          const { [behaviorId]: _, ...rest } = state.behaviorDefinitionOverrides;
+          return { behaviorDefinitionOverrides: rest };
+        });
+      },
+
+      advancedMergeBehaviors: ({ sourceBehaviorId, targetBehaviorId, useSourceName }) => {
+        const state = get();
+        
+        // Find source and target behaviors across all students and global bank
+        let sourceName = '';
+        let targetName = '';
+        
+        // Check students for behavior names
+        state.students.forEach((student) => {
+          student.behaviors.forEach((b) => {
+            if (b.id === sourceBehaviorId || b.baseBehaviorId === sourceBehaviorId) {
+              sourceName = b.name;
+            }
+            if (b.id === targetBehaviorId || b.baseBehaviorId === targetBehaviorId) {
+              targetName = b.name;
+            }
+          });
+        });
+        
+        // Check global bank
+        const globalSource = state.globalBehaviorBank.find((b) => b.id === sourceBehaviorId);
+        const globalTarget = state.globalBehaviorBank.find((b) => b.id === targetBehaviorId);
+        if (globalSource) sourceName = globalSource.name;
+        if (globalTarget) targetName = globalTarget.name;
+        
+        const finalName = useSourceName ? sourceName : targetName;
+        
+        set((s) => ({
+          students: s.students.map((student) => ({
+            ...student,
+            behaviors: student.behaviors.map((behavior) => {
+              // If this behavior matches the source, merge it into target
+              if (behavior.id === sourceBehaviorId || behavior.baseBehaviorId === sourceBehaviorId) {
+                return {
+                  ...behavior,
+                  id: behavior.id, // Keep original ID for data integrity
+                  name: finalName,
+                  baseBehaviorId: targetBehaviorId,
+                };
+              }
+              // If this behavior is the target and we're using source name, rename it
+              if (useSourceName && (behavior.id === targetBehaviorId || behavior.baseBehaviorId === targetBehaviorId)) {
+                return {
+                  ...behavior,
+                  name: finalName,
+                };
+              }
+              return behavior;
+            }),
+          })),
+          // Update data entries to reference target behavior
+          frequencyEntries: s.frequencyEntries.map((e) =>
+            e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
+          ),
+          durationEntries: s.durationEntries.map((e) =>
+            e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
+          ),
+          intervalEntries: s.intervalEntries.map((e) =>
+            e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
+          ),
+          abcEntries: s.abcEntries.map((e) =>
+            e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
+          ),
+          latencyEntries: s.latencyEntries.map((e) =>
+            e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
+          ),
+          // Remove source from global bank if it was there
+          globalBehaviorBank: s.globalBehaviorBank.filter((b) => b.id !== sourceBehaviorId),
+        }));
+      },
+
+      getBehaviorBankDefinition: (behaviorId) => {
+        const state = get();
+        
+        // First check global bank
+        const globalBehavior = state.globalBehaviorBank.find((b) => b.id === behaviorId);
+        if (globalBehavior) {
+          return globalBehavior;
+        }
+        
+        // Check if there's an override
+        const override = state.behaviorDefinitionOverrides[behaviorId];
+        if (override) {
+          // Return a merged definition (would need the original, but return override info)
+          return {
+            id: behaviorId,
+            name: '',
+            operationalDefinition: override.operationalDefinition || '',
+            category: override.category || '',
+            isGlobal: true,
+          };
+        }
+        
+        return undefined;
       },
 
       addABCEntry: (entry) => {
