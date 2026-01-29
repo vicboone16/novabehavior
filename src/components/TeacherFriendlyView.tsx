@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ThumbsUp, ThumbsDown, Minus, MessageSquare, Plus,
   User, Clock, Check, X, Settings2, PlusCircle, Save, Timer,
-  Play, Square, FileDown, BarChart3, Edit2
+  Play, Square, FileDown, BarChart3, Edit2, Link2, Library, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +20,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useDataStore } from '@/store/dataStore';
 import { Student, ANTECEDENT_OPTIONS, CONSEQUENCE_OPTIONS } from '@/types/behavior';
@@ -32,12 +47,18 @@ interface TeacherFriendlyViewProps {
 type DayRating = 'good' | 'ok' | 'hard' | null;
 
 interface RecordedEntry {
+  id: string;
   behaviorId: string;
   behaviorName: string;
   count: number;
   durationSeconds?: number;
   timestamp: Date;
-  type: 'frequency' | 'duration';
+  type: 'frequency' | 'duration' | 'abc';
+  recordedBy: string;
+  recordedByName: string;
+  linkedABCId?: string; // Link to ABC entry if applicable
+  antecedent?: string;
+  consequence?: string;
 }
 
 interface ActiveTimer {
@@ -59,6 +80,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     addHistoricalDuration,
     resetFrequency,
     updateBehaviorMethods,
+    globalBehaviorBank,
   } = useDataStore();
 
   const [dayRating, setDayRating] = useState<DayRating>(null);
@@ -109,14 +131,38 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   
   // Daily summary view
   const [showDailySummary, setShowDailySummary] = useState(false);
+  
+  // ABC Duration toggle
+  const [abcIncludeDuration, setAbcIncludeDuration] = useState(false);
+  const [abcDurationMinutes, setAbcDurationMinutes] = useState('');
+  const [abcDurationSeconds, setAbcDurationSeconds] = useState('');
+  
+  // Link ABC to frequency/duration
+  const [linkABCToData, setLinkABCToData] = useState(false);
+  
+  // Behavior bank selection
+  const [showBehaviorBankDialog, setShowBehaviorBankDialog] = useState(false);
+  const [selectedBankBehavior, setSelectedBankBehavior] = useState<string>('');
 
   const allAntecedents = [...ANTECEDENT_OPTIONS, ...(student.customAntecedents || [])];
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
+  
+  // Get all behaviors including from bank that student doesn't have
+  const studentBehaviorNames = new Set(student.behaviors.map(b => b.name.toLowerCase()));
+  const availableBankBehaviors = globalBehaviorBank.filter(
+    b => !studentBehaviorNames.has(b.name.toLowerCase())
+  );
   
   // Get preselected behaviors or default to first 3
   const quickABCBehaviors = preselectedBehaviorIds.length > 0 
     ? student.behaviors.filter(b => preselectedBehaviorIds.includes(b.id))
     : student.behaviors.slice(0, 3);
+
+  // Get display name for user
+  const getUserDisplayName = useCallback(() => {
+    if (!user) return 'Unknown';
+    return user.email?.split('@')[0] || 'Unknown';
+  }, [user]);
 
   // Update timer displays every second
   useEffect(() => {
@@ -204,7 +250,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   
   // Record multiple behaviors at once with frequency 1
   const handleRecordMultipleBehaviors = () => {
-    if (selectedMultiBehaviors.length === 0) return;
+    if (selectedMultiBehaviors.length === 0 || !user) return;
     
     const now = new Date();
     const entries: RecordedEntry[] = [];
@@ -212,6 +258,8 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     selectedMultiBehaviors.forEach(behaviorId => {
       const behavior = student.behaviors.find(b => b.id === behaviorId);
       if (!behavior) return;
+      
+      const entryId = crypto.randomUUID();
       
       // Add to historical with count of 1
       addHistoricalFrequency({
@@ -222,11 +270,14 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       });
       
       entries.push({
+        id: entryId,
         behaviorId,
         behaviorName: behavior.name,
         count: 1,
         timestamp: now,
         type: 'frequency',
+        recordedBy: user.id,
+        recordedByName: getUserDisplayName(),
       });
     });
     
@@ -242,7 +293,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   };
 
   const handleQuickABC = () => {
-    if (selectedBehaviors.length === 0 || !selectedAntecedent || !selectedConsequence) {
+    if (selectedBehaviors.length === 0 || !selectedAntecedent || !selectedConsequence || !user) {
       toast({
         title: 'Missing info',
         description: 'Please select at least one behavior, antecedent, and consequence',
@@ -250,6 +301,14 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       });
       return;
     }
+
+    const now = new Date();
+    const abcEntryId = crypto.randomUUID();
+    
+    // Calculate duration if included
+    const durationMins = abcIncludeDuration 
+      ? (parseInt(abcDurationMinutes) || 0) + (parseInt(abcDurationSeconds) || 0) / 60
+      : undefined;
 
     // Record ABC for each selected behavior with frequency 1
     selectedBehaviors.forEach(behaviorId => {
@@ -263,17 +322,42 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
         behavior: behavior.name,
         consequence: selectedConsequence,
         frequencyCount: 1, // Default frequency 1 for multi-select
+        hasDuration: abcIncludeDuration,
+        durationMinutes: durationMins,
       });
+      
+      // If linking ABC to data, create corresponding frequency entry
+      if (linkABCToData) {
+        const entryId = crypto.randomUUID();
+        
+        setRecordedEntries(prev => [{
+          id: entryId,
+          behaviorId,
+          behaviorName: behavior.name,
+          count: 1,
+          durationSeconds: durationMins ? durationMins * 60 : undefined,
+          timestamp: now,
+          type: 'abc',
+          recordedBy: user.id,
+          recordedByName: getUserDisplayName(),
+          linkedABCId: abcEntryId,
+          antecedent: selectedAntecedent,
+          consequence: selectedConsequence,
+        }, ...prev]);
+      }
     });
 
     toast({ 
       title: 'ABC Recorded', 
-      description: `${selectedBehaviors.length} behavior(s) saved with frequency 1` 
+      description: `${selectedBehaviors.length} behavior(s) saved with frequency 1${linkABCToData ? ' (linked)' : ''}` 
     });
     setSelectedBehaviors([]);
     setSelectedAntecedent(null);
     setSelectedConsequence(null);
     setShowABCQuick(false);
+    setAbcIncludeDuration(false);
+    setAbcDurationMinutes('');
+    setAbcDurationSeconds('');
   };
 
   const handleAddBehavior = () => {
@@ -294,8 +378,35 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     setShowAddBehavior(false);
   };
   
-  // Toggle duration tracking for a behavior
-  const handleToggleBehaviorDuration = (behaviorId: string) => {
+  // Add behavior from bank
+  const handleAddFromBank = () => {
+    if (!selectedBankBehavior) return;
+    
+    const bankBehavior = globalBehaviorBank.find(b => b.id === selectedBankBehavior);
+    if (!bankBehavior) return;
+    
+    addBehaviorWithMethods(
+      student.id, 
+      bankBehavior.name, 
+      ['frequency', 'abc'], 
+      { 
+        operationalDefinition: bankBehavior.operationalDefinition,
+        category: bankBehavior.category,
+        baseBehaviorId: bankBehavior.id,
+      }
+    );
+    
+    toast({
+      title: 'Behavior Added',
+      description: `"${bankBehavior.name}" added from library`,
+    });
+    
+    setSelectedBankBehavior('');
+    setShowBehaviorBankDialog(false);
+  };
+  
+  // Toggle duration tracking for a behavior directly (without settings gear)
+  const handleQuickToggleDuration = (behaviorId: string) => {
     const behavior = student.behaviors.find(b => b.id === behaviorId);
     if (!behavior) return;
     
@@ -314,6 +425,11 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       title: hasDuration ? 'Duration Disabled' : 'Duration Enabled',
       description: `${behavior.name} ${hasDuration ? 'no longer tracks' : 'now tracks'} duration`,
     });
+  };
+  
+  // Toggle duration tracking for a behavior via settings
+  const handleToggleBehaviorDuration = (behaviorId: string) => {
+    handleQuickToggleDuration(behaviorId);
   };
 
   const handleAddNewAntecedent = () => {
@@ -371,6 +487,8 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
 
   // Record Now - save current behavior data immediately with timestamp
   const handleRecordNow = async () => {
+    if (!user) return;
+    
     setIsRecording(true);
     const now = new Date();
     const entries: RecordedEntry[] = [];
@@ -380,6 +498,8 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       for (const behavior of student.behaviors) {
         const count = getFrequencyCount(student.id, behavior.id);
         if (count > 0) {
+          const entryId = crypto.randomUUID();
+          
           // Add to historical frequency with timestamp
           addHistoricalFrequency({
             studentId: student.id,
@@ -389,11 +509,14 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
           });
           
           entries.push({
+            id: entryId,
             behaviorId: behavior.id,
             behaviorName: behavior.name,
             count,
             timestamp: now,
             type: 'frequency',
+            recordedBy: user.id,
+            recordedByName: getUserDisplayName(),
           });
           
           // Reset the count after recording
@@ -445,7 +568,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   
   // Confirm and save duration
   const handleConfirmDuration = () => {
-    if (!pendingDuration) return;
+    if (!pendingDuration || !user) return;
     
     const mins = parseInt(editedMinutes) || 0;
     const secs = parseInt(editedSeconds) || 0;
@@ -463,6 +586,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     
     const behavior = student.behaviors.find(b => b.id === pendingDuration.behaviorId);
     const now = new Date();
+    const entryId = crypto.randomUUID();
     
     addHistoricalDuration({
       studentId: student.id,
@@ -472,12 +596,15 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     });
     
     setRecordedEntries(prev => [{
+      id: entryId,
       behaviorId: pendingDuration.behaviorId,
       behaviorName: behavior?.name || 'Unknown',
       count: 0,
       durationSeconds: totalSeconds,
       timestamp: now,
       type: 'duration',
+      recordedBy: user.id,
+      recordedByName: getUserDisplayName(),
     }, ...prev]);
     
     toast({
@@ -500,7 +627,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   };
 
   const handleSaveDuration = () => {
-    if (!selectedDurationBehavior) return;
+    if (!selectedDurationBehavior || !user) return;
     
     const mins = parseInt(durationMinutes) || 0;
     const secs = parseInt(durationSeconds) || 0;
@@ -517,6 +644,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     
     const behavior = student.behaviors.find(b => b.id === selectedDurationBehavior);
     const now = new Date();
+    const entryId = crypto.randomUUID();
     
     // Add historical duration
     addHistoricalDuration({
@@ -527,12 +655,15 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     });
     
     setRecordedEntries(prev => [{
+      id: entryId,
       behaviorId: selectedDurationBehavior,
       behaviorName: behavior?.name || 'Unknown',
       count: 0,
       durationSeconds: totalSeconds,
       timestamp: now,
       type: 'duration',
+      recordedBy: user.id,
+      recordedByName: getUserDisplayName(),
     }, ...prev]);
     
     toast({
@@ -561,34 +692,60 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     }
   };
   
-  // Get today's recorded data summary
+  // Get today's recorded data summary with cumulative totals
   const getTodaySummary = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntries = recordedEntries.filter(
       e => format(e.timestamp, 'yyyy-MM-dd') === today
     );
     
-    // Group by behavior
-    const behaviorSummary: Record<string, { frequency: number; duration: number; entries: RecordedEntry[] }> = {};
+    // Group by behavior with cumulative totals
+    const behaviorSummary: Record<string, { 
+      frequency: number; 
+      duration: number; 
+      entries: RecordedEntry[];
+      abcCount: number;
+    }> = {};
+    
+    // Track linked ABC IDs to avoid double counting
+    const linkedABCIds = new Set<string>();
     
     todayEntries.forEach(entry => {
       if (!behaviorSummary[entry.behaviorId]) {
-        behaviorSummary[entry.behaviorId] = { frequency: 0, duration: 0, entries: [] };
+        behaviorSummary[entry.behaviorId] = { frequency: 0, duration: 0, entries: [], abcCount: 0 };
       }
+      
+      // If this entry is linked to an ABC, track it
+      if (entry.linkedABCId) {
+        linkedABCIds.add(entry.linkedABCId);
+      }
+      
       if (entry.type === 'frequency') {
         behaviorSummary[entry.behaviorId].frequency += entry.count;
-      } else if (entry.durationSeconds) {
+      } else if (entry.type === 'duration' && entry.durationSeconds) {
         behaviorSummary[entry.behaviorId].duration += entry.durationSeconds;
+      } else if (entry.type === 'abc') {
+        behaviorSummary[entry.behaviorId].abcCount += entry.count;
+        if (entry.durationSeconds) {
+          behaviorSummary[entry.behaviorId].duration += entry.durationSeconds;
+        }
       }
       behaviorSummary[entry.behaviorId].entries.push(entry);
     });
     
-    return { behaviorSummary, todayEntries };
+    // Calculate grand totals
+    const totals = {
+      totalFrequency: Object.values(behaviorSummary).reduce((sum, d) => sum + d.frequency + d.abcCount, 0),
+      totalDuration: Object.values(behaviorSummary).reduce((sum, d) => sum + d.duration, 0),
+      totalEntries: todayEntries.length,
+    };
+    
+    return { behaviorSummary, todayEntries, totals };
   };
   
   // Export daily summary as CSV
   const handleExportSummary = () => {
-    const { todayEntries } = getTodaySummary();
+    const { todayEntries, behaviorSummary, totals } = getTodaySummary();
     
     if (todayEntries.length === 0) {
       toast({
@@ -599,17 +756,42 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       return;
     }
     
-    const headers = ['Behavior', 'Type', 'Value', 'Time'];
+    // Summary section
+    const summaryRows = [
+      `Daily Summary for ${student.name} - ${format(new Date(), 'MMMM d, yyyy')}`,
+      '',
+      'BEHAVIOR TOTALS',
+      'Behavior,Total Frequency,Total Duration,ABC Entries',
+    ];
+    
+    Object.entries(behaviorSummary).forEach(([behaviorId, data]) => {
+      const behavior = student.behaviors.find(b => b.id === behaviorId);
+      summaryRows.push([
+        behavior?.name || 'Unknown',
+        (data.frequency + data.abcCount).toString(),
+        data.duration > 0 ? formatDuration(data.duration) : '-',
+        data.abcCount.toString(),
+      ].join(','));
+    });
+    
+    summaryRows.push('');
+    summaryRows.push(`GRAND TOTALS: ${totals.totalFrequency} occurrences, ${formatDuration(totals.totalDuration)} total duration`);
+    summaryRows.push('');
+    
+    // Detailed entries
+    const headers = ['Time', 'Behavior', 'Type', 'Value', 'Recorded By', 'Linked ABC'];
     const rows = todayEntries.map(entry => [
+      format(entry.timestamp, 'h:mm a'),
       entry.behaviorName,
       entry.type,
-      entry.type === 'frequency' ? entry.count.toString() : formatDuration(entry.durationSeconds || 0),
-      format(entry.timestamp, 'h:mm a'),
+      entry.type === 'frequency' || entry.type === 'abc' ? entry.count.toString() : formatDuration(entry.durationSeconds || 0),
+      entry.recordedByName,
+      entry.linkedABCId ? 'Yes' : '',
     ]);
     
     const csvContent = [
-      `Daily Summary for ${student.name} - ${format(new Date(), 'MMMM d, yyyy')}`,
-      '',
+      ...summaryRows,
+      'DETAILED ENTRIES',
       headers.join(','),
       ...rows.map(row => row.join(',')),
     ].join('\n');
@@ -628,7 +810,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     });
   };
 
-  const { behaviorSummary, todayEntries } = getTodaySummary();
+  const { behaviorSummary, todayEntries, totals } = getTodaySummary();
 
   return (
     <div className="space-y-4 max-w-md mx-auto">
@@ -720,14 +902,25 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               >
                 <Settings2 className="w-4 h-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddBehavior(true)}
-                title="Add behavior"
-              >
-                <PlusCircle className="w-4 h-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" title="Add behavior">
+                    <PlusCircle className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowAddBehavior(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Behavior
+                  </DropdownMenuItem>
+                  {availableBankBehaviors.length > 0 && (
+                    <DropdownMenuItem onClick={() => setShowBehaviorBankDialog(true)}>
+                      <Library className="w-4 h-4 mr-2" />
+                      From Library ({availableBankBehaviors.length})
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           {multiBehaviorMode && (
@@ -768,23 +961,44 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                       </Badge>
                     </Button>
                   )}
-                  {!multiBehaviorMode && supportsDuration && (
-                    <Button
-                      variant={isTimerActive ? 'default' : 'ghost'}
-                      size="sm"
-                      className={`absolute -top-1 -right-1 h-6 w-6 p-0 rounded-full ${
-                        isTimerActive 
-                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                          : 'bg-muted hover:bg-primary hover:text-primary-foreground'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleTimer(behavior.id);
-                      }}
-                      title={isTimerActive ? `Stop timer (${formatTimerDisplay(timerSeconds)})` : 'Start timer'}
-                    >
-                      {isTimerActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                    </Button>
+                  {!multiBehaviorMode && (
+                    <div className="absolute -top-1 -right-1 flex gap-0.5">
+                      {/* Quick duration toggle */}
+                      <Button
+                        variant={supportsDuration ? 'default' : 'ghost'}
+                        size="sm"
+                        className={`h-5 w-5 p-0 rounded-full ${
+                          supportsDuration 
+                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                        title={supportsDuration ? 'Disable duration' : 'Enable duration'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickToggleDuration(behavior.id);
+                        }}
+                      >
+                        <Timer className="w-2.5 h-2.5" />
+                      </Button>
+                      {supportsDuration && (
+                        <Button
+                          variant={isTimerActive ? 'default' : 'ghost'}
+                          size="sm"
+                          className={`h-5 w-5 p-0 rounded-full ${
+                            isTimerActive 
+                              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+                              : 'bg-green-500 hover:bg-green-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleTimer(behavior.id);
+                          }}
+                          title={isTimerActive ? `Stop timer (${formatTimerDisplay(timerSeconds)})` : 'Start timer'}
+                        >
+                          {isTimerActive ? <Square className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5" />}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -801,7 +1015,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             </Button>
           )}
           
-      {/* Active Timers Display */}
+          {/* Active Timers Display */}
           {activeTimers.length > 0 && (
             <div className="pt-2 border-t">
               <p className="text-xs font-medium mb-2 flex items-center gap-1">
@@ -905,11 +1119,34 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
           <CardContent className="space-y-3">
             {/* Behavior Selection - Multi-select up to 3 */}
             <div>
-              <p className="text-xs font-medium mb-2">
-                Behavior(s) <span className="text-muted-foreground">(select up to 3, frequency = 1)</span>
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium">
+                  Behavior(s) <span className="text-muted-foreground">(select up to 3, frequency = 1)</span>
+                </p>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 px-2">
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowAddBehavior(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Behavior
+                    </DropdownMenuItem>
+                    {availableBankBehaviors.length > 0 && (
+                      <DropdownMenuItem onClick={() => setShowBehaviorBankDialog(true)}>
+                        <Library className="w-4 h-4 mr-2" />
+                        From Library
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <div className="flex flex-wrap gap-1">
-                {quickABCBehaviors.map((b) => (
+                {/* Show all student behaviors, not just quick ABC ones */}
+                {student.behaviors.map((b) => (
                   <Badge
                     key={b.id}
                     variant={selectedBehaviors.includes(b.id) ? 'default' : 'outline'}
@@ -985,15 +1222,71 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                 ))}
               </div>
             </div>
+            
+            {/* Duration toggle for ABC */}
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="abc-duration"
+                    checked={abcIncludeDuration}
+                    onCheckedChange={setAbcIncludeDuration}
+                  />
+                  <Label htmlFor="abc-duration" className="text-xs cursor-pointer flex items-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    Include Duration
+                  </Label>
+                </div>
+              </div>
+              {abcIncludeDuration && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Minutes</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={abcDurationMinutes}
+                      onChange={(e) => setAbcDurationMinutes(e.target.value)}
+                      placeholder="0"
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Seconds</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={abcDurationSeconds}
+                      onChange={(e) => setAbcDurationSeconds(e.target.value)}
+                      placeholder="0"
+                      className="h-8"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Link ABC to frequency/duration data */}
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <Switch
+                id="link-abc"
+                checked={linkABCToData}
+                onCheckedChange={setLinkABCToData}
+              />
+              <Label htmlFor="link-abc" className="text-xs cursor-pointer flex items-center gap-1">
+                <Link2 className="w-3 h-3" />
+                Link to frequency/duration data (prevents double counting)
+              </Label>
+            </div>
 
             <Button 
-              className="w-full" 
-              size="sm"
               onClick={handleQuickABC}
               disabled={selectedBehaviors.length === 0 || !selectedAntecedent || !selectedConsequence}
+              className="w-full"
             >
               <Check className="w-4 h-4 mr-1" />
-              Save ABC ({selectedBehaviors.length} behavior{selectedBehaviors.length !== 1 ? 's' : ''})
+              Record ABC
             </Button>
           </CardContent>
         )}
@@ -1034,15 +1327,24 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-1.5 max-h-32 overflow-y-auto">
-              {recordedEntries.slice(0, 5).map((entry, idx) => (
-                <div key={idx} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1">
-                  <span className="font-medium truncate flex-1">{entry.behaviorName}</span>
-                  <div className="flex items-center gap-2 text-muted-foreground">
+              {recordedEntries.slice(0, 5).map((entry) => (
+                <div key={entry.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="font-medium truncate">{entry.behaviorName}</span>
+                    {entry.linkedABCId && (
+                      <span title="Linked to ABC">
+                        <Link2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground flex-shrink-0">
                     {entry.type === 'duration' ? (
                       <Badge variant="outline" className="text-xs">
                         <Timer className="w-3 h-3 mr-1" />
                         {formatDuration(entry.durationSeconds || 0)}
                       </Badge>
+                    ) : entry.type === 'abc' ? (
+                      <Badge variant="outline" className="text-xs">ABC ×{entry.count}</Badge>
                     ) : (
                       <span>×{entry.count}</span>
                     )}
@@ -1051,6 +1353,16 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                 </div>
               ))}
             </div>
+            {recordedEntries.length > 5 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full mt-2 text-xs"
+                onClick={() => setShowDailySummary(true)}
+              >
+                View all {recordedEntries.length} entries
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -1090,6 +1402,27 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               {format(new Date(), 'EEEE, MMMM d, yyyy')}
             </div>
             
+            {/* Grand Totals */}
+            {Object.keys(behaviorSummary).length > 0 && (
+              <div className="bg-primary/10 rounded-lg p-3">
+                <h4 className="text-sm font-medium mb-2">Day Totals</h4>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{totals.totalFrequency}</div>
+                    <div className="text-xs text-muted-foreground">Occurrences</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{formatDuration(totals.totalDuration)}</div>
+                    <div className="text-xs text-muted-foreground">Duration</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-primary">{totals.totalEntries}</div>
+                    <div className="text-xs text-muted-foreground">Entries</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {Object.keys(behaviorSummary).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -1098,26 +1431,28 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               </div>
             ) : (
               <div className="space-y-3">
-              {Object.entries(behaviorSummary).map(([behaviorId, data]) => {
+                <h4 className="text-sm font-medium">Per Behavior</h4>
+                {Object.entries(behaviorSummary).map(([behaviorId, data]) => {
                   const behavior = student.behaviors.find(b => b.id === behaviorId);
+                  const totalCount = data.frequency + data.abcCount;
                   return (
                     <div key={behaviorId} className="border border-border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{behavior?.name || 'Unknown'}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        {data.frequency > 0 && (
-                          <div className="bg-muted rounded p-2">
-                            <div className="text-xs text-muted-foreground">Frequency</div>
-                            <div className="text-lg font-bold">{data.frequency}</div>
-                          </div>
-                        )}
-                        {data.duration > 0 && (
-                          <div className="bg-muted rounded p-2">
-                            <div className="text-xs text-muted-foreground">Duration</div>
-                            <div className="text-lg font-bold">{formatDuration(data.duration)}</div>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div className="bg-muted rounded p-2 text-center">
+                          <div className="text-xs text-muted-foreground">Frequency</div>
+                          <div className="text-lg font-bold">{totalCount}</div>
+                        </div>
+                        <div className="bg-muted rounded p-2 text-center">
+                          <div className="text-xs text-muted-foreground">Duration</div>
+                          <div className="text-lg font-bold">{data.duration > 0 ? formatDuration(data.duration) : '-'}</div>
+                        </div>
+                        <div className="bg-muted rounded p-2 text-center">
+                          <div className="text-xs text-muted-foreground">ABC</div>
+                          <div className="text-lg font-bold">{data.abcCount}</div>
+                        </div>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
                         {data.entries.length} recording{data.entries.length !== 1 ? 's' : ''}
@@ -1132,21 +1467,31 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
             {todayEntries.length > 0 && (
               <div className="border-t pt-4">
                 <h4 className="text-sm font-medium mb-2">Timeline</h4>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {todayEntries.map((entry, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1.5">
-                      <span className="font-medium">{entry.behaviorName}</span>
-                      <div className="flex items-center gap-2">
-                        {entry.type === 'duration' ? (
-                          <span>{formatDuration(entry.durationSeconds || 0)}</span>
-                        ) : (
-                          <span>×{entry.count}</span>
-                        )}
-                        <span className="text-muted-foreground">{format(entry.timestamp, 'h:mm a')}</span>
+                <ScrollArea className="h-48">
+                  <div className="space-y-1">
+                    {todayEntries.map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium truncate">{entry.behaviorName}</span>
+                          {entry.linkedABCId && (
+                            <Link2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {entry.type === 'duration' ? (
+                            <span>{formatDuration(entry.durationSeconds || 0)}</span>
+                          ) : entry.type === 'abc' ? (
+                            <span>ABC ×{entry.count}</span>
+                          ) : (
+                            <span>×{entry.count}</span>
+                          )}
+                          <span className="text-muted-foreground">{format(entry.timestamp, 'h:mm a')}</span>
+                          <span className="text-muted-foreground text-[10px]">by {entry.recordedByName}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
           </div>
@@ -1201,6 +1546,53 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               Cancel
             </Button>
             <Button onClick={handleAddBehavior} disabled={!newBehaviorName.trim()}>
+              Add Behavior
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Behavior Bank Dialog */}
+      <Dialog open={showBehaviorBankDialog} onOpenChange={setShowBehaviorBankDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Library className="w-4 h-4" />
+              Add from Behavior Library
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select value={selectedBankBehavior} onValueChange={setSelectedBankBehavior}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a behavior..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableBankBehaviors.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    <div className="flex flex-col">
+                      <span>{b.name}</span>
+                      {b.category && (
+                        <span className="text-xs text-muted-foreground">{b.category}</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedBankBehavior && (
+              <div className="text-sm text-muted-foreground bg-muted/50 rounded p-2">
+                {globalBehaviorBank.find(b => b.id === selectedBankBehavior)?.operationalDefinition || 'No definition available'}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowBehaviorBankDialog(false);
+              setSelectedBankBehavior('');
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddFromBank} disabled={!selectedBankBehavior}>
               Add Behavior
             </Button>
           </DialogFooter>
@@ -1427,7 +1819,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               {pendingDuration && formatTimerDisplay(pendingDuration.seconds)}
             </div>
             <p className="text-xs text-center text-muted-foreground">
-              Edit if needed:
+              Edit the duration below if needed
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -1438,6 +1830,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                   max="999"
                   value={editedMinutes}
                   onChange={(e) => setEditedMinutes(e.target.value)}
+                  placeholder="0"
                   className="text-center text-lg"
                 />
               </div>
@@ -1449,24 +1842,22 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                   max="59"
                   value={editedSeconds}
                   onChange={(e) => setEditedSeconds(e.target.value)}
+                  placeholder="0"
                   className="text-center text-lg"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowDurationConfirm(false);
-                setPendingDuration(null);
-              }}
-            >
+            <Button variant="outline" onClick={() => {
+              setShowDurationConfirm(false);
+              setPendingDuration(null);
+            }}>
               Discard
             </Button>
             <Button onClick={handleConfirmDuration}>
-              <Check className="w-4 h-4 mr-1" />
-              Confirm
+              <Save className="w-4 h-4 mr-1" />
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
