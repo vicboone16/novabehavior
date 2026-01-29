@@ -71,7 +71,7 @@ interface UserWithRole {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
-  pin_hash: string | null;
+  has_pin: boolean; // Changed from pin_hash to boolean - don't expose actual hash
   is_approved: boolean;
   roles: AppRole[];
   created_at: string;
@@ -166,7 +166,7 @@ export default function Admin() {
       // Load users with their profiles and roles
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, email, display_name, first_name, last_name, phone, pin_hash, is_approved, created_at');
+        .select('user_id, email, display_name, first_name, last_name, phone, is_approved, created_at');
       
       const { data: roles } = await supabase
         .from('user_roles')
@@ -180,7 +180,7 @@ export default function Admin() {
           first_name: profile.first_name,
           last_name: profile.last_name,
           phone: profile.phone,
-          pin_hash: profile.pin_hash,
+          has_pin: false, // We no longer expose pin_hash - admin can reset but not view
           is_approved: profile.is_approved ?? false,
           roles: roles?.filter(r => r.user_id === profile.user_id).map(r => r.role as AppRole) || [],
           created_at: profile.created_at,
@@ -454,10 +454,9 @@ export default function Admin() {
     }
   };
 
-  // Helper to show PIN (only first 2 and last 2 digits for security)
-  const formatPinDisplay = (pinHash: string | null) => {
-    if (!pinHash) return 'Not set';
-    return '●●●●●●'; // Always show masked
+  // Helper to show PIN status (we no longer have access to the hash)
+  const formatPinDisplay = (hasPin: boolean) => {
+    return hasPin ? '●●●●●●' : 'Not set';
   };
 
   if (loading) {
@@ -685,7 +684,7 @@ export default function Admin() {
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
-                              {formatPinDisplay(u.pin_hash)}
+                              {formatPinDisplay(u.has_pin)}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -921,42 +920,38 @@ export default function Admin() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Current PIN</Label>
+              <Label>PIN Status</Label>
               <div className="flex gap-2 items-center">
                 <Input
-                  value={showEditUser?.pin_hash ? '●●●●●●' : 'Not set'}
+                  value="Admin cannot view PIN status"
                   disabled
                   className="bg-muted flex-1"
                 />
-                {showEditUser?.pin_hash && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={async () => {
-                      if (!showEditUser) return;
-                      try {
-                        const { error } = await supabase
-                          .from('profiles')
-                          .update({ pin_hash: null })
-                          .eq('user_id', showEditUser.id);
-                        if (error) throw error;
-                        toast({ title: 'PIN reset', description: 'User will need to set a new PIN' });
-                        setShowEditUser({ ...showEditUser, pin_hash: null });
-                        await loadData();
-                      } catch (error: any) {
-                        toast({ title: 'Failed to reset PIN', description: error.message, variant: 'destructive' });
-                      }
-                    }}
-                  >
-                    Reset PIN
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    if (!showEditUser) return;
+                    try {
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ pin_hash: null })
+                        .eq('user_id', showEditUser.id);
+                      if (error) throw error;
+                      toast({ title: 'PIN reset', description: 'User will need to set a new PIN' });
+                      setShowEditUser({ ...showEditUser, has_pin: false });
+                      await loadData();
+                    } catch (error: any) {
+                      toast({ title: 'Failed to reset PIN', description: error.message, variant: 'destructive' });
+                    }
+                  }}
+                >
+                  Reset PIN
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {showEditUser?.pin_hash 
-                  ? 'PIN is set. Reset to require user to set a new one.'
-                  : 'No PIN set. User cannot use PIN login until one is configured.'}
+                Reset forces the user to set a new PIN. Admins cannot view whether a PIN is set for security.
               </p>
             </div>
             <div className="space-y-2">
