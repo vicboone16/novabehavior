@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useDataStore } from '@/store/dataStore';
 import { ABCTracker } from '@/components/ABCTracker';
 import { 
@@ -23,7 +24,6 @@ import {
   CONSEQUENCE_OPTIONS 
 } from '@/types/behavior';
 import { toast } from 'sonner';
-
 interface AssessmentDataCollectionProps {
   student: Student;
 }
@@ -86,6 +86,9 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
     durationMinutes: 0,
   });
   const observationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // End observation confirmation state
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
 
   // Custom A/C input state
   const [newAntecedent, setNewAntecedent] = useState('');
@@ -272,6 +275,7 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
   };
 
   const handleEndObservation = () => {
+    setShowEndConfirmation(false);
     setObservationSession({
       isActive: false,
       startTime: null,
@@ -279,6 +283,10 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
     });
     setIntervalTimerRunning(false);
     toast.success('Observation session ended');
+  };
+  
+  const handleRequestEndObservation = () => {
+    setShowEndConfirmation(true);
   };
 
   const toggleBehaviorExpand = (behaviorId: string) => {
@@ -315,7 +323,7 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
               </div>
             </div>
             {observationSession.isActive ? (
-              <Button variant="destructive" size="sm" onClick={handleEndObservation}>
+              <Button variant="destructive" size="sm" onClick={handleRequestEndObservation}>
                 <Square className="w-4 h-4 mr-2" />
                 End Observation
               </Button>
@@ -782,6 +790,18 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* End Observation Confirmation Dialog */}
+      <ConfirmDialog
+        open={showEndConfirmation}
+        onOpenChange={setShowEndConfirmation}
+        title="End Observation?"
+        description={`Are you sure you want to end the observation session? Total duration: ${observationSession.durationMinutes.toFixed(1)} minutes. All recorded data will be saved.`}
+        confirmLabel="End Observation"
+        cancelLabel="Continue Observing"
+        onConfirm={handleEndObservation}
+        variant="destructive"
+      />
     </div>
   );
 }
