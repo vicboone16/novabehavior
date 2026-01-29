@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Clock, Minimize2, Maximize2, Square, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataStore } from '@/store/dataStore';
 import { SessionEndFlow } from './SessionEndFlow';
 import { toast } from '@/hooks/use-toast';
@@ -146,10 +147,28 @@ export function SessionTimer() {
                   {currentSessionId ? 'Session Time' : 'No Active Session'}
                 </p>
                 {activeStudents.length > 0 && (
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
-                    <Users className="w-3 h-3 mr-1" />
-                    {activeStudents.length}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 cursor-default">
+                        <Users className="w-3 h-3 mr-1" />
+                        {activeStudents.length}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-sm">
+                        <p className="font-medium mb-1">Active Students:</p>
+                        {activeStudents.map(s => (
+                          <div key={s.id} className="flex items-center gap-1.5">
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: s.color }} 
+                            />
+                            {s.name}
+                          </div>
+                        ))}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
               <p className="timer-display text-foreground">{formattedTime}</p>
