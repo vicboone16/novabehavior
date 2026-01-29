@@ -137,6 +137,9 @@ export interface Behavior {
   operationalDefinition?: string; // Student-specific definition
   baseBehaviorId?: string; // If pulled from behavior bank
   category?: string;
+  isMastered?: boolean; // Behavior goal mastered - archived
+  masteredAt?: Date;
+  isArchived?: boolean; // Manually archived (different from mastery)
 }
 
 export interface NarrativeNote {
