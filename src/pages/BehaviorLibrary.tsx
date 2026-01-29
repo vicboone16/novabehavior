@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users } from 'lucide-react';
+import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,9 +24,11 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
 import { useDataStore } from '@/store/dataStore';
+import { EditBehaviorDialog } from '@/components/behavior-library/EditBehaviorDialog';
+import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteToStandardDialog';
+import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
 
 // Default behavior bank with operational definitions
 const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
@@ -142,41 +144,77 @@ export default function BehaviorLibrary() {
   const { toast } = useToast();
   const students = useDataStore((state) => state.students);
   const mergeBehaviors = useDataStore((state) => state.mergeBehaviors);
+  const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
+  const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
+  const addToBehaviorBank = useDataStore((state) => state.addToBehaviorBank);
+  const updateBankBehaviorDefinition = useDataStore((state) => state.updateBankBehaviorDefinition);
+  const resetBehaviorDefinition = useDataStore((state) => state.resetBehaviorDefinition);
+  const advancedMergeBehaviors = useDataStore((state) => state.advancedMergeBehaviors);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAddBehavior, setShowAddBehavior] = useState(false);
-  const [editingBehavior, setEditingBehavior] = useState<BehaviorDefinition | null>(null);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showAdvancedMergeDialog, setShowAdvancedMergeDialog] = useState(false);
   const [mergeSource, setMergeSource] = useState<{ name: string; studentNames: string[] } | null>(null);
   const [mergeTarget, setMergeTarget] = useState<string>('');
+  
+  // Edit dialog state
+  const [editingBehavior, setEditingBehavior] = useState<BehaviorDefinition | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  
+  // Promote dialog state
+  const [promotingBehavior, setPromotingBehavior] = useState<(BehaviorDefinition & { studentNames?: string[] }) | null>(null);
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
   
   // Form state
   const [newName, setNewName] = useState('');
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
 
-  // Get all custom behaviors from students - deduplicate by NAME (not by ID)
-  // This prevents the same behavior added to multiple students from appearing multiple times
+  // Apply overrides to default behaviors
+  const effectiveDefaultBehaviors = useMemo(() => {
+    return DEFAULT_BEHAVIORS.map(behavior => {
+      const override = behaviorDefinitionOverrides[behavior.id];
+      if (override) {
+        return {
+          ...behavior,
+          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+          category: override.category || behavior.category,
+          isEdited: true,
+        };
+      }
+      return { ...behavior, isEdited: false };
+    });
+  }, [behaviorDefinitionOverrides]);
+
+  // Get original definition for a built-in behavior
+  const getOriginalDefinition = (behaviorId: string) => {
+    const original = DEFAULT_BEHAVIORS.find(b => b.id === behaviorId);
+    return original?.operationalDefinition;
+  };
+
+  // Get all custom behaviors from students - deduplicate by NAME
   const customBehaviorsMap = new Map<string, BehaviorDefinition & { studentNames: string[] }>();
   
   students.forEach(student => {
     student.behaviors.forEach(behavior => {
       const normalizedName = behavior.name.toLowerCase().trim();
-      // Check if this behavior is already in the default list
-      const isDefault = DEFAULT_BEHAVIORS.find(b => 
+      // Check if this behavior is already in the default list or global bank
+      const isDefault = effectiveDefaultBehaviors.find(b => 
+        b.id === behavior.id || b.name.toLowerCase().trim() === normalizedName
+      );
+      const isInGlobalBank = globalBehaviorBank.find(b =>
         b.id === behavior.id || b.name.toLowerCase().trim() === normalizedName
       );
       
-      if (!isDefault) {
+      if (!isDefault && !isInGlobalBank) {
         if (customBehaviorsMap.has(normalizedName)) {
-          // Behavior already exists - add student name to the list
           const existing = customBehaviorsMap.get(normalizedName)!;
           if (!existing.studentNames.includes(student.name)) {
             existing.studentNames.push(student.name);
           }
         } else {
-          // New behavior - add it
           customBehaviorsMap.set(normalizedName, {
             id: behavior.id,
             name: behavior.name,
@@ -192,7 +230,12 @@ export default function BehaviorLibrary() {
   
   const customBehaviors = Array.from(customBehaviorsMap.values());
 
-  const allBehaviors = [...DEFAULT_BEHAVIORS, ...customBehaviors];
+  // Combine all sources: defaults + global bank + custom
+  const allBehaviors = [
+    ...effectiveDefaultBehaviors.map(b => ({ ...b, source: 'built-in' as const })),
+    ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const, studentNames: [] as string[] })),
+    ...customBehaviors.map(b => ({ ...b, source: 'custom' as const })),
+  ];
 
   const filteredBehaviors = allBehaviors.filter(behavior => {
     const matchesSearch =
@@ -208,7 +251,7 @@ export default function BehaviorLibrary() {
     }
     acc[behavior.category].push(behavior);
     return acc;
-  }, {} as Record<string, BehaviorDefinition[]>);
+  }, {} as Record<string, typeof filteredBehaviors>);
 
   const handleCopyDefinition = (behavior: BehaviorDefinition) => {
     navigator.clipboard.writeText(behavior.operationalDefinition);
@@ -220,7 +263,19 @@ export default function BehaviorLibrary() {
     setNewDefinition('');
     setNewCategory('Other');
     setShowAddBehavior(false);
-    setEditingBehavior(null);
+  };
+
+  const handleAddBehavior = () => {
+    if (newName.trim() && newDefinition.trim()) {
+      addToBehaviorBank({
+        name: newName.trim(),
+        operationalDefinition: newDefinition.trim(),
+        category: newCategory,
+        isGlobal: true,
+      });
+      toast({ title: 'Behavior added to library' });
+      resetForm();
+    }
   };
 
   // Find mergeable behaviors (custom behaviors that match a bank behavior name)
@@ -228,7 +283,7 @@ export default function BehaviorLibrary() {
     const result: { custom: { name: string; studentNames: string[] }; bankBehavior: BehaviorDefinition }[] = [];
     
     customBehaviors.forEach(custom => {
-      const matchingBank = DEFAULT_BEHAVIORS.find(
+      const matchingBank = effectiveDefaultBehaviors.find(
         bank => bank.name.toLowerCase().trim() === custom.name.toLowerCase().trim()
       );
       if (matchingBank) {
@@ -237,7 +292,7 @@ export default function BehaviorLibrary() {
     });
     
     return result;
-  }, [customBehaviors]);
+  }, [customBehaviors, effectiveDefaultBehaviors]);
 
   const handleMergeBehavior = () => {
     if (!mergeSource || !mergeTarget) return;
@@ -245,12 +300,86 @@ export default function BehaviorLibrary() {
     mergeBehaviors(mergeSource.name, mergeTarget);
     toast({ 
       title: 'Behaviors merged', 
-      description: `Linked ${mergeSource.studentNames.length} student behaviors to the library definition. Custom definitions preserved.` 
+      description: `Linked ${mergeSource.studentNames.length} student behaviors to the library definition.` 
     });
     setShowMergeDialog(false);
     setMergeSource(null);
     setMergeTarget('');
   };
+
+  const handleEditBehavior = (behavior: BehaviorDefinition) => {
+    setEditingBehavior(behavior);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = (behaviorId: string, definition: string, category?: string) => {
+    updateBankBehaviorDefinition(behaviorId, definition, category);
+    toast({ title: 'Definition updated' });
+    setShowEditDialog(false);
+    setEditingBehavior(null);
+  };
+
+  const handleResetDefinition = (behaviorId: string) => {
+    resetBehaviorDefinition(behaviorId);
+    toast({ title: 'Definition reset to default' });
+  };
+
+  const handlePromoteBehavior = (behavior: BehaviorDefinition & { studentNames?: string[] }) => {
+    setPromotingBehavior(behavior);
+    setShowPromoteDialog(true);
+  };
+
+  const handleConfirmPromote = (behavior: BehaviorDefinition) => {
+    addToBehaviorBank({
+      name: behavior.name,
+      operationalDefinition: behavior.operationalDefinition,
+      category: behavior.category,
+      isGlobal: true,
+    });
+    toast({ 
+      title: 'Behavior promoted', 
+      description: `"${behavior.name}" is now a standard organization behavior.` 
+    });
+    setShowPromoteDialog(false);
+    setPromotingBehavior(null);
+  };
+
+  const handleAdvancedMerge = (sourceId: string, targetId: string, useSourceName: boolean) => {
+    advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
+    toast({ 
+      title: 'Behaviors merged', 
+      description: 'All data has been preserved and behaviors combined.' 
+    });
+  };
+
+  // Prepare behaviors for advanced merge dialog
+  const behaviorsForMerge = useMemo(() => {
+    const result: Array<{
+      id: string;
+      name: string;
+      operationalDefinition: string;
+      category: string;
+      isGlobal: boolean;
+      studentNames: string[];
+      studentCount: number;
+    }> = [];
+
+    // Add all behaviors with student counts
+    allBehaviors.forEach(b => {
+      const studentNames = (b as any).studentNames || [];
+      result.push({
+        id: b.id,
+        name: b.name,
+        operationalDefinition: b.operationalDefinition,
+        category: b.category,
+        isGlobal: b.isGlobal || false,
+        studentNames,
+        studentCount: studentNames.length,
+      });
+    });
+
+    return result;
+  }, [allBehaviors]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,10 +401,16 @@ export default function BehaviorLibrary() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => setShowAddBehavior(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Custom Behavior
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowAdvancedMergeDialog(true)}>
+                <Merge className="w-4 h-4 mr-2" />
+                Merge Behaviors
+              </Button>
+              <Button onClick={() => setShowAddBehavior(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Behavior
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -323,14 +458,18 @@ export default function BehaviorLibrary() {
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Standard behaviors:</span>
+                    <span className="text-muted-foreground">Built-in behaviors:</span>
                     <span className="font-medium">{DEFAULT_BEHAVIORS.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Organization behaviors:</span>
+                    <span className="font-medium">{globalBehaviorBank.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Custom behaviors:</span>
                     <span className="font-medium">{customBehaviors.length}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between border-t pt-2">
                     <span className="text-muted-foreground">Total:</span>
                     <span className="font-medium">{allBehaviors.length}</span>
                   </div>
@@ -340,14 +479,14 @@ export default function BehaviorLibrary() {
 
             {/* Merge duplicates card */}
             {mergeableBehaviors.length > 0 && (
-              <Card className="border-amber-500/50 bg-amber-500/5">
+              <Card className="border-primary/50 bg-primary/5">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Merge className="w-4 h-4 text-amber-600" />
-                    Merge Duplicates
+                    <Merge className="w-4 h-4 text-primary" />
+                    Quick Merge
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {mergeableBehaviors.length} custom behavior{mergeableBehaviors.length > 1 ? 's' : ''} can be linked to library definitions
+                    {mergeableBehaviors.length} custom behavior{mergeableBehaviors.length > 1 ? 's' : ''} match library definitions
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -386,7 +525,7 @@ export default function BehaviorLibrary() {
               <CardHeader>
                 <CardTitle>Behavior Definitions</CardTitle>
                 <CardDescription>
-                  Click on a behavior to view full details or copy its definition
+                  Edit definitions, promote custom behaviors, or merge duplicates
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -404,13 +543,29 @@ export default function BehaviorLibrary() {
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 mr-4">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                                       <h4 className="font-semibold">{behavior.name}</h4>
-                                    {!behavior.isGlobal && (
+                                      {behavior.source === 'built-in' && (
+                                        <Badge variant="secondary" className="text-xs">Built-in</Badge>
+                                      )}
+                                      {behavior.source === 'organization' && (
+                                        <Badge className="text-xs bg-primary/20 text-primary hover:bg-primary/30">
+                                          <Building2 className="w-3 h-3 mr-1" />
+                                          Organization
+                                        </Badge>
+                                      )}
+                                      {behavior.source === 'custom' && (
                                         <Badge variant="outline" className="text-xs">Custom</Badge>
+                                      )}
+                                      {(behavior as any).isEdited && (
+                                        <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                                          <Edit2 className="w-3 h-3 mr-1" />
+                                          Edited
+                                        </Badge>
                                       )}
                                       {(behavior as any).studentNames && (behavior as any).studentNames.length > 0 && (
                                         <Badge variant="secondary" className="text-xs">
+                                          <Users className="w-3 h-3 mr-1" />
                                           {(behavior as any).studentNames.length} student{(behavior as any).studentNames.length > 1 ? 's' : ''}
                                         </Badge>
                                       )}
@@ -419,15 +574,36 @@ export default function BehaviorLibrary() {
                                       {behavior.operationalDefinition}
                                     </p>
                                   </div>
-                                  <div className="flex gap-1">
+                                  <div className="flex gap-1 flex-shrink-0">
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
                                       onClick={() => handleCopyDefinition(behavior)}
+                                      title="Copy definition"
                                     >
                                       <Copy className="w-4 h-4" />
                                     </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleEditBehavior(behavior)}
+                                      title="Edit definition"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                    {behavior.source === 'custom' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-primary hover:text-primary"
+                                        onClick={() => handlePromoteBehavior(behavior as BehaviorDefinition & { studentNames?: string[] })}
+                                        title="Make standard"
+                                      >
+                                        <Building2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               </CardContent>
@@ -455,7 +631,10 @@ export default function BehaviorLibrary() {
       <Dialog open={showAddBehavior} onOpenChange={(open) => !open && resetForm()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Custom Behavior</DialogTitle>
+            <DialogTitle>Add Organization Behavior</DialogTitle>
+            <DialogDescription>
+              This behavior will be available to add to any student.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -500,14 +679,14 @@ export default function BehaviorLibrary() {
             <Button variant="outline" onClick={resetForm}>
               Cancel
             </Button>
-            <Button disabled={!newName.trim() || !newDefinition.trim()}>
+            <Button onClick={handleAddBehavior} disabled={!newName.trim() || !newDefinition.trim()}>
               Add to Library
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Merge Confirmation Dialog */}
+      {/* Quick Merge Confirmation Dialog */}
       <Dialog open={showMergeDialog} onOpenChange={setShowMergeDialog}>
         <DialogContent>
           <DialogHeader>
@@ -552,6 +731,40 @@ export default function BehaviorLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Behavior Dialog */}
+      <EditBehaviorDialog
+        behavior={editingBehavior}
+        isOpen={showEditDialog}
+        onClose={() => {
+          setShowEditDialog(false);
+          setEditingBehavior(null);
+        }}
+        onSave={handleSaveEdit}
+        onReset={handleResetDefinition}
+        isBuiltIn={editingBehavior ? DEFAULT_BEHAVIORS.some(b => b.id === editingBehavior.id) : false}
+        isEdited={editingBehavior ? !!behaviorDefinitionOverrides[editingBehavior.id] : false}
+        originalDefinition={editingBehavior ? getOriginalDefinition(editingBehavior.id) : undefined}
+      />
+
+      {/* Promote to Standard Dialog */}
+      <PromoteToStandardDialog
+        behavior={promotingBehavior}
+        isOpen={showPromoteDialog}
+        onClose={() => {
+          setShowPromoteDialog(false);
+          setPromotingBehavior(null);
+        }}
+        onConfirm={handleConfirmPromote}
+      />
+
+      {/* Advanced Merge Dialog */}
+      <AdvancedMergeDialog
+        isOpen={showAdvancedMergeDialog}
+        onClose={() => setShowAdvancedMergeDialog(false)}
+        allBehaviors={behaviorsForMerge}
+        onMerge={handleAdvancedMerge}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BookOpen, Plus, Search, Edit2, Trash2, Copy, Check, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { BookOpen, Plus, Search, Trash2, Copy, Building2, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
+import { useDataStore } from '@/store/dataStore';
 
 // Default behavior bank with operational definitions
 const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
@@ -152,7 +153,33 @@ export function BehaviorBank({
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
 
-  const allBehaviors = [...DEFAULT_BEHAVIORS, ...customBehaviors];
+  // Get global behavior bank and overrides from store
+  const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
+  const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
+
+  // Apply overrides to default behaviors
+  const effectiveDefaultBehaviors = useMemo(() => {
+    return DEFAULT_BEHAVIORS.map(behavior => {
+      const override = behaviorDefinitionOverrides[behavior.id];
+      if (override) {
+        return {
+          ...behavior,
+          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+          category: override.category || behavior.category,
+          isEdited: true,
+          source: 'built-in' as const,
+        };
+      }
+      return { ...behavior, isEdited: false, source: 'built-in' as const };
+    });
+  }, [behaviorDefinitionOverrides]);
+
+  // Combine all behavior sources
+  const allBehaviors = useMemo(() => [
+    ...effectiveDefaultBehaviors,
+    ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const, isEdited: false })),
+    ...customBehaviors.map(b => ({ ...b, source: 'custom' as const, isEdited: false })),
+  ], [effectiveDefaultBehaviors, globalBehaviorBank, customBehaviors]);
 
   const filteredBehaviors = allBehaviors.filter(behavior => {
     const matchesSearch = 
@@ -168,7 +195,7 @@ export function BehaviorBank({
     }
     acc[behavior.category].push(behavior);
     return acc;
-  }, {} as Record<string, BehaviorDefinition[]>);
+  }, {} as Record<string, typeof filteredBehaviors>);
 
   const handleAddBehavior = () => {
     if (newName.trim() && newDefinition.trim() && onAddCustomBehavior) {
@@ -247,10 +274,25 @@ export function BehaviorBank({
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 mr-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h5 className="font-medium text-sm">{behavior.name}</h5>
-                              {!behavior.isGlobal && (
+                              {behavior.source === 'built-in' && (
+                                <Badge variant="secondary" className="text-xs">Built-in</Badge>
+                              )}
+                              {behavior.source === 'organization' && (
+                                <Badge className="text-xs bg-primary/20 text-primary hover:bg-primary/30">
+                                  <Building2 className="w-3 h-3 mr-1" />
+                                  Organization
+                                </Badge>
+                              )}
+                              {behavior.source === 'custom' && (
                                 <Badge variant="outline" className="text-xs">Custom</Badge>
+                              )}
+                              {behavior.isEdited && (
+                                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                                  <Edit2 className="w-3 h-3 mr-1" />
+                                  Edited
+                                </Badge>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -267,7 +309,7 @@ export function BehaviorBank({
                               <Copy className="w-3 h-3 mr-1" />
                               Use
                             </Button>
-                            {!behavior.isGlobal && onDeleteCustomBehavior && (
+                            {behavior.source === 'custom' && onDeleteCustomBehavior && (
                               <Button
                                 variant="ghost"
                                 size="icon"
