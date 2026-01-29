@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, addMinutes, setHours, setMinutes } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,17 @@ const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
   };
 });
 
+export const APPOINTMENT_CATEGORIES = [
+  { value: 'assessment', label: 'Assessment' },
+  { value: 'supervision', label: 'Supervision' },
+  { value: 'parent_training', label: 'Parent Training' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'collaboration', label: 'Collaboration' },
+  { value: 'iep_meeting', label: 'IEP Meeting' },
+  { value: '1on1_session', label: '1:1 Session' },
+  { value: 'other', label: 'Other' },
+];
+
 export function AppointmentDialog({
   open,
   onOpenChange,
@@ -75,6 +87,9 @@ export function AppointmentDialog({
 }: AppointmentDialogProps) {
   const NO_STUDENT_VALUE = '__no_student__';
 
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('1on1_session');
+  const [customCategory, setCustomCategory] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(30);
@@ -90,6 +105,22 @@ export function AppointmentDialog({
       setStartTime(format(start, 'HH:mm'));
       setDuration(appointment.duration_minutes);
       setStudentId(appointment.student_id || '');
+      setTitle(appointment.title || '');
+      
+      // Parse category from appointment_type (if it's not 'scheduled' or 'retroactive')
+      const aptType = appointment.appointment_type;
+      if (aptType && aptType !== 'scheduled' && aptType !== 'retroactive') {
+        if (APPOINTMENT_CATEGORIES.some(c => c.value === aptType)) {
+          setCategory(aptType);
+          setCustomCategory('');
+        } else {
+          setCategory('other');
+          setCustomCategory(aptType);
+        }
+      } else {
+        setCategory('1on1_session');
+        setCustomCategory('');
+      }
       
       // Load staff from array or single value
       if (appointment.staff_user_ids && appointment.staff_user_ids.length > 0) {
@@ -103,6 +134,9 @@ export function AppointmentDialog({
       setNotes(appointment.notes || '');
     } else {
       // Reset to defaults
+      setTitle('');
+      setCategory('1on1_session');
+      setCustomCategory('');
       setSelectedDate(new Date());
       setStartTime('09:00');
       setDuration(30);
@@ -133,16 +167,22 @@ export function AppointmentDialog({
     const startDateTime = setMinutes(setHours(selectedDate, hours), minutes);
     const endDateTime = addMinutes(startDateTime, duration);
 
+    // Determine appointment type - use category or custom
+    const appointmentType = category === 'other' && customCategory 
+      ? customCategory 
+      : category;
+
     onSave({
+      title: title.trim() || null,
       student_id: studentId || null,
-      staff_user_id: selectedStaffIds[0] || null, // Keep primary staff for backwards compatibility
+      staff_user_id: selectedStaffIds[0] || null,
       staff_user_ids: selectedStaffIds,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
       duration_minutes: duration,
       notes: notes || null,
       status: 'scheduled',
-      appointment_type: 'scheduled'
+      appointment_type: appointmentType
     });
   };
 
@@ -156,6 +196,43 @@ export function AppointmentDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Title field - at the top */}
+          <div className="space-y-2">
+            <Label>Appointment Title</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Morning Session, Weekly Check-in..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional. This will be displayed on the calendar.
+            </p>
+          </div>
+
+          {/* Category dropdown */}
+          <div className="space-y-2">
+            <Label>Category *</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APPOINTMENT_CATEGORIES.map(c => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {category === 'other' && (
+              <Input
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Enter custom category..."
+                className="mt-2"
+              />
+            )}
+          </div>
+
           {/* Date picker */}
           <div className="space-y-2">
             <Label>Date *</Label>
@@ -256,7 +333,6 @@ export function AppointmentDialog({
                       >
                         <Checkbox 
                           checked={selectedStaffIds.includes(s.id)}
-                          // Row click handles toggling; prevent double-toggle.
                           onCheckedChange={() => {}}
                           className="pointer-events-none"
                         />
@@ -286,7 +362,6 @@ export function AppointmentDialog({
                 <SelectValue placeholder="Select student or leave empty..." />
               </SelectTrigger>
               <SelectContent>
-                {/* Radix SelectItem value cannot be an empty string */}
                 <SelectItem value={NO_STUDENT_VALUE}>No student (staff-only meeting)</SelectItem>
                 {students.map(s => (
                   <SelectItem key={s.id} value={s.id}>

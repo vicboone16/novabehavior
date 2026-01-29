@@ -5,6 +5,8 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
 import type { Appointment, CalendarStudent, CalendarStaff, FilterMode } from '@/types/schedule';
 
 interface ScheduleTimelineProps {
@@ -55,7 +57,29 @@ export function ScheduleTimeline({
   }, [filterMode, staff, students, dayAppointments]);
 
   const getStudentColor = (id?: string | null) => id ? students.find(s => s.id === id)?.color || '#3B82F6' : '#6B7280';
-  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : 'Staff Only';
+  const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : null;
+
+  const getStaffNames = (appointment: Appointment) => {
+    const staffIds = appointment.staff_user_ids?.length 
+      ? appointment.staff_user_ids 
+      : appointment.staff_user_id ? [appointment.staff_user_id] : [];
+    
+    if (staffIds.length === 0) return undefined;
+    return staffIds.map(id => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
+  };
+
+  const getCategoryLabel = (type: string) => {
+    if (type === 'scheduled' || type === 'retroactive') return null;
+    const cat = APPOINTMENT_CATEGORIES.find(c => c.value === type);
+    return cat?.label || type;
+  };
+
+  const getDisplayTitle = (appointment: Appointment) => {
+    if (appointment.title) return appointment.title;
+    const catLabel = getCategoryLabel(appointment.appointment_type);
+    if (catLabel) return catLabel;
+    return 'Appointment';
+  };
 
   const getAppointmentsForRow = (rowId: string, rowType: 'staff' | 'student') => {
     if (rowType === 'staff') {
@@ -180,32 +204,46 @@ export function ScheduleTimeline({
                   const { left, width } = getAppointmentStyle(appointment);
                   const studentColor = getStudentColor(appointment.student_id);
                   const isRetroactive = appointment.appointment_type === 'retroactive';
+                  const displayTitle = getDisplayTitle(appointment);
+                  const staffNames = getStaffNames(appointment);
+                  const studentName = getStudentName(appointment.student_id);
 
                   return (
-                    <div
-                      key={appointment.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, appointment)}
-                      onClick={() => onAppointmentClick(appointment)}
-                      className={cn(
-                        "absolute top-1 bottom-1 rounded-md px-2 cursor-pointer",
-                        "flex items-center gap-1 overflow-hidden",
-                        "hover:shadow-md hover:z-10 transition-shadow",
-                        draggedId === appointment.id && "opacity-50"
-                      )}
-                      style={{
-                        left,
-                        width,
-                        backgroundColor: `${studentColor}25`,
-                        borderLeft: `3px solid ${studentColor}`,
-                        borderStyle: isRetroactive ? 'dashed' : 'solid'
-                      }}
-                    >
-                      <span className="text-xs font-medium truncate" style={{ color: studentColor }}>
-                        {row.type === 'staff' ? getStudentName(appointment.student_id) : null}
-                        {format(new Date(appointment.start_time), 'h:mma')}
-                      </span>
-                    </div>
+                    <Tooltip key={appointment.id}>
+                      <TooltipTrigger asChild>
+                        <div
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, appointment)}
+                          onClick={() => onAppointmentClick(appointment)}
+                          className={cn(
+                            "absolute top-1 bottom-1 rounded-md px-2 cursor-pointer",
+                            "flex items-center gap-1 overflow-hidden",
+                            "hover:shadow-md hover:z-10 transition-shadow",
+                            draggedId === appointment.id && "opacity-50"
+                          )}
+                          style={{
+                            left,
+                            width,
+                            backgroundColor: `${studentColor}25`,
+                            borderLeft: `3px solid ${studentColor}`,
+                            borderStyle: isRetroactive ? 'dashed' : 'solid'
+                          }}
+                        >
+                          <span className="text-xs font-medium truncate" style={{ color: studentColor }}>
+                            {displayTitle} {format(new Date(appointment.start_time), 'h:mma')}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <div className="space-y-1 text-sm">
+                          <p className="font-medium">{displayTitle}</p>
+                          {staffNames && <p>Staff: {staffNames}</p>}
+                          {studentName && <p>Student: {studentName}</p>}
+                          <p>{format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}</p>
+                          {appointment.notes && <p className="text-muted-foreground italic">{appointment.notes}</p>}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 })}
 
