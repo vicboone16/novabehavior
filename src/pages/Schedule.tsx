@@ -40,12 +40,16 @@ export default function Schedule() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [showSessionPrompt, setShowSessionPrompt] = useState<Appointment | null>(null);
 
-  // Check admin status
+  // Check admin status and set appropriate filter mode for non-admins
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user) return;
       const { data } = await supabase.rpc('is_admin', { _user_id: user.id });
       setIsAdmin(!!data);
+      // Non-admins should only see their own schedule by default
+      if (!data) {
+        setFilterMode('my');
+      }
     };
     checkAdmin();
   }, [user]);
@@ -149,10 +153,16 @@ export default function Schedule() {
 
   const goToToday = () => setCurrentDate(new Date());
 
-  // Filter appointments based on filter mode
+  // Filter appointments based on filter mode and user permissions
   const filteredAppointments = useMemo(() => {
     let filtered = appointments;
 
+    // Non-admins can ONLY see their own appointments
+    if (!isAdmin) {
+      return appointments.filter(a => a.staff_user_id === user?.id);
+    }
+
+    // Admins can use all filter modes
     switch (filterMode) {
       case 'my':
         filtered = appointments.filter(a => a.staff_user_id === user?.id);
@@ -170,7 +180,21 @@ export default function Schedule() {
     }
 
     return filtered;
-  }, [appointments, filterMode, selectedStaffId, selectedStudentId, user?.id]);
+  }, [appointments, filterMode, selectedStaffId, selectedStudentId, user?.id, isAdmin]);
+
+  // For non-admins, only show students they have appointments with
+  const visibleStudents = useMemo(() => {
+    if (isAdmin) return students;
+    
+    // Get student IDs from user's appointments
+    const studentIdsWithAppointments = new Set(
+      appointments
+        .filter(a => a.staff_user_id === user?.id && a.student_id)
+        .map(a => a.student_id)
+    );
+    
+    return students.filter(s => studentIdsWithAppointments.has(s.id));
+  }, [students, appointments, user?.id, isAdmin]);
 
   const handleCreateAppointment = () => {
     setEditingAppointment(null);
@@ -191,9 +215,11 @@ export default function Schedule() {
     // If within 15 minutes of start time or past start time, offer to start session
     if (timeDiff <= 15 && appointment.status === 'scheduled' && !appointment.linked_session_id) {
       setShowSessionPrompt(appointment);
-    } else {
+    } else if (isAdmin) {
+      // Only admins can edit appointments
       handleEditAppointment(appointment);
     }
+    // Non-admins clicking outside the session prompt window does nothing
   };
 
   const handleSaveAppointment = async (data: Partial<Appointment>) => {
@@ -269,13 +295,12 @@ export default function Schedule() {
     }
   };
 
-  if (!isAdmin) {
+  // Loading state
+  if (loading) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">Only administrators can access scheduling.</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -290,53 +315,68 @@ export default function Schedule() {
             </CardTitle>
             
             <div className="flex flex-wrap items-center gap-2">
-              {/* Filter controls */}
-              <Select value={filterMode} onValueChange={(v: FilterMode) => setFilterMode(v)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    <span className="flex items-center gap-2"><Users className="w-4 h-4" /> All</span>
-                  </SelectItem>
-                  <SelectItem value="my">
-                    <span className="flex items-center gap-2"><User className="w-4 h-4" /> My Schedule</span>
-                  </SelectItem>
-                  <SelectItem value="staff">By Staff</SelectItem>
-                  <SelectItem value="student">By Student</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Filter controls - Only show for admins */}
+              {isAdmin && (
+                <>
+                  <Select value={filterMode} onValueChange={(v: FilterMode) => setFilterMode(v)}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <span className="flex items-center gap-2"><Users className="w-4 h-4" /> All</span>
+                      </SelectItem>
+                      <SelectItem value="my">
+                        <span className="flex items-center gap-2"><User className="w-4 h-4" /> My Schedule</span>
+                      </SelectItem>
+                      <SelectItem value="staff">By Staff</SelectItem>
+                      <SelectItem value="student">By Student</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              {filterMode === 'staff' && (
-                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select staff..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staff.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {filterMode === 'staff' && (
+                    <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select staff..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {staff.map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {filterMode === 'student' && (
+                    <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select student..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {students.map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </>
               )}
 
-              {filterMode === 'student' && (
-                <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select student..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {students.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Non-admins see a label instead of filter dropdown */}
+              {!isAdmin && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  My Schedule
+                </Badge>
               )}
 
-              <Button onClick={handleCreateAppointment} size="sm">
-                <Plus className="w-4 h-4 mr-1" />
-                New Appointment
-              </Button>
+              {/* Only admins can create new appointments */}
+              {isAdmin && (
+                <Button onClick={handleCreateAppointment} size="sm">
+                  <Plus className="w-4 h-4 mr-1" />
+                  New Appointment
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -378,27 +418,27 @@ export default function Schedule() {
                 <ScheduleDayView
                   date={currentDate}
                   appointments={filteredAppointments}
-                  students={students}
+                  students={visibleStudents}
                   staff={staff}
                   onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={handleDragAppointment}
+                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
                 />
               )}
               {viewType === 'week' && (
                 <ScheduleWeekView
                   date={currentDate}
                   appointments={filteredAppointments}
-                  students={students}
+                  students={visibleStudents}
                   staff={staff}
                   onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={handleDragAppointment}
+                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
                 />
               )}
               {viewType === 'month' && (
                 <ScheduleMonthView
                   date={currentDate}
                   appointments={filteredAppointments}
-                  students={students}
+                  students={visibleStudents}
                   staff={staff}
                   onAppointmentClick={handleAppointmentClick}
                 />
@@ -407,11 +447,11 @@ export default function Schedule() {
                 <ScheduleTimeline
                   date={currentDate}
                   appointments={filteredAppointments}
-                  students={students}
+                  students={visibleStudents}
                   staff={staff}
-                  filterMode={filterMode}
+                  filterMode={isAdmin ? filterMode : 'my'}
                   onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={handleDragAppointment}
+                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
                 />
               )}
             </>
@@ -419,15 +459,17 @@ export default function Schedule() {
         </CardContent>
       </Card>
 
-      <AppointmentDialog
-        open={showAppointmentDialog}
-        onOpenChange={setShowAppointmentDialog}
-        appointment={editingAppointment}
-        students={students}
-        staff={staff}
-        onSave={handleSaveAppointment}
-        onDelete={editingAppointment ? () => handleDeleteAppointment(editingAppointment.id) : undefined}
-      />
+      {isAdmin && (
+        <AppointmentDialog
+          open={showAppointmentDialog}
+          onOpenChange={setShowAppointmentDialog}
+          appointment={editingAppointment}
+          students={students}
+          staff={staff}
+          onSave={handleSaveAppointment}
+          onDelete={editingAppointment ? () => handleDeleteAppointment(editingAppointment.id) : undefined}
+        />
+      )}
 
       <SessionPromptDialog
         appointment={showSessionPrompt}
