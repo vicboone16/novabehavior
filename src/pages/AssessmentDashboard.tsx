@@ -16,7 +16,7 @@ import { FBAModeTools } from '@/components/FBAModeTools';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { AssessmentDataCollection } from '@/components/AssessmentDataCollection';
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
-import { CollaborationPanel } from '@/components/CollaborationPanel';
+// CollaborationPanel is available but hidden from the main UI - feature kept for programmatic access
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
@@ -475,13 +475,7 @@ export default function AssessmentDashboard() {
               </Card>
             </div>
 
-            {/* Collaboration Panel - shown on workflow tab */}
-            {selectedStudent && (
-              <CollaborationPanel 
-                studentId={selectedStudentId}
-                studentName={selectedStudent.name}
-              />
-            )}
+            {/* Collaboration features are available programmatically but hidden from UI */}
 
             {/* Quick Actions */}
             <Card>
@@ -543,10 +537,6 @@ export default function AssessmentDashboard() {
                   />
                 </div>
                 <div className="space-y-4">
-                  <CollaborationPanel 
-                    studentId={selectedStudentId}
-                    studentName={selectedStudent.name}
-                  />
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">Assessment Tips</CardTitle>

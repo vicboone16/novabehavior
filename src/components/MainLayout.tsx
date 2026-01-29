@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar, GraduationCap } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -74,6 +75,15 @@ export default function MainLayout() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/teacher-dashboard')}
+                className="gap-2"
+              >
+                <GraduationCap className="w-4 h-4" />
+                <span className="hidden sm:inline">Teacher Mode</span>
+              </Button>
               <BehaviorManager />
               <NotificationBell />
               <UserMenu />

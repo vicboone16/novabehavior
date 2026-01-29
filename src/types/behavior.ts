@@ -406,6 +406,10 @@ export interface HistoricalFrequencyEntry {
   count: number;
   timestamp: Date;
   observationDurationMinutes?: number;
+  recordedBy?: string; // User ID who recorded this
+  recordedByName?: string; // Display name of recorder
+  modifiedBy?: string; // User ID who last modified
+  modifiedAt?: Date; // When last modified
 }
 
 export interface HistoricalDurationEntry {
@@ -413,6 +417,10 @@ export interface HistoricalDurationEntry {
   behaviorId: string;
   durationSeconds: number;
   timestamp: Date;
+  recordedBy?: string; // User ID who recorded this
+  recordedByName?: string; // Display name of recorder
+  modifiedBy?: string; // User ID who last modified
+  modifiedAt?: Date; // When last modified
 }
 
 export interface StudentHistoricalData {
