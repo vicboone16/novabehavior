@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Settings, Trash2, Activity, Edit2, Check, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,10 +8,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
-import { DataCollectionMethod, METHOD_LABELS, Behavior } from '@/types/behavior';
+import { DataCollectionMethod, METHOD_LABELS, Behavior, BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
 
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
+
+// Default behavior bank
+const BEHAVIOR_BANK: BehaviorDefinition[] = [
+  { id: 'aggression-physical', name: 'Physical Aggression', operationalDefinition: 'Forceful physical contact towards others', category: 'Aggression', isGlobal: true },
+  { id: 'aggression-verbal', name: 'Verbal Aggression', operationalDefinition: 'Vocalized threats or hostile statements', category: 'Aggression', isGlobal: true },
+  { id: 'sib', name: 'Self-Injurious Behavior', operationalDefinition: 'Behavior causing injury to oneself', category: 'Self-Injury', isGlobal: true },
+  { id: 'property-destruction', name: 'Property Destruction', operationalDefinition: 'Damaging or breaking property', category: 'Property Destruction', isGlobal: true },
+  { id: 'elopement', name: 'Elopement', operationalDefinition: 'Leaving designated area without permission', category: 'Elopement', isGlobal: true },
+  { id: 'non-compliance', name: 'Non-Compliance', operationalDefinition: 'Failure to follow instructions', category: 'Non-Compliance', isGlobal: true },
+  { id: 'task-refusal', name: 'Task Refusal', operationalDefinition: 'Refusing to complete requested tasks', category: 'Non-Compliance', isGlobal: true },
+  { id: 'verbal-disruption', name: 'Verbal Disruption', operationalDefinition: 'Vocalizations interrupting instruction', category: 'Verbal Disruption', isGlobal: true },
+  { id: 'out-of-seat', name: 'Out of Seat', operationalDefinition: 'Leaving seat without permission', category: 'Verbal Disruption', isGlobal: true },
+  { id: 'stereotypy-motor', name: 'Motor Stereotypy', operationalDefinition: 'Repetitive motor movements', category: 'Stereotypy', isGlobal: true },
+  { id: 'stereotypy-vocal', name: 'Vocal Stereotypy', operationalDefinition: 'Repetitive non-communicative vocalizations', category: 'Stereotypy', isGlobal: true },
+  { id: 'on-task', name: 'On-Task Behavior', operationalDefinition: 'Engagement in assigned activities', category: 'Academic', isGlobal: true },
+];
 
 export function BehaviorManager() {
   const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, removeBehavior } = useDataStore();
@@ -108,12 +126,40 @@ export function BehaviorManager() {
             <h3 className="font-medium text-sm text-foreground">Add New Behavior</h3>
             
             <div className="flex gap-2 flex-wrap">
-              <Input
-                placeholder="Behavior name..."
-                value={newBehaviorName}
-                onChange={(e) => setNewBehaviorName(e.target.value)}
-                className="flex-1 min-w-[200px]"
-              />
+              <div className="flex-1 min-w-[200px] relative">
+                <Input
+                  placeholder="Type or select from bank..."
+                  value={newBehaviorName}
+                  onChange={(e) => setNewBehaviorName(e.target.value)}
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" title="Select from Behavior Bank">
+                    <BookOpen className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-0" align="start">
+                  <div className="p-2 border-b">
+                    <p className="text-sm font-medium">Behavior Bank</p>
+                    <p className="text-xs text-muted-foreground">Select a predefined behavior</p>
+                  </div>
+                  <ScrollArea className="h-64">
+                    <div className="p-2 space-y-1">
+                      {BEHAVIOR_BANK.map((b) => (
+                        <button
+                          key={b.id}
+                          className="w-full text-left px-2 py-1.5 rounded hover:bg-secondary text-sm"
+                          onClick={() => setNewBehaviorName(b.name)}
+                        >
+                          <span className="font-medium">{b.name}</span>
+                          <span className="text-xs text-muted-foreground block">{b.category}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
               <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Select student" />

@@ -151,24 +151,41 @@ export default function BehaviorLibrary() {
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
 
-  // Get all custom behaviors from students - convert Behavior to BehaviorDefinition
-  const customBehaviors: (BehaviorDefinition & { studentName?: string })[] = [];
+  // Get all custom behaviors from students - deduplicate by NAME (not by ID)
+  // This prevents the same behavior added to multiple students from appearing multiple times
+  const customBehaviorsMap = new Map<string, BehaviorDefinition & { studentNames: string[] }>();
+  
   students.forEach(student => {
     student.behaviors.forEach(behavior => {
+      const normalizedName = behavior.name.toLowerCase().trim();
       // Check if this behavior is already in the default list
-      const isDefault = DEFAULT_BEHAVIORS.find(b => b.id === behavior.id || b.name === behavior.name);
-      if (!isDefault && !customBehaviors.find(b => b.id === behavior.id)) {
-        customBehaviors.push({
-          id: behavior.id,
-          name: behavior.name,
-          operationalDefinition: behavior.operationalDefinition || '',
-          category: behavior.category || 'Other',
-          isGlobal: false,
-          studentName: student.name,
-        });
+      const isDefault = DEFAULT_BEHAVIORS.find(b => 
+        b.id === behavior.id || b.name.toLowerCase().trim() === normalizedName
+      );
+      
+      if (!isDefault) {
+        if (customBehaviorsMap.has(normalizedName)) {
+          // Behavior already exists - add student name to the list
+          const existing = customBehaviorsMap.get(normalizedName)!;
+          if (!existing.studentNames.includes(student.name)) {
+            existing.studentNames.push(student.name);
+          }
+        } else {
+          // New behavior - add it
+          customBehaviorsMap.set(normalizedName, {
+            id: behavior.id,
+            name: behavior.name,
+            operationalDefinition: behavior.operationalDefinition || '',
+            category: behavior.category || 'Other',
+            isGlobal: false,
+            studentNames: [student.name],
+          });
+        }
       }
     });
   });
+  
+  const customBehaviors = Array.from(customBehaviorsMap.values());
 
   const allBehaviors = [...DEFAULT_BEHAVIORS, ...customBehaviors];
 
@@ -314,12 +331,12 @@ export default function BehaviorLibrary() {
                                   <div className="flex-1 mr-4">
                                     <div className="flex items-center gap-2 mb-2">
                                       <h4 className="font-semibold">{behavior.name}</h4>
-                                      {!behavior.isGlobal && (
+                                    {!behavior.isGlobal && (
                                         <Badge variant="outline" className="text-xs">Custom</Badge>
                                       )}
-                                      {(behavior as any).studentName && (
+                                      {(behavior as any).studentNames && (behavior as any).studentNames.length > 0 && (
                                         <Badge variant="secondary" className="text-xs">
-                                          {(behavior as any).studentName}
+                                          {(behavior as any).studentNames.length} student{(behavior as any).studentNames.length > 1 ? 's' : ''}
                                         </Badge>
                                       )}
                                     </div>
