@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { Student, Behavior } from '@/types/behavior';
 
 interface StudentWithAccess extends Student {
@@ -121,6 +122,7 @@ export default function TeacherDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <GlobalSearch />
               <Button variant="outline" size="sm" onClick={handleExitToMain}>
                 <ArrowRight className="w-4 h-4 mr-1" />
                 Exit

@@ -20,6 +20,7 @@ import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
+import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -338,7 +339,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -358,6 +359,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="documents" className="gap-1 text-xs">
               <FileUp className="w-3 h-3" />
               Documents
+            </TabsTrigger>
+            <TabsTrigger value="questionnaires" className="gap-1 text-xs">
+              <ClipboardCheck className="w-3 h-3" />
+              Questionnaires
             </TabsTrigger>
             <TabsTrigger value="report" className="gap-1 text-xs">
               <FileText className="w-3 h-3" />
@@ -686,6 +691,13 @@ export default function AssessmentDashboard() {
                   });
                 }}
               />
+            )}
+          </TabsContent>
+
+          {/* Questionnaires Tab */}
+          <TabsContent value="questionnaires">
+            {selectedStudent && (
+              <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
             )}
           </TabsContent>
 

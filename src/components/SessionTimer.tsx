@@ -10,7 +10,8 @@ import { toast } from '@/hooks/use-toast';
 export function SessionTimer() {
   const { 
     sessionStartTime, 
-    startSession, 
+    startSession,
+    resetSession,
     currentSessionId,
     selectedStudentIds,
     students,
@@ -89,8 +90,8 @@ export function SessionTimer() {
     setPausedTime(0);
     setPausedAt(null);
     setElapsed(0);
-    // Start fresh session
-    startSession();
+    // Clear session without auto-starting - user must click Start
+    resetSession();
   };
 
   const handleEndSession = () => {
