@@ -134,6 +134,86 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_name: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      data_access_logs: {
+        Row: {
+          access_type: string
+          created_at: string
+          data_category: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          student_id: string
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          created_at?: string
+          data_category: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          student_id: string
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          created_at?: string
+          data_category?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          student_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_access_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_requirements: {
         Row: {
           created_at: string
@@ -244,6 +324,36 @@ export type Database = {
           pin_hash?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      security_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -807,6 +917,25 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _details?: Json
+          _resource_id?: string
+          _resource_name?: string
+          _resource_type: string
+        }
+        Returns: string
+      }
+      log_data_access: {
+        Args: {
+          _access_type: string
+          _data_category: string
+          _details?: Json
+          _student_id: string
+        }
+        Returns: string
+      }
       record_pin_attempt: {
         Args: {
           _email: string

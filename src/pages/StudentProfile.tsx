@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
@@ -64,6 +64,7 @@ import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
+import { logDataAccess } from '@/lib/auditLogger';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -102,6 +103,13 @@ export default function StudentProfile() {
   
   // Check user permissions for this student
   const studentAccess = useStudentAccess(studentId);
+
+  // Log data access when viewing student profile
+  useEffect(() => {
+    if (studentId && student) {
+      logDataAccess(studentId, 'view', 'profile', { studentName: student.name });
+    }
+  }, [studentId, student?.name]);
 
   // State for dialogs
   const [showAddBehavior, setShowAddBehavior] = useState(false);
