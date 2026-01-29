@@ -17,7 +17,7 @@ interface ProfileData {
   last_name: string | null;
   phone: string | null;
   email: string | null;
-  pin_hash: string | null;
+  has_pin: boolean; // Changed from pin_hash to boolean - don't expose actual hash
 }
 
 export default function UserProfile() {
@@ -48,13 +48,22 @@ export default function UserProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('display_name, first_name, last_name, phone, email, pin_hash')
+        .select('display_name, first_name, last_name, phone, email')
         .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
 
-      setProfile(data);
+      // Check if user has PIN set using verify_pin with empty string (will return false if no PIN, but we catch this)
+      // We don't expose the actual hash - just check if one exists via a separate query
+      const { data: pinCheck } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .not('pin_hash', 'is', null)
+        .maybeSingle();
+      
+      setProfile({ ...data, has_pin: !!pinCheck });
       setPhone(data.phone || '');
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -295,16 +304,16 @@ export default function UserProfile() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">
-                  {profile?.pin_hash ? 'PIN is set' : 'No PIN configured'}
+                  {profile?.has_pin ? 'PIN is set' : 'No PIN configured'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {profile?.pin_hash 
+                  {profile?.has_pin 
                     ? 'You can log in using your 6-digit PIN' 
                     : 'Set up a PIN for quick access'}
                 </p>
               </div>
               <Button onClick={() => setShowPinSetup(true)}>
-                {profile?.pin_hash ? 'Change PIN' : 'Set Up PIN'}
+                {profile?.has_pin ? 'Change PIN' : 'Set Up PIN'}
               </Button>
             </div>
           </CardContent>

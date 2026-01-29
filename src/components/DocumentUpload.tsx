@@ -227,16 +227,24 @@ export function DocumentUpload({
               // Sync to student_files for profile view
               await syncToStudentFiles(filePath, selectedFile.name, selectedFile.type, selectedFile.size, docDescription);
               
-              // Get public URL for the file
-              const { data: urlData } = supabase.storage
+              // Create a signed URL for secure access (expires in 1 hour)
+              const { data: signedUrlData, error: signedUrlError } = await supabase.storage
                 .from('student-documents')
-                .getPublicUrl(filePath);
+                .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-              // Call edge function with file URL for PDF processing
+              if (signedUrlError) {
+                console.error('Failed to create signed URL:', signedUrlError);
+                toast.error('Could not access uploaded file securely.');
+                setIsExtracting(false);
+                setIsUploading(false);
+                return;
+              }
+
+              // Call edge function with signed URL for PDF processing
               const { data, error } = await supabase.functions.invoke('extract-document', {
                 body: {
                   documentType: selectedType,
-                  fileUrl: urlData.publicUrl,
+                  fileUrl: signedUrlData.signedUrl,
                   fileName: selectedFile.name,
                 }
               });
