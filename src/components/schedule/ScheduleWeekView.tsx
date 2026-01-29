@@ -3,8 +3,10 @@ import {
   format, startOfWeek, addDays, isSameDay, setHours, setMinutes, 
   differenceInMinutes, startOfDay, isToday 
 } from 'date-fns';
+import { CheckCircle2, Clock, XCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
@@ -19,6 +21,25 @@ interface ScheduleWeekViewProps {
 
 const HOUR_HEIGHT = 48;
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => i);
+
+// Status-based colors for calendar display
+const getStatusColors = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return { bg: 'hsl(var(--primary) / 0.15)', border: 'hsl(var(--primary))', text: 'hsl(var(--primary))' };
+    case 'canceled':
+      return { bg: 'hsl(var(--muted))', border: 'hsl(var(--muted-foreground) / 0.5)', text: 'hsl(var(--muted-foreground))' };
+    case 'rescheduled':
+      return { bg: 'hsl(280, 70%, 50%, 0.15)', border: 'hsl(280, 70%, 50%)', text: 'hsl(280, 70%, 50%)' };
+    case 'no_show':
+    case 'did_not_occur':
+      return { bg: 'hsl(var(--destructive) / 0.15)', border: 'hsl(var(--destructive))', text: 'hsl(var(--destructive))' };
+    case 'pending_verification':
+      return { bg: 'hsl(var(--warning) / 0.15)', border: 'hsl(var(--warning))', text: 'hsl(var(--warning))' };
+    default: // scheduled
+      return null; // Use student color
+  }
+};
 
 export function ScheduleWeekView({
   date,
@@ -74,6 +95,16 @@ export function ScheduleWeekView({
     const height = Math.max((durationMinutes / 60) * HOUR_HEIGHT, 16);
     
     return { top, height };
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle2 className="w-3 h-3" />;
+      case 'canceled': return <XCircle className="w-3 h-3" />;
+      case 'no_show': return <AlertTriangle className="w-3 h-3" />;
+      case 'pending_verification': return <Clock className="w-3 h-3" />;
+      default: return null;
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, appointment: Appointment) => {
@@ -174,10 +205,17 @@ export function ScheduleWeekView({
             {getAppointmentsByDay(day).map(appointment => {
               const { top, height } = getAppointmentStyle(appointment, day);
               const studentColor = getStudentColor(appointment.student_id);
+              const statusColors = getStatusColors(appointment.status);
               const isRetroactive = appointment.appointment_type === 'retroactive';
               const displayTitle = getDisplayTitle(appointment);
               const staffNames = getStaffNames(appointment);
               const studentName = getStudentName(appointment.student_id);
+              const statusIcon = getStatusIcon(appointment.status);
+
+              // Use status colors if available, otherwise student color
+              const bgColor = statusColors?.bg || `${studentColor}25`;
+              const borderColor = statusColors?.border || studentColor;
+              const textColor = statusColors?.text || studentColor;
 
               return (
                 <Tooltip key={appointment.id}>
@@ -189,17 +227,19 @@ export function ScheduleWeekView({
                       className={cn(
                         "absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-pointer",
                         "text-[10px] overflow-hidden hover:z-10 hover:shadow-md transition-shadow",
-                        draggedId === appointment.id && "opacity-50"
+                        draggedId === appointment.id && "opacity-50",
+                        appointment.status === 'canceled' && "line-through opacity-60"
                       )}
                       style={{
                         top,
                         height,
-                        backgroundColor: `${studentColor}25`,
-                        borderLeft: `3px solid ${studentColor}`,
+                        backgroundColor: bgColor,
+                        borderLeft: `3px solid ${borderColor}`,
                         borderStyle: isRetroactive ? 'dashed' : 'solid'
                       }}
                     >
-                      <p className="font-medium truncate" style={{ color: studentColor }}>
+                      <p className="font-medium truncate flex items-center gap-1" style={{ color: textColor }}>
+                        {statusIcon}
                         {displayTitle}
                       </p>
                       {height > 24 && staffNames && (
@@ -216,7 +256,13 @@ export function ScheduleWeekView({
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-xs">
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium">{displayTitle}</p>
+                      <p className="font-medium flex items-center gap-1">
+                        {statusIcon}
+                        {displayTitle}
+                      </p>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {appointment.status.replace(/_/g, ' ')}
+                      </Badge>
                       {staffNames && <p>Staff: {staffNames}</p>}
                       {studentName && <p>Student: {studentName}</p>}
                       <p>{format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}</p>
