@@ -58,6 +58,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
     addHistoricalFrequency,
     addHistoricalDuration,
     resetFrequency,
+    updateBehaviorMethods,
   } = useDataStore();
 
   const [dayRating, setDayRating] = useState<DayRating>(null);
@@ -68,6 +69,10 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   const [showABCQuick, setShowABCQuick] = useState(false);
   const [showAddBehavior, setShowAddBehavior] = useState(false);
   const [newBehaviorName, setNewBehaviorName] = useState('');
+  const [newBehaviorSupportsDuration, setNewBehaviorSupportsDuration] = useState(false);
+  
+  // Behavior configuration dialog
+  const [showBehaviorConfig, setShowBehaviorConfig] = useState(false);
   const [showAddAntecedent, setShowAddAntecedent] = useState(false);
   const [showAddConsequence, setShowAddConsequence] = useState(false);
   const [newAntecedent, setNewAntecedent] = useState('');
@@ -274,13 +279,41 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   const handleAddBehavior = () => {
     if (!newBehaviorName.trim()) return;
     
-    addBehaviorWithMethods(student.id, newBehaviorName.trim(), ['frequency', 'abc']);
+    const methods: ('frequency' | 'abc' | 'duration')[] = ['frequency', 'abc'];
+    if (newBehaviorSupportsDuration) {
+      methods.push('duration');
+    }
+    
+    addBehaviorWithMethods(student.id, newBehaviorName.trim(), methods);
     toast({
       title: 'Behavior Added',
-      description: `"${newBehaviorName}" has been added`,
+      description: `"${newBehaviorName}" has been added${newBehaviorSupportsDuration ? ' with duration tracking' : ''}`,
     });
     setNewBehaviorName('');
+    setNewBehaviorSupportsDuration(false);
     setShowAddBehavior(false);
+  };
+  
+  // Toggle duration tracking for a behavior
+  const handleToggleBehaviorDuration = (behaviorId: string) => {
+    const behavior = student.behaviors.find(b => b.id === behaviorId);
+    if (!behavior) return;
+    
+    const currentMethods = behavior.methods || ['frequency'];
+    const hasDuration = currentMethods.includes('duration');
+    
+    let newMethods: typeof currentMethods;
+    if (hasDuration) {
+      newMethods = currentMethods.filter(m => m !== 'duration');
+    } else {
+      newMethods = [...currentMethods, 'duration'];
+    }
+    
+    updateBehaviorMethods(student.id, behaviorId, newMethods);
+    toast({
+      title: hasDuration ? 'Duration Disabled' : 'Duration Enabled',
+      description: `${behavior.name} ${hasDuration ? 'no longer tracks' : 'now tracks'} duration`,
+    });
   };
 
   const handleAddNewAntecedent = () => {
@@ -682,7 +715,16 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setShowBehaviorConfig(true)}
+                title="Configure duration tracking"
+              >
+                <Settings2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowAddBehavior(true)}
+                title="Add behavior"
               >
                 <PlusCircle className="w-4 h-4" />
               </Button>
@@ -1136,13 +1178,78 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                 onKeyDown={(e) => e.key === 'Enter' && handleAddBehavior()}
               />
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="duration-tracking"
+                checked={newBehaviorSupportsDuration}
+                onCheckedChange={(checked) => setNewBehaviorSupportsDuration(checked === true)}
+              />
+              <Label 
+                htmlFor="duration-tracking" 
+                className="text-sm cursor-pointer flex items-center gap-1"
+              >
+                <Timer className="w-3 h-3" />
+                Enable duration tracking
+              </Label>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddBehavior(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowAddBehavior(false);
+              setNewBehaviorSupportsDuration(false);
+            }}>
               Cancel
             </Button>
             <Button onClick={handleAddBehavior} disabled={!newBehaviorName.trim()}>
               Add Behavior
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Behavior Configuration Dialog */}
+      <Dialog open={showBehaviorConfig} onOpenChange={setShowBehaviorConfig}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4" />
+              Configure Behaviors
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enable or disable duration tracking for each behavior. Behaviors with duration enabled will show timer buttons.
+            </p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {student.behaviors.map((b) => {
+                const hasDuration = b.methods?.includes('duration');
+                return (
+                  <div key={b.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <span className="text-sm font-medium truncate flex-1">{b.name}</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={hasDuration ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => handleToggleBehaviorDuration(b.id)}
+                      >
+                        <Timer className="w-3 h-3 mr-1" />
+                        {hasDuration ? 'On' : 'Off'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+              {student.behaviors.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No behaviors configured yet
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowBehaviorConfig(false)}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
