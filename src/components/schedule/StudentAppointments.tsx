@@ -102,7 +102,7 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-600 hover:bg-green-700"><CheckCircle2 className="w-3 h-3 mr-1" />Completed</Badge>;
+        return <Badge className="bg-primary hover:bg-primary/90"><CheckCircle2 className="w-3 h-3 mr-1" />Completed</Badge>;
       case 'cancelled':
         return <Badge variant="secondary"><XCircle className="w-3 h-3 mr-1" />Cancelled</Badge>;
       case 'in_progress':
@@ -114,9 +114,13 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
     }
   };
 
-  const getStaffName = (staffId?: string | null) => {
-    if (!staffId) return null;
-    return staff.find(s => s.id === staffId)?.name;
+  const getStaffNames = (apt: any) => {
+    const staffIds = apt.staff_user_ids?.length 
+      ? apt.staff_user_ids 
+      : apt.staff_user_id ? [apt.staff_user_id] : [];
+    
+    if (staffIds.length === 0) return null;
+    return staffIds.map((id: string) => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
   };
 
   // Separate upcoming and past appointments
@@ -205,10 +209,10 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                                 <Badge variant="outline" className="text-xs">Retroactive</Badge>
                               )}
                             </div>
-                            {getStaffName(apt.staff_user_id) && (
+                            {getStaffNames(apt) && (
                               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                 <User className="w-3 h-3" />
-                                {getStaffName(apt.staff_user_id)}
+                                {getStaffNames(apt)}
                               </p>
                             )}
                           </div>
@@ -249,10 +253,10 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                                   <Badge variant="outline" className="text-xs">Retroactive</Badge>
                                 )}
                               </div>
-                              {getStaffName(apt.staff_user_id) && (
+                              {getStaffNames(apt) && (
                                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                   <User className="w-3 h-3" />
-                                  {getStaffName(apt.staff_user_id)}
+                                  {getStaffNames(apt)}
                                 </p>
                               )}
                             </div>

@@ -158,23 +158,33 @@ export default function Schedule() {
 
   const goToToday = () => setCurrentDate(new Date());
 
+  // Helper to check if user is assigned to an appointment
+  const isUserAssignedToAppointment = (appointment: Appointment, userId: string) => {
+    // Check both single staff_user_id and array staff_user_ids
+    if (appointment.staff_user_id === userId) return true;
+    if (appointment.staff_user_ids && appointment.staff_user_ids.includes(userId)) return true;
+    return false;
+  };
+
   // Filter appointments based on filter mode and user permissions
   const filteredAppointments = useMemo(() => {
     let filtered = appointments;
 
     // Non-admins can ONLY see their own appointments
-    if (!isAdmin) {
-      return appointments.filter(a => a.staff_user_id === user?.id);
+    if (!isAdmin && user) {
+      return appointments.filter(a => isUserAssignedToAppointment(a, user.id));
     }
 
     // Admins can use all filter modes
     switch (filterMode) {
       case 'my':
-        filtered = appointments.filter(a => a.staff_user_id === user?.id);
+        if (user) {
+          filtered = appointments.filter(a => isUserAssignedToAppointment(a, user.id));
+        }
         break;
       case 'staff':
         if (selectedStaffId) {
-          filtered = appointments.filter(a => a.staff_user_id === selectedStaffId);
+          filtered = appointments.filter(a => isUserAssignedToAppointment(a, selectedStaffId));
         }
         break;
       case 'student':
@@ -190,11 +200,12 @@ export default function Schedule() {
   // For non-admins, only show students they have appointments with
   const visibleStudents = useMemo(() => {
     if (isAdmin) return students;
+    if (!user) return [];
     
     // Get student IDs from user's appointments
     const studentIdsWithAppointments = new Set(
       appointments
-        .filter(a => a.staff_user_id === user?.id && a.student_id)
+        .filter(a => isUserAssignedToAppointment(a, user.id) && a.student_id)
         .map(a => a.student_id)
     );
     
@@ -311,22 +322,30 @@ export default function Schedule() {
     try {
       const { start, end } = getDateRange();
       
+      // Helper to get all staff names for an appointment
+      const getStaffNames = (apt: Appointment) => {
+        const staffIds = apt.staff_user_ids?.length 
+          ? apt.staff_user_ids 
+          : apt.staff_user_id ? [apt.staff_user_id] : [];
+        
+        if (staffIds.length === 0) return 'Unassigned';
+        return staffIds.map(id => staff.find(s => s.id === id)?.name || 'Unknown').join(', ');
+      };
+      
       // Build the PDF content
       const appointmentList = filteredAppointments
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
         .map(apt => {
           const studentName = apt.student_id 
-            ? (visibleStudents.find(s => s.id === apt.student_id)?.name || 'Unknown Student')
-            : 'Staff Only';
-          const staffName = apt.staff_user_id
-            ? (staff.find(s => s.id === apt.staff_user_id)?.name || 'Unknown Staff')
-            : 'Unassigned';
+            ? (students.find(s => s.id === apt.student_id)?.name || 'Unknown Student')
+            : 'Staff Meeting';
+          const staffNames = getStaffNames(apt);
           const startTime = format(new Date(apt.start_time), 'EEE, MMM d, yyyy h:mm a');
           const endTime = format(new Date(apt.end_time), 'h:mm a');
           const status = apt.status.charAt(0).toUpperCase() + apt.status.slice(1);
           const type = apt.appointment_type === 'retroactive' ? ' (Retroactive)' : '';
           
-          return `${startTime} - ${endTime}\n  ${studentName} | ${staffName}\n  Status: ${status}${type}`;
+          return `${startTime} - ${endTime}\n  ${studentName} | Staff: ${staffNames}\n  Status: ${status}${type}`;
         })
         .join('\n\n');
 
