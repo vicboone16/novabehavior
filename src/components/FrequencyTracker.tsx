@@ -101,10 +101,9 @@ export function FrequencyTracker({ studentId, behavior, studentColor }: Frequenc
           <Minus className="w-4 h-4" />
         </Button>
         <div 
-          className="flex-1 h-12 rounded-lg flex items-center justify-center counter-display"
+          className="flex-1 h-12 rounded-lg flex items-center justify-center counter-display text-foreground font-bold"
           style={{ 
             backgroundColor: `${studentColor}20`,
-            color: studentColor,
             border: `2px solid ${studentColor}40`
           }}
         >
