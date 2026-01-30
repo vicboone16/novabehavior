@@ -3,7 +3,7 @@ import {
   ClipboardCheck, Users, FileText, BarChart3, Brain, Eye, 
   Target, AlertTriangle, CheckCircle2, ArrowRight, ChevronRight,
   FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar, ClipboardList,
-  Square, Timer
+  Square, Timer, History
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ import { FBAModeTools } from '@/components/FBAModeTools';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { AssessmentDataCollection } from '@/components/AssessmentDataCollection';
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
+import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
+import { ObservationHistory } from '@/components/ObservationHistory';
 // CollaborationPanel is available but hidden from the main UI - feature kept for programmatic access
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
@@ -277,42 +279,16 @@ export default function AssessmentDashboard() {
         </Select>
       </div>
 
-      {/* Active Observation Banner */}
-      {activeObservation.isActive && selectedStudentId && (
-        <Card className="border-primary bg-primary/5">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/20">
-                  <Timer className="w-5 h-5 text-primary animate-pulse" />
-                </div>
-                <div>
-                  <p className="font-medium text-sm">Active Observation in Progress</p>
-                  <p className="text-xs text-muted-foreground">
-                    Duration: {activeObservation.durationMinutes.toFixed(1)} minutes • 
-                    Student: {selectedStudent?.name}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="default" className="gap-1">
-                  <Eye className="w-3 h-3" />
-                  1 Active
-                </Badge>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setActiveTab('collect')}
-                  className="gap-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  Go to Direct Observation
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Active Observation Banner - Shows ALL active observations across all students */}
+      <ActiveObservationsBanner 
+        showNavigate={false}
+        onEndObservation={(studentId) => {
+          // Navigate to collect tab if this is the selected student
+          if (studentId === selectedStudentId) {
+            setActiveTab('collect');
+          }
+        }}
+      />
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -706,6 +682,9 @@ export default function AssessmentDashboard() {
                       )}
                     </CardContent>
                   </Card>
+
+                  {/* Observation History */}
+                  <ObservationHistory studentId={selectedStudentId} />
                 </div>
               </div>
             )}
