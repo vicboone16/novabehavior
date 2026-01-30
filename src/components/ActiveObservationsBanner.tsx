@@ -34,12 +34,21 @@ export function ActiveObservationsBanner({
     isStudentSessionEnded,
   } = useDataStore();
 
-  // Get all active observations
+  // Get all active observations - properly check if ALL sessions have ended
   const activeObservations = useMemo(() => {
+    // No session start time means no active session at all
     if (!sessionStartTime) return [];
+    
+    // No students selected means no active observations
+    if (selectedStudentIds.length === 0) return [];
 
-    return selectedStudentIds
-      .filter(id => !isStudentSessionEnded(id))
+    // Filter to only students who haven't ended their session
+    const activeStudents = selectedStudentIds.filter(id => !isStudentSessionEnded(id));
+    
+    // If all students have ended their sessions, no active observations
+    if (activeStudents.length === 0) return [];
+
+    return activeStudents
       .map(studentId => {
         const student = students.find(s => s.id === studentId);
         const status = studentSessionStatus.find(s => s.studentId === studentId);

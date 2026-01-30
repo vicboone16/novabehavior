@@ -3,7 +3,7 @@ import {
   ClipboardCheck, Users, FileText, BarChart3, Brain, Eye, 
   Target, AlertTriangle, CheckCircle2, ArrowRight, ChevronRight,
   FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar, ClipboardList,
-  Square, Timer, History
+  Square, Timer, History, PieChart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { AssessmentDataCollection } from '@/components/AssessmentDataCollection'
 import { IndirectAssessmentTools } from '@/components/IndirectAssessmentTools';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { ObservationHistory } from '@/components/ObservationHistory';
+import { ObservationResultsViewer } from '@/components/ObservationResultsViewer';
 // CollaborationPanel is available but hidden from the main UI - feature kept for programmatic access
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
@@ -364,7 +365,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-7 w-full">
+          <TabsList className="grid grid-cols-8 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -376,6 +377,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="collect" className="gap-1 text-xs">
               <Eye className="w-3 h-3" />
               Direct
+            </TabsTrigger>
+            <TabsTrigger value="results" className="gap-1 text-xs">
+              <PieChart className="w-3 h-3" />
+              Results
             </TabsTrigger>
             <TabsTrigger value="analysis" className="gap-1 text-xs">
               <Brain className="w-3 h-3" />
@@ -687,6 +692,16 @@ export default function AssessmentDashboard() {
                   <ObservationHistory studentId={selectedStudentId} />
                 </div>
               </div>
+            )}
+          </TabsContent>
+
+          {/* Results Tab - View observation results and export structured observations */}
+          <TabsContent value="results" className="space-y-4">
+            {selectedStudent && (
+              <ObservationResultsViewer 
+                studentId={selectedStudent.id}
+                student={selectedStudent}
+              />
             )}
           </TabsContent>
 
