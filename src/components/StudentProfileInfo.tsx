@@ -48,6 +48,9 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   };
   
   const [dob, setDob] = useState(student.dateOfBirth ? formatDateForInput(new Date(student.dateOfBirth)) : '');
+  const [dataCollectionStartDate, setDataCollectionStartDate] = useState(
+    student.dataCollectionStartDate ? formatDateForInput(new Date(student.dataCollectionStartDate)) : ''
+  );
   const [grade, setGrade] = useState(student.grade || '');
   const [school, setSchool] = useState(student.school || '');
   const [caseTypes, setCaseTypes] = useState<CaseType[]>(student.caseTypes || []);
@@ -75,12 +78,19 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       parsedDate = new Date(year, month - 1, day);
     }
     
+    let parsedStartDate: Date | undefined;
+    if (dataCollectionStartDate) {
+      const [year, month, day] = dataCollectionStartDate.split('-').map(Number);
+      parsedStartDate = new Date(year, month - 1, day);
+    }
+    
     onUpdate({
       name: fullName,
       firstName: firstName.trim() || undefined,
       lastName: lastName.trim() || undefined,
       displayName: displayName.trim() || undefined,
       dateOfBirth: parsedDate,
+      dataCollectionStartDate: parsedStartDate,
       grade: grade || undefined,
       school: school || undefined,
       caseTypes: caseTypes.length > 0 ? caseTypes : undefined,
@@ -93,7 +103,8 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setFirstName(student.firstName || '');
     setLastName(student.lastName || '');
     setDisplayName(student.displayName || '');
-    setDob(student.dateOfBirth ? format(new Date(student.dateOfBirth), 'yyyy-MM-dd') : '');
+    setDob(student.dateOfBirth ? formatDateForInput(new Date(student.dateOfBirth)) : '');
+    setDataCollectionStartDate(student.dataCollectionStartDate ? formatDateForInput(new Date(student.dataCollectionStartDate)) : '');
     setGrade(student.grade || '');
     setSchool(student.school || '');
     setCaseTypes(student.caseTypes || []);
@@ -198,6 +209,23 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
               />
             </div>
 
+            {/* Data Collection Start Date */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Data Collection Start Date
+                <Badge variant="outline" className="text-xs">Required</Badge>
+              </Label>
+              <Input
+                type="date"
+                value={dataCollectionStartDate}
+                onChange={(e) => setDataCollectionStartDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                The date this student was added to the system. Graphs will show data from at least this date.
+              </p>
+            </div>
+
             {/* Grade */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -292,6 +320,14 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
                 <Badge variant="outline">
                   {ageInfo.years}y {ageInfo.months}m ({ageInfo.totalMonths} months)
                 </Badge>
+              </div>
+            )}
+
+            {/* Data Collection Start Date */}
+            {student.dataCollectionStartDate && (
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span>Data collection since: {format(new Date(student.dataCollectionStartDate), 'MMM d, yyyy')}</span>
               </div>
             )}
 

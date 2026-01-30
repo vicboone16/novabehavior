@@ -2,11 +2,12 @@ import { useMemo, useState, useCallback } from 'react';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import { 
   TrendingUp, TrendingDown, Minus, Activity, Calendar, 
-  BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon
+  BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon,
+  Layers
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell 
+  Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, ReferenceLine 
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,9 +38,11 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Behavior, FrequencyEntry, DurationEntry, ABCEntry, IntervalEntry, Session, METHOD_LABELS } from '@/types/behavior';
+import { Behavior, FrequencyEntry, DurationEntry, ABCEntry, IntervalEntry, Session, METHOD_LABELS, BehaviorGoal, PhaseChange } from '@/types/behavior';
 import { ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
 
 interface StudentBehaviorsOverviewProps {
@@ -53,6 +56,8 @@ interface StudentBehaviorsOverviewProps {
   intervalEntries: IntervalEntry[];
   sessions: Session[];
   historicalData?: any[];
+  dataCollectionStartDate?: Date;
+  behaviorGoals?: BehaviorGoal[];
 }
 
 const DATE_RANGE_PRESETS = [
@@ -100,6 +105,8 @@ export function StudentBehaviorsOverview({
   intervalEntries,
   sessions,
   historicalData = [],
+  dataCollectionStartDate,
+  behaviorGoals = [],
 }: StudentBehaviorsOverviewProps) {
   const [dateRangePreset, setDateRangePreset] = useState<string>('last30');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
@@ -107,12 +114,19 @@ export function StudentBehaviorsOverview({
   const [selectedBehavior, setSelectedBehavior] = useState<string>('all');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [showPhaseLines, setShowPhaseLines] = useState(true);
 
   // For the "All Time" preset we still need a concrete range so charts can render.
   // We compute the earliest available timestamp for this student and use "today" as the end.
-  // IMPORTANT: Include historicalData timestamps to ensure older entries (e.g., July 2025) appear.
+  // IMPORTANT: Include historicalData timestamps and dataCollectionStartDate to ensure all data appears.
   const allTimeRange = useMemo(() => {
     const times: number[] = [];
+
+    // If dataCollectionStartDate is set, use it as the earliest possible date
+    if (dataCollectionStartDate) {
+      const t = new Date(dataCollectionStartDate).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    }
 
     frequencyEntries.forEach((e) => {
       if (e.studentId !== studentId) return;
@@ -157,7 +171,28 @@ export function StudentBehaviorsOverview({
       start: startOfDay(min),
       end: endOfDay(new Date()),
     };
-  }, [abcEntries, durationEntries, frequencyEntries, intervalEntries, historicalData, studentId]);
+  }, [abcEntries, durationEntries, frequencyEntries, intervalEntries, historicalData, studentId, dataCollectionStartDate]);
+
+  // Collect all phase changes from behavior goals for this student
+  const phaseChangesForChart = useMemo(() => {
+    const phases: Array<PhaseChange & { behaviorId: string; behaviorName: string }> = [];
+    
+    behaviorGoals.forEach(goal => {
+      if (goal.studentId !== studentId) return;
+      const behavior = behaviors.find(b => b.id === goal.behaviorId);
+      if (!behavior) return;
+      
+      goal.phaseChanges?.forEach(pc => {
+        phases.push({
+          ...pc,
+          behaviorId: goal.behaviorId,
+          behaviorName: behavior.name,
+        });
+      });
+    });
+    
+    return phases.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [behaviorGoals, studentId, behaviors]);
 
   // Calculate date range
   const dateRange = useMemo(() => {
@@ -555,6 +590,20 @@ export function StudentBehaviorsOverview({
           </ToggleGroupItem>
         </ToggleGroup>
 
+        {/* Phase Lines Toggle */}
+        {phaseChangesForChart.length > 0 && (
+          <div className="flex items-center gap-2 px-2 py-1 bg-secondary/50 rounded-md">
+            <Layers className="w-3 h-3 text-muted-foreground" />
+            <Label htmlFor="phase-lines" className="text-xs cursor-pointer">Phase Lines</Label>
+            <Switch 
+              id="phase-lines" 
+              checked={showPhaseLines} 
+              onCheckedChange={setShowPhaseLines}
+              className="scale-75"
+            />
+          </div>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 ml-auto">
@@ -658,6 +707,28 @@ export function StudentBehaviorsOverview({
                           dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
                         />
                       ))}
+                      {/* Phase Change Lines */}
+                      {showPhaseLines && phaseChangesForChart.map((pc, idx) => {
+                        const dateLabel = format(new Date(pc.date), 'MMM d');
+                        // Find matching date in chart data
+                        const matchIndex = frequencyChartData.findIndex(d => d.date === dateLabel);
+                        if (matchIndex === -1) return null;
+                        return (
+                          <ReferenceLine
+                            key={pc.id}
+                            x={dateLabel}
+                            stroke="hsl(var(--warning))"
+                            strokeDasharray="5 5"
+                            strokeWidth={2}
+                            label={{
+                              value: pc.label,
+                              position: 'top',
+                              fill: 'hsl(var(--warning))',
+                              fontSize: 10,
+                            }}
+                          />
+                        );
+                      })}
                     </LineChart>
                   ) : (
                     <BarChart data={frequencyChartData}>
@@ -680,6 +751,27 @@ export function StudentBehaviorsOverview({
                           radius={[2, 2, 0, 0]}
                         />
                       ))}
+                      {/* Phase Change Lines */}
+                      {showPhaseLines && phaseChangesForChart.map((pc) => {
+                        const dateLabel = format(new Date(pc.date), 'MMM d');
+                        const matchIndex = frequencyChartData.findIndex(d => d.date === dateLabel);
+                        if (matchIndex === -1) return null;
+                        return (
+                          <ReferenceLine
+                            key={pc.id}
+                            x={dateLabel}
+                            stroke="hsl(var(--warning))"
+                            strokeDasharray="5 5"
+                            strokeWidth={2}
+                            label={{
+                              value: pc.label,
+                              position: 'top',
+                              fill: 'hsl(var(--warning))',
+                              fontSize: 10,
+                            }}
+                          />
+                        );
+                      })}
                     </BarChart>
                   )}
                 </ResponsiveContainer>
@@ -724,6 +816,27 @@ export function StudentBehaviorsOverview({
                           dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
                         />
                       ))}
+                      {/* Phase Change Lines */}
+                      {showPhaseLines && phaseChangesForChart.map((pc) => {
+                        const dateLabel = format(new Date(pc.date), 'MMM d');
+                        const matchIndex = durationChartData.findIndex(d => d.date === dateLabel);
+                        if (matchIndex === -1) return null;
+                        return (
+                          <ReferenceLine
+                            key={pc.id}
+                            x={dateLabel}
+                            stroke="hsl(var(--warning))"
+                            strokeDasharray="5 5"
+                            strokeWidth={2}
+                            label={{
+                              value: pc.label,
+                              position: 'top',
+                              fill: 'hsl(var(--warning))',
+                              fontSize: 10,
+                            }}
+                          />
+                        );
+                      })}
                     </LineChart>
                   ) : (
                     <BarChart data={durationChartData}>
