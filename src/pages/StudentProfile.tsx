@@ -64,6 +64,8 @@ import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
 import { SessionNotesTab } from '@/components/session-notes';
+import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
+import { ObservationHistory } from '@/components/ObservationHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -984,8 +986,14 @@ export default function StudentProfile() {
         {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
         <TabsContent value="assessment" className="space-y-4">
           <div className="grid gap-4">
+            {/* Active Observation Banner */}
+            <ActiveObservationsBanner />
+
             {/* FBA Workflow Progress - shows completed steps and navigation */}
             <FBAWorkflowProgress student={student} />
+
+            {/* Observation History */}
+            <ObservationHistory studentId={student.id} />
 
             {/* Editable Background Information for FBA */}
             <StudentBackgroundEditor

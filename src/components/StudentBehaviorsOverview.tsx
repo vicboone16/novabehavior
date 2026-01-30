@@ -110,6 +110,7 @@ export function StudentBehaviorsOverview({
 
   // For the "All Time" preset we still need a concrete range so charts can render.
   // We compute the earliest available timestamp for this student and use "today" as the end.
+  // IMPORTANT: Include historicalData timestamps to ensure older entries (e.g., July 2025) appear.
   const allTimeRange = useMemo(() => {
     const times: number[] = [];
 
@@ -137,6 +138,12 @@ export function StudentBehaviorsOverview({
       if (Number.isFinite(t)) times.push(t);
     });
 
+    // Also include historicalData timestamps
+    historicalData.forEach((e: any) => {
+      const t = new Date(e.timestamp).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    });
+
     // Fallback keeps charts usable even if there's no data.
     if (times.length === 0) {
       return {
@@ -150,7 +157,7 @@ export function StudentBehaviorsOverview({
       start: startOfDay(min),
       end: endOfDay(new Date()),
     };
-  }, [abcEntries, durationEntries, frequencyEntries, intervalEntries, studentId]);
+  }, [abcEntries, durationEntries, frequencyEntries, intervalEntries, historicalData, studentId]);
 
   // Calculate date range
   const dateRange = useMemo(() => {
@@ -293,7 +300,7 @@ export function StudentBehaviorsOverview({
     };
   }, [filteredBehaviors]);
 
-  // Chart data: frequency over time
+  // Chart data: frequency over time (combines frequencyEntries + historicalData)
   const frequencyChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -305,18 +312,34 @@ export function StudentBehaviorsOverview({
 
       const dataPoint: any = { date: format(day, 'MMM d') };
 
-      filteredBehaviors.forEach((behavior, idx) => {
+      filteredBehaviors.forEach((behavior) => {
+        // Count from frequencyEntries
         const dayFrequency = frequencyEntries.filter(e => 
           e.studentId === studentId &&
           e.behaviorId === behavior.id &&
           isWithinInterval(new Date(e.timestamp), { start: dayStart, end: dayEnd })
         );
-        dataPoint[behavior.name] = dayFrequency.reduce((s, e) => s + e.count, 0);
+        let count = dayFrequency.reduce((s, e) => s + e.count, 0);
+        
+        // Also add from historicalData (for entries that might only exist there after cloud load)
+        const histFrequency = historicalData.filter((e: any) =>
+          e.behaviorId === behavior.id &&
+          isWithinInterval(new Date(e.timestamp), { start: dayStart, end: dayEnd })
+        );
+        // Avoid double counting - check if entry IDs overlap
+        const freqIds = new Set(dayFrequency.map(e => e.id));
+        histFrequency.forEach((h: any) => {
+          if (!freqIds.has(h.id)) {
+            count += h.count || 0;
+          }
+        });
+        
+        dataPoint[behavior.name] = count;
       });
 
       return dataPoint;
     });
-  }, [dateRange, filteredBehaviors, frequencyEntries, studentId]);
+  }, [dateRange, filteredBehaviors, frequencyEntries, historicalData, studentId]);
 
   // Chart data: duration over time
   const durationChartData = useMemo(() => {

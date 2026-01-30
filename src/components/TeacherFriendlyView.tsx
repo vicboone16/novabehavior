@@ -694,11 +694,69 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   };
   
   // Get today's recorded data summary with cumulative totals
+  // Now reads from persisted store instead of local recordedEntries state
   const getTodaySummary = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todayEntries = recordedEntries.filter(
-      e => format(e.timestamp, 'yyyy-MM-dd') === today
+    
+    // Get frequency entries from the store for this student
+    const storeFrequencyEntries = useDataStore.getState().frequencyEntries.filter(
+      e => e.studentId === student.id && format(new Date(e.timestamp), 'yyyy-MM-dd') === today
     );
+    
+    // Get duration entries from the store for this student
+    const storeDurationEntries = useDataStore.getState().durationEntries.filter(
+      e => e.studentId === student.id && e.startTime && format(new Date(e.startTime), 'yyyy-MM-dd') === today
+    );
+    
+    // Get ABC entries from the store for this student
+    const storeAbcEntries = useDataStore.getState().abcEntries.filter(
+      e => e.studentId === student.id && format(new Date(e.timestamp), 'yyyy-MM-dd') === today
+    );
+    
+    // Combine into entries format
+    const combinedEntries: RecordedEntry[] = [
+      ...storeFrequencyEntries.map(e => ({
+        id: e.id,
+        behaviorId: e.behaviorId,
+        behaviorName: student.behaviors.find(b => b.id === e.behaviorId)?.name || 'Unknown',
+        count: e.count,
+        timestamp: new Date(e.timestamp),
+        type: 'frequency' as const,
+        recordedBy: '',
+        recordedByName: '',
+      })),
+      ...storeDurationEntries.map(e => ({
+        id: e.id,
+        behaviorId: e.behaviorId,
+        behaviorName: student.behaviors.find(b => b.id === e.behaviorId)?.name || 'Unknown',
+        count: 0,
+        durationSeconds: e.duration,
+        timestamp: new Date(e.startTime),
+        type: 'duration' as const,
+        recordedBy: '',
+        recordedByName: '',
+      })),
+      ...storeAbcEntries.map(e => ({
+        id: e.id,
+        behaviorId: e.behaviorId,
+        behaviorName: e.behavior,
+        count: e.frequencyCount || 1,
+        timestamp: new Date(e.timestamp),
+        type: 'abc' as const,
+        recordedBy: '',
+        recordedByName: '',
+        antecedent: e.antecedent,
+        consequence: e.consequence,
+      })),
+    ];
+    
+    // Also include any local recordedEntries that might not be persisted yet
+    const localOnlyEntries = recordedEntries.filter(
+      e => format(e.timestamp, 'yyyy-MM-dd') === today &&
+           !combinedEntries.some(ce => ce.id === e.id)
+    );
+    
+    const todayEntries = [...combinedEntries, ...localOnlyEntries];
     
     // Group by behavior with cumulative totals
     const behaviorSummary: Record<string, { 
