@@ -71,6 +71,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   const { user } = useAuth();
   const { 
     incrementFrequency, 
+    decrementFrequency,
     getFrequencyCount, 
     addABCEntry,
     addBehaviorWithMethods,
@@ -950,16 +951,28 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
                       {isSelected && <Check className="w-4 h-4" />}
                     </Button>
                   ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full h-16 flex-col gap-1"
-                      onClick={() => handleBehaviorTap(behavior.id)}
-                    >
-                      <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {count}
-                      </Badge>
-                    </Button>
+                    <div className="flex gap-1 w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-16 w-10 p-0 flex items-center justify-center"
+                        onClick={() => decrementFrequency(student.id, behavior.id)}
+                        disabled={count === 0}
+                        title="Subtract 1"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-16 flex-col gap-1"
+                        onClick={() => handleBehaviorTap(behavior.id)}
+                      >
+                        <span className="text-sm font-medium truncate max-w-full">{behavior.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {count}
+                        </Badge>
+                      </Button>
+                    </div>
                   )}
                   {!multiBehaviorMode && (
                     <div className="absolute -top-1 -right-1 flex gap-0.5">
