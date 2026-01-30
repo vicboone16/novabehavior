@@ -276,6 +276,129 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_items: {
+        Row: {
+          active: boolean
+          age_band_max: number | null
+          age_band_min: number | null
+          code: string | null
+          created_at: string
+          curriculum_system_id: string
+          description: string | null
+          display_order: number | null
+          domain_id: string | null
+          id: string
+          keywords: string[] | null
+          level: string | null
+          mastery_criteria: string | null
+          prerequisites: string[] | null
+          source_reference: string | null
+          teaching_notes: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          age_band_max?: number | null
+          age_band_min?: number | null
+          code?: string | null
+          created_at?: string
+          curriculum_system_id: string
+          description?: string | null
+          display_order?: number | null
+          domain_id?: string | null
+          id?: string
+          keywords?: string[] | null
+          level?: string | null
+          mastery_criteria?: string | null
+          prerequisites?: string[] | null
+          source_reference?: string | null
+          teaching_notes?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          age_band_max?: number | null
+          age_band_min?: number | null
+          code?: string | null
+          created_at?: string
+          curriculum_system_id?: string
+          description?: string | null
+          display_order?: number | null
+          domain_id?: string | null
+          id?: string
+          keywords?: string[] | null
+          level?: string | null
+          mastery_criteria?: string | null
+          prerequisites?: string[] | null
+          source_reference?: string | null
+          teaching_notes?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_items_curriculum_system_id_fkey"
+            columns: ["curriculum_system_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_items_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_systems: {
+        Row: {
+          active: boolean
+          age_range_max_months: number | null
+          age_range_min_months: number | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          publisher: string | null
+          tags: string[] | null
+          type: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          active?: boolean
+          age_range_max_months?: number | null
+          age_range_min_months?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          publisher?: string | null
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          active?: boolean
+          age_range_max_months?: number | null
+          age_range_min_months?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          publisher?: string | null
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       daily_summaries: {
         Row: {
           comments: string | null
@@ -357,6 +480,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      domains: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       enhanced_session_notes: {
         Row: {
@@ -610,6 +763,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      org_goal_templates: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          data_collection_type: string | null
+          description: string | null
+          domain_id: string | null
+          generalization_notes: string | null
+          id: string
+          mastery_criteria: string | null
+          prompting_notes: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          data_collection_type?: string | null
+          description?: string | null
+          domain_id?: string | null
+          generalization_notes?: string | null
+          id?: string
+          mastery_criteria?: string | null
+          prompting_notes?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          data_collection_type?: string | null
+          description?: string | null
+          domain_id?: string | null
+          generalization_notes?: string | null
+          id?: string
+          mastery_criteria?: string | null
+          prompting_notes?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_goal_templates_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pin_auth_attempts: {
         Row: {
@@ -1060,6 +1269,120 @@ export type Database = {
           },
         ]
       }
+      student_assessments: {
+        Row: {
+          administered_by: string | null
+          created_at: string
+          curriculum_system_id: string
+          date_administered: string
+          domain_scores: Json | null
+          id: string
+          notes: string | null
+          raw_attachment_path: string | null
+          results_json: Json | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          administered_by?: string | null
+          created_at?: string
+          curriculum_system_id: string
+          date_administered?: string
+          domain_scores?: Json | null
+          id?: string
+          notes?: string | null
+          raw_attachment_path?: string | null
+          results_json?: Json | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          administered_by?: string | null
+          created_at?: string
+          curriculum_system_id?: string
+          date_administered?: string
+          domain_scores?: Json | null
+          id?: string
+          notes?: string | null
+          raw_attachment_path?: string | null
+          results_json?: Json | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_assessments_curriculum_system_id_fkey"
+            columns: ["curriculum_system_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_curriculum_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          current_level: string | null
+          curriculum_system_id: string
+          date_started: string
+          id: string
+          notes: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          current_level?: string | null
+          curriculum_system_id: string
+          date_started?: string
+          id?: string
+          notes?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          current_level?: string | null
+          curriculum_system_id?: string
+          date_started?: string
+          id?: string
+          notes?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_curriculum_plans_curriculum_system_id_fkey"
+            columns: ["curriculum_system_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_curriculum_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_files: {
         Row: {
           created_at: string
@@ -1193,6 +1516,93 @@ export type Database = {
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_targets: {
+        Row: {
+          added_by: string | null
+          baseline_data: Json | null
+          created_at: string
+          current_performance: Json | null
+          customized: boolean
+          data_collection_type: string | null
+          date_added: string
+          date_mastered: string | null
+          description: string | null
+          domain_id: string | null
+          id: string
+          linked_prerequisite_ids: string[] | null
+          mastery_criteria: string | null
+          notes_for_staff: string | null
+          priority: string | null
+          source_id: string | null
+          source_type: string
+          status: string
+          student_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          baseline_data?: Json | null
+          created_at?: string
+          current_performance?: Json | null
+          customized?: boolean
+          data_collection_type?: string | null
+          date_added?: string
+          date_mastered?: string | null
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          linked_prerequisite_ids?: string[] | null
+          mastery_criteria?: string | null
+          notes_for_staff?: string | null
+          priority?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          student_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          baseline_data?: Json | null
+          created_at?: string
+          current_performance?: Json | null
+          customized?: boolean
+          data_collection_type?: string | null
+          date_added?: string
+          date_mastered?: string | null
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          linked_prerequisite_ids?: string[] | null
+          mastery_criteria?: string | null
+          notes_for_staff?: string | null
+          priority?: string | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          student_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
