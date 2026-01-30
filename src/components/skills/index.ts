@@ -8,3 +8,6 @@ export { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 export { SkillProgressReports } from './SkillProgressReports';
 export { AssessmentUploadMapper } from './AssessmentUploadMapper';
 export { BulkImportDialog } from './BulkImportDialog';
+export { AssessmentHistoryPanel } from './AssessmentHistoryPanel';
+export { AssessmentComparisonView } from './AssessmentComparisonView';
+export { PrintableAssessmentGrid } from './PrintableAssessmentGrid';

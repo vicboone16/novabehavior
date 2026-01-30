@@ -262,7 +262,24 @@ export function useStudentAssessments(studentId: string, systemId?: string) {
     return true;
   };
 
-  return { assessments, loading, refetch: fetchAssessments, createAssessment, updateAssessment };
+  const deleteAssessment = async (assessmentId: string) => {
+    const { error } = await supabase
+      .from('student_assessments')
+      .delete()
+      .eq('id', assessmentId);
+    
+    if (error) {
+      toast.error('Failed to delete assessment');
+      console.error(error);
+      return false;
+    }
+    
+    toast.success('Assessment deleted');
+    fetchAssessments();
+    return true;
+  };
+
+  return { assessments, loading, refetch: fetchAssessments, createAssessment, updateAssessment, deleteAssessment };
 }
 
 export function useTargetActions(studentId: string, onSuccess?: () => void) {

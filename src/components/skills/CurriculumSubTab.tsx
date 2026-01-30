@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, BookOpen, Calendar, FileText, ChevronRight } from 'lucide-react';
+import { Plus, BookOpen, Calendar, FileText, ChevronRight, Trash2, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,13 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { format } from 'date-fns';
 import { 
   useCurriculumSystems, 
   useStudentCurriculumPlans, 
-  useStudentAssessments 
+  useStudentAssessments,
+  useCurriculumItems,
 } from '@/hooks/useCurriculum';
 import { VBMAPPGrid } from './VBMAPPGrid';
+import { AssessmentComparisonView } from './AssessmentComparisonView';
 import type { StudentCurriculumPlan, StudentAssessment } from '@/types/curriculum';
 
 interface CurriculumSubTabProps {
@@ -33,12 +42,24 @@ interface CurriculumSubTabProps {
 export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabProps) {
   const { systems, loading: systemsLoading } = useCurriculumSystems();
   const { plans, loading: plansLoading, addPlan } = useStudentCurriculumPlans(studentId);
-  const { assessments, createAssessment, updateAssessment, refetch: refetchAssessments } = useStudentAssessments(studentId);
+  const { 
+    assessments, 
+    createAssessment, 
+    updateAssessment, 
+    deleteAssessment,
+    refetch: refetchAssessments 
+  } = useStudentAssessments(studentId);
 
   const [showAddSystemDialog, setShowAddSystemDialog] = useState(false);
   const [selectedSystemId, setSelectedSystemId] = useState<string>('');
   const [activePlan, setActivePlan] = useState<StudentCurriculumPlan | null>(null);
   const [activeAssessment, setActiveAssessment] = useState<StudentAssessment | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
+  const [comparisonSystemId, setComparisonSystemId] = useState<string | null>(null);
+
+  // Get curriculum items for comparison view
+  const { items: comparisonItems } = useCurriculumItems(comparisonSystemId || undefined);
 
   const activePlans = plans.filter(p => p.active);
   const availableSystems = systems.filter(s => !plans.some(p => p.curriculum_system_id === s.id));
@@ -51,26 +72,66 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
     }
   };
 
-  const handleOpenAssessment = async (plan: StudentCurriculumPlan) => {
+  const handleOpenAssessment = async (plan: StudentCurriculumPlan, existingAssessment?: StudentAssessment) => {
     setActivePlan(plan);
     
-    // Find or create an assessment for this curriculum
-    const existingDraft = assessments.find(
-      a => a.curriculum_system_id === plan.curriculum_system_id && a.status === 'draft'
-    );
-
-    if (existingDraft) {
-      setActiveAssessment(existingDraft);
+    if (existingAssessment) {
+      setActiveAssessment(existingAssessment);
     } else {
-      const newAssessment = await createAssessment(plan.curriculum_system_id);
-      if (newAssessment) {
-        setActiveAssessment(newAssessment);
+      // Find existing draft or create new
+      const existingDraft = assessments.find(
+        a => a.curriculum_system_id === plan.curriculum_system_id && a.status === 'draft'
+      );
+
+      if (existingDraft) {
+        setActiveAssessment(existingDraft);
+      } else {
+        const newAssessment = await createAssessment(plan.curriculum_system_id);
+        if (newAssessment) {
+          setActiveAssessment(newAssessment);
+        }
       }
     }
   };
 
+  const handleCreateNewAssessment = async (plan: StudentCurriculumPlan) => {
+    setActivePlan(plan);
+    const newAssessment = await createAssessment(plan.curriculum_system_id);
+    if (newAssessment) {
+      setActiveAssessment(newAssessment);
+    }
+  };
+
+  const handleDeleteAssessment = async () => {
+    if (deleteConfirmId) {
+      await deleteAssessment(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const handleOpenComparison = (systemId: string) => {
+    setComparisonSystemId(systemId);
+    setShowComparison(true);
+  };
+
   const isVBMAPP = (systemName?: string) => systemName?.toLowerCase().includes('vb-mapp');
 
+  // Show comparison view
+  if (showComparison && comparisonSystemId) {
+    const systemAssessments = assessments.filter(a => a.curriculum_system_id === comparisonSystemId);
+    return (
+      <AssessmentComparisonView
+        assessments={systemAssessments}
+        items={comparisonItems}
+        onClose={() => {
+          setShowComparison(false);
+          setComparisonSystemId(null);
+        }}
+      />
+    );
+  }
+
+  // Show VB-MAPP grid if active
   if (activePlan && activeAssessment && isVBMAPP(activePlan.curriculum_system?.name)) {
     return (
       <VBMAPPGrid
@@ -129,8 +190,11 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
         <div className="grid gap-4 md:grid-cols-2">
           {activePlans.map(plan => {
             const system = plan.curriculum_system;
-            const planAssessments = assessments.filter(a => a.curriculum_system_id === plan.curriculum_system_id);
+            const planAssessments = assessments
+              .filter(a => a.curriculum_system_id === plan.curriculum_system_id)
+              .sort((a, b) => new Date(b.date_administered).getTime() - new Date(a.date_administered).getTime());
             const latestAssessment = planAssessments[0];
+            const hasDraft = planAssessments.some(a => a.status === 'draft');
 
             return (
               <Card key={plan.id} className="hover:shadow-md transition-shadow">
@@ -164,32 +228,72 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
                       )}
                     </div>
 
-                    {/* Assessment history */}
+                    {/* Assessment count and latest */}
                     {planAssessments.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Assessments ({planAssessments.length})
-                        </span>
+                      <div className="space-y-1 p-2 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium">
+                            {planAssessments.length} Assessment{planAssessments.length > 1 ? 's' : ''}
+                          </span>
+                          {planAssessments.length >= 2 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 text-xs"
+                              onClick={() => handleOpenComparison(plan.curriculum_system_id)}
+                            >
+                              <BarChart3 className="w-3 h-3 mr-1" />
+                              Compare
+                            </Button>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-xs">
                           <FileText className="w-3 h-3" />
                           <span>
                             Latest: {format(new Date(latestAssessment.date_administered), 'MMM d, yyyy')}
                           </span>
-                          <Badge variant={latestAssessment.status === 'final' ? 'default' : 'secondary'}>
+                          <Badge 
+                            variant={latestAssessment.status === 'final' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
                             {latestAssessment.status}
                           </Badge>
                         </div>
                       </div>
                     )}
 
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => handleOpenAssessment(plan)}
-                    >
-                      {isVBMAPP(system?.name) ? 'Open Milestones Grid' : 'Enter Assessment Data'}
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button className="flex-1" variant="outline">
+                            {hasDraft ? 'Continue Draft' : 'New Assessment'}
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          {hasDraft && (
+                            <DropdownMenuItem onClick={() => handleOpenAssessment(plan)}>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Continue Draft Assessment
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => handleCreateNewAssessment(plan)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Start New Assessment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
+                      {isVBMAPP(system?.name) && (
+                        <Button 
+                          variant="outline"
+                          onClick={() => handleOpenAssessment(plan)}
+                        >
+                          Open Grid
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -203,29 +307,65 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
         <div className="space-y-3">
           <h3 className="font-semibold">Assessment History</h3>
           <div className="space-y-2">
-            {assessments.slice(0, 5).map(assessment => (
-              <Card key={assessment.id}>
-                <CardContent className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <span className="font-medium text-sm">
-                        {assessment.curriculum_system?.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {format(new Date(assessment.date_administered), 'MMM d, yyyy')}
-                      </span>
+            {assessments.slice(0, 10).map(assessment => {
+              const plan = activePlans.find(p => p.curriculum_system_id === assessment.curriculum_system_id);
+              
+              return (
+                <Card key={assessment.id}>
+                  <CardContent className="py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <span className="font-medium text-sm">
+                          {assessment.curriculum_system?.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {format(new Date(assessment.date_administered), 'MMM d, yyyy')}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
-                    {assessment.status}
-                  </Badge>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center gap-2">
+                      <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
+                        {assessment.status}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (plan) {
+                            handleOpenAssessment(plan, assessment);
+                          }
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteConfirmId(assessment.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete Assessment?"
+        description="This will permanently delete this assessment and all its scores. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={handleDeleteAssessment}
+      />
 
       {/* Add System Dialog */}
       <Dialog open={showAddSystemDialog} onOpenChange={setShowAddSystemDialog}>
