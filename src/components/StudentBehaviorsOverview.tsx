@@ -108,6 +108,50 @@ export function StudentBehaviorsOverview({
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
 
+  // For the "All Time" preset we still need a concrete range so charts can render.
+  // We compute the earliest available timestamp for this student and use "today" as the end.
+  const allTimeRange = useMemo(() => {
+    const times: number[] = [];
+
+    frequencyEntries.forEach((e) => {
+      if (e.studentId !== studentId) return;
+      const t = new Date(e.timestamp as any).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    });
+
+    durationEntries.forEach((e) => {
+      if (e.studentId !== studentId) return;
+      const t = new Date((e as any).startTime).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    });
+
+    intervalEntries.forEach((e) => {
+      if (e.studentId !== studentId) return;
+      const t = new Date(e.timestamp as any).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    });
+
+    abcEntries.forEach((e) => {
+      if (e.studentId !== studentId) return;
+      const t = new Date((e as any).timestamp).getTime();
+      if (Number.isFinite(t)) times.push(t);
+    });
+
+    // Fallback keeps charts usable even if there's no data.
+    if (times.length === 0) {
+      return {
+        start: startOfDay(subDays(new Date(), 30)),
+        end: endOfDay(new Date()),
+      };
+    }
+
+    const min = new Date(Math.min(...times));
+    return {
+      start: startOfDay(min),
+      end: endOfDay(new Date()),
+    };
+  }, [abcEntries, durationEntries, frequencyEntries, intervalEntries, studentId]);
+
   // Calculate date range
   const dateRange = useMemo(() => {
     if (dateRangePreset === 'custom') {
@@ -118,15 +162,19 @@ export function StudentBehaviorsOverview({
     }
     
     const preset = DATE_RANGE_PRESETS.find(p => p.value === dateRangePreset);
-    if (!preset || preset.days === null) {
-      return null; // All time
-    }
+    if (!preset) return null;
+
+    // "All Time" should still chart; use computed earliest->today range.
+    if (preset.value === 'all') return allTimeRange;
+
+    // Other presets with null days shouldn't happen here (custom is handled above).
+    if (preset.days === null) return null;
     
     return {
       start: startOfDay(subDays(new Date(), preset.days)),
       end: endOfDay(new Date()),
     };
-  }, [dateRangePreset, customStartDate, customEndDate]);
+  }, [dateRangePreset, customStartDate, customEndDate, allTimeRange]);
 
   // Filter entries by date range and student
   const filterByDateRange = useCallback(<T extends Record<string, any>>(entries: T[], dateField: keyof T = 'timestamp' as keyof T): T[] => {
