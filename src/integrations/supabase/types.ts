@@ -1212,15 +1212,18 @@ export type Database = {
           custom_antecedents: Json | null
           custom_consequences: Json | null
           date_of_birth: string | null
+          display_name: string | null
           documents: Json | null
           fba_findings: Json | null
           fba_workflow_progress: Json | null
+          first_name: string | null
           goals: Json | null
           grade: string | null
           historical_data: Json | null
           id: string
           indirect_assessments: Json | null
           is_archived: boolean
+          last_name: string | null
           name: string
           narrative_notes: Json | null
           notes_required: boolean | null
@@ -1242,15 +1245,18 @@ export type Database = {
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
           date_of_birth?: string | null
+          display_name?: string | null
           documents?: Json | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
+          first_name?: string | null
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
           is_archived?: boolean
+          last_name?: string | null
           name: string
           narrative_notes?: Json | null
           notes_required?: boolean | null
@@ -1272,15 +1278,18 @@ export type Database = {
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
           date_of_birth?: string | null
+          display_name?: string | null
           documents?: Json | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
+          first_name?: string | null
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
           is_archived?: boolean
+          last_name?: string | null
           name?: string
           narrative_notes?: Json | null
           notes_required?: boolean | null
