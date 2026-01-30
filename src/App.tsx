@@ -15,6 +15,7 @@ import StudentProfile from "./pages/StudentProfile";
 import Reports from "./pages/Reports";
 import AssessmentDashboard from "./pages/AssessmentDashboard";
 import SkillAcquisition from "./pages/SkillAcquisition";
+import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/assessment" element={<AssessmentDashboard />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
+              <Route path="/notes-review" element={<NotesReview />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
