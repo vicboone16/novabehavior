@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Users, Plus, Target } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Users, Plus, Target, BookOpen, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,24 +21,189 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useDataStore } from '@/store/dataStore';
-import { DataCollectionMethod, METHOD_LABELS, GoalDirection, GoalMetric } from '@/types/behavior';
+import { DataCollectionMethod, METHOD_LABELS, GoalDirection, GoalMetric, BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
+
+// Default behavior bank with operational definitions
+const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
+  {
+    id: 'aggression-physical',
+    name: 'Physical Aggression',
+    operationalDefinition: 'Any instance of forceful physical contact towards another person including hitting, kicking, biting, scratching, pushing, or throwing objects at others with apparent intent to harm or intimidate.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'aggression-verbal',
+    name: 'Verbal Aggression',
+    operationalDefinition: 'Vocalized threats, name-calling, or hostile statements directed at others, including yelling obscenities, making threats of harm, or using derogatory language.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'sib',
+    name: 'Self-Injurious Behavior',
+    operationalDefinition: 'Any behavior that results in or has the potential to result in physical injury to oneself, including head-banging, biting self, hitting self, scratching self, or hair pulling.',
+    category: 'Self-Injury',
+    isGlobal: true,
+  },
+  {
+    id: 'property-destruction',
+    name: 'Property Destruction',
+    operationalDefinition: 'Any instance of damaging, breaking, or attempting to destroy property, including throwing objects, tearing materials, breaking items, or defacing property.',
+    category: 'Property Destruction',
+    isGlobal: true,
+  },
+  {
+    id: 'elopement',
+    name: 'Elopement',
+    operationalDefinition: 'Leaving or attempting to leave a designated area without permission, including running away, walking out of the classroom, or leaving the school grounds without authorization.',
+    category: 'Elopement',
+    isGlobal: true,
+  },
+  {
+    id: 'non-compliance',
+    name: 'Non-Compliance',
+    operationalDefinition: 'Failure to initiate a response to an instruction within 10 seconds of the instruction being given, or failure to complete the instructed task.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'task-refusal',
+    name: 'Task Refusal',
+    operationalDefinition: 'Verbal or non-verbal indication that the individual will not complete a requested task, including saying "no", shaking head, pushing materials away, or stating refusal.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'verbal-disruption',
+    name: 'Verbal Disruption',
+    operationalDefinition: 'Vocalizations that interrupt ongoing instruction or activities, including talking out of turn, making loud noises, singing, humming loudly, or calling out during lessons.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'out-of-seat',
+    name: 'Out of Seat',
+    operationalDefinition: 'Leaving assigned seat without permission, including standing up, walking around the classroom, or moving to a different location during instruction.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-motor',
+    name: 'Motor Stereotypy',
+    operationalDefinition: 'Repetitive motor movements that appear to have no adaptive function, including hand flapping, body rocking, finger flicking, spinning, or repetitive object manipulation.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-vocal',
+    name: 'Vocal Stereotypy',
+    operationalDefinition: 'Repetitive vocalizations that do not serve a communicative function, including scripting, echolalia, repetitive sounds, or humming.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'on-task',
+    name: 'On-Task Behavior',
+    operationalDefinition: 'Engagement in assigned task activities including looking at materials, writing, participating in discussions, following along during instruction, or completing work independently.',
+    category: 'Academic',
+    isGlobal: true,
+  },
+  {
+    id: 'hand-raising',
+    name: 'Appropriate Hand Raising',
+    operationalDefinition: 'Raising hand quietly and waiting to be called on before speaking during classroom instruction or group activities.',
+    category: 'Social Skills',
+    isGlobal: true,
+  },
+  {
+    id: 'appropriate-request',
+    name: 'Appropriate Requesting',
+    operationalDefinition: 'Using words, signs, or AAC device to request wants or needs in a calm voice without engaging in problem behavior.',
+    category: 'Communication',
+    isGlobal: true,
+  },
+];
 
 export function BulkAddBehavior() {
-  const { students, bulkAddBehavior, bulkAddGoal } = useDataStore();
+  const { students, bulkAddBehavior, bulkAddGoal, globalBehaviorBank, behaviorDefinitionOverrides } = useDataStore();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'behavior' | 'goal'>('behavior');
   
   // Behavior form
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [behaviorName, setBehaviorName] = useState('');
+  const [behaviorDefinition, setBehaviorDefinition] = useState('');
   const [selectedMethods, setSelectedMethods] = useState<DataCollectionMethod[]>(['frequency']);
+  const [behaviorBankOpen, setBehaviorBankOpen] = useState(false);
+  const [bankSearchQuery, setBankSearchQuery] = useState('');
   
   // Goal form
   const [goalStudentIds, setGoalStudentIds] = useState<string[]>([]);
   const [goalBehaviorName, setGoalBehaviorName] = useState('');
+  const [goalBehaviorDefinition, setGoalBehaviorDefinition] = useState('');
   const [goalDirection, setGoalDirection] = useState<GoalDirection>('decrease');
   const [goalMetric, setGoalMetric] = useState<GoalMetric>('frequency');
+  const [goalBankOpen, setGoalBankOpen] = useState(false);
+  const [goalBankSearchQuery, setGoalBankSearchQuery] = useState('');
+
+  // Apply overrides to default behaviors
+  const effectiveDefaultBehaviors = useMemo(() => {
+    return DEFAULT_BEHAVIORS.map(behavior => {
+      const override = behaviorDefinitionOverrides[behavior.id];
+      if (override) {
+        return {
+          ...behavior,
+          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+          category: override.category || behavior.category,
+        };
+      }
+      return behavior;
+    });
+  }, [behaviorDefinitionOverrides]);
+
+  // Combine all behavior sources
+  const allBankBehaviors = useMemo(() => [
+    ...effectiveDefaultBehaviors,
+    ...globalBehaviorBank,
+  ], [effectiveDefaultBehaviors, globalBehaviorBank]);
+
+  // Filtered behaviors for behavior tab
+  const filteredBankBehaviors = useMemo(() => {
+    if (!bankSearchQuery.trim()) return allBankBehaviors;
+    const query = bankSearchQuery.toLowerCase();
+    return allBankBehaviors.filter(b => 
+      b.name.toLowerCase().includes(query) || 
+      b.operationalDefinition.toLowerCase().includes(query) ||
+      b.category.toLowerCase().includes(query)
+    );
+  }, [allBankBehaviors, bankSearchQuery]);
+
+  // Filtered behaviors for goal tab
+  const filteredGoalBankBehaviors = useMemo(() => {
+    if (!goalBankSearchQuery.trim()) return allBankBehaviors;
+    const query = goalBankSearchQuery.toLowerCase();
+    return allBankBehaviors.filter(b => 
+      b.name.toLowerCase().includes(query) || 
+      b.operationalDefinition.toLowerCase().includes(query) ||
+      b.category.toLowerCase().includes(query)
+    );
+  }, [allBankBehaviors, goalBankSearchQuery]);
 
   const activeStudents = students.filter(s => !s.isArchived);
 
@@ -86,11 +251,17 @@ export function BulkAddBehavior() {
   const resetForm = () => {
     setSelectedStudentIds([]);
     setBehaviorName('');
+    setBehaviorDefinition('');
     setSelectedMethods(['frequency']);
+    setBehaviorBankOpen(false);
+    setBankSearchQuery('');
     setGoalStudentIds([]);
     setGoalBehaviorName('');
+    setGoalBehaviorDefinition('');
     setGoalDirection('decrease');
     setGoalMetric('frequency');
+    setGoalBankOpen(false);
+    setGoalBankSearchQuery('');
   };
 
   return (
@@ -166,14 +337,67 @@ export function BulkAddBehavior() {
               </div>
             </div>
 
-            {/* Behavior Name */}
+            {/* Behavior Name with Bank Picker */}
             <div className="space-y-2">
               <Label>Behavior Name</Label>
-              <Input
-                placeholder="Enter behavior name..."
-                value={behaviorName}
-                onChange={(e) => setBehaviorName(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter behavior name or select from bank..."
+                  value={behaviorName}
+                  onChange={(e) => setBehaviorName(e.target.value)}
+                  className="flex-1"
+                />
+                <Popover open={behaviorBankOpen} onOpenChange={setBehaviorBankOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <BookOpen className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[350px] p-0" align="end">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search behavior bank..." 
+                        value={bankSearchQuery}
+                        onValueChange={setBankSearchQuery}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No behaviors found.</CommandEmpty>
+                        {BEHAVIOR_CATEGORIES.map(category => {
+                          const categoryBehaviors = filteredBankBehaviors.filter(b => b.category === category);
+                          if (categoryBehaviors.length === 0) return null;
+                          return (
+                            <CommandGroup key={category} heading={category}>
+                              {categoryBehaviors.map(behavior => (
+                                <CommandItem
+                                  key={behavior.id}
+                                  value={behavior.name}
+                                  onSelect={() => {
+                                    setBehaviorName(behavior.name);
+                                    setBehaviorDefinition(behavior.operationalDefinition);
+                                    setBehaviorBankOpen(false);
+                                    setBankSearchQuery('');
+                                  }}
+                                  className="flex flex-col items-start"
+                                >
+                                  <span className="font-medium">{behavior.name}</span>
+                                  <span className="text-xs text-muted-foreground line-clamp-1">
+                                    {behavior.operationalDefinition}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          );
+                        })}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {behaviorDefinition && (
+                <p className="text-xs text-muted-foreground bg-secondary/30 rounded p-2">
+                  <strong>Definition:</strong> {behaviorDefinition}
+                </p>
+              )}
             </div>
 
             {/* Data Collection Methods */}
@@ -254,14 +478,67 @@ export function BulkAddBehavior() {
               </div>
             </div>
 
-            {/* Behavior Name for Goal */}
+            {/* Behavior Name for Goal with Bank Picker */}
             <div className="space-y-2">
               <Label>Behavior Name</Label>
-              <Input
-                placeholder="Enter behavior name..."
-                value={goalBehaviorName}
-                onChange={(e) => setGoalBehaviorName(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter behavior name or select from bank..."
+                  value={goalBehaviorName}
+                  onChange={(e) => setGoalBehaviorName(e.target.value)}
+                  className="flex-1"
+                />
+                <Popover open={goalBankOpen} onOpenChange={setGoalBankOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      <BookOpen className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[350px] p-0" align="end">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search behavior bank..." 
+                        value={goalBankSearchQuery}
+                        onValueChange={setGoalBankSearchQuery}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No behaviors found.</CommandEmpty>
+                        {BEHAVIOR_CATEGORIES.map(category => {
+                          const categoryBehaviors = filteredGoalBankBehaviors.filter(b => b.category === category);
+                          if (categoryBehaviors.length === 0) return null;
+                          return (
+                            <CommandGroup key={category} heading={category}>
+                              {categoryBehaviors.map(behavior => (
+                                <CommandItem
+                                  key={behavior.id}
+                                  value={behavior.name}
+                                  onSelect={() => {
+                                    setGoalBehaviorName(behavior.name);
+                                    setGoalBehaviorDefinition(behavior.operationalDefinition);
+                                    setGoalBankOpen(false);
+                                    setGoalBankSearchQuery('');
+                                  }}
+                                  className="flex flex-col items-start"
+                                >
+                                  <span className="font-medium">{behavior.name}</span>
+                                  <span className="text-xs text-muted-foreground line-clamp-1">
+                                    {behavior.operationalDefinition}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          );
+                        })}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {goalBehaviorDefinition && (
+                <p className="text-xs text-muted-foreground bg-secondary/30 rounded p-2">
+                  <strong>Definition:</strong> {goalBehaviorDefinition}
+                </p>
+              )}
             </div>
 
             {/* Goal Direction & Metric */}
