@@ -595,7 +595,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
@@ -848,7 +848,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
 
           {/* Data Grid */}
           {canShowGrid ? (
-            <ScrollArea className="flex-1 border rounded-md">
+            <ScrollArea className="flex-1 min-h-0 border rounded-md">
               <div className="min-w-max">
                 {selectedStudentIds.map(studentId => {
                   const student = activeStudents.find(s => s.id === studentId);
