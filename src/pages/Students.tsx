@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy, Mail, Phone, School, CalendarDays, GraduationCap } from 'lucide-react';
+import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy, Mail, Phone, School, CalendarDays, GraduationCap, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import { useDataStore } from '@/store/dataStore';
 import { BulkAddBehavior } from '@/components/BulkAddBehavior';
 import { StudentComparison } from '@/components/StudentComparison';
 import { StudentTagsDisplay } from '@/components/StudentTagSelector';
+import { BulkHistoricalDataEntry } from '@/components/BulkHistoricalDataEntry';
 import { format } from 'date-fns';
 import { CaseType, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 
@@ -36,6 +37,7 @@ export default function Students() {
   const [newStudentName, setNewStudentName] = useState('');
   const [filter, setFilter] = useState<FilterType>('active');
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [showBulkDataEntry, setShowBulkDataEntry] = useState(false);
   const [sourceStudentId, setSourceStudentId] = useState('');
   const [targetStudentId, setTargetStudentId] = useState('');
 
@@ -100,6 +102,13 @@ export default function Students() {
         </Button>
         <BulkAddBehavior />
         <StudentComparison />
+        <Button 
+          variant="outline" 
+          onClick={() => setShowBulkDataEntry(true)}
+        >
+          <ClipboardList className="w-4 h-4 mr-2" />
+          Bulk Data Entry
+        </Button>
       </div>
 
       {/* Filter Tabs */}
@@ -362,6 +371,12 @@ export default function Students() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Historical Data Entry Dialog */}
+      <BulkHistoricalDataEntry 
+        open={showBulkDataEntry} 
+        onOpenChange={setShowBulkDataEntry} 
+      />
     </div>
   );
 }
