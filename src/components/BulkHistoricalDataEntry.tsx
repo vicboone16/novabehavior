@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 import { 
   Users, Calendar, Save, X, Check, Minus, 
-  ChevronDown, ChevronUp, AlertCircle, Plus
+  ChevronDown, ChevronUp, AlertCircle, Timer, Grid3X3, TrendingUp,
+  Edit2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -27,6 +28,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Table,
   TableBody,
   TableCell,
@@ -39,17 +45,21 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
-import { Student, Behavior } from '@/types/behavior';
+import { Behavior } from '@/types/behavior';
 
 type DataStatus = 'collected' | 'zero' | 'no_data';
+type DataType = 'frequency' | 'interval';
 
 interface CellData {
   status: DataStatus;
   count: number;
   durationSeconds?: number;
-  observationMinutes?: number;
+  // Interval-specific fields
+  totalIntervals?: number;
+  occurredIntervals?: number[];
 }
 
 // Key format: studentId-behaviorId-date
@@ -61,7 +71,7 @@ interface BulkHistoricalDataEntryProps {
 }
 
 export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDataEntryProps) {
-  const { students, addHistoricalFrequency, addHistoricalDuration } = useDataStore();
+  const { students, addHistoricalFrequency, addHistoricalDuration, recordInterval } = useDataStore();
   
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -71,14 +81,26 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     end: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
   });
   
+  // Data type selection
+  const [dataType, setDataType] = useState<DataType>('frequency');
+  
   // Bulk data map
   const [bulkData, setBulkData] = useState<BulkDataMap>({});
   
   // UI state
   const [expandedStudents, setExpandedStudents] = useState<string[]>([]);
   const [defaultStatus, setDefaultStatus] = useState<DataStatus>('collected');
-  const [defaultCount, setDefaultCount] = useState(0);
+  const [defaultCount, setDefaultCount] = useState(1);
+  const [defaultDuration, setDefaultDuration] = useState(0);
+  const [defaultTotalIntervals, setDefaultTotalIntervals] = useState(6);
   const [showApplyDefaults, setShowApplyDefaults] = useState(false);
+  
+  // Cell editor state
+  const [editingCell, setEditingCell] = useState<{
+    studentId: string;
+    behaviorId: string;
+    date: Date;
+  } | null>(null);
 
   // Get active (non-archived) students
   const activeStudents = useMemo(() => 
@@ -97,7 +119,6 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       student.behaviors
         .filter(b => !b.isArchived && !b.isMastered)
         .forEach(behavior => {
-          // Group behaviors by name for multi-student selection
           const key = behavior.name.toLowerCase();
           const existing = behaviorMap.get(key);
           if (existing) {
@@ -127,7 +148,12 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
   // Get cell data
   const getCellData = (studentId: string, behaviorId: string, date: Date): CellData => {
     const key = getCellKey(studentId, behaviorId, date);
-    return bulkData[key] || { status: 'no_data', count: 0 };
+    return bulkData[key] || { 
+      status: 'no_data', 
+      count: 0,
+      totalIntervals: defaultTotalIntervals,
+      occurredIntervals: [],
+    };
   };
 
   // Set cell data
@@ -140,14 +166,16 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
   };
 
   // Cycle through status: no_data -> zero -> collected -> no_data
-  const cycleStatus = (studentId: string, behaviorId: string, date: Date) => {
+  const cycleStatus = (studentId: string, behaviorId: string, date: Date, e: React.MouseEvent) => {
+    e.stopPropagation();
     const current = getCellData(studentId, behaviorId, date);
     const statusOrder: DataStatus[] = ['no_data', 'zero', 'collected'];
     const currentIndex = statusOrder.indexOf(current.status);
     const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
     setCellData(studentId, behaviorId, date, { 
       status: nextStatus, 
-      count: nextStatus === 'zero' ? 0 : (nextStatus === 'collected' ? 1 : 0) 
+      count: nextStatus === 'zero' ? 0 : (nextStatus === 'collected' ? 1 : 0),
+      occurredIntervals: nextStatus === 'zero' ? [] : current.occurredIntervals,
     });
   };
 
@@ -160,7 +188,6 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       if (!student) return;
 
       selectedBehaviorIds.forEach(behaviorName => {
-        // Find this behavior for this student
         const behavior = student.behaviors.find(b => 
           b.name.toLowerCase() === behaviorName.toLowerCase() && !b.isArchived && !b.isMastered
         );
@@ -171,6 +198,9 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           newData[key] = {
             status: defaultStatus,
             count: defaultStatus === 'zero' ? 0 : defaultCount,
+            durationSeconds: defaultDuration > 0 ? defaultDuration : undefined,
+            totalIntervals: defaultTotalIntervals,
+            occurredIntervals: [],
           };
         });
       });
@@ -179,25 +209,6 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     setBulkData(newData);
     setShowApplyDefaults(false);
     toast.success('Defaults applied to all cells');
-  };
-
-  // Set all cells for a specific date
-  const setAllForDate = (date: Date, status: DataStatus) => {
-    selectedStudentIds.forEach(studentId => {
-      const student = activeStudents.find(s => s.id === studentId);
-      if (!student) return;
-
-      selectedBehaviorIds.forEach(behaviorName => {
-        const behavior = student.behaviors.find(b => 
-          b.name.toLowerCase() === behaviorName.toLowerCase() && !b.isArchived && !b.isMastered
-        );
-        if (!behavior) return;
-        setCellData(studentId, behavior.id, date, { 
-          status, 
-          count: status === 'zero' ? 0 : (status === 'collected' ? 1 : 0) 
-        });
-      });
-    });
   };
 
   // Set all cells for a specific student
@@ -214,7 +225,8 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       dates.forEach(date => {
         setCellData(studentId, behavior.id, date, { 
           status, 
-          count: status === 'zero' ? 0 : (status === 'collected' ? 1 : 0) 
+          count: status === 'zero' ? 0 : (status === 'collected' ? 1 : 0),
+          occurredIntervals: status === 'zero' ? [] : undefined,
         });
       });
     });
@@ -240,33 +252,45 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
         return;
       }
 
-      const [studentId, behaviorId, dateStr] = key.split('-');
-      const timestamp = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
+      const parts = key.split('-');
+      const dateStr = parts.pop()!;
+      const behaviorId = parts.pop()!;
+      const studentId = parts.join('-'); // Handle UUIDs with dashes
+      const timestamp = new Date(dateStr + 'T12:00:00');
 
-      // Add frequency entry
-      addHistoricalFrequency({
-        studentId,
-        behaviorId,
-        count: data.status === 'zero' ? 0 : data.count,
-        timestamp,
-        observationDurationMinutes: data.observationMinutes,
-      });
-
-      // Add duration if present
-      if (data.durationSeconds && data.durationSeconds > 0) {
-        addHistoricalDuration({
+      if (dataType === 'frequency') {
+        // Add frequency entry
+        addHistoricalFrequency({
           studentId,
           behaviorId,
-          durationSeconds: data.durationSeconds,
+          count: data.status === 'zero' ? 0 : data.count,
           timestamp,
         });
+
+        // Add duration if present
+        if (data.durationSeconds && data.durationSeconds > 0) {
+          addHistoricalDuration({
+            studentId,
+            behaviorId,
+            durationSeconds: data.durationSeconds,
+            timestamp,
+          });
+        }
+      } else if (dataType === 'interval') {
+        // Record interval data
+        const total = data.totalIntervals || defaultTotalIntervals;
+        const occurred = data.occurredIntervals || [];
+        
+        for (let i = 0; i < total; i++) {
+          recordInterval(studentId, behaviorId, i, occurred.includes(i));
+        }
       }
 
       savedCount++;
     });
 
     if (savedCount > 0) {
-      toast.success(`Saved ${savedCount} data entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`);
+      toast.success(`Saved ${savedCount} ${dataType} entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`);
       resetAndClose();
     } else if (skippedCount > 0) {
       toast.info('All entries marked as "No Data" - nothing saved');
@@ -281,23 +305,246 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     setSelectedBehaviorIds([]);
     setBulkData({});
     setExpandedStudents([]);
+    setEditingCell(null);
     onOpenChange(false);
   };
 
-  // Get status icon/badge
-  const getStatusBadge = (status: DataStatus, count: number) => {
-    switch (status) {
-      case 'no_data':
-        return <Minus className="w-4 h-4 text-muted-foreground" />;
-      case 'zero':
-        return <Badge variant="secondary" className="text-xs px-1.5">0</Badge>;
-      case 'collected':
-        return <Badge variant="default" className="text-xs px-1.5">{count}</Badge>;
+  // Format duration for display
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) return `${mins}m${secs > 0 ? ` ${secs}s` : ''}`;
+    return `${secs}s`;
+  };
+
+  // Get status badge
+  const getStatusBadge = (cellData: CellData) => {
+    const { status, count, durationSeconds, totalIntervals, occurredIntervals } = cellData;
+    
+    if (status === 'no_data') {
+      return <Minus className="w-4 h-4 text-muted-foreground" />;
     }
+    
+    if (status === 'zero') {
+      return <Badge variant="secondary" className="text-xs px-1.5">0</Badge>;
+    }
+    
+    if (dataType === 'interval') {
+      const total = totalIntervals || defaultTotalIntervals;
+      const occurred = occurredIntervals?.length || 0;
+      const percentage = total > 0 ? Math.round((occurred / total) * 100) : 0;
+      return (
+        <Badge variant="default" className="text-xs px-1.5">
+          {percentage}%
+        </Badge>
+      );
+    }
+    
+    // Frequency with optional duration
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <Badge variant="default" className="text-xs px-1.5">{count}</Badge>
+        {durationSeconds && durationSeconds > 0 && (
+          <span className="text-[10px] text-muted-foreground">
+            {formatDuration(durationSeconds)}
+          </span>
+        )}
+      </div>
+    );
   };
 
   // Check if we're ready to show the grid
   const canShowGrid = selectedStudentIds.length > 0 && selectedBehaviorIds.length > 0 && dates.length > 0;
+
+  // Cell Editor Component
+  const CellEditor = () => {
+    if (!editingCell) return null;
+    
+    const { studentId, behaviorId, date } = editingCell;
+    const cellData = getCellData(studentId, behaviorId, date);
+    const student = activeStudents.find(s => s.id === studentId);
+    const behavior = student?.behaviors.find(b => b.id === behaviorId);
+    
+    const [localCount, setLocalCount] = useState(cellData.count || 1);
+    const [localDuration, setLocalDuration] = useState(cellData.durationSeconds || 0);
+    const [localStatus, setLocalStatus] = useState(cellData.status);
+    const [localTotalIntervals, setLocalTotalIntervals] = useState(cellData.totalIntervals || defaultTotalIntervals);
+    const [localOccurred, setLocalOccurred] = useState<number[]>(cellData.occurredIntervals || []);
+    
+    const handleSaveCell = () => {
+      setCellData(studentId, behaviorId, date, {
+        status: localStatus,
+        count: localStatus === 'zero' ? 0 : localCount,
+        durationSeconds: localDuration > 0 ? localDuration : undefined,
+        totalIntervals: localTotalIntervals,
+        occurredIntervals: localOccurred,
+      });
+      setEditingCell(null);
+    };
+    
+    const toggleInterval = (index: number) => {
+      setLocalOccurred(prev => 
+        prev.includes(index) 
+          ? prev.filter(i => i !== index)
+          : [...prev, index].sort((a, b) => a - b)
+      );
+    };
+    
+    const setAllIntervalsOccurred = () => {
+      setLocalOccurred(Array.from({ length: localTotalIntervals }, (_, i) => i));
+    };
+    
+    const setNoIntervalsOccurred = () => {
+      setLocalOccurred([]);
+    };
+    
+    return (
+      <Dialog open={!!editingCell} onOpenChange={() => setEditingCell(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="w-4 h-4" />
+              Edit Cell Data
+            </DialogTitle>
+            <DialogDescription>
+              {behavior?.name} - {student?.displayName || student?.name} - {format(date, 'MMM d, yyyy')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            {/* Status Selection */}
+            <div className="space-y-2">
+              <Label>Data Status</Label>
+              <Select value={localStatus} onValueChange={(v) => setLocalStatus(v as DataStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no_data">No Data Collected</SelectItem>
+                  <SelectItem value="zero">Zero (Behavior Not Observed)</SelectItem>
+                  <SelectItem value="collected">Data Collected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {localStatus === 'collected' && dataType === 'frequency' && (
+              <>
+                {/* Count Input */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Frequency Count
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={localCount}
+                    onChange={(e) => setLocalCount(parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                
+                {/* Duration Input */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Timer className="w-4 h-4" />
+                    Duration (seconds)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={localDuration}
+                      onChange={(e) => setLocalDuration(parseInt(e.target.value) || 0)}
+                      placeholder="Optional"
+                    />
+                    {localDuration > 0 && (
+                      <Badge variant="outline" className="whitespace-nowrap">
+                        {formatDuration(localDuration)}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave at 0 if not tracking duration
+                  </p>
+                </div>
+              </>
+            )}
+            
+            {localStatus === 'collected' && dataType === 'interval' && (
+              <>
+                {/* Total Intervals */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Grid3X3 className="w-4 h-4" />
+                    Total Intervals
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={localTotalIntervals}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 6;
+                      setLocalTotalIntervals(Math.min(30, Math.max(1, val)));
+                      // Remove any occurred intervals that exceed the new total
+                      setLocalOccurred(prev => prev.filter(i => i < val));
+                    }}
+                  />
+                </div>
+                
+                {/* Interval Grid */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Intervals Occurred ({localOccurred.length}/{localTotalIntervals})</Label>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" className="h-6 text-xs" onClick={setAllIntervalsOccurred}>
+                        All
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-6 text-xs" onClick={setNoIntervalsOccurred}>
+                        None
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-6 gap-1">
+                    {Array.from({ length: localTotalIntervals }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => toggleInterval(i)}
+                        className={`h-8 rounded text-xs font-medium border transition-colors ${
+                          localOccurred.includes(i)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-secondary/50 border-border hover:bg-secondary'
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {localTotalIntervals > 0 
+                      ? `${Math.round((localOccurred.length / localTotalIntervals) * 100)}% occurrence`
+                      : '0% occurrence'
+                    }
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCell(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveCell}>
+              <Check className="w-4 h-4 mr-2" />
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -313,6 +560,20 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
+          {/* Data Type Selection */}
+          <Tabs value={dataType} onValueChange={(v) => setDataType(v as DataType)} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-xs">
+              <TabsTrigger value="frequency" className="gap-1">
+                <TrendingUp className="w-3 h-3" />
+                Frequency/Duration
+              </TabsTrigger>
+              <TabsTrigger value="interval" className="gap-1">
+                <Grid3X3 className="w-3 h-3" />
+                Interval
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           {/* Selection Controls */}
           <div className="grid md:grid-cols-3 gap-4">
             {/* Student Selection */}
@@ -336,7 +597,6 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                               setSelectedStudentIds(prev => [...prev, student.id]);
                             } else {
                               setSelectedStudentIds(prev => prev.filter(id => id !== student.id));
-                              // Also remove their behaviors from selection
                             }
                           }}
                         />
@@ -477,7 +737,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                 Apply Defaults to All
               </Button>
               {showApplyDefaults && (
-                <div className="flex items-center gap-2 bg-secondary/50 p-2 rounded-md">
+                <div className="flex items-center gap-2 bg-secondary/50 p-2 rounded-md flex-wrap">
                   <Select value={defaultStatus} onValueChange={(v) => setDefaultStatus(v as DataStatus)}>
                     <SelectTrigger className="w-28 h-8">
                       <SelectValue />
@@ -488,14 +748,35 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                       <SelectItem value="collected">Collected</SelectItem>
                     </SelectContent>
                   </Select>
-                  {defaultStatus === 'collected' && (
+                  {defaultStatus === 'collected' && dataType === 'frequency' && (
+                    <>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={defaultCount}
+                        onChange={(e) => setDefaultCount(parseInt(e.target.value) || 0)}
+                        className="w-16 h-8"
+                        placeholder="Count"
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        value={defaultDuration}
+                        onChange={(e) => setDefaultDuration(parseInt(e.target.value) || 0)}
+                        className="w-20 h-8"
+                        placeholder="Duration (s)"
+                      />
+                    </>
+                  )}
+                  {defaultStatus === 'collected' && dataType === 'interval' && (
                     <Input
                       type="number"
-                      min={0}
-                      value={defaultCount}
-                      onChange={(e) => setDefaultCount(parseInt(e.target.value) || 0)}
-                      className="w-16 h-8"
-                      placeholder="Count"
+                      min={1}
+                      max={30}
+                      value={defaultTotalIntervals}
+                      onChange={(e) => setDefaultTotalIntervals(parseInt(e.target.value) || 6)}
+                      className="w-20 h-8"
+                      placeholder="Intervals"
                     />
                   )}
                   <Button size="sm" onClick={applyDefaultsToAll}>
@@ -583,7 +864,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                                 {dates.map(date => (
                                   <TableHead 
                                     key={date.toISOString()} 
-                                    className="text-center px-1 min-w-16"
+                                    className="text-center px-1 min-w-20"
                                   >
                                     <div className="text-xs">
                                       <div>{format(date, 'EEE')}</div>
@@ -606,19 +887,59 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                                         key={date.toISOString()}
                                         className="text-center p-1"
                                       >
-                                        <button
-                                          className={`w-full h-8 rounded border flex items-center justify-center transition-colors ${
-                                            cellData.status === 'no_data'
-                                              ? 'bg-secondary/30 border-transparent'
-                                              : cellData.status === 'zero'
-                                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
-                                                : 'bg-primary/10 border-primary/30'
-                                          }`}
-                                          onClick={() => cycleStatus(studentId, behavior.id, date)}
-                                          title="Click to cycle: No Data → Zero → Collected"
-                                        >
-                                          {getStatusBadge(cellData.status, cellData.count)}
-                                        </button>
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <button
+                                              className={`w-full min-h-10 rounded border flex items-center justify-center transition-colors p-1 ${
+                                                cellData.status === 'no_data'
+                                                  ? 'bg-secondary/30 border-transparent hover:bg-secondary/50'
+                                                  : cellData.status === 'zero'
+                                                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
+                                                    : 'bg-primary/10 border-primary/30 hover:bg-primary/20'
+                                              }`}
+                                              title="Click to edit, right-click to cycle status"
+                                            >
+                                              {getStatusBadge(cellData)}
+                                            </button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-2" align="center">
+                                            <div className="flex flex-col gap-1">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="justify-start h-7"
+                                                onClick={() => {
+                                                  setCellData(studentId, behavior.id, date, { status: 'no_data', count: 0 });
+                                                }}
+                                              >
+                                                <Minus className="w-3 h-3 mr-2" />
+                                                No Data
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="justify-start h-7"
+                                                onClick={() => {
+                                                  setCellData(studentId, behavior.id, date, { status: 'zero', count: 0 });
+                                                }}
+                                              >
+                                                <Badge variant="secondary" className="mr-2 text-xs px-1">0</Badge>
+                                                Zero
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="justify-start h-7"
+                                                onClick={() => {
+                                                  setEditingCell({ studentId, behaviorId: behavior.id, date });
+                                                }}
+                                              >
+                                                <Edit2 className="w-3 h-3 mr-2" />
+                                                Edit Details...
+                                              </Button>
+                                            </div>
+                                          </PopoverContent>
+                                        </Popover>
                                       </TableCell>
                                     );
                                   })}
@@ -645,7 +966,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           )}
 
           {/* Legend */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2 flex-wrap">
             <span className="font-medium">Legend:</span>
             <div className="flex items-center gap-1">
               <Minus className="w-4 h-4" />
@@ -653,13 +974,13 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
             </div>
             <div className="flex items-center gap-1">
               <Badge variant="secondary" className="text-xs px-1.5">0</Badge>
-              <span>Zero (behavior not observed)</span>
+              <span>Zero</span>
             </div>
             <div className="flex items-center gap-1">
               <Badge variant="default" className="text-xs px-1.5">N</Badge>
-              <span>Collected (N occurrences)</span>
+              <span>{dataType === 'interval' ? 'Occurrence %' : 'Count'}</span>
             </div>
-            <span className="ml-auto">Click cells to cycle status</span>
+            <span className="ml-auto">Click cells to edit</span>
           </div>
         </div>
 
@@ -673,6 +994,9 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           </Button>
         </DialogFooter>
       </DialogContent>
+      
+      {/* Cell Editor Dialog */}
+      <CellEditor />
     </Dialog>
   );
 }
