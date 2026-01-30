@@ -246,9 +246,11 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
       intervalEntries,
     };
 
-    // Add to store
+    // Add to store - both the session and the top-level intervalEntries
     useDataStore.setState((state) => ({
       sessions: [newSession, ...state.sessions],
+      // Also add to top-level intervalEntries so they appear in behavior summaries
+      intervalEntries: [...state.intervalEntries, ...intervalEntries],
     }));
 
     toast.success('Historical interval data saved');
