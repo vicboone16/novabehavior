@@ -44,6 +44,8 @@ interface BehaviorSelection {
   behaviorId: string;
   count: number;
   durationSeconds?: number;
+  linkDuration?: boolean; // Link frequency and duration together
+  dataStatus?: 'collected' | 'zero' | 'no_data'; // Zero = behavior not observed, No Data = data not collected
 }
 
 type EntryType = 'frequency' | 'abc' | 'duration';
@@ -108,9 +110,27 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
       if (existing) {
         return prev.filter(b => b.behaviorId !== behaviorId);
       } else {
-        return [...prev, { behaviorId, count: 1 }];
+        return [...prev, { behaviorId, count: 1, dataStatus: 'collected' }];
       }
     });
+  };
+
+  // Update behavior data status (collected, zero, no_data)
+  const updateBehaviorDataStatus = (behaviorId: string, status: 'collected' | 'zero' | 'no_data') => {
+    setSelectedBehaviors(prev => 
+      prev.map(b => b.behaviorId === behaviorId ? { 
+        ...b, 
+        dataStatus: status,
+        count: status === 'zero' ? 0 : (status === 'no_data' ? 0 : b.count),
+      } : b)
+    );
+  };
+
+  // Toggle duration linking
+  const toggleDurationLink = (behaviorId: string) => {
+    setSelectedBehaviors(prev => 
+      prev.map(b => b.behaviorId === behaviorId ? { ...b, linkDuration: !b.linkDuration } : b)
+    );
   };
 
   // Update behavior count
@@ -178,17 +198,43 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     const timestamp = parseLocalDate(date, time);
     const durationMinutes = observationDuration ? parseFloat(observationDuration) : undefined;
 
+    let addedCount = 0;
+    let skippedNoData = 0;
+
     selectedBehaviors.forEach(selection => {
+      // Skip "no data" entries - they don't get recorded
+      if (selection.dataStatus === 'no_data') {
+        skippedNoData++;
+        return;
+      }
+
+      // Add frequency entry (including zero counts)
       addHistoricalFrequency({
         studentId: student.id,
         behaviorId: selection.behaviorId,
-        count: selection.count,
+        count: selection.dataStatus === 'zero' ? 0 : selection.count,
         timestamp,
         observationDurationMinutes: durationMinutes,
       });
+
+      // If duration is linked, also add duration entry
+      if (selection.linkDuration && selection.durationSeconds && selection.durationSeconds > 0) {
+        addHistoricalDuration({
+          studentId: student.id,
+          behaviorId: selection.behaviorId,
+          durationSeconds: selection.durationSeconds,
+          timestamp,
+        });
+      }
+
+      addedCount++;
     });
 
-    toast.success(`Added ${selectedBehaviors.length} frequency ${selectedBehaviors.length === 1 ? 'entry' : 'entries'}`);
+    if (addedCount === 0 && skippedNoData > 0) {
+      toast.info(`${skippedNoData} behavior(s) marked as "No Data" were not recorded`);
+    } else {
+      toast.success(`Added ${addedCount} frequency ${addedCount === 1 ? 'entry' : 'entries'}${skippedNoData > 0 ? ` (${skippedNoData} skipped - no data)` : ''}`);
+    }
     resetForm();
   };
 
@@ -406,10 +452,17 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
                             )}
                           </div>
                           {isSelected && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {entryType === 'duration' 
-                                ? (selection?.durationSeconds ? formatDuration(selection.durationSeconds) : 'Set duration')
-                                : `×${selection?.count || 1}`
+                            <Badge 
+                              variant={selection?.dataStatus === 'no_data' ? 'outline' : selection?.dataStatus === 'zero' ? 'secondary' : 'secondary'} 
+                              className={`ml-auto ${selection?.dataStatus === 'no_data' ? 'text-muted-foreground' : ''}`}
+                            >
+                              {selection?.dataStatus === 'no_data' 
+                                ? 'No Data'
+                                : selection?.dataStatus === 'zero'
+                                  ? 'Zero'
+                                  : entryType === 'duration' 
+                                    ? (selection?.durationSeconds ? formatDuration(selection.durationSeconds) : 'Set duration')
+                                    : `×${selection?.count || 1}`
                               }
                             </Badge>
                           )}
@@ -417,54 +470,108 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
                         
                         {/* Per-behavior options when selected */}
                         {isSelected && (
-                          <div className="mt-3 pt-3 border-t flex flex-wrap gap-3">
-                            {entryType !== 'duration' && (
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs">Count:</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  className="w-20 h-8"
-                                  value={selection?.count || 1}
-                                  onChange={(e) => updateBehaviorCount(behavior.id, parseInt(e.target.value) || 1)}
-                                />
-                              </div>
-                            )}
-                            
-                            {(entryType === 'duration' || entryType === 'abc') && (
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs">Duration:</Label>
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    className="w-16 h-8"
-                                    placeholder="min"
-                                    value={selection?.durationSeconds ? Math.floor(selection.durationSeconds / 60) : ''}
-                                    onChange={(e) => {
-                                      const mins = parseInt(e.target.value) || 0;
-                                      const currentSecs = (selection?.durationSeconds || 0) % 60;
-                                      updateBehaviorDuration(behavior.id, mins * 60 + currentSecs);
-                                    }}
-                                  />
-                                  <span className="text-xs text-muted-foreground">m</span>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="59"
-                                    className="w-16 h-8"
-                                    placeholder="sec"
-                                    value={selection?.durationSeconds ? (selection.durationSeconds % 60) : ''}
-                                    onChange={(e) => {
-                                      const secs = parseInt(e.target.value) || 0;
-                                      const currentMins = Math.floor((selection?.durationSeconds || 0) / 60);
-                                      updateBehaviorDuration(behavior.id, currentMins * 60 + Math.min(secs, 59));
-                                    }}
-                                  />
-                                  <span className="text-xs text-muted-foreground">s</span>
+                          <div className="mt-3 pt-3 border-t space-y-3">
+                            {/* Data Status Row - for frequency tab */}
+                            {entryType === 'frequency' && (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Label className="text-xs text-muted-foreground">Status:</Label>
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    variant={selection?.dataStatus !== 'zero' && selection?.dataStatus !== 'no_data' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="h-6 text-[10px] px-2"
+                                    onClick={() => updateBehaviorDataStatus(behavior.id, 'collected')}
+                                  >
+                                    Collected
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={selection?.dataStatus === 'zero' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="h-6 text-[10px] px-2"
+                                    onClick={() => updateBehaviorDataStatus(behavior.id, 'zero')}
+                                  >
+                                    Zero (Not Observed)
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={selection?.dataStatus === 'no_data' ? 'secondary' : 'outline'}
+                                    size="sm"
+                                    className="h-6 text-[10px] px-2"
+                                    onClick={() => updateBehaviorDataStatus(behavior.id, 'no_data')}
+                                  >
+                                    No Data
+                                  </Button>
                                 </div>
                               </div>
                             )}
+
+                            {/* Count and Duration Row */}
+                            <div className="flex flex-wrap gap-3">
+                              {entryType !== 'duration' && selection?.dataStatus !== 'zero' && selection?.dataStatus !== 'no_data' && (
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs">Count:</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    className="w-20 h-8"
+                                    value={selection?.count || 1}
+                                    onChange={(e) => updateBehaviorCount(behavior.id, parseInt(e.target.value) || 1)}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* Duration linking for frequency mode */}
+                              {entryType === 'frequency' && selection?.dataStatus !== 'zero' && selection?.dataStatus !== 'no_data' && (
+                                <div className="flex items-center gap-2">
+                                  <Checkbox
+                                    id={`link-duration-${behavior.id}`}
+                                    checked={selection?.linkDuration || false}
+                                    onCheckedChange={() => toggleDurationLink(behavior.id)}
+                                  />
+                                  <Label htmlFor={`link-duration-${behavior.id}`} className="text-xs cursor-pointer">
+                                    Include Duration
+                                  </Label>
+                                </div>
+                              )}
+                              
+                              {/* Duration input - show for duration tab, ABC tab, or when linked in frequency tab */}
+                              {(entryType === 'duration' || entryType === 'abc' || (entryType === 'frequency' && selection?.linkDuration)) && (
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs">Duration:</Label>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="w-16 h-8"
+                                      placeholder="min"
+                                      value={selection?.durationSeconds ? Math.floor(selection.durationSeconds / 60) : ''}
+                                      onChange={(e) => {
+                                        const mins = parseInt(e.target.value) || 0;
+                                        const currentSecs = (selection?.durationSeconds || 0) % 60;
+                                        updateBehaviorDuration(behavior.id, mins * 60 + currentSecs);
+                                      }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">m</span>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="59"
+                                      className="w-16 h-8"
+                                      placeholder="sec"
+                                      value={selection?.durationSeconds ? (selection.durationSeconds % 60) : ''}
+                                      onChange={(e) => {
+                                        const secs = parseInt(e.target.value) || 0;
+                                        const currentMins = Math.floor((selection?.durationSeconds || 0) / 60);
+                                        updateBehaviorDuration(behavior.id, currentMins * 60 + Math.min(secs, 59));
+                                      }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">s</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>

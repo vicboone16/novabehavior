@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar, GraduationCap } from 'lucide-react';
+import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar, GraduationCap, FileCheck } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
@@ -8,11 +8,16 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { useSync } from '@/contexts/SyncContext';
 import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading } = useSync();
+  const { userRole } = useAuth();
+  
+  // Check if user can view notes review (admin or super_admin)
+  const canViewNotesReview = userRole === 'admin' || userRole === 'super_admin';
   
   // Determine active tab from path
   const getActiveTab = () => {
@@ -21,6 +26,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/assessment')) return 'assessment';
     if (location.pathname.startsWith('/skills')) return 'skills';
     if (location.pathname.startsWith('/schedule')) return 'schedule';
+    if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     return 'dashboard';
   };
 
@@ -43,6 +49,9 @@ export default function MainLayout() {
         break;
       case 'schedule':
         navigate('/schedule');
+        break;
+      case 'notes-review':
+        navigate('/notes-review');
         break;
     }
   };
@@ -141,6 +150,15 @@ export default function MainLayout() {
                 <Calendar className="w-4 h-4" />
                 Schedule
               </TabsTrigger>
+              {canViewNotesReview && (
+                <TabsTrigger 
+                  value="notes-review" 
+                  className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  Notes Review
+                </TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         </div>
