@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isValid, parseISO } from 'date-fns';
 import { 
   Users, Calendar, Save, X, Check, Minus, 
   ChevronDown, ChevronUp, AlertCircle, Timer, Grid3X3, TrendingUp,
@@ -50,6 +50,67 @@ import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
 import { Behavior } from '@/types/behavior';
 
+// Custom hook for debounced date inputs
+function useDebouncedDateRange(initialStart: string, initialEnd: string, delay: number = 500) {
+  const [inputStart, setInputStart] = useState(initialStart);
+  const [inputEnd, setInputEnd] = useState(initialEnd);
+  const [debouncedRange, setDebouncedRange] = useState({ start: initialStart, end: initialEnd });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const updateDebouncedRange = useCallback((start: string, end: string) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      // Only update if both dates are valid complete dates (yyyy-MM-dd format)
+      const startValid = start.length === 10 && isValid(parseISO(start));
+      const endValid = end.length === 10 && isValid(parseISO(end));
+      
+      if (startValid && endValid) {
+        setDebouncedRange({ start, end });
+      }
+    }, delay);
+  }, [delay]);
+  
+  const setStart = useCallback((value: string) => {
+    setInputStart(value);
+    updateDebouncedRange(value, inputEnd);
+  }, [inputEnd, updateDebouncedRange]);
+  
+  const setEnd = useCallback((value: string) => {
+    setInputEnd(value);
+    updateDebouncedRange(inputStart, value);
+  }, [inputStart, updateDebouncedRange]);
+  
+  const setImmediate = useCallback((start: string, end: string) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setInputStart(start);
+    setInputEnd(end);
+    setDebouncedRange({ start, end });
+  }, []);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+  
+  return {
+    inputStart,
+    inputEnd,
+    debouncedRange,
+    setStart,
+    setEnd,
+    setImmediate,
+  };
+}
+
 type DataStatus = 'collected' | 'zero' | 'no_data';
 type DataType = 'frequency' | 'interval';
 
@@ -77,10 +138,18 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-    end: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-  });
+  
+  // Use debounced date range to prevent freezing when typing
+  const initialStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const initialEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const {
+    inputStart,
+    inputEnd,
+    debouncedRange: dateRange,
+    setStart: setDateStart,
+    setEnd: setDateEnd,
+    setImmediate: setDateRangeImmediate,
+  } = useDebouncedDateRange(initialStart, initialEnd, 400);
   
   // Data type selection
   const [dataType, setDataType] = useState<DataType>('frequency');
@@ -724,8 +793,8 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                     <Label className="text-xs">Start</Label>
                     <Input
                       type="date"
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      value={inputStart}
+                      onChange={(e) => setDateStart(e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
@@ -733,8 +802,8 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                     <Label className="text-xs">End</Label>
                     <Input
                       type="date"
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      value={inputEnd}
+                      onChange={(e) => setDateEnd(e.target.value)}
                       className="h-8 text-xs"
                     />
                   </div>
@@ -746,10 +815,10 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                     className="h-6 text-xs"
                     onClick={() => {
                       const today = new Date();
-                      setDateRange({
-                        start: format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-                        end: format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-                      });
+                      setDateRangeImmediate(
+                        format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+                        format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+                      );
                     }}
                   >
                     This Week
@@ -760,10 +829,10 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                     className="h-6 text-xs"
                     onClick={() => {
                       const lastWeek = addDays(new Date(), -7);
-                      setDateRange({
-                        start: format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-                        end: format(endOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
-                      });
+                      setDateRangeImmediate(
+                        format(startOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+                        format(endOfWeek(lastWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+                      );
                     }}
                   >
                     Last Week
