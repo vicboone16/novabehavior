@@ -59,6 +59,24 @@ export function SyncProvider({ children }: SyncProviderProps) {
     }
   }, []);
 
+  // IMPORTANT: Date-only fields (like DOB) must be parsed/serialized in LOCAL time.
+  // Using `new Date('YYYY-MM-DD')` or `toISOString()` can shift the date depending on timezone.
+  const parseDateOnlyLocal = (value?: string | null): Date | undefined => {
+    if (!value) return undefined;
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return undefined;
+    return new Date(year, month - 1, day);
+  };
+
+  const formatDateOnlyLocal = (value?: Date | null): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Load all data from Supabase
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -105,7 +123,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
           isArchived: s.is_archived,
           archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
           // Extended profile fields
-          dateOfBirth: s.date_of_birth ? new Date(s.date_of_birth) : undefined,
+            dateOfBirth: parseDateOnlyLocal(s.date_of_birth),
           grade: s.grade || undefined,
           school: s.school || undefined,
           caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
@@ -681,7 +699,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             is_archived: student.isArchived || false,
             archived_at: student.archivedAt ? new Date(student.archivedAt).toISOString() : null,
             // Extended profile fields
-            date_of_birth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : null,
+            date_of_birth: formatDateOnlyLocal(student.dateOfBirth),
             grade: student.grade || null,
             school: student.school || null,
             case_types: student.caseTypes || [],
@@ -993,7 +1011,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 isArchived: s.is_archived,
                 archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
                 // Extended profile fields
-                dateOfBirth: s.date_of_birth ? new Date(s.date_of_birth) : undefined,
+                dateOfBirth: parseDateOnlyLocal(s.date_of_birth),
                 grade: s.grade || undefined,
                 school: s.school || undefined,
                 caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
