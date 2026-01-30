@@ -12,6 +12,7 @@ export function SessionTimer() {
     sessionStartTime, 
     startSession,
     resetSession,
+    resetSessionData,
     currentSessionId,
     selectedStudentIds,
     students,
@@ -111,9 +112,12 @@ export function SessionTimer() {
     // Reset timer state after session ends
     setIsPaused(true);
     setPausedAt(null);
+    setElapsed(0);
+    // Clear session data from the summary display
+    resetSessionData();
     toast({
       title: 'Sessions Ended',
-      description: 'All student sessions have been completed.',
+      description: 'All student sessions have been completed. Data has been saved.',
     });
   };
 
