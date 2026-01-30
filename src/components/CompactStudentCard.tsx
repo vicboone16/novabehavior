@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Student, DataCollectionMethod, METHOD_LABELS } from '@/types/behavior';
+import { useState, useMemo } from 'react';
+import { Student, DataCollectionMethod, METHOD_LABELS, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
@@ -377,8 +377,30 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
           <User className="w-4 h-4" style={{ color: student.color }} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-foreground text-sm truncate">{student.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-foreground text-sm truncate">
+              {student.displayName || student.name}
+            </h3>
+            {student.dateOfBirth && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-sm cursor-help" title={ZODIAC_LABELS[getZodiacSign(new Date(student.dateOfBirth))]}>
+                      {ZODIAC_SYMBOLS[getZodiacSign(new Date(student.dateOfBirth))]}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {ZODIAC_LABELS[getZodiacSign(new Date(student.dateOfBirth))]}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
           <p className="text-[10px] text-muted-foreground">
+            {student.dateOfBirth && (() => {
+              const age = calculateAge(new Date(student.dateOfBirth));
+              return `${age.years}y ${age.months}m • `;
+            })()}
             {student.behaviors.length} behaviors
             {skillTargets.length > 0 && ` • ${skillTargets.length} skills`}
             {(collapsedMethodsCount > 0 || collapsedBehaviorsCount > 0) && (

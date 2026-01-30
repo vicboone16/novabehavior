@@ -319,9 +319,86 @@ export interface StudentBackgroundInfo {
   updatedAt?: Date;
 }
 
+// Zodiac signs
+export type ZodiacSign = 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo' | 'virgo' | 'libra' | 'scorpio' | 'sagittarius' | 'capricorn' | 'aquarius' | 'pisces';
+
+export const ZODIAC_SYMBOLS: Record<ZodiacSign, string> = {
+  aries: '♈',
+  taurus: '♉',
+  gemini: '♊',
+  cancer: '♋',
+  leo: '♌',
+  virgo: '♍',
+  libra: '♎',
+  scorpio: '♏',
+  sagittarius: '♐',
+  capricorn: '♑',
+  aquarius: '♒',
+  pisces: '♓',
+};
+
+export const ZODIAC_LABELS: Record<ZodiacSign, string> = {
+  aries: 'Aries',
+  taurus: 'Taurus',
+  gemini: 'Gemini',
+  cancer: 'Cancer',
+  leo: 'Leo',
+  virgo: 'Virgo',
+  libra: 'Libra',
+  scorpio: 'Scorpio',
+  sagittarius: 'Sagittarius',
+  capricorn: 'Capricorn',
+  aquarius: 'Aquarius',
+  pisces: 'Pisces',
+};
+
+// Helper function to calculate zodiac sign from date
+export function getZodiacSign(date: Date): ZodiacSign {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'aries';
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'taurus';
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return 'gemini';
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return 'cancer';
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return 'leo';
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return 'virgo';
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return 'libra';
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return 'scorpio';
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'sagittarius';
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'capricorn';
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'aquarius';
+  return 'pisces';
+}
+
+// Helper function to calculate age in years and months
+export function calculateAge(dob: Date): { years: number; months: number; totalMonths: number } {
+  const today = new Date();
+  let years = today.getFullYear() - dob.getFullYear();
+  let months = today.getMonth() - dob.getMonth();
+  
+  if (months < 0 || (months === 0 && today.getDate() < dob.getDate())) {
+    years--;
+    months += 12;
+  }
+  if (today.getDate() < dob.getDate()) {
+    months--;
+    if (months < 0) {
+      months += 12;
+    }
+  }
+  
+  const totalMonths = years * 12 + months;
+  return { years, months, totalMonths };
+}
+
 export interface Student {
   id: string;
   name: string;
+  // Separate name fields
+  firstName?: string;
+  lastName?: string;
+  displayName?: string; // Preferred/display name for data collection
   behaviors: Behavior[];
   color: string;
   customAntecedents?: string[];

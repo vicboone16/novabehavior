@@ -20,12 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataStore } from '@/store/dataStore';
 import { BulkAddBehavior } from '@/components/BulkAddBehavior';
 import { StudentComparison } from '@/components/StudentComparison';
 import { StudentTagsDisplay } from '@/components/StudentTagSelector';
 import { format } from 'date-fns';
-import { CaseType } from '@/types/behavior';
+import { CaseType, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 
 type FilterType = 'active' | 'archived' | 'all';
 
@@ -173,11 +174,25 @@ export default function Students() {
                   >
                     <User className="w-6 h-6" style={{ color: student.color }} />
                   </div>
-                  <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground truncate">
-                        {student.name}
+                        {student.displayName || student.name}
                       </h3>
+                      {student.dateOfBirth && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-base cursor-help">
+                                {ZODIAC_SYMBOLS[getZodiacSign(new Date(student.dateOfBirth))]}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{ZODIAC_LABELS[getZodiacSign(new Date(student.dateOfBirth))]}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       {student.isArchived && (
                         <Badge variant="outline" className="text-xs">
                           <Archive className="w-3 h-3 mr-1" />
@@ -188,16 +203,19 @@ export default function Students() {
                     
                     {/* Profile Info Row */}
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                      {student.dateOfBirth && (
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          DOB: {format(new Date(student.dateOfBirth), 'MM/dd/yyyy')}
-                        </span>
-                      )}
+                      {student.dateOfBirth && (() => {
+                        const age = calculateAge(new Date(student.dateOfBirth));
+                        return (
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3" />
+                            {age.years}y {age.months}m ({age.totalMonths} months)
+                          </span>
+                        );
+                      })()}
                       {student.grade && (
                         <span className="flex items-center gap-1">
                           <GraduationCap className="w-3 h-3" />
-                          Grade {student.grade}
+                          {student.grade}
                         </span>
                       )}
                       {student.school && (

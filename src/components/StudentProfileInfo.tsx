@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue 
 } from '@/components/ui/select';
-import { Student, CaseType, CASE_TYPE_LABELS } from '@/types/behavior';
+import { Student, CaseType, CASE_TYPE_LABELS, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StudentProfileInfoProps {
   student: Student;
@@ -34,6 +35,9 @@ const GRADE_OPTIONS = [
 
 export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [firstName, setFirstName] = useState(student.firstName || '');
+  const [lastName, setLastName] = useState(student.lastName || '');
+  const [displayName, setDisplayName] = useState(student.displayName || '');
   const [dob, setDob] = useState(student.dateOfBirth ? format(new Date(student.dateOfBirth), 'yyyy-MM-dd') : '');
   const [grade, setGrade] = useState(student.grade || '');
   const [school, setSchool] = useState(student.school || '');
@@ -49,7 +53,17 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   };
 
   const handleSave = () => {
+    // If first/last name are set, update the main name field too
+    let fullName = student.name;
+    if (firstName.trim() || lastName.trim()) {
+      fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    }
+    
     onUpdate({
+      name: fullName,
+      firstName: firstName.trim() || undefined,
+      lastName: lastName.trim() || undefined,
+      displayName: displayName.trim() || undefined,
       dateOfBirth: dob ? new Date(dob) : undefined,
       grade: grade || undefined,
       school: school || undefined,
@@ -60,6 +74,9 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   };
 
   const handleCancel = () => {
+    setFirstName(student.firstName || '');
+    setLastName(student.lastName || '');
+    setDisplayName(student.displayName || '');
     setDob(student.dateOfBirth ? format(new Date(student.dateOfBirth), 'yyyy-MM-dd') : '');
     setGrade(student.grade || '');
     setSchool(student.school || '');
@@ -68,16 +85,9 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setIsEditing(false);
   };
 
-  // Calculate age if DOB is set
-  const calculateAge = (dob: Date): string => {
-    const today = new Date();
-    let years = today.getFullYear() - dob.getFullYear();
-    const months = today.getMonth() - dob.getMonth();
-    if (months < 0 || (months === 0 && today.getDate() < dob.getDate())) {
-      years--;
-    }
-    return `${years} years old`;
-  };
+  // Get age info if DOB is set
+  const ageInfo = student.dateOfBirth ? calculateAge(new Date(student.dateOfBirth)) : null;
+  const zodiacSign = student.dateOfBirth ? getZodiacSign(new Date(student.dateOfBirth)) : null;
 
   return (
     <Card>
@@ -86,6 +96,20 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
             Student Information
+            {zodiacSign && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-lg cursor-help" title={ZODIAC_LABELS[zodiacSign]}>
+                      {ZODIAC_SYMBOLS[zodiacSign]}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{ZODIAC_LABELS[zodiacSign]}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </CardTitle>
           {!isEditing ? (
             <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
@@ -109,6 +133,42 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       <CardContent className="space-y-4">
         {isEditing ? (
           <>
+            {/* First Name / Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            {/* Display Name */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Display Name
+                <span className="text-xs text-muted-foreground">(for data collection)</span>
+              </Label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Preferred name or nickname"
+              />
+              <p className="text-xs text-muted-foreground">
+                This name will be shown on the dashboard during data collection sessions.
+              </p>
+            </div>
+
             {/* Date of Birth */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -195,12 +255,27 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
         ) : (
           /* Display Mode */
           <div className="space-y-3">
-            {/* DOB & Age */}
-            {student.dateOfBirth && (
+            {/* Name Info */}
+            {(student.firstName || student.lastName) && (
               <div className="flex items-center gap-3 text-sm">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span>{student.firstName} {student.lastName}</span>
+                {student.displayName && (
+                  <Badge variant="outline" className="text-xs">
+                    "{student.displayName}"
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* DOB & Age */}
+            {student.dateOfBirth && ageInfo && (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span>{format(new Date(student.dateOfBirth), 'MMM d, yyyy')}</span>
-                <Badge variant="outline">{calculateAge(new Date(student.dateOfBirth))}</Badge>
+                <Badge variant="outline">
+                  {ageInfo.years}y {ageInfo.months}m ({ageInfo.totalMonths} months)
+                </Badge>
               </div>
             )}
 
@@ -244,7 +319,8 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
 
             {/* Empty state */}
             {!student.dateOfBirth && !student.grade && !student.school && 
-             (!student.caseTypes || student.caseTypes.length === 0) && (
+             (!student.caseTypes || student.caseTypes.length === 0) &&
+             !student.firstName && !student.lastName && (
               <p className="text-sm text-muted-foreground">
                 No profile information set. Click Edit to add details.
               </p>
