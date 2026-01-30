@@ -38,7 +38,16 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const [firstName, setFirstName] = useState(student.firstName || '');
   const [lastName, setLastName] = useState(student.lastName || '');
   const [displayName, setDisplayName] = useState(student.displayName || '');
-  const [dob, setDob] = useState(student.dateOfBirth ? format(new Date(student.dateOfBirth), 'yyyy-MM-dd') : '');
+  // Parse date without timezone shift - treat as local date
+  const formatDateForInput = (date: Date | string): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const [dob, setDob] = useState(student.dateOfBirth ? formatDateForInput(new Date(student.dateOfBirth)) : '');
   const [grade, setGrade] = useState(student.grade || '');
   const [school, setSchool] = useState(student.school || '');
   const [caseTypes, setCaseTypes] = useState<CaseType[]>(student.caseTypes || []);
@@ -59,12 +68,19 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     }
     
+    // Parse date without timezone issues - split and create local date
+    let parsedDate: Date | undefined;
+    if (dob) {
+      const [year, month, day] = dob.split('-').map(Number);
+      parsedDate = new Date(year, month - 1, day);
+    }
+    
     onUpdate({
       name: fullName,
       firstName: firstName.trim() || undefined,
       lastName: lastName.trim() || undefined,
       displayName: displayName.trim() || undefined,
-      dateOfBirth: dob ? new Date(dob) : undefined,
+      dateOfBirth: parsedDate,
       grade: grade || undefined,
       school: school || undefined,
       caseTypes: caseTypes.length > 0 ? caseTypes : undefined,
