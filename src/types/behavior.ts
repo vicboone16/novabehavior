@@ -95,6 +95,15 @@ export interface SkillTarget {
   chainingMethod?: 'forward' | 'backward' | 'total_task';
 }
 
+// Phase change entry for marking status changes on graphs
+export interface PhaseChange {
+  id: string;
+  date: Date;
+  label: string;
+  description?: string;
+  phaseType: 'baseline' | 'intervention' | 'generalization' | 'maintenance' | 'modification' | 'custom';
+}
+
 export interface BehaviorGoal {
   id: string;
   studentId: string;
@@ -118,6 +127,8 @@ export interface BehaviorGoal {
   masteryCriteria?: string;
   measurementType?: string;
   reviewDate?: Date;
+  // Phase changes for graph visualization
+  phaseChanges?: PhaseChange[];
 }
 
 export interface BehaviorDefinition {
@@ -411,6 +422,8 @@ export interface Student {
   school?: string;
   caseTypes?: CaseType[];
   assessmentModeEnabled?: boolean;
+  // Data collection start date - ensures graphs show data from at least this date
+  dataCollectionStartDate?: Date;
   // Contact info
   contactEmail?: string;
   contactPhone?: string;

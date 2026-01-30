@@ -66,6 +66,7 @@ import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttenda
 import { SessionNotesTab } from '@/components/session-notes';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { ObservationHistory } from '@/components/ObservationHistory';
+import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
@@ -184,6 +185,11 @@ export default function StudentProfile() {
   const historicalIntervalSessions = sessions.filter(session => 
     session.intervalEntries.some(e => e.studentId === studentId)
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Helper to get behavior name by ID
+  const getBehaviorName = (behaviorId: string) => {
+    return student.behaviors.find(b => b.id === behaviorId)?.name || 'Unknown';
+  };
 
   const handleAddBehavior = () => {
     if (newBehaviorName.trim() && selectedMethods.length > 0) {
@@ -542,6 +548,8 @@ export default function StudentProfile() {
             intervalEntries={studentIntervals}
             sessions={sessions}
             historicalData={student.historicalData?.frequencyEntries || []}
+            dataCollectionStartDate={student.dataCollectionStartDate}
+            behaviorGoals={behaviorGoals.filter(g => g.studentId === student.id)}
           />
 
           {/* Behavior List (for management) */}
@@ -625,6 +633,10 @@ export default function StudentProfile() {
                           </p>
                         </div>
                         <div className="flex gap-1">
+                          <PhaseChangeManager 
+                            goal={goal} 
+                            behaviorName={getBehaviorName(goal.behaviorId)}
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
