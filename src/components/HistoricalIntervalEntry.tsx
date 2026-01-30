@@ -293,8 +293,9 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
           </DialogDescription>
         </DialogHeader>
 
+        <ScrollArea className="flex-1 min-h-0">
         {step === 'config' ? (
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 pr-4">
             {/* Date and Time */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -394,8 +395,7 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
             </div>
           </div>
         ) : (
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 pr-4">
               {selectedBehaviors.map((behaviorId) => {
                 const behavior = student.behaviors.find(b => b.id === behaviorId);
                 if (!behavior) return null;
@@ -496,10 +496,10 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
                 );
               })}
             </div>
-          </ScrollArea>
         )}
+        </ScrollArea>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-shrink-0">
           <Button variant="outline" onClick={handleClose}>
             <X className="w-4 h-4 mr-2" />
             Cancel

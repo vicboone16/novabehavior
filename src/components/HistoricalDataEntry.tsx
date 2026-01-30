@@ -253,7 +253,8 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
         frequencyCount: selection.count,
         hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
         durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
-      });
+        timestamp, // Include historical timestamp
+      } as any);
     } else {
       // For multiple behaviors, create entries for each
       selectedBehaviors.forEach(selection => {
@@ -266,7 +267,8 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
           frequencyCount: selection.count,
           hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
           durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
-        });
+          timestamp, // Include historical timestamp
+        } as any);
       });
     }
 
