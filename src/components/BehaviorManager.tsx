@@ -45,6 +45,9 @@ export function BehaviorManager() {
   const [editDefinitionText, setEditDefinitionText] = useState('');
   const [showArchived, setShowArchived] = useState(false);
 
+  // All non-archived students for the dropdown
+  const allActiveStudents = students.filter((s) => !s.isArchived);
+  // Only currently selected students for bulk operations and display
   const selectedStudents = students.filter((s) => selectedStudentIds.includes(s.id));
 
   const toggleMethod = (method: DataCollectionMethod) => {
@@ -204,14 +207,22 @@ export function BehaviorManager() {
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Select student" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999] bg-popover">
-                  {selectedStudents.length > 0 ? (
-                    selectedStudents.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                <SelectContent className="z-[9999] bg-popover max-h-[300px]">
+                  {allActiveStudents.length > 0 ? (
+                    allActiveStudents.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.name}
+                        </div>
+                      </SelectItem>
                     ))
                   ) : (
                     <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                      No students selected. Please select students from the dashboard first.
+                      No students found. Add students first.
                     </div>
                   )}
                 </SelectContent>
