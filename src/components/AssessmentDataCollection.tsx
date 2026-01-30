@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Plus, Play, Pause, Square, Clock, Hash, Check, Timer, Zap,
-  ChevronDown, ChevronUp, AlertTriangle, X
+  ChevronDown, ChevronUp, AlertTriangle, X, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useDataStore } from '@/store/dataStore';
 import { ABCTracker } from '@/components/ABCTracker';
+import { StudentSessionTimer } from '@/components/StudentSessionTimer';
 import { 
   Student, 
   Behavior, 
@@ -36,12 +37,6 @@ interface IntervalConfig {
   totalIntervals: number;
 }
 
-interface ObservationSession {
-  isActive: boolean;
-  startTime: Date | null;
-  durationMinutes: number;
-}
-
 export function AssessmentDataCollection({ student, onObservationChange }: AssessmentDataCollectionProps) {
   const {
     addBehaviorWithMethods,
@@ -53,6 +48,15 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
     getIntervalData,
     addLatencyEntry,
     updateStudentProfile,
+    // Live session engine
+    sessionStartTime,
+    startSession,
+    selectedStudentIds,
+    toggleStudentSelection,
+    resetStudentSessionStatus,
+    isStudentSessionEnded,
+    resetSessionData,
+    resetSession,
   } = useDataStore();
 
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
@@ -81,15 +85,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const intervalTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Observation session state
-  const [observationSession, setObservationSession] = useState<ObservationSession>({
-    isActive: false,
-    startTime: null,
-    durationMinutes: 0,
-  });
-  const observationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // End observation confirmation state
-  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   // Custom A/C input state
   const [newAntecedent, setNewAntecedent] = useState('');
@@ -139,23 +135,19 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
     };
   }, [intervalTimerRunning, intervalTimeRemaining, intervalConfig.intervalLength]);
 
-  // Observation session timer
-  useEffect(() => {
-    if (observationSession.isActive && observationSession.startTime) {
-      observationTimerRef.current = setInterval(() => {
-        const elapsed = (Date.now() - observationSession.startTime!.getTime()) / 1000 / 60;
-        setObservationSession(prev => ({ ...prev, durationMinutes: elapsed }));
-      }, 1000);
-    }
-    return () => {
-      if (observationTimerRef.current) clearInterval(observationTimerRef.current);
-    };
-  }, [observationSession.isActive]);
+  const isStudentSelected = selectedStudentIds.includes(student.id);
+  const studentEnded = isStudentSessionEnded(student.id);
+  const isLiveObservationActive = !!sessionStartTime && isStudentSelected && !studentEnded;
+  const canDeleteThisObservation = !!sessionStartTime && isStudentSelected && selectedStudentIds.length === 1;
 
-  // Notify parent of observation state changes
+  // Notify parent of observation state changes (kept for backwards compatibility)
   useEffect(() => {
-    onObservationChange?.(observationSession.isActive, observationSession.durationMinutes);
-  }, [observationSession.isActive, observationSession.durationMinutes, onObservationChange]);
+    if (!onObservationChange) return;
+    const durationMinutes = sessionStartTime
+      ? (Date.now() - new Date(sessionStartTime).getTime()) / 60000
+      : 0;
+    onObservationChange(isLiveObservationActive, durationMinutes);
+  }, [isLiveObservationActive, onObservationChange, sessionStartTime]);
 
   const playIntervalAlert = () => {
     try {
@@ -272,27 +264,36 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   };
 
   const handleStartObservation = () => {
-    setObservationSession({
-      isActive: true,
-      startTime: new Date(),
-      durationMinutes: 0,
-    });
-    toast.success('Observation session started');
+    // Start global session clock if needed
+    if (!sessionStartTime) {
+      startSession();
+    }
+    // Ensure this student is part of the active session
+    if (!isStudentSelected) {
+      toggleStudentSelection(student.id);
+    }
+    // If this student had previously ended, re-open them
+    resetStudentSessionStatus(student.id);
+    toast.success('Observation started');
   };
 
-  const handleEndObservation = () => {
-    setShowEndConfirmation(false);
-    setObservationSession({
-      isActive: false,
-      startTime: null,
-      durationMinutes: 0,
-    });
-    setIntervalTimerRunning(false);
-    toast.success('Observation session ended');
-  };
-  
-  const handleRequestEndObservation = () => {
-    setShowEndConfirmation(true);
+  const handleDeleteObservation = () => {
+    // Safety: only allow single-student delete here (multi-student sessions should be managed via End/Reset flows)
+    if (!canDeleteThisObservation) {
+      toast.error('To delete, end or reset the session from the main session controls.');
+      return;
+    }
+
+    // Remove unsaved/live entries from the current session (moved to trash when applicable)
+    resetSessionData();
+    // Clear the session clock
+    resetSession();
+    // Clear per-student status and selection
+    resetStudentSessionStatus(student.id);
+    if (selectedStudentIds.includes(student.id)) {
+      toggleStudentSelection(student.id);
+    }
+    toast.success('Observation deleted');
   };
 
   const toggleBehaviorExpand = (behaviorId: string) => {
@@ -310,38 +311,55 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   return (
     <div className="space-y-4">
       {/* Observation Session Header */}
-      <Card className={observationSession.isActive ? 'border-primary' : ''}>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${observationSession.isActive ? 'bg-primary/20' : 'bg-muted'}`}>
-                <Timer className={`w-5 h-5 ${observationSession.isActive ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-              </div>
-              <div>
-                <p className="font-medium">
-                  {observationSession.isActive ? 'Observation Active' : 'Start Observation'}
-                </p>
-                {observationSession.isActive && (
-                  <p className="text-sm text-muted-foreground">
-                    Duration: {observationSession.durationMinutes.toFixed(1)} minutes
-                  </p>
-                )}
-              </div>
-            </div>
-            {observationSession.isActive ? (
-              <Button variant="destructive" size="sm" onClick={handleRequestEndObservation}>
-                <Square className="w-4 h-4 mr-2" />
-                End Observation
+      {isLiveObservationActive ? (
+        <div className="space-y-2">
+          <StudentSessionTimer
+            studentId={student.id}
+            studentName={student.displayName || student.name}
+            studentColor={student.color}
+          />
+
+          {canDeleteThisObservation && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-destructive hover:text-destructive"
+                onClick={() => setShowDeleteConfirmation(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Observation
               </Button>
-            ) : (
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <Timer className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">
+                    {sessionStartTime ? 'Join Active Observation' : 'Start Observation'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {sessionStartTime
+                      ? 'Add this student to the current live session'
+                      : 'Start a live observation session for this student'}
+                  </p>
+                </div>
+              </div>
               <Button onClick={handleStartObservation}>
                 <Play className="w-4 h-4 mr-2" />
-                Start Observation
+                {sessionStartTime ? 'Join' : 'Start'}
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Mode Tabs */}
       <Tabs value={activeMode} onValueChange={(v) => setActiveMode(v as RecordingMode)}>
@@ -797,15 +815,14 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         </TabsContent>
       </Tabs>
       
-      {/* End Observation Confirmation Dialog */}
       <ConfirmDialog
-        open={showEndConfirmation}
-        onOpenChange={setShowEndConfirmation}
-        title="End Observation?"
-        description={`Are you sure you want to end the observation session? Total duration: ${observationSession.durationMinutes.toFixed(1)} minutes. All recorded data will be saved.`}
-        confirmLabel="End Observation"
-        cancelLabel="Continue Observing"
-        onConfirm={handleEndObservation}
+        open={showDeleteConfirmation}
+        onOpenChange={setShowDeleteConfirmation}
+        title="Delete this observation?"
+        description="This removes the currently active observation for this student (and any unsaved data recorded during it)."
+        confirmLabel="Delete Observation"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteObservation}
         variant="destructive"
       />
     </div>
