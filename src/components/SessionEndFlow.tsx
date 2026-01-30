@@ -30,11 +30,23 @@ interface SessionEndFlowProps {
   onComplete: () => void;
 }
 
-type FlowStep = 'confirm' | 'note_decision' | 'note_builder' | 'complete';
+type FlowStep = 'confirm' | 'note_decision' | 'note_type_select' | 'note_builder' | 'complete';
+
+// Clinical note types per spec
+export type ClinicalNoteType = 'therapist' | 'clinical' | 'parent_training' | 'assessment' | 'supervision_revision';
+
+export const CLINICAL_NOTE_TYPE_LABELS: Record<ClinicalNoteType, string> = {
+  therapist: 'Therapist (RBT)',
+  clinical: 'Clinical (BCBA)',
+  parent_training: 'Parent Training',
+  assessment: 'Assessment',
+  supervision_revision: 'Supervision Revision',
+};
 
 interface StudentNoteStatus {
   studentId: string;
   decision: 'data_only' | 'data_and_note' | 'pending';
+  noteType?: ClinicalNoteType;
   noteCompleted: boolean;
 }
 
@@ -181,8 +193,8 @@ export function SessionEndFlow({
     );
 
     if (decision === 'data_and_note') {
-      setBuildingNote(studentId);
-      setStep('note_builder');
+      // Show note type selection instead of going straight to builder
+      setStep('note_type_select');
     } else {
       // Check if more students need decisions
       const remaining = studentsNeedingDecision.filter(s => s.id !== studentId);
@@ -199,6 +211,14 @@ export function SessionEndFlow({
         }
       }
     }
+  };
+
+  const handleNoteTypeSelect = (studentId: string, noteType: ClinicalNoteType) => {
+    setStudentNoteStatuses(prev =>
+      prev.map(s => s.studentId === studentId ? { ...s, noteType } : s)
+    );
+    setBuildingNote(studentId);
+    setStep('note_builder');
   };
 
   const handleNoteComplete = (studentId: string) => {
@@ -395,6 +415,71 @@ export function SessionEndFlow({
     );
   };
 
+  const renderNoteTypeSelectStep = () => {
+    if (!currentStudent) return null;
+
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: currentStudent.color }}
+              />
+              <CardTitle className="text-base">{currentStudent.name}</CardTitle>
+            </div>
+            <CardDescription>
+              Select the type of note to create
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Choose the appropriate note type for this session:
+            </p>
+
+            <div className="flex flex-col gap-2">
+              {(Object.entries(CLINICAL_NOTE_TYPE_LABELS) as [ClinicalNoteType, string][]).map(([type, label]) => (
+                <Button
+                  key={type}
+                  variant="outline"
+                  className="justify-start h-auto py-3"
+                  onClick={() => handleNoteTypeSelect(currentStudent.id, type)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  <div className="text-left flex-1">
+                    <div className="font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {type === 'therapist' && 'Daily session note for RBT/BT documentation'}
+                      {type === 'clinical' && 'Clinical supervision and treatment planning'}
+                      {type === 'parent_training' && 'Parent/caregiver training session'}
+                      {type === 'assessment' && 'FBA, skills assessment, or evaluation'}
+                      {type === 'supervision_revision' && 'Combined clinical + parent training'}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              variant="ghost"
+              className="w-full mt-3"
+              onClick={() => {
+                setStudentNoteStatuses(prev =>
+                  prev.map(s => s.studentId === currentStudent.id ? { ...s, decision: 'data_only' } : s)
+                );
+                handleNoteComplete(currentStudent.id);
+              }}
+            >
+              Skip Note
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderNoteBuilderStep = () => {
     if (!buildingNote) return null;
     const student = students.find(s => s.id === buildingNote);
@@ -465,6 +550,12 @@ export function SessionEndFlow({
                 Session Notes
               </>
             )}
+            {step === 'note_type_select' && (
+              <>
+                <FileText className="w-5 h-5" />
+                Select Note Type
+              </>
+            )}
             {step === 'note_builder' && (
               <>
                 <FileText className="w-5 h-5" />
@@ -482,6 +573,7 @@ export function SessionEndFlow({
 
         {step === 'confirm' && renderConfirmStep()}
         {step === 'note_decision' && renderNoteDecisionStep()}
+        {step === 'note_type_select' && renderNoteTypeSelectStep()}
         {step === 'note_builder' && renderNoteBuilderStep()}
         {step === 'complete' && renderCompleteStep()}
       </DialogContent>

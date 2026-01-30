@@ -24,7 +24,7 @@ import { ScheduleMonthView } from '@/components/schedule/ScheduleMonthView';
 import { AppointmentDialog } from '@/components/schedule/AppointmentDialog';
 import { SessionPromptDialog } from '@/components/schedule/SessionPromptDialog';
 import { VerificationDialog } from '@/components/schedule/VerificationDialog';
-import { NeedsVerificationQueue } from '@/components/schedule/NeedsVerificationQueue';
+import { VerificationQueue } from '@/components/schedule/VerificationQueue';
 import type { Appointment, ScheduleViewType, FilterMode } from '@/types/schedule';
 
 export default function Schedule() {
@@ -627,9 +627,9 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
         }}
       />
 
-      {/* Needs Verification Queue - Admin only */}
+      {/* Verification Queue - Admin only */}
       {isAdmin && showVerificationQueue && (
-        <NeedsVerificationQueue
+        <VerificationQueue
           students={students}
           staff={staff}
           onRefresh={loadAppointments}

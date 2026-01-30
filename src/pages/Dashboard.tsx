@@ -13,6 +13,7 @@ import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { TrashRecovery } from '@/components/TrashRecovery';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
+import { ActiveStudentSessions } from '@/components/ActiveStudentSessions';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -61,6 +62,9 @@ export default function Dashboard() {
         <SessionTimer />
         <DataSummary />
       </div>
+
+      {/* Active Student Sessions - Per-student timers */}
+      <ActiveStudentSessions />
 
       {/* Quick Actions Row */}
       <div className="flex flex-wrap gap-2 justify-center">
