@@ -3,7 +3,7 @@ import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date
 import { 
   Users, Calendar, Save, X, Check, Minus, 
   ChevronDown, ChevronUp, AlertCircle, Timer, Grid3X3, TrendingUp,
-  Edit2
+  Edit2, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +57,7 @@ interface CellData {
   status: DataStatus;
   count: number;
   durationSeconds?: number;
+  observationMinutes?: number; // For rate calculation
   // Interval-specific fields
   totalIntervals?: number;
   occurredIntervals?: number[];
@@ -92,6 +93,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
   const [defaultStatus, setDefaultStatus] = useState<DataStatus>('collected');
   const [defaultCount, setDefaultCount] = useState(1);
   const [defaultDuration, setDefaultDuration] = useState(0);
+  const [defaultObservationMinutes, setDefaultObservationMinutes] = useState(0);
   const [defaultTotalIntervals, setDefaultTotalIntervals] = useState(6);
   const [showApplyDefaults, setShowApplyDefaults] = useState(false);
   
@@ -199,6 +201,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
             status: defaultStatus,
             count: defaultStatus === 'zero' ? 0 : defaultCount,
             durationSeconds: defaultDuration > 0 ? defaultDuration : undefined,
+            observationMinutes: defaultObservationMinutes > 0 ? defaultObservationMinutes : undefined,
             totalIntervals: defaultTotalIntervals,
             occurredIntervals: [],
           };
@@ -259,12 +262,13 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       const timestamp = new Date(dateStr + 'T12:00:00');
 
       if (dataType === 'frequency') {
-        // Add frequency entry
+        // Add frequency entry with observation duration for rate calculation
         addHistoricalFrequency({
           studentId,
           behaviorId,
           count: data.status === 'zero' ? 0 : data.count,
           timestamp,
+          observationDurationMinutes: data.observationMinutes,
         });
 
         // Add duration if present
@@ -341,10 +345,20 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       );
     }
     
-    // Frequency with optional duration
+    // Frequency with optional duration and rate
+    const { observationMinutes } = cellData;
+    const rate = observationMinutes && observationMinutes > 0 
+      ? (count / (observationMinutes / 60)).toFixed(1) 
+      : null;
+    
     return (
       <div className="flex flex-col items-center gap-0.5">
         <Badge variant="default" className="text-xs px-1.5">{count}</Badge>
+        {rate && (
+          <span className="text-[10px] text-primary font-medium">
+            {rate}/hr
+          </span>
+        )}
         {durationSeconds && durationSeconds > 0 && (
           <span className="text-[10px] text-muted-foreground">
             {formatDuration(durationSeconds)}
@@ -368,15 +382,22 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     
     const [localCount, setLocalCount] = useState(cellData.count || 1);
     const [localDuration, setLocalDuration] = useState(cellData.durationSeconds || 0);
+    const [localObservationMinutes, setLocalObservationMinutes] = useState(cellData.observationMinutes || 0);
     const [localStatus, setLocalStatus] = useState(cellData.status);
     const [localTotalIntervals, setLocalTotalIntervals] = useState(cellData.totalIntervals || defaultTotalIntervals);
     const [localOccurred, setLocalOccurred] = useState<number[]>(cellData.occurredIntervals || []);
+    
+    // Calculate rate for display
+    const calculatedRate = localObservationMinutes > 0 
+      ? (localCount / (localObservationMinutes / 60)).toFixed(2)
+      : null;
     
     const handleSaveCell = () => {
       setCellData(studentId, behaviorId, date, {
         status: localStatus,
         count: localStatus === 'zero' ? 0 : localCount,
         durationSeconds: localDuration > 0 ? localDuration : undefined,
+        observationMinutes: localObservationMinutes > 0 ? localObservationMinutes : undefined,
         totalIntervals: localTotalIntervals,
         occurredIntervals: localOccurred,
       });
@@ -444,11 +465,37 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                   />
                 </div>
                 
+                {/* Observation Duration for Rate Calculation */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Observation Duration (minutes)
+                  </Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={localObservationMinutes}
+                      onChange={(e) => setLocalObservationMinutes(parseFloat(e.target.value) || 0)}
+                      placeholder="Optional"
+                    />
+                    {calculatedRate && (
+                      <Badge variant="default" className="whitespace-nowrap">
+                        Rate: {calculatedRate}/hr
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter observation time to calculate rate per hour
+                  </p>
+                </div>
+                
                 {/* Duration Input */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Timer className="w-4 h-4" />
-                    Duration (seconds)
+                    Behavior Duration (seconds)
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -465,7 +512,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Leave at 0 if not tracking duration
+                    Leave at 0 if not tracking behavior duration
                   </p>
                 </div>
               </>
@@ -761,10 +808,21 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
                       <Input
                         type="number"
                         min={0}
+                        step={0.5}
+                        value={defaultObservationMinutes}
+                        onChange={(e) => setDefaultObservationMinutes(parseFloat(e.target.value) || 0)}
+                        className="w-20 h-8"
+                        placeholder="Obs (min)"
+                        title="Observation duration in minutes for rate calculation"
+                      />
+                      <Input
+                        type="number"
+                        min={0}
                         value={defaultDuration}
                         onChange={(e) => setDefaultDuration(parseInt(e.target.value) || 0)}
                         className="w-20 h-8"
-                        placeholder="Duration (s)"
+                        placeholder="Dur (s)"
+                        title="Behavior duration in seconds"
                       />
                     </>
                   )}
