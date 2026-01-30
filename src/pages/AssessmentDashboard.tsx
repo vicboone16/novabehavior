@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   ClipboardCheck, Users, FileText, BarChart3, Brain, Eye, 
   Target, AlertTriangle, CheckCircle2, ArrowRight, ChevronRight,
-  FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar, ClipboardList
+  FileUp, BookOpen, Lightbulb, TrendingUp, Clock, Calendar, ClipboardList,
+  Square, Timer
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,17 @@ export default function AssessmentDashboard() {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isInitializing, setIsInitializing] = useState(false);
   const [activeTab, setActiveTab] = useState('workflow');
+  
+  // Active observation tracking
+  const [activeObservation, setActiveObservation] = useState<{
+    isActive: boolean;
+    durationMinutes: number;
+  }>({ isActive: false, durationMinutes: 0 });
+
+  // Handle observation state changes from AssessmentDataCollection
+  const handleObservationChange = useCallback((isActive: boolean, durationMinutes: number) => {
+    setActiveObservation({ isActive, durationMinutes });
+  }, []);
 
   // Filter to students with assessment mode enabled
   const assessmentStudents = useMemo(() => {
@@ -264,6 +276,43 @@ export default function AssessmentDashboard() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Active Observation Banner */}
+      {activeObservation.isActive && selectedStudentId && (
+        <Card className="border-primary bg-primary/5">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/20">
+                  <Timer className="w-5 h-5 text-primary animate-pulse" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Active Observation in Progress</p>
+                  <p className="text-xs text-muted-foreground">
+                    Duration: {activeObservation.durationMinutes.toFixed(1)} minutes • 
+                    Student: {selectedStudent?.name}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="gap-1">
+                  <Eye className="w-3 h-3" />
+                  1 Active
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setActiveTab('collect')}
+                  className="gap-1"
+                >
+                  <Eye className="w-4 h-4" />
+                  Go to Direct Observation
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -563,7 +612,10 @@ export default function AssessmentDashboard() {
             {selectedStudent && (
               <div className="grid lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
-                  <AssessmentDataCollection student={selectedStudent} />
+                  <AssessmentDataCollection 
+                    student={selectedStudent} 
+                    onObservationChange={handleObservationChange}
+                  />
                 </div>
                 <div className="space-y-4">
                   <Card>

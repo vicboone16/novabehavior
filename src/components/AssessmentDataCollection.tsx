@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 interface AssessmentDataCollectionProps {
   student: Student;
+  onObservationChange?: (isActive: boolean, durationMinutes: number) => void;
 }
 
 type RecordingMode = 'abc' | 'interval' | 'frequency' | 'duration' | 'latency';
@@ -41,7 +42,7 @@ interface ObservationSession {
   durationMinutes: number;
 }
 
-export function AssessmentDataCollection({ student }: AssessmentDataCollectionProps) {
+export function AssessmentDataCollection({ student, onObservationChange }: AssessmentDataCollectionProps) {
   const {
     addBehaviorWithMethods,
     incrementFrequency,
@@ -150,6 +151,11 @@ export function AssessmentDataCollection({ student }: AssessmentDataCollectionPr
       if (observationTimerRef.current) clearInterval(observationTimerRef.current);
     };
   }, [observationSession.isActive]);
+
+  // Notify parent of observation state changes
+  useEffect(() => {
+    onObservationChange?.(observationSession.isActive, observationSession.durationMinutes);
+  }, [observationSession.isActive, observationSession.durationMinutes, onObservationChange]);
 
   const playIntervalAlert = () => {
     try {

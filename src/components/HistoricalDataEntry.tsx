@@ -347,6 +347,9 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
 
   const activeBehaviors = student.behaviors.filter(b => !b.isArchived && !b.isMastered);
 
+  // Check if any data has been entered
+  const hasEnteredData = selectedBehaviors.length > 0 || observationDuration || notes || antecedent || consequence;
+
   return (
     <Card>
       <CardHeader>
@@ -357,6 +360,17 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               Manually add data collected outside the system or from past sessions
             </CardDescription>
           </div>
+          {hasEnteredData && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetForm}
+              className="gap-1"
+            >
+              <X className="w-3 h-3" />
+              Clear
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
