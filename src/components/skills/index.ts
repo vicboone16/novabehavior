@@ -5,4 +5,6 @@ export { RecommendationsSubTab } from './RecommendationsSubTab';
 export { VBMAPPGrid } from './VBMAPPGrid';
 export { AddTargetDialog } from './AddTargetDialog';
 export { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
+export { SkillProgressReports } from './SkillProgressReports';
+export { AssessmentUploadMapper } from './AssessmentUploadMapper';
 export { BulkImportDialog } from './BulkImportDialog';

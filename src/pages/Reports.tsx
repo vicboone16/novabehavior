@@ -10,7 +10,8 @@ import { EnhancedExportOptions } from '@/components/EnhancedExportOptions';
 import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
-import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart } from 'lucide-react';
+import { SkillProgressReports } from '@/components/skills/SkillProgressReports';
+import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target } from 'lucide-react';
 
 export default function Reports() {
   return (
