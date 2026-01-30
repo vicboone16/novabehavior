@@ -857,7 +857,8 @@ export const useDataStore = create<DataState>()(
             { 
               ...entry, 
               id: crypto.randomUUID(), 
-              timestamp: new Date(), 
+              // Use provided timestamp for historical entries, otherwise use current time
+              timestamp: (entry as any).timestamp || new Date(), 
               frequencyCount: entry.frequencyCount ?? 1,
               sessionId: state.currentSessionId || undefined 
             },
