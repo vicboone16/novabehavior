@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, Save, FileText, CheckCircle2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useCurriculumItems, useDomains, useTargetActions } from '@/hooks/useCurriculum';
+import { AssessmentUploadMapper } from './AssessmentUploadMapper';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
 
 interface VBMAPPGridProps {
@@ -40,6 +41,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
     (assessment.results_json || {}) as Record<string, MilestoneScore>
   );
   const [saving, setSaving] = useState(false);
+  const [showUploadMapper, setShowUploadMapper] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
 
   // Group items by domain and level
@@ -174,6 +176,10 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowUploadMapper(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload & Map
+          </Button>
           <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
             Save Draft
@@ -184,6 +190,15 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
           </Button>
         </div>
       </div>
+
+      {/* Upload Mapper Dialog */}
+      <AssessmentUploadMapper
+        open={showUploadMapper}
+        onOpenChange={setShowUploadMapper}
+        curriculumSystemId={assessment.curriculum_system_id}
+        existingScores={scores}
+        onScoresExtracted={(newScores) => setScores(newScores)}
+      />
 
       {/* Domain Score Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
