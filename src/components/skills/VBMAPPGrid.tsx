@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, Upload } from 'lucide-react';
+import { 
+  ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, 
+  Upload, Printer, AlertTriangle 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +12,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useCurriculumItems, useDomains, useTargetActions } from '@/hooks/useCurriculum';
 import { AssessmentUploadMapper } from './AssessmentUploadMapper';
+import { PrintableAssessmentGrid } from './PrintableAssessmentGrid';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
 
 interface VBMAPPGridProps {
@@ -27,9 +41,9 @@ interface VBMAPPGridProps {
 }
 
 const SCORE_OPTIONS = [
-  { value: 0, label: '0', color: 'bg-red-100 hover:bg-red-200 text-red-700 border-red-300' },
-  { value: 0.5, label: '½', color: 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border-yellow-300' },
-  { value: 1, label: '1', color: 'bg-green-100 hover:bg-green-200 text-green-700 border-green-300' },
+  { value: 0, label: '0', color: 'bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30' },
+  { value: 0.5, label: '½', color: 'bg-amber-100 hover:bg-amber-200 text-amber-700 border-amber-300' },
+  { value: 1, label: '1', color: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300' },
 ];
 
 export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave }: VBMAPPGridProps) {
@@ -42,6 +56,8 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
   );
   const [saving, setSaving] = useState(false);
   const [showUploadMapper, setShowUploadMapper] = useState(false);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
 
   // Group items by domain and level
@@ -103,6 +119,14 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
     return scores_by_domain;
   }, [allItems, scores]);
 
+  // Calculate completion percentage
+  const completionPercentage = useMemo(() => {
+    const scoredCount = Object.values(scores).filter(s => s.score !== undefined).length;
+    return allItems.length > 0 ? Math.round((scoredCount / allItems.length) * 100) : 0;
+  }, [scores, allItems]);
+
+  const isComplete = completionPercentage >= 90;
+
   const handleScoreChange = (itemId: string, score: number) => {
     setScores(prev => ({
       ...prev,
@@ -115,6 +139,16 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
   };
 
   const handleSave = async (finalize: boolean) => {
+    // Check if incomplete when finalizing
+    if (finalize && !isComplete) {
+      setShowIncompleteWarning(true);
+      return;
+    }
+
+    await performSave(finalize);
+  };
+
+  const performSave = async (finalize: boolean) => {
     setSaving(true);
     try {
       const domainScoresRecord: Record<string, number> = {};
@@ -150,9 +184,9 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
   const getScoreColor = (itemId: string) => {
     const score = scores[itemId]?.score;
     if (score === undefined) return 'bg-muted/30';
-    if (score === 0) return 'bg-red-50';
-    if (score === 0.5) return 'bg-yellow-50';
-    return 'bg-green-50';
+    if (score === 0) return 'bg-destructive/5';
+    if (score === 0.5) return 'bg-amber-50';
+    return 'bg-emerald-50';
   };
 
   if (loading) {
@@ -169,13 +203,26 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
           </Button>
           <div>
             <h3 className="font-semibold text-lg">VB-MAPP Milestones Assessment</h3>
-            <p className="text-sm text-muted-foreground">
-              {studentName} • {assessment.status === 'final' ? 'Final' : 'Draft'}
-            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{studentName}</span>
+              <span>•</span>
+              <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
+                {assessment.status === 'final' ? 'Finalized' : 'Draft'}
+              </Badge>
+              <span>•</span>
+              <span className={!isComplete ? 'text-amber-600' : ''}>
+                {completionPercentage}% complete
+              </span>
+              {!isComplete && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+            </div>
           </div>
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
+            <Printer className="w-4 h-4 mr-2" />
+            Print / Export
+          </Button>
           <Button variant="outline" onClick={() => setShowUploadMapper(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Upload & Map
@@ -191,6 +238,22 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
         </div>
       </div>
 
+      {/* Completion Progress Bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Assessment Progress</span>
+          <span>{Object.values(scores).filter(s => s.score !== undefined).length} / {allItems.length} items scored</span>
+        </div>
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all ${
+              isComplete ? 'bg-emerald-500' : 'bg-amber-400'
+            }`}
+            style={{ width: `${completionPercentage}%` }}
+          />
+        </div>
+      </div>
+
       {/* Upload Mapper Dialog */}
       <AssessmentUploadMapper
         open={showUploadMapper}
@@ -199,6 +262,42 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
         existingScores={scores}
         onScoresExtracted={(newScores) => setScores(newScores)}
       />
+
+      {/* Print Dialog */}
+      <PrintableAssessmentGrid
+        open={showPrintDialog}
+        onOpenChange={setShowPrintDialog}
+        assessment={{ ...assessment, results_json: scores }}
+        items={allItems}
+        studentName={studentName}
+        systemName="VB-MAPP"
+      />
+
+      {/* Incomplete Warning Dialog */}
+      <AlertDialog open={showIncompleteWarning} onOpenChange={setShowIncompleteWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Incomplete Assessment
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This assessment is only {completionPercentage}% complete. You can still finalize it, 
+              but the recommendations and scores may be less accurate. You can always edit this 
+              assessment later to add more scores.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setShowIncompleteWarning(false);
+              performSave(true);
+            }}>
+              Finalize Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Domain Score Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
@@ -227,13 +326,15 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
                 const items = levelMap.get(level) || [];
                 if (items.length === 0) return null;
 
+                const masteredCount = items.filter(i => scores[i.id]?.score === 1).length;
+
                 return (
                   <Card key={domainName}>
                     <CardHeader className="py-3">
                       <CardTitle className="text-base flex items-center justify-between">
                         <span>{domainName}</span>
                         <Badge variant="outline">
-                          {items.filter(i => scores[i.id]?.score === 1).length} / {items.length} mastered
+                          {masteredCount} / {items.length} mastered
                         </Badge>
                       </CardTitle>
                     </CardHeader>
