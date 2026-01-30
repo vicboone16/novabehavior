@@ -54,6 +54,7 @@ import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
 import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
 import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
+import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
 import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
@@ -798,20 +799,20 @@ export default function StudentProfile() {
 
         {/* Add Data Tab */}
         <TabsContent value="data" className="space-y-4">
+          {/* New Enhanced Historical Data Entry */}
+          <div className="flex items-center justify-between mb-2">
+            <div />
+            <HistoricalDataManager studentId={student.id} />
+          </div>
+          
+          <HistoricalDataEntry student={student} />
+
+          {/* Historical Interval Data Button */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Add Historical / External Data</CardTitle>
-                  <CardDescription>
-                    Manually add data collected outside the system or from past sessions
-                  </CardDescription>
-                </div>
-                <HistoricalDataManager studentId={student.id} />
-              </div>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Interval Data</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Historical Interval Data Button */}
               <Button
                 variant="outline"
                 className="w-full justify-start gap-2"
@@ -872,137 +873,6 @@ export default function StudentProfile() {
                   </div>
                 </div>
               )}
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or add frequency/ABC data</span>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    value={dataDate}
-                    onChange={(e) => setDataDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Time</Label>
-                  <Input
-                    type="time"
-                    value={dataTime}
-                    onChange={(e) => setDataTime(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Behavior</Label>
-                <Select value={dataBehaviorId} onValueChange={setDataBehaviorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select behavior" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {student.behaviors.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Data Type</Label>
-                <Select value={dataType} onValueChange={(v: 'frequency' | 'abc') => setDataType(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="frequency">Frequency Count</SelectItem>
-                    <SelectItem value="abc">ABC Entry</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {dataType === 'frequency' ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Count</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={dataCount}
-                      onChange={(e) => setDataCount(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center justify-between">
-                      <span>Observation Duration (optional)</span>
-                      <span className="text-xs text-muted-foreground font-normal">For rate calculation</span>
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="e.g., 30"
-                        value={dataObservationDuration}
-                        onChange={(e) => setDataObservationDuration(e.target.value)}
-                        className="flex-1"
-                      />
-                      <span className="flex items-center text-sm text-muted-foreground">minutes</span>
-                    </div>
-                    {dataObservationDuration && parseInt(dataCount) > 0 && parseFloat(dataObservationDuration) > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Rate: {((parseInt(dataCount) || 0) / (parseFloat(dataObservationDuration) / 60)).toFixed(2)} per hour
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Antecedent</Label>
-                    <Select value={dataAntecedent} onValueChange={setDataAntecedent}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select antecedent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allAntecedents.map((a) => (
-                          <SelectItem key={a} value={a}>{a}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Consequence</Label>
-                    <Select value={dataConsequence} onValueChange={setDataConsequence}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select consequence" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allConsequences.map((c) => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                className="w-full"
-                onClick={dataType === 'frequency' ? handleAddManualData : handleAddManualABC}
-                disabled={!dataBehaviorId || (dataType === 'abc' && (!dataAntecedent || !dataConsequence))}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Add Data Entry
-              </Button>
             </CardContent>
           </Card>
 
