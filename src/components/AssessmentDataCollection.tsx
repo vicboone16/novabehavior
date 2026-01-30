@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Plus, Play, Pause, Square, Clock, Hash, Check, Timer, Zap,
-  ChevronDown, ChevronUp, AlertTriangle, X, Trash2
+  ChevronDown, ChevronUp, AlertTriangle, X, Trash2, Target, 
+  FileText, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,9 @@ import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useDataStore } from '@/store/dataStore';
 import { ABCTracker } from '@/components/ABCTracker';
 import { StudentSessionTimer } from '@/components/StudentSessionTimer';
+import { ColdProbeTracker, ColdProbeSession } from '@/components/ColdProbeTracker';
+import { StructuredObservationForm, StructuredObservationData } from '@/components/StructuredObservationForm';
+import { ObservationNotesPanel, ObservationNotes } from '@/components/ObservationNotesPanel';
 import { 
   Student, 
   Behavior, 
@@ -25,12 +29,13 @@ import {
   CONSEQUENCE_OPTIONS 
 } from '@/types/behavior';
 import { toast } from 'sonner';
+
 interface AssessmentDataCollectionProps {
   student: Student;
   onObservationChange?: (isActive: boolean, durationMinutes: number) => void;
 }
 
-type RecordingMode = 'abc' | 'interval' | 'frequency' | 'duration' | 'latency';
+type RecordingMode = 'abc' | 'interval' | 'frequency' | 'duration' | 'latency' | 'cold_probe' | 'structured' | 'notes';
 
 interface IntervalConfig {
   intervalLength: number; // seconds
@@ -363,12 +368,24 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
       {/* Mode Tabs */}
       <Tabs value={activeMode} onValueChange={(v) => setActiveMode(v as RecordingMode)}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-8 w-full">
           <TabsTrigger value="abc" className="text-xs">ABC</TabsTrigger>
           <TabsTrigger value="interval" className="text-xs">Interval</TabsTrigger>
-          <TabsTrigger value="frequency" className="text-xs">Frequency</TabsTrigger>
-          <TabsTrigger value="duration" className="text-xs">Duration</TabsTrigger>
-          <TabsTrigger value="latency" className="text-xs">Latency</TabsTrigger>
+          <TabsTrigger value="frequency" className="text-xs">Freq</TabsTrigger>
+          <TabsTrigger value="duration" className="text-xs">Dur</TabsTrigger>
+          <TabsTrigger value="latency" className="text-xs">Lat</TabsTrigger>
+          <TabsTrigger value="cold_probe" className="text-xs">
+            <Target className="w-3 h-3 mr-1" />
+            Probe
+          </TabsTrigger>
+          <TabsTrigger value="structured" className="text-xs">
+            <FileText className="w-3 h-3 mr-1" />
+            Form
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="text-xs">
+            <MessageSquare className="w-3 h-3 mr-1" />
+            Notes
+          </TabsTrigger>
         </TabsList>
 
         {/* ABC Tab - Shows ALL behaviors */}
@@ -812,6 +829,96 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Cold Probe Tab */}
+        <TabsContent value="cold_probe" className="space-y-4">
+          <ColdProbeTracker
+            studentId={student.id}
+            skillTargets={student.skillTargets || []}
+            studentColor={student.color}
+            onSaveSession={(session: ColdProbeSession) => {
+              // Save cold probe session - could store in student.dttSessions or separate storage
+              toast.success(`Cold probe session saved with ${session.trials.length} trials`);
+              // Update student profile with cold probe data
+              const existingData = student.dttSessions || [];
+              updateStudentProfile(student.id, {
+                dttSessions: [...existingData, {
+                  id: session.id,
+                  skillTargetId: session.trials[0]?.skillTargetId || '',
+                  studentId: student.id,
+                  date: session.date,
+                  trials: session.trials.map(t => ({
+                    id: t.id,
+                    timestamp: t.timestamp,
+                    isCorrect: t.isCorrect,
+                    promptLevel: t.promptLevel || 'independent',
+                    notes: t.note,
+                  })),
+                  percentCorrect: Math.round(
+                    (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
+                  ),
+                  percentIndependent: Math.round(
+                    (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
+                  ),
+                  notes: session.notes,
+                }],
+              });
+            }}
+          />
+        </TabsContent>
+
+        {/* Structured Observation Form Tab */}
+        <TabsContent value="structured" className="space-y-4">
+          <StructuredObservationForm
+            studentId={student.id}
+            studentName={student.displayName || student.name}
+            onSave={(data: StructuredObservationData) => {
+              // Save structured observation to student's narrative notes or a dedicated field
+              const observationNote = {
+                id: crypto.randomUUID(),
+                studentId: student.id,
+                content: JSON.stringify(data),
+                timestamp: new Date(),
+                tags: ['structured-observation', 'fba'],
+              };
+              const existingNotes = student.narrativeNotes || [];
+              updateStudentProfile(student.id, {
+                narrativeNotes: [...existingNotes, observationNote],
+              });
+              toast.success('Structured observation saved to student profile');
+            }}
+          />
+        </TabsContent>
+
+        {/* Observation Notes Tab */}
+        <TabsContent value="notes" className="space-y-4">
+          <ObservationNotesPanel
+            studentId={student.id}
+            behaviors={student.behaviors}
+            skillTargets={student.skillTargets || []}
+            onSave={(notes: ObservationNotes) => {
+              // Save observation notes to student profile
+              const noteContent = {
+                type: 'observation-notes',
+                behaviorNotes: notes.behaviorNotes,
+                skillNotes: notes.skillNotes,
+                narrativeNotes: notes.narrativeNotes,
+                observationDate: notes.observationDate,
+              };
+              const observationNote = {
+                id: notes.id,
+                studentId: student.id,
+                content: JSON.stringify(noteContent),
+                timestamp: new Date(),
+                tags: ['observation-notes'],
+              };
+              const existingNotes = student.narrativeNotes || [];
+              updateStudentProfile(student.id, {
+                narrativeNotes: [...existingNotes, observationNote],
+              });
+            }}
+          />
         </TabsContent>
       </Tabs>
       
