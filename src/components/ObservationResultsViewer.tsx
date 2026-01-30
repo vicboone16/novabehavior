@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { format, isWithinInterval, startOfDay, endOfDay, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { 
   ClipboardList, Download, Eye, FileText, ChevronDown, ChevronUp,
-  Target, MessageSquare, Filter, Calendar, BarChart3
+  Filter, Calendar, BarChart3, FileDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,8 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useDataStore } from '@/store/dataStore';
-import { Student } from '@/types/behavior';
+import { Student, Session, ABCEntry, FrequencyEntry, DurationEntry, IntervalEntry } from '@/types/behavior';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Document, 
@@ -37,6 +43,11 @@ import {
   TextRun, 
   HeadingLevel, 
   AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -162,6 +173,399 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       intervalsOccurred,
       intervalPercentage: intervalCount > 0 ? Math.round((intervalsOccurred / intervalCount) * 100) : 0,
     };
+  };
+
+  // Get detailed session data for export
+  const getDetailedSessionData = (sessionId: string) => {
+    const sessionAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const sessionFrequency = frequencyEntries.filter(e => 
+      e.studentId === studentId && e.sessionId === sessionId
+    );
+    const sessionDuration = durationEntries.filter(e => 
+      e.studentId === studentId && e.sessionId === sessionId
+    );
+    const sessionIntervals = intervalEntries.filter(e => 
+      e.studentId === studentId && e.sessionId === sessionId
+    );
+    
+    return { sessionAbcs, sessionFrequency, sessionDuration, sessionIntervals };
+  };
+
+  // Format duration helper
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  };
+
+  // Export single session to Word document
+  const exportSessionToDocx = async (session: Session) => {
+    const { sessionAbcs, sessionFrequency, sessionDuration, sessionIntervals } = getDetailedSessionData(session.id);
+    const summary = getSessionDataSummary(session.id);
+    const children: Paragraph[] = [];
+
+    // Title
+    children.push(
+      new Paragraph({
+        text: 'OBSERVATION SESSION REPORT',
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+      })
+    );
+    children.push(new Paragraph({ text: '' }));
+
+    // Header info
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Student: ', bold: true }),
+          new TextRun(student.displayName || student.name),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Date: ', bold: true }),
+          new TextRun(format(new Date(session.date), 'MMMM d, yyyy')),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Time: ', bold: true }),
+          new TextRun(format(new Date(session.date), 'h:mm a')),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Duration: ', bold: true }),
+          new TextRun(`${session.sessionLengthMinutes} minutes`),
+        ],
+      })
+    );
+    children.push(new Paragraph({ text: '' }));
+
+    // Summary Section
+    children.push(
+      new Paragraph({
+        text: 'DATA SUMMARY',
+        heading: HeadingLevel.HEADING_2,
+      })
+    );
+    children.push(new Paragraph({ text: '' }));
+
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: `• ABC Records: `, bold: true }),
+        new TextRun(`${summary.abcCount}`),
+      ],
+    }));
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: `• Frequency Count: `, bold: true }),
+        new TextRun(`${summary.frequencyCount}`),
+      ],
+    }));
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: `• Duration Total: `, bold: true }),
+        new TextRun(formatDuration(summary.durationSeconds)),
+      ],
+    }));
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: `• Interval Percentage: `, bold: true }),
+        new TextRun(`${summary.intervalPercentage}% (${summary.intervalsOccurred}/${summary.intervalCount})`),
+      ],
+    }));
+    children.push(new Paragraph({ text: '' }));
+
+    // ABC Data Section
+    if (sessionAbcs.length > 0) {
+      children.push(
+        new Paragraph({
+          text: 'ABC DATA LOG',
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({ text: '' }));
+
+      sessionAbcs.forEach((abc, index) => {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `Entry ${index + 1} - `, bold: true }),
+            new TextRun(format(new Date(abc.timestamp), 'h:mm a')),
+          ],
+        }));
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Antecedent: ', bold: true }),
+            new TextRun(abc.antecedent || abc.antecedents?.join(', ') || 'N/A'),
+          ],
+        }));
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Behavior: ', bold: true }),
+            new TextRun(abc.behavior || 'N/A'),
+          ],
+        }));
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Consequence: ', bold: true }),
+            new TextRun(abc.consequence || abc.consequences?.join(', ') || 'N/A'),
+          ],
+        }));
+        if (abc.functions && abc.functions.length > 0) {
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: 'Function(s): ', bold: true }),
+              new TextRun(abc.functions.join(', ')),
+            ],
+          }));
+        }
+        children.push(new Paragraph({ text: '' }));
+      });
+    }
+
+    // Frequency Data Section
+    if (sessionFrequency.length > 0) {
+      children.push(
+        new Paragraph({
+          text: 'FREQUENCY DATA',
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({ text: '' }));
+
+      // Group by behavior
+      const freqByBehavior = sessionFrequency.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = 0;
+        acc[name] += entry.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      Object.entries(freqByBehavior).forEach(([name, count]) => {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `• ${name}: `, bold: true }),
+            new TextRun(`${count} occurrences`),
+          ],
+        }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    // Duration Data Section
+    if (sessionDuration.length > 0) {
+      children.push(
+        new Paragraph({
+          text: 'DURATION DATA',
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({ text: '' }));
+
+      // Group by behavior
+      const durByBehavior = sessionDuration.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = 0;
+        acc[name] += entry.duration || 0;
+        return acc;
+      }, {} as Record<string, number>);
+
+      Object.entries(durByBehavior).forEach(([name, seconds]) => {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `• ${name}: `, bold: true }),
+            new TextRun(formatDuration(seconds)),
+          ],
+        }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    // Interval Data Section
+    if (sessionIntervals.length > 0) {
+      children.push(
+        new Paragraph({
+          text: 'INTERVAL DATA',
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({ text: '' }));
+
+      // Group by behavior
+      const intByBehavior = sessionIntervals.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = { occurred: 0, total: 0 };
+        acc[name].total++;
+        if (entry.occurred) acc[name].occurred++;
+        return acc;
+      }, {} as Record<string, { occurred: number; total: number }>);
+
+      Object.entries(intByBehavior).forEach(([name, data]) => {
+        const pct = Math.round((data.occurred / data.total) * 100);
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `• ${name}: `, bold: true }),
+            new TextRun(`${pct}% (${data.occurred}/${data.total} intervals)`),
+          ],
+        }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    // Session Notes
+    if (session.notes) {
+      children.push(
+        new Paragraph({
+          text: 'SESSION NOTES',
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({ text: session.notes }));
+    }
+
+    // Create document
+    const doc = new Document({
+      sections: [{ properties: {}, children }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const filename = `observation-session-${student.name.replace(/\s+/g, '-')}-${format(new Date(session.date), 'yyyy-MM-dd')}.docx`;
+    saveAs(blob, filename);
+    
+    toast({
+      title: 'Exported',
+      description: 'Session data exported to Word document.',
+    });
+  };
+
+  // Export all filtered sessions to Word document
+  const exportAllSessionsToDocx = async () => {
+    if (filteredSessions.length === 0) {
+      toast({
+        title: 'No sessions to export',
+        description: 'There are no sessions in the selected date range.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const children: Paragraph[] = [];
+
+    // Title
+    children.push(
+      new Paragraph({
+        text: 'OBSERVATION SESSIONS REPORT',
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+      })
+    );
+    children.push(new Paragraph({ text: '' }));
+
+    // Header info
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Student: ', bold: true }),
+          new TextRun(student.displayName || student.name),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Report Date: ', bold: true }),
+          new TextRun(format(new Date(), 'MMMM d, yyyy')),
+        ],
+      })
+    );
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Sessions Included: ', bold: true }),
+          new TextRun(`${filteredSessions.length}`),
+        ],
+      })
+    );
+    children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({ text: '─'.repeat(50) }));
+    children.push(new Paragraph({ text: '' }));
+
+    // Each session
+    for (const session of filteredSessions) {
+      const summary = getSessionDataSummary(session.id);
+      const { sessionAbcs } = getDetailedSessionData(session.id);
+
+      children.push(
+        new Paragraph({
+          text: format(new Date(session.date), 'MMMM d, yyyy - h:mm a'),
+          heading: HeadingLevel.HEADING_2,
+        })
+      );
+      children.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'Duration: ', bold: true }),
+          new TextRun(`${session.sessionLengthMinutes} minutes`),
+        ],
+      }));
+      children.push(new Paragraph({ text: '' }));
+
+      // Summary stats
+      children.push(new Paragraph({
+        text: `ABC: ${summary.abcCount} | Frequency: ${summary.frequencyCount} | Duration: ${formatDuration(summary.durationSeconds)} | Intervals: ${summary.intervalPercentage}%`,
+      }));
+      children.push(new Paragraph({ text: '' }));
+
+      // ABC entries
+      if (sessionAbcs.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'ABC Records:', bold: true })],
+        }));
+        sessionAbcs.forEach(abc => {
+          children.push(new Paragraph({
+            text: `  • ${abc.antecedent || abc.antecedents?.[0] || 'N/A'} → ${abc.behavior} → ${abc.consequence || abc.consequences?.[0] || 'N/A'}`,
+          }));
+        });
+        children.push(new Paragraph({ text: '' }));
+      }
+
+      if (session.notes) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Notes: ', bold: true }),
+            new TextRun(session.notes),
+          ],
+        }));
+        children.push(new Paragraph({ text: '' }));
+      }
+
+      children.push(new Paragraph({ text: '─'.repeat(50) }));
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    const doc = new Document({
+      sections: [{ properties: {}, children }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const filename = `all-sessions-${student.name.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.docx`;
+    saveAs(blob, filename);
+    
+    toast({
+      title: 'Exported',
+      description: `${filteredSessions.length} sessions exported to Word document.`,
+    });
   };
 
   // Export structured observation to PDF/DOCX
@@ -331,26 +735,42 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
 
   return (
     <div className="space-y-4">
-      {/* Header with filter */}
-      <div className="flex items-center justify-between">
+      {/* Header with filter and export */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h3 className="text-sm font-medium">Observation Results</h3>
           <p className="text-xs text-muted-foreground">
             View collected data from direct observations
           </p>
         </div>
-        <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
-          <SelectTrigger className="w-[130px] h-8">
-            <Filter className="w-3 h-3 mr-1" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <FileDown className="w-4 h-4" />
+                Export All
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportAllSessionsToDocx}>
+                <Download className="w-4 h-4 mr-2" />
+                Export to Word (.docx)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
+            <SelectTrigger className="w-[130px] h-8">
+              <Filter className="w-3 h-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="sessions" className="space-y-4">
@@ -444,6 +864,18 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                                   Intervals ({summary.intervalsOccurred}/{summary.intervalCount})
                                 </p>
                               </div>
+                            </div>
+                            {/* Export buttons */}
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => exportSessionToDocx(session)}
+                              >
+                                <Download className="w-3 h-3" />
+                                Export to Word
+                              </Button>
                             </div>
                           </CardContent>
                         </CollapsibleContent>
