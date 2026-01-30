@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, subMonths, subDays, isAfter, parseISO, isValid, startOfDay } from 'date-fns';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,6 +24,8 @@ const CHART_COLORS = [
   'hsl(280, 65%, 70%)',
 ];
 
+type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
+
 export function BehaviorTrendCharts() {
   const { sessions, students, frequencyEntries, addHistoricalFrequency } = useDataStore();
   const [filterStudent, setFilterStudent] = useState<string>('all');
@@ -31,6 +33,9 @@ export function BehaviorTrendCharts() {
   const [showRatePerHour, setShowRatePerHour] = useState(false);
   const [showAddHistorical, setShowAddHistorical] = useState(false);
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   
   // Historical entry form state
   const [histDate, setHistDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -38,6 +43,31 @@ export function BehaviorTrendCharts() {
   const [histBehaviorId, setHistBehaviorId] = useState('');
   const [histCount, setHistCount] = useState('1');
   const [histDuration, setHistDuration] = useState('30');
+
+  // Calculate date range based on preset
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const endDate = startOfDay(now);
+    
+    switch (dateRangePreset) {
+      case '1month':
+        return { start: subMonths(endDate, 1), end: endDate };
+      case '3months':
+        return { start: subMonths(endDate, 3), end: endDate };
+      case '6months':
+        return { start: subMonths(endDate, 6), end: endDate };
+      case 'custom':
+        const customStart = customStartDate ? parseISO(customStartDate) : null;
+        const customEnd = customEndDate ? parseISO(customEndDate) : null;
+        if (customStart && isValid(customStart) && customEnd && isValid(customEnd)) {
+          return { start: customStart, end: customEnd };
+        }
+        return null; // Show all if custom dates invalid
+      case 'all':
+      default:
+        return null; // No filter - show all
+    }
+  }, [dateRangePreset, customStartDate, customEndDate]);
 
   const allBehaviors = useMemo(() => {
     const behaviors: { id: string; name: string }[] = [];
@@ -51,116 +81,154 @@ export function BehaviorTrendCharts() {
     return behaviors;
   }, [students]);
 
-  // Process data for charts - use null for missing data (no data collected) vs 0 for zero occurrences
+  // Process data for charts - combine session data AND historical data
   const chartData = useMemo(() => {
-    // Get unique dates from all sessions
-    const sessionsByDate = new Map<string, typeof sessions[0][]>();
-    sessions.forEach(session => {
-      const date = format(new Date(session.date), 'yyyy-MM-dd');
-      if (!sessionsByDate.has(date)) {
-        sessionsByDate.set(date, []);
+    // Collect all data points by date
+    const dataByDate = new Map<string, {
+      frequencyByBehavior: Record<string, number>;
+      rateByBehavior: Record<string, number>;
+      intervalByBehavior: Record<string, { occurred: number; total: number }>;
+      durationByBehavior: Record<string, number>;
+    }>();
+
+    const getOrCreateDateEntry = (dateKey: string) => {
+      if (!dataByDate.has(dateKey)) {
+        dataByDate.set(dateKey, {
+          frequencyByBehavior: {},
+          rateByBehavior: {},
+          intervalByBehavior: {},
+          durationByBehavior: {},
+        });
       }
-      sessionsByDate.get(date)!.push(session);
+      return dataByDate.get(dateKey)!;
+    };
+
+    // Helper to check if date is in range
+    const isInDateRange = (date: Date) => {
+      if (!dateRange) return true; // No filter
+      const dateOnly = startOfDay(new Date(date));
+      return dateOnly >= dateRange.start && dateOnly <= dateRange.end;
+    };
+
+    // Process session data
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.date);
+      if (!isInDateRange(sessionDate)) return;
+      
+      const dateKey = format(sessionDate, 'yyyy-MM-dd');
+      const entry = getOrCreateDateEntry(dateKey);
+      const sessionLengthMinutes = session.sessionLengthMinutes || 30;
+      
+      // Process frequency entries from sessions
+      session.frequencyEntries.forEach(freqEntry => {
+        if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
+        if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
+        
+        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        
+        const wasDataCollected = freqEntry.count > 0 || (freqEntry as any).dataCollected === true;
+        if (wasDataCollected) {
+          entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
+          
+          const durationMinutes = (freqEntry as any).observationDurationMinutes || sessionLengthMinutes;
+          const ratePerHour = freqEntry.count / (durationMinutes / 60);
+          entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
+        }
+      });
+
+      // Process interval data
+      session.intervalEntries.forEach(intEntry => {
+        if (filterStudent !== 'all' && intEntry.studentId !== filterStudent) return;
+        if (filterBehavior !== 'all' && intEntry.behaviorId !== filterBehavior) return;
+        
+        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === intEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        
+        if (!entry.intervalByBehavior[key]) entry.intervalByBehavior[key] = { occurred: 0, total: 0 };
+        entry.intervalByBehavior[key].total++;
+        if (intEntry.occurred) entry.intervalByBehavior[key].occurred++;
+      });
+
+      // Process duration data
+      session.durationEntries.forEach(durEntry => {
+        if (filterStudent !== 'all' && durEntry.studentId !== filterStudent) return;
+        if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
+        
+        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        
+        entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
+      });
     });
 
-    const sessionData = Array.from(sessionsByDate.entries()).map(([dateKey, dateSessions]) => {
-      const date = format(new Date(dateKey), 'MM/dd');
-      
-      // Aggregate data across all sessions for this date
-      const frequencyByBehavior: Record<string, number | null> = {};
-      const rateByBehavior: Record<string, number | null> = {};
-      const intervalByBehavior: Record<string, { occurred: number; total: number }> = {};
-      const durationByBehavior: Record<string, number | null> = {};
-      
-      // Track which behaviors had data collected on this date
-      const behaviorsWithData = new Set<string>();
-      
-      dateSessions.forEach(session => {
-        const sessionLengthMinutes = session.sessionLengthMinutes || 30;
+    // Process historical data from students
+    students.forEach(student => {
+      if (filterStudent !== 'all' && student.id !== filterStudent) return;
+      if (!student.historicalData) return;
+
+      // Historical frequency entries
+      student.historicalData.frequencyEntries?.forEach(histEntry => {
+        if (filterBehavior !== 'all' && histEntry.behaviorId !== filterBehavior) return;
         
-        // Process frequency entries
-        session.frequencyEntries.forEach(entry => {
-          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
-          
-          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-          const key = behavior?.name || 'Unknown';
-          
-          // Only count as data collected if:
-          // 1. count > 0 (data was definitely collected), or
-          // 2. dataCollected flag is true (explicitly marked as zero recorded)
-          const wasDataCollected = entry.count > 0 || (entry as any).dataCollected === true;
-          
-          if (wasDataCollected) {
-            behaviorsWithData.add(key);
-            
-            // Use actual count value (including 0)
-            frequencyByBehavior[key] = (frequencyByBehavior[key] ?? 0) + entry.count;
-            
-            // Calculate rate per hour
-            const durationMinutes = (entry as any).observationDurationMinutes || sessionLengthMinutes;
-            const ratePerHour = entry.count / (durationMinutes / 60);
-            rateByBehavior[key] = (rateByBehavior[key] ?? 0) + ratePerHour;
-          }
-          // If dataCollected is false/undefined and count is 0, this day will have null (gap in chart)
-        });
-
-        // Process interval data
-        session.intervalEntries.forEach(entry => {
-          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
-          
-          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-          const key = behavior?.name || 'Unknown';
-          behaviorsWithData.add(key);
-          
-          if (!intervalByBehavior[key]) intervalByBehavior[key] = { occurred: 0, total: 0 };
-          intervalByBehavior[key].total++;
-          if (entry.occurred) intervalByBehavior[key].occurred++;
-        });
-
-        // Process duration data
-        session.durationEntries.forEach(entry => {
-          if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
-          if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
-          
-          const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-          const key = behavior?.name || 'Unknown';
-          behaviorsWithData.add(key);
-          
-          durationByBehavior[key] = (durationByBehavior[key] ?? 0) + entry.duration;
-        });
+        const entryDate = new Date(histEntry.timestamp);
+        if (!isInDateRange(entryDate)) return;
+        
+        const dateKey = format(entryDate, 'yyyy-MM-dd');
+        const entry = getOrCreateDateEntry(dateKey);
+        
+        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        
+        entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
+        
+        // Calculate rate if observation duration provided
+        const durationMinutes = histEntry.observationDurationMinutes || 30;
+        const ratePerHour = histEntry.count / (durationMinutes / 60);
+        entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
       });
 
-      // Calculate interval percentages (only for behaviors with interval data)
-      const intervalPercentages: Record<string, number | null> = {};
-      Object.entries(intervalByBehavior).forEach(([key, value]) => {
-        intervalPercentages[key] = value.total > 0 ? Math.round((value.occurred / value.total) * 100) : 0;
+      // Historical duration entries
+      student.historicalData.durationEntries?.forEach(histEntry => {
+        if (filterBehavior !== 'all' && histEntry.behaviorId !== filterBehavior) return;
+        
+        const entryDate = new Date(histEntry.timestamp);
+        if (!isInDateRange(entryDate)) return;
+        
+        const dateKey = format(entryDate, 'yyyy-MM-dd');
+        const entry = getOrCreateDateEntry(dateKey);
+        
+        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        
+        entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + histEntry.durationSeconds;
       });
+    });
 
-      // Build the data point - only include values for behaviors that had data collected
+    // Convert to chart data format
+    const chartDataArray = Array.from(dataByDate.entries()).map(([dateKey, data]) => {
       const dataPoint: Record<string, any> = {
-        date,
+        date: format(new Date(dateKey), 'MM/dd'),
         dateKey,
       };
       
-      // Add frequency data - null if no data was collected for that behavior
-      Object.entries(frequencyByBehavior).forEach(([key, value]) => {
+      // Add frequency data
+      Object.entries(data.frequencyByBehavior).forEach(([key, value]) => {
         dataPoint[key] = value;
       });
       
       // Add rate data
-      Object.entries(rateByBehavior).forEach(([key, value]) => {
-        dataPoint[`${key} (/hr)`] = value !== null ? parseFloat(value.toFixed(2)) : null;
+      Object.entries(data.rateByBehavior).forEach(([key, value]) => {
+        dataPoint[`${key} (/hr)`] = parseFloat(value.toFixed(2));
       });
       
-      // Add interval percentages
-      Object.entries(intervalPercentages).forEach(([key, value]) => {
-        dataPoint[`${key} (%)`] = value;
+      // Calculate and add interval percentages
+      Object.entries(data.intervalByBehavior).forEach(([key, value]) => {
+        dataPoint[`${key} (%)`] = value.total > 0 ? Math.round((value.occurred / value.total) * 100) : 0;
       });
       
       // Add duration data
-      Object.entries(durationByBehavior).forEach(([key, value]) => {
+      Object.entries(data.durationByBehavior).forEach(([key, value]) => {
         dataPoint[`${key} (sec)`] = value;
       });
 
@@ -168,14 +236,24 @@ export function BehaviorTrendCharts() {
     });
 
     // Sort by date
-    return sessionData.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  }, [sessions, students, filterStudent, filterBehavior]);
+    return chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
 
-  // Aggregate data for pie chart
+  // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
     const totals: Record<string, number> = {};
     
+    // Helper to check if date is in range
+    const isInDateRange = (date: Date) => {
+      if (!dateRange) return true;
+      const dateOnly = startOfDay(new Date(date));
+      return dateOnly >= dateRange.start && dateOnly <= dateRange.end;
+    };
+    
+    // Session data
     sessions.forEach(session => {
+      if (!isInDateRange(new Date(session.date))) return;
+      
       session.frequencyEntries.forEach(entry => {
         if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
@@ -185,13 +263,28 @@ export function BehaviorTrendCharts() {
         totals[key] = (totals[key] || 0) + entry.count;
       });
     });
+    
+    // Historical data from students
+    students.forEach(student => {
+      if (filterStudent !== 'all' && student.id !== filterStudent) return;
+      if (!student.historicalData) return;
+      
+      student.historicalData.frequencyEntries?.forEach(histEntry => {
+        if (filterBehavior !== 'all' && histEntry.behaviorId !== filterBehavior) return;
+        if (!isInDateRange(new Date(histEntry.timestamp))) return;
+        
+        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        totals[key] = (totals[key] || 0) + histEntry.count;
+      });
+    });
 
     return Object.entries(totals).map(([name, value], idx) => ({
       name,
       value,
       color: CHART_COLORS[idx % CHART_COLORS.length],
     }));
-  }, [sessions, students, filterStudent, filterBehavior]);
+  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
 
   // Get unique behavior names for chart keys
   const behaviorNames = useMemo(() => {
@@ -238,7 +331,16 @@ export function BehaviorTrendCharts() {
     return student?.behaviors || [];
   }, [histStudentId, students]);
 
-  if (sessions.length === 0) {
+  // Check if there's any data (sessions OR historical)
+  const hasAnyData = useMemo(() => {
+    if (sessions.length > 0) return true;
+    return students.some(s => 
+      (s.historicalData?.frequencyEntries?.length || 0) > 0 ||
+      (s.historicalData?.durationEntries?.length || 0) > 0
+    );
+  }, [sessions, students]);
+
+  if (!hasAnyData) {
     return (
       <Dialog>
         <DialogTrigger asChild>
@@ -253,8 +355,8 @@ export function BehaviorTrendCharts() {
           </DialogHeader>
           <div className="text-center py-8 text-muted-foreground">
             <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No session data available</p>
-            <p className="text-sm">Save sessions to see trend charts</p>
+            <p>No data available</p>
+            <p className="text-sm">Save sessions or add historical data to see trend charts</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -278,12 +380,45 @@ export function BehaviorTrendCharts() {
         </DialogHeader>
 
         {/* Filters and Controls */}
-        <div className="flex flex-wrap gap-3 py-2 border-b items-center">
+        <div className="flex flex-wrap gap-2 py-2 border-b items-center">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
           </div>
+          
+          {/* Date Range Filter */}
+          <Select value={dateRangePreset} onValueChange={(v) => setDateRangePreset(v as DateRangePreset)}>
+            <SelectTrigger className="w-[120px] h-8">
+              <SelectValue placeholder="Date Range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1month">1 Month</SelectItem>
+              <SelectItem value="3months">3 Months</SelectItem>
+              <SelectItem value="6months">6 Months</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {dateRangePreset === 'custom' && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="h-8 w-[110px] text-xs"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <Input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="h-8 w-[110px] text-xs"
+              />
+            </div>
+          )}
+          
           <Select value={filterStudent} onValueChange={setFilterStudent}>
-            <SelectTrigger className="w-[150px] h-8">
+            <SelectTrigger className="w-[130px] h-8">
               <SelectValue placeholder="All Students" />
             </SelectTrigger>
             <SelectContent>
@@ -294,7 +429,7 @@ export function BehaviorTrendCharts() {
             </SelectContent>
           </Select>
           <Select value={filterBehavior} onValueChange={setFilterBehavior}>
-            <SelectTrigger className="w-[150px] h-8">
+            <SelectTrigger className="w-[130px] h-8">
               <SelectValue placeholder="All Behaviors" />
             </SelectTrigger>
             <SelectContent>
@@ -304,7 +439,7 @@ export function BehaviorTrendCharts() {
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="outline">{sessions.length} sessions</Badge>
+          <Badge variant="outline" className="text-xs">{chartData.length} data points</Badge>
           
           {/* Chart Type Toggle */}
           <ToggleGroup type="single" value={chartType} onValueChange={(v) => v && setChartType(v as 'line' | 'bar')} size="sm">
