@@ -19,6 +19,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
   TOIEventType,
   TOILocation,
   TOIContributor,
@@ -28,6 +36,7 @@ import {
   formatDuration,
   toLocalISOString,
 } from '@/types/toi';
+import { format } from 'date-fns';
 
 interface ManualTOIEntryDialogProps {
   open: boolean;
@@ -49,40 +58,59 @@ export function ManualTOIEntryDialog({
   onSave,
 }: ManualTOIEntryDialogProps) {
   const [eventType, setEventType] = useState<TOIEventType | ''>('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [startTimeStr, setStartTimeStr] = useState('09:00');
+  const [endTimeStr, setEndTimeStr] = useState('09:30');
   const [location, setLocation] = useState<TOILocation | ''>('');
   const [contributor, setContributor] = useState<TOIContributor | ''>('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
   const calculatedDuration = useMemo(() => {
-    if (!startTime || !endTime) return null;
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const minutes = Math.round((end.getTime() - start.getTime()) / 60000);
-    return minutes;
-  }, [startTime, endTime]);
+    if (!selectedDate || !startTimeStr || !endTimeStr) return null;
+    
+    const [startHour, startMin] = startTimeStr.split(':').map(Number);
+    const [endHour, endMin] = endTimeStr.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    return endMinutes - startMinutes;
+  }, [selectedDate, startTimeStr, endTimeStr]);
 
   const handleSave = () => {
     if (!eventType) {
       setError('Please select a type.');
       return;
     }
-    if (!startTime || !endTime) {
-      setError('Please select a type and start time.');
+    if (!selectedDate) {
+      setError('Please select a date.');
+      return;
+    }
+    if (!startTimeStr || !endTimeStr) {
+      setError('Please enter start and end times.');
       return;
     }
     if (calculatedDuration !== null && calculatedDuration <= 0) {
-      setError("End time can't be earlier than start time.");
+      setError("End time can't be earlier than or equal to start time.");
       return;
     }
+
+    // Build start and end Date objects from selectedDate and time strings
+    const [startHour, startMin] = startTimeStr.split(':').map(Number);
+    const [endHour, endMin] = endTimeStr.split(':').map(Number);
+    
+    const startDate = new Date(selectedDate);
+    startDate.setHours(startHour, startMin, 0, 0);
+    
+    const endDate = new Date(selectedDate);
+    endDate.setHours(endHour, endMin, 0, 0);
 
     onSave({
       event_type: eventType,
       display_label: TOI_EVENT_LABELS[eventType],
-      start_time: toLocalISOString(new Date(startTime)),
-      end_time: toLocalISOString(new Date(endTime)),
+      start_time: toLocalISOString(startDate),
+      end_time: toLocalISOString(endDate),
       location: location || undefined,
       suspected_contributor: contributor || undefined,
       notes: notes || undefined,
@@ -90,8 +118,9 @@ export function ManualTOIEntryDialog({
 
     // Reset form
     setEventType('');
-    setStartTime('');
-    setEndTime('');
+    setSelectedDate(undefined);
+    setStartTimeStr('09:00');
+    setEndTimeStr('09:30');
     setLocation('');
     setContributor('');
     setNotes('');
@@ -126,23 +155,53 @@ export function ManualTOIEntryDialog({
             </Select>
           </div>
 
+          {/* Date picker */}
+          <div className="grid gap-2">
+            <Label>Date *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Time inputs */}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="start">Start time *</Label>
+              <Label htmlFor="start-time">Start time *</Label>
               <Input
-                id="start"
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                id="start-time"
+                type="time"
+                value={startTimeStr}
+                onChange={(e) => setStartTimeStr(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="end">End time *</Label>
+              <Label htmlFor="end-time">End time *</Label>
               <Input
-                id="end"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                id="end-time"
+                type="time"
+                value={endTimeStr}
+                onChange={(e) => setEndTimeStr(e.target.value)}
               />
             </div>
           </div>
