@@ -1,26 +1,28 @@
 import { useState } from 'react';
-import { Target, BookOpen, Lightbulb, BarChart3 } from 'lucide-react';
+import { Target, BookOpen, Lightbulb, BarChart3, Clock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TargetsSubTab } from './TargetsSubTab';
 import { CurriculumSubTab } from './CurriculumSubTab';
 import { RecommendationsSubTab } from './RecommendationsSubTab';
 import { SkillProgressReports } from './SkillProgressReports';
+import { TOILog } from '@/components/toi/TOILog';
 import type { SkillsSubTab } from '@/types/curriculum';
 
-type ExtendedSkillsTab = SkillsSubTab | 'progress';
+type ExtendedSkillsTab = SkillsSubTab | 'progress' | 'context';
 
 interface SkillsTabContainerProps {
   studentId: string;
   studentName: string;
+  isAdmin?: boolean;
 }
 
-export function SkillsTabContainer({ studentId, studentName }: SkillsTabContainerProps) {
+export function SkillsTabContainer({ studentId, studentName, isAdmin = false }: SkillsTabContainerProps) {
   const [activeTab, setActiveTab] = useState<ExtendedSkillsTab>('targets');
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ExtendedSkillsTab)}>
-        <TabsList className="grid w-full grid-cols-4 max-w-lg">
+        <TabsList className="grid w-full grid-cols-5 max-w-2xl">
           <TabsTrigger value="targets" className="flex items-center gap-2">
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Targets</span>
@@ -36,6 +38,10 @@ export function SkillsTabContainer({ studentId, studentName }: SkillsTabContaine
           <TabsTrigger value="progress" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Progress</span>
+          </TabsTrigger>
+          <TabsTrigger value="context" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span className="hidden sm:inline">Context</span>
           </TabsTrigger>
         </TabsList>
 
@@ -53,6 +59,10 @@ export function SkillsTabContainer({ studentId, studentName }: SkillsTabContaine
 
         <TabsContent value="progress" className="mt-4">
           <SkillProgressReports studentId={studentId} studentName={studentName} />
+        </TabsContent>
+
+        <TabsContent value="context" className="mt-4">
+          <TOILog studentId={studentId} studentName={studentName} isAdmin={isAdmin} />
         </TabsContent>
       </Tabs>
     </div>

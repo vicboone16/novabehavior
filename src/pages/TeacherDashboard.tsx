@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { TeacherModeTOI } from '@/components/toi/TeacherModeTOI';
 import { Student, Behavior } from '@/types/behavior';
 
 interface StudentWithAccess extends Student {
@@ -167,7 +168,16 @@ export default function TeacherDashboard() {
             <TeacherFriendlyView student={selectedStudent} />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* TOI Quick Entry Section */}
+            <TeacherModeTOI 
+              students={accessibleStudents.map(s => ({
+                id: s.id,
+                name: s.name,
+                color: s.color,
+              }))} 
+            />
+
             <h2 className="text-lg font-semibold">Your Students</h2>
             
             {accessibleStudents.length === 0 ? (

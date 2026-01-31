@@ -276,6 +276,74 @@ export type Database = {
         }
         Relationships: []
       }
+      context_barriers_events: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          display_label: string
+          duration_minutes: number | null
+          end_time: string | null
+          event_group: string
+          event_type: Database["public"]["Enums"]["toi_event_type"]
+          id: string
+          is_active: boolean
+          location: Database["public"]["Enums"]["toi_location"] | null
+          notes: string | null
+          start_time: string
+          student_id: string
+          suspected_contributor:
+            | Database["public"]["Enums"]["toi_contributor"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          display_label: string
+          duration_minutes?: number | null
+          end_time?: string | null
+          event_group?: string
+          event_type: Database["public"]["Enums"]["toi_event_type"]
+          id?: string
+          is_active?: boolean
+          location?: Database["public"]["Enums"]["toi_location"] | null
+          notes?: string | null
+          start_time: string
+          student_id: string
+          suspected_contributor?:
+            | Database["public"]["Enums"]["toi_contributor"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          display_label?: string
+          duration_minutes?: number | null
+          end_time?: string | null
+          event_group?: string
+          event_type?: Database["public"]["Enums"]["toi_event_type"]
+          id?: string
+          is_active?: boolean
+          location?: Database["public"]["Enums"]["toi_location"] | null
+          notes?: string | null
+          start_time?: string
+          student_id?: string
+          suspected_contributor?:
+            | Database["public"]["Enums"]["toi_contributor"]
+            | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_barriers_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       curriculum_items: {
         Row: {
           active: boolean
@@ -1989,6 +2057,29 @@ export type Database = {
         | "clinical"
         | "parent_training"
         | "supervision_revision"
+      toi_contributor:
+        | "medication_change"
+        | "missed_dose"
+        | "illness"
+        | "poor_sleep_night"
+        | "unknown"
+        | "other"
+      toi_event_type:
+        | "TOI_SLEEPING"
+        | "TOI_NURSE_OFFICE"
+        | "TOI_HEALTH_ROOM_REST"
+        | "TOI_MED_SIDE_EFFECT_FATIGUE"
+        | "TOI_ILLNESS_LETHARGY"
+        | "TOI_DECOMPRESSION_BREAK"
+        | "TOI_WAITING_PICKUP"
+        | "TOI_OTHER"
+      toi_location:
+        | "classroom"
+        | "nurse"
+        | "office"
+        | "sensory_room"
+        | "outside"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2125,6 +2216,32 @@ export const Constants = {
         "clinical",
         "parent_training",
         "supervision_revision",
+      ],
+      toi_contributor: [
+        "medication_change",
+        "missed_dose",
+        "illness",
+        "poor_sleep_night",
+        "unknown",
+        "other",
+      ],
+      toi_event_type: [
+        "TOI_SLEEPING",
+        "TOI_NURSE_OFFICE",
+        "TOI_HEALTH_ROOM_REST",
+        "TOI_MED_SIDE_EFFECT_FATIGUE",
+        "TOI_ILLNESS_LETHARGY",
+        "TOI_DECOMPRESSION_BREAK",
+        "TOI_WAITING_PICKUP",
+        "TOI_OTHER",
+      ],
+      toi_location: [
+        "classroom",
+        "nurse",
+        "office",
+        "sensory_room",
+        "outside",
+        "other",
       ],
     },
   },
