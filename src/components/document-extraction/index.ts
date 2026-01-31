@@ -1,0 +1,1 @@
+export { ClinicalDocumentExtractor } from './ClinicalDocumentExtractor';
