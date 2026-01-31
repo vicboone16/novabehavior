@@ -280,6 +280,7 @@ interface DataState {
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
+  forceEndAllSessions: () => void;
 }
 
 const DEFAULT_TRACKER_ORDER: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
@@ -2157,6 +2158,22 @@ export const useDataStore = create<DataState>()(
           frequencyEntries: [],
           durationEntries: [],
           intervalEntries: [],
+        });
+      },
+
+      // Force end all sessions and clear all observation state - used for stale session cleanup
+      forceEndAllSessions: () => {
+        set({
+          sessionStartTime: null,
+          currentSessionId: null,
+          selectedStudentIds: [],
+          studentSessionStatus: [],
+          studentIntervalStatus: [],
+          sessionNotes: '',
+          sessionLengthOverrides: [],
+          sessionFocus: DEFAULT_SESSION_FOCUS,
+          syncedIntervalsRunning: false,
+          lastSavedDataHash: null,
         });
       },
 

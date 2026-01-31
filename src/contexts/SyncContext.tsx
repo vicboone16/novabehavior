@@ -531,6 +531,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
             console.log('[Sync] Local data exists, skipping live data load to prevent overwrite');
           }
         }
+      } else {
+        // No active session in database - clear any stale local session state
+        const currentState = useDataStore.getState();
+        if (currentState.sessionStartTime || currentState.selectedStudentIds.length > 0 || currentState.currentSessionId) {
+          console.log('[Sync] No active session in DB, clearing stale local session state');
+          useDataStore.getState().forceEndAllSessions();
+        }
       }
 
       setLastSyncTime(new Date());
