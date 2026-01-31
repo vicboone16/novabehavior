@@ -120,3 +120,22 @@ export function calculateLiveDuration(startTime: string): number {
   const now = new Date();
   return Math.round((now.getTime() - start.getTime()) / 60000);
 }
+
+// Helper to convert Date to ISO string preserving local timezone
+// This prevents date shifting that occurs with toISOString() which converts to UTC
+export function toLocalISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  // Get timezone offset in format +HH:MM or -HH:MM
+  const tzOffset = -date.getTimezoneOffset();
+  const tzSign = tzOffset >= 0 ? '+' : '-';
+  const tzHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(2, '0');
+  const tzMinutes = String(Math.abs(tzOffset) % 60).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${tzSign}${tzHours}:${tzMinutes}`;
+}

@@ -26,8 +26,8 @@ import {
   TOI_LOCATION_LABELS,
   TOI_CONTRIBUTOR_LABELS,
   formatDuration,
+  toLocalISOString,
 } from '@/types/toi';
-import { format } from 'date-fns';
 
 interface ManualTOIEntryDialogProps {
   open: boolean;
@@ -81,8 +81,8 @@ export function ManualTOIEntryDialog({
     onSave({
       event_type: eventType,
       display_label: TOI_EVENT_LABELS[eventType],
-      start_time: new Date(startTime).toISOString(),
-      end_time: new Date(endTime).toISOString(),
+      start_time: toLocalISOString(new Date(startTime)),
+      end_time: toLocalISOString(new Date(endTime)),
       location: location || undefined,
       suspected_contributor: contributor || undefined,
       notes: notes || undefined,
