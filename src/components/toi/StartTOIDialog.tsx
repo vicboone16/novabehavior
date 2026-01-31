@@ -25,6 +25,7 @@ import {
   TOI_EVENT_LABELS,
   TOI_LOCATION_LABELS,
   TOI_CONTRIBUTOR_LABELS,
+  toLocalISOString,
 } from '@/types/toi';
 import { format } from 'date-fns';
 
@@ -60,7 +61,7 @@ export function StartTOIDialog({
     onStart({
       event_type: eventType,
       display_label: TOI_EVENT_LABELS[eventType],
-      start_time: new Date(startTime).toISOString(),
+      start_time: toLocalISOString(new Date(startTime)),
       location: location || undefined,
       suspected_contributor: contributor || undefined,
       notes: notes || undefined,

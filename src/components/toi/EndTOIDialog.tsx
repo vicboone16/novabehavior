@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { TOIEvent, TOI_EVENT_LABELS, formatDuration, calculateLiveDuration } from '@/types/toi';
+import { TOIEvent, TOI_EVENT_LABELS, formatDuration, toLocalISOString } from '@/types/toi';
 import { format } from 'date-fns';
 
 interface EndTOIDialogProps {
@@ -33,7 +33,7 @@ export function EndTOIDialog({
   if (!event) return null;
 
   const handleEnd = () => {
-    onEnd(event.id, new Date(endTime).toISOString());
+    onEnd(event.id, toLocalISOString(new Date(endTime)));
     onOpenChange(false);
   };
 
