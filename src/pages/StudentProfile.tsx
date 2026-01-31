@@ -59,6 +59,7 @@ import { SkillTargetManager } from '@/components/SkillTargetManager';
 import { DTTTracker } from '@/components/DTTTracker';
 import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEditor';
 import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
+import { TOILog } from '@/components/toi/TOILog';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
@@ -1202,6 +1203,13 @@ export default function StudentProfile() {
           <HistoricalSkillDataEditor
             studentId={student.id}
             studentName={student.name}
+          />
+
+          {/* Context & Barriers (TOI) Section */}
+          <TOILog
+            studentId={student.id}
+            studentName={student.name}
+            isAdmin={studentAccess.isAdmin || studentAccess.canEditProfile}
           />
         </TabsContent>
 
