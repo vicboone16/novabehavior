@@ -9,3 +9,4 @@ export { TOIQuickTypeButtons } from './TOIQuickTypeButtons';
 export { ActiveTOICard } from './ActiveTOICard';
 export { TeacherModeTOI } from './TeacherModeTOI';
 export { BulkTOIEntry } from './BulkTOIEntry';
+export { BulkTOIDailyStatus } from './BulkTOIDailyStatus';
