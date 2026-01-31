@@ -291,7 +291,7 @@ export default function AssessmentDashboard() {
         }}
       />
 
-      {/* Overview Stats */}
+      {/* Overview Stats - FBA Students is always global, other 3 are student-specific when selected */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4">
@@ -306,41 +306,68 @@ export default function AssessmentDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={selectedStudentId ? 'ring-1 ring-primary/30' : ''}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-orange-500/10">
                 <BarChart3 className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{assessmentStats.totalABCEntries}</p>
-                <p className="text-xs text-muted-foreground">ABC Entries</p>
+                <p className="text-2xl font-bold">
+                  {selectedStudentId ? (studentStats?.abcCount || 0) : assessmentStats.totalABCEntries}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedStudentId ? `ABC Entries` : 'ABC Entries (All)'}
+                </p>
+                {selectedStudentId && (
+                  <p className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
+                    {selectedStudent?.name}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={selectedStudentId ? 'ring-1 ring-primary/30' : ''}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-green-500/10">
                 <Eye className="w-5 h-5 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{assessmentStats.totalObservations}</p>
-                <p className="text-xs text-muted-foreground">Observations</p>
+                <p className="text-2xl font-bold">
+                  {selectedStudentId ? (studentStats?.sessionCount || 0) : assessmentStats.totalObservations}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedStudentId ? `Observations` : 'Observations (All)'}
+                </p>
+                {selectedStudentId && (
+                  <p className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
+                    {selectedStudent?.name}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className={selectedStudentId ? 'ring-1 ring-primary/30' : ''}>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-500/10">
                 <TrendingUp className="w-5 h-5 text-purple-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{assessmentStats.averageEntriesPerStudent}</p>
-                <p className="text-xs text-muted-foreground">Avg Entries/Student</p>
+                <p className="text-2xl font-bold">
+                  {selectedStudentId ? (studentStats?.behaviorCount || 0) : assessmentStats.averageEntriesPerStudent}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedStudentId ? `Behaviors` : 'Avg Entries/Student'}
+                </p>
+                {selectedStudentId && (
+                  <p className="text-[10px] text-muted-foreground/70 truncate max-w-[100px]">
+                    {selectedStudent?.name}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
