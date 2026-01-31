@@ -10,8 +10,9 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Play, Plus, Download, CalendarIcon, Filter } from 'lucide-react';
+import { Play, Plus, Download, CalendarIcon, Filter, CalendarCheck } from 'lucide-react';
 import { useTOIEvents } from '@/hooks/useTOIEvents';
+import { BulkTOIDailyStatus } from './BulkTOIDailyStatus';
 import { TOISummaryCards } from './TOISummaryCards';
 import { TOIEventsTable } from './TOIEventsTable';
 import { StartTOIDialog } from './StartTOIDialog';
@@ -50,6 +51,7 @@ export function TOILog({ studentId, studentName, isAdmin = false }: TOILogProps)
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [dailyStatusOpen, setDailyStatusOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TOIEvent | null>(null);
 
   // Calculate date range based on filter
@@ -162,6 +164,14 @@ export function TOILog({ studentId, studentName, isAdmin = false }: TOILogProps)
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Manual Entry
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDailyStatusOpen(true)}
+              >
+                <CalendarCheck className="mr-2 h-4 w-4" />
+                Daily Status Log
               </Button>
               {isAdmin && (
                 <Button variant="outline" size="sm">
@@ -310,6 +320,21 @@ export function TOILog({ studentId, studentName, isAdmin = false }: TOILogProps)
         onSave={handleEdit}
         onDelete={handleDelete}
       />
+
+      {/* Daily Status Dialog */}
+      {dailyStatusOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-4 z-50 overflow-auto rounded-lg bg-background shadow-lg">
+            <div className="p-4">
+              <BulkTOIDailyStatus
+                studentId={studentId}
+                studentName={studentName}
+                onClose={() => setDailyStatusOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

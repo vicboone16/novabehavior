@@ -1870,6 +1870,47 @@ export type Database = {
         }
         Relationships: []
       }
+      toi_daily_logs: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          id: string
+          log_date: string
+          notes: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          log_date: string
+          notes?: string | null
+          status: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toi_daily_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
