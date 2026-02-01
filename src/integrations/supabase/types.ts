@@ -14,6 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      abas3_assessments: {
+        Row: {
+          administered_by: string | null
+          completed_at: string | null
+          composite_scores: Json | null
+          created_at: string
+          date_administered: string
+          domain_raw_scores: Json | null
+          domain_scaled_scores: Json | null
+          form_template_id: string | null
+          id: string
+          invitation_id: string | null
+          notes: string | null
+          raw_responses: Json | null
+          recommendations: Json | null
+          respondent_name: string | null
+          respondent_relationship: string | null
+          scored_at: string | null
+          scored_by: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          administered_by?: string | null
+          completed_at?: string | null
+          composite_scores?: Json | null
+          created_at?: string
+          date_administered?: string
+          domain_raw_scores?: Json | null
+          domain_scaled_scores?: Json | null
+          form_template_id?: string | null
+          id?: string
+          invitation_id?: string | null
+          notes?: string | null
+          raw_responses?: Json | null
+          recommendations?: Json | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          scored_at?: string | null
+          scored_by?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          administered_by?: string | null
+          completed_at?: string | null
+          composite_scores?: Json | null
+          created_at?: string
+          date_administered?: string
+          domain_raw_scores?: Json | null
+          domain_scaled_scores?: Json | null
+          form_template_id?: string | null
+          id?: string
+          invitation_id?: string | null
+          notes?: string | null
+          raw_responses?: Json | null
+          recommendations?: Json | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          scored_at?: string | null
+          scored_by?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas3_assessments_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "abas3_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abas3_assessments_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abas3_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas3_form_templates: {
+        Row: {
+          age_range: string
+          created_at: string
+          domains: Json
+          form_code: string
+          form_name: string
+          id: string
+          language: string
+          questions: Json
+          respondent_type: string
+          scoring_info: Json | null
+          updated_at: string
+        }
+        Insert: {
+          age_range: string
+          created_at?: string
+          domains?: Json
+          form_code: string
+          form_name: string
+          id?: string
+          language?: string
+          questions?: Json
+          respondent_type: string
+          scoring_info?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          age_range?: string
+          created_at?: string
+          domains?: Json
+          form_code?: string
+          form_name?: string
+          id?: string
+          language?: string
+          questions?: Json
+          respondent_type?: string
+          scoring_info?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_permissions: {
         Row: {
           can_assign_admin: boolean | null
@@ -2045,6 +2178,25 @@ export type Database = {
       has_tag_based_access: {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
+      }
+      insert_audit_log: {
+        Args: {
+          _action: string
+          _details?: Json
+          _resource_id?: string
+          _resource_name?: string
+          _resource_type: string
+        }
+        Returns: string
+      }
+      insert_data_access_log: {
+        Args: {
+          _access_type: string
+          _data_category: string
+          _details?: Json
+          _student_id: string
+        }
+        Returns: string
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_student_owner: {

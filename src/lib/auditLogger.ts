@@ -72,7 +72,7 @@ let flushTimeout: NodeJS.Timeout | null = null;
 
 const FLUSH_DELAY = 2000; // 2 seconds
 
-// Flush queued logs to database
+// Flush queued logs to database using secure RPC functions
 async function flushLogs() {
   if (auditQueue.length === 0 && dataAccessQueue.length === 0) return;
 
@@ -86,46 +86,52 @@ async function flushLogs() {
   dataAccessQueue = [];
 
   try {
-    // Insert audit logs
+    // Insert audit logs via secure RPC function
     if (auditToFlush.length > 0) {
-      const auditRecords = auditToFlush.map(entry => ({
-        user_id: user.id,
-        action: entry.action,
-        resource_type: entry.resourceType,
-        resource_id: entry.resourceId || null,
-        resource_name: entry.resourceName || null,
-        details: entry.details || {},
-      }));
+      const failedAuditLogs: AuditLogEntry[] = [];
+      
+      for (const entry of auditToFlush) {
+        const { error } = await supabase.rpc('insert_audit_log', {
+          _action: entry.action,
+          _resource_type: entry.resourceType,
+          _resource_id: entry.resourceId || null,
+          _resource_name: entry.resourceName || null,
+          _details: entry.details || {},
+        });
 
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert(auditRecords);
-
-      if (error) {
-        console.error('Failed to insert audit logs:', error);
-        // Re-queue failed logs
-        auditQueue.push(...auditToFlush);
+        if (error) {
+          console.error('Failed to insert audit log:', error);
+          failedAuditLogs.push(entry);
+        }
+      }
+      
+      // Re-queue failed logs
+      if (failedAuditLogs.length > 0) {
+        auditQueue.push(...failedAuditLogs);
       }
     }
 
-    // Insert data access logs
+    // Insert data access logs via secure RPC function
     if (accessToFlush.length > 0) {
-      const accessRecords = accessToFlush.map(entry => ({
-        user_id: user.id,
-        student_id: entry.studentId,
-        access_type: entry.accessType,
-        data_category: entry.dataCategory,
-        details: entry.details || {},
-      }));
+      const failedAccessLogs: DataAccessLogEntry[] = [];
+      
+      for (const entry of accessToFlush) {
+        const { error } = await supabase.rpc('insert_data_access_log', {
+          _student_id: entry.studentId,
+          _access_type: entry.accessType,
+          _data_category: entry.dataCategory,
+          _details: entry.details || {},
+        });
 
-      const { error } = await supabase
-        .from('data_access_logs')
-        .insert(accessRecords);
-
-      if (error) {
-        console.error('Failed to insert data access logs:', error);
-        // Re-queue failed logs
-        dataAccessQueue.push(...accessToFlush);
+        if (error) {
+          console.error('Failed to insert data access log:', error);
+          failedAccessLogs.push(entry);
+        }
+      }
+      
+      // Re-queue failed logs
+      if (failedAccessLogs.length > 0) {
+        dataAccessQueue.push(...failedAccessLogs);
       }
     }
   } catch (error) {
