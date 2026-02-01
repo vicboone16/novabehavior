@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Send, Plus, FileText, Clock, CheckCircle, AlertCircle,
-  Mail, User, Trash2, Eye, ExternalLink, Copy
+  Mail, User, Trash2, Eye, ExternalLink, Copy, ClipboardList
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -46,6 +46,14 @@ interface Template {
   created_at: string;
 }
 
+interface ABAS3Form {
+  id: string;
+  form_code: string;
+  form_name: string;
+  respondent_type: string;
+  age_range: string;
+}
+
 interface Invitation {
   id: string;
   template_id: string;
@@ -69,11 +77,13 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
   const { toast } = useToast();
 
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [abas3Forms, setAbas3Forms] = useState<ABAS3Form[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedTemplateType, setSelectedTemplateType] = useState<'custom' | 'abas3'>('custom');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientType, setRecipientType] = useState<string>('teacher');
@@ -83,7 +93,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load templates
+      // Load custom templates
       const { data: templatesData } = await supabase
         .from('questionnaire_templates')
         .select('*')
@@ -93,6 +103,16 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
 
       if (templatesData) {
         setTemplates(templatesData as Template[]);
+      }
+
+      // Load ABAS-3 standardized forms
+      const { data: abas3Data } = await supabase
+        .from('abas3_form_templates')
+        .select('id, form_code, form_name, respondent_type, age_range')
+        .order('form_code');
+
+      if (abas3Data) {
+        setAbas3Forms(abas3Data as ABAS3Form[]);
       }
 
       // Load invitations for this student
@@ -131,33 +151,71 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     setIsSending(true);
 
     try {
-      // Create invitation
-      const { data: invitation, error } = await supabase
-        .from('questionnaire_invitations')
-        .insert({
-          template_id: selectedTemplateId,
-          student_id: studentId,
-          recipient_name: recipientName.trim(),
-          recipient_email: recipientEmail.trim(),
-          recipient_type: recipientType,
-          created_by: user?.id,
-          sent_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      if (selectedTemplateType === 'abas3') {
+        // Create ABAS-3 assessment with invitation
+        const { data: invitation, error: invError } = await supabase
+          .from('questionnaire_invitations')
+          .insert({
+            template_id: selectedTemplateId,
+            student_id: studentId,
+            recipient_name: recipientName.trim(),
+            recipient_email: recipientEmail.trim(),
+            recipient_type: recipientType,
+            created_by: user?.id,
+            sent_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (invError) throw invError;
 
-      // TODO: Send email via edge function when RESEND_API_KEY is configured
-      // For now, we'll just show a link that can be copied
+        // Create the ABAS-3 assessment record
+        const { error: assessError } = await supabase
+          .from('abas3_assessments')
+          .insert({
+            student_id: studentId,
+            form_template_id: selectedTemplateId,
+            invitation_id: invitation.id,
+            date_administered: new Date().toISOString().split('T')[0],
+            administered_by: user?.id,
+            respondent_name: recipientName.trim(),
+            respondent_relationship: recipientType,
+            status: 'pending',
+          });
 
-      toast({
-        title: 'Questionnaire Created!',
-        description: 'Copy the link to share with the recipient.',
-      });
+        if (assessError) throw assessError;
+
+        toast({
+          title: 'ABAS-3 Assessment Created!',
+          description: 'Copy the link to share with the recipient.',
+        });
+      } else {
+        // Create custom template invitation
+        const { error } = await supabase
+          .from('questionnaire_invitations')
+          .insert({
+            template_id: selectedTemplateId,
+            student_id: studentId,
+            recipient_name: recipientName.trim(),
+            recipient_email: recipientEmail.trim(),
+            recipient_type: recipientType,
+            created_by: user?.id,
+            sent_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: 'Questionnaire Created!',
+          description: 'Copy the link to share with the recipient.',
+        });
+      }
 
       setShowSendDialog(false);
       setSelectedTemplateId('');
+      setSelectedTemplateType('custom');
       setRecipientName('');
       setRecipientEmail('');
       setRecipientType('teacher');
@@ -182,11 +240,28 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500 text-primary-foreground"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+        return <Badge variant="default" className="bg-primary"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
       case 'expired':
         return <Badge variant="secondary"><AlertCircle className="w-3 h-3 mr-1" />Expired</Badge>;
       default:
         return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+    }
+  };
+
+  const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0;
+
+  const handleTemplateSelect = (value: string) => {
+    // Check if it's an ABAS-3 form
+    const isAbas3 = abas3Forms.some(f => f.id === value);
+    setSelectedTemplateType(isAbas3 ? 'abas3' : 'custom');
+    setSelectedTemplateId(value);
+
+    // Auto-set recipient type for ABAS-3 forms
+    if (isAbas3) {
+      const form = abas3Forms.find(f => f.id === value);
+      if (form) {
+        setRecipientType(form.respondent_type);
+      }
     }
   };
 
@@ -205,12 +280,59 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
             <Plus className="w-4 h-4 mr-2" />
             Create Template
           </Button>
-          <Button onClick={() => setShowSendDialog(true)} disabled={templates.length === 0}>
+          <Button onClick={() => setShowSendDialog(true)} disabled={!hasAnyTemplates}>
             <Send className="w-4 h-4 mr-2" />
             Send Questionnaire
           </Button>
         </div>
       </div>
+
+      {/* ABAS-3 Standardized Assessments */}
+      {abas3Forms.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              ABAS-3 Standardized Forms
+            </CardTitle>
+            <CardDescription>
+              Send standardized adaptive behavior assessments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {abas3Forms.map((form) => (
+                <div
+                  key={form.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">{form.form_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Ages {form.age_range} • {form.respondent_type.charAt(0).toUpperCase() + form.respondent_type.slice(1)} form
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleTemplateSelect(form.id);
+                      setRecipientType(form.respondent_type);
+                      setShowSendDialog(true);
+                    }}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    Send
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sent Questionnaires */}
       <Card>
@@ -366,19 +488,50 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Select Template *</Label>
-              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <Label>Select Form or Template *</Label>
+              <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a template..." />
+                  <SelectValue placeholder="Choose a form or template..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
+                  {abas3Forms.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        ABAS-3 Standardized Forms
+                      </div>
+                      {abas3Forms.map((form) => (
+                        <SelectItem key={form.id} value={form.id}>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="w-3 h-3 text-primary" />
+                            <span>{form.form_name}</span>
+                            <span className="text-xs text-muted-foreground">({form.age_range})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {templates.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        Custom Templates
+                      </div>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-3 h-3" />
+                            <span>{t.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              {selectedTemplateType === 'abas3' && (
+                <p className="text-xs text-muted-foreground">
+                  This is a standardized ABAS-3 assessment form. Responses will be automatically scored.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
