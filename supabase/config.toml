@@ -1,7 +1,4 @@
 project_id = "yboqqmkghwhlhhnsegje"
 
-[functions.extract-document]
-verify_jwt = false
-
 [functions.pin-auth]
 verify_jwt = false
