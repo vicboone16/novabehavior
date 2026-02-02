@@ -31,6 +31,7 @@ interface Invitation {
   recipient_email: string;
   status: string;
   expires_at: string;
+  form_type: string;
 }
 
 interface Template {
@@ -92,21 +93,58 @@ export default function QuestionnaireForm() {
 
         setInvitation(invitationData as Invitation);
 
-        // Fetch template
-        const { data: templateData, error: templateError } = await supabase
-          .from('questionnaire_templates')
-          .select('*')
-          .eq('id', invitationData.template_id)
-          .single();
+        // Fetch template based on form_type
+        const formType = invitationData.form_type || 'custom';
+        let templateData: any = null;
+        let templateError: any = null;
+
+        if (formType === 'abas3') {
+          const result = await supabase
+            .from('abas3_form_templates')
+            .select('*')
+            .eq('id', invitationData.template_id)
+            .single();
+          templateData = result.data;
+          templateError = result.error;
+        } else if (formType === 'vbmapp') {
+          const result = await supabase
+            .from('vbmapp_form_templates')
+            .select('*')
+            .eq('id', invitationData.template_id)
+            .single();
+          templateData = result.data;
+          templateError = result.error;
+        } else if (formType === 'socially_savvy') {
+          const result = await supabase
+            .from('socially_savvy_form_templates')
+            .select('*')
+            .eq('id', invitationData.template_id)
+            .single();
+          templateData = result.data;
+          templateError = result.error;
+        } else {
+          // Default: custom questionnaire templates
+          const result = await supabase
+            .from('questionnaire_templates')
+            .select('*')
+            .eq('id', invitationData.template_id)
+            .single();
+          templateData = result.data;
+          templateError = result.error;
+        }
 
         if (templateError || !templateData) {
+          console.error('Template fetch error:', templateError);
           setError('Unable to load questionnaire. Please contact the sender.');
           setIsLoading(false);
           return;
         }
 
+        // Map template data to common format
         setTemplate({
-          ...templateData,
+          id: templateData.id,
+          name: templateData.form_name || templateData.name || 'Assessment',
+          description: templateData.description || null,
           questions: (templateData.questions as unknown as Question[]) || [],
         } as Template);
       } catch (err) {
