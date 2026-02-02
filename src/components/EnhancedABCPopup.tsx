@@ -175,6 +175,7 @@ export function EnhancedABCPopup() {
       frequencyCount: totalFrequency,
       hasDuration: selectedBehaviors.some(b => b.hasDuration),
       durationMinutes: totalDuration > 0 ? totalDuration : undefined,
+      isConcurrent: selectedBehaviors.length > 1,
     });
 
     // Reset form
