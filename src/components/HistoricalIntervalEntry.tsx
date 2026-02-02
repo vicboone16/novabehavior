@@ -203,7 +203,12 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
 
 
   const handleSave = () => {
-    const sessionDate = new Date(`${date}T${time}`);
+    const safeTime = (time || '').trim() || '12:00';
+    const sessionDate = new Date(`${date}T${safeTime}`);
+    if (Number.isNaN(sessionDate.getTime())) {
+      toast.error('Please select a valid date. Time is optional.');
+      return;
+    }
     const numIntervals = parseInt(numberOfIntervals) || 20;
     const intervalSecs = parseInt(intervalDuration) || 15;
     
