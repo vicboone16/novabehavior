@@ -165,6 +165,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
   const [defaultObservationMinutes, setDefaultObservationMinutes] = useState(0);
   const [defaultTotalIntervals, setDefaultTotalIntervals] = useState(6);
   const [showApplyDefaults, setShowApplyDefaults] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Cell editor state
   const [editingCell, setEditingCell] = useState<{
@@ -315,6 +316,20 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
 
   // Handle save with batching to prevent freeze
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    const parseBulkKey = (key: string) => {
+      // Key format: studentId-behaviorId-yyyy-MM-dd
+      // NOTE: studentId and behaviorId are UUIDs that contain dashes.
+      // We parse deterministically from the end using the fixed date length.
+      const dateStr = key.slice(-10);
+      const rest = key.slice(0, -(10 + 1)); // strip trailing '-' before date
+      const studentId = rest.slice(0, 36);
+      const behaviorId = rest.slice(37); // skip '-' between ids
+      return { studentId, behaviorId, dateStr };
+    };
+
     const frequencyEntries: Array<{
       studentId: string;
       behaviorId: string;
@@ -339,10 +354,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
         return;
       }
 
-      const parts = key.split('-');
-      const dateStr = parts.pop()!;
-      const behaviorId = parts.pop()!;
-      const studentId = parts.join('-'); // Handle UUIDs with dashes
+      const { studentId, behaviorId, dateStr } = parseBulkKey(key);
       const timestamp = new Date(dateStr + 'T12:00:00');
 
       if (dataType === 'frequency') {
@@ -375,25 +387,39 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       }
     });
 
-    // Batch save all frequency entries in one state update
-    if (frequencyEntries.length > 0) {
-      addHistoricalFrequencyBatch(frequencyEntries);
-    }
-    
-    // Batch save all duration entries in one state update
-    if (durationEntries.length > 0) {
-      addHistoricalDurationBatch(durationEntries);
-    }
+    try {
+      // Yield once so the UI can paint before the (potentially large) persist write.
+      await new Promise((r) => setTimeout(r, 0));
 
-    const savedCount = frequencyEntries.length + (dataType === 'interval' ? Object.keys(bulkData).filter(k => bulkData[k].status !== 'no_data').length : 0);
+      // Batch save all frequency entries in one state update
+      if (frequencyEntries.length > 0) {
+        addHistoricalFrequencyBatch(frequencyEntries);
+      }
 
-    if (savedCount > 0) {
-      toast.success(`Saved ${savedCount} ${dataType} entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`);
-      resetAndClose();
-    } else if (skippedCount > 0) {
-      toast.info('All entries marked as "No Data" - nothing saved');
-    } else {
-      toast.error('No data to save. Please enter data for at least one cell.');
+      // Batch save all duration entries in one state update
+      if (durationEntries.length > 0) {
+        addHistoricalDurationBatch(durationEntries);
+      }
+
+      const savedCount = dataType === 'frequency'
+        ? frequencyEntries.length
+        : Object.keys(bulkData).filter((k) => bulkData[k].status !== 'no_data').length;
+
+      if (savedCount > 0) {
+        toast.success(
+          `Saved ${savedCount} ${dataType} entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`
+        );
+        resetAndClose();
+      } else if (skippedCount > 0) {
+        toast.info('All entries marked as "No Data" - nothing saved');
+      } else {
+        toast.error('No data to save. Please enter data for at least one cell.');
+      }
+    } catch (err) {
+      console.error('Bulk save failed', err);
+      toast.error('Save failed. Please try again with a smaller date range.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1140,9 +1166,9 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           <Button variant="outline" onClick={resetAndClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={Object.keys(bulkData).length === 0}>
+          <Button onClick={handleSave} disabled={isSaving || Object.keys(bulkData).length === 0}>
             <Save className="w-4 h-4 mr-2" />
-            Save All Data
+            {isSaving ? 'Saving…' : 'Save All Data'}
           </Button>
         </DialogFooter>
       </DialogContent>
