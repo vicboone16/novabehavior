@@ -33,6 +33,8 @@ import {
   Student, 
   ANTECEDENT_OPTIONS, 
   CONSEQUENCE_OPTIONS,
+  FUNCTION_OPTIONS,
+  BehaviorFunction,
   DataCollectionMethod 
 } from '@/types/behavior';
 
@@ -63,9 +65,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
   // Multi-behavior selection
   const [selectedBehaviors, setSelectedBehaviors] = useState<BehaviorSelection[]>([]);
   
-  // ABC-specific fields
-  const [antecedent, setAntecedent] = useState('');
-  const [consequence, setConsequence] = useState('');
+  // ABC-specific fields - now multi-select
+  const [selectedAntecedents, setSelectedAntecedents] = useState<string[]>([]);
+  const [selectedConsequences, setSelectedConsequences] = useState<string[]>([]);
+  const [selectedFunctions, setSelectedFunctions] = useState<BehaviorFunction[]>([]);
   const [customAntecedent, setCustomAntecedent] = useState('');
   const [customConsequence, setCustomConsequence] = useState('');
   
@@ -174,7 +177,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
   const handleAddCustomAntecedent = () => {
     if (!customAntecedent.trim()) return;
     addCustomAntecedent(student.id, customAntecedent.trim());
-    setAntecedent(customAntecedent.trim());
+    setSelectedAntecedents(prev => [...prev, customAntecedent.trim()]);
     setCustomAntecedent('');
     toast.success('Custom antecedent added');
   };
@@ -183,9 +186,28 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
   const handleAddCustomConsequence = () => {
     if (!customConsequence.trim()) return;
     addCustomConsequence(student.id, customConsequence.trim());
-    setConsequence(customConsequence.trim());
+    setSelectedConsequences(prev => [...prev, customConsequence.trim()]);
     setCustomConsequence('');
     toast.success('Custom consequence added');
+  };
+
+  // Toggle functions for multi-select
+  const toggleAntecedent = (a: string) => {
+    setSelectedAntecedents(prev => 
+      prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
+    );
+  };
+
+  const toggleConsequence = (c: string) => {
+    setSelectedConsequences(prev => 
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
+  };
+
+  const toggleFunction = (f: BehaviorFunction) => {
+    setSelectedFunctions(prev => 
+      prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
+    );
   };
 
   // Submit frequency entries
@@ -275,48 +297,35 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
       return;
     }
 
-    if (!antecedent) {
-      toast.error('Please select an antecedent');
+    if (selectedAntecedents.length === 0) {
+      toast.error('Please select at least one antecedent');
       return;
     }
 
-    if (!consequence) {
-      toast.error('Please select a consequence');
+    if (selectedConsequences.length === 0) {
+      toast.error('Please select at least one consequence');
       return;
     }
 
     const timestamp = parseLocalDate(date, time);
 
     // Create ABC entry with multiple behaviors
-    if (selectedBehaviors.length === 1) {
-      const selection = selectedBehaviors[0];
+    selectedBehaviors.forEach(selection => {
       addABCEntry({
         studentId: student.id,
         behaviorId: selection.behaviorId,
-        antecedent,
+        antecedent: selectedAntecedents[0], // Primary for legacy
+        antecedents: selectedAntecedents,
         behavior: getBehaviorName(selection.behaviorId),
-        consequence,
+        consequence: selectedConsequences[0], // Primary for legacy
+        consequences: selectedConsequences,
+        functions: selectedFunctions.length > 0 ? selectedFunctions : undefined,
         frequencyCount: selection.count,
         hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
         durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
         timestamp, // Include historical timestamp
       } as any);
-    } else {
-      // For multiple behaviors, create entries for each
-      selectedBehaviors.forEach(selection => {
-        addABCEntry({
-          studentId: student.id,
-          behaviorId: selection.behaviorId,
-          antecedent,
-          behavior: getBehaviorName(selection.behaviorId),
-          consequence,
-          frequencyCount: selection.count,
-          hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
-          durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
-          timestamp, // Include historical timestamp
-        } as any);
-      });
-    }
+    });
 
     toast.success(`Added ABC ${selectedBehaviors.length === 1 ? 'entry' : 'entries'} for ${selectedBehaviors.length} behavior${selectedBehaviors.length === 1 ? '' : 's'}`);
     resetForm();
@@ -327,8 +336,9 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     setSelectedBehaviors([]);
     setObservationDuration('');
     setNotes('');
-    setAntecedent('');
-    setConsequence('');
+    setSelectedAntecedents([]);
+    setSelectedConsequences([]);
+    setSelectedFunctions([]);
   };
 
   // Calculate rate for display
@@ -348,7 +358,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
   const activeBehaviors = student.behaviors.filter(b => !b.isArchived && !b.isMastered);
 
   // Check if any data has been entered
-  const hasEnteredData = selectedBehaviors.length > 0 || observationDuration || notes || antecedent || consequence;
+  const hasEnteredData = selectedBehaviors.length > 0 || observationDuration || notes || selectedAntecedents.length > 0 || selectedConsequences.length > 0;
 
   return (
     <Card>
@@ -663,20 +673,38 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
 
           {/* ABC-specific fields */}
           <TabsContent value="abc" className="space-y-4 mt-4">
+            {/* Antecedents - Multi-select */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Antecedent (A)</Label>
+                <Label className="text-antecedent">Antecedent(s)</Label>
+                {selectedAntecedents.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedAntecedents.length} selected
+                  </Badge>
+                )}
               </div>
-              <Select value={antecedent} onValueChange={setAntecedent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="What happened before?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allAntecedents.map((a) => (
-                    <SelectItem key={a} value={a}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {allAntecedents.map((a) => {
+                  const isCustom = !ANTECEDENT_OPTIONS.includes(a);
+                  return (
+                    <button
+                      key={a}
+                      onClick={() => toggleAntecedent(a)}
+                      className={`
+                        px-3 py-1.5 text-sm rounded-md transition-all border
+                        ${selectedAntecedents.includes(a) 
+                          ? 'bg-antecedent text-antecedent-foreground border-antecedent' 
+                          : 'bg-secondary hover:bg-antecedent/20 border-border'}
+                        ${isCustom ? 'ring-1 ring-primary/30' : ''}
+                      `}
+                    >
+                      {a}
+                      {isCustom && <span className="ml-1 text-xs opacity-70">★</span>}
+                      {selectedAntecedents.includes(a) && <Check className="w-3 h-3 ml-1 inline" />}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex gap-2">
                 <Input
                   placeholder="Add custom antecedent..."
@@ -695,18 +723,38 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               </div>
             </div>
 
+            {/* Consequences - Multi-select */}
             <div className="space-y-2">
-              <Label>Consequence (C)</Label>
-              <Select value={consequence} onValueChange={setConsequence}>
-                <SelectTrigger>
-                  <SelectValue placeholder="What happened after?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allConsequences.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label className="text-consequence">Consequence(s)</Label>
+                {selectedConsequences.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedConsequences.length} selected
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allConsequences.map((c) => {
+                  const isCustom = !CONSEQUENCE_OPTIONS.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => toggleConsequence(c)}
+                      className={`
+                        px-3 py-1.5 text-sm rounded-md transition-all border
+                        ${selectedConsequences.includes(c) 
+                          ? 'bg-consequence text-consequence-foreground border-consequence' 
+                          : 'bg-secondary hover:bg-consequence/20 border-border'}
+                        ${isCustom ? 'ring-1 ring-primary/30' : ''}
+                      `}
+                    >
+                      {c}
+                      {isCustom && <span className="ml-1 text-xs opacity-70">★</span>}
+                      {selectedConsequences.includes(c) && <Check className="w-3 h-3 ml-1 inline" />}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex gap-2">
                 <Input
                   placeholder="Add custom consequence..."
@@ -725,6 +773,35 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               </div>
             </div>
 
+            {/* Functions - Multi-select */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Hypothesized Function(s) - Optional</Label>
+                {selectedFunctions.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedFunctions.length} selected
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {FUNCTION_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => toggleFunction(value)}
+                    className={`
+                      px-3 py-1.5 text-sm rounded-md transition-all border
+                      ${selectedFunctions.includes(value) 
+                        ? 'bg-primary text-primary-foreground border-primary' 
+                        : 'bg-secondary hover:bg-primary/20 border-border'}
+                    `}
+                  >
+                    {label}
+                    {selectedFunctions.includes(value) && <Check className="w-3 h-3 ml-1 inline" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               Tip: You can set count and duration per-behavior in the selection above.
             </p>
@@ -732,7 +809,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
             <Button
               className="w-full"
               onClick={handleSubmitABC}
-              disabled={selectedBehaviors.length === 0 || !antecedent || !consequence}
+              disabled={selectedBehaviors.length === 0 || selectedAntecedents.length === 0 || selectedConsequences.length === 0}
             >
               <Save className="w-4 h-4 mr-2" />
               Add ABC Entry

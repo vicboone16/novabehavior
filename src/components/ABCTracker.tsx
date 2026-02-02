@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Check, X, Pencil, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
-import { Behavior, ANTECEDENT_OPTIONS, CONSEQUENCE_OPTIONS } from '@/types/behavior';
+import { 
+  Behavior, 
+  ANTECEDENT_OPTIONS, 
+  CONSEQUENCE_OPTIONS,
+  FUNCTION_OPTIONS,
+  BehaviorFunction 
+} from '@/types/behavior';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +28,10 @@ interface ABCTrackerProps {
 
 export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProps) {
   const { addABCEntry, abcEntries, updateABCEntry, deleteABCEntry, students, getStudentAntecedents, getStudentConsequences } = useDataStore();
-  const [selectedAntecedent, setSelectedAntecedent] = useState<string | null>(null);
+  const [selectedAntecedents, setSelectedAntecedents] = useState<string[]>([]);
   const [selectedBehavior, setSelectedBehavior] = useState<string | null>(null);
-  const [selectedConsequence, setSelectedConsequence] = useState<string | null>(null);
+  const [selectedConsequences, setSelectedConsequences] = useState<string[]>([]);
+  const [selectedFunctions, setSelectedFunctions] = useState<BehaviorFunction[]>([]);
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [showEntries, setShowEntries] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -32,64 +39,91 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
   const student = students.find(s => s.id === studentId);
   const customAntecedents = getStudentAntecedents(studentId);
   const customConsequences = getStudentConsequences(studentId);
-  const allAntecedents = [...ANTECEDENT_OPTIONS, ...customAntecedents.filter(a => !ANTECEDENT_OPTIONS.includes(a))];
-  const allConsequences = [...CONSEQUENCE_OPTIONS, ...customConsequences.filter(c => !CONSEQUENCE_OPTIONS.includes(c))];
+  const allAntecedents = useMemo(() => 
+    [...ANTECEDENT_OPTIONS, ...customAntecedents.filter(a => !ANTECEDENT_OPTIONS.includes(a))],
+    [customAntecedents]
+  );
+  const allConsequences = useMemo(() => 
+    [...CONSEQUENCE_OPTIONS, ...customConsequences.filter(c => !CONSEQUENCE_OPTIONS.includes(c))],
+    [customConsequences]
+  );
 
   const behaviorEntries = abcEntries.filter(
     e => e.studentId === studentId && e.behaviorId === behavior.id
   );
 
+  const toggleAntecedent = (a: string) => {
+    setSelectedAntecedents(prev => 
+      prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
+    );
+  };
+
+  const toggleConsequence = (c: string) => {
+    setSelectedConsequences(prev => 
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
+  };
+
+  const toggleFunction = (f: BehaviorFunction) => {
+    setSelectedFunctions(prev => 
+      prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
+    );
+  };
+
   const handleRecord = () => {
-    if (selectedAntecedent && selectedBehavior && selectedConsequence) {
+    if (selectedAntecedents.length > 0 && selectedBehavior && selectedConsequences.length > 0) {
       addABCEntry({
         studentId,
         behaviorId: behavior.id,
-        antecedent: selectedAntecedent,
+        antecedent: selectedAntecedents[0], // Primary for legacy
+        antecedents: selectedAntecedents,
         behavior: selectedBehavior,
-        consequence: selectedConsequence,
+        consequence: selectedConsequences[0], // Primary for legacy
+        consequences: selectedConsequences,
+        functions: selectedFunctions.length > 0 ? selectedFunctions : undefined,
         frequencyCount: 1,
       });
-      setSelectedAntecedent(null);
-      setSelectedBehavior(null);
-      setSelectedConsequence(null);
+      handleClear();
     }
   };
 
   const handleClear = () => {
-    setSelectedAntecedent(null);
+    setSelectedAntecedents([]);
     setSelectedBehavior(null);
-    setSelectedConsequence(null);
+    setSelectedConsequences([]);
+    setSelectedFunctions([]);
   };
 
   const handleEdit = (entryId: string) => {
     const entry = abcEntries.find(e => e.id === entryId);
     if (entry) {
-      setSelectedAntecedent(entry.antecedent);
+      // Support both legacy single and new multi-select format
+      setSelectedAntecedents(entry.antecedents || (entry.antecedent ? [entry.antecedent] : []));
       setSelectedBehavior(entry.behavior);
-      setSelectedConsequence(entry.consequence);
+      setSelectedConsequences(entry.consequences || (entry.consequence ? [entry.consequence] : []));
+      setSelectedFunctions(entry.functions || []);
       setEditingEntry(entryId);
     }
   };
 
   const handleSaveEdit = () => {
-    if (editingEntry && selectedAntecedent && selectedBehavior && selectedConsequence) {
+    if (editingEntry && selectedAntecedents.length > 0 && selectedBehavior && selectedConsequences.length > 0) {
       updateABCEntry(editingEntry, {
-        antecedent: selectedAntecedent,
+        antecedent: selectedAntecedents[0],
+        antecedents: selectedAntecedents,
         behavior: selectedBehavior,
-        consequence: selectedConsequence,
+        consequence: selectedConsequences[0],
+        consequences: selectedConsequences,
+        functions: selectedFunctions.length > 0 ? selectedFunctions : undefined,
       });
       setEditingEntry(null);
-      setSelectedAntecedent(null);
-      setSelectedBehavior(null);
-      setSelectedConsequence(null);
+      handleClear();
     }
   };
 
   const handleCancelEdit = () => {
     setEditingEntry(null);
-    setSelectedAntecedent(null);
-    setSelectedBehavior(null);
-    setSelectedConsequence(null);
+    handleClear();
   };
 
   const handleDelete = () => {
@@ -99,7 +133,15 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
     }
   };
 
-  const isComplete = selectedAntecedent && selectedBehavior && selectedConsequence;
+  const isComplete = selectedAntecedents.length > 0 && selectedBehavior && selectedConsequences.length > 0;
+
+  // Helper to display entry antecedents/consequences
+  const formatMultiple = (items: string[] | undefined, single: string): string => {
+    if (items && items.length > 0) {
+      return items.length > 1 ? `${items[0]} +${items.length - 1}` : items[0];
+    }
+    return single;
+  };
 
   return (
     <div className="bg-secondary/30 rounded-lg p-3 space-y-3">
@@ -116,24 +158,37 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
         </Button>
       </div>
 
-      {/* Antecedent */}
+      {/* Antecedent - Multi-select */}
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-antecedent">A - Antecedent</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-antecedent">A - Antecedent(s)</span>
+          {selectedAntecedents.length > 0 && (
+            <Badge variant="secondary" className="text-xs h-5">
+              {selectedAntecedents.length} selected
+            </Badge>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1">
-          {allAntecedents.map((option) => (
-            <button
-              key={option}
-              onClick={() => setSelectedAntecedent(option)}
-              className={`
-                px-2 py-1 text-xs rounded-md transition-all
-                ${selectedAntecedent === option 
-                  ? 'bg-antecedent text-antecedent-foreground' 
-                  : 'bg-secondary hover:bg-antecedent/20 text-foreground'}
-              `}
-            >
-              {option}
-            </button>
-          ))}
+          {allAntecedents.map((option) => {
+            const isCustom = !ANTECEDENT_OPTIONS.includes(option);
+            return (
+              <button
+                key={option}
+                onClick={() => toggleAntecedent(option)}
+                className={`
+                  px-2 py-1 text-xs rounded-md transition-all
+                  ${selectedAntecedents.includes(option)
+                    ? 'bg-antecedent text-antecedent-foreground' 
+                    : 'bg-secondary hover:bg-antecedent/20 text-foreground'}
+                  ${isCustom ? 'ring-1 ring-primary/30' : ''}
+                `}
+              >
+                {option}
+                {isCustom && <span className="ml-0.5 opacity-70">★</span>}
+                {selectedAntecedents.includes(option) && <Check className="w-3 h-3 ml-0.5 inline" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -153,22 +208,64 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
         </button>
       </div>
 
-      {/* Consequence */}
+      {/* Consequence - Multi-select */}
       <div className="space-y-1.5">
-        <span className="text-xs font-medium text-consequence">C - Consequence</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-consequence">C - Consequence(s)</span>
+          {selectedConsequences.length > 0 && (
+            <Badge variant="secondary" className="text-xs h-5">
+              {selectedConsequences.length} selected
+            </Badge>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1">
-          {allConsequences.map((option) => (
+          {allConsequences.map((option) => {
+            const isCustom = !CONSEQUENCE_OPTIONS.includes(option);
+            return (
+              <button
+                key={option}
+                onClick={() => toggleConsequence(option)}
+                className={`
+                  px-2 py-1 text-xs rounded-md transition-all
+                  ${selectedConsequences.includes(option) 
+                    ? 'bg-consequence text-consequence-foreground' 
+                    : 'bg-secondary hover:bg-consequence/20 text-foreground'}
+                  ${isCustom ? 'ring-1 ring-primary/30' : ''}
+                `}
+              >
+                {option}
+                {isCustom && <span className="ml-0.5 opacity-70">★</span>}
+                {selectedConsequences.includes(option) && <Check className="w-3 h-3 ml-0.5 inline" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Function - Multi-select */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Function (optional)</span>
+          {selectedFunctions.length > 0 && (
+            <Badge variant="secondary" className="text-xs h-5">
+              {selectedFunctions.length} selected
+            </Badge>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {FUNCTION_OPTIONS.map(({ value, label }) => (
             <button
-              key={option}
-              onClick={() => setSelectedConsequence(option)}
+              key={value}
+              onClick={() => toggleFunction(value)}
               className={`
                 px-2 py-1 text-xs rounded-md transition-all
-                ${selectedConsequence === option 
-                  ? 'bg-consequence text-consequence-foreground' 
-                  : 'bg-secondary hover:bg-consequence/20 text-foreground'}
+                ${selectedFunctions.includes(value)
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-secondary hover:bg-primary/20 text-foreground'}
               `}
             >
-              {option}
+              {label}
+              {selectedFunctions.includes(value) && <Check className="w-3 h-3 ml-0.5 inline" />}
             </button>
           ))}
         </div>
@@ -181,7 +278,7 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
           variant="outline"
           className="flex-1"
           onClick={editingEntry ? handleCancelEdit : handleClear}
-          disabled={!selectedAntecedent && !selectedBehavior && !selectedConsequence && !editingEntry}
+          disabled={selectedAntecedents.length === 0 && !selectedBehavior && selectedConsequences.length === 0 && selectedFunctions.length === 0 && !editingEntry}
         >
           <X className="w-4 h-4 mr-1" />
           {editingEntry ? 'Cancel' : 'Clear'}
@@ -251,7 +348,11 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div>
                         <span className="font-medium text-antecedent block">A</span>
-                        <span className="text-foreground">{entry.antecedent}</span>
+                        <span className="text-foreground">
+                          {entry.antecedents && entry.antecedents.length > 1 
+                            ? entry.antecedents.join(', ')
+                            : entry.antecedent}
+                        </span>
                       </div>
                       <div>
                         <span className="font-medium text-behavior block">B</span>
@@ -259,9 +360,22 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
                       </div>
                       <div>
                         <span className="font-medium text-consequence block">C</span>
-                        <span className="text-foreground">{entry.consequence}</span>
+                        <span className="text-foreground">
+                          {entry.consequences && entry.consequences.length > 1 
+                            ? entry.consequences.join(', ')
+                            : entry.consequence}
+                        </span>
                       </div>
                     </div>
+                    {entry.functions && entry.functions.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {entry.functions.map(f => (
+                          <Badge key={f} variant="outline" className="text-xs">
+                            {FUNCTION_OPTIONS.find(fo => fo.value === f)?.label || f}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
             )}
