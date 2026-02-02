@@ -140,13 +140,33 @@ export default function QuestionnaireForm() {
           return;
         }
 
+        const questions = (templateData.questions as unknown as Question[]) || [];
+        
+        // Check if template has questions
+        if (questions.length === 0) {
+          setError('This questionnaire has not been configured with questions yet. Please contact the sender.');
+          setIsLoading(false);
+          return;
+        }
+
         // Map template data to common format
         setTemplate({
           id: templateData.id,
           name: templateData.form_name || templateData.name || 'Assessment',
           description: templateData.description || null,
-          questions: (templateData.questions as unknown as Question[]) || [],
+          questions: questions,
         } as Template);
+
+        // Track that the questionnaire was opened
+        await supabase
+          .from('questionnaire_invitations')
+          .update({
+            first_opened_at: invitationData.first_opened_at || new Date().toISOString(),
+            last_opened_at: new Date().toISOString(),
+            open_count: (invitationData.open_count || 0) + 1,
+          })
+          .eq('id', invitationData.id);
+
       } catch (err) {
         console.error('Error loading questionnaire:', err);
         setError('An error occurred loading the questionnaire.');
@@ -160,6 +180,16 @@ export default function QuestionnaireForm() {
 
   const handleSubmit = async () => {
     if (!invitation || !template) return;
+
+    // Check if there are questions to answer
+    if (template.questions.length === 0) {
+      toast({
+        title: 'No questions to submit',
+        description: 'This questionnaire has no questions configured.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Validate required questions
     const unansweredRequired = template.questions.filter(
