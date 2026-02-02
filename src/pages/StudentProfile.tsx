@@ -72,6 +72,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
 import { logDataAccess } from '@/lib/auditLogger';
+import { toast } from 'sonner';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -288,7 +289,12 @@ export default function StudentProfile() {
 
     const count = parseInt(dataCount) || 1;
     const durationMinutes = dataObservationDuration ? parseFloat(dataObservationDuration) : undefined;
-    const timestamp = new Date(`${dataDate}T${dataTime}`);
+    const safeTime = (dataTime || '').trim() || '12:00';
+    const timestamp = new Date(`${dataDate}T${safeTime}`);
+    if (Number.isNaN(timestamp.getTime())) {
+      toast.error('Please select a valid date. Time is optional.');
+      return;
+    }
     
     // Use historical frequency entry to preserve observation duration
     addHistoricalFrequency({

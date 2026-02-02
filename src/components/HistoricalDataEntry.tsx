@@ -101,8 +101,18 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
 
   // Parse date without timezone shift
   const parseLocalDate = (dateStr: string, timeStr: string): Date => {
+    const normalizeTime = (t: string) => {
+      const trimmed = (t || '').trim();
+      // Treat blank/unknown time as noon to keep date stable without implying "start of day".
+      if (!trimmed) return '12:00';
+      // HTML time inputs typically emit HH:mm; if not, fall back safely.
+      if (!/^\d{2}:\d{2}$/.test(trimmed)) return '12:00';
+      return trimmed;
+    };
+
     const [year, month, day] = dateStr.split('-').map(Number);
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const safeTime = normalizeTime(timeStr);
+    const [hours, minutes] = safeTime.split(':').map(Number);
     return new Date(year, month - 1, day, hours, minutes);
   };
 
@@ -218,6 +228,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     }
 
     const timestamp = parseLocalDate(date, time);
+    if (Number.isNaN(timestamp.getTime())) {
+      toast.error('Please select a valid date. Time is optional.');
+      return;
+    }
     const durationMinutes = observationDuration ? parseFloat(observationDuration) : undefined;
 
     let addedCount = 0;
@@ -268,6 +282,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     }
 
     const timestamp = parseLocalDate(date, time);
+    if (Number.isNaN(timestamp.getTime())) {
+      toast.error('Please select a valid date. Time is optional.');
+      return;
+    }
 
     selectedBehaviors.forEach(selection => {
       if (selection.durationSeconds && selection.durationSeconds > 0) {
@@ -308,6 +326,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     }
 
     const timestamp = parseLocalDate(date, time);
+    if (Number.isNaN(timestamp.getTime())) {
+      toast.error('Please select a valid date. Time is optional.');
+      return;
+    }
     
     // Generate a concurrent group ID if multiple behaviors are being recorded together
     const isConcurrent = selectedBehaviors.length > 1;
@@ -418,7 +440,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Time</Label>
+              <Label>Time (optional)</Label>
               <Input
                 type="time"
                 value={time}
