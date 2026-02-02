@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Plus, Play, Pause, Square, Clock, Hash, Check, Timer, Zap,
   ChevronDown, ChevronUp, AlertTriangle, X, Trash2, Target, 
-  FileText, MessageSquare
+  FileText, MessageSquare, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,8 @@ import { StudentSessionTimer } from '@/components/StudentSessionTimer';
 import { ColdProbeTracker, ColdProbeSession } from '@/components/ColdProbeTracker';
 import { StructuredObservationForm, StructuredObservationData } from '@/components/StructuredObservationForm';
 import { ObservationNotesPanel, ObservationNotes } from '@/components/ObservationNotesPanel';
+import { HistoricalObservationEntry } from '@/components/assessment/HistoricalObservationEntry';
+import { AddTargetFromProbe } from '@/components/assessment/AddTargetFromProbe';
 import { 
   Student, 
   Behavior, 
@@ -91,6 +93,8 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
   // Observation session state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showHistoricalEntry, setShowHistoricalEntry] = useState(false);
+  const [showAddTarget, setShowAddTarget] = useState(false);
 
   // Custom A/C input state
   const [newAntecedent, setNewAntecedent] = useState('');
@@ -353,14 +357,20 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                   <p className="text-sm text-muted-foreground">
                     {sessionStartTime
                       ? 'Add this student to the current live session'
-                      : 'Start a live observation session for this student'}
+                      : 'Start a live observation session or enter historical data'}
                   </p>
                 </div>
               </div>
-              <Button onClick={handleStartObservation}>
-                <Play className="w-4 h-4 mr-2" />
-                {sessionStartTime ? 'Join' : 'Start'}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowHistoricalEntry(true)}>
+                  <History className="w-4 h-4 mr-2" />
+                  Historical
+                </Button>
+                <Button onClick={handleStartObservation}>
+                  <Play className="w-4 h-4 mr-2" />
+                  {sessionStartTime ? 'Join' : 'Start Live'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -833,6 +843,19 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
         {/* Cold Probe Tab */}
         <TabsContent value="cold_probe" className="space-y-4">
+          {/* Add Target Button */}
+          <div className="flex justify-end">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAddTarget(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Skill Target
+            </Button>
+          </div>
+
           <ColdProbeTracker
             studentId={student.id}
             skillTargets={student.skillTargets || []}
@@ -931,6 +954,24 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         cancelLabel="Cancel"
         onConfirm={handleDeleteObservation}
         variant="destructive"
+      />
+
+      {/* Historical Observation Entry Dialog */}
+      <HistoricalObservationEntry
+        student={student}
+        open={showHistoricalEntry}
+        onOpenChange={setShowHistoricalEntry}
+      />
+
+      {/* Add Target Dialog */}
+      <AddTargetFromProbe
+        studentId={student.id}
+        studentName={student.displayName || student.name}
+        open={showAddTarget}
+        onOpenChange={setShowAddTarget}
+        onSuccess={() => {
+          // Refresh targets - the hook will handle re-fetching
+        }}
       />
     </div>
   );
