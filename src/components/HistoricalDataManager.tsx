@@ -212,7 +212,7 @@ export function HistoricalDataManager({ studentId }: HistoricalDataManagerProps)
             </Badge>
           </div>
 
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="flex-1 min-h-0 pr-4">
             <div className="space-y-4 py-2">
               {/* Frequency Data */}
               {(filterType === 'all' || filterType === 'frequency') && filteredFrequency.length > 0 && (
