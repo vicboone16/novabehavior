@@ -201,6 +201,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
           recipient_type: recipientType,
           created_by: user?.id,
           sent_at: new Date().toISOString(),
+          form_type: selectedTemplateType,
         })
         .select()
         .single();

@@ -1103,6 +1103,7 @@ export type Database = {
           created_at: string
           created_by: string
           expires_at: string
+          form_type: string
           id: string
           recipient_email: string
           recipient_name: string
@@ -1118,6 +1119,7 @@ export type Database = {
           created_at?: string
           created_by: string
           expires_at?: string
+          form_type?: string
           id?: string
           recipient_email: string
           recipient_name: string
@@ -1133,6 +1135,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           expires_at?: string
+          form_type?: string
           id?: string
           recipient_email?: string
           recipient_name?: string
@@ -1148,13 +1151,6 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "questionnaire_invitations_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "questionnaire_templates"
             referencedColumns: ["id"]
           },
         ]
