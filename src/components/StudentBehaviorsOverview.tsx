@@ -231,21 +231,37 @@ export function StudentBehaviorsOverview({
   // Get behaviors with calculated stats
   const behaviorsWithStats: BehaviorWithStats[] = useMemo(() => {
     return behaviors.map(behavior => {
-      // Frequency stats
+      // Frequency stats - include ABC entry frequencyCount
       const behaviorFrequency = frequencyEntries.filter(e => e.studentId === studentId && e.behaviorId === behavior.id);
       const filteredFrequency = filterByDateRange(behaviorFrequency);
-      const frequencyCount = behaviorFrequency.reduce((sum, e) => sum + e.count, 0);
-      const filteredFrequencyCount = filteredFrequency.reduce((sum, e) => sum + e.count, 0);
-
-      // Duration stats
-      const behaviorDuration = durationEntries.filter(e => e.studentId === studentId && e.behaviorId === behavior.id);
-      const filteredDurationEntries = filterByDateRange(behaviorDuration, 'startTime');
-      const totalDuration = behaviorDuration.reduce((sum, e) => sum + e.duration, 0);
-      const filteredDuration = filteredDurationEntries.reduce((sum, e) => sum + e.duration, 0);
-
-      // ABC stats
+      let frequencyCount = behaviorFrequency.reduce((sum, e) => sum + e.count, 0);
+      let filteredFrequencyCount = filteredFrequency.reduce((sum, e) => sum + e.count, 0);
+      
+      // Also count frequency from ABC entries (they contain frequencyCount)
       const behaviorABC = abcEntries.filter(e => e.studentId === studentId && e.behaviorId === behavior.id);
       const filteredABC = filterByDateRange(behaviorABC);
+      frequencyCount += behaviorABC.reduce((sum, e) => sum + ((e as any).frequencyCount || 1), 0);
+      filteredFrequencyCount += filteredABC.reduce((sum, e) => sum + ((e as any).frequencyCount || 1), 0);
+
+      // Duration stats - include ABC entry durationMinutes
+      const behaviorDuration = durationEntries.filter(e => e.studentId === studentId && e.behaviorId === behavior.id);
+      const filteredDurationEntries = filterByDateRange(behaviorDuration, 'startTime');
+      let totalDuration = behaviorDuration.reduce((sum, e) => sum + e.duration, 0);
+      let filteredDuration = filteredDurationEntries.reduce((sum, e) => sum + e.duration, 0);
+      
+      // Also add duration from ABC entries (stored as durationMinutes, convert to seconds)
+      behaviorABC.forEach(e => {
+        if ((e as any).hasDuration && (e as any).durationMinutes) {
+          totalDuration += ((e as any).durationMinutes * 60);
+        }
+      });
+      filteredABC.forEach(e => {
+        if ((e as any).hasDuration && (e as any).durationMinutes) {
+          filteredDuration += ((e as any).durationMinutes * 60);
+        }
+      });
+
+      // ABC stats (already computed above)
       const abcCount = behaviorABC.length;
       const filteredAbcCount = filteredABC.length;
 
@@ -335,7 +351,7 @@ export function StudentBehaviorsOverview({
     };
   }, [filteredBehaviors]);
 
-  // Chart data: frequency over time (combines frequencyEntries + historicalData)
+  // Chart data: frequency over time (combines frequencyEntries + historicalData + ABC frequencyCount)
   const frequencyChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -369,14 +385,22 @@ export function StudentBehaviorsOverview({
           }
         });
         
+        // Also add frequencyCount from ABC entries for this behavior
+        const dayABC = abcEntries.filter(e => 
+          e.studentId === studentId &&
+          e.behaviorId === behavior.id &&
+          isWithinInterval(new Date((e as any).timestamp), { start: dayStart, end: dayEnd })
+        );
+        count += dayABC.reduce((s, e) => s + ((e as any).frequencyCount || 1), 0);
+        
         dataPoint[behavior.name] = count;
       });
 
       return dataPoint;
     });
-  }, [dateRange, filteredBehaviors, frequencyEntries, historicalData, studentId]);
+  }, [dateRange, filteredBehaviors, frequencyEntries, historicalData, abcEntries, studentId]);
 
-  // Chart data: duration over time
+  // Chart data: duration over time (includes ABC durationMinutes)
   const durationChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -389,17 +413,30 @@ export function StudentBehaviorsOverview({
       const dataPoint: any = { date: format(day, 'MMM d') };
 
       filteredBehaviors.forEach((behavior, idx) => {
+        // Duration from durationEntries
         const dayDuration = durationEntries.filter(e => 
           e.studentId === studentId &&
           e.behaviorId === behavior.id &&
           isWithinInterval(new Date(e.startTime), { start: dayStart, end: dayEnd })
         );
-        dataPoint[`${behavior.name} (sec)`] = dayDuration.reduce((s, e) => s + e.duration, 0);
+        let duration = dayDuration.reduce((s, e) => s + e.duration, 0);
+        
+        // Also add duration from ABC entries (stored as durationMinutes, convert to seconds)
+        const dayABC = abcEntries.filter(e => 
+          e.studentId === studentId &&
+          e.behaviorId === behavior.id &&
+          (e as any).hasDuration &&
+          (e as any).durationMinutes &&
+          isWithinInterval(new Date((e as any).timestamp), { start: dayStart, end: dayEnd })
+        );
+        duration += dayABC.reduce((s, e) => s + (((e as any).durationMinutes || 0) * 60), 0);
+        
+        dataPoint[`${behavior.name} (sec)`] = duration;
       });
 
       return dataPoint;
     });
-  }, [dateRange, filteredBehaviors, durationEntries, studentId]);
+  }, [dateRange, filteredBehaviors, durationEntries, abcEntries, studentId]);
 
   // ABC distribution data
   const abcDistributionData = useMemo(() => {
