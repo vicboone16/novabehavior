@@ -133,7 +133,7 @@ interface BulkHistoricalDataEntryProps {
 }
 
 export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDataEntryProps) {
-  const { students, addHistoricalFrequency, addHistoricalDuration, recordInterval } = useDataStore();
+  const { students, addHistoricalFrequencyBatch, addHistoricalDurationBatch, recordInterval } = useDataStore();
   
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -313,11 +313,26 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     );
   };
 
-  // Handle save
-  const handleSave = () => {
-    let savedCount = 0;
+  // Handle save with batching to prevent freeze
+  const handleSave = async () => {
+    const frequencyEntries: Array<{
+      studentId: string;
+      behaviorId: string;
+      count: number;
+      timestamp: Date;
+      observationDurationMinutes?: number;
+    }> = [];
+    
+    const durationEntries: Array<{
+      studentId: string;
+      behaviorId: string;
+      durationSeconds: number;
+      timestamp: Date;
+    }> = [];
+    
     let skippedCount = 0;
 
+    // Collect all entries first without triggering state updates
     Object.entries(bulkData).forEach(([key, data]) => {
       if (data.status === 'no_data') {
         skippedCount++;
@@ -331,8 +346,8 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       const timestamp = new Date(dateStr + 'T12:00:00');
 
       if (dataType === 'frequency') {
-        // Add frequency entry with observation duration for rate calculation
-        addHistoricalFrequency({
+        // Collect frequency entry
+        frequencyEntries.push({
           studentId,
           behaviorId,
           count: data.status === 'zero' ? 0 : data.count,
@@ -340,9 +355,9 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           observationDurationMinutes: data.observationMinutes,
         });
 
-        // Add duration if present
+        // Collect duration if present
         if (data.durationSeconds && data.durationSeconds > 0) {
-          addHistoricalDuration({
+          durationEntries.push({
             studentId,
             behaviorId,
             durationSeconds: data.durationSeconds,
@@ -350,7 +365,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           });
         }
       } else if (dataType === 'interval') {
-        // Record interval data
+        // Record interval data (still individual calls for now)
         const total = data.totalIntervals || defaultTotalIntervals;
         const occurred = data.occurredIntervals || [];
         
@@ -358,9 +373,19 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           recordInterval(studentId, behaviorId, i, occurred.includes(i));
         }
       }
-
-      savedCount++;
     });
+
+    // Batch save all frequency entries in one state update
+    if (frequencyEntries.length > 0) {
+      addHistoricalFrequencyBatch(frequencyEntries);
+    }
+    
+    // Batch save all duration entries in one state update
+    if (durationEntries.length > 0) {
+      addHistoricalDurationBatch(durationEntries);
+    }
+
+    const savedCount = frequencyEntries.length + (dataType === 'interval' ? Object.keys(bulkData).filter(k => bulkData[k].status !== 'no_data').length : 0);
 
     if (savedCount > 0) {
       toast.success(`Saved ${savedCount} ${dataType} entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`);
