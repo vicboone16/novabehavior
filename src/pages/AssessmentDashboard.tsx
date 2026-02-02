@@ -25,6 +25,7 @@ import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
+import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -768,9 +769,18 @@ export default function AssessmentDashboard() {
           </TabsContent>
 
           {/* Questionnaires Tab */}
-          <TabsContent value="questionnaires">
+          <TabsContent value="questionnaires" className="space-y-6">
             {selectedStudent && (
-              <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
+              <>
+                {/* VB-MAPP Internal Entry - Not sent out */}
+                <InternalVBMAPPEntry 
+                  studentId={selectedStudent.id} 
+                  studentName={selectedStudent.name} 
+                />
+                
+                {/* Questionnaire Manager - Sent out forms */}
+                <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
+              </>
             )}
           </TabsContent>
 
