@@ -308,8 +308,12 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     }
 
     const timestamp = parseLocalDate(date, time);
+    
+    // Generate a concurrent group ID if multiple behaviors are being recorded together
+    const isConcurrent = selectedBehaviors.length > 1;
+    const concurrentGroupId = isConcurrent ? `concurrent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : undefined;
 
-    // Create ABC entry with multiple behaviors
+    // Create ABC entry for each behavior
     selectedBehaviors.forEach(selection => {
       addABCEntry({
         studentId: student.id,
@@ -323,11 +327,13 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
         frequencyCount: selection.count,
         hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
         durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
+        isConcurrent,
+        concurrentGroupId,
         timestamp, // Include historical timestamp
       } as any);
     });
 
-    toast.success(`Added ABC ${selectedBehaviors.length === 1 ? 'entry' : 'entries'} for ${selectedBehaviors.length} behavior${selectedBehaviors.length === 1 ? '' : 's'}`);
+    toast.success(`Added ABC ${selectedBehaviors.length === 1 ? 'entry' : 'entries'} for ${selectedBehaviors.length} behavior${selectedBehaviors.length === 1 ? '' : 's'}${isConcurrent ? ' (concurrent)' : ''}`);
     resetForm();
   };
 
@@ -802,9 +808,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Tip: You can set count and duration per-behavior in the selection above.
-            </p>
+            <div className="text-xs text-muted-foreground space-y-1 bg-secondary/50 p-2 rounded">
+              <p><strong>Concurrent behaviors:</strong> When multiple behaviors happen at once, each gets its own entry marked as "concurrent" for accurate de-duplication in reports.</p>
+              <p><strong>Frequency per behavior:</strong> Set the count for each behavior to reflect how many times it occurred (e.g., if one behavior happened 3× during an episode).</p>
+            </div>
 
             <Button
               className="w-full"

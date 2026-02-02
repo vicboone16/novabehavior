@@ -367,15 +367,30 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
                         </span>
                       </div>
                     </div>
-                    {entry.functions && entry.functions.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {entry.functions.map(f => (
-                          <Badge key={f} variant="outline" className="text-xs">
-                            {FUNCTION_OPTIONS.find(fo => fo.value === f)?.label || f}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {entry.frequencyCount > 1 && (
+                        <Badge variant="secondary" className="text-xs">
+                          ×{entry.frequencyCount}
+                        </Badge>
+                      )}
+                      {entry.durationMinutes && entry.durationMinutes > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {entry.durationMinutes >= 1 
+                            ? `${Math.round(entry.durationMinutes)}m` 
+                            : `${Math.round(entry.durationMinutes * 60)}s`}
+                        </Badge>
+                      )}
+                      {entry.isConcurrent && (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          concurrent
+                        </Badge>
+                      )}
+                      {entry.functions && entry.functions.map(f => (
+                        <Badge key={f} variant="outline" className="text-xs">
+                          {FUNCTION_OPTIONS.find(fo => fo.value === f)?.label || f}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 ))
             )}

@@ -472,9 +472,11 @@ export interface ABCEntry {
   consequence: string;
   consequences?: string[]; // Multiple consequences
   functions?: BehaviorFunction[]; // Hypothesized functions
-  frequencyCount: number; // Legacy - total count
+  frequencyCount: number; // Count for this behavior instance (can be >1 if multiple occurrences in same episode)
   hasDuration?: boolean;
-  durationMinutes?: number; // Legacy - total duration
+  durationMinutes?: number; // Duration for this behavior
+  isConcurrent?: boolean; // True if this behavior occurred concurrently with others (for de-duplication in reports)
+  concurrentGroupId?: string; // Optional: Links concurrent behaviors to the same episode
   timestamp: Date;
   sessionId?: string;
 }
