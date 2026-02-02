@@ -90,10 +90,10 @@ export function SyncProvider({ children }: SyncProviderProps) {
       // This prevents stale localStorage data from overriding cloud data
       console.log('[Sync] Loading fresh data from cloud for user:', user.id);
       
-      // Load user profile
+      // Load user profile - explicitly exclude pin_hash for security
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, display_name, first_name, last_name, email, phone, is_approved, approved_at, approved_by, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
 

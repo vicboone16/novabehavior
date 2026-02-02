@@ -36,10 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserDetails = async (userId: string) => {
     try {
-      // Fetch profile
+      // Fetch profile - explicitly exclude pin_hash for security
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, display_name, first_name, last_name, email, phone, is_approved, approved_at, approved_by, created_at, updated_at')
         .eq('user_id', userId)
         .single();
 
