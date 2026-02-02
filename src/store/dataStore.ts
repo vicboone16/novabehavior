@@ -153,6 +153,19 @@ interface DataState {
     timestamp: Date;
     observationDurationMinutes?: number;
   }) => void;
+  addHistoricalFrequencyBatch: (entries: Array<{ 
+    studentId: string; 
+    behaviorId: string; 
+    count: number; 
+    timestamp: Date;
+    observationDurationMinutes?: number;
+  }>) => void;
+  addHistoricalDurationBatch: (entries: Array<{
+    studentId: string;
+    behaviorId: string;
+    durationSeconds: number;
+    timestamp: Date;
+  }>) => void;
   deleteFrequencyEntry: (id: string) => void;
   deleteHistoricalFrequency: (studentId: string, entryId: string) => void;
   updateFrequencyEntry: (id: string, updates: Partial<Omit<FrequencyEntry, 'id'>>) => void;
@@ -1101,6 +1114,123 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+      },
+
+      addHistoricalFrequencyBatch: (entries) => {
+        if (entries.length === 0) return;
+        
+        // Generate all IDs upfront
+        const entriesWithIds = entries.map(entry => ({
+          ...entry,
+          id: crypto.randomUUID(),
+        }));
+        
+        // Single state update for all entries
+        set((state) => {
+          // Build new frequency entries
+          const newFrequencyEntries = entriesWithIds.map(entry => ({
+            id: entry.id,
+            studentId: entry.studentId,
+            behaviorId: entry.behaviorId,
+            count: entry.count,
+            timestamp: entry.timestamp,
+            timestamps: Array(entry.count).fill(entry.timestamp),
+            observationDurationMinutes: entry.observationDurationMinutes,
+            isHistorical: true,
+          }));
+          
+          // Group entries by studentId for efficient student updates
+          const entriesByStudent = entriesWithIds.reduce((acc, entry) => {
+            if (!acc[entry.studentId]) acc[entry.studentId] = [];
+            acc[entry.studentId].push(entry);
+            return acc;
+          }, {} as Record<string, typeof entriesWithIds>);
+          
+          // Update students with their historical data
+          const updatedStudents = state.students.map((s) => {
+            const studentEntries = entriesByStudent[s.id];
+            if (!studentEntries) return s;
+            
+            return {
+              ...s,
+              historicalData: {
+                frequencyEntries: [
+                  ...(s.historicalData?.frequencyEntries || []),
+                  ...studentEntries.map(entry => ({
+                    id: entry.id,
+                    behaviorId: entry.behaviorId,
+                    count: entry.count,
+                    timestamp: entry.timestamp,
+                    observationDurationMinutes: entry.observationDurationMinutes,
+                  })),
+                ],
+                durationEntries: s.historicalData?.durationEntries || [],
+              },
+            };
+          });
+          
+          return {
+            frequencyEntries: [...state.frequencyEntries, ...newFrequencyEntries],
+            students: updatedStudents,
+          };
+        });
+      },
+
+      addHistoricalDurationBatch: (entries) => {
+        if (entries.length === 0) return;
+        
+        // Generate all IDs upfront
+        const entriesWithIds = entries.map(entry => ({
+          ...entry,
+          id: crypto.randomUUID(),
+        }));
+        
+        // Single state update for all entries
+        set((state) => {
+          // Build new duration entries
+          const newDurationEntries = entriesWithIds.map(entry => ({
+            id: entry.id,
+            studentId: entry.studentId,
+            behaviorId: entry.behaviorId,
+            duration: entry.durationSeconds,
+            startTime: entry.timestamp,
+            endTime: new Date(new Date(entry.timestamp).getTime() + entry.durationSeconds * 1000),
+          }));
+          
+          // Group entries by studentId for efficient student updates
+          const entriesByStudent = entriesWithIds.reduce((acc, entry) => {
+            if (!acc[entry.studentId]) acc[entry.studentId] = [];
+            acc[entry.studentId].push(entry);
+            return acc;
+          }, {} as Record<string, typeof entriesWithIds>);
+          
+          // Update students with their historical data
+          const updatedStudents = state.students.map((s) => {
+            const studentEntries = entriesByStudent[s.id];
+            if (!studentEntries) return s;
+            
+            return {
+              ...s,
+              historicalData: {
+                frequencyEntries: s.historicalData?.frequencyEntries || [],
+                durationEntries: [
+                  ...(s.historicalData?.durationEntries || []),
+                  ...studentEntries.map(entry => ({
+                    id: entry.id,
+                    behaviorId: entry.behaviorId,
+                    durationSeconds: entry.durationSeconds,
+                    timestamp: entry.timestamp,
+                  })),
+                ],
+              },
+            };
+          });
+          
+          return {
+            durationEntries: [...state.durationEntries, ...newDurationEntries],
+            students: updatedStudents,
+          };
+        });
       },
 
       deleteFrequencyEntry: (id) => {
