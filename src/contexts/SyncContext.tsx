@@ -124,7 +124,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
           isArchived: s.is_archived,
           archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
           // Extended profile fields
-            dateOfBirth: parseDateOnlyLocal(s.date_of_birth),
+          dateOfBirth: parseDateOnlyLocal(s.date_of_birth),
+          dataCollectionStartDate: parseDateOnlyLocal(s.data_collection_start_date),
           grade: s.grade || undefined,
           school: s.school || undefined,
           caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
@@ -712,6 +713,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             archived_at: student.archivedAt ? new Date(student.archivedAt).toISOString() : null,
             // Extended profile fields
             date_of_birth: formatDateOnlyLocal(student.dateOfBirth),
+            data_collection_start_date: formatDateOnlyLocal(student.dataCollectionStartDate),
             grade: student.grade || null,
             school: student.school || null,
             case_types: student.caseTypes || [],

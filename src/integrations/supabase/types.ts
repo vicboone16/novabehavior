@@ -1936,6 +1936,7 @@ export type Database = {
           created_at: string
           custom_antecedents: Json | null
           custom_consequences: Json | null
+          data_collection_start_date: string | null
           date_of_birth: string | null
           display_name: string | null
           documents: Json | null
@@ -1969,6 +1970,7 @@ export type Database = {
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
+          data_collection_start_date?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           documents?: Json | null
@@ -2002,6 +2004,7 @@ export type Database = {
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
+          data_collection_start_date?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           documents?: Json | null
