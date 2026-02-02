@@ -54,6 +54,23 @@ interface ABAS3Form {
   age_range: string;
 }
 
+interface VBMAPPForm {
+  id: string;
+  form_code: string;
+  form_name: string;
+  form_type: string;
+  level: string | null;
+  age_range: string | null;
+  description: string | null;
+}
+
+interface SociallySavvyForm {
+  id: string;
+  form_code: string;
+  form_name: string;
+  description: string | null;
+}
+
 interface Invitation {
   id: string;
   template_id: string;
@@ -78,12 +95,14 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [abas3Forms, setAbas3Forms] = useState<ABAS3Form[]>([]);
+  const [vbmappForms, setVbmappForms] = useState<VBMAPPForm[]>([]);
+  const [sociallySavvyForms, setSociallySavvyForms] = useState<SociallySavvyForm[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [selectedTemplateType, setSelectedTemplateType] = useState<'custom' | 'abas3'>('custom');
+  const [selectedTemplateType, setSelectedTemplateType] = useState<'custom' | 'abas3' | 'vbmapp' | 'socially_savvy'>('custom');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [recipientType, setRecipientType] = useState<string>('teacher');
@@ -113,6 +132,26 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
 
       if (abas3Data) {
         setAbas3Forms(abas3Data as ABAS3Form[]);
+      }
+
+      // Load VB-MAPP standardized forms
+      const { data: vbmappData } = await supabase
+        .from('vbmapp_form_templates')
+        .select('id, form_code, form_name, form_type, level, age_range, description')
+        .order('form_code');
+
+      if (vbmappData) {
+        setVbmappForms(vbmappData as VBMAPPForm[]);
+      }
+
+      // Load Socially Savvy forms
+      const { data: ssData } = await supabase
+        .from('socially_savvy_form_templates')
+        .select('id, form_code, form_name, description')
+        .order('form_code');
+
+      if (ssData) {
+        setSociallySavvyForms(ssData as SociallySavvyForm[]);
       }
 
       // Load invitations for this student
@@ -151,24 +190,26 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     setIsSending(true);
 
     try {
+      // Create the invitation first (common for all types)
+      const { data: invitation, error: invError } = await supabase
+        .from('questionnaire_invitations')
+        .insert({
+          template_id: selectedTemplateId,
+          student_id: studentId,
+          recipient_name: recipientName.trim(),
+          recipient_email: recipientEmail.trim(),
+          recipient_type: recipientType,
+          created_by: user?.id,
+          sent_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (invError) throw invError;
+
+      let assessmentName = 'Questionnaire';
+
       if (selectedTemplateType === 'abas3') {
-        // Create ABAS-3 assessment with invitation
-        const { data: invitation, error: invError } = await supabase
-          .from('questionnaire_invitations')
-          .insert({
-            template_id: selectedTemplateId,
-            student_id: studentId,
-            recipient_name: recipientName.trim(),
-            recipient_email: recipientEmail.trim(),
-            recipient_type: recipientType,
-            created_by: user?.id,
-            sent_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (invError) throw invError;
-
         // Create the ABAS-3 assessment record
         const { error: assessError } = await supabase
           .from('abas3_assessments')
@@ -184,34 +225,47 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
           });
 
         if (assessError) throw assessError;
-
-        toast({
-          title: 'ABAS-3 Assessment Created!',
-          description: 'Copy the link to share with the recipient.',
-        });
-      } else {
-        // Create custom template invitation
-        const { error } = await supabase
-          .from('questionnaire_invitations')
+        assessmentName = 'ABAS-3 Assessment';
+      } else if (selectedTemplateType === 'vbmapp') {
+        // Create the VB-MAPP assessment record
+        const { error: assessError } = await supabase
+          .from('vbmapp_assessments')
           .insert({
-            template_id: selectedTemplateId,
             student_id: studentId,
-            recipient_name: recipientName.trim(),
-            recipient_email: recipientEmail.trim(),
-            recipient_type: recipientType,
-            created_by: user?.id,
-            sent_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
+            form_template_id: selectedTemplateId,
+            invitation_id: invitation.id,
+            date_administered: new Date().toISOString().split('T')[0],
+            administered_by: user?.id,
+            respondent_name: recipientName.trim(),
+            respondent_relationship: recipientType,
+            status: 'pending',
+          });
 
-        if (error) throw error;
+        if (assessError) throw assessError;
+        assessmentName = 'VB-MAPP Assessment';
+      } else if (selectedTemplateType === 'socially_savvy') {
+        // Create the Socially Savvy assessment record
+        const { error: assessError } = await supabase
+          .from('socially_savvy_assessments')
+          .insert({
+            student_id: studentId,
+            form_template_id: selectedTemplateId,
+            invitation_id: invitation.id,
+            date_administered: new Date().toISOString().split('T')[0],
+            administered_by: user?.id,
+            respondent_name: recipientName.trim(),
+            respondent_relationship: recipientType,
+            status: 'pending',
+          });
 
-        toast({
-          title: 'Questionnaire Created!',
-          description: 'Copy the link to share with the recipient.',
-        });
+        if (assessError) throw assessError;
+        assessmentName = 'Socially Savvy Assessment';
       }
+
+      toast({
+        title: `${assessmentName} Created!`,
+        description: 'Copy the link to share with the recipient.',
+      });
 
       setShowSendDialog(false);
       setSelectedTemplateId('');
@@ -248,21 +302,29 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     }
   };
 
-  const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0;
+  const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0 || vbmappForms.length > 0 || sociallySavvyForms.length > 0;
 
   const handleTemplateSelect = (value: string) => {
-    // Check if it's an ABAS-3 form
+    // Check which type of form this is
     const isAbas3 = abas3Forms.some(f => f.id === value);
-    setSelectedTemplateType(isAbas3 ? 'abas3' : 'custom');
-    setSelectedTemplateId(value);
-
-    // Auto-set recipient type for ABAS-3 forms
+    const isVbmapp = vbmappForms.some(f => f.id === value);
+    const isSociallySavvy = sociallySavvyForms.some(f => f.id === value);
+    
     if (isAbas3) {
+      setSelectedTemplateType('abas3');
       const form = abas3Forms.find(f => f.id === value);
       if (form) {
         setRecipientType(form.respondent_type);
       }
+    } else if (isVbmapp) {
+      setSelectedTemplateType('vbmapp');
+    } else if (isSociallySavvy) {
+      setSelectedTemplateType('socially_savvy');
+    } else {
+      setSelectedTemplateType('custom');
     }
+    
+    setSelectedTemplateId(value);
   };
 
   return (
@@ -334,6 +396,98 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
         </Card>
       )}
 
+      {/* VB-MAPP Assessments */}
+      {vbmappForms.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              VB-MAPP Assessments
+            </CardTitle>
+            <CardDescription>
+              Verbal Behavior Milestones Assessment and Placement Program
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {vbmappForms.map((form) => (
+                <div
+                  key={form.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">{form.form_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {form.form_type === 'milestones' ? `${form.level} • ` : ''}{form.age_range || 'All ages'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleTemplateSelect(form.id);
+                      setShowSendDialog(true);
+                    }}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    Send
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Socially Savvy Assessments */}
+      {sociallySavvyForms.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Socially Savvy Assessments
+            </CardTitle>
+            <CardDescription>
+              Comprehensive social skills assessment checklist
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {sociallySavvyForms.map((form) => (
+                <div
+                  key={form.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-sm">{form.form_name}</p>
+                      {form.description && (
+                        <p className="text-xs text-muted-foreground">{form.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleTemplateSelect(form.id);
+                      setShowSendDialog(true);
+                    }}
+                  >
+                    <Send className="w-3 h-3 mr-1" />
+                    Send
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Sent Questionnaires */}
       <Card>
         <CardHeader>
@@ -363,7 +517,13 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
               </TableHeader>
               <TableBody>
                 {invitations.map((inv) => {
-                  const template = templates.find(t => t.id === inv.template_id);
+                  // Look up template name from all sources
+                  const customTemplate = templates.find(t => t.id === inv.template_id);
+                  const abas3Form = abas3Forms.find(f => f.id === inv.template_id);
+                  const vbmappForm = vbmappForms.find(f => f.id === inv.template_id);
+                  const ssForm = sociallySavvyForms.find(f => f.id === inv.template_id);
+                  const templateName = customTemplate?.name || abas3Form?.form_name || vbmappForm?.form_name || ssForm?.form_name || 'Unknown';
+                  
                   return (
                     <TableRow key={inv.id}>
                       <TableCell>
@@ -380,7 +540,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                           {inv.recipient_type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{template?.name || 'Unknown'}</TableCell>
+                      <TableCell className="text-sm">{templateName}</TableCell>
                       <TableCell>{getStatusBadge(inv.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {inv.sent_at ? format(new Date(inv.sent_at), 'MMM d, yyyy') : '-'}
@@ -510,6 +670,39 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       ))}
                     </>
                   )}
+                  {vbmappForms.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        VB-MAPP Assessments
+                      </div>
+                      {vbmappForms.map((form) => (
+                        <SelectItem key={form.id} value={form.id}>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="w-3 h-3 text-primary" />
+                            <span>{form.form_name}</span>
+                            {form.age_range && (
+                              <span className="text-xs text-muted-foreground">({form.age_range})</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {sociallySavvyForms.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                        Socially Savvy Assessments
+                      </div>
+                      {sociallySavvyForms.map((form) => (
+                        <SelectItem key={form.id} value={form.id}>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="w-3 h-3 text-primary" />
+                            <span>{form.form_name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                   {templates.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -530,6 +723,16 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
               {selectedTemplateType === 'abas3' && (
                 <p className="text-xs text-muted-foreground">
                   This is a standardized ABAS-3 assessment form. Responses will be automatically scored.
+                </p>
+              )}
+              {selectedTemplateType === 'vbmapp' && (
+                <p className="text-xs text-muted-foreground">
+                  VB-MAPP: Verbal Behavior Milestones Assessment and Placement Program.
+                </p>
+              )}
+              {selectedTemplateType === 'socially_savvy' && (
+                <p className="text-xs text-muted-foreground">
+                  Comprehensive social skills checklist covering multiple domains.
                 </p>
               )}
             </div>
