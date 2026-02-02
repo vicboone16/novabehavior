@@ -336,7 +336,20 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     const concurrentGroupId = isConcurrent ? `concurrent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : undefined;
 
     // Create ABC entry for each behavior
+    const savedBehaviors: string[] = [];
     selectedBehaviors.forEach(selection => {
+      // Ensure frequencyCount is at least 1 for valid entries
+      const freqCount = Math.max(1, selection.count || 1);
+      
+      console.log('[HistoricalDataEntry] Saving ABC entry:', {
+        studentId: student.id,
+        behaviorId: selection.behaviorId,
+        behaviorName: getBehaviorName(selection.behaviorId),
+        frequencyCount: freqCount,
+        timestamp: timestamp.toISOString(),
+        date,
+      });
+      
       addABCEntry({
         studentId: student.id,
         behaviorId: selection.behaviorId,
@@ -346,16 +359,19 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
         consequence: selectedConsequences[0], // Primary for legacy
         consequences: selectedConsequences,
         functions: selectedFunctions.length > 0 ? selectedFunctions : undefined,
-        frequencyCount: selection.count,
+        frequencyCount: freqCount,
         hasDuration: selection.durationSeconds !== undefined && selection.durationSeconds > 0,
         durationMinutes: selection.durationSeconds ? selection.durationSeconds / 60 : undefined,
         isConcurrent,
         concurrentGroupId,
-        timestamp, // Include historical timestamp
+        timestamp, // Pass Date object - store handles serialization
       } as any);
+      
+      savedBehaviors.push(getBehaviorName(selection.behaviorId));
     });
 
-    toast.success(`Added ABC ${selectedBehaviors.length === 1 ? 'entry' : 'entries'} for ${selectedBehaviors.length} behavior${selectedBehaviors.length === 1 ? '' : 's'}${isConcurrent ? ' (concurrent)' : ''}`);
+    const formattedDate = format(timestamp, 'MMM d, yyyy');
+    toast.success(`Added ABC ${selectedBehaviors.length === 1 ? 'entry' : 'entries'} for ${savedBehaviors.join(', ')} on ${formattedDate}${isConcurrent ? ' (concurrent)' : ''}`);
     resetForm();
   };
 

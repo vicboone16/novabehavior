@@ -865,17 +865,28 @@ export const useDataStore = create<DataState>()(
       },
 
       addABCEntry: (entry) => {
+        // Normalize timestamp - handle both Date objects and ISO strings
+        let timestamp: Date;
+        const providedTimestamp = (entry as any).timestamp;
+        if (providedTimestamp) {
+          // If it's a string (from historical entry), convert to Date; otherwise use as-is
+          timestamp = typeof providedTimestamp === 'string' 
+            ? new Date(providedTimestamp) 
+            : providedTimestamp;
+        } else {
+          timestamp = new Date();
+        }
+        
         set((state) => ({
           abcEntries: [
             ...state.abcEntries,
             { 
               ...entry, 
               id: crypto.randomUUID(), 
-              // Use provided timestamp for historical entries, otherwise use current time
-              timestamp: (entry as any).timestamp || new Date(), 
+              timestamp,
               frequencyCount: entry.frequencyCount ?? 1,
               sessionId: state.currentSessionId || undefined 
-            },
+            } as ABCEntry,
           ],
         }));
       },
