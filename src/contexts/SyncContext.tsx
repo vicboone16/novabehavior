@@ -6,6 +6,7 @@ import { Student, Behavior, BehaviorGoal, Session } from '@/types/behavior';
 import { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { fetchAllRows } from '@/lib/supabasePagination';
 
 interface SyncContextType {
   isSyncing: boolean;
@@ -248,18 +249,22 @@ export function SyncProvider({ children }: SyncProviderProps) {
       }
 
       // Load sessions
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('sessions')
-        .select('*')
-        .order('start_time', { ascending: false });
-
-      if (sessionsError) throw sessionsError;
+      const sessionsData = await fetchAllRows<any>((from, to) =>
+        supabase
+          .from('sessions')
+          .select('*')
+          .order('start_time', { ascending: false })
+          .range(from, to)
+      );
 
       if (sessionsData && sessionsData.length > 0) {
-        const { data: sessionDataEntries } = await supabase
-          .from('session_data')
-          .select('*')
-          .order('timestamp', { ascending: true });
+        const sessionDataEntries = await fetchAllRows<any>((from, to) =>
+          supabase
+            .from('session_data')
+            .select('*')
+            .order('timestamp', { ascending: true })
+            .range(from, to)
+        );
 
         console.log('[Sync] Loaded', sessionDataEntries?.length || 0, 'session_data entries from cloud');
 
