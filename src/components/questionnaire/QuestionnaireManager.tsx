@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { 
   Send, Plus, FileText, Clock, CheckCircle, AlertCircle,
-  Mail, User, Trash2, Eye, ExternalLink, Copy, ClipboardList
+  Mail, User, Trash2, Eye, ExternalLink, Copy, ClipboardList,
+  Users, Bell, Calendar, RefreshCw, Pencil
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
   SelectContent,
@@ -37,6 +39,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuestionnaireBuilder } from './QuestionnaireBuilder';
 import { ResponseViewer } from './ResponseViewer';
+import { QuestionnairePreview } from './QuestionnairePreview';
+import { InPersonCompletion } from './InPersonCompletion';
 
 interface Template {
   id: string;
@@ -82,6 +86,8 @@ interface Invitation {
   expires_at: string;
   completed_at: string | null;
   access_token: string;
+  form_type?: string;
+  created_at?: string;
 }
 
 interface QuestionnaireManagerProps {
@@ -108,6 +114,17 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
   const [recipientType, setRecipientType] = useState<string>('teacher');
   const [isSending, setIsSending] = useState(false);
   const [selectedInvitationId, setSelectedInvitationId] = useState<string | null>(null);
+  
+  // New states for preview and in-person completion
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string>('');
+  const [previewTemplateType, setPreviewTemplateType] = useState<'custom' | 'abas3' | 'vbmapp' | 'socially_savvy'>('custom');
+  const [showInPerson, setShowInPerson] = useState(false);
+  const [inPersonTemplateId, setInPersonTemplateId] = useState<string>('');
+  const [inPersonTemplateType, setInPersonTemplateType] = useState<'custom' | 'abas3' | 'vbmapp' | 'socially_savvy'>('custom');
+  
+  // Track newly completed for highlighting
+  const [newlyCompletedIds, setNewlyCompletedIds] = useState<Set<string>>(new Set());
 
   const loadData = async () => {
     setIsLoading(true);
@@ -292,16 +309,49 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     toast({ title: 'Link copied to clipboard!' });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (inv: Invitation) => {
+    const isNew = newlyCompletedIds.has(inv.id);
+    switch (inv.status) {
       case 'completed':
-        return <Badge variant="default" className="bg-primary"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+        return (
+          <div className="flex items-center gap-1">
+            <Badge variant="default" className={`bg-green-600 ${isNew ? 'animate-pulse' : ''}`}>
+              <CheckCircle className="w-3 h-3 mr-1" />Completed
+            </Badge>
+            {isNew && (
+              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-300">
+                <Bell className="w-3 h-3 mr-1" />New
+              </Badge>
+            )}
+          </div>
+        );
       case 'expired':
         return <Badge variant="secondary"><AlertCircle className="w-3 h-3 mr-1" />Expired</Badge>;
       default:
         return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
     }
   };
+
+  const openPreview = (templateId: string, templateType: 'custom' | 'abas3' | 'vbmapp' | 'socially_savvy') => {
+    setPreviewTemplateId(templateId);
+    setPreviewTemplateType(templateType);
+    setShowPreview(true);
+  };
+
+  const openInPerson = (templateId: string, templateType: 'custom' | 'abas3' | 'vbmapp' | 'socially_savvy') => {
+    setInPersonTemplateId(templateId);
+    setInPersonTemplateType(templateType);
+    setShowInPerson(true);
+  };
+
+  // Calculate summary stats
+  const completedCount = invitations.filter(i => i.status === 'completed').length;
+  const pendingCount = invitations.filter(i => i.status === 'pending').length;
+  const recentlyCompleted = invitations.filter(i => 
+    i.status === 'completed' && 
+    i.completed_at && 
+    new Date(i.completed_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  ).length;
 
   const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0 || vbmappForms.length > 0 || sociallySavvyForms.length > 0;
 
@@ -350,6 +400,39 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
         </div>
       </div>
 
+      {/* Summary Cards */}
+      {invitations.length > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="bg-muted/30">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span className="text-2xl font-bold">{pendingCount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Pending</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-muted/30">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500" />
+                <span className="text-2xl font-bold">{completedCount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-muted/30">
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" />
+                <span className="text-2xl font-bold">{recentlyCompleted}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* ABAS-3 Standardized Assessments */}
       {abas3Forms.length > 0 && (
         <Card>
@@ -378,18 +461,44 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handleTemplateSelect(form.id);
-                      setRecipientType(form.respondent_type);
-                      setShowSendDialog(true);
-                    }}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openPreview(form.id, 'abas3')}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Preview</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInPerson(form.id, 'abas3')}
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Complete In-Person</TooltipContent>
+                    </Tooltip>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleTemplateSelect(form.id);
+                        setRecipientType(form.respondent_type);
+                        setShowSendDialog(true);
+                      }}
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      Send
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -425,17 +534,43 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handleTemplateSelect(form.id);
-                      setShowSendDialog(true);
-                    }}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openPreview(form.id, 'vbmapp')}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Preview</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInPerson(form.id, 'vbmapp')}
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Complete In-Person</TooltipContent>
+                    </Tooltip>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleTemplateSelect(form.id);
+                        setShowSendDialog(true);
+                      }}
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      Send
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -471,17 +606,43 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       )}
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handleTemplateSelect(form.id);
-                      setShowSendDialog(true);
-                    }}
-                  >
-                    <Send className="w-3 h-3 mr-1" />
-                    Send
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openPreview(form.id, 'socially_savvy')}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Preview</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInPerson(form.id, 'socially_savvy')}
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Complete In-Person</TooltipContent>
+                    </Tooltip>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleTemplateSelect(form.id);
+                        setShowSendDialog(true);
+                      }}
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      Send
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -492,10 +653,20 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
       {/* Sent Questionnaires */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Sent Questionnaires</CardTitle>
-          <CardDescription>
-            Track questionnaires sent for {studentName}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Sent Questionnaires
+              </CardTitle>
+              <CardDescription>
+                Track questionnaires sent for {studentName}
+              </CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={loadData}>
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {invitations.length === 0 ? (
@@ -513,6 +684,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                   <TableHead>Template</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Sent</TableHead>
+                  <TableHead>Completed</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -524,15 +696,24 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                   const vbmappForm = vbmappForms.find(f => f.id === inv.template_id);
                   const ssForm = sociallySavvyForms.find(f => f.id === inv.template_id);
                   const templateName = customTemplate?.name || abas3Form?.form_name || vbmappForm?.form_name || ssForm?.form_name || 'Unknown';
+                  const isInPerson = inv.recipient_email?.includes('@internal.local');
                   
                   return (
-                    <TableRow key={inv.id}>
+                    <TableRow key={inv.id} className={newlyCompletedIds.has(inv.id) ? 'bg-green-50 dark:bg-green-950/20' : ''}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
+                          {isInPerson ? (
+                            <Users className="w-4 h-4 text-primary" />
+                          ) : (
+                            <User className="w-4 h-4 text-muted-foreground" />
+                          )}
                           <div>
                             <p className="font-medium text-sm">{inv.recipient_name}</p>
-                            <p className="text-xs text-muted-foreground">{inv.recipient_email}</p>
+                            {isInPerson ? (
+                              <p className="text-xs text-primary">In-person</p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">{inv.recipient_email}</p>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -542,29 +723,55 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{templateName}</TableCell>
-                      <TableCell>{getStatusBadge(inv.status)}</TableCell>
+                      <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {inv.sent_at ? format(new Date(inv.sent_at), 'MMM d, yyyy') : '-'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {inv.completed_at ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-green-600 cursor-help">
+                                {formatDistanceToNow(new Date(inv.completed_at), { addSuffix: true })}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {format(new Date(inv.completed_at), 'MMM d, yyyy h:mm a')}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {inv.status === 'completed' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedInvitationId(inv.id)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedInvitationId(inv.id)}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>View Responses</TooltipContent>
+                            </Tooltip>
                           )}
                           {inv.status === 'pending' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyLink(inv.access_token)}
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyLink(inv.access_token)}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copy Link</TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       </TableCell>
@@ -610,12 +817,37 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openPreview(template.id, 'custom')}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Preview</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openInPerson(template.id, 'custom')}
+                        >
+                          <Users className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Complete In-Person</TooltipContent>
+                    </Tooltip>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
                         setSelectedTemplateId(template.id);
+                        setSelectedTemplateType('custom');
                         setShowSendDialog(true);
                       }}
                     >
@@ -792,6 +1024,25 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
           onOpenChange={(open) => !open && setSelectedInvitationId(null)}
         />
       )}
+
+      {/* Preview Dialog */}
+      <QuestionnairePreview
+        templateId={previewTemplateId}
+        templateType={previewTemplateType}
+        open={showPreview}
+        onOpenChange={setShowPreview}
+      />
+
+      {/* In-Person Completion Dialog */}
+      <InPersonCompletion
+        templateId={inPersonTemplateId}
+        templateType={inPersonTemplateType}
+        studentId={studentId}
+        studentName={studentName}
+        open={showInPerson}
+        onOpenChange={setShowInPerson}
+        onComplete={loadData}
+      />
     </div>
   );
 }

@@ -51,15 +51,45 @@ export function ResponseViewer({ invitationId, open, onOpenChange }: ResponseVie
         if (invData) {
           setInvitation(invData);
 
-          // Load template
-          const { data: templateData } = await supabase
-            .from('questionnaire_templates')
-            .select('*')
-            .eq('id', invData.template_id)
-            .single();
+          // Load template based on form_type
+          const formType = invData.form_type || 'custom';
+          let templateData: any = null;
+
+          if (formType === 'abas3') {
+            const { data } = await supabase
+              .from('abas3_form_templates')
+              .select('*')
+              .eq('id', invData.template_id)
+              .single();
+            templateData = data;
+          } else if (formType === 'vbmapp') {
+            const { data } = await supabase
+              .from('vbmapp_form_templates')
+              .select('*')
+              .eq('id', invData.template_id)
+              .single();
+            templateData = data;
+          } else if (formType === 'socially_savvy') {
+            const { data } = await supabase
+              .from('socially_savvy_form_templates')
+              .select('*')
+              .eq('id', invData.template_id)
+              .single();
+            templateData = data;
+          } else {
+            const { data } = await supabase
+              .from('questionnaire_templates')
+              .select('*')
+              .eq('id', invData.template_id)
+              .single();
+            templateData = data;
+          }
 
           if (templateData) {
-            setTemplate(templateData);
+            setTemplate({
+              name: templateData.form_name || templateData.name || 'Questionnaire',
+              questions: templateData.questions || [],
+            });
           }
 
           // Load response
