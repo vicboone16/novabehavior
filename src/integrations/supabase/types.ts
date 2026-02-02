@@ -1103,8 +1103,12 @@ export type Database = {
           created_at: string
           created_by: string
           expires_at: string
+          first_opened_at: string | null
           form_type: string
           id: string
+          last_opened_at: string | null
+          open_count: number | null
+          progress_percent: number | null
           recipient_email: string
           recipient_name: string
           recipient_type: string
@@ -1119,8 +1123,12 @@ export type Database = {
           created_at?: string
           created_by: string
           expires_at?: string
+          first_opened_at?: string | null
           form_type?: string
           id?: string
+          last_opened_at?: string | null
+          open_count?: number | null
+          progress_percent?: number | null
           recipient_email: string
           recipient_name: string
           recipient_type: string
@@ -1135,8 +1143,12 @@ export type Database = {
           created_at?: string
           created_by?: string
           expires_at?: string
+          first_opened_at?: string | null
           form_type?: string
           id?: string
+          last_opened_at?: string | null
+          open_count?: number | null
+          progress_percent?: number | null
           recipient_email?: string
           recipient_name?: string
           recipient_type?: string

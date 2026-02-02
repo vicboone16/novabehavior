@@ -88,6 +88,10 @@ interface Invitation {
   access_token: string;
   form_type?: string;
   created_at?: string;
+  first_opened_at?: string | null;
+  last_opened_at?: string | null;
+  open_count?: number;
+  progress_percent?: number;
 }
 
 interface QuestionnaireManagerProps {
@@ -342,6 +346,47 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     setInPersonTemplateId(templateId);
     setInPersonTemplateType(templateType);
     setShowInPerson(true);
+  };
+
+  const handleDeleteInvitation = async (invitationId: string) => {
+    if (!confirm('Are you sure you want to delete this questionnaire invitation? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // First delete any responses
+      await supabase
+        .from('questionnaire_responses')
+        .delete()
+        .eq('invitation_id', invitationId);
+
+      // Then delete the invitation
+      const { error } = await supabase
+        .from('questionnaire_invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      toast({ title: 'Questionnaire deleted' });
+      loadData();
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      toast({ title: 'Failed to delete questionnaire', variant: 'destructive' });
+    }
+  };
+
+  const getProgressDisplay = (inv: Invitation) => {
+    if (inv.status === 'completed') {
+      return <Badge className="bg-green-600">100%</Badge>;
+    }
+    if (!inv.first_opened_at) {
+      return <span className="text-muted-foreground text-xs">Not opened</span>;
+    }
+    if (inv.progress_percent && inv.progress_percent > 0) {
+      return <Badge variant="outline">{inv.progress_percent}%</Badge>;
+    }
+    return <span className="text-xs text-amber-600">Opened</span>;
   };
 
   // Calculate summary stats
@@ -682,6 +727,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                   <TableHead>Recipient</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Template</TableHead>
+                  <TableHead>Progress</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Sent</TableHead>
                   <TableHead>Completed</TableHead>
@@ -723,6 +769,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{templateName}</TableCell>
+                      <TableCell>{getProgressDisplay(inv)}</TableCell>
                       <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {inv.sent_at ? format(new Date(inv.sent_at), 'MMM d, yyyy') : '-'}
@@ -773,6 +820,19 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                               <TooltipContent>Copy Link</TooltipContent>
                             </Tooltip>
                           )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteInvitation(inv.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete</TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
