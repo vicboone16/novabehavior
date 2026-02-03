@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Users, Plus, Eye, Trash2, Calendar, CheckCircle, AlertCircle
 } from 'lucide-react';
@@ -41,7 +41,7 @@ interface BriefTeacherInputManagerProps {
 
 export function BriefTeacherInputManager({ student, onSendQuestionnaire }: BriefTeacherInputManagerProps) {
   const { updateStudentProfile } = useDataStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<BriefTeacherInputSaved | null>(null);
   const [showResponsesDialog, setShowResponsesDialog] = useState(false);
@@ -49,11 +49,28 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
   const [pendingSaveData, setPendingSaveData] = useState<BriefTeacherInputData | null>(null);
   const [duplicateAction, setDuplicateAction] = useState<'additional' | 'replace' | 'cancel'>('additional');
   const [responseToReplace, setResponseToReplace] = useState<string | null>(null);
+  const [componentError, setComponentError] = useState<string | null>(null);
 
-  // Get saved responses from student profile
+  // Initialize loading state
+  useEffect(() => {
+    const timeout = setTimeout(() => setIsLoading(false), 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Get saved responses from student profile with defensive parsing
   const savedResponses = useMemo((): BriefTeacherInputSaved[] => {
-    return student.briefTeacherInputs || [];
-  }, [student.briefTeacherInputs]);
+    try {
+      if (!student) return [];
+      const inputs = student.briefTeacherInputs;
+      if (!Array.isArray(inputs)) return [];
+      // Filter out any malformed entries
+      return inputs.filter(item => item && typeof item === 'object' && item.id);
+    } catch (error) {
+      console.error('Error parsing brief teacher inputs:', error);
+      setComponentError('Failed to load saved responses');
+      return [];
+    }
+  }, [student?.briefTeacherInputs]);
 
   const handleNewResponse = () => {
     // Check if responses already exist - if so, show duplicate prompt
@@ -172,6 +189,34 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
         </CardHeader>
         <CardContent>
           <Skeleton className="h-24" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (componentError) {
+    return (
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+            <AlertCircle className="w-4 h-4" />
+            Error Loading Brief Teacher Input
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{componentError}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2"
+            onClick={() => {
+              setComponentError(null);
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 100);
+            }}
+          >
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );

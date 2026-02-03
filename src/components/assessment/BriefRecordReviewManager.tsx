@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
-  FileText, Edit2, Eye, Calendar
+  FileText, Edit2, Eye, Calendar, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,35 +30,48 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  // Get the SINGLE record review from student profile
+  // Get the SINGLE record review from student profile with defensive parsing
   const existingReview = useMemo((): BriefRecordReviewSavedData | null => {
     try {
+      // Safety check for student object
+      if (!student) return null;
+      
       // Check new single-instance field first
-      if (student.briefRecordReview) {
+      if (student.briefRecordReview && typeof student.briefRecordReview === 'object') {
         return student.briefRecordReview;
       }
       
       // Fall back to legacy array format
-      const reviews = student.briefRecordReviews || [];
+      const reviews = student.briefRecordReviews;
       if (Array.isArray(reviews) && reviews.length > 0) {
         const review = reviews[0];
-        if (review.data) {
+        if (review && review.data && typeof review.data === 'object') {
           return review.data;
         }
       }
       
       return null;
-    } catch {
-      console.error('Error parsing brief record review');
+    } catch (error) {
+      console.error('Error parsing brief record review:', error);
+      setFormError('Failed to load existing review data');
       return null;
     }
-  }, [student.briefRecordReview, student.briefRecordReviews]);
+  }, [student?.briefRecordReview, student?.briefRecordReviews]);
 
   useEffect(() => {
+    // Safely delay loading state
     const timeout = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timeout);
   }, []);
+  
+  // Reset form error when opening fresh
+  useEffect(() => {
+    if (!showForm) {
+      setFormError(null);
+    }
+  }, [showForm]);
 
   const handleOpenReview = () => {
     setIsEditing(!!existingReview);
@@ -135,6 +148,45 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
         </CardHeader>
         <CardContent>
           <Skeleton className="h-24" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (formError) {
+    return (
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-4 h-4" />
+            Error Loading Record Review
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{formError}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2"
+            onClick={() => {
+              setFormError(null);
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 100);
+            }}
+          >
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Safety check for student
+  if (!student || !student.id) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <p className="text-sm">No student selected</p>
         </CardContent>
       </Card>
     );
