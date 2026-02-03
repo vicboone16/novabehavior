@@ -75,6 +75,19 @@ import { logDataAccess } from '@/lib/auditLogger';
 import { toast } from 'sonner';
 import { FundingModeToggle, PayersAuthorizationsTab, InsuranceStatusBanner, AuthorizationUsagePage } from '@/components/funding';
 import { useFundingMode } from '@/hooks/useFundingMode';
+import { useClientProfile } from '@/hooks/useClientProfile';
+import { 
+  ContactsTab, 
+  SafetyMedicalTab, 
+  CommunicationTab,
+  SchedulingTab,
+  LocationsTab, 
+  TeamAssignmentsTab,
+  DocumentsTab,
+  CommunicationLogTab,
+  TagsCaseAttributesTab,
+} from '@/components/client-profile/tabs';
+import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-react';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -116,6 +129,9 @@ export default function StudentProfile() {
   
   // Funding mode hook
   const { fundingMode, insuranceTrackingState, setFundingMode, hasActivePayer, hasActiveAuth, refetch: refetchFunding } = useFundingMode(studentId);
+  
+  // Client profile data (for Profile 2.0 tabs)
+  const clientProfile = useClientProfile(studentId);
   // Log data access when viewing student profile
   useEffect(() => {
     if (studentId && student) {
@@ -551,6 +567,43 @@ export default function StudentProfile() {
           <TabsTrigger value="teacher" className="gap-1 text-xs">
             <UserCheck className="w-3 h-3" />
             Teacher View
+          </TabsTrigger>
+          {/* Profile 2.0 Tabs - Always visible */}
+          <TabsTrigger value="team" className="gap-1 text-xs">
+            <Users className="w-3 h-3" />
+            Team
+          </TabsTrigger>
+          <TabsTrigger value="contacts" className="gap-1 text-xs">
+            <Phone className="w-3 h-3" />
+            Contacts
+          </TabsTrigger>
+          <TabsTrigger value="locations" className="gap-1 text-xs">
+            <MapPin className="w-3 h-3" />
+            Locations
+          </TabsTrigger>
+          <TabsTrigger value="safety" className="gap-1 text-xs">
+            <HeartPulse className="w-3 h-3" />
+            Safety
+          </TabsTrigger>
+          <TabsTrigger value="scheduling" className="gap-1 text-xs">
+            <Calendar className="w-3 h-3" />
+            Scheduling
+          </TabsTrigger>
+          <TabsTrigger value="communication" className="gap-1 text-xs">
+            <MessageSquare className="w-3 h-3" />
+            Communication
+          </TabsTrigger>
+          <TabsTrigger value="comm-log" className="gap-1 text-xs">
+            <MessageSquare className="w-3 h-3" />
+            Comm Log
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="gap-1 text-xs">
+            <FolderOpen className="w-3 h-3" />
+            Documents
+          </TabsTrigger>
+          <TabsTrigger value="tags" className="gap-1 text-xs">
+            <Tag className="w-3 h-3" />
+            Tags
           </TabsTrigger>
           {fundingMode === 'insurance' && (
             <>
@@ -1293,6 +1346,88 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Team & Assignments */}
+        <TabsContent value="team" className="space-y-4">
+          <TeamAssignmentsTab
+            clientId={student.id}
+            teamAssignments={clientProfile.teamAssignments}
+            onRefetch={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Contacts */}
+        <TabsContent value="contacts" className="space-y-4">
+          <ContactsTab
+            clientId={student.id}
+            contacts={clientProfile.contacts}
+            onRefresh={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Locations */}
+        <TabsContent value="locations" className="space-y-4">
+          <LocationsTab
+            clientId={student.id}
+            locations={clientProfile.locations}
+            onRefresh={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Safety & Medical */}
+        <TabsContent value="safety" className="space-y-4">
+          <SafetyMedicalTab
+            clientId={student.id}
+            data={clientProfile.safetyMedical}
+            onRefresh={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Scheduling */}
+        <TabsContent value="scheduling" className="space-y-4">
+          <SchedulingTab
+            clientId={student.id}
+            data={clientProfile.schedulingPreferences}
+            onRefresh={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Communication Access */}
+        <TabsContent value="communication" className="space-y-4">
+          <CommunicationTab
+            clientId={student.id}
+            data={clientProfile.communicationAccess}
+            onRefresh={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Communication Log */}
+        <TabsContent value="comm-log" className="space-y-4">
+          <CommunicationLogTab
+            clientId={student.id}
+            communicationLog={clientProfile.communicationLog}
+            contacts={clientProfile.contacts}
+            onRefetch={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Documents */}
+        <TabsContent value="documents" className="space-y-4">
+          <DocumentsTab
+            clientId={student.id}
+            documents={clientProfile.documents}
+            onRefetch={clientProfile.refetch}
+          />
+        </TabsContent>
+
+        {/* Profile 2.0 Tabs - Tags & Case Attributes */}
+        <TabsContent value="tags" className="space-y-4">
+          <TagsCaseAttributesTab
+            clientId={student.id}
+            caseAttributes={clientProfile.caseAttributes}
+            onRefetch={clientProfile.refetch}
+          />
         </TabsContent>
 
         {/* Payers & Authorizations Tab (Insurance mode only) */}
