@@ -46,6 +46,7 @@ import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 export interface BriefRecordReviewData {
   id: string;
   studentId: string;
+  studentName?: string;
   // Header fields
   grade: string;
   reviewer: string;

@@ -19,6 +19,7 @@ import { useDataStore } from '@/store/dataStore';
 import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
 import { format } from 'date-fns';
 import { BriefTeacherInput, BriefTeacherInputData } from '@/components/assessment/BriefTeacherInput';
+import { BriefTeacherInputManager } from '@/components/assessment/BriefTeacherInputManager';
 import { BriefRecordReviewManager } from '@/components/assessment/BriefRecordReviewManager';
 
 interface IndirectAssessmentToolsProps {
@@ -378,9 +379,9 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
               <BriefRecordReviewManager student={student} />
             </div>
           ) : activeAssessment === 'BRIEF' ? (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              Use the Brief Teacher form below to collect structured interview data.
-            </p>
+            <div className="mt-2">
+              <BriefTeacherInputManager student={student} />
+            </div>
           ) : (
             <>
               {/* Assessment Info */}
@@ -542,7 +543,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       )}
 
       {/* Notes - only for rating scales */}
-      {activeAssessment !== 'BRIEF' && (
+      {activeAssessment !== 'BRIEF' && activeAssessment !== 'RECORD_REVIEW' && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Assessment Notes</CardTitle>
