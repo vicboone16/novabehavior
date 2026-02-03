@@ -73,7 +73,7 @@ import { useStudentAccess } from '@/hooks/useStudentAccess';
 import { Session } from '@/types/behavior';
 import { logDataAccess } from '@/lib/auditLogger';
 import { toast } from 'sonner';
-import { FundingModeToggle, PayersAuthorizationsTab } from '@/components/funding';
+import { FundingModeToggle, PayersAuthorizationsTab, InsuranceStatusBanner, AuthorizationUsagePage } from '@/components/funding';
 import { useFundingMode } from '@/hooks/useFundingMode';
 
 export default function StudentProfile() {
@@ -115,7 +115,7 @@ export default function StudentProfile() {
   const studentAccess = useStudentAccess(studentId);
   
   // Funding mode hook
-  const { fundingMode, setFundingMode, hasActivePayer, hasActiveAuth, refetch: refetchFunding } = useFundingMode(studentId);
+  const { fundingMode, insuranceTrackingState, setFundingMode, hasActivePayer, hasActiveAuth, refetch: refetchFunding } = useFundingMode(studentId);
   // Log data access when viewing student profile
   useEffect(() => {
     if (studentId && student) {
@@ -471,12 +471,29 @@ export default function StudentProfile() {
       <FundingModeToggle
         studentId={student.id}
         currentMode={fundingMode}
+        insuranceTrackingState={insuranceTrackingState}
         onModeChange={async (mode) => {
           await setFundingMode(mode);
           refetchFunding();
         }}
         hasActivePayer={hasActivePayer}
         hasActiveAuth={hasActiveAuth}
+      />
+
+      {/* Insurance Status Banner */}
+      <InsuranceStatusBanner
+        fundingMode={fundingMode}
+        insuranceTrackingState={insuranceTrackingState}
+        onFinishSetup={() => {
+          // The toggle will handle showing the wizard
+        }}
+        onSwitchToSchoolBased={async () => {
+          await setFundingMode('school_based');
+          refetchFunding();
+        }}
+        onReenableInsurance={() => {
+          // The toggle will handle showing the restore dialog
+        }}
       />
 
       <Tabs defaultValue="profile" className="space-y-4">
@@ -536,10 +553,16 @@ export default function StudentProfile() {
             Teacher View
           </TabsTrigger>
           {fundingMode === 'insurance' && (
-            <TabsTrigger value="payers" className="gap-1 text-xs">
-              <Shield className="w-3 h-3" />
-              Payers & Auth
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="payers" className="gap-1 text-xs">
+                <Shield className="w-3 h-3" />
+                Payers & Auth
+              </TabsTrigger>
+              <TabsTrigger value="usage" className="gap-1 text-xs">
+                <Clock className="w-3 h-3" />
+                Auth Usage
+              </TabsTrigger>
+            </>
           )}
         </TabsList>
 
@@ -1276,6 +1299,13 @@ export default function StudentProfile() {
         {fundingMode === 'insurance' && (
           <TabsContent value="payers" className="space-y-4">
             <PayersAuthorizationsTab studentId={student.id} />
+          </TabsContent>
+        )}
+
+        {/* Authorization Usage Tab (Insurance mode only) */}
+        {fundingMode === 'insurance' && (
+          <TabsContent value="usage" className="space-y-4">
+            <AuthorizationUsagePage studentId={student.id} />
           </TabsContent>
         )}
       </Tabs>
