@@ -130,8 +130,9 @@ export function SessionStartConfirmation({
         return;
       }
       
-      // If no exact match, look for appointments in extended window (up to 2 hours back)
-      const extendedWindowStart = subMinutes(now, 120); // 2 hours back
+      // If no exact match, look for appointments in extended window (up to 2.5 hours back)
+      // Using 150 min to account for minor timing differences and give some buffer
+      const extendedWindowStart = subMinutes(now, 150); // 2.5 hours back
       
       const { data: extendedAppointments, error: extendedError } = await supabase
         .from('appointments')
