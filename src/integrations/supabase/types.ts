@@ -914,6 +914,380 @@ export type Database = {
           },
         ]
       }
+      bx_objective_strategy_links: {
+        Row: {
+          created_at: string
+          id: string
+          objective_id: string
+          phase: string | null
+          priority: number | null
+          strategy_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective_id: string
+          phase?: string | null
+          priority?: number | null
+          strategy_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective_id?: string
+          phase?: string | null
+          priority?: number | null
+          strategy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_objective_strategy_links_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "bx_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bx_objective_strategy_links_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "bx_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_objectives: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mastery_criteria: string | null
+          measurement_recommendations: string[] | null
+          objective_code: string
+          objective_title: string
+          operational_definition: string | null
+          prerequisites: string[] | null
+          replacement_skill_tags: string[] | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mastery_criteria?: string | null
+          measurement_recommendations?: string[] | null
+          objective_code: string
+          objective_title: string
+          operational_definition?: string | null
+          prerequisites?: string[] | null
+          replacement_skill_tags?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mastery_criteria?: string | null
+          measurement_recommendations?: string[] | null
+          objective_code?: string
+          objective_title?: string
+          operational_definition?: string | null
+          prerequisites?: string[] | null
+          replacement_skill_tags?: string[] | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_objectives_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_presenting_problems: {
+        Row: {
+          agency_id: string | null
+          contraindications: string[] | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          domain: string
+          examples: string[] | null
+          function_tags: string[] | null
+          id: string
+          problem_code: string
+          risk_level: string
+          source_origin: string
+          source_page: number | null
+          source_problem_number: string | null
+          source_section: string | null
+          source_title: string | null
+          status: string
+          title: string
+          topics: string[] | null
+          trigger_tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          definition?: string | null
+          domain: string
+          examples?: string[] | null
+          function_tags?: string[] | null
+          id?: string
+          problem_code: string
+          risk_level?: string
+          source_origin?: string
+          source_page?: number | null
+          source_problem_number?: string | null
+          source_section?: string | null
+          source_title?: string | null
+          status?: string
+          title: string
+          topics?: string[] | null
+          trigger_tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          definition?: string | null
+          domain?: string
+          examples?: string[] | null
+          function_tags?: string[] | null
+          id?: string
+          problem_code?: string
+          risk_level?: string
+          source_origin?: string
+          source_page?: number | null
+          source_problem_number?: string | null
+          source_section?: string | null
+          source_title?: string | null
+          status?: string
+          title?: string
+          topics?: string[] | null
+          trigger_tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_presenting_problems_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_problem_objective_links: {
+        Row: {
+          created_at: string
+          id: string
+          objective_id: string
+          priority: number | null
+          problem_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective_id: string
+          priority?: number | null
+          problem_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective_id?: string
+          priority?: number | null
+          problem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_problem_objective_links_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "bx_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bx_problem_objective_links_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "bx_presenting_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_recommendation_settings: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          guardrail_block_contraindicated: boolean | null
+          guardrail_exclude_existing: boolean | null
+          guardrail_exclude_rejected: boolean | null
+          guardrail_school_reduce_high_risk: boolean | null
+          id: string
+          max_objectives: number | null
+          max_strategies_per_objective: number | null
+          threshold_high_confidence: number | null
+          threshold_medium_confidence: number | null
+          tuning_profile: string | null
+          updated_at: string
+          weight_bcba_penalty_school: number | null
+          weight_contraindication: number | null
+          weight_domain_match: number | null
+          weight_function_match: number | null
+          weight_problem_title_match: number | null
+          weight_rejected_penalty: number | null
+          weight_risk_crisis_penalty: number | null
+          weight_risk_high_penalty: number | null
+          weight_risk_safe_bonus: number | null
+          weight_topic_overlap: number | null
+          weight_trigger_match: number | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          guardrail_block_contraindicated?: boolean | null
+          guardrail_exclude_existing?: boolean | null
+          guardrail_exclude_rejected?: boolean | null
+          guardrail_school_reduce_high_risk?: boolean | null
+          id?: string
+          max_objectives?: number | null
+          max_strategies_per_objective?: number | null
+          threshold_high_confidence?: number | null
+          threshold_medium_confidence?: number | null
+          tuning_profile?: string | null
+          updated_at?: string
+          weight_bcba_penalty_school?: number | null
+          weight_contraindication?: number | null
+          weight_domain_match?: number | null
+          weight_function_match?: number | null
+          weight_problem_title_match?: number | null
+          weight_rejected_penalty?: number | null
+          weight_risk_crisis_penalty?: number | null
+          weight_risk_high_penalty?: number | null
+          weight_risk_safe_bonus?: number | null
+          weight_topic_overlap?: number | null
+          weight_trigger_match?: number | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          guardrail_block_contraindicated?: boolean | null
+          guardrail_exclude_existing?: boolean | null
+          guardrail_exclude_rejected?: boolean | null
+          guardrail_school_reduce_high_risk?: boolean | null
+          id?: string
+          max_objectives?: number | null
+          max_strategies_per_objective?: number | null
+          threshold_high_confidence?: number | null
+          threshold_medium_confidence?: number | null
+          tuning_profile?: string | null
+          updated_at?: string
+          weight_bcba_penalty_school?: number | null
+          weight_contraindication?: number | null
+          weight_domain_match?: number | null
+          weight_function_match?: number | null
+          weight_problem_title_match?: number | null
+          weight_rejected_penalty?: number | null
+          weight_risk_crisis_penalty?: number | null
+          weight_risk_high_penalty?: number | null
+          weight_risk_safe_bonus?: number | null
+          weight_topic_overlap?: number | null
+          weight_trigger_match?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_recommendation_settings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_strategies: {
+        Row: {
+          agency_id: string | null
+          contraindications: string[] | null
+          created_at: string
+          created_by: string | null
+          data_targets: string[] | null
+          fidelity_checklist: string[] | null
+          id: string
+          implementation_steps: string[] | null
+          materials: string[] | null
+          requires_bcba: boolean | null
+          risk_level: string
+          staff_script: string | null
+          status: string
+          strategy_code: string
+          strategy_name: string
+          strategy_type: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          data_targets?: string[] | null
+          fidelity_checklist?: string[] | null
+          id?: string
+          implementation_steps?: string[] | null
+          materials?: string[] | null
+          requires_bcba?: boolean | null
+          risk_level?: string
+          staff_script?: string | null
+          status?: string
+          strategy_code: string
+          strategy_name: string
+          strategy_type?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          data_targets?: string[] | null
+          fidelity_checklist?: string[] | null
+          id?: string
+          implementation_steps?: string[] | null
+          materials?: string[] | null
+          requires_bcba?: boolean | null
+          risk_level?: string
+          staff_script?: string | null
+          status?: string
+          strategy_code?: string
+          strategy_name?: string
+          strategy_type?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_strategies_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_line_items: {
         Row: {
           claim_id: string
@@ -5644,6 +6018,101 @@ export type Database = {
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_bx_plan_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_summary: string | null
+          function_hypothesis: string[] | null
+          id: string
+          implementation_owner: string[] | null
+          link_status: string
+          notes: string | null
+          objective_id: string | null
+          problem_id: string | null
+          recommendation_reason: string | null
+          recommended_score: number | null
+          review_due: string | null
+          setting_notes: string | null
+          start_date: string | null
+          strategy_id: string | null
+          student_id: string
+          target_behavior_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_summary?: string | null
+          function_hypothesis?: string[] | null
+          id?: string
+          implementation_owner?: string[] | null
+          link_status?: string
+          notes?: string | null
+          objective_id?: string | null
+          problem_id?: string | null
+          recommendation_reason?: string | null
+          recommended_score?: number | null
+          review_due?: string | null
+          setting_notes?: string | null
+          start_date?: string | null
+          strategy_id?: string | null
+          student_id: string
+          target_behavior_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_summary?: string | null
+          function_hypothesis?: string[] | null
+          id?: string
+          implementation_owner?: string[] | null
+          link_status?: string
+          notes?: string | null
+          objective_id?: string | null
+          problem_id?: string | null
+          recommendation_reason?: string | null
+          recommended_score?: number | null
+          review_due?: string | null
+          setting_notes?: string | null
+          start_date?: string | null
+          strategy_id?: string | null
+          student_id?: string
+          target_behavior_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bx_plan_links_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "bx_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "bx_presenting_problems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "bx_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"

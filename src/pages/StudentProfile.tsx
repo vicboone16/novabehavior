@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,7 @@ import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEdito
 import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
 import { TOILog } from '@/components/toi/TOILog';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
+import { StudentBxPlanView } from '@/components/behavior-interventions';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
@@ -633,68 +634,91 @@ export default function StudentProfile() {
 
         {/* Behaviors Tab */}
         <TabsContent value="behaviors" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Behaviors</h3>
-            <Button onClick={() => setShowAddBehavior(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Behavior
-            </Button>
-          </div>
+          <Tabs defaultValue="data" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="data" className="flex items-center gap-1">
+                  <Activity className="w-4 h-4" />
+                  Data & Tracking
+                </TabsTrigger>
+                <TabsTrigger value="interventions" className="flex items-center gap-1">
+                  <Lightbulb className="w-4 h-4" />
+                  Interventions
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          {/* Behavior Overview with Charts */}
-          <StudentBehaviorsOverview
-            studentId={student.id}
-            studentName={student.name}
-            studentColor={student.color}
-            behaviors={student.behaviors}
-            frequencyEntries={studentFrequency}
-            durationEntries={studentDuration}
-            abcEntries={studentABC}
-            intervalEntries={studentIntervals}
-            sessions={sessions}
-            historicalData={student.historicalData?.frequencyEntries || []}
-            dataCollectionStartDate={student.dataCollectionStartDate}
-            behaviorGoals={behaviorGoals.filter(g => g.studentId === student.id)}
-          />
-
-          {/* Behavior List (for management) */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Manage Behaviors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                {student.behaviors.length === 0 ? (
-                  <div className="py-4 text-center text-muted-foreground text-sm">
-                    No behaviors configured. Add one to start tracking.
-                  </div>
-                ) : (
-                  student.behaviors.map((behavior) => (
-                    <div key={behavior.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                      <div>
-                        <span className="font-medium text-sm">{behavior.name}</span>
-                        <div className="flex gap-1 mt-0.5">
-                          {(behavior.methods || [behavior.type]).map((method) => (
-                            <Badge key={method} variant="secondary" className="text-xs py-0">
-                              {METHOD_LABELS[method]}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteConfirm({ type: 'behavior', id: behavior.id })}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))
-                )}
+            <TabsContent value="data" className="space-y-4 mt-0">
+              <div className="flex justify-end">
+                <Button onClick={() => setShowAddBehavior(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Behavior
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Behavior Overview with Charts */}
+              <StudentBehaviorsOverview
+                studentId={student.id}
+                studentName={student.name}
+                studentColor={student.color}
+                behaviors={student.behaviors}
+                frequencyEntries={studentFrequency}
+                durationEntries={studentDuration}
+                abcEntries={studentABC}
+                intervalEntries={studentIntervals}
+                sessions={sessions}
+                historicalData={student.historicalData?.frequencyEntries || []}
+                dataCollectionStartDate={student.dataCollectionStartDate}
+                behaviorGoals={behaviorGoals.filter(g => g.studentId === student.id)}
+              />
+
+              {/* Behavior List (for management) */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Manage Behaviors</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-2">
+                    {student.behaviors.length === 0 ? (
+                      <div className="py-4 text-center text-muted-foreground text-sm">
+                        No behaviors configured. Add one to start tracking.
+                      </div>
+                    ) : (
+                      student.behaviors.map((behavior) => (
+                        <div key={behavior.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                          <div>
+                            <span className="font-medium text-sm">{behavior.name}</span>
+                            <div className="flex gap-1 mt-0.5">
+                              {(behavior.methods || [behavior.type]).map((method) => (
+                                <Badge key={method} variant="secondary" className="text-xs py-0">
+                                  {METHOD_LABELS[method]}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteConfirm({ type: 'behavior', id: behavior.id })}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="interventions" className="mt-0">
+              <StudentBxPlanView 
+                studentId={student.id}
+                studentName={student.name}
+              />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* Goals Tab */}

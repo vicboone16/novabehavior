@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw } from 'lucide-react';
+import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import { useDataStore } from '@/store/dataStore';
 import { EditBehaviorDialog } from '@/components/behavior-library/EditBehaviorDialog';
 import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteToStandardDialog';
 import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
+import { BxInterventionLibrary } from '@/components/behavior-interventions';
 
 // Default behavior bank with operational definitions
 const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
@@ -151,6 +153,7 @@ export default function BehaviorLibrary() {
   const resetBehaviorDefinition = useDataStore((state) => state.resetBehaviorDefinition);
   const advancedMergeBehaviors = useDataStore((state) => state.advancedMergeBehaviors);
   
+  const [activeLibraryTab, setActiveLibraryTab] = useState<'behaviors' | 'interventions'>('behaviors');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAddBehavior, setShowAddBehavior] = useState(false);
@@ -397,26 +400,43 @@ export default function BehaviorLibrary() {
               <div>
                 <h1 className="text-xl font-bold text-foreground">Behavior Library</h1>
                 <p className="text-sm text-muted-foreground">
-                  Operational definitions & behavior bank
+                  Operational definitions & intervention planning
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowAdvancedMergeDialog(true)}>
-                <Merge className="w-4 h-4 mr-2" />
-                Merge Behaviors
-              </Button>
-              <Button onClick={() => setShowAddBehavior(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Behavior
-              </Button>
-            </div>
+            {activeLibraryTab === 'behaviors' && (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowAdvancedMergeDialog(true)}>
+                  <Merge className="w-4 h-4 mr-2" />
+                  Merge Behaviors
+                </Button>
+                <Button onClick={() => setShowAddBehavior(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Behavior
+                </Button>
+              </div>
+            )}
           </div>
+          
+          {/* Library Tabs */}
+          <Tabs value={activeLibraryTab} onValueChange={(v) => setActiveLibraryTab(v as 'behaviors' | 'interventions')} className="mt-4">
+            <TabsList>
+              <TabsTrigger value="behaviors" className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Behaviors to Track
+              </TabsTrigger>
+              <TabsTrigger value="interventions" className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Behavior Interventions
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container py-6">
+        {activeLibraryTab === 'behaviors' ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Sidebar with search and filters */}
           <div className="lg:col-span-1 space-y-4">
@@ -625,6 +645,11 @@ export default function BehaviorLibrary() {
             </Card>
           </div>
         </div>
+        ) : (
+          <div className="h-[calc(100vh-200px)]">
+            <BxInterventionLibrary />
+          </div>
+        )}
       </main>
 
       {/* Add Behavior Dialog */}
