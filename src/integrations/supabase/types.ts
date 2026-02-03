@@ -1050,51 +1050,83 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           approved_at: string | null
           approved_by: string | null
+          avatar_url: string | null
           created_at: string
+          credential: string | null
           display_name: string | null
           email: string | null
           first_name: string | null
+          hire_date: string | null
           id: string
           is_approved: boolean | null
           last_name: string | null
+          npi: string | null
           phone: string | null
           pin_hash: string | null
+          status: string | null
+          supervisor_id: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          address?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          avatar_url?: string | null
           created_at?: string
+          credential?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
+          hire_date?: string | null
           id?: string
           is_approved?: boolean | null
           last_name?: string | null
+          npi?: string | null
           phone?: string | null
           pin_hash?: string | null
+          status?: string | null
+          supervisor_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          address?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          avatar_url?: string | null
           created_at?: string
+          credential?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
+          hire_date?: string | null
           id?: string
           is_approved?: boolean | null
           last_name?: string | null
+          npi?: string | null
           phone?: string | null
           pin_hash?: string | null
+          status?: string | null
+          supervisor_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       questionnaire_invitations: {
         Row: {
@@ -1595,6 +1627,126 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      staff_caseloads: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          assignment_type: string | null
+          clinician_user_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          student_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type?: string | null
+          clinician_user_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          student_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type?: string | null
+          clinician_user_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_caseloads_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_caseloads_clinician_user_id_fkey"
+            columns: ["clinician_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_caseloads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_credentials: {
+        Row: {
+          created_at: string
+          credential_number: string | null
+          credential_type: string
+          document_path: string | null
+          expiration_date: string | null
+          id: string
+          is_verified: boolean | null
+          issue_date: string | null
+          issuing_body: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          credential_number?: string | null
+          credential_type: string
+          document_path?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_verified?: boolean | null
+          issue_date?: string | null
+          issuing_body?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          credential_number?: string | null
+          credential_type?: string
+          document_path?: string | null
+          expiration_date?: string | null
+          id?: string
+          is_verified?: boolean | null
+          issue_date?: string | null
+          issuing_body?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_credentials_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       student_assessments: {
         Row: {
@@ -2425,7 +2577,15 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
+      get_clinician_patient_count: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       get_pending_approval_count: { Args: never; Returns: number }
+      get_supervisor_clinician_count: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

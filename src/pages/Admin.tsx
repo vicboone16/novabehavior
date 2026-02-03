@@ -6,7 +6,7 @@ import {
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
-  FileText, UserCog
+  FileText, UserCog, Award, Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +61,8 @@ import { UserTagManager } from '@/components/admin/UserTagManager';
 import { StudentTagManager } from '@/components/admin/StudentTagManager';
 import { BulkStudentManager } from '@/components/admin/BulkStudentManager';
 import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
+import { StaffManagement } from '@/components/admin/StaffManagement';
+import { CredentialTracker } from '@/components/admin/CredentialTracker';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
@@ -511,7 +513,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-6">
+          <TabsList className="grid w-full max-w-5xl grid-cols-8">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Pending</span>
@@ -520,6 +522,14 @@ export default function Admin() {
                   {pendingUsers.length}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="clinicians" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              <span className="hidden sm:inline">Clinicians</span>
+            </TabsTrigger>
+            <TabsTrigger value="credentials" className="gap-2">
+              <Award className="w-4 h-4" />
+              <span className="hidden sm:inline">Credentials</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="w-4 h-4" />
@@ -614,6 +624,20 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Clinicians Tab */}
+          <TabsContent value="clinicians">
+            <StaffManagement 
+              onNavigateToSchedule={(userId) => {
+                navigate(`/schedule?staff=${userId}`);
+              }}
+            />
+          </TabsContent>
+
+          {/* Credentials Tab */}
+          <TabsContent value="credentials">
+            <CredentialTracker showAllStaff />
           </TabsContent>
 
           {/* Users Tab */}
