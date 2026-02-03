@@ -451,6 +451,78 @@ export interface Student {
   customPromptLevels?: string[];
   // Note requirements
   notesRequired?: boolean;
+  // Brief Record Review assessments
+  briefRecordReviews?: BriefRecordReview[];
+  // Brief Teacher Input assessments
+  briefTeacherInputs?: BriefTeacherInputSaved[];
+}
+
+// Brief Record Review saved data
+export interface BriefRecordReview {
+  id: string;
+  data: BriefRecordReviewSavedData;
+  responses: BriefRecordReviewSavedData[];
+}
+
+export interface BriefRecordReviewSavedData {
+  id: string;
+  studentId: string;
+  grade: string;
+  reviewer: string;
+  date: string;
+  respondentType: 'BCBA' | 'Teacher' | 'Staff' | 'Other';
+  respondentName: string;
+  respondentEmail?: string;
+  healthReviewed: boolean;
+  healthHistory: string;
+  medicalDiagnoses: string;
+  mentalHealthDiagnoses: string;
+  medications: string;
+  academicReviewed: boolean;
+  academicAssessments: unknown[];
+  interventionsReviewed: boolean;
+  behaviorInterventions: string;
+  academicInterventions: string;
+  previousFBABIP: string;
+  attendanceReviewed: boolean;
+  previousAttendanceConcerns: 'No' | 'Yes' | '';
+  tardy: string;
+  earlyDismissal: string;
+  absent: string;
+  disciplineReviewed: boolean;
+  disciplineRecords: unknown[];
+  disciplineNotes: string;
+  iepReviewed: boolean;
+  eligibilityDisability: string;
+  services: string;
+  programModifications: string;
+  otherInformation: string;
+  status: 'draft' | 'submitted';
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Brief Teacher Input saved data
+export interface BriefTeacherInputSaved {
+  id: string;
+  studentId: string;
+  respondentName: string;
+  date: Date;
+  strengths: string[];
+  problemBehaviors: string[];
+  otherBehavior?: string;
+  behaviorDescription: string;
+  frequency: string;
+  duration: string;
+  intensity: string;
+  triggers: string[];
+  otherTrigger?: string;
+  thingsObtained: string[];
+  otherObtained?: string;
+  thingsAvoided: string[];
+  otherAvoided?: string;
+  additionalNotes: string;
+  inferredFunctions: string[];
 }
 
 export interface ABCBehaviorEntry {

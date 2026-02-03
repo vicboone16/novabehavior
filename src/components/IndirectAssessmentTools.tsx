@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ClipboardList, Save, RotateCcw, ChevronDown, ChevronUp, 
-  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2
+  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2, FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { useDataStore } from '@/store/dataStore';
 import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
 import { format } from 'date-fns';
 import { BriefTeacherInput, BriefTeacherInputData } from '@/components/assessment/BriefTeacherInput';
+import { BriefRecordReviewManager } from '@/components/assessment/BriefRecordReviewManager';
 
 interface IndirectAssessmentToolsProps {
   student: Student;
@@ -124,7 +125,7 @@ const RATING_OPTIONS = [
 
 export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectAssessmentToolsProps) {
   const { addIndirectAssessment, deleteIndirectAssessment, updateStudentProfile } = useDataStore();
-  const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF' | 'BRIEF'>('FAST');
+  const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF' | 'BRIEF' | 'RECORD_REVIEW'>('FAST');
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [targetBehavior, setTargetBehavior] = useState('');
   const [completedBy, setCompletedBy] = useState('');
@@ -133,6 +134,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSavedAssessments, setShowSavedAssessments] = useState(false);
   const [showBriefTeacherInput, setShowBriefTeacherInput] = useState(false);
+  const [showRecordReview, setShowRecordReview] = useState(false);
 
   const currentItems = useMemo(() => {
     switch (activeAssessment) {
@@ -341,12 +343,13 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
         <CardContent className="space-y-4">
           {/* Assessment Selection */}
           <Tabs value={activeAssessment} onValueChange={(v) => {
-            setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF' | 'BRIEF');
+            setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF' | 'BRIEF' | 'RECORD_REVIEW');
             setResponses({});
             setShowResults(false);
             setShowBriefTeacherInput(v === 'BRIEF');
+            setShowRecordReview(v === 'RECORD_REVIEW');
           }}>
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="FAST" className="text-xs">
                 FAST
                 <Badge variant="secondary" className="ml-1 text-xs">{FAST_ITEMS.length}</Badge>
@@ -362,11 +365,19 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
               <TabsTrigger value="BRIEF" className="text-xs">
                 Brief Teacher
               </TabsTrigger>
+              <TabsTrigger value="RECORD_REVIEW" className="text-xs">
+                <FileText className="w-3 h-3 mr-1" />
+                Record Review
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Show Brief Teacher Input or Rating Scale UI */}
-          {activeAssessment === 'BRIEF' ? (
+          {/* Show Record Review, Brief Teacher Input, or Rating Scale UI */}
+          {activeAssessment === 'RECORD_REVIEW' ? (
+            <div className="mt-2">
+              <BriefRecordReviewManager student={student} />
+            </div>
+          ) : activeAssessment === 'BRIEF' ? (
             <p className="text-xs text-muted-foreground text-center py-2">
               Use the Brief Teacher form below to collect structured interview data.
             </p>
