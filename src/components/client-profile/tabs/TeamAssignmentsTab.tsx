@@ -153,12 +153,20 @@ export function TeamAssignmentsTab({ clientId, teamAssignments, onRefetch }: Tea
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {staffList.map((staff) => (
-                      <SelectItem key={staff.user_id} value={staff.user_id}>
-                        {staff.display_name || `${staff.first_name} ${staff.last_name}`}
-                        {staff.credential && ` (${staff.credential})`}
-                      </SelectItem>
-                    ))}
+                    {loadingStaff ? (
+                      <div className="p-2 text-center text-sm text-muted-foreground">Loading...</div>
+                    ) : staffList.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-muted-foreground">
+                        No staff members found. Add staff via Admin → Staff Management first.
+                      </div>
+                    ) : (
+                      staffList.map((staff) => (
+                        <SelectItem key={staff.user_id} value={staff.user_id}>
+                          {staff.display_name || `${staff.first_name} ${staff.last_name}`}
+                          {staff.credential && ` (${staff.credential})`}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
