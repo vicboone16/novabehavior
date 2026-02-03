@@ -20,6 +20,8 @@ import { SERVICE_TYPES, SETTINGS_OPTIONS, DAYS_OF_WEEK } from '@/types/staffProf
 
 interface SchedulingEngineProps {
   clientId?: string;
+  /** Optional callback when staff is selected - used when embedded in dialogs */
+  onStaffSelected?: (staffId: string) => void;
 }
 
 interface StaffSuggestion {
@@ -52,7 +54,7 @@ interface ScheduleFormData {
   notes: string;
 }
 
-export function SchedulingEngine({ clientId }: SchedulingEngineProps) {
+export function SchedulingEngine({ clientId, onStaffSelected }: SchedulingEngineProps) {
   const [clients, setClients] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [staffSuggestions, setStaffSuggestions] = useState<StaffSuggestion[]>([]);
@@ -327,6 +329,13 @@ export function SchedulingEngine({ clientId }: SchedulingEngineProps) {
   };
 
   const selectStaff = (userId: string) => {
+    // If onStaffSelected callback is provided, call it and return (used in dialog mode)
+    if (onStaffSelected) {
+      onStaffSelected(userId);
+      return;
+    }
+    
+    // Otherwise, toggle selection in form data
     setFormData(prev => ({
       ...prev,
       preferred_staff_ids: prev.preferred_staff_ids.includes(userId)

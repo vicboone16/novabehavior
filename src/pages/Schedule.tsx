@@ -14,10 +14,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Plus, Users, User, Clock, Loader2, Download, AlertTriangle 
+  Plus, Users, User, Clock, Loader2, Download, AlertTriangle, Sparkles 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleTimeline } from '@/components/schedule/ScheduleTimeline';
+import { SchedulingEngine } from '@/components/scheduling/SchedulingEngine';
 import { ScheduleDayView } from '@/components/schedule/ScheduleDayView';
 import { ScheduleWeekView } from '@/components/schedule/ScheduleWeekView';
 import { ScheduleMonthView } from '@/components/schedule/ScheduleMonthView';
@@ -26,6 +27,8 @@ import { SessionPromptDialog } from '@/components/schedule/SessionPromptDialog';
 import { VerificationDialog } from '@/components/schedule/VerificationDialog';
 import { VerificationQueue } from '@/components/schedule/VerificationQueue';
 import type { Appointment, ScheduleViewType, FilterMode } from '@/types/schedule';
+
+type ScheduleTab = 'calendar' | 'planning';
 
 export default function Schedule() {
   const { user } = useAuth();
@@ -49,6 +52,7 @@ export default function Schedule() {
   const [showVerificationDialog, setShowVerificationDialog] = useState<Appointment | null>(null);
   const [showVerificationQueue, setShowVerificationQueue] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
   const scheduleRef = useRef<HTMLDivElement>(null);
 
   // Check admin status and set appropriate filter mode for non-admins
@@ -404,10 +408,28 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5" />
-              Schedule
-            </CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5" />
+                Schedule
+              </CardTitle>
+              
+              {/* Main tab switcher: Calendar vs Planning */}
+              {isAdmin && (
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ScheduleTab)}>
+                  <TabsList>
+                    <TabsTrigger value="calendar" className="gap-1">
+                      <CalendarIcon className="w-4 h-4" />
+                      Calendar
+                    </TabsTrigger>
+                    <TabsTrigger value="planning" className="gap-1">
+                      <Sparkles className="w-4 h-4" />
+                      Planning
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
+            </div>
             
             <div className="flex flex-wrap items-center gap-2">
               {/* Filter controls - Only show for admins */}
@@ -492,103 +514,111 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
         </CardHeader>
 
         <CardContent className="space-y-4" ref={scheduleRef}>
-          {/* Navigation and view controls */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={goToToday}>
-                Today
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              
-              {/* Date picker for jumping to specific date */}
-              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-1">
-                    <CalendarIcon className="w-4 h-4" />
-                    {getDateLabel()}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={currentDate}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Tabs value={viewType} onValueChange={(v) => setViewType(v as ScheduleViewType)}>
-                <TabsList>
-                  <TabsTrigger value="day">Day</TabsTrigger>
-                  <TabsTrigger value="week">Week</TabsTrigger>
-                  <TabsTrigger value="month">Month</TabsTrigger>
-                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              {/* Export PDF button */}
-              <Button variant="outline" size="sm" onClick={handleExportPDF}>
-                <Download className="w-4 h-4 mr-1" />
-                Export
-              </Button>
-            </div>
-          </div>
-
-          {/* Calendar views */}
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
+          {activeTab === 'planning' && isAdmin ? (
+            /* Planning tab with SchedulingEngine */
+            <SchedulingEngine />
           ) : (
+            /* Calendar tab */
             <>
-              {viewType === 'day' && (
-                <ScheduleDayView
-                  date={currentDate}
-                  appointments={filteredAppointments}
-                  students={visibleStudents}
-                  staff={staff}
-                  onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
-                />
-              )}
-              {viewType === 'week' && (
-                <ScheduleWeekView
-                  date={currentDate}
-                  appointments={filteredAppointments}
-                  students={visibleStudents}
-                  staff={staff}
-                  onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
-                />
-              )}
-              {viewType === 'month' && (
-                <ScheduleMonthView
-                  date={currentDate}
-                  appointments={filteredAppointments}
-                  students={visibleStudents}
-                  staff={staff}
-                  onAppointmentClick={handleAppointmentClick}
-                />
-              )}
-              {viewType === 'timeline' && (
-                <ScheduleTimeline
-                  date={currentDate}
-                  appointments={filteredAppointments}
-                  students={visibleStudents}
-                  staff={staff}
-                  filterMode={isAdmin ? filterMode : 'my'}
-                  onAppointmentClick={handleAppointmentClick}
-                  onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
-                />
+              {/* Navigation and view controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={goToToday}>
+                    Today
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  
+                  {/* Date picker for jumping to specific date */}
+                  <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <CalendarIcon className="w-4 h-4" />
+                        {getDateLabel()}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={currentDate}
+                        onSelect={handleDateSelect}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Tabs value={viewType} onValueChange={(v) => setViewType(v as ScheduleViewType)}>
+                    <TabsList>
+                      <TabsTrigger value="day">Day</TabsTrigger>
+                      <TabsTrigger value="week">Week</TabsTrigger>
+                      <TabsTrigger value="month">Month</TabsTrigger>
+                      <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  {/* Export PDF button */}
+                  <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                    <Download className="w-4 h-4 mr-1" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+
+              {/* Calendar views */}
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  {viewType === 'day' && (
+                    <ScheduleDayView
+                      date={currentDate}
+                      appointments={filteredAppointments}
+                      students={visibleStudents}
+                      staff={staff}
+                      onAppointmentClick={handleAppointmentClick}
+                      onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
+                    />
+                  )}
+                  {viewType === 'week' && (
+                    <ScheduleWeekView
+                      date={currentDate}
+                      appointments={filteredAppointments}
+                      students={visibleStudents}
+                      staff={staff}
+                      onAppointmentClick={handleAppointmentClick}
+                      onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
+                    />
+                  )}
+                  {viewType === 'month' && (
+                    <ScheduleMonthView
+                      date={currentDate}
+                      appointments={filteredAppointments}
+                      students={visibleStudents}
+                      staff={staff}
+                      onAppointmentClick={handleAppointmentClick}
+                    />
+                  )}
+                  {viewType === 'timeline' && (
+                    <ScheduleTimeline
+                      date={currentDate}
+                      appointments={filteredAppointments}
+                      students={visibleStudents}
+                      staff={staff}
+                      filterMode={isAdmin ? filterMode : 'my'}
+                      onAppointmentClick={handleAppointmentClick}
+                      onDragAppointment={isAdmin ? handleDragAppointment : async () => {}}
+                    />
+                  )}
+                </>
               )}
             </>
           )}
