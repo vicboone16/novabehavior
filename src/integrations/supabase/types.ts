@@ -411,10 +411,16 @@ export type Database = {
       }
       authorizations: {
         Row: {
+          alert_exhausted: boolean | null
+          alert_expiring_30_days: boolean | null
+          alert_low_units_20: boolean | null
+          alert_no_match: boolean | null
           auth_number: string
           created_at: string
           end_date: string
           id: string
+          is_default: boolean | null
+          matching_rule: string | null
           notes: string | null
           payer_id: string
           service_codes: string[] | null
@@ -426,12 +432,19 @@ export type Database = {
           units_remaining: number | null
           units_used: number
           updated_at: string
+          warning_behavior: string | null
         }
         Insert: {
+          alert_exhausted?: boolean | null
+          alert_expiring_30_days?: boolean | null
+          alert_low_units_20?: boolean | null
+          alert_no_match?: boolean | null
           auth_number: string
           created_at?: string
           end_date: string
           id?: string
+          is_default?: boolean | null
+          matching_rule?: string | null
           notes?: string | null
           payer_id: string
           service_codes?: string[] | null
@@ -443,12 +456,19 @@ export type Database = {
           units_remaining?: number | null
           units_used?: number
           updated_at?: string
+          warning_behavior?: string | null
         }
         Update: {
+          alert_exhausted?: boolean | null
+          alert_expiring_30_days?: boolean | null
+          alert_low_units_20?: boolean | null
+          alert_no_match?: boolean | null
           auth_number?: string
           created_at?: string
           end_date?: string
           id?: string
+          is_default?: boolean | null
+          matching_rule?: string | null
           notes?: string | null
           payer_id?: string
           service_codes?: string[] | null
@@ -460,6 +480,7 @@ export type Database = {
           units_remaining?: number | null
           units_used?: number
           updated_at?: string
+          warning_behavior?: string | null
         }
         Relationships: [
           {
@@ -471,6 +492,75 @@ export type Database = {
           },
           {
             foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      authorized_services: {
+        Row: {
+          authorization_id: string
+          cpt_code: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          modifier: string | null
+          place_of_service: string | null
+          rate: number | null
+          service_name: string
+          student_id: string
+          unit_type: string
+          units_approved: number
+          units_remaining: number | null
+          units_used: number
+          updated_at: string
+        }
+        Insert: {
+          authorization_id: string
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          modifier?: string | null
+          place_of_service?: string | null
+          rate?: number | null
+          service_name: string
+          student_id: string
+          unit_type?: string
+          units_approved?: number
+          units_remaining?: number | null
+          units_used?: number
+          updated_at?: string
+        }
+        Update: {
+          authorization_id?: string
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          modifier?: string | null
+          place_of_service?: string | null
+          rate?: number | null
+          service_name?: string
+          student_id?: string
+          unit_type?: string
+          units_approved?: number
+          units_remaining?: number | null
+          units_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorized_services_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authorized_services_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -1616,8 +1706,13 @@ export type Database = {
           attendance_outcome: string | null
           attendance_reason_code: string | null
           attendance_reason_detail: string | null
+          authorization_id: string | null
+          authorization_status: string | null
+          authorized_service_id: string | null
+          billing_status: string | null
           created_at: string
           end_time: string | null
+          funding_mode_snapshot: string | null
           has_data: boolean | null
           id: string
           interval_length_seconds: number
@@ -1638,8 +1733,13 @@ export type Database = {
           attendance_outcome?: string | null
           attendance_reason_code?: string | null
           attendance_reason_detail?: string | null
+          authorization_id?: string | null
+          authorization_status?: string | null
+          authorized_service_id?: string | null
+          billing_status?: string | null
           created_at?: string
           end_time?: string | null
+          funding_mode_snapshot?: string | null
           has_data?: boolean | null
           id?: string
           interval_length_seconds?: number
@@ -1660,8 +1760,13 @@ export type Database = {
           attendance_outcome?: string | null
           attendance_reason_code?: string | null
           attendance_reason_detail?: string | null
+          authorization_id?: string | null
+          authorization_status?: string | null
+          authorized_service_id?: string | null
+          billing_status?: string | null
           created_at?: string
           end_time?: string | null
+          funding_mode_snapshot?: string | null
           has_data?: boolean | null
           id?: string
           interval_length_seconds?: number
@@ -1683,6 +1788,20 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_authorized_service_id_fkey"
+            columns: ["authorized_service_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_services"
             referencedColumns: ["id"]
           },
         ]
@@ -2290,6 +2409,8 @@ export type Database = {
           historical_data: Json | null
           id: string
           indirect_assessments: Json | null
+          insurance_alerts_background: boolean | null
+          insurance_tracking_state: string | null
           is_archived: boolean
           last_name: string | null
           name: string
@@ -2325,6 +2446,8 @@ export type Database = {
           historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
+          insurance_alerts_background?: boolean | null
+          insurance_tracking_state?: string | null
           is_archived?: boolean
           last_name?: string | null
           name: string
@@ -2360,6 +2483,8 @@ export type Database = {
           historical_data?: Json | null
           id?: string
           indirect_assessments?: Json | null
+          insurance_alerts_background?: boolean | null
+          insurance_tracking_state?: string | null
           is_archived?: boolean
           last_name?: string | null
           name?: string
@@ -2498,6 +2623,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "toi_daily_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unit_deduction_ledger: {
+        Row: {
+          authorization_id: string
+          authorized_service_id: string | null
+          created_at: string
+          deduction_reason: string
+          id: string
+          notes: string | null
+          performed_by: string | null
+          session_id: string | null
+          student_id: string
+          units_deducted: number
+        }
+        Insert: {
+          authorization_id: string
+          authorized_service_id?: string | null
+          created_at?: string
+          deduction_reason?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          session_id?: string | null
+          student_id: string
+          units_deducted: number
+        }
+        Update: {
+          authorization_id?: string
+          authorized_service_id?: string | null
+          created_at?: string
+          deduction_reason?: string
+          id?: string
+          notes?: string | null
+          performed_by?: string | null
+          session_id?: string | null
+          student_id?: string
+          units_deducted?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_deduction_ledger_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_authorized_service_id_fkey"
+            columns: ["authorized_service_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"

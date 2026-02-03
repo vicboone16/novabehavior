@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Shield, AlertTriangle } from 'lucide-react';
+import { Building2, Shield, AlertTriangle, Snowflake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -7,15 +7,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { InsuranceSetupWizard } from './InsuranceSetupWizard';
+import { InsuranceHibernateDialog } from './InsuranceHibernateDialog';
+import { InsuranceRestoreDialog } from './InsuranceRestoreDialog';
 import { cn } from '@/lib/utils';
 
 export type FundingMode = 'school_based' | 'insurance';
+export type InsuranceTrackingState = 'active' | 'incomplete' | 'hibernated' | null;
 
 interface FundingModeToggleProps {
   studentId: string;
   currentMode: FundingMode;
+  insuranceTrackingState?: InsuranceTrackingState;
   onModeChange: (mode: FundingMode) => void;
   hasActivePayer?: boolean;
   hasActiveAuth?: boolean;
@@ -25,50 +28,55 @@ interface FundingModeToggleProps {
 export function FundingModeToggle({
   studentId,
   currentMode,
+  insuranceTrackingState,
   onModeChange,
   hasActivePayer = false,
   hasActiveAuth = false,
   className,
 }: FundingModeToggleProps) {
-  const [showSwitchToSchoolConfirm, setShowSwitchToSchoolConfirm] = useState(false);
+  const [showHibernateDialog, setShowHibernateDialog] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [showInsuranceWizard, setShowInsuranceWizard] = useState(false);
-  const [pendingMode, setPendingMode] = useState<FundingMode | null>(null);
 
   const isInsuranceReady = hasActivePayer && hasActiveAuth;
+  const isHibernated = insuranceTrackingState === 'hibernated';
 
   const handleModeClick = (mode: FundingMode) => {
     if (mode === currentMode) return;
 
     if (mode === 'school_based') {
-      // Switching to school-based: show confirmation
-      setPendingMode(mode);
-      setShowSwitchToSchoolConfirm(true);
+      // Switching to school-based: show hibernate confirmation
+      setShowHibernateDialog(true);
     } else {
-      // Switching to insurance: show setup wizard
-      setPendingMode(mode);
-      setShowInsuranceWizard(true);
+      // Switching to insurance
+      if (isHibernated) {
+        // Has existing data - show restore dialog
+        setShowRestoreDialog(true);
+      } else {
+        // No existing data - show full wizard
+        setShowInsuranceWizard(true);
+      }
     }
   };
 
-  const handleConfirmSchoolBased = () => {
-    if (pendingMode) {
-      onModeChange(pendingMode);
-    }
-    setShowSwitchToSchoolConfirm(false);
-    setPendingMode(null);
+  const handleHibernateComplete = () => {
+    setShowHibernateDialog(false);
+    onModeChange('school_based');
   };
 
-  const handleInsuranceSetupComplete = () => {
-    if (pendingMode) {
-      onModeChange(pendingMode);
-    }
+  const handleRestoreComplete = () => {
+    setShowRestoreDialog(false);
+    onModeChange('insurance');
+  };
+
+  const handleWizardComplete = () => {
     setShowInsuranceWizard(false);
-    setPendingMode(null);
+    onModeChange('insurance');
   };
 
-  const handleInsuranceWizardCancel = () => {
-    setShowInsuranceWizard(false);
-    setPendingMode(null);
+  const handleRunWizardFromRestore = () => {
+    setShowRestoreDialog(false);
+    setShowInsuranceWizard(true);
   };
 
   return (
@@ -107,6 +115,7 @@ export function FundingModeToggle({
             </Button>
           </div>
 
+          {/* Status badges */}
           {currentMode === 'insurance' && !isInsuranceReady && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -126,6 +135,20 @@ export function FundingModeToggle({
               </TooltipContent>
             </Tooltip>
           )}
+
+          {currentMode === 'school_based' && isHibernated && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 dark:bg-blue-950 dark:border-blue-700 dark:text-blue-400 ml-2">
+                  <Snowflake className="w-3 h-3 mr-1" />
+                  Insurance Paused
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Insurance data is preserved. Click Insurance to restore.</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground pl-1">
@@ -135,15 +158,21 @@ export function FundingModeToggle({
         </p>
       </div>
 
-      {/* Switch to School-Based Confirmation */}
-      <ConfirmDialog
-        open={showSwitchToSchoolConfirm}
-        onOpenChange={setShowSwitchToSchoolConfirm}
-        title="Switch to School-Based?"
-        description="Switching to School-Based will hide insurance authorization tracking for this client. Existing payer/authorization data will be preserved but inactive for school-based workflows."
-        confirmLabel="Switch to School-Based"
-        cancelLabel="Cancel"
-        onConfirm={handleConfirmSchoolBased}
+      {/* Hibernate Dialog (Insurance → School-Based) */}
+      <InsuranceHibernateDialog
+        studentId={studentId}
+        open={showHibernateDialog}
+        onOpenChange={setShowHibernateDialog}
+        onComplete={handleHibernateComplete}
+      />
+
+      {/* Restore Dialog (School-Based → Insurance with existing data) */}
+      <InsuranceRestoreDialog
+        studentId={studentId}
+        open={showRestoreDialog}
+        onOpenChange={setShowRestoreDialog}
+        onComplete={handleRestoreComplete}
+        onRunWizard={handleRunWizardFromRestore}
       />
 
       {/* Insurance Setup Wizard */}
@@ -151,8 +180,8 @@ export function FundingModeToggle({
         <InsuranceSetupWizard
           studentId={studentId}
           open={showInsuranceWizard}
-          onComplete={handleInsuranceSetupComplete}
-          onCancel={handleInsuranceWizardCancel}
+          onComplete={handleWizardComplete}
+          onCancel={() => setShowInsuranceWizard(false)}
         />
       )}
     </>
