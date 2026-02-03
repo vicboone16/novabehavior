@@ -9,7 +9,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,7 +89,7 @@ export function AddFromIEPLibraryDialog({
             />
           </div>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 min-h-0">
             <div className="space-y-2 py-2">
               {isLoading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -106,7 +105,7 @@ export function AddFromIEPLibraryDialog({
                 ))
               )}
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 
