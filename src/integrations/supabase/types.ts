@@ -568,6 +568,175 @@ export type Database = {
           },
         ]
       }
+      billing_claims: {
+        Row: {
+          adjustment_amount: number | null
+          adjustment_codes: Json | null
+          appeal_deadline: string | null
+          appeal_submitted_date: string | null
+          authorization_id: string | null
+          claim_number: string
+          created_at: string
+          created_by: string
+          denial_code: string | null
+          denial_reason: string | null
+          diagnosis_codes: Json | null
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          payer_id: string
+          place_of_service: string
+          service_date_from: string
+          service_date_to: string
+          status: string
+          student_id: string
+          submitted_date: string | null
+          total_charges: number
+          updated_at: string
+        }
+        Insert: {
+          adjustment_amount?: number | null
+          adjustment_codes?: Json | null
+          appeal_deadline?: string | null
+          appeal_submitted_date?: string | null
+          authorization_id?: string | null
+          claim_number: string
+          created_at?: string
+          created_by: string
+          denial_code?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: Json | null
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payer_id: string
+          place_of_service?: string
+          service_date_from: string
+          service_date_to: string
+          status?: string
+          student_id: string
+          submitted_date?: string | null
+          total_charges?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustment_amount?: number | null
+          adjustment_codes?: Json | null
+          appeal_deadline?: string | null
+          appeal_submitted_date?: string | null
+          authorization_id?: string | null
+          claim_number?: string
+          created_at?: string
+          created_by?: string
+          denial_code?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: Json | null
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payer_id?: string
+          place_of_service?: string
+          service_date_from?: string
+          service_date_to?: string
+          status?: string
+          student_id?: string
+          submitted_date?: string | null
+          total_charges?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_claims_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_claims_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_claims_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_line_items: {
+        Row: {
+          claim_id: string
+          cpt_code: string
+          created_at: string
+          id: string
+          line_number: number
+          modifiers: Json | null
+          notes: string | null
+          rendering_provider_name: string | null
+          rendering_provider_npi: string | null
+          service_date: string
+          session_id: string | null
+          total_charge: number
+          unit_charge: number
+          units: number
+        }
+        Insert: {
+          claim_id: string
+          cpt_code: string
+          created_at?: string
+          id?: string
+          line_number: number
+          modifiers?: Json | null
+          notes?: string | null
+          rendering_provider_name?: string | null
+          rendering_provider_npi?: string | null
+          service_date: string
+          session_id?: string | null
+          total_charge: number
+          unit_charge: number
+          units: number
+        }
+        Update: {
+          claim_id?: string
+          cpt_code?: string
+          created_at?: string
+          id?: string
+          line_number?: number
+          modifiers?: Json | null
+          notes?: string | null
+          rendering_provider_name?: string | null
+          rendering_provider_npi?: string | null
+          service_date?: string
+          session_id?: string | null
+          total_charge?: number
+          unit_charge?: number
+          units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_line_items_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "billing_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_payers: {
         Row: {
           created_at: string
@@ -1032,6 +1201,229 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      era_remittances: {
+        Row: {
+          adjustment_codes: Json | null
+          check_number: string | null
+          claim_id: string | null
+          created_at: string
+          id: string
+          paid_amount: number
+          payer_claim_number: string | null
+          raw_data: Json | null
+          remark_codes: Json | null
+          remittance_date: string
+        }
+        Insert: {
+          adjustment_codes?: Json | null
+          check_number?: string | null
+          claim_id?: string | null
+          created_at?: string
+          id?: string
+          paid_amount: number
+          payer_claim_number?: string | null
+          raw_data?: Json | null
+          remark_codes?: Json | null
+          remittance_date: string
+        }
+        Update: {
+          adjustment_codes?: Json | null
+          check_number?: string | null
+          claim_id?: string | null
+          created_at?: string
+          id?: string
+          paid_amount?: number
+          payer_claim_number?: string | null
+          raw_data?: Json | null
+          remark_codes?: Json | null
+          remittance_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "era_remittances_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "billing_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fieldwork_hours: {
+        Row: {
+          created_at: string
+          experience_type: string
+          fieldwork_date: string
+          hours: number
+          hours_type: string
+          id: string
+          notes: string | null
+          supervisor_user_id: string
+          task_list_items: Json | null
+          trainee_user_id: string
+          updated_at: string
+          verified: boolean
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          experience_type?: string
+          fieldwork_date?: string
+          hours: number
+          hours_type?: string
+          id?: string
+          notes?: string | null
+          supervisor_user_id: string
+          task_list_items?: Json | null
+          trainee_user_id: string
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          experience_type?: string
+          fieldwork_date?: string
+          hours?: number
+          hours_type?: string
+          id?: string
+          notes?: string | null
+          supervisor_user_id?: string
+          task_list_items?: Json | null
+          trainee_user_id?: string
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      intake_checklist_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          funding_source: string | null
+          id: string
+          is_active: boolean
+          items: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      intake_checklists: {
+        Row: {
+          checklist_template_id: string | null
+          completed_items: Json | null
+          created_at: string
+          due_date: string | null
+          id: string
+          items: Json
+          referral_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_template_id?: string | null
+          completed_items?: Json | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          items?: Json
+          referral_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_template_id?: string | null
+          completed_items?: Json | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          items?: Json
+          referral_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_checklists_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "intake_checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_checklists_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_documents: {
+        Row: {
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          referral_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          referral_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          document_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          referral_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_documents_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
             referencedColumns: ["id"]
           },
         ]
@@ -1540,6 +1932,113 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          assigned_to_user_id: string | null
+          client_address: string | null
+          client_city: string | null
+          client_diagnosis: string | null
+          client_dob: string | null
+          client_first_name: string
+          client_last_name: string
+          client_state: string | null
+          client_zip: string | null
+          converted_student_id: string | null
+          created_at: string
+          created_by: string
+          estimated_start_date: string | null
+          funding_source: string | null
+          id: string
+          insurance_info: Json | null
+          notes: string | null
+          parent_guardian_email: string | null
+          parent_guardian_name: string | null
+          parent_guardian_phone: string | null
+          priority_level: string
+          referral_date: string
+          source: string
+          source_contact_email: string | null
+          source_contact_name: string | null
+          source_contact_phone: string | null
+          status: string
+          updated_at: string
+          waitlist_added_date: string | null
+          waitlist_position: number | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          client_address?: string | null
+          client_city?: string | null
+          client_diagnosis?: string | null
+          client_dob?: string | null
+          client_first_name: string
+          client_last_name: string
+          client_state?: string | null
+          client_zip?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          created_by: string
+          estimated_start_date?: string | null
+          funding_source?: string | null
+          id?: string
+          insurance_info?: Json | null
+          notes?: string | null
+          parent_guardian_email?: string | null
+          parent_guardian_name?: string | null
+          parent_guardian_phone?: string | null
+          priority_level?: string
+          referral_date?: string
+          source?: string
+          source_contact_email?: string | null
+          source_contact_name?: string | null
+          source_contact_phone?: string | null
+          status?: string
+          updated_at?: string
+          waitlist_added_date?: string | null
+          waitlist_position?: number | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          client_address?: string | null
+          client_city?: string | null
+          client_diagnosis?: string | null
+          client_dob?: string | null
+          client_first_name?: string
+          client_last_name?: string
+          client_state?: string | null
+          client_zip?: string | null
+          converted_student_id?: string | null
+          created_at?: string
+          created_by?: string
+          estimated_start_date?: string | null
+          funding_source?: string | null
+          id?: string
+          insurance_info?: Json | null
+          notes?: string | null
+          parent_guardian_email?: string | null
+          parent_guardian_name?: string | null
+          parent_guardian_phone?: string | null
+          priority_level?: string
+          referral_date?: string
+          source?: string
+          source_contact_email?: string | null
+          source_contact_name?: string | null
+          source_contact_phone?: string | null
+          status?: string
+          updated_at?: string
+          waitlist_added_date?: string | null
+          waitlist_position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_converted_student_id_fkey"
+            columns: ["converted_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_settings: {
         Row: {
@@ -2496,6 +2995,120 @@ export type Database = {
         }
         Relationships: []
       }
+      supervision_logs: {
+        Row: {
+          activities: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          duration_minutes: number
+          end_time: string
+          id: string
+          notes: string | null
+          session_id: string | null
+          start_time: string
+          status: string
+          student_id: string | null
+          supervisee_user_id: string
+          supervision_date: string
+          supervision_type: string
+          supervisor_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          activities?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          duration_minutes: number
+          end_time: string
+          id?: string
+          notes?: string | null
+          session_id?: string | null
+          start_time: string
+          status?: string
+          student_id?: string | null
+          supervisee_user_id: string
+          supervision_date?: string
+          supervision_type?: string
+          supervisor_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          activities?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          duration_minutes?: number
+          end_time?: string
+          id?: string
+          notes?: string | null
+          session_id?: string | null
+          start_time?: string
+          status?: string
+          student_id?: string | null
+          supervisee_user_id?: string
+          supervision_date?: string
+          supervision_type?: string
+          supervisor_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supervision_requirements: {
+        Row: {
+          billing_period_end: string
+          billing_period_start: string
+          created_at: string
+          id: string
+          is_active: boolean
+          requirement_type: string
+          supervisee_user_id: string
+          supervisor_user_id: string
+          target_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          billing_period_end: string
+          billing_period_start: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          requirement_type?: string
+          supervisee_user_id: string
+          supervisor_user_id: string
+          target_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_period_end?: string
+          billing_period_start?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          requirement_type?: string
+          supervisee_user_id?: string
+          supervisor_user_id?: string
+          target_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supervisor_reviews: {
         Row: {
           action_completed: boolean | null
@@ -2950,6 +3563,7 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
+      generate_claim_number: { Args: never; Returns: string }
       get_clinician_patient_count: {
         Args: { _user_id: string }
         Returns: number
@@ -2959,6 +3573,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      has_billing_access: { Args: { check_user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2968,6 +3583,10 @@ export type Database = {
       }
       has_student_access: {
         Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_supervision_access: {
+        Args: { check_user_id: string }
         Returns: boolean
       }
       has_tag_based_access: {
@@ -2994,6 +3613,10 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_intake_coordinator: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       is_student_owner: {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
