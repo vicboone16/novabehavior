@@ -26,9 +26,9 @@ export function useStaffProfile(userId: string | undefined) {
       const availabilityRes = await supabase.from('staff_availability').select('*').eq('staff_user_id', userId);
       if (availabilityRes.data) setAvailability(availabilityRes.data as unknown as StaffAvailability[]);
       
-      // Fetch credentials - use user_id since that's the existing column
+      // Fetch credentials
       const credentialsRes = await supabase.from('staff_credentials').select('*').eq('user_id', userId);
-      if (credentialsRes.data) setCredentials(credentialsRes.data as any);
+      if (credentialsRes.data) setCredentials(credentialsRes.data as unknown as StaffCredential[]);
       
       // Fetch supervisor links (where user is supervisee)
       const supervisorRes = await supabase.from('supervisor_links').select('*').eq('supervisee_staff_id', userId);
