@@ -49,18 +49,6 @@ interface AppointmentDialogProps {
   defaultStudentId?: string;
 }
 
-const DURATION_OPTIONS = [
-  { value: 5, label: '5 min' },
-  { value: 10, label: '10 min' },
-  { value: 15, label: '15 min' },
-  { value: 20, label: '20 min' },
-  { value: 30, label: '30 min' },
-  { value: 45, label: '45 min' },
-  { value: 60, label: '1 hour' },
-  { value: 90, label: '1.5 hours' },
-  { value: 120, label: '2 hours' },
-];
-
 const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
   const hour = Math.floor(i / 4);
   const minute = (i % 4) * 15;
@@ -70,6 +58,40 @@ const TIME_OPTIONS = Array.from({ length: 96 }, (_, i) => {
     label: format(date, 'h:mm a')
   };
 });
+
+// Helper to calculate duration in minutes between two time strings
+const calculateDuration = (start: string, end: string): number => {
+  const [startHours, startMinutes] = start.split(':').map(Number);
+  const [endHours, endMinutes] = end.split(':').map(Number);
+  
+  let startTotalMinutes = startHours * 60 + startMinutes;
+  let endTotalMinutes = endHours * 60 + endMinutes;
+  
+  // Handle overnight appointments (end time is next day)
+  if (endTotalMinutes <= startTotalMinutes) {
+    endTotalMinutes += 24 * 60;
+  }
+  
+  return endTotalMinutes - startTotalMinutes;
+};
+
+// Helper to calculate end time from start time and duration
+const calculateEndTime = (start: string, durationMinutes: number): string => {
+  const [hours, minutes] = start.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHours = Math.floor(totalMinutes / 60) % 24;
+  const endMinutes = totalMinutes % 60;
+  return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+};
+
+// Format duration for display
+const formatDuration = (minutes: number): string => {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) return `${hours} hr`;
+  return `${hours} hr ${mins} min`;
+};
 
 export const APPOINTMENT_CATEGORIES = [
   { value: 'assessment', label: 'Assessment' },
@@ -99,7 +121,7 @@ export function AppointmentDialog({
   const [customCategory, setCustomCategory] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState('09:00');
-  const [duration, setDuration] = useState(30);
+  const [endTime, setEndTime] = useState('10:00');
   const [studentId, setStudentId] = useState('');
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -108,9 +130,10 @@ export function AppointmentDialog({
   useEffect(() => {
     if (appointment) {
       const start = new Date(appointment.start_time);
+      const end = new Date(appointment.end_time);
       setSelectedDate(start);
       setStartTime(format(start, 'HH:mm'));
-      setDuration(appointment.duration_minutes);
+      setEndTime(format(end, 'HH:mm'));
       setStudentId(appointment.student_id || '');
       setTitle(appointment.title || '');
       
@@ -146,12 +169,19 @@ export function AppointmentDialog({
       setCustomCategory('');
       setSelectedDate(new Date());
       setStartTime('09:00');
-      setDuration(30);
+      setEndTime('10:00');
       setStudentId(defaultStudentId || '');
       setSelectedStaffIds([]);
       setNotes('');
     }
   }, [appointment, open, defaultStudentId]);
+
+  // Auto-adjust end time when start time changes (keep same duration)
+  const handleStartTimeChange = (newStartTime: string) => {
+    const currentDuration = calculateDuration(startTime, endTime);
+    setStartTime(newStartTime);
+    setEndTime(calculateEndTime(newStartTime, currentDuration));
+  };
 
   const handleStaffToggle = (staffId: string) => {
     setSelectedStaffIds(prev => 
@@ -170,9 +200,18 @@ export function AppointmentDialog({
   const handleSave = () => {
     if (!selectedDate) return;
 
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const startDateTime = setMinutes(setHours(selectedDate, hours), minutes);
-    const endDateTime = addMinutes(startDateTime, duration);
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    
+    const startDateTime = setMinutes(setHours(selectedDate, startHours), startMinutes);
+    
+    // Handle end time - if it's before start time, it's the next day
+    let endDateTime = setMinutes(setHours(selectedDate, endHours), endMinutes);
+    if (endDateTime <= startDateTime) {
+      endDateTime = addMinutes(endDateTime, 24 * 60); // Add a day
+    }
+    
+    const duration = calculateDuration(startTime, endTime);
 
     // Determine appointment type - use category or custom
     const appointmentType = category === 'other' && customCategory 
@@ -268,11 +307,10 @@ export function AppointmentDialog({
             </Popover>
           </div>
 
-          {/* Time and duration */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Start Time *</Label>
-              <Select value={startTime} onValueChange={setStartTime}>
+              <Select value={startTime} onValueChange={handleStartTimeChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -285,19 +323,27 @@ export function AppointmentDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Duration *</Label>
-              <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
+              <Label>End Time *</Label>
+              <Select value={endTime} onValueChange={setEndTime}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  {DURATION_OPTIONS.map(d => (
-                    <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                <SelectContent className="max-h-[200px]">
+                  {TIME_OPTIONS.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          {/* Duration display */}
+          <p className="text-xs text-muted-foreground -mt-2">
+            Duration: {formatDuration(calculateDuration(startTime, endTime))}
+            {calculateDuration(startTime, endTime) > 0 && calculateDuration(startTime, endTime) <= startTime.split(':').map(Number)[0] * 60 + startTime.split(':').map(Number)[1] && 
+              <span className="ml-1 text-warning">(spans to next day)</span>
+            }
+          </p>
 
           {/* Staff selection - Multiple */}
           <div className="space-y-2">
