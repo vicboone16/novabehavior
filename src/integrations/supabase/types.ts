@@ -409,6 +409,141 @@ export type Database = {
         }
         Relationships: []
       }
+      authorizations: {
+        Row: {
+          auth_number: string
+          created_at: string
+          end_date: string
+          id: string
+          notes: string | null
+          payer_id: string
+          service_codes: string[] | null
+          start_date: string
+          status: string | null
+          student_id: string
+          unit_type: string | null
+          units_approved: number
+          units_remaining: number | null
+          units_used: number
+          updated_at: string
+        }
+        Insert: {
+          auth_number: string
+          created_at?: string
+          end_date: string
+          id?: string
+          notes?: string | null
+          payer_id: string
+          service_codes?: string[] | null
+          start_date: string
+          status?: string | null
+          student_id: string
+          unit_type?: string | null
+          units_approved?: number
+          units_remaining?: number | null
+          units_used?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_number?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          notes?: string | null
+          payer_id?: string
+          service_codes?: string[] | null
+          start_date?: string
+          status?: string | null
+          student_id?: string
+          unit_type?: string | null
+          units_approved?: number
+          units_remaining?: number | null
+          units_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorizations_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_payers: {
+        Row: {
+          created_at: string
+          effective_date: string | null
+          group_number: string | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          member_id: string | null
+          payer_id: string
+          policy_holder_dob: string | null
+          policy_holder_name: string | null
+          relationship_to_client: string | null
+          student_id: string
+          termination_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          effective_date?: string | null
+          group_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          member_id?: string | null
+          payer_id: string
+          policy_holder_dob?: string | null
+          policy_holder_name?: string | null
+          relationship_to_client?: string | null
+          student_id: string
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          effective_date?: string | null
+          group_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          member_id?: string | null
+          payer_id?: string
+          policy_holder_dob?: string | null
+          policy_holder_name?: string | null
+          relationship_to_client?: string | null
+          student_id?: string
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_payers_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_payers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       context_barriers_events: {
         Row: {
           created_at: string
@@ -1020,6 +1155,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payers: {
+        Row: {
+          address: string | null
+          billing_notes: string | null
+          created_at: string
+          email: string | null
+          fax: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          payer_type: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          billing_notes?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          payer_type?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          billing_notes?: string | null
+          created_at?: string
+          email?: string | null
+          fax?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          payer_type?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       pin_auth_attempts: {
         Row: {
@@ -2107,6 +2284,7 @@ export type Database = {
           fba_findings: Json | null
           fba_workflow_progress: Json | null
           first_name: string | null
+          funding_mode: string | null
           goals: Json | null
           grade: string | null
           historical_data: Json | null
@@ -2141,6 +2319,7 @@ export type Database = {
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
           first_name?: string | null
+          funding_mode?: string | null
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
@@ -2175,6 +2354,7 @@ export type Database = {
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
           first_name?: string | null
+          funding_mode?: string | null
           goals?: Json | null
           grade?: string | null
           historical_data?: Json | null
