@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, 
-  Upload, Printer, AlertTriangle, Calendar, Palette
+  Upload, Printer, AlertTriangle, Calendar, RotateCcw, X, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,18 +24,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useCurriculumItems, useDomains, useTargetActions } from '@/hooks/useCurriculum';
 import { AssessmentUploadMapper } from './AssessmentUploadMapper';
 import { PrintableAssessmentGrid } from './PrintableAssessmentGrid';
+import { VBMAPPReport } from './VBMAPPReport';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
 
 interface VBMAPPGridProps {
   studentId: string;
   studentName: string;
   assessment: StudentAssessment;
-  allAssessments?: StudentAssessment[]; // All assessments for this curriculum system (for multi-date overlay)
+  allAssessments?: StudentAssessment[];
   onBack: () => void;
   onSave: (
     results: Record<string, MilestoneScore>,
@@ -45,9 +52,9 @@ interface VBMAPPGridProps {
 }
 
 const SCORE_OPTIONS = [
-  { value: 0, label: '0', color: 'bg-destructive/10 hover:bg-destructive/20 text-destructive border-destructive/30' },
-  { value: 0.5, label: '½', color: 'bg-amber-100 hover:bg-amber-200 text-amber-700 border-amber-300' },
-  { value: 1, label: '1', color: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300' },
+  { value: 0, label: '0', description: 'Not demonstrated', color: 'bg-destructive/20 hover:bg-destructive/30 text-destructive border-destructive/40' },
+  { value: 0.5, label: '½', description: 'Emerging', color: 'bg-amber-100 hover:bg-amber-200 text-amber-700 border-amber-300' },
+  { value: 1, label: '1', description: 'Mastered', color: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300' },
 ];
 
 // Colors for different assessment dates
@@ -73,8 +80,10 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
   const [showHistoricalOverlay, setShowHistoricalOverlay] = useState(true);
+  const [activeView, setActiveView] = useState<'milestones' | 'report'>('milestones');
+  const [clearDomainConfirm, setClearDomainConfirm] = useState<{ domain: string; level: string } | null>(null);
 
-  // Build historical scores from other assessments (sorted by date, most recent first)
+  // Build historical scores from other assessments
   const historicalScores = useMemo(() => {
     const otherAssessments = allAssessments
       .filter(a => a.id !== assessment.id)
@@ -107,7 +116,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
       domainMap.get(level)!.push(item);
     });
 
-    // Sort items within each group
     grouped.forEach(domainMap => {
       domainMap.forEach(items => {
         items.sort((a, b) => a.display_order - b.display_order);
@@ -117,7 +125,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
     return grouped;
   }, [allItems]);
 
-  // Get unique levels
   const levels = useMemo(() => {
     const levelSet = new Set<string>();
     allItems.forEach(item => {
@@ -126,7 +133,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
     return Array.from(levelSet).sort();
   }, [allItems]);
 
-  // Calculate domain scores
   const domainScores = useMemo(() => {
     const scores_by_domain: Record<string, { total: number; possible: number }> = {};
     
@@ -138,7 +144,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
       
       scores_by_domain[domainName].possible += 1;
       const score = scores[item.id]?.score;
-      if (score !== undefined) {
+      if (score !== undefined && score !== null) {
         scores_by_domain[domainName].total += score;
       }
     });
@@ -146,9 +152,8 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
     return scores_by_domain;
   }, [allItems, scores]);
 
-  // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    const scoredCount = Object.values(scores).filter(s => s.score !== undefined).length;
+    const scoredCount = Object.values(scores).filter(s => s.score !== undefined && s.score !== null).length;
     return allItems.length > 0 ? Math.round((scoredCount / allItems.length) * 100) : 0;
   }, [scores, allItems]);
 
@@ -165,13 +170,38 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
     }));
   };
 
+  const handleClearScore = (itemId: string) => {
+    setScores(prev => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+    toast.success('Score cleared');
+  };
+
+  const handleClearDomainRow = (domain: string, level: string) => {
+    const domainMap = itemsByDomainAndLevel.get(domain);
+    if (!domainMap) return;
+    
+    const items = domainMap.get(level) || [];
+    
+    setScores(prev => {
+      const next = { ...prev };
+      items.forEach(item => {
+        delete next[item.id];
+      });
+      return next;
+    });
+    
+    toast.success(`Cleared ${items.length} items in ${domain} (${level})`);
+    setClearDomainConfirm(null);
+  };
+
   const handleSave = async (finalize: boolean) => {
-    // Check if incomplete when finalizing
     if (finalize && !isComplete) {
       setShowIncompleteWarning(true);
       return;
     }
-
     await performSave(finalize);
   };
 
@@ -208,20 +238,25 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
     });
   };
 
-  const getScoreColor = (itemId: string) => {
-    const score = scores[itemId]?.score;
-    if (score === undefined) return 'bg-muted/30';
-    if (score === 0) return 'bg-destructive/5';
-    if (score === 0.5) return 'bg-amber-50';
-    return 'bg-emerald-50';
+  const getScoreDisplay = (itemId: string) => {
+    const score = scores[itemId];
+    if (!score || score.score === undefined || score.score === null) {
+      return { label: 'Not assessed', color: 'bg-muted/50 text-muted-foreground', isScored: false };
+    }
+    if (score.score === 0) {
+      return { label: '0 - Not demonstrated', color: 'bg-destructive/10', isScored: true };
+    }
+    if (score.score === 0.5) {
+      return { label: '½ - Emerging', color: 'bg-amber-50', isScored: true };
+    }
+    return { label: '1 - Mastered', color: 'bg-emerald-50', isScored: true };
   };
 
-  // Get historical indicators for an item
   const getHistoricalIndicators = (itemId: string) => {
     if (!showHistoricalOverlay) return [];
     
     return historicalScores
-      .filter(h => h.scores[itemId]?.score !== undefined)
+      .filter(h => h.scores[itemId]?.score !== undefined && h.scores[itemId]?.score !== null)
       .map(h => ({
         score: h.scores[itemId].score,
         date: h.assessment.date_administered,
@@ -262,17 +297,38 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </div>
 
         <div className="flex gap-2">
+          {/* View Toggle */}
+          <div className="flex border rounded-lg overflow-hidden">
+            <Button 
+              variant={activeView === 'milestones' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setActiveView('milestones')}
+            >
+              Milestones
+            </Button>
+            <Button 
+              variant={activeView === 'report' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setActiveView('report')}
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              Report
+            </Button>
+          </div>
+          
           <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
             <Printer className="w-4 h-4 mr-2" />
-            Print / Export
+            Print
           </Button>
           <Button variant="outline" onClick={() => setShowUploadMapper(true)}>
             <Upload className="w-4 h-4 mr-2" />
-            Upload & Map
+            Upload
           </Button>
           <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
             <Save className="w-4 h-4 mr-2" />
-            Save Draft
+            Save
           </Button>
           <Button onClick={() => handleSave(true)} disabled={saving}>
             <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -281,63 +337,272 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </div>
       </div>
 
-      {/* Historical Overlay Toggle & Legend */}
-      {historicalScores.length > 0 && (
-        <Card className="bg-muted/30">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="show-historical"
-                    checked={showHistoricalOverlay}
-                    onCheckedChange={setShowHistoricalOverlay}
-                  />
-                  <Label htmlFor="show-historical" className="text-sm font-medium">
-                    Show historical scores
-                  </Label>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  ({historicalScores.length} previous assessment{historicalScores.length > 1 ? 's' : ''})
-                </span>
-              </div>
-              
-              {showHistoricalOverlay && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-3 h-3 rounded-full ${DATE_COLORS[0].bg}`} />
-                    <span className="text-xs">Current ({format(new Date(assessment.date_administered), 'M/d/yy')})</span>
-                  </div>
-                  {historicalScores.slice(0, 3).map((h, i) => (
-                    <div key={h.assessment.id} className="flex items-center gap-1.5">
-                      <div className={`w-3 h-3 rounded-full ${h.color.bg}`} />
-                      <span className="text-xs">{format(new Date(h.assessment.date_administered), 'M/d/yy')}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Report View */}
+      {activeView === 'report' && (
+        <VBMAPPReport
+          assessment={assessment}
+          items={allItems}
+          scores={scores}
+          studentName={studentName}
+          onAddGoals={(goals) => {
+            goals.forEach(async (goal) => {
+              await addTarget({
+                title: goal.title,
+                mastery_criteria: goal.masteryCriteria,
+                data_collection_type: goal.measurement === 'percent correct' ? 'discrete_trial' : 'probe',
+                source_type: 'custom',
+              });
+            });
+          }}
+        />
       )}
 
-      {/* Completion Progress Bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Assessment Progress</span>
-          <span>{Object.values(scores).filter(s => s.score !== undefined).length} / {allItems.length} items scored</span>
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all ${
-              isComplete ? 'bg-emerald-500' : 'bg-amber-400'
-            }`}
-            style={{ width: `${completionPercentage}%` }}
-          />
-        </div>
-      </div>
+      {/* Milestones View */}
+      {activeView === 'milestones' && (
+        <>
+          {/* Historical Overlay Toggle */}
+          {historicalScores.length > 0 && (
+            <Card className="bg-muted/30">
+              <CardContent className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-historical"
+                        checked={showHistoricalOverlay}
+                        onCheckedChange={setShowHistoricalOverlay}
+                      />
+                      <Label htmlFor="show-historical" className="text-sm font-medium">
+                        Show historical scores
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  {showHistoricalOverlay && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-3 h-3 rounded-full ${DATE_COLORS[0].bg}`} />
+                        <span className="text-xs">Current ({format(new Date(assessment.date_administered), 'M/d/yy')})</span>
+                      </div>
+                      {historicalScores.slice(0, 3).map((h, i) => (
+                        <div key={h.assessment.id} className="flex items-center gap-1.5">
+                          <div className={`w-3 h-3 rounded-full ${h.color.bg}`} />
+                          <span className="text-xs">{format(new Date(h.assessment.date_administered), 'M/d/yy')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Upload Mapper Dialog */}
+          {/* Progress Bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Assessment Progress</span>
+              <span>{Object.values(scores).filter(s => s.score !== undefined && s.score !== null).length} / {allItems.length} items scored</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all ${isComplete ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Domain Score Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {Object.entries(domainScores).slice(0, 6).map(([domain, { total, possible }]) => (
+              <Card key={domain} className="p-3">
+                <div className="text-xs text-muted-foreground truncate">{domain}</div>
+                <div className="text-lg font-bold">
+                  {total.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">/ {possible}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Level Tabs */}
+          <Tabs value={activeLevel} onValueChange={setActiveLevel}>
+            <TabsList>
+              {levels.map(level => (
+                <TabsTrigger key={level} value={level}>{level}</TabsTrigger>
+              ))}
+            </TabsList>
+
+            {levels.map(level => (
+              <TabsContent key={level} value={level} className="mt-4">
+                <div className="space-y-6">
+                  {Array.from(itemsByDomainAndLevel.entries()).map(([domainName, levelMap]) => {
+                    const items = levelMap.get(level) || [];
+                    if (items.length === 0) return null;
+
+                    const masteredCount = items.filter(i => scores[i.id]?.score === 1).length;
+                    const scoredCount = items.filter(i => scores[i.id]?.score !== undefined && scores[i.id]?.score !== null).length;
+
+                    return (
+                      <Card key={domainName}>
+                        <CardHeader className="py-3">
+                          <CardTitle className="text-base flex items-center justify-between">
+                            <span>{domainName}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {masteredCount} / {items.length} mastered
+                              </Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 text-xs">
+                                    <RotateCcw className="w-3 h-3 mr-1" />
+                                    Clear Row
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem
+                                    onClick={() => setClearDomainConfirm({ domain: domainName, level })}
+                                    className="text-destructive"
+                                  >
+                                    Clear all {scoredCount} scored items in {domainName}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-2">
+                            {items.map(item => {
+                              const scoreDisplay = getScoreDisplay(item.id);
+                              const historicalIndicators = getHistoricalIndicators(item.id);
+                              
+                              return (
+                                <div 
+                                  key={item.id}
+                                  className={`flex items-center justify-between gap-3 p-2 rounded-lg ${scoreDisplay.color}`}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs shrink-0">
+                                        {item.code}
+                                      </Badge>
+                                      <span className="text-sm font-medium truncate">{item.title}</span>
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-sm">
+                                          <p className="text-sm">{item.description}</p>
+                                          {item.mastery_criteria && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              <strong>Mastery:</strong> {item.mastery_criteria}
+                                            </p>
+                                          )}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                      
+                                      {/* Historical indicators */}
+                                      {historicalIndicators.length > 0 && (
+                                        <div className="flex items-center gap-1 ml-2">
+                                          {historicalIndicators.map((h, i) => (
+                                            <Tooltip key={i}>
+                                              <TooltipTrigger>
+                                                <div 
+                                                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${h.color.bg}`}
+                                                >
+                                                  {h.score === 0.5 ? '½' : h.score}
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p className="text-xs">
+                                                  Score: {h.score} on {format(new Date(h.date), 'MMM d, yyyy')}
+                                                </p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Not assessed indicator */}
+                                      {!scoreDisplay.isScored && (
+                                        <Badge variant="outline" className="text-xs text-muted-foreground bg-muted/50">
+                                          Not assessed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {/* Score buttons */}
+                                    <div className="flex gap-1">
+                                      {SCORE_OPTIONS.map(option => (
+                                        <Tooltip key={option.value}>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className={`w-8 h-8 p-0 ${
+                                                scores[item.id]?.score === option.value 
+                                                  ? option.color + ` ring-2 ring-offset-1 ${DATE_COLORS[0].ring}` 
+                                                  : 'hover:' + option.color.split(' ')[0]
+                                              }`}
+                                              onClick={() => handleScoreChange(item.id, option.value)}
+                                            >
+                                              {option.label}
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>{option.description}</TooltipContent>
+                                        </Tooltip>
+                                      ))}
+                                    </div>
+
+                                    {/* Clear score button */}
+                                    {scoreDisplay.isScored && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                            onClick={() => handleClearScore(item.id)}
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Clear score (set to Not Assessed)</TooltipContent>
+                                      </Tooltip>
+                                    )}
+
+                                    {/* Add as target */}
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleAddAsTarget(item)}
+                                        >
+                                          <FileText className="w-4 h-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Add as Target</TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </>
+      )}
+
+      {/* Dialogs */}
       <AssessmentUploadMapper
         open={showUploadMapper}
         onOpenChange={setShowUploadMapper}
@@ -346,7 +611,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         onScoresExtracted={(newScores) => setScores(newScores)}
       />
 
-      {/* Print Dialog */}
       <PrintableAssessmentGrid
         open={showPrintDialog}
         onOpenChange={setShowPrintDialog}
@@ -356,7 +620,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         systemName="VB-MAPP"
       />
 
-      {/* Incomplete Warning Dialog */}
       <AlertDialog open={showIncompleteWarning} onOpenChange={setShowIncompleteWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -366,8 +629,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
             </AlertDialogTitle>
             <AlertDialogDescription>
               This assessment is only {completionPercentage}% complete. You can still finalize it, 
-              but the recommendations and scores may be less accurate. You can always edit this 
-              assessment later to add more scores.
+              but recommendations may be less accurate.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -382,146 +644,26 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Domain Score Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {Object.entries(domainScores).slice(0, 6).map(([domain, { total, possible }]) => (
-          <Card key={domain} className="p-3">
-            <div className="text-xs text-muted-foreground truncate">{domain}</div>
-            <div className="text-lg font-bold">
-              {total.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">/ {possible}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* Level Tabs */}
-      <Tabs value={activeLevel} onValueChange={setActiveLevel}>
-        <TabsList>
-          {levels.map(level => (
-            <TabsTrigger key={level} value={level}>{level}</TabsTrigger>
-          ))}
-        </TabsList>
-
-        {levels.map(level => (
-          <TabsContent key={level} value={level} className="mt-4">
-            <div className="space-y-6">
-              {Array.from(itemsByDomainAndLevel.entries()).map(([domainName, levelMap]) => {
-                const items = levelMap.get(level) || [];
-                if (items.length === 0) return null;
-
-                const masteredCount = items.filter(i => scores[i.id]?.score === 1).length;
-
-                return (
-                  <Card key={domainName}>
-                    <CardHeader className="py-3">
-                      <CardTitle className="text-base flex items-center justify-between">
-                        <span>{domainName}</span>
-                        <Badge variant="outline">
-                          {masteredCount} / {items.length} mastered
-                        </Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-2">
-                        {items.map(item => {
-                          const historicalIndicators = getHistoricalIndicators(item.id);
-                          
-                          return (
-                            <div 
-                              key={item.id}
-                              className={`flex items-center justify-between gap-3 p-2 rounded-lg ${getScoreColor(item.id)}`}
-                            >
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs shrink-0">
-                                    {item.code}
-                                  </Badge>
-                                  <span className="text-sm font-medium truncate">{item.title}</span>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-sm">
-                                      <p className="text-sm">{item.description}</p>
-                                      {item.mastery_criteria && (
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          <strong>Mastery:</strong> {item.mastery_criteria}
-                                        </p>
-                                      )}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  
-                                  {/* Historical score indicators */}
-                                  {historicalIndicators.length > 0 && (
-                                    <div className="flex items-center gap-1 ml-2">
-                                      {historicalIndicators.map((h, i) => (
-                                        <Tooltip key={i}>
-                                          <TooltipTrigger>
-                                            <div 
-                                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${h.color.bg}`}
-                                            >
-                                              {h.score === 0.5 ? '½' : h.score}
-                                            </div>
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p className="text-xs">
-                                              Score: {h.score} on {format(new Date(h.date), 'MMM d, yyyy')}
-                                            </p>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 shrink-0">
-                                {/* Score buttons */}
-                                <div className="flex gap-1">
-                                  {SCORE_OPTIONS.map(option => (
-                                    <Button
-                                      key={option.value}
-                                      variant="outline"
-                                      size="sm"
-                                      className={`w-8 h-8 p-0 ${
-                                        scores[item.id]?.score === option.value 
-                                          ? option.color + ` ring-2 ring-offset-1 ${DATE_COLORS[0].ring}` 
-                                          : 'hover:' + option.color.split(' ')[0]
-                                      }`}
-                                      onClick={() => handleScoreChange(item.id, option.value)}
-                                    >
-                                      {option.label}
-                                    </Button>
-                                  ))}
-                                </div>
-
-                                {/* Add as target */}
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => handleAddAsTarget(item)}
-                                    >
-                                      <FileText className="w-4 h-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Add as Target</TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+      <AlertDialog open={!!clearDomainConfirm} onOpenChange={() => setClearDomainConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Domain Scores?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset all scored items in <strong>{clearDomainConfirm?.domain}</strong> ({clearDomainConfirm?.level}) 
+              back to "Not Assessed". This action can be undone by re-scoring items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearDomainConfirm && handleClearDomainRow(clearDomainConfirm.domain, clearDomainConfirm.level)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Clear All Scores
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
