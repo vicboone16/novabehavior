@@ -21,6 +21,7 @@ import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { AgencySwitcher } from '@/components/AgencySwitcher';
 import { useSync } from '@/contexts/SyncContext';
 import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,14 +91,17 @@ export default function MainLayout() {
       <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-                <ClipboardList className="w-4 h-4 text-primary-foreground" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+                  <ClipboardList className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-foreground">Behavior Data Collector</h1>
+                  <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-foreground">Behavior Data Collector</h1>
-                <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
-              </div>
+              <AgencySwitcher />
             </div>
             <div className="flex items-center gap-2">
               <GlobalSearch />

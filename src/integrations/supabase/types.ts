@@ -189,6 +189,149 @@ export type Database = {
         }
         Relationships: []
       }
+      agencies: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          billing_address_city: string | null
+          billing_address_line1: string | null
+          billing_address_state: string | null
+          billing_address_zip: string | null
+          city: string | null
+          country: string | null
+          coverage_mode: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          legal_name: string | null
+          logo_url: string | null
+          name: string
+          npi: string | null
+          phone: string | null
+          primary_color: string | null
+          settings: Json | null
+          slug: string | null
+          state: string | null
+          status: string
+          tax_id: string | null
+          timezone: string | null
+          updated_at: string
+          website: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_address_city?: string | null
+          billing_address_line1?: string | null
+          billing_address_state?: string | null
+          billing_address_zip?: string | null
+          city?: string | null
+          country?: string | null
+          coverage_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          name: string
+          npi?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          settings?: Json | null
+          slug?: string | null
+          state?: string | null
+          status?: string
+          tax_id?: string | null
+          timezone?: string | null
+          updated_at?: string
+          website?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_address_city?: string | null
+          billing_address_line1?: string | null
+          billing_address_state?: string | null
+          billing_address_zip?: string | null
+          city?: string | null
+          country?: string | null
+          coverage_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_url?: string | null
+          name?: string
+          npi?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          settings?: Json | null
+          slug?: string | null
+          state?: string | null
+          status?: string
+          tax_id?: string | null
+          timezone?: string | null
+          updated_at?: string
+          website?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      agency_memberships: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          is_primary: boolean | null
+          joined_at: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean | null
+          joined_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean | null
+          joined_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_memberships_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           appointment_type: string
@@ -3640,6 +3783,7 @@ export type Database = {
           phone: string | null
           pin_hash: string | null
           preferred_regions: Json | null
+          primary_agency_id: string | null
           secondary_email: string | null
           secondary_phone: string | null
           session_length_preferences: Json | null
@@ -3685,6 +3829,7 @@ export type Database = {
           phone?: string | null
           pin_hash?: string | null
           preferred_regions?: Json | null
+          primary_agency_id?: string | null
           secondary_email?: string | null
           secondary_phone?: string | null
           session_length_preferences?: Json | null
@@ -3730,6 +3875,7 @@ export type Database = {
           phone?: string | null
           pin_hash?: string | null
           preferred_regions?: Json | null
+          primary_agency_id?: string | null
           secondary_email?: string | null
           secondary_phone?: string | null
           session_length_preferences?: Json | null
@@ -3746,6 +3892,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_primary_agency_id_fkey"
+            columns: ["primary_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_supervisor_id_fkey"
             columns: ["supervisor_id"]
@@ -5160,6 +5313,7 @@ export type Database = {
       students: {
         Row: {
           activation_status: string | null
+          agency_id: string | null
           archived_at: string | null
           assessment_mode_enabled: boolean | null
           background_info: Json | null
@@ -5215,6 +5369,7 @@ export type Database = {
         }
         Insert: {
           activation_status?: string | null
+          agency_id?: string | null
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
           background_info?: Json | null
@@ -5270,6 +5425,7 @@ export type Database = {
         }
         Update: {
           activation_status?: string | null
+          agency_id?: string | null
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
           background_info?: Json | null
@@ -5323,7 +5479,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supervision_logs: {
         Row: {
@@ -5683,6 +5847,41 @@ export type Database = {
           },
         ]
       }
+      user_agency_context: {
+        Row: {
+          created_at: string
+          current_agency_id: string | null
+          id: string
+          last_switched_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_agency_id?: string | null
+          id?: string
+          last_switched_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_agency_id?: string | null
+          id?: string
+          last_switched_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_agency_context_current_agency_id_fkey"
+            columns: ["current_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -5943,6 +6142,7 @@ export type Database = {
         Args: { distance_miles: number }
         Returns: number
       }
+      generate_agency_slug: { Args: { _name: string }; Returns: string }
       generate_claim_number: { Args: never; Returns: string }
       get_client_coverage_mode: {
         Args: { _client_id: string }
@@ -5952,6 +6152,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      get_current_agency_id: { Args: { _user_id: string }; Returns: string }
       get_pending_approval_count: { Args: never; Returns: number }
       get_staff_supervisor: {
         Args: { _staff_user_id: string }
@@ -6082,6 +6283,10 @@ export type Database = {
         Args: { _staff_user_id: string }
         Returns: boolean
       }
+      has_agency_access: {
+        Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -6122,6 +6327,10 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_agency_admin: {
+        Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_coverage_verification_due: {
         Args: { _client_id: string }
         Returns: boolean
@@ -6166,6 +6375,10 @@ export type Database = {
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       set_user_pin: {
         Args: { _pin: string; _user_id: string }
+        Returns: boolean
+      }
+      switch_agency: {
+        Args: { _agency_id: string; _user_id: string }
         Returns: boolean
       }
       user_has_pin: { Args: { _user_id: string }; Returns: boolean }
