@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { 
-  Users, Plus, Eye, Trash2, Calendar, CheckCircle, AlertCircle
+  Users, Plus, Eye, Trash2, Calendar, CheckCircle, AlertCircle, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -34,6 +34,25 @@ import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BriefTeacherInputSaved } from '@/types/behavior';
 
+// Form error display component
+function FormErrorDisplay({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="p-6 text-center space-y-4">
+      <AlertCircle className="w-12 h-12 mx-auto text-destructive" />
+      <div>
+        <h3 className="font-medium text-destructive">Failed to load form</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          There was an error loading the Brief Teacher Input form.
+        </p>
+      </div>
+      <Button variant="outline" onClick={onRetry}>
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Try Again
+      </Button>
+    </div>
+  );
+}
+
 interface BriefTeacherInputManagerProps {
   student: Student;
   onSendQuestionnaire?: (assessmentType: string) => void;
@@ -50,12 +69,26 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
   const [duplicateAction, setDuplicateAction] = useState<'additional' | 'replace' | 'cancel'>('additional');
   const [responseToReplace, setResponseToReplace] = useState<string | null>(null);
   const [componentError, setComponentError] = useState<string | null>(null);
+  const [formRenderError, setFormRenderError] = useState(false);
+  const [formKey, setFormKey] = useState(0); // Key to force re-mount form
 
   // Initialize loading state
   useEffect(() => {
     const timeout = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timeout);
   }, []);
+
+  // Reset errors when form closes
+  useEffect(() => {
+    if (!showForm) {
+      setFormRenderError(false);
+    }
+  }, [showForm]);
+
+  const handleFormRetry = () => {
+    setFormRenderError(false);
+    setFormKey(prev => prev + 1);
+  };
 
   // Get saved responses from student profile with defensive parsing
   const savedResponses = useMemo((): BriefTeacherInputSaved[] => {
@@ -83,17 +116,22 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
   };
 
   const handleSave = (data: BriefTeacherInputData) => {
-    // If there are existing responses and this is a new entry, we already showed the dialog
-    // If user chose additional or this is the first response, save normally
-    if (savedResponses.length > 0 && !showForm) {
-      // This shouldn't happen, but handle it
-      setPendingSaveData(data);
-      setShowDuplicateDialog(true);
-      return;
-    }
+    try {
+      // If there are existing responses and this is a new entry, we already showed the dialog
+      // If user chose additional or this is the first response, save normally
+      if (savedResponses.length > 0 && !showForm) {
+        // This shouldn't happen, but handle it
+        setPendingSaveData(data);
+        setShowDuplicateDialog(true);
+        return;
+      }
 
-    saveResponse(data, duplicateAction === 'replace' ? responseToReplace : null);
-    setShowForm(false);
+      saveResponse(data, duplicateAction === 'replace' ? responseToReplace : null);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error in handleSave:', error);
+      toast.error('Failed to save. Please try again.');
+    }
   };
 
   const saveResponse = (data: BriefTeacherInputData, replaceId: string | null) => {
@@ -319,10 +357,20 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-120px)]">
-              <BriefTeacherInput
-                student={student}
-                onSave={handleSave}
-              />
+              {formRenderError ? (
+                <FormErrorDisplay onRetry={handleFormRetry} />
+              ) : (
+                <AssessmentErrorBoundary 
+                  onReset={handleFormRetry}
+                  fallbackMessage="Form failed to render"
+                >
+                  <BriefTeacherInput
+                    key={formKey}
+                    student={student}
+                    onSave={handleSave}
+                  />
+                </AssessmentErrorBoundary>
+              )}
             </ScrollArea>
           </DialogContent>
         </Dialog>
@@ -445,7 +493,7 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-500" />
+                <AlertCircle className="w-5 h-5 text-warning" />
                 Existing Teacher Input Found
               </AlertDialogTitle>
               <AlertDialogDescription>
