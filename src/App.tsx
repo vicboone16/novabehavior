@@ -26,6 +26,10 @@ import Schedule from "./pages/Schedule";
 import SecuritySettings from "./pages/SecuritySettings";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import QuestionnaireForm from "./pages/QuestionnaireForm";
+import Supervision from "./pages/Supervision";
+import Referrals from "./pages/Referrals";
+import Billing from "./pages/Billing";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import { toast } from "sonner";
 
@@ -106,6 +110,42 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <BehaviorLibrary />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/supervision" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Supervision />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/referrals" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Referrals />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/billing" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Billing />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Analytics />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
