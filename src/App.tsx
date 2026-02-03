@@ -33,6 +33,7 @@ import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
+import IEPLibrary from "./pages/IEPLibrary";
 import { StaffProfilePage } from "./components/staff-profile";
 import { toast } from "sonner";
 
@@ -106,6 +107,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <UserProfile />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/iep-library" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <IEPLibrary />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>

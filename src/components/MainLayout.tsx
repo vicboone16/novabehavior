@@ -13,7 +13,8 @@ import {
   UserCheck,
   UserPlus,
   DollarSign,
-  BarChart3
+  BarChart3,
+  BookOpen
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -140,6 +141,15 @@ export default function MainLayout() {
               >
                 <BarChart3 className="w-4 h-4" />
                 <span className="hidden sm:inline">Analytics</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/iep-library')}
+                className="gap-1"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">IEP Library</span>
               </Button>
               <Button
                 variant="outline"
