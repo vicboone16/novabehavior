@@ -147,8 +147,9 @@ export function CredentialTracker({ userId, showAllStaff = false }: CredentialTr
 
   const handleSaveCredential = async () => {
     try {
+      const targetUserId = form.user_id || userId || user?.id;
       const payload = {
-        user_id: form.user_id || userId || user?.id,
+        user_id: targetUserId,
         credential_type: form.credential_type,
         credential_number: form.credential_number || null,
         issuing_body: form.issuing_body || null,
@@ -168,6 +169,30 @@ export function CredentialTracker({ userId, showAllStaff = false }: CredentialTr
         const { error } = await supabase.from('staff_credentials').insert(payload);
         if (error) throw error;
         toast({ title: 'Credential added' });
+      }
+
+      // Sync NPI to profiles table for easy access in staff views
+      if (form.credential_type === 'NPI' && form.credential_number && targetUserId) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ npi: form.credential_number })
+          .eq('user_id', targetUserId);
+        
+        if (profileError) {
+          console.error('Failed to sync NPI to profile:', profileError);
+        }
+      }
+
+      // Sync primary credential type to profiles.credential field
+      if (['BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA'].includes(form.credential_type) && targetUserId) {
+        const { error: credError } = await supabase
+          .from('profiles')
+          .update({ credential: form.credential_type })
+          .eq('user_id', targetUserId);
+        
+        if (credError) {
+          console.error('Failed to sync credential to profile:', credError);
+        }
       }
 
       setShowAddCredential(false);
