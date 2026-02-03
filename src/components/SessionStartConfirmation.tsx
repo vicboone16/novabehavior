@@ -145,10 +145,20 @@ export function SessionStartConfirmation({
     try {
       let linkedAppointmentId: string | undefined;
       
+      // Generate session ID that will be used when session starts
+      const newSessionId = crypto.randomUUID();
+      
       if (startOption === 'continue' && inProgressAppointment) {
         // Continue with existing in-progress appointment (cross-device sync)
         linkedAppointmentId = inProgressAppointment.id;
-        // No need to update status - it's already in_progress
+        
+        // Ensure the appointment has the linked_session_id (for retroactive linkage)
+        if (!inProgressAppointment.linked_session_id) {
+          await supabase
+            .from('appointments')
+            .update({ linked_session_id: currentSessionId || newSessionId })
+            .eq('id', inProgressAppointment.id);
+        }
         
         toast({
           title: 'Continuing Session',
@@ -159,10 +169,13 @@ export function SessionStartConfirmation({
         // Link to existing scheduled appointment
         linkedAppointmentId = matchingAppointment.id;
         
-        // Update appointment status to in_progress
+        // Update appointment status to in_progress and link the session
         await supabase
           .from('appointments')
-          .update({ status: 'in_progress' })
+          .update({ 
+            status: 'in_progress',
+            linked_session_id: currentSessionId || newSessionId,
+          })
           .eq('id', matchingAppointment.id);
           
       } else if (startOption === 'create') {
@@ -181,6 +194,7 @@ export function SessionStartConfirmation({
             appointment_type: 'session',
             verification_status: 'unverified',
             verification_required: true,
+            linked_session_id: currentSessionId || newSessionId,
           })
           .select()
           .single();

@@ -142,16 +142,39 @@ export function SessionEndFlow({
             onConflict: 'session_id,student_id',
           });
 
-          // Check if there's an existing appointment for this session
-          // If not, create a retroactive appointment
-          const { data: existingAppointment } = await supabase
-            .from('appointments')
-            .select('id')
-            .eq('student_id', student.id)
-            .eq('linked_session_id', currentSessionId)
-            .maybeSingle();
+          // Check if there's a linked appointment in the store first, then fall back to DB lookup
+          const storedLinkedAppointmentId = useDataStore.getState().linkedAppointmentId;
+          
+          let appointmentToUpdate: string | null = null;
+          
+          if (storedLinkedAppointmentId) {
+            // We have a stored linked appointment - use it directly
+            appointmentToUpdate = storedLinkedAppointmentId;
+          } else {
+            // Fall back to checking by linked_session_id
+            const { data: existingAppointment } = await supabase
+              .from('appointments')
+              .select('id')
+              .eq('student_id', student.id)
+              .eq('linked_session_id', currentSessionId)
+              .maybeSingle();
+            
+            if (existingAppointment) {
+              appointmentToUpdate = existingAppointment.id;
+            }
+          }
 
-          if (!existingAppointment) {
+          if (appointmentToUpdate) {
+            // Update existing appointment status and end time
+            await supabase.from('appointments')
+              .update({ 
+                status: 'completed',
+                end_time: now.toISOString(),
+                duration_minutes: Math.round(effectiveMinutes),
+                linked_session_id: currentSessionId, // Ensure linkage
+              })
+              .eq('id', appointmentToUpdate);
+          } else {
             // Create retroactive appointment to show the session on the calendar
             await supabase.from('appointments').insert({
               student_id: student.id,
@@ -164,11 +187,6 @@ export function SessionEndFlow({
               linked_session_id: currentSessionId,
               notes: 'Auto-created from completed session',
             });
-          } else {
-            // Update existing appointment status
-            await supabase.from('appointments')
-              .update({ status: 'completed' })
-              .eq('id', existingAppointment.id);
           }
         }
       }
