@@ -97,12 +97,25 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         .select('clinician_user_id, student_id')
         .eq('status', 'active');
 
+      // Fetch staff credentials for NPI and certification info
+      const { data: credentials } = await supabase
+        .from('staff_credentials')
+        .select('user_id, credential_type, credential_number, is_verified')
+        .in('credential_type', ['NPI', 'BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA', 'State License']);
+
       // Build staff list with counts
       const staffWithCounts: StaffMember[] = (profiles || []).map(p => {
         const userRoles = roles?.filter(r => r.user_id === p.user_id).map(r => r.role) || [];
         const patientCount = caseloads?.filter(c => c.clinician_user_id === p.user_id).length || 0;
         const clinicianCount = profiles?.filter(pr => pr.supervisor_id === p.user_id).length || 0;
         const supervisor = profiles?.find(pr => pr.user_id === p.supervisor_id);
+
+        // Get NPI from credentials table if not in profile
+        const userCredentials = credentials?.filter(c => c.user_id === p.user_id) || [];
+        const npiCredential = userCredentials.find(c => c.credential_type === 'NPI');
+        const certCredential = userCredentials.find(c => 
+          ['BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA'].includes(c.credential_type)
+        );
 
         return {
           id: p.user_id,
@@ -112,8 +125,10 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
           last_name: p.last_name,
           email: p.email,
           phone: p.phone,
-          credential: p.credential,
-          npi: p.npi,
+          // Prefer profile credential, fall back to credentials table
+          credential: p.credential || certCredential?.credential_type || null,
+          // Prefer profile NPI, fall back to credentials table
+          npi: p.npi || npiCredential?.credential_number || null,
           title: p.title,
           status: p.status || 'active',
           supervisor_id: p.supervisor_id,

@@ -37,24 +37,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserDetails = async (userId: string) => {
     try {
       // Fetch profile - explicitly exclude pin_hash for security
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, user_id, display_name, first_name, last_name, email, phone, is_approved, approved_at, approved_by, created_at, updated_at')
         .eq('user_id', userId)
         .single();
 
-      if (profileData) {
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      } else if (profileData) {
         setProfile(profileData as Profile);
       }
 
-      // Fetch role
-      const { data: roleData } = await supabase
+      // Fetch role - always fetch fresh from database
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .single();
 
-      if (roleData) {
+      if (roleError) {
+        console.error('Error fetching role:', roleError);
+        // Don't clear role on error - keep previous value if any
+      } else if (roleData) {
         setUserRole(roleData.role as AppRole);
       }
     } catch (error) {
