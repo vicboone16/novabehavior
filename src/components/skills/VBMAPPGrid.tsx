@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, 
-  Upload, Printer, AlertTriangle 
+  Upload, Printer, AlertTriangle, Calendar, Palette
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { useCurriculumItems, useDomains, useTargetActions } from '@/hooks/useCurriculum';
 import { AssessmentUploadMapper } from './AssessmentUploadMapper';
 import { PrintableAssessmentGrid } from './PrintableAssessmentGrid';
@@ -32,6 +35,7 @@ interface VBMAPPGridProps {
   studentId: string;
   studentName: string;
   assessment: StudentAssessment;
+  allAssessments?: StudentAssessment[]; // All assessments for this curriculum system (for multi-date overlay)
   onBack: () => void;
   onSave: (
     results: Record<string, MilestoneScore>,
@@ -46,7 +50,16 @@ const SCORE_OPTIONS = [
   { value: 1, label: '1', color: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-emerald-300' },
 ];
 
-export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave }: VBMAPPGridProps) {
+// Colors for different assessment dates
+const DATE_COLORS = [
+  { bg: 'bg-blue-500', text: 'text-blue-500', ring: 'ring-blue-500', label: 'Current' },
+  { bg: 'bg-purple-500', text: 'text-purple-500', ring: 'ring-purple-500', label: 'Previous 1' },
+  { bg: 'bg-orange-500', text: 'text-orange-500', ring: 'ring-orange-500', label: 'Previous 2' },
+  { bg: 'bg-teal-500', text: 'text-teal-500', ring: 'ring-teal-500', label: 'Previous 3' },
+  { bg: 'bg-pink-500', text: 'text-pink-500', ring: 'ring-pink-500', label: 'Previous 4' },
+];
+
+export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments = [], onBack, onSave }: VBMAPPGridProps) {
   const { domains } = useDomains();
   const { items: allItems, loading } = useCurriculumItems(assessment.curriculum_system_id);
   const { addTarget } = useTargetActions(studentId);
@@ -59,6 +72,20 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
+  const [showHistoricalOverlay, setShowHistoricalOverlay] = useState(true);
+
+  // Build historical scores from other assessments (sorted by date, most recent first)
+  const historicalScores = useMemo(() => {
+    const otherAssessments = allAssessments
+      .filter(a => a.id !== assessment.id)
+      .sort((a, b) => new Date(b.date_administered).getTime() - new Date(a.date_administered).getTime());
+    
+    return otherAssessments.map((a, index) => ({
+      assessment: a,
+      scores: (a.results_json || {}) as Record<string, MilestoneScore>,
+      color: DATE_COLORS[Math.min(index + 1, DATE_COLORS.length - 1)],
+    }));
+  }, [allAssessments, assessment.id]);
 
   // Group items by domain and level
   const itemsByDomainAndLevel = useMemo(() => {
@@ -189,6 +216,19 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
     return 'bg-emerald-50';
   };
 
+  // Get historical indicators for an item
+  const getHistoricalIndicators = (itemId: string) => {
+    if (!showHistoricalOverlay) return [];
+    
+    return historicalScores
+      .filter(h => h.scores[itemId]?.score !== undefined)
+      .map(h => ({
+        score: h.scores[itemId].score,
+        date: h.assessment.date_administered,
+        color: h.color,
+      }));
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading VB-MAPP milestones...</div>;
   }
@@ -209,6 +249,9 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
               <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
                 {assessment.status === 'final' ? 'Finalized' : 'Draft'}
               </Badge>
+              <span>•</span>
+              <Calendar className="w-3 h-3" />
+              <span>{format(new Date(assessment.date_administered), 'MMM d, yyyy')}</span>
               <span>•</span>
               <span className={!isComplete ? 'text-amber-600' : ''}>
                 {completionPercentage}% complete
@@ -237,6 +280,46 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
           </Button>
         </div>
       </div>
+
+      {/* Historical Overlay Toggle & Legend */}
+      {historicalScores.length > 0 && (
+        <Card className="bg-muted/30">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-historical"
+                    checked={showHistoricalOverlay}
+                    onCheckedChange={setShowHistoricalOverlay}
+                  />
+                  <Label htmlFor="show-historical" className="text-sm font-medium">
+                    Show historical scores
+                  </Label>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  ({historicalScores.length} previous assessment{historicalScores.length > 1 ? 's' : ''})
+                </span>
+              </div>
+              
+              {showHistoricalOverlay && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-3 h-3 rounded-full ${DATE_COLORS[0].bg}`} />
+                    <span className="text-xs">Current ({format(new Date(assessment.date_administered), 'M/d/yy')})</span>
+                  </div>
+                  {historicalScores.slice(0, 3).map((h, i) => (
+                    <div key={h.assessment.id} className="flex items-center gap-1.5">
+                      <div className={`w-3 h-3 rounded-full ${h.color.bg}`} />
+                      <span className="text-xs">{format(new Date(h.assessment.date_administered), 'M/d/yy')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Completion Progress Bar */}
       <div className="space-y-1">
@@ -340,70 +423,96 @@ export function VBMAPPGrid({ studentId, studentName, assessment, onBack, onSave 
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-2">
-                        {items.map(item => (
-                          <div 
-                            key={item.id}
-                            className={`flex items-center justify-between gap-3 p-2 rounded-lg ${getScoreColor(item.id)}`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  {item.code}
-                                </Badge>
-                                <span className="text-sm font-medium truncate">{item.title}</span>
+                        {items.map(item => {
+                          const historicalIndicators = getHistoricalIndicators(item.id);
+                          
+                          return (
+                            <div 
+                              key={item.id}
+                              className={`flex items-center justify-between gap-3 p-2 rounded-lg ${getScoreColor(item.id)}`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs shrink-0">
+                                    {item.code}
+                                  </Badge>
+                                  <span className="text-sm font-medium truncate">{item.title}</span>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-sm">
+                                      <p className="text-sm">{item.description}</p>
+                                      {item.mastery_criteria && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          <strong>Mastery:</strong> {item.mastery_criteria}
+                                        </p>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  
+                                  {/* Historical score indicators */}
+                                  {historicalIndicators.length > 0 && (
+                                    <div className="flex items-center gap-1 ml-2">
+                                      {historicalIndicators.map((h, i) => (
+                                        <Tooltip key={i}>
+                                          <TooltipTrigger>
+                                            <div 
+                                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${h.color.bg}`}
+                                            >
+                                              {h.score === 0.5 ? '½' : h.score}
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs">
+                                              Score: {h.score} on {format(new Date(h.date), 'MMM d, yyyy')}
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {/* Score buttons */}
+                                <div className="flex gap-1">
+                                  {SCORE_OPTIONS.map(option => (
+                                    <Button
+                                      key={option.value}
+                                      variant="outline"
+                                      size="sm"
+                                      className={`w-8 h-8 p-0 ${
+                                        scores[item.id]?.score === option.value 
+                                          ? option.color + ` ring-2 ring-offset-1 ${DATE_COLORS[0].ring}` 
+                                          : 'hover:' + option.color.split(' ')[0]
+                                      }`}
+                                      onClick={() => handleScoreChange(item.id, option.value)}
+                                    >
+                                      {option.label}
+                                    </Button>
+                                  ))}
+                                </div>
+
+                                {/* Add as target */}
                                 <Tooltip>
-                                  <TooltipTrigger>
-                                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleAddAsTarget(item)}
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                    </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent className="max-w-sm">
-                                    <p className="text-sm">{item.description}</p>
-                                    {item.mastery_criteria && (
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        <strong>Mastery:</strong> {item.mastery_criteria}
-                                      </p>
-                                    )}
-                                  </TooltipContent>
+                                  <TooltipContent>Add as Target</TooltipContent>
                                 </Tooltip>
                               </div>
                             </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              {/* Score buttons */}
-                              <div className="flex gap-1">
-                                {SCORE_OPTIONS.map(option => (
-                                  <Button
-                                    key={option.value}
-                                    variant="outline"
-                                    size="sm"
-                                    className={`w-8 h-8 p-0 ${
-                                      scores[item.id]?.score === option.value 
-                                        ? option.color + ' ring-2 ring-offset-1' 
-                                        : 'hover:' + option.color.split(' ')[0]
-                                    }`}
-                                    onClick={() => handleScoreChange(item.id, option.value)}
-                                  >
-                                    {option.label}
-                                  </Button>
-                                ))}
-                              </div>
-
-                              {/* Add as target */}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => handleAddAsTarget(item)}
-                                  >
-                                    <FileText className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Add as Target</TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Grid3X3, Plus, Edit2, Calendar, ChevronRight,
-  Loader2, BookOpen, TrendingUp
+  Loader2, BookOpen, TrendingUp, Trash2, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -49,6 +59,16 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
   const [curriculumSystems, setCurriculumSystems] = useState<{ id: string; name: string }[]>([]);
   const [selectedAssessment, setSelectedAssessment] = useState<AssessmentRow | null>(null);
   const [creating, setCreating] = useState(false);
+  
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<AssessmentRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  
+  // Duplicate warning state
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [pendingCurriculumSystemId, setPendingCurriculumSystemId] = useState<string | null>(null);
+  const [existingAssessmentForSystem, setExistingAssessmentForSystem] = useState<AssessmentRow | null>(null);
 
   useEffect(() => {
     loadData();
@@ -88,8 +108,24 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
     }
   };
 
-  const handleCreateAssessment = async (curriculumSystemId: string) => {
+  const handleCreateAssessmentRequest = (curriculumSystemId: string) => {
+    // Check if there's already an assessment for this curriculum system
+    const existing = assessments.find(a => a.curriculum_system_id === curriculumSystemId);
+    
+    if (existing) {
+      // Show duplicate warning
+      setPendingCurriculumSystemId(curriculumSystemId);
+      setExistingAssessmentForSystem(existing);
+      setDuplicateWarningOpen(true);
+    } else {
+      // Create directly
+      createAssessment(curriculumSystemId);
+    }
+  };
+
+  const createAssessment = async (curriculumSystemId: string) => {
     setCreating(true);
+    setDuplicateWarningOpen(false);
     try {
       const { data, error } = await supabase
         .from('student_assessments')
@@ -119,7 +155,48 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
       toast.error('Failed to create assessment');
     } finally {
       setCreating(false);
+      setPendingCurriculumSystemId(null);
+      setExistingAssessmentForSystem(null);
     }
+  };
+
+  const handleResumeExisting = () => {
+    if (existingAssessmentForSystem) {
+      setSelectedAssessment(existingAssessmentForSystem);
+    }
+    setDuplicateWarningOpen(false);
+    setPendingCurriculumSystemId(null);
+    setExistingAssessmentForSystem(null);
+  };
+
+  const handleDeleteAssessment = async () => {
+    if (!assessmentToDelete) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('student_assessments')
+        .delete()
+        .eq('id', assessmentToDelete.id);
+
+      if (error) throw error;
+
+      setAssessments(prev => prev.filter(a => a.id !== assessmentToDelete.id));
+      toast.success('Assessment deleted');
+    } catch (error) {
+      console.error('Error deleting assessment:', error);
+      toast.error('Failed to delete assessment');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setAssessmentToDelete(null);
+    }
+  };
+
+  const confirmDelete = (e: React.MouseEvent, assessment: AssessmentRow) => {
+    e.stopPropagation();
+    setAssessmentToDelete(assessment);
+    setDeleteConfirmOpen(true);
   };
 
   const handleSaveAssessment = async (
@@ -190,6 +267,13 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
     } : undefined,
   });
 
+  // Get all assessments for the same curriculum system to enable multi-date overlay
+  const getRelatedAssessments = (assessment: AssessmentRow): StudentAssessment[] => {
+    return assessments
+      .filter(a => a.curriculum_system_id === assessment.curriculum_system_id)
+      .map(toStudentAssessment);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -205,6 +289,7 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
         studentId={studentId}
         studentName={studentName}
         assessment={toStudentAssessment(selectedAssessment)}
+        allAssessments={getRelatedAssessments(selectedAssessment)}
         onBack={() => {
           setSelectedAssessment(null);
           loadData();
@@ -216,6 +301,68 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
 
   return (
     <div className="space-y-4">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              Delete Assessment
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this VB-MAPP assessment from{' '}
+              <strong>{assessmentToDelete?.date_administered ? format(new Date(assessmentToDelete.date_administered), 'MMM d, yyyy') : ''}</strong>?
+              This will permanently remove all scored milestones. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAssessment} 
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete Assessment'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Duplicate Warning Dialog */}
+      <AlertDialog open={duplicateWarningOpen} onOpenChange={setDuplicateWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Existing Assessment Found
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                {studentName} already has a VB-MAPP assessment for this curriculum system 
+                (started on {existingAssessmentForSystem?.date_administered 
+                  ? format(new Date(existingAssessmentForSystem.date_administered), 'MMM d, yyyy') 
+                  : 'a previous date'}).
+              </p>
+              <p className="font-medium">
+                You can continue scoring on the existing assessment to add data from a new date, 
+                or create a completely new assessment if needed.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={handleResumeExisting}>
+              <Edit2 className="w-4 h-4 mr-2" />
+              Resume Existing
+            </Button>
+            <AlertDialogAction onClick={() => pendingCurriculumSystemId && createAssessment(pendingCurriculumSystemId)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -225,7 +372,7 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
         </div>
         
         {curriculumSystems.length > 0 && (
-          <Select onValueChange={handleCreateAssessment} disabled={creating}>
+          <Select onValueChange={handleCreateAssessmentRequest} disabled={creating}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder={creating ? "Creating..." : "Start New Assessment"} />
             </SelectTrigger>
@@ -252,6 +399,7 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
               <p className="text-xs text-muted-foreground mt-1">
                 These assessments are NOT sent out as questionnaires. Score milestones directly, 
                 save as drafts, and finalize when complete. Scores sync with skill acquisition targets.
+                <strong className="block mt-1">Tip: Continue an existing assessment to add scores from a new date—they'll appear color-coded by date!</strong>
               </p>
             </div>
           </div>
@@ -268,7 +416,7 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
               Start a new assessment to begin scoring milestones for {studentName}
             </p>
             {curriculumSystems.length > 0 && (
-              <Button onClick={() => handleCreateAssessment(curriculumSystems[0].id)} disabled={creating}>
+              <Button onClick={() => handleCreateAssessmentRequest(curriculumSystems[0].id)} disabled={creating}>
                 <Plus className="w-4 h-4 mr-2" />
                 Start First Assessment
               </Button>
@@ -323,6 +471,14 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => confirmDelete(e, assessment)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="sm">
                           <Edit2 className="w-4 h-4 mr-1" />
                           {assessment.status === 'draft' ? 'Continue' : 'View'}
