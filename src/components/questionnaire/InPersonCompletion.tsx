@@ -28,7 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { ABAS3FormRenderer } from './ABAS3FormRenderer';
+import { ABAS3FormRenderer, ABASResponse, canSubmitABAS, validateABASBeforeSubmit, createDefaultABASResponse } from './ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -75,6 +75,8 @@ export function InPersonCompletion({
     questions: Question[] | ABAS3Question[];
   } | null>(null);
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [abasResponses, setAbasResponses] = useState<Record<string, ABASResponse>>({});
+  const [showValidation, setShowValidation] = useState(false);
   const [respondentName, setRespondentName] = useState('');
   const [respondentType, setRespondentType] = useState<string>('parent');
 
@@ -142,16 +144,24 @@ export function InPersonCompletion({
       return;
     }
 
-    // Validate required questions (ABAS-3 questions are all required by default)
+    // Validate required questions (ABAS-3 uses ABASResponse validation)
     if (templateType === 'abas3') {
       const abas3Questions = template.questions as ABAS3Question[];
-      const unanswered = abas3Questions.filter(q => responses[q.id] === undefined);
-      if (unanswered.length > 0) {
+      const items = abas3Questions.map(q => ({ id: q.id, required: true }));
+      const validation = validateABASBeforeSubmit(items, abasResponses);
+      
+      if (!validation.ok) {
+        setShowValidation(true);
         toast({
           title: 'Please complete all questions',
-          description: `${unanswered.length} question(s) not answered`,
+          description: `${validation.missingIds.length} question(s) not answered`,
           variant: 'destructive',
         });
+        // Scroll to first missing item
+        const firstMissing = document.getElementById(`abas-item-${validation.missingIds[0]}`);
+        if (firstMissing) {
+          firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
     } else {
@@ -193,13 +203,15 @@ export function InPersonCompletion({
 
       if (invError) throw invError;
 
-      // Save the response
+      // Save the response (use abasResponses for ABAS-3, regular responses otherwise)
+      const responsesToSave = templateType === 'abas3' ? abasResponses : responses;
+      
       const { error: responseError } = await supabase
         .from('questionnaire_responses')
-        .insert({
+        .insert([{
           invitation_id: invitation.id,
           student_id: studentId,
-          responses: responses,
+          responses: JSON.parse(JSON.stringify(responsesToSave)),
           respondent_info: {
             name: respondentName.trim(),
             type: respondentType,
@@ -207,13 +219,13 @@ export function InPersonCompletion({
             completed_by: user?.id,
             submitted_at: new Date().toISOString(),
           },
-        });
+        }]);
 
       if (responseError) throw responseError;
 
       // Create corresponding assessment record if standardized
       if (templateType === 'abas3') {
-        await supabase.from('abas3_assessments').insert({
+        await supabase.from('abas3_assessments').insert([{
           student_id: studentId,
           form_template_id: templateId,
           invitation_id: invitation.id,
@@ -223,8 +235,8 @@ export function InPersonCompletion({
           respondent_relationship: respondentType,
           status: 'completed',
           completed_at: new Date().toISOString(),
-          raw_responses: responses,
-        });
+          raw_responses: JSON.parse(JSON.stringify(abasResponses)),
+        }]);
       } else if (templateType === 'socially_savvy') {
         await supabase.from('socially_savvy_assessments').insert({
           student_id: studentId,
@@ -247,6 +259,8 @@ export function InPersonCompletion({
 
       // Reset state
       setResponses({});
+      setAbasResponses({});
+      setShowValidation(false);
       setRespondentName('');
       setRespondentType('parent');
       onComplete();
@@ -335,10 +349,11 @@ export function InPersonCompletion({
             {isABAS3 ? (
               <ABAS3FormRenderer
                 questions={questions as ABAS3Question[]}
-                responses={responses}
+                responses={abasResponses}
                 onResponseChange={(questionId, value) => 
-                  setResponses((prev) => ({ ...prev, [questionId]: value }))
+                  setAbasResponses((prev) => ({ ...prev, [questionId]: value }))
                 }
+                showValidation={showValidation}
               />
             ) : (
               <>
