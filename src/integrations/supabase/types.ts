@@ -2888,6 +2888,8 @@ export type Database = {
           background_info: Json | null
           behaviors: Json | null
           bip_data: Json | null
+          brief_record_review: Json | null
+          brief_teacher_inputs: Json | null
           case_types: Json | null
           color: string
           contact_email: string | null
@@ -2925,6 +2927,8 @@ export type Database = {
           background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
+          brief_record_review?: Json | null
+          brief_teacher_inputs?: Json | null
           case_types?: Json | null
           color?: string
           contact_email?: string | null
@@ -2962,6 +2966,8 @@ export type Database = {
           background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
+          brief_record_review?: Json | null
+          brief_teacher_inputs?: Json | null
           case_types?: Json | null
           color?: string
           contact_email?: string | null
