@@ -14,6 +14,14 @@ import type {
   RiskFlag,
   DataSignals
 } from '@/types/iepSupports';
+import {
+  getWeightsForProfile,
+  getConfidenceForProfile,
+  deduplicateRecommendations,
+  mapGoalToDomainTopics,
+  matchTopicWithSynonyms,
+  TOPIC_DICTIONARY
+} from '@/lib/iepRecommendationConfig';
 
 // Transform database row to typed object
 function transformSupportLink(row: Record<string, unknown>): StudentIEPSupportLink {
@@ -372,9 +380,11 @@ export function useIEPRecommendations(studentId: string) {
         };
       });
 
+      // Deduplicate similar items
+      const deduped = deduplicateRecommendations(scored.filter(r => r.recommendation_score > 0));
+
       // Sort by score and take top N
-      const sorted = scored
-        .filter(r => r.recommendation_score > 0)
+      const sorted = deduped
         .sort((a, b) => b.recommendation_score - a.recommendation_score)
         .slice(0, request.constraints.max_recommendations)
         .map((r, idx) => ({ ...r, rank: idx + 1 }));
@@ -407,54 +417,67 @@ export function useIEPRecommendations(studentId: string) {
   };
 }
 
-// ==================== Scoring Functions ====================
+// ==================== Scoring Functions with Configurable Weights ====================
 
 function calculateScore(
   item: Record<string, unknown>,
-  request: IEPRecommendationRequest
+  request: IEPRecommendationRequest,
+  profileId?: string
 ): number {
+  const weights = getWeightsForProfile(profileId);
   let score = 0;
   const student = request.student;
   const goals = request.goals;
   const signals = request.data_signals;
 
-  // 1) Eligibility / disability match (+3)
+  // 1) Eligibility / disability match
   const disabilityTags = (item.disability_tags as string[]) || [];
   if (disabilityTags.some(d => student.eligibility.includes(d))) {
-    score += 3;
+    score += weights.eligibility_match;
   }
   if (disabilityTags.includes('all')) {
-    score += 1;
+    score += weights.eligibility_all_tag;
   }
 
-  // 2) Grade band match (+2)
+  // 2) Grade band match
   const gradeBand = (item.grade_band as string[]) || [];
   if (gradeBand.includes(student.grade_band) || gradeBand.includes('all')) {
-    score += 2;
+    score += weights.grade_band_match;
   }
 
-  // 3) Setting match (+2 or +1)
+  // 3) Setting match
   const settings = (item.setting_tags as string[]) || [];
   if (settings.some(s => student.settings.includes(s))) {
-    score += 2;
+    score += weights.setting_match;
   } else if (settings.includes('general_ed')) {
-    score += 1;
+    score += weights.general_ed_setting_bonus;
   }
 
-  // 4) Goal/domain match (+3 per goal domain, +1 per skill area)
+  // 4) Goal/domain match using crosswalk
   const domains = (item.domains as string[]) || [];
   const topics = (item.topics as string[]) || [];
   
   for (const goal of goals) {
-    if (domains.includes(goal.domain)) {
-      score += 3;
+    // Try to map goal text to domains/topics via crosswalk
+    const mapped = mapGoalToDomainTopics(goal.goal_text);
+    if (mapped) {
+      if (domains.includes(mapped.domain)) {
+        score += weights.goal_domain_match_per_goal;
+      }
+      if (mapped.topics.some(t => matchTopicWithSynonyms(t, topics))) {
+        score += weights.goal_topic_match_per_goal;
+      }
     }
-    if (topics.includes(goal.skill_area)) {
-      score += 1;
+    // Also check direct matches
+    if (domains.includes(goal.domain)) {
+      score += weights.goal_domain_match_per_goal;
+    }
+    if (matchTopicWithSynonyms(goal.skill_area, topics)) {
+      score += weights.goal_topic_match_per_goal;
     }
   }
 
-  // 5) Data signal match (+2 per bucket match)
+  // 5) Data signal match using topic dictionary synonyms
   const allSignals = [
     ...signals.academic,
     ...signals.behavior,
@@ -464,21 +487,35 @@ function calculateScore(
     ...signals.executive_function
   ];
   
-  const signalMatches = [...domains, ...topics].filter(d => 
-    allSignals.some(s => s.toLowerCase().includes(d.toLowerCase()) || d.toLowerCase().includes(s.toLowerCase()))
-  );
-  score += signalMatches.length * 2;
+  let signalMatches = 0;
+  for (const signal of allSignals) {
+    const signalLower = signal.toLowerCase().replace(/\s+/g, '_');
+    if ([...domains, ...topics].some(d => {
+      if (d === signalLower) return true;
+      const dictEntry = TOPIC_DICTIONARY[d];
+      return dictEntry?.synonyms.some(s => s === signalLower || signalLower.includes(s));
+    })) {
+      signalMatches++;
+    }
+  }
+  score += signalMatches * weights.data_signal_match_per_hit;
 
   // 6) Compliance weighting
   const compliance = item.idea_compliance_level as string;
   if (compliance?.toLowerCase() === 'safe') {
-    score += 1;
+    score += weights.safe_bonus;
   } else if (compliance?.toLowerCase() === 'caution') {
-    score -= 1;
+    score += weights.caution_penalty;
   }
   
   if ((item.item_type as string)?.toLowerCase() === 'modification') {
-    score -= 1;
+    score += weights.modification_penalty;
+  }
+
+  // 7) Contraindication penalty
+  const contraindications = (item.contraindications as string[]) || [];
+  if (contraindications.length > 0) {
+    score += weights.contraindication_present_penalty;
   }
 
   return Math.max(0, score);
@@ -549,8 +586,9 @@ function identifyRiskFlags(item: Record<string, unknown>): RiskFlag[] {
   return flags;
 }
 
-function getConfidence(score: number): RecommendationConfidence {
-  if (score >= 10) return 'high';
-  if (score >= 6) return 'medium';
+function getConfidence(score: number, profileId?: string): RecommendationConfidence {
+  const thresholds = getConfidenceForProfile(profileId);
+  if (score >= thresholds.high_min_score) return 'high';
+  if (score >= thresholds.medium_min_score) return 'medium';
   return 'low';
 }
