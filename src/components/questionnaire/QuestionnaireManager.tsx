@@ -411,7 +411,8 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     new Date(i.completed_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   ).length;
 
-  const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0 || vbmappForms.length > 0 || sociallySavvyForms.length > 0;
+  // VB-MAPP is tracker_internal - not included in sendable templates
+  const hasAnyTemplates = templates.length > 0 || abas3Forms.length > 0 || sociallySavvyForms.length > 0;
 
   const handleTemplateSelect = (value: string) => {
     // Check which type of form this is
@@ -564,77 +565,8 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
         </Card>
       )}
 
-      {/* VB-MAPP Assessments */}
-      {vbmappForms.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" />
-              VB-MAPP Assessments
-            </CardTitle>
-            <CardDescription>
-              Verbal Behavior Milestones Assessment and Placement Program
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {vbmappForms.map((form) => (
-                <div
-                  key={form.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium text-sm">{form.form_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {form.form_type === 'milestones' ? `${form.level} • ` : ''}{form.age_range || 'All ages'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openPreview(form.id, 'vbmapp')}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Preview</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openInPerson(form.id, 'vbmapp')}
-                        >
-                          <Users className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Complete In-Person</TooltipContent>
-                    </Tooltip>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        handleTemplateSelect(form.id);
-                        setShowSendDialog(true);
-                      }}
-                    >
-                      <Send className="w-3 h-3 mr-1" />
-                      Send
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* VB-MAPP Note: VB-MAPP is an internal tracker, not a sendable questionnaire.
+          It is accessed via Student Profile > Skills > Curriculum tab */}
 
       {/* Socially Savvy Assessments */}
       {sociallySavvyForms.length > 0 && (
@@ -976,24 +908,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                       ))}
                     </>
                   )}
-                  {vbmappForms.length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                        VB-MAPP Assessments
-                      </div>
-                      {vbmappForms.map((form) => (
-                        <SelectItem key={form.id} value={form.id}>
-                          <div className="flex items-center gap-2">
-                            <ClipboardList className="w-3 h-3 text-primary" />
-                            <span>{form.form_name}</span>
-                            {form.age_range && (
-                              <span className="text-xs text-muted-foreground">({form.age_range})</span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
+                  {/* VB-MAPP excluded - it's an internal tracker, not sendable */}
                   {sociallySavvyForms.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
