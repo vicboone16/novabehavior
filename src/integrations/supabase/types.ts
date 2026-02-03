@@ -737,6 +737,461 @@ export type Database = {
           },
         ]
       }
+      client_case_attributes: {
+        Row: {
+          attribute_key: string
+          attribute_type: string
+          attribute_value: string
+          client_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          attribute_key: string
+          attribute_type: string
+          attribute_value: string
+          client_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          attribute_key?: string
+          attribute_type?: string
+          attribute_value?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_case_attributes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_communication_access: {
+        Row: {
+          aac_device_type: string | null
+          aac_notes: string | null
+          client_id: string
+          communication_mode: string | null
+          created_at: string
+          cultural_notes: string | null
+          cultural_notes_visibility: string | null
+          id: string
+          interpreter_language: string | null
+          interpreter_required: boolean
+          preferred_language_for_caregiver_comms: string
+          primary_language: string
+          secondary_languages: Json | null
+          sensory_preferences: Json | null
+          updated_at: string
+        }
+        Insert: {
+          aac_device_type?: string | null
+          aac_notes?: string | null
+          client_id: string
+          communication_mode?: string | null
+          created_at?: string
+          cultural_notes?: string | null
+          cultural_notes_visibility?: string | null
+          id?: string
+          interpreter_language?: string | null
+          interpreter_required?: boolean
+          preferred_language_for_caregiver_comms?: string
+          primary_language?: string
+          secondary_languages?: Json | null
+          sensory_preferences?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          aac_device_type?: string | null
+          aac_notes?: string | null
+          client_id?: string
+          communication_mode?: string | null
+          created_at?: string
+          cultural_notes?: string | null
+          cultural_notes_visibility?: string | null
+          id?: string
+          interpreter_language?: string | null
+          interpreter_required?: boolean
+          preferred_language_for_caregiver_comms?: string
+          primary_language?: string
+          secondary_languages?: Json | null
+          sensory_preferences?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_communication_access_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_communication_log: {
+        Row: {
+          attachments: Json | null
+          client_id: string
+          contact_id: string | null
+          contact_person: string
+          contact_role: string | null
+          created_at: string
+          date_time: string
+          detailed_notes: string | null
+          direction: string | null
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          follow_up_tasks: Json | null
+          id: string
+          logged_by: string
+          method: string
+          summary: string
+          topic_tags: Json | null
+          updated_at: string
+          visibility: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          client_id: string
+          contact_id?: string | null
+          contact_person: string
+          contact_role?: string | null
+          created_at?: string
+          date_time?: string
+          detailed_notes?: string | null
+          direction?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          follow_up_tasks?: Json | null
+          id?: string
+          logged_by: string
+          method: string
+          summary: string
+          topic_tags?: Json | null
+          updated_at?: string
+          visibility?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          client_id?: string
+          contact_id?: string | null
+          contact_person?: string
+          contact_role?: string | null
+          created_at?: string
+          date_time?: string
+          detailed_notes?: string | null
+          direction?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          follow_up_tasks?: Json | null
+          id?: string
+          logged_by?: string
+          method?: string
+          summary?: string
+          topic_tags?: Json | null
+          updated_at?: string
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_communication_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_communication_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contacts: {
+        Row: {
+          can_make_decisions: boolean | null
+          can_pickup: boolean | null
+          client_id: string
+          created_at: string
+          emails: Json | null
+          full_name: string
+          id: string
+          is_emergency_contact: boolean | null
+          is_primary_guardian: boolean | null
+          is_provider_contact: boolean | null
+          is_school_contact: boolean | null
+          is_secondary_guardian: boolean | null
+          notes: string | null
+          phones: Json | null
+          preferred_contact_method: string | null
+          preferred_language: string | null
+          relationship: string
+          updated_at: string
+          visibility_permission: string | null
+        }
+        Insert: {
+          can_make_decisions?: boolean | null
+          can_pickup?: boolean | null
+          client_id: string
+          created_at?: string
+          emails?: Json | null
+          full_name: string
+          id?: string
+          is_emergency_contact?: boolean | null
+          is_primary_guardian?: boolean | null
+          is_provider_contact?: boolean | null
+          is_school_contact?: boolean | null
+          is_secondary_guardian?: boolean | null
+          notes?: string | null
+          phones?: Json | null
+          preferred_contact_method?: string | null
+          preferred_language?: string | null
+          relationship: string
+          updated_at?: string
+          visibility_permission?: string | null
+        }
+        Update: {
+          can_make_decisions?: boolean | null
+          can_pickup?: boolean | null
+          client_id?: string
+          created_at?: string
+          emails?: Json | null
+          full_name?: string
+          id?: string
+          is_emergency_contact?: boolean | null
+          is_primary_guardian?: boolean | null
+          is_provider_contact?: boolean | null
+          is_school_contact?: boolean | null
+          is_secondary_guardian?: boolean | null
+          notes?: string | null
+          phones?: Json | null
+          preferred_contact_method?: string | null
+          preferred_language?: string | null
+          relationship?: string
+          updated_at?: string
+          visibility_permission?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          doc_type: string
+          expiration_date: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_current_version: boolean | null
+          mime_type: string | null
+          notes: string | null
+          previous_version_id: string | null
+          review_required: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_year_tag: string | null
+          tags: Json | null
+          title: string
+          updated_at: string
+          upload_date: string
+          uploaded_by: string | null
+          version_number: number | null
+          visibility_permission: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          doc_type: string
+          expiration_date?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_current_version?: boolean | null
+          mime_type?: string | null
+          notes?: string | null
+          previous_version_id?: string | null
+          review_required?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_year_tag?: string | null
+          tags?: Json | null
+          title: string
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string | null
+          version_number?: number | null
+          visibility_permission?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          expiration_date?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_current_version?: boolean | null
+          mime_type?: string | null
+          notes?: string | null
+          previous_version_id?: string | null
+          review_required?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_year_tag?: string | null
+          tags?: Json | null
+          title?: string
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string | null
+          version_number?: number | null
+          visibility_permission?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_documents_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "client_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_locations: {
+        Row: {
+          access_instructions: string | null
+          address_line1: string
+          address_line2: string | null
+          allowed_session_types: Json | null
+          allowed_staff_roles: Json | null
+          city: string
+          client_id: string
+          country: string | null
+          created_at: string
+          geocode_lat: number | null
+          geocode_lng: number | null
+          geocode_status: string | null
+          id: string
+          is_active: boolean
+          is_primary_service_site: boolean | null
+          location_name: string
+          location_type: string
+          onsite_contact_email: string | null
+          onsite_contact_name: string | null
+          onsite_contact_phone: string | null
+          parking_notes: string | null
+          safety_notes: string | null
+          safety_notes_visibility: string | null
+          school_hours: Json | null
+          school_hours_only: boolean | null
+          state: string
+          updated_at: string
+          zip_code: string
+        }
+        Insert: {
+          access_instructions?: string | null
+          address_line1: string
+          address_line2?: string | null
+          allowed_session_types?: Json | null
+          allowed_staff_roles?: Json | null
+          city: string
+          client_id: string
+          country?: string | null
+          created_at?: string
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary_service_site?: boolean | null
+          location_name: string
+          location_type: string
+          onsite_contact_email?: string | null
+          onsite_contact_name?: string | null
+          onsite_contact_phone?: string | null
+          parking_notes?: string | null
+          safety_notes?: string | null
+          safety_notes_visibility?: string | null
+          school_hours?: Json | null
+          school_hours_only?: boolean | null
+          state: string
+          updated_at?: string
+          zip_code: string
+        }
+        Update: {
+          access_instructions?: string | null
+          address_line1?: string
+          address_line2?: string | null
+          allowed_session_types?: Json | null
+          allowed_staff_roles?: Json | null
+          city?: string
+          client_id?: string
+          country?: string | null
+          created_at?: string
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary_service_site?: boolean | null
+          location_name?: string
+          location_type?: string
+          onsite_contact_email?: string | null
+          onsite_contact_name?: string | null
+          onsite_contact_phone?: string | null
+          parking_notes?: string | null
+          safety_notes?: string | null
+          safety_notes_visibility?: string | null
+          school_hours?: Json | null
+          school_hours_only?: boolean | null
+          state?: string
+          updated_at?: string
+          zip_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_locations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_payers: {
         Row: {
           created_at: string
@@ -797,6 +1252,279 @@ export type Database = {
           {
             foreignKeyName: "client_payers_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_safety_medical: {
+        Row: {
+          allergies: Json | null
+          client_id: string
+          created_at: string
+          crisis_plan_doc_id: string | null
+          deescalation_supports: Json | null
+          dietary_restrictions: Json | null
+          emergency_protocol_present: boolean
+          id: string
+          known_triggers: Json | null
+          last_reviewed_at: string | null
+          last_reviewed_by: string | null
+          medical_conditions: Json | null
+          medications: Json | null
+          mobility_needs: string | null
+          other_medical_notes: string | null
+          safety_flags: Json | null
+          seizure_protocol: string | null
+          sensory_considerations: string | null
+          updated_at: string
+        }
+        Insert: {
+          allergies?: Json | null
+          client_id: string
+          created_at?: string
+          crisis_plan_doc_id?: string | null
+          deescalation_supports?: Json | null
+          dietary_restrictions?: Json | null
+          emergency_protocol_present?: boolean
+          id?: string
+          known_triggers?: Json | null
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
+          medical_conditions?: Json | null
+          medications?: Json | null
+          mobility_needs?: string | null
+          other_medical_notes?: string | null
+          safety_flags?: Json | null
+          seizure_protocol?: string | null
+          sensory_considerations?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allergies?: Json | null
+          client_id?: string
+          created_at?: string
+          crisis_plan_doc_id?: string | null
+          deescalation_supports?: Json | null
+          dietary_restrictions?: Json | null
+          emergency_protocol_present?: boolean
+          id?: string
+          known_triggers?: Json | null
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
+          medical_conditions?: Json | null
+          medications?: Json | null
+          mobility_needs?: string | null
+          other_medical_notes?: string | null
+          safety_flags?: Json | null
+          seizure_protocol?: string | null
+          sensory_considerations?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_safety_medical_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_scheduling_preferences: {
+        Row: {
+          availability_windows: Json
+          client_id: string
+          created_at: string
+          hard_constraints: Json
+          id: string
+          max_sessions_per_day: number | null
+          min_gap_between_sessions: number | null
+          notes: string | null
+          notes_visibility: string | null
+          preferred_cadence: string | null
+          preferred_session_length: number | null
+          school_schedule: Json | null
+          updated_at: string
+          vacation_blackouts: Json | null
+        }
+        Insert: {
+          availability_windows?: Json
+          client_id: string
+          created_at?: string
+          hard_constraints?: Json
+          id?: string
+          max_sessions_per_day?: number | null
+          min_gap_between_sessions?: number | null
+          notes?: string | null
+          notes_visibility?: string | null
+          preferred_cadence?: string | null
+          preferred_session_length?: number | null
+          school_schedule?: Json | null
+          updated_at?: string
+          vacation_blackouts?: Json | null
+        }
+        Update: {
+          availability_windows?: Json
+          client_id?: string
+          created_at?: string
+          hard_constraints?: Json
+          id?: string
+          max_sessions_per_day?: number | null
+          min_gap_between_sessions?: number | null
+          notes?: string | null
+          notes_visibility?: string | null
+          preferred_cadence?: string | null
+          preferred_session_length?: number | null
+          school_schedule?: Json | null
+          updated_at?: string
+          vacation_blackouts?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_scheduling_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_service_lines: {
+        Row: {
+          authorization_status: string | null
+          authorized_units: number | null
+          client_id: string
+          cpt_code: string | null
+          created_at: string
+          end_date: string | null
+          expiry_alert_days: number | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          payer_id: string | null
+          remaining_units: number | null
+          requires_authorization: boolean | null
+          service_type: string
+          start_date: string | null
+          unit_type: string | null
+          updated_at: string
+          used_units: number | null
+        }
+        Insert: {
+          authorization_status?: string | null
+          authorized_units?: number | null
+          client_id: string
+          cpt_code?: string | null
+          created_at?: string
+          end_date?: string | null
+          expiry_alert_days?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payer_id?: string | null
+          remaining_units?: number | null
+          requires_authorization?: boolean | null
+          service_type: string
+          start_date?: string | null
+          unit_type?: string | null
+          updated_at?: string
+          used_units?: number | null
+        }
+        Update: {
+          authorization_status?: string | null
+          authorized_units?: number | null
+          client_id?: string
+          cpt_code?: string | null
+          created_at?: string
+          end_date?: string | null
+          expiry_alert_days?: number | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payer_id?: string | null
+          remaining_units?: number | null
+          requires_authorization?: boolean | null
+          service_type?: string
+          start_date?: string | null
+          unit_type?: string | null
+          updated_at?: string
+          used_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_service_lines_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_service_lines_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_team_assignments: {
+        Row: {
+          assigned_by: string | null
+          billable_rate: number | null
+          client_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          permission_scope: Json | null
+          role: string
+          staff_user_id: string
+          start_date: string
+          supervising_staff_id: string | null
+          supervision_required: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          billable_rate?: number | null
+          client_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_scope?: Json | null
+          role: string
+          staff_user_id: string
+          start_date?: string
+          supervising_staff_id?: string | null
+          supervision_required?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          billable_rate?: number | null
+          client_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_scope?: Json | null
+          role?: string
+          staff_user_id?: string
+          start_date?: string
+          supervising_staff_id?: string | null
+          supervision_required?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_team_assignments_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
@@ -3151,6 +3879,7 @@ export type Database = {
       }
       students: {
         Row: {
+          activation_status: string | null
           archived_at: string | null
           assessment_mode_enabled: boolean | null
           background_info: Json | null
@@ -3158,6 +3887,8 @@ export type Database = {
           bip_data: Json | null
           brief_record_review: Json | null
           brief_teacher_inputs: Json | null
+          case_closed_date: string | null
+          case_opened_date: string | null
           case_types: Json | null
           color: string
           contact_email: string | null
@@ -3167,7 +3898,11 @@ export type Database = {
           custom_consequences: Json | null
           data_collection_start_date: string | null
           date_of_birth: string | null
+          diagnoses: Json | null
+          discharge_reason: string | null
           display_name: string | null
+          district_name: string | null
+          dob: string | null
           documents: Json | null
           fba_findings: Json | null
           fba_workflow_progress: Json | null
@@ -3182,14 +3917,23 @@ export type Database = {
           insurance_tracking_state: string | null
           is_archived: boolean
           last_name: string | null
+          legal_first_name: string | null
+          legal_last_name: string | null
           name: string
           narrative_notes: Json | null
           notes_required: boolean | null
+          preferred_name: string | null
+          primary_setting: string | null
+          primary_supervisor_staff_id: string | null
+          profile_completeness_status: string | null
+          pronouns: string | null
           school: string | null
+          school_name: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          activation_status?: string | null
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
           background_info?: Json | null
@@ -3197,6 +3941,8 @@ export type Database = {
           bip_data?: Json | null
           brief_record_review?: Json | null
           brief_teacher_inputs?: Json | null
+          case_closed_date?: string | null
+          case_opened_date?: string | null
           case_types?: Json | null
           color?: string
           contact_email?: string | null
@@ -3206,7 +3952,11 @@ export type Database = {
           custom_consequences?: Json | null
           data_collection_start_date?: string | null
           date_of_birth?: string | null
+          diagnoses?: Json | null
+          discharge_reason?: string | null
           display_name?: string | null
+          district_name?: string | null
+          dob?: string | null
           documents?: Json | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
@@ -3221,14 +3971,23 @@ export type Database = {
           insurance_tracking_state?: string | null
           is_archived?: boolean
           last_name?: string | null
+          legal_first_name?: string | null
+          legal_last_name?: string | null
           name: string
           narrative_notes?: Json | null
           notes_required?: boolean | null
+          preferred_name?: string | null
+          primary_setting?: string | null
+          primary_supervisor_staff_id?: string | null
+          profile_completeness_status?: string | null
+          pronouns?: string | null
           school?: string | null
+          school_name?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          activation_status?: string | null
           archived_at?: string | null
           assessment_mode_enabled?: boolean | null
           background_info?: Json | null
@@ -3236,6 +3995,8 @@ export type Database = {
           bip_data?: Json | null
           brief_record_review?: Json | null
           brief_teacher_inputs?: Json | null
+          case_closed_date?: string | null
+          case_opened_date?: string | null
           case_types?: Json | null
           color?: string
           contact_email?: string | null
@@ -3245,7 +4006,11 @@ export type Database = {
           custom_consequences?: Json | null
           data_collection_start_date?: string | null
           date_of_birth?: string | null
+          diagnoses?: Json | null
+          discharge_reason?: string | null
           display_name?: string | null
+          district_name?: string | null
+          dob?: string | null
           documents?: Json | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
@@ -3260,10 +4025,18 @@ export type Database = {
           insurance_tracking_state?: string | null
           is_archived?: boolean
           last_name?: string | null
+          legal_first_name?: string | null
+          legal_last_name?: string | null
           name?: string
           narrative_notes?: Json | null
           notes_required?: boolean | null
+          preferred_name?: string | null
+          primary_setting?: string | null
+          primary_supervisor_staff_id?: string | null
+          profile_completeness_status?: string | null
+          pronouns?: string | null
           school?: string | null
+          school_name?: string | null
           updated_at?: string
           user_id?: string
         }
