@@ -1934,6 +1934,62 @@ export type Database = {
           },
         ]
       }
+      delivered_minutes_log: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_billable: boolean | null
+          is_makeup: boolean | null
+          location_type: string | null
+          makeup_for_date: string | null
+          minutes_delivered: number
+          provider_credential: string | null
+          provider_user_id: string
+          service_line: string
+          session_date: string
+          session_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_billable?: boolean | null
+          is_makeup?: boolean | null
+          location_type?: string | null
+          makeup_for_date?: string | null
+          minutes_delivered: number
+          provider_credential?: string | null
+          provider_user_id: string
+          service_line: string
+          session_date: string
+          session_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_billable?: boolean | null
+          is_makeup?: boolean | null
+          location_type?: string | null
+          makeup_for_date?: string | null
+          minutes_delivered?: number
+          provider_credential?: string | null
+          provider_user_id?: string
+          service_line?: string
+          session_date?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivered_minutes_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_inbox: {
         Row: {
           ai_confidence_score: number | null
@@ -2257,6 +2313,107 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: []
+      }
+      goal_links: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          link_notes: string | null
+          link_type: string
+          linked_object_id: string
+          linked_object_table: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          link_notes?: string | null
+          link_type: string
+          linked_object_id: string
+          linked_object_table: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          link_notes?: string | null
+          link_type?: string
+          linked_object_id?: string
+          linked_object_table?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      iep_goals: {
+        Row: {
+          baseline_summary: string | null
+          client_id: string
+          created_at: string
+          data_completeness_status: string | null
+          end_date: string | null
+          goal_area: string
+          goal_text: string
+          id: string
+          last_progress_update: string | null
+          measurement_type: string
+          narrative_summary: string | null
+          responsible_provider_role: string | null
+          short_description: string | null
+          start_date: string | null
+          status: string | null
+          target_criteria: string | null
+          updated_at: string
+        }
+        Insert: {
+          baseline_summary?: string | null
+          client_id: string
+          created_at?: string
+          data_completeness_status?: string | null
+          end_date?: string | null
+          goal_area: string
+          goal_text: string
+          id?: string
+          last_progress_update?: string | null
+          measurement_type: string
+          narrative_summary?: string | null
+          responsible_provider_role?: string | null
+          short_description?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_criteria?: string | null
+          updated_at?: string
+        }
+        Update: {
+          baseline_summary?: string | null
+          client_id?: string
+          created_at?: string
+          data_completeness_status?: string | null
+          end_date?: string | null
+          goal_area?: string
+          goal_text?: string
+          id?: string
+          last_progress_update?: string | null
+          measurement_type?: string
+          narrative_summary?: string | null
+          responsible_provider_role?: string | null
+          short_description?: string | null
+          start_date?: string | null
+          status?: string | null
+          target_criteria?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_goals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intake_checklist_templates: {
         Row: {
@@ -2596,6 +2753,42 @@ export type Database = {
           },
         ]
       }
+      override_logs: {
+        Row: {
+          affected_object_ids: Json
+          affected_object_type: string
+          created_at: string
+          id: string
+          original_constraint: Json | null
+          overridden_by: string
+          override_context: Json | null
+          override_type: string
+          reason: string
+        }
+        Insert: {
+          affected_object_ids?: Json
+          affected_object_type: string
+          created_at?: string
+          id?: string
+          original_constraint?: Json | null
+          overridden_by: string
+          override_context?: Json | null
+          override_type: string
+          reason: string
+        }
+        Update: {
+          affected_object_ids?: Json
+          affected_object_type?: string
+          created_at?: string
+          id?: string
+          original_constraint?: Json | null
+          overridden_by?: string
+          override_context?: Json | null
+          override_type?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       payers: {
         Row: {
           address: string | null
@@ -2668,6 +2861,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          allowed_service_types: Json | null
           approved_at: string | null
           approved_by: string | null
           avatar_url: string | null
@@ -2675,22 +2869,44 @@ export type Database = {
           credential: string | null
           display_name: string | null
           email: string | null
+          employment_status: string | null
           first_name: string | null
+          geocode_lat: number | null
+          geocode_lng: number | null
+          geocode_status: string | null
           hire_date: string | null
+          home_base_address: string | null
+          home_base_city: string | null
+          home_base_state: string | null
+          home_base_zip: string | null
           id: string
           is_approved: boolean | null
+          languages_spoken: Json | null
           last_name: string | null
+          max_travel_radius_miles: number | null
+          min_buffer_minutes: number | null
           npi: string | null
           phone: string | null
           pin_hash: string | null
+          preferred_regions: Json | null
+          secondary_email: string | null
+          secondary_phone: string | null
+          session_length_preferences: Json | null
+          settings_willing_to_serve: Json | null
+          staff_id: string | null
+          staff_notes: string | null
+          staff_notes_visibility: string | null
           status: string | null
           supervisor_id: string | null
+          timezone: string | null
           title: string | null
+          transportation_method: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          allowed_service_types?: Json | null
           approved_at?: string | null
           approved_by?: string | null
           avatar_url?: string | null
@@ -2698,22 +2914,44 @@ export type Database = {
           credential?: string | null
           display_name?: string | null
           email?: string | null
+          employment_status?: string | null
           first_name?: string | null
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
           hire_date?: string | null
+          home_base_address?: string | null
+          home_base_city?: string | null
+          home_base_state?: string | null
+          home_base_zip?: string | null
           id?: string
           is_approved?: boolean | null
+          languages_spoken?: Json | null
           last_name?: string | null
+          max_travel_radius_miles?: number | null
+          min_buffer_minutes?: number | null
           npi?: string | null
           phone?: string | null
           pin_hash?: string | null
+          preferred_regions?: Json | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
+          session_length_preferences?: Json | null
+          settings_willing_to_serve?: Json | null
+          staff_id?: string | null
+          staff_notes?: string | null
+          staff_notes_visibility?: string | null
           status?: string | null
           supervisor_id?: string | null
+          timezone?: string | null
           title?: string | null
+          transportation_method?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          allowed_service_types?: Json | null
           approved_at?: string | null
           approved_by?: string | null
           avatar_url?: string | null
@@ -2721,17 +2959,38 @@ export type Database = {
           credential?: string | null
           display_name?: string | null
           email?: string | null
+          employment_status?: string | null
           first_name?: string | null
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
           hire_date?: string | null
+          home_base_address?: string | null
+          home_base_city?: string | null
+          home_base_state?: string | null
+          home_base_zip?: string | null
           id?: string
           is_approved?: boolean | null
+          languages_spoken?: Json | null
           last_name?: string | null
+          max_travel_radius_miles?: number | null
+          min_buffer_minutes?: number | null
           npi?: string | null
           phone?: string | null
           pin_hash?: string | null
+          preferred_regions?: Json | null
+          secondary_email?: string | null
+          secondary_phone?: string | null
+          session_length_preferences?: Json | null
+          settings_willing_to_serve?: Json | null
+          staff_id?: string | null
+          staff_notes?: string | null
+          staff_notes_visibility?: string | null
           status?: string | null
           supervisor_id?: string | null
+          timezone?: string | null
           title?: string | null
+          transportation_method?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2998,6 +3257,142 @@ export type Database = {
           },
         ]
       }
+      schedule_requests: {
+        Row: {
+          client_id: string
+          constraints: Json | null
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          frequency: string | null
+          id: string
+          location_id: string | null
+          notes: string | null
+          preferred_staff_ids: Json | null
+          requested_day: string | null
+          requested_end_time: string | null
+          requested_start_time: string | null
+          service_type: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          constraints?: Json | null
+          created_at?: string
+          created_by: string
+          duration_minutes: number
+          frequency?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          preferred_staff_ids?: Json | null
+          requested_day?: string | null
+          requested_end_time?: string | null
+          requested_start_time?: string | null
+          service_type: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          constraints?: Json | null
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          frequency?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          preferred_staff_ids?: Json | null
+          requested_day?: string | null
+          requested_end_time?: string | null
+          requested_start_time?: string | null
+          service_type?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_sessions: {
+        Row: {
+          appointment_id: string | null
+          client_id: string
+          computed_distance_miles: number | null
+          created_at: string
+          end_datetime: string
+          id: string
+          location_id: string | null
+          override_applied: boolean | null
+          override_log_id: string | null
+          schedule_request_id: string | null
+          service_type: string
+          session_id: string | null
+          staff_user_id: string
+          start_datetime: string
+          status: string | null
+          supervisor_user_id: string | null
+          travel_time_estimate_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id: string
+          computed_distance_miles?: number | null
+          created_at?: string
+          end_datetime: string
+          id?: string
+          location_id?: string | null
+          override_applied?: boolean | null
+          override_log_id?: string | null
+          schedule_request_id?: string | null
+          service_type: string
+          session_id?: string | null
+          staff_user_id: string
+          start_datetime: string
+          status?: string | null
+          supervisor_user_id?: string | null
+          travel_time_estimate_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string
+          computed_distance_miles?: number | null
+          created_at?: string
+          end_datetime?: string
+          id?: string
+          location_id?: string | null
+          override_applied?: boolean | null
+          override_log_id?: string | null
+          schedule_request_id?: string | null
+          service_type?: string
+          session_id?: string | null
+          staff_user_id?: string
+          start_datetime?: string
+          status?: string | null
+          supervisor_user_id?: string | null
+          travel_time_estimate_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_settings: {
         Row: {
           created_at: string
@@ -3025,6 +3420,86 @@ export type Database = {
           setting_value?: Json
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      service_plan_minutes: {
+        Row: {
+          client_id: string
+          created_at: string
+          effective_end_date: string | null
+          effective_start_date: string
+          id: string
+          mandated_minutes_per_period: number
+          notes: string | null
+          period_type: string | null
+          service_line: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date: string
+          id?: string
+          mandated_minutes_per_period: number
+          notes?: string | null
+          period_type?: string | null
+          service_line: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date?: string
+          id?: string
+          mandated_minutes_per_period?: number
+          notes?: string | null
+          period_type?: string | null
+          service_line?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_plan_minutes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_blocking_reasons: {
+        Row: {
+          blocking_reason_code: string
+          created_at: string
+          id: string
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          session_id: string
+        }
+        Insert: {
+          blocking_reason_code: string
+          created_at?: string
+          id?: string
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id: string
+        }
+        Update: {
+          blocking_reason_code?: string
+          created_at?: string
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string
         }
         Relationships: []
       }
@@ -3415,6 +3890,48 @@ export type Database = {
           id?: string
           questions?: Json
           scoring_info?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff_availability: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          effective_from: string | null
+          effective_until: string | null
+          end_time: string
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          staff_user_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          effective_from?: string | null
+          effective_until?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          staff_user_id: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          effective_from?: string | null
+          effective_until?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          staff_user_id?: string
+          start_time?: string
           updated_at?: string
         }
         Relationships: []
@@ -4156,6 +4673,48 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string
+          status: string
+          supervisee_staff_id: string
+          supervision_type: string | null
+          supervisor_staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string
+          supervisee_staff_id: string
+          supervision_type?: string | null
+          supervisor_staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string
+          supervisee_staff_id?: string
+          supervision_type?: string | null
+          supervisor_staff_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supervisor_reviews: {
         Row: {
           action_completed: boolean | null
@@ -4610,15 +5169,31 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
+      compute_distance_miles: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      estimate_travel_time_minutes: {
+        Args: { distance_miles: number }
+        Returns: number
+      }
       generate_claim_number: { Args: never; Returns: string }
       get_clinician_patient_count: {
         Args: { _user_id: string }
         Returns: number
       }
       get_pending_approval_count: { Args: never; Returns: number }
+      get_staff_supervisor: {
+        Args: { _staff_user_id: string }
+        Returns: string
+      }
       get_supervisor_clinician_count: {
         Args: { _user_id: string }
         Returns: number
+      }
+      has_active_supervisor: {
+        Args: { _staff_user_id: string }
+        Returns: boolean
       }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }
       has_role: {
