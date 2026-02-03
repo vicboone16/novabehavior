@@ -62,12 +62,17 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     first_name: '',
     last_name: '',
     email: '',
+    password: '',
+    pin: '',
     phone: '',
     credential: '',
     npi: '',
     title: 'Clinician',
     supervisor_id: '',
+    role: 'staff',
+    sendEmail: false,
   });
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -232,19 +237,72 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   };
 
   const handleAddStaff = async () => {
-    // This would typically send an invitation email
-    toast({ title: 'Staff invitation sent', description: `Invitation sent to ${newStaffForm.email}` });
-    setShowAddStaff(false);
-    setNewStaffForm({
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: '',
-      credential: '',
-      npi: '',
-      title: 'Clinician',
-      supervisor_id: '',
-    });
+    if (!newStaffForm.email || !newStaffForm.password || !newStaffForm.first_name || !newStaffForm.last_name) {
+      toast({ title: 'Missing required fields', description: 'Please fill in all required fields', variant: 'destructive' });
+      return;
+    }
+
+    if (newStaffForm.password.length < 6) {
+      toast({ title: 'Password too short', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+
+    if (newStaffForm.pin && !/^\d{6}$/.test(newStaffForm.pin)) {
+      toast({ title: 'Invalid PIN', description: 'PIN must be exactly 6 digits', variant: 'destructive' });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-staff', {
+        body: {
+          email: newStaffForm.email,
+          password: newStaffForm.password,
+          pin: newStaffForm.pin || undefined,
+          first_name: newStaffForm.first_name,
+          last_name: newStaffForm.last_name,
+          phone: newStaffForm.phone,
+          credential: newStaffForm.credential,
+          npi: newStaffForm.npi,
+          supervisor_id: newStaffForm.supervisor_id,
+          title: newStaffForm.title,
+          role: newStaffForm.role,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast({ 
+        title: 'Staff member created', 
+        description: `${data.display_name} has been created successfully${newStaffForm.sendEmail ? '. Login email will be sent.' : '.'}` 
+      });
+
+      // TODO: If sendEmail is true, trigger email sending
+
+      setShowAddStaff(false);
+      setNewStaffForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        pin: '',
+        phone: '',
+        credential: '',
+        npi: '',
+        title: 'Clinician',
+        supervisor_id: '',
+        role: 'staff',
+        sendEmail: false,
+      });
+      
+      // Reload staff list
+      loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to create staff', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (loading) {
@@ -495,18 +553,18 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
       {/* Add Staff Dialog */}
       <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Clinician</DialogTitle>
+            <DialogTitle>Add New Staff Member</DialogTitle>
             <DialogDescription>
-              Enter the clinician's information. They will receive an invitation email.
+              Create a new staff account with login credentials.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>First Name</Label>
+                <Label>First Name *</Label>
                 <Input
                   value={newStaffForm.first_name}
                   onChange={(e) => setNewStaffForm(f => ({ ...f, first_name: e.target.value }))}
@@ -514,7 +572,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                 />
               </div>
               <div className="space-y-2">
-                <Label>Last Name</Label>
+                <Label>Last Name *</Label>
                 <Input
                   value={newStaffForm.last_name}
                   onChange={(e) => setNewStaffForm(f => ({ ...f, last_name: e.target.value }))}
@@ -524,13 +582,38 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
             </div>
 
             <div className="space-y-2">
-              <Label>Email Address</Label>
+              <Label>Email Address *</Label>
               <Input
                 type="email"
                 value={newStaffForm.email}
                 onChange={(e) => setNewStaffForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="email@example.com"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Password *</Label>
+                <Input
+                  type="password"
+                  value={newStaffForm.password}
+                  onChange={(e) => setNewStaffForm(f => ({ ...f, password: e.target.value }))}
+                  placeholder="Min 6 characters"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>PIN (6 digits)</Label>
+                <Input
+                  type="text"
+                  maxLength={6}
+                  value={newStaffForm.pin}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setNewStaffForm(f => ({ ...f, pin: val }));
+                  }}
+                  placeholder="Optional PIN"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -572,32 +655,71 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Supervisor</Label>
-              <Select 
-                value={newStaffForm.supervisor_id}
-                onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supervisor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {supervisors.map(s => (
-                    <SelectItem key={s.id} value={s.user_id}>
-                      {s.first_name} {s.last_name} ({s.credential || s.title})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select 
+                  value={newStaffForm.role}
+                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, role: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Supervisor</Label>
+                <Select 
+                  value={newStaffForm.supervisor_id}
+                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {supervisors.map(s => (
+                      <SelectItem key={s.id} value={s.user_id}>
+                        {s.first_name} {s.last_name} ({s.credential || s.title})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2 border-t">
+              <input
+                type="checkbox"
+                id="sendEmail"
+                checked={newStaffForm.sendEmail}
+                onChange={(e) => setNewStaffForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                className="rounded border-border"
+              />
+              <Label htmlFor="sendEmail" className="text-sm font-normal cursor-pointer">
+                Send login credentials via email
+              </Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddStaff(false)}>
+            <Button variant="outline" onClick={() => setShowAddStaff(false)} disabled={isCreating}>
               Cancel
             </Button>
-            <Button onClick={handleAddStaff}>
-              Send Invitation
+            <Button onClick={handleAddStaff} disabled={isCreating}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Staff Member'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
