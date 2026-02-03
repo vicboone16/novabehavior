@@ -451,17 +451,18 @@ export interface Student {
   customPromptLevels?: string[];
   // Note requirements
   notesRequired?: boolean;
-  // Brief Record Review assessments
+  // Brief Record Review - SINGLE instance per student (editable)
+  briefRecordReview?: BriefRecordReviewSavedData | null;
+  // Legacy: briefRecordReviews for backwards compatibility
   briefRecordReviews?: BriefRecordReview[];
-  // Brief Teacher Input assessments
+  // Brief Teacher Input assessments - MULTI-respondent
   briefTeacherInputs?: BriefTeacherInputSaved[];
 }
 
-// Brief Record Review saved data
+// Brief Record Review saved data (SINGLE instance per student)
 export interface BriefRecordReview {
   id: string;
   data: BriefRecordReviewSavedData;
-  responses: BriefRecordReviewSavedData[];
 }
 
 export interface BriefRecordReviewSavedData {
