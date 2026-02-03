@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { FileText, Plus, Clock, MapPin, Database, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { FileText, Plus, Clock, MapPin, Database, ArrowRight, CheckCircle2, DollarSign, Link2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,10 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDataStore } from '@/store/dataStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionNotes } from '@/hooks/useSessionNotes';
-import { NoteTemplate, SessionNoteType, ServiceSetting, AuthorRole, PulledDataSnapshot, NOTE_TYPE_LABELS, SERVICE_SETTING_LABELS, AUTHOR_ROLE_OPTIONS } from '@/types/sessionNotes';
+import { NoteTemplate, SessionNoteType, ServiceSetting, AuthorRole, PulledDataSnapshot, NOTE_TYPE_LABELS, SERVICE_SETTING_LABELS, AUTHOR_ROLE_OPTIONS, NOTE_TYPE_DEFAULT_BILLABLE } from '@/types/sessionNotes';
 
 interface NoteCreationDialogProps {
   open: boolean;
@@ -24,15 +26,24 @@ interface NoteCreationDialogProps {
   onNoteCreated: () => void;
 }
 
-type Step = 'session' | 'type' | 'data';
+type Step = 'type' | 'billable' | 'session' | 'data';
 
 export function NoteCreationDialog({ open, onOpenChange, studentId, studentName, templates, onNoteCreated }: NoteCreationDialogProps) {
   const { user, profile, userRole } = useAuth();
   const { createNote } = useSessionNotes(studentId);
   const { sessions, students } = useDataStore();
   
-  const [step, setStep] = useState<Step>('session');
+  const [step, setStep] = useState<Step>('type');
   const [creating, setCreating] = useState(false);
+  
+  // Type selection
+  const [noteType, setNoteType] = useState<SessionNoteType>('therapist');
+  const [authorRole, setAuthorRole] = useState<AuthorRole>('RBT');
+  
+  // Billable toggle
+  const [isBillable, setIsBillable] = useState(true);
+  
+  // Session linking
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
   const [manualSession, setManualSession] = useState(false);
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -40,8 +51,8 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
   const [endTime, setEndTime] = useState('');
   const [serviceSetting, setServiceSetting] = useState<ServiceSetting>('school');
   const [locationDetail, setLocationDetail] = useState('');
-  const [noteType, setNoteType] = useState<SessionNoteType>('therapist');
-  const [authorRole, setAuthorRole] = useState<AuthorRole>('RBT');
+  
+  // Data pull
   const [autoPullEnabled, setAutoPullEnabled] = useState(true);
   
   const student = students.find(s => s.id === studentId);
@@ -49,7 +60,9 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
 
   useEffect(() => {
     if (open) {
-      setStep('session');
+      setStep('type');
+      setNoteType('therapist');
+      setIsBillable(true);
       setSelectedSessionId('');
       setManualSession(false);
       setSessionDate(format(new Date(), 'yyyy-MM-dd'));
@@ -57,14 +70,18 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
       setEndTime('');
       setServiceSetting('school');
       setLocationDetail('');
-      setNoteType('therapist');
       setAutoPullEnabled(true);
       setAuthorRole(userRole === 'admin' || userRole === 'super_admin' ? 'BCBA' : 'RBT');
     }
   }, [open, userRole]);
 
+  // Update billable default when note type changes
+  useEffect(() => {
+    setIsBillable(NOTE_TYPE_DEFAULT_BILLABLE[noteType] ?? true);
+  }, [noteType]);
+
   const generatePulledDataSnapshot = (): PulledDataSnapshot | null => {
-    if (!autoPullEnabled) return null;
+    if (!autoPullEnabled || !isBillable) return null;
     const sessionStartTime = new Date(`${sessionDate}T${startTime}`);
     const sessionEndTime = endTime ? new Date(`${sessionDate}T${endTime}`) : new Date();
     const durationMinutes = Math.round((sessionEndTime.getTime() - sessionStartTime.getTime()) / 60000);
@@ -96,11 +113,11 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
         duration_minutes: durationMinutes,
         service_setting: serviceSetting,
         location_detail: locationDetail,
-        auto_pull_enabled: autoPullEnabled,
+        auto_pull_enabled: autoPullEnabled && isBillable,
         pulled_data_snapshot: pulledData,
         note_content: {},
         status: 'draft',
-        billable: true,
+        billable: isBillable,
         clinician_signature_name: profile?.display_name || (profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : undefined),
         credential: authorRole,
       });
@@ -112,36 +129,164 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
   };
 
   const canProceed = () => {
-    if (step === 'session') return manualSession || selectedSessionId;
     if (step === 'type') return noteType && authorRole;
+    if (step === 'billable') return true; // Billable selection is always valid
+    if (step === 'session') return manualSession || selectedSessionId || !isBillable;
     return true;
   };
 
+  const getStepNumber = () => {
+    const steps: Step[] = ['type', 'billable', 'session', 'data'];
+    return steps.indexOf(step) + 1;
+  };
+
+  const getTotalSteps = () => isBillable ? 4 : 3;
+
   const handleNext = () => {
-    if (step === 'session') setStep('type');
-    else if (step === 'type') setStep('data');
+    if (step === 'type') setStep('billable');
+    else if (step === 'billable') {
+      if (isBillable) {
+        setStep('session');
+      } else {
+        setStep('data');
+      }
+    }
+    else if (step === 'session') setStep('data');
     else handleCreate();
   };
 
   const handleBack = () => {
-    if (step === 'type') setStep('session');
-    else if (step === 'data') setStep('type');
+    if (step === 'billable') setStep('type');
+    else if (step === 'session') setStep('billable');
+    else if (step === 'data') {
+      if (isBillable) {
+        setStep('session');
+      } else {
+        setStep('billable');
+      }
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><FileText className="w-5 h-5" />Create Session Note</DialogTitle>
-          <DialogDescription>{studentName} • Step {step === 'session' ? 1 : step === 'type' ? 2 : 3} of 3</DialogDescription>
+          <DialogTitle className="flex items-center gap-2"><FileText className="w-5 h-5" />Create Clinical Note</DialogTitle>
+          <DialogDescription>{studentName} • Step {getStepNumber()} of {getTotalSteps()}</DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 -mx-6 px-6">
+          {/* STEP 1: NOTE TYPE */}
+          {step === 'type' && (
+            <div className="space-y-4">
+              <div>
+                <Label>Note Type</Label>
+                <div className="grid grid-cols-1 gap-2 mt-2">
+                  {Object.entries(NOTE_TYPE_LABELS).map(([key, label]) => (
+                    <Card key={key} className={`cursor-pointer transition-colors ${noteType === key ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => setNoteType(key as SessionNoteType)}>
+                      <CardContent className="py-3 px-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{label}</p>
+                          {NOTE_TYPE_DEFAULT_BILLABLE[key as SessionNoteType] === false && (
+                            <Badge variant="outline" className="text-xs">Non-billable default</Badge>
+                          )}
+                        </div>
+                        {noteType === key && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Your Role</Label>
+                <Select value={authorRole} onValueChange={(v) => setAuthorRole(v as AuthorRole)}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {AUTHOR_ROLE_OPTIONS.map(role => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: BILLABLE SELECTION */}
+          {step === 'billable' && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Is this note billable?
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This determines whether the note routes to Session Review and affects authorization tracking.
+                </p>
+              </div>
+
+              <RadioGroup value={isBillable ? 'yes' : 'no'} onValueChange={(v) => setIsBillable(v === 'yes')} className="space-y-3">
+                <Card className={`cursor-pointer transition-colors ${isBillable ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => setIsBillable(true)}>
+                  <CardContent className="py-4 px-4">
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="yes" id="billable-yes" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="billable-yes" className="font-semibold cursor-pointer flex items-center gap-2">
+                          <Badge className="bg-primary/20 text-primary">BILLABLE</Badge>
+                          Yes, this is a billable clinical note
+                        </Label>
+                        <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                          <li>• Routes to Session Review workflow</li>
+                          <li>• Can pull session data (timing, behaviors, skills)</li>
+                          <li>• Tracks against authorization/utilization</li>
+                          <li>• Should be linked to appointment/session</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className={`cursor-pointer transition-colors ${!isBillable ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => setIsBillable(false)}>
+                  <CardContent className="py-4 px-4">
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="no" id="billable-no" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="billable-no" className="font-semibold cursor-pointer flex items-center gap-2">
+                          <Badge variant="outline">NON-BILLABLE</Badge>
+                          No, this is a non-billable clinical note
+                        </Label>
+                        <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                          <li>• Does NOT route to Session Review</li>
+                          <li>• Does NOT affect authorization/utilization</li>
+                          <li>• Does NOT require session timing</li>
+                          <li>• Still visible in clinical notes and exportable</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* STEP 3: SESSION LINKING (only for billable) */}
           {step === 'session' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Link2 className="w-4 h-4" />
+                    Link to Session
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Connect this note to an existing session or create standalone.
+                  </p>
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 mb-4">
                 <Switch checked={manualSession} onCheckedChange={setManualSession} id="manual-session" />
                 <Label htmlFor="manual-session">Create without existing session</Label>
               </div>
+              
               {!manualSession && studentSessions.length > 0 ? (
                 <div className="space-y-3">
                   <Label>Select Existing Session</Label>
@@ -165,6 +310,12 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
                 </div>
               ) : (
                 <div className="space-y-3">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Creating without a linked session. You can still enter timing manually.
+                    </AlertDescription>
+                  </Alert>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label htmlFor="session-date">Date</Label><Input id="session-date" type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="mt-1" /></div>
                     <div><Label htmlFor="start-time">Start Time</Label><Input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="mt-1" /></div>
@@ -178,50 +329,63 @@ export function NoteCreationDialog({ open, onOpenChange, studentId, studentName,
               )}
             </div>
           )}
-          {step === 'type' && (
-            <div className="space-y-4">
-              <div>
-                <Label>Note Type</Label>
-                <div className="grid grid-cols-1 gap-2 mt-2">
-                  {Object.entries(NOTE_TYPE_LABELS).map(([key, label]) => (
-                    <Card key={key} className={`cursor-pointer transition-colors ${noteType === key ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`} onClick={() => setNoteType(key as SessionNoteType)}>
-                      <CardContent className="py-3 px-4 flex items-center justify-between">
-                        <div><p className="font-medium">{label}</p></div>
-                        {noteType === key && <CheckCircle2 className="w-5 h-5 text-primary" />}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-              <div><Label>Your Role</Label><Select value={authorRole} onValueChange={(v) => setAuthorRole(v as AuthorRole)}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger><SelectContent>{AUTHOR_ROLE_OPTIONS.map(role => (<SelectItem key={role} value={role}>{role}</SelectItem>))}</SelectContent></Select></div>
-            </div>
-          )}
+
+          {/* STEP 4: DATA OPTIONS */}
           {step === 'data' && (
             <div className="space-y-4">
-              <Card className="border-dashed">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Database className="w-5 h-5 text-primary" />
-                      <div><p className="font-medium">Auto-Pull Session Data</p><p className="text-xs text-muted-foreground">Include behavior and skill data from the session</p></div>
+              {isBillable && (
+                <Card className="border-dashed">
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Database className="w-5 h-5 text-primary" />
+                        <div><p className="font-medium">Auto-Pull Session Data</p><p className="text-xs text-muted-foreground">Include behavior and skill data from the session</p></div>
+                      </div>
+                      <Switch checked={autoPullEnabled} onCheckedChange={setAutoPullEnabled} />
                     </div>
-                    <Switch checked={autoPullEnabled} onCheckedChange={setAutoPullEnabled} />
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="bg-muted/50 rounded-lg p-4 text-sm space-y-2">
                 <p className="font-medium">Ready to create note</p>
-                <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li>• {NOTE_TYPE_LABELS[noteType]}</li>
-                  <li>• {SERVICE_SETTING_LABELS[serviceSetting]}</li>
-                  <li>• {autoPullEnabled ? 'Session data will be auto-pulled' : 'Manual data entry'}</li>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <FileText className="w-3 h-3" />
+                    {NOTE_TYPE_LABELS[noteType]}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <DollarSign className="w-3 h-3" />
+                    {isBillable ? (
+                      <Badge className="bg-primary/20 text-primary text-xs">BILLABLE</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">NON-BILLABLE</Badge>
+                    )}
+                  </li>
+                  {isBillable && (
+                    <>
+                      <li className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3" />
+                        {SERVICE_SETTING_LABELS[serviceSetting]}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Database className="w-3 h-3" />
+                        {autoPullEnabled ? 'Session data will be auto-pulled' : 'Manual data entry'}
+                      </li>
+                    </>
+                  )}
                 </ul>
+                {isBillable && (
+                  <p className="text-xs text-muted-foreground pt-2 border-t mt-2">
+                    This note will route to Session Review for supervisor approval.
+                  </p>
+                )}
               </div>
             </div>
           )}
         </ScrollArea>
         <DialogFooter className="flex-row justify-between">
-          <Button variant="outline" onClick={step === 'session' ? () => onOpenChange(false) : handleBack}>{step === 'session' ? 'Cancel' : 'Back'}</Button>
+          <Button variant="outline" onClick={step === 'type' ? () => onOpenChange(false) : handleBack}>{step === 'type' ? 'Cancel' : 'Back'}</Button>
           <Button onClick={handleNext} disabled={!canProceed() || creating}>{creating ? 'Creating...' : step === 'data' ? 'Create Note' : 'Next'}{step !== 'data' && <ArrowRight className="w-4 h-4 ml-2" />}</Button>
         </DialogFooter>
       </DialogContent>

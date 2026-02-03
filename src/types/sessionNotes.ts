@@ -5,7 +5,8 @@ export type SessionNoteType =
   | 'assessment'
   | 'clinical'
   | 'parent_training'
-  | 'supervision_revision';
+  | 'supervision_revision'
+  | 'clinical_memo';
 
 export type NoteSubtype = 
   | 'clinical_only'
@@ -173,6 +174,17 @@ export const NOTE_TYPE_LABELS: Record<SessionNoteType, string> = {
   clinical: 'Clinical Note (BCBA)',
   parent_training: 'Parent Training',
   supervision_revision: 'Supervision Revision',
+  clinical_memo: 'Clinical Memo',
+};
+
+// Default billable status by note type
+export const NOTE_TYPE_DEFAULT_BILLABLE: Record<SessionNoteType, boolean> = {
+  therapist: true,
+  assessment: true,
+  clinical: true,
+  parent_training: true,
+  supervision_revision: true,
+  clinical_memo: false, // Memos are typically non-billable
 };
 
 export const SERVICE_SETTING_LABELS: Record<ServiceSetting, string> = {

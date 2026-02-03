@@ -98,6 +98,7 @@ export function SupervisorReviewDashboard() {
       let query = supabase
         .from('enhanced_session_notes')
         .select('*')
+        .eq('billable', true) // Only fetch billable notes for review
         .gte('created_at', startDate)
         .order('created_at', { ascending: false });
 
@@ -270,10 +271,10 @@ export function SupervisorReviewDashboard() {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <ClipboardCheck className="w-5 h-5 text-primary" />
-            Supervisor Review
+            Session Review
           </h2>
           <p className="text-sm text-muted-foreground">
-            Review and audit submitted session notes
+            Review and audit submitted billable session notes
           </p>
         </div>
         <div className="flex gap-3">

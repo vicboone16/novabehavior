@@ -15,6 +15,8 @@ import {
   Download,
   RefreshCw,
   MapPin,
+  DollarSign,
+  Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +68,7 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
   // Filters
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [billableFilter, setBillableFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('');
 
   const isAdmin = userRole === 'super_admin' || userRole === 'admin';
@@ -73,8 +76,11 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
   const filteredNotes = notes.filter(note => {
     const matchesType = typeFilter === 'all' || note.note_type === typeFilter;
     const matchesStatus = statusFilter === 'all' || note.status === statusFilter;
+    const matchesBillable = billableFilter === 'all' || 
+      (billableFilter === 'billable' && note.billable) || 
+      (billableFilter === 'non_billable' && !note.billable);
     const matchesDate = !dateFilter || format(new Date(note.start_time), 'yyyy-MM-dd') === dateFilter;
-    return matchesType && matchesStatus && matchesDate;
+    return matchesType && matchesStatus && matchesBillable && matchesDate;
   });
 
   const handleDelete = async () => {
@@ -109,6 +115,22 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
     );
   };
 
+  const getBillableBadge = (billable: boolean) => {
+    if (billable) {
+      return (
+        <Badge className="bg-primary/20 text-primary text-xs gap-1">
+          <DollarSign className="w-3 h-3" />
+          BILLABLE
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-xs text-muted-foreground gap-1">
+        NON-BILLABLE
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -116,7 +138,7 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
-            Session Notes
+            Session Notes (Clinical)
           </h3>
           <p className="text-sm text-muted-foreground">
             Clinical documentation for {studentName}
@@ -152,6 +174,16 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
                 ))}
               </SelectContent>
             </Select>
+            <Select value={billableFilter} onValueChange={setBillableFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Billable" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Notes</SelectItem>
+                <SelectItem value="billable">Billable Only</SelectItem>
+                <SelectItem value="non_billable">Non-Billable Only</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Status" />
@@ -170,13 +202,14 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
               className="w-[160px]"
               placeholder="Filter by date"
             />
-            {(typeFilter !== 'all' || statusFilter !== 'all' || dateFilter) && (
+            {(typeFilter !== 'all' || statusFilter !== 'all' || billableFilter !== 'all' || dateFilter) && (
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => {
                   setTypeFilter('all');
                   setStatusFilter('all');
+                  setBillableFilter('all');
                   setDateFilter('');
                 }}
               >
@@ -213,12 +246,11 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Setting</TableHead>
                   <TableHead>Note Type</TableHead>
+                  <TableHead>Billable</TableHead>
+                  <TableHead>Linked</TableHead>
                   <TableHead>Author</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Data</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,24 +258,32 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
                 {filteredNotes.map(note => (
                   <TableRow key={note.id}>
                     <TableCell className="font-medium">
-                      {format(new Date(note.start_time), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(note.start_time), 'h:mm a')}
-                      {note.end_time && ` - ${format(new Date(note.end_time), 'h:mm a')}`}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-sm">
-                          {SERVICE_SETTING_LABELS[note.service_setting] || note.service_setting}
-                        </span>
+                      <div>
+                        {format(new Date(note.start_time), 'MMM d, yyyy')}
                       </div>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(note.start_time), 'h:mm a')}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {NOTE_TYPE_LABELS[note.note_type] || note.note_type}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {getBillableBadge(note.billable)}
+                    </TableCell>
+                    <TableCell>
+                      {note.session_id || note.pulled_data_snapshot ? (
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <Link2 className="w-3 h-3" />
+                          Yes
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          No
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
@@ -252,18 +292,6 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(note.status)}</TableCell>
-                    <TableCell>
-                      {note.pulled_data_snapshot ? (
-                        <Badge variant="secondary" className="text-xs">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Linked
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                          Manual
-                        </Badge>
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
