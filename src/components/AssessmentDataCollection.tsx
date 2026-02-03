@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Plus, Play, Pause, Square, Clock, Hash, Check, Timer, Zap,
   ChevronDown, ChevronUp, AlertTriangle, X, Trash2, Target, 
-  FileText, MessageSquare, History
+  FileText, MessageSquare, History, RefreshCw
 } from 'lucide-react';
+import { useStudentTargets } from '@/hooks/useCurriculum';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +67,8 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
     resetSession,
   } = useDataStore();
 
+  // Fetch skill targets from Supabase instead of local student.skillTargets
+  const { targets: supabaseSkillTargets, loading: targetsLoading, refetch: refetchTargets } = useStudentTargets(student.id);
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   
@@ -844,7 +847,17 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         {/* Cold Probe Tab */}
         <TabsContent value="cold_probe" className="space-y-4">
           {/* Add Target Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => refetchTargets()}
+              disabled={targetsLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${targetsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -856,39 +869,57 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
             </Button>
           </div>
 
-          <ColdProbeTracker
-            studentId={student.id}
-            skillTargets={student.skillTargets || []}
-            studentColor={student.color}
-            onSaveSession={(session: ColdProbeSession) => {
-              // Save cold probe session - could store in student.dttSessions or separate storage
-              toast.success(`Cold probe session saved with ${session.trials.length} trials`);
-              // Update student profile with cold probe data
-              const existingData = student.dttSessions || [];
-              updateStudentProfile(student.id, {
-                dttSessions: [...existingData, {
-                  id: session.id,
-                  skillTargetId: session.trials[0]?.skillTargetId || '',
-                  studentId: student.id,
-                  date: session.date,
-                  trials: session.trials.map(t => ({
-                    id: t.id,
-                    timestamp: t.timestamp,
-                    isCorrect: t.isCorrect,
-                    promptLevel: t.promptLevel || 'independent',
-                    notes: t.note,
-                  })),
-                  percentCorrect: Math.round(
-                    (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
-                  ),
-                  percentIndependent: Math.round(
-                    (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
-                  ),
-                  notes: session.notes,
-                }],
-              });
-            }}
-          />
+          {targetsLoading ? (
+            <div className="text-sm text-muted-foreground text-center py-4">Loading skill targets...</div>
+          ) : (
+            <ColdProbeTracker
+              studentId={student.id}
+              skillTargets={supabaseSkillTargets.map(t => ({
+                id: t.id,
+                studentId: student.id,
+                name: t.title || '',
+                operationalDefinition: t.description || undefined,
+                domain: (t.domain as any)?.name || undefined,
+                method: (t.data_collection_type === 'probe' ? 'probe' : 'dtt') as any,
+                status: (t.status || 'active') as any,
+                masteryCriteria: t.mastery_criteria ? { 
+                  type: 'percent_correct' as const, 
+                  percentCorrect: 80 
+                } : undefined,
+                createdAt: new Date(t.created_at || Date.now()),
+                updatedAt: new Date(t.updated_at || Date.now()),
+              }))}
+              studentColor={student.color}
+              onSaveSession={(session: ColdProbeSession) => {
+                // Save cold probe session - could store in student.dttSessions or separate storage
+                toast.success(`Cold probe session saved with ${session.trials.length} trials`);
+                // Update student profile with cold probe data
+                const existingData = student.dttSessions || [];
+                updateStudentProfile(student.id, {
+                  dttSessions: [...existingData, {
+                    id: session.id,
+                    skillTargetId: session.trials[0]?.skillTargetId || '',
+                    studentId: student.id,
+                    date: session.date,
+                    trials: session.trials.map(t => ({
+                      id: t.id,
+                      timestamp: t.timestamp,
+                      isCorrect: t.isCorrect,
+                      promptLevel: t.promptLevel || 'independent',
+                      notes: t.note,
+                    })),
+                    percentCorrect: Math.round(
+                      (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
+                    ),
+                    percentIndependent: Math.round(
+                      (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
+                    ),
+                    notes: session.notes,
+                  }],
+                });
+              }}
+            />
+          )}
         </TabsContent>
 
         {/* Structured Observation Form Tab */}
@@ -970,7 +1001,8 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         open={showAddTarget}
         onOpenChange={setShowAddTarget}
         onSuccess={() => {
-          // Refresh targets - the hook will handle re-fetching
+          // Refresh targets from Supabase after adding
+          refetchTargets();
         }}
       />
     </div>

@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
 import { format } from 'date-fns';
+import { BriefTeacherInput, BriefTeacherInputData } from '@/components/assessment/BriefTeacherInput';
 
 interface IndirectAssessmentToolsProps {
   student: Student;
@@ -122,8 +123,8 @@ const RATING_OPTIONS = [
 ];
 
 export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectAssessmentToolsProps) {
-  const { addIndirectAssessment, deleteIndirectAssessment } = useDataStore();
-  const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF'>('FAST');
+  const { addIndirectAssessment, deleteIndirectAssessment, updateStudentProfile } = useDataStore();
+  const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF' | 'BRIEF'>('FAST');
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [targetBehavior, setTargetBehavior] = useState('');
   const [completedBy, setCompletedBy] = useState('');
@@ -131,6 +132,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [showResults, setShowResults] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSavedAssessments, setShowSavedAssessments] = useState(false);
+  const [showBriefTeacherInput, setShowBriefTeacherInput] = useState(false);
 
   const currentItems = useMemo(() => {
     switch (activeAssessment) {
@@ -204,8 +206,11 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       return;
     }
 
+    // Only save rating scale assessments (not BRIEF)
+    if (activeAssessment === 'BRIEF') return;
+
     const result: Omit<IndirectAssessmentResult, 'id'> = {
-      type: activeAssessment,
+      type: activeAssessment as 'FAST' | 'MAS' | 'QABF',
       studentId: student.id,
       completedBy: completedBy || 'Unknown',
       completedAt: new Date(),
@@ -336,11 +341,12 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
         <CardContent className="space-y-4">
           {/* Assessment Selection */}
           <Tabs value={activeAssessment} onValueChange={(v) => {
-            setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF');
+            setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF' | 'BRIEF');
             setResponses({});
             setShowResults(false);
+            setShowBriefTeacherInput(v === 'BRIEF');
           }}>
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-4 w-full">
               <TabsTrigger value="FAST" className="text-xs">
                 FAST
                 <Badge variant="secondary" className="ml-1 text-xs">{FAST_ITEMS.length}</Badge>
@@ -353,44 +359,81 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
                 QABF
                 <Badge variant="secondary" className="ml-1 text-xs">{QABF_ITEMS.length}</Badge>
               </TabsTrigger>
+              <TabsTrigger value="BRIEF" className="text-xs">
+                Brief Teacher
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Assessment Info */}
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Target Behavior</Label>
-              <Input
-                placeholder="Enter the behavior being assessed"
-                value={targetBehavior}
-                onChange={(e) => setTargetBehavior(e.target.value)}
-                className="text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Completed By</Label>
-              <Input
-                placeholder="Informant name/role"
-                value={completedBy}
-                onChange={(e) => setCompletedBy(e.target.value)}
-                className="text-sm"
-              />
-            </div>
-          </div>
+          {/* Show Brief Teacher Input or Rating Scale UI */}
+          {activeAssessment === 'BRIEF' ? (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Use the Brief Teacher form below to collect structured interview data.
+            </p>
+          ) : (
+            <>
+              {/* Assessment Info */}
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Target Behavior</Label>
+                  <Input
+                    placeholder="Enter the behavior being assessed"
+                    value={targetBehavior}
+                    onChange={(e) => setTargetBehavior(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Completed By</Label>
+                  <Input
+                    placeholder="Informant name/role"
+                    value={completedBy}
+                    onChange={(e) => setCompletedBy(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
 
-          {/* Progress */}
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span>Progress</span>
-              <span>{Math.round(progress)}% complete</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+              {/* Progress */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span>Progress</span>
+                  <span>{Math.round(progress)}% complete</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Results Card (shown when complete) */}
-      {showResults && (
+      {/* Brief Teacher Input Form */}
+      {activeAssessment === 'BRIEF' && (
+        <BriefTeacherInput
+          student={student}
+          onSave={(data: BriefTeacherInputData) => {
+            // Save to narrative notes with specific tag
+            const noteContent = {
+              type: 'brief-teacher-input',
+              ...data,
+            };
+            const observationNote = {
+              id: data.id,
+              studentId: student.id,
+              content: JSON.stringify(noteContent),
+              timestamp: new Date(),
+              tags: ['brief-teacher-input', 'indirect-assessment'],
+            };
+            const existingNotes = student.narrativeNotes || [];
+            updateStudentProfile(student.id, {
+              narrativeNotes: [...existingNotes, observationNote],
+            });
+          }}
+        />
+      )}
+
+      {/* Results Card (shown when complete) - only for rating scales */}
+      {showResults && activeAssessment !== 'BRIEF' && (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -427,78 +470,82 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
         </Card>
       )}
 
-      {/* Assessment Items */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">
-            {activeAssessment} Items
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Rate how often each statement applies to the target behavior
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-3">
-              {currentItems.map((item, index) => (
-                <div 
-                  key={item.id}
-                  className={`p-3 border rounded-lg transition-colors ${
-                    responses[item.id] !== undefined 
-                      ? 'bg-muted/30 border-muted-foreground/20' 
-                      : 'hover:bg-muted/10'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <p className="text-sm">{item.text}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {RATING_OPTIONS.map(option => (
-                          <button
-                            key={option.value}
-                            onClick={() => handleResponse(item.id, option.value)}
-                            className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-                              responses[item.id] === option.value
-                                ? `${option.color} text-white border-transparent`
-                                : 'bg-background hover:bg-muted border-border'
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
+      {/* Assessment Items - only for rating scales */}
+      {activeAssessment !== 'BRIEF' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">
+              {activeAssessment} Items
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Rate how often each statement applies to the target behavior
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-3">
+                {currentItems.map((item, index) => (
+                  <div 
+                    key={item.id}
+                    className={`p-3 border rounded-lg transition-colors ${
+                      responses[item.id] !== undefined 
+                        ? 'bg-muted/30 border-muted-foreground/20' 
+                        : 'hover:bg-muted/10'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                        {index + 1}
                       </div>
+                      <div className="flex-1 space-y-2">
+                        <p className="text-sm">{item.text}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {RATING_OPTIONS.map(option => (
+                            <button
+                              key={option.value}
+                              onClick={() => handleResponse(item.id, option.value)}
+                              className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                                responses[item.id] === option.value
+                                  ? `${option.color} text-white border-transparent`
+                                  : 'bg-background hover:bg-muted border-border'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${getFunctionColor(item.function)} text-white border-0`}
+                      >
+                        {item.function.charAt(0).toUpperCase()}
+                      </Badge>
                     </div>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${getFunctionColor(item.function)} text-white border-0`}
-                    >
-                      {item.function.charAt(0).toUpperCase()}
-                    </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Notes */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Assessment Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Add any additional notes or observations about this assessment..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-          />
-        </CardContent>
-      </Card>
+      {/* Notes - only for rating scales */}
+      {activeAssessment !== 'BRIEF' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Assessment Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              placeholder="Add any additional notes or observations about this assessment..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
