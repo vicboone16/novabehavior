@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,10 +27,29 @@ import SecuritySettings from "./pages/SecuritySettings";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import QuestionnaireForm from "./pages/QuestionnaireForm";
 import NotFound from "./pages/NotFound";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+// Generate unique error ID
+const generateErrorId = () => `ERR-${Date.now().toString(36).toUpperCase()}`;
+
+const App = () => {
+  // Global unhandled rejection handler for defensive error handling
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const errorId = generateErrorId();
+      console.error("Unhandled rejection:", event.reason);
+      console.error(`Error ID: ${errorId}`);
+      toast.error(`Something went wrong. Please refresh. Error ID: ${errorId}`);
+      event.preventDefault(); // Prevent crash
+    };
+
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => window.removeEventListener("unhandledrejection", handleRejection);
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -115,6 +135,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
