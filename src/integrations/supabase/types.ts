@@ -3229,6 +3229,9 @@ export type Database = {
           implementation_notes: Json | null
           item_type: string
           setting_tags: string[]
+          source_doc: string | null
+          source_origin: string | null
+          source_page: number | null
           source_reference: string[] | null
           status: string
           title: string
@@ -3253,6 +3256,9 @@ export type Database = {
           implementation_notes?: Json | null
           item_type: string
           setting_tags?: string[]
+          source_doc?: string | null
+          source_origin?: string | null
+          source_page?: number | null
           source_reference?: string[] | null
           status?: string
           title: string
@@ -3277,6 +3283,9 @@ export type Database = {
           implementation_notes?: Json | null
           item_type?: string
           setting_tags?: string[]
+          source_doc?: string | null
+          source_origin?: string | null
+          source_page?: number | null
           source_reference?: string[] | null
           status?: string
           title?: string
@@ -5304,6 +5313,96 @@ export type Database = {
             columns: ["support_id"]
             isOneToOne: false
             referencedRelation: "student_iep_supports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_iep_support_links: {
+        Row: {
+          approved_by: string | null
+          confirmation_required: boolean | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          created_by: string | null
+          date_added: string
+          date_updated: string
+          evidence: Json | null
+          implementation_plan: Json | null
+          item_id: string
+          link_id: string
+          link_status: string
+          notes: string | null
+          owner: string | null
+          rationale_bullets: Json | null
+          recommendation_confidence: string | null
+          recommendation_score: number | null
+          review_due: string | null
+          risk_flags: Json | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          confirmation_required?: boolean | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_added?: string
+          date_updated?: string
+          evidence?: Json | null
+          implementation_plan?: Json | null
+          item_id: string
+          link_id?: string
+          link_status?: string
+          notes?: string | null
+          owner?: string | null
+          rationale_bullets?: Json | null
+          recommendation_confidence?: string | null
+          recommendation_score?: number | null
+          review_due?: string | null
+          risk_flags?: Json | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          confirmation_required?: boolean | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_added?: string
+          date_updated?: string
+          evidence?: Json | null
+          implementation_plan?: Json | null
+          item_id?: string
+          link_id?: string
+          link_status?: string
+          notes?: string | null
+          owner?: string | null
+          rationale_bullets?: Json | null
+          recommendation_confidence?: string | null
+          recommendation_score?: number | null
+          review_due?: string | null
+          risk_flags?: Json | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_iep_support_links_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "iep_library_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_iep_support_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
