@@ -354,13 +354,26 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     }
 
     try {
-      // First delete any responses
+      // Delete related assessment records first (foreign key constraints)
+      // ABAS-3 assessments
+      await supabase
+        .from('abas3_assessments')
+        .delete()
+        .eq('invitation_id', invitationId);
+
+      // Socially Savvy assessments
+      await supabase
+        .from('socially_savvy_assessments')
+        .delete()
+        .eq('invitation_id', invitationId);
+
+      // Delete any questionnaire responses
       await supabase
         .from('questionnaire_responses')
         .delete()
         .eq('invitation_id', invitationId);
 
-      // Then delete the invitation
+      // Finally delete the invitation itself
       const { error } = await supabase
         .from('questionnaire_invitations')
         .delete()
