@@ -63,6 +63,7 @@ import { BulkStudentManager } from '@/components/admin/BulkStudentManager';
 import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
 import { StaffManagement } from '@/components/admin/StaffManagement';
 import { CredentialTracker } from '@/components/admin/CredentialTracker';
+import { UserPermissionsManager } from '@/components/admin/UserPermissionsManager';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
@@ -845,12 +846,15 @@ export default function Admin() {
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings">
+          <TabsContent value="settings" className="space-y-6">
+            {/* User Permissions Manager */}
+            <UserPermissionsManager />
+            
             <Card>
               <CardHeader>
-                <CardTitle>Admin Settings</CardTitle>
+                <CardTitle>Access Control Information</CardTitle>
                 <CardDescription>
-                  Configure system-wide settings
+                  How permissions work in this system
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -870,16 +874,16 @@ export default function Admin() {
                   </ul>
                 </div>
                 <div className="p-4 bg-secondary/30 rounded-lg">
-                  <h3 className="font-medium mb-2">Granular Permissions</h3>
+                  <h3 className="font-medium mb-2">Feature Permissions</h3>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Even with tag-based access, you can still configure granular permissions for each user-student combination via the "Access" button in User Management. This allows you to:
+                    Use the Permissions Manager above to configure granular feature access for each user. Permissions can be toggled individually:
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Toggle view notes permission</li>
-                    <li>Toggle view documents permission</li>
-                    <li>Toggle data collection permission</li>
-                    <li>Toggle profile editing permission</li>
-                    <li>Toggle report generation permission</li>
+                    <li>Menu/navigation access</li>
+                    <li>Staff, client, and payer management</li>
+                    <li>Scheduling and billing features</li>
+                    <li>Reports and dashboard widgets</li>
+                    <li>Settings and administration</li>
                   </ul>
                 </div>
               </CardContent>

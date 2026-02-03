@@ -737,6 +737,65 @@ export type Database = {
           },
         ]
       }
+      client_accommodations: {
+        Row: {
+          category: string
+          client_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          implementation_notes: string | null
+          is_active: boolean
+          responsible_staff: string | null
+          review_date: string | null
+          settings: string[] | null
+          start_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          client_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          implementation_notes?: string | null
+          is_active?: boolean
+          responsible_staff?: string | null
+          review_date?: string | null
+          settings?: string[] | null
+          start_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          implementation_notes?: string | null
+          is_active?: boolean
+          responsible_staff?: string | null
+          review_date?: string | null
+          settings?: string[] | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_accommodations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_case_attributes: {
         Row: {
           attribute_key: string
@@ -2532,6 +2591,333 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_permissions: {
+        Row: {
+          activity_tracking: boolean | null
+          add_new_client: boolean | null
+          add_new_payer: boolean | null
+          add_new_staff: boolean | null
+          all_clients: boolean | null
+          all_staff: boolean | null
+          appointment_info: boolean | null
+          ar_fix_claims: boolean | null
+          ar_manager: boolean | null
+          ar_post_payment: boolean | null
+          ar_readiness: boolean | null
+          ar_rebill: boolean | null
+          ar_reports: boolean | null
+          billing_billed_files: boolean | null
+          billing_financials: boolean | null
+          billing_generate_invoice: boolean | null
+          billing_payment_source: boolean | null
+          billing_provider_identifier: boolean | null
+          billing_verification_forms: boolean | null
+          cancel_appointment: boolean | null
+          client_assignments: boolean | null
+          client_authorization: boolean | null
+          client_cabinet: boolean | null
+          client_contacts: boolean | null
+          client_custom_fields: boolean | null
+          client_info: boolean | null
+          client_list: boolean | null
+          client_personal_info: boolean | null
+          client_profile: boolean | null
+          create_appointment: boolean | null
+          created_at: string
+          dashboard_active_auths: boolean | null
+          dashboard_active_clients: boolean | null
+          dashboard_active_staff: boolean | null
+          dashboard_aging_report: boolean | null
+          dashboard_billing_summary: boolean | null
+          dashboard_cancelled_summary: boolean | null
+          dashboard_daily_appointments: boolean | null
+          dashboard_expiring_quals: boolean | null
+          dashboard_incomplete_appts: boolean | null
+          dashboard_miles_driven: boolean | null
+          dashboard_scheduled_vs_completed: boolean | null
+          dashboard_staff_summary: boolean | null
+          dashboard_unbilled_appts: boolean | null
+          dashboard_weekly_hours: boolean | null
+          delete_appointment: boolean | null
+          id: string
+          manage_clinical_teams: boolean | null
+          master_availability: boolean | null
+          menu_billing: boolean | null
+          menu_client: boolean | null
+          menu_forms: boolean | null
+          menu_payer: boolean | null
+          menu_payroll: boolean | null
+          menu_reports: boolean | null
+          menu_schedule: boolean | null
+          menu_settings: boolean | null
+          menu_staff: boolean | null
+          my_schedule: boolean | null
+          notifications: boolean | null
+          other_schedule: boolean | null
+          payer_cabinet: boolean | null
+          payer_info: boolean | null
+          payer_list: boolean | null
+          payer_profile: boolean | null
+          payer_services: boolean | null
+          payroll_financials: boolean | null
+          reports_appointment_billing: boolean | null
+          reports_appointment_list: boolean | null
+          reports_authorization_summary: boolean | null
+          reports_billing_ledger: boolean | null
+          reports_client_aging: boolean | null
+          reports_client_list: boolean | null
+          reports_expiring_authorization: boolean | null
+          reports_payer_aging: boolean | null
+          reports_payer_list: boolean | null
+          reports_payroll: boolean | null
+          reports_profit_loss: boolean | null
+          reports_staff_list: boolean | null
+          reports_staff_productivity: boolean | null
+          reports_user_login_history: boolean | null
+          schedule_billing: boolean | null
+          schedule_documents: boolean | null
+          schedule_verification: boolean | null
+          settings_cancellation_types: boolean | null
+          settings_custom_fields: boolean | null
+          settings_custom_lists: boolean | null
+          settings_organization: boolean | null
+          settings_payroll: boolean | null
+          settings_qualifications: boolean | null
+          settings_security: boolean | null
+          settings_services: boolean | null
+          settings_subscription: boolean | null
+          settings_system: boolean | null
+          settings_text_reminders: boolean | null
+          staff_cabinet: boolean | null
+          staff_custom_fields: boolean | null
+          staff_info: boolean | null
+          staff_list: boolean | null
+          staff_pay_rates: boolean | null
+          staff_personal_info: boolean | null
+          staff_profile: boolean | null
+          staff_qualifications: boolean | null
+          staff_supervisor: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_tracking?: boolean | null
+          add_new_client?: boolean | null
+          add_new_payer?: boolean | null
+          add_new_staff?: boolean | null
+          all_clients?: boolean | null
+          all_staff?: boolean | null
+          appointment_info?: boolean | null
+          ar_fix_claims?: boolean | null
+          ar_manager?: boolean | null
+          ar_post_payment?: boolean | null
+          ar_readiness?: boolean | null
+          ar_rebill?: boolean | null
+          ar_reports?: boolean | null
+          billing_billed_files?: boolean | null
+          billing_financials?: boolean | null
+          billing_generate_invoice?: boolean | null
+          billing_payment_source?: boolean | null
+          billing_provider_identifier?: boolean | null
+          billing_verification_forms?: boolean | null
+          cancel_appointment?: boolean | null
+          client_assignments?: boolean | null
+          client_authorization?: boolean | null
+          client_cabinet?: boolean | null
+          client_contacts?: boolean | null
+          client_custom_fields?: boolean | null
+          client_info?: boolean | null
+          client_list?: boolean | null
+          client_personal_info?: boolean | null
+          client_profile?: boolean | null
+          create_appointment?: boolean | null
+          created_at?: string
+          dashboard_active_auths?: boolean | null
+          dashboard_active_clients?: boolean | null
+          dashboard_active_staff?: boolean | null
+          dashboard_aging_report?: boolean | null
+          dashboard_billing_summary?: boolean | null
+          dashboard_cancelled_summary?: boolean | null
+          dashboard_daily_appointments?: boolean | null
+          dashboard_expiring_quals?: boolean | null
+          dashboard_incomplete_appts?: boolean | null
+          dashboard_miles_driven?: boolean | null
+          dashboard_scheduled_vs_completed?: boolean | null
+          dashboard_staff_summary?: boolean | null
+          dashboard_unbilled_appts?: boolean | null
+          dashboard_weekly_hours?: boolean | null
+          delete_appointment?: boolean | null
+          id?: string
+          manage_clinical_teams?: boolean | null
+          master_availability?: boolean | null
+          menu_billing?: boolean | null
+          menu_client?: boolean | null
+          menu_forms?: boolean | null
+          menu_payer?: boolean | null
+          menu_payroll?: boolean | null
+          menu_reports?: boolean | null
+          menu_schedule?: boolean | null
+          menu_settings?: boolean | null
+          menu_staff?: boolean | null
+          my_schedule?: boolean | null
+          notifications?: boolean | null
+          other_schedule?: boolean | null
+          payer_cabinet?: boolean | null
+          payer_info?: boolean | null
+          payer_list?: boolean | null
+          payer_profile?: boolean | null
+          payer_services?: boolean | null
+          payroll_financials?: boolean | null
+          reports_appointment_billing?: boolean | null
+          reports_appointment_list?: boolean | null
+          reports_authorization_summary?: boolean | null
+          reports_billing_ledger?: boolean | null
+          reports_client_aging?: boolean | null
+          reports_client_list?: boolean | null
+          reports_expiring_authorization?: boolean | null
+          reports_payer_aging?: boolean | null
+          reports_payer_list?: boolean | null
+          reports_payroll?: boolean | null
+          reports_profit_loss?: boolean | null
+          reports_staff_list?: boolean | null
+          reports_staff_productivity?: boolean | null
+          reports_user_login_history?: boolean | null
+          schedule_billing?: boolean | null
+          schedule_documents?: boolean | null
+          schedule_verification?: boolean | null
+          settings_cancellation_types?: boolean | null
+          settings_custom_fields?: boolean | null
+          settings_custom_lists?: boolean | null
+          settings_organization?: boolean | null
+          settings_payroll?: boolean | null
+          settings_qualifications?: boolean | null
+          settings_security?: boolean | null
+          settings_services?: boolean | null
+          settings_subscription?: boolean | null
+          settings_system?: boolean | null
+          settings_text_reminders?: boolean | null
+          staff_cabinet?: boolean | null
+          staff_custom_fields?: boolean | null
+          staff_info?: boolean | null
+          staff_list?: boolean | null
+          staff_pay_rates?: boolean | null
+          staff_personal_info?: boolean | null
+          staff_profile?: boolean | null
+          staff_qualifications?: boolean | null
+          staff_supervisor?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_tracking?: boolean | null
+          add_new_client?: boolean | null
+          add_new_payer?: boolean | null
+          add_new_staff?: boolean | null
+          all_clients?: boolean | null
+          all_staff?: boolean | null
+          appointment_info?: boolean | null
+          ar_fix_claims?: boolean | null
+          ar_manager?: boolean | null
+          ar_post_payment?: boolean | null
+          ar_readiness?: boolean | null
+          ar_rebill?: boolean | null
+          ar_reports?: boolean | null
+          billing_billed_files?: boolean | null
+          billing_financials?: boolean | null
+          billing_generate_invoice?: boolean | null
+          billing_payment_source?: boolean | null
+          billing_provider_identifier?: boolean | null
+          billing_verification_forms?: boolean | null
+          cancel_appointment?: boolean | null
+          client_assignments?: boolean | null
+          client_authorization?: boolean | null
+          client_cabinet?: boolean | null
+          client_contacts?: boolean | null
+          client_custom_fields?: boolean | null
+          client_info?: boolean | null
+          client_list?: boolean | null
+          client_personal_info?: boolean | null
+          client_profile?: boolean | null
+          create_appointment?: boolean | null
+          created_at?: string
+          dashboard_active_auths?: boolean | null
+          dashboard_active_clients?: boolean | null
+          dashboard_active_staff?: boolean | null
+          dashboard_aging_report?: boolean | null
+          dashboard_billing_summary?: boolean | null
+          dashboard_cancelled_summary?: boolean | null
+          dashboard_daily_appointments?: boolean | null
+          dashboard_expiring_quals?: boolean | null
+          dashboard_incomplete_appts?: boolean | null
+          dashboard_miles_driven?: boolean | null
+          dashboard_scheduled_vs_completed?: boolean | null
+          dashboard_staff_summary?: boolean | null
+          dashboard_unbilled_appts?: boolean | null
+          dashboard_weekly_hours?: boolean | null
+          delete_appointment?: boolean | null
+          id?: string
+          manage_clinical_teams?: boolean | null
+          master_availability?: boolean | null
+          menu_billing?: boolean | null
+          menu_client?: boolean | null
+          menu_forms?: boolean | null
+          menu_payer?: boolean | null
+          menu_payroll?: boolean | null
+          menu_reports?: boolean | null
+          menu_schedule?: boolean | null
+          menu_settings?: boolean | null
+          menu_staff?: boolean | null
+          my_schedule?: boolean | null
+          notifications?: boolean | null
+          other_schedule?: boolean | null
+          payer_cabinet?: boolean | null
+          payer_info?: boolean | null
+          payer_list?: boolean | null
+          payer_profile?: boolean | null
+          payer_services?: boolean | null
+          payroll_financials?: boolean | null
+          reports_appointment_billing?: boolean | null
+          reports_appointment_list?: boolean | null
+          reports_authorization_summary?: boolean | null
+          reports_billing_ledger?: boolean | null
+          reports_client_aging?: boolean | null
+          reports_client_list?: boolean | null
+          reports_expiring_authorization?: boolean | null
+          reports_payer_aging?: boolean | null
+          reports_payer_list?: boolean | null
+          reports_payroll?: boolean | null
+          reports_profit_loss?: boolean | null
+          reports_staff_list?: boolean | null
+          reports_staff_productivity?: boolean | null
+          reports_user_login_history?: boolean | null
+          schedule_billing?: boolean | null
+          schedule_documents?: boolean | null
+          schedule_verification?: boolean | null
+          settings_cancellation_types?: boolean | null
+          settings_custom_fields?: boolean | null
+          settings_custom_lists?: boolean | null
+          settings_organization?: boolean | null
+          settings_payroll?: boolean | null
+          settings_qualifications?: boolean | null
+          settings_security?: boolean | null
+          settings_services?: boolean | null
+          settings_subscription?: boolean | null
+          settings_system?: boolean | null
+          settings_text_reminders?: boolean | null
+          staff_cabinet?: boolean | null
+          staff_custom_fields?: boolean | null
+          staff_info?: boolean | null
+          staff_list?: boolean | null
+          staff_pay_rates?: boolean | null
+          staff_personal_info?: boolean | null
+          staff_profile?: boolean | null
+          staff_qualifications?: boolean | null
+          staff_supervisor?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       fieldwork_hours: {
         Row: {
@@ -5574,6 +5960,123 @@ export type Database = {
       get_supervisor_clinician_count: {
         Args: { _user_id: string }
         Returns: number
+      }
+      get_user_feature_permissions: {
+        Args: { _user_id: string }
+        Returns: {
+          activity_tracking: boolean | null
+          add_new_client: boolean | null
+          add_new_payer: boolean | null
+          add_new_staff: boolean | null
+          all_clients: boolean | null
+          all_staff: boolean | null
+          appointment_info: boolean | null
+          ar_fix_claims: boolean | null
+          ar_manager: boolean | null
+          ar_post_payment: boolean | null
+          ar_readiness: boolean | null
+          ar_rebill: boolean | null
+          ar_reports: boolean | null
+          billing_billed_files: boolean | null
+          billing_financials: boolean | null
+          billing_generate_invoice: boolean | null
+          billing_payment_source: boolean | null
+          billing_provider_identifier: boolean | null
+          billing_verification_forms: boolean | null
+          cancel_appointment: boolean | null
+          client_assignments: boolean | null
+          client_authorization: boolean | null
+          client_cabinet: boolean | null
+          client_contacts: boolean | null
+          client_custom_fields: boolean | null
+          client_info: boolean | null
+          client_list: boolean | null
+          client_personal_info: boolean | null
+          client_profile: boolean | null
+          create_appointment: boolean | null
+          created_at: string
+          dashboard_active_auths: boolean | null
+          dashboard_active_clients: boolean | null
+          dashboard_active_staff: boolean | null
+          dashboard_aging_report: boolean | null
+          dashboard_billing_summary: boolean | null
+          dashboard_cancelled_summary: boolean | null
+          dashboard_daily_appointments: boolean | null
+          dashboard_expiring_quals: boolean | null
+          dashboard_incomplete_appts: boolean | null
+          dashboard_miles_driven: boolean | null
+          dashboard_scheduled_vs_completed: boolean | null
+          dashboard_staff_summary: boolean | null
+          dashboard_unbilled_appts: boolean | null
+          dashboard_weekly_hours: boolean | null
+          delete_appointment: boolean | null
+          id: string
+          manage_clinical_teams: boolean | null
+          master_availability: boolean | null
+          menu_billing: boolean | null
+          menu_client: boolean | null
+          menu_forms: boolean | null
+          menu_payer: boolean | null
+          menu_payroll: boolean | null
+          menu_reports: boolean | null
+          menu_schedule: boolean | null
+          menu_settings: boolean | null
+          menu_staff: boolean | null
+          my_schedule: boolean | null
+          notifications: boolean | null
+          other_schedule: boolean | null
+          payer_cabinet: boolean | null
+          payer_info: boolean | null
+          payer_list: boolean | null
+          payer_profile: boolean | null
+          payer_services: boolean | null
+          payroll_financials: boolean | null
+          reports_appointment_billing: boolean | null
+          reports_appointment_list: boolean | null
+          reports_authorization_summary: boolean | null
+          reports_billing_ledger: boolean | null
+          reports_client_aging: boolean | null
+          reports_client_list: boolean | null
+          reports_expiring_authorization: boolean | null
+          reports_payer_aging: boolean | null
+          reports_payer_list: boolean | null
+          reports_payroll: boolean | null
+          reports_profit_loss: boolean | null
+          reports_staff_list: boolean | null
+          reports_staff_productivity: boolean | null
+          reports_user_login_history: boolean | null
+          schedule_billing: boolean | null
+          schedule_documents: boolean | null
+          schedule_verification: boolean | null
+          settings_cancellation_types: boolean | null
+          settings_custom_fields: boolean | null
+          settings_custom_lists: boolean | null
+          settings_organization: boolean | null
+          settings_payroll: boolean | null
+          settings_qualifications: boolean | null
+          settings_security: boolean | null
+          settings_services: boolean | null
+          settings_subscription: boolean | null
+          settings_system: boolean | null
+          settings_text_reminders: boolean | null
+          staff_cabinet: boolean | null
+          staff_custom_fields: boolean | null
+          staff_info: boolean | null
+          staff_list: boolean | null
+          staff_pay_rates: boolean | null
+          staff_personal_info: boolean | null
+          staff_profile: boolean | null
+          staff_qualifications: boolean | null
+          staff_supervisor: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "feature_permissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_active_supervisor: {
         Args: { _staff_user_id: string }
