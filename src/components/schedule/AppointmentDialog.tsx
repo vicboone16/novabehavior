@@ -26,9 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Trash2, X, Users } from 'lucide-react';
+import { CalendarIcon, Trash2, X, Users, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SchedulingEngine } from '@/components/scheduling/SchedulingEngine';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface AppointmentDialogProps {
@@ -97,7 +104,7 @@ export function AppointmentDialog({
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [showStaffSelector, setShowStaffSelector] = useState(false);
-
+  const [showFindStaffSheet, setShowFindStaffSheet] = useState(false);
   useEffect(() => {
     if (appointment) {
       const start = new Date(appointment.start_time);
@@ -314,40 +321,53 @@ export function AppointmentDialog({
             )}
             
             {/* Staff selector popover */}
-            <Popover open={showStaffSelector} onOpenChange={setShowStaffSelector}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
-                  {selectedStaffIds.length === 0 
-                    ? 'Select staff members...' 
-                    : `${selectedStaffIds.length} staff selected`}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[280px] p-0" align="start">
-                <ScrollArea className="h-[200px]">
-                  <div className="p-2 space-y-1">
-                    {staff.map(s => (
-                      <div 
-                        key={s.id} 
-                        className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
-                        onClick={() => handleStaffToggle(s.id)}
-                      >
-                        <Checkbox 
-                          checked={selectedStaffIds.includes(s.id)}
-                          onCheckedChange={() => {}}
-                          className="pointer-events-none"
-                        />
-                        <span className="text-sm">{s.name}</span>
-                      </div>
-                    ))}
-                    {staff.length === 0 && (
-                      <p className="text-sm text-muted-foreground p-2">No staff available</p>
-                    )}
-                  </div>
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
+            <div className="flex gap-2">
+              <Popover open={showStaffSelector} onOpenChange={setShowStaffSelector}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex-1 justify-start">
+                    {selectedStaffIds.length === 0 
+                      ? 'Select staff members...' 
+                      : `${selectedStaffIds.length} staff selected`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <ScrollArea className="h-[200px]">
+                    <div className="p-2 space-y-1">
+                      {staff.map(s => (
+                        <div 
+                          key={s.id} 
+                          className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
+                          onClick={() => handleStaffToggle(s.id)}
+                        >
+                          <Checkbox 
+                            checked={selectedStaffIds.includes(s.id)}
+                            onCheckedChange={() => {}}
+                            className="pointer-events-none"
+                          />
+                          <span className="text-sm">{s.name}</span>
+                        </div>
+                      ))}
+                      {staff.length === 0 && (
+                        <p className="text-sm text-muted-foreground p-2">No staff available</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </PopoverContent>
+              </Popover>
+              
+              {/* Find Staff button - opens scheduling engine */}
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={() => setShowFindStaffSheet(true)}
+                className="gap-1"
+              >
+                <Sparkles className="w-4 h-4" />
+                Find Staff
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Select one or more staff members. Leave empty for unassigned.
+              Select manually or use "Find Staff" to get constraint-aware suggestions.
             </p>
           </div>
 
@@ -408,6 +428,29 @@ export function AppointmentDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Find Staff Sheet - opens scheduling engine in a side panel */}
+      <Sheet open={showFindStaffSheet} onOpenChange={setShowFindStaffSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              Find Available Staff
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <SchedulingEngine 
+              clientId={studentId || undefined}
+              onStaffSelected={(staffId) => {
+                if (!selectedStaffIds.includes(staffId)) {
+                  setSelectedStaffIds(prev => [...prev, staffId]);
+                }
+                setShowFindStaffSheet(false);
+              }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </Dialog>
   );
 }
