@@ -1396,6 +1396,7 @@ export type Database = {
           authorization_status: string | null
           authorized_units: number | null
           client_id: string
+          coverage_mode_override: string | null
           cpt_code: string | null
           created_at: string
           end_date: string | null
@@ -1416,6 +1417,7 @@ export type Database = {
           authorization_status?: string | null
           authorized_units?: number | null
           client_id: string
+          coverage_mode_override?: string | null
           cpt_code?: string | null
           created_at?: string
           end_date?: string | null
@@ -1436,6 +1438,7 @@ export type Database = {
           authorization_status?: string | null
           authorized_units?: number | null
           client_id?: string
+          coverage_mode_override?: string | null
           cpt_code?: string | null
           created_at?: string
           end_date?: string | null
@@ -1723,6 +1726,270 @@ export type Database = {
           {
             foreignKeyName: "context_barriers_events_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_checks: {
+        Row: {
+          client_id: string
+          created_at: string
+          details: Json | null
+          evidence_link: string | null
+          follow_up_tasks_created: Json | null
+          id: string
+          linked_rules_checked: Json | null
+          mode_used: string
+          performed_by: string | null
+          performed_by_type: string | null
+          result_status: string
+          session_id: string | null
+          summary: string | null
+          trigger_reason: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          details?: Json | null
+          evidence_link?: string | null
+          follow_up_tasks_created?: Json | null
+          id?: string
+          linked_rules_checked?: Json | null
+          mode_used: string
+          performed_by?: string | null
+          performed_by_type?: string | null
+          result_status: string
+          session_id?: string | null
+          summary?: string | null
+          trigger_reason: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          details?: Json | null
+          evidence_link?: string | null
+          follow_up_tasks_created?: Json | null
+          id?: string
+          linked_rules_checked?: Json | null
+          mode_used?: string
+          performed_by?: string | null
+          performed_by_type?: string | null
+          result_status?: string
+          session_id?: string | null
+          summary?: string | null
+          trigger_reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_rules_insurance: {
+        Row: {
+          client_id: string
+          coverage_notes: string | null
+          coverage_status: string
+          cpt_code: string
+          created_at: string
+          created_by: string | null
+          evidence_attachment_url: string | null
+          icd10_codes: Json | null
+          id: string
+          is_active: boolean | null
+          last_verified_at: string | null
+          modifiers: Json | null
+          next_verification_due_at: string | null
+          payer_plan_id: string | null
+          place_of_service: Json | null
+          provider_credential_required: Json | null
+          updated_at: string
+          verification_source: string | null
+        }
+        Insert: {
+          client_id: string
+          coverage_notes?: string | null
+          coverage_status?: string
+          cpt_code: string
+          created_at?: string
+          created_by?: string | null
+          evidence_attachment_url?: string | null
+          icd10_codes?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          modifiers?: Json | null
+          next_verification_due_at?: string | null
+          payer_plan_id?: string | null
+          place_of_service?: Json | null
+          provider_credential_required?: Json | null
+          updated_at?: string
+          verification_source?: string | null
+        }
+        Update: {
+          client_id?: string
+          coverage_notes?: string | null
+          coverage_status?: string
+          cpt_code?: string
+          created_at?: string
+          created_by?: string | null
+          evidence_attachment_url?: string | null
+          icd10_codes?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          modifiers?: Json | null
+          next_verification_due_at?: string | null
+          payer_plan_id?: string | null
+          place_of_service?: Json | null
+          provider_credential_required?: Json | null
+          updated_at?: string
+          verification_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_rules_insurance_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coverage_rules_insurance_payer_plan_id_fkey"
+            columns: ["payer_plan_id"]
+            isOneToOne: false
+            referencedRelation: "payer_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_rules_school: {
+        Row: {
+          allowed_settings: Json | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          last_verified_at: string | null
+          next_verification_due_at: string | null
+          notes: string | null
+          provider_roles_allowed: Json | null
+          service_line: string
+          source: string
+          source_document_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          allowed_settings?: Json | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          next_verification_due_at?: string | null
+          notes?: string | null
+          provider_roles_allowed?: Json | null
+          service_line: string
+          source: string
+          source_document_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allowed_settings?: Json | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_verified_at?: string | null
+          next_verification_due_at?: string | null
+          notes?: string | null
+          provider_roles_allowed?: Json | null
+          service_line?: string
+          source?: string
+          source_document_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_rules_school_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          due_date: string
+          id: string
+          linked_coverage_rule_id: string | null
+          linked_payer_plan_id: string | null
+          linked_session_ids: Json | null
+          priority: string | null
+          reason: string | null
+          resolution_notes: string | null
+          status: string | null
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          linked_coverage_rule_id?: string | null
+          linked_payer_plan_id?: string | null
+          linked_session_ids?: Json | null
+          priority?: string | null
+          reason?: string | null
+          resolution_notes?: string | null
+          status?: string | null
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          linked_coverage_rule_id?: string | null
+          linked_payer_plan_id?: string | null
+          linked_session_ids?: Json | null
+          priority?: string | null
+          reason?: string | null
+          resolution_notes?: string | null
+          status?: string | null
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_tasks_client_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
@@ -2697,6 +2964,42 @@ export type Database = {
         }
         Relationships: []
       }
+      org_coverage_settings: {
+        Row: {
+          auto_create_tasks_on_auth_renewal: boolean | null
+          auto_create_tasks_on_code_change: boolean | null
+          auto_create_tasks_on_intake: boolean | null
+          auto_create_tasks_on_plan_renewal: boolean | null
+          coverage_mode: string
+          created_at: string
+          default_verification_cadence_days: number | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_create_tasks_on_auth_renewal?: boolean | null
+          auto_create_tasks_on_code_change?: boolean | null
+          auto_create_tasks_on_intake?: boolean | null
+          auto_create_tasks_on_plan_renewal?: boolean | null
+          coverage_mode?: string
+          created_at?: string
+          default_verification_cadence_days?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_create_tasks_on_auth_renewal?: boolean | null
+          auto_create_tasks_on_code_change?: boolean | null
+          auto_create_tasks_on_intake?: boolean | null
+          auto_create_tasks_on_plan_renewal?: boolean | null
+          coverage_mode?: string
+          created_at?: string
+          default_verification_cadence_days?: number | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       org_goal_templates: {
         Row: {
           active: boolean
@@ -2788,6 +3091,68 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      payer_plans: {
+        Row: {
+          client_id: string
+          created_at: string
+          effective_end_date: string | null
+          effective_start_date: string
+          group_number: string | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          member_id: string | null
+          notes: string | null
+          notes_visibility: string | null
+          payer_name: string
+          plan_name: string | null
+          plan_renewal_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date: string
+          group_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          member_id?: string | null
+          notes?: string | null
+          notes_visibility?: string | null
+          payer_name: string
+          plan_name?: string | null
+          plan_renewal_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date?: string
+          group_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          member_id?: string | null
+          notes?: string | null
+          notes_visibility?: string | null
+          payer_name?: string
+          plan_name?: string | null
+          plan_renewal_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payer_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payers: {
         Row: {
@@ -3642,6 +4007,10 @@ export type Database = {
           authorization_status: string | null
           authorized_service_id: string | null
           billing_status: string | null
+          coverage_gate_reason_code: string | null
+          coverage_gate_status: string | null
+          coverage_last_verified_at: string | null
+          coverage_rule_match_ids: Json | null
           created_at: string
           end_time: string | null
           funding_mode_snapshot: string | null
@@ -3669,6 +4038,10 @@ export type Database = {
           authorization_status?: string | null
           authorized_service_id?: string | null
           billing_status?: string | null
+          coverage_gate_reason_code?: string | null
+          coverage_gate_status?: string | null
+          coverage_last_verified_at?: string | null
+          coverage_rule_match_ids?: Json | null
           created_at?: string
           end_time?: string | null
           funding_mode_snapshot?: string | null
@@ -3696,6 +4069,10 @@ export type Database = {
           authorization_status?: string | null
           authorized_service_id?: string | null
           billing_status?: string | null
+          coverage_gate_reason_code?: string | null
+          coverage_gate_status?: string | null
+          coverage_last_verified_at?: string | null
+          coverage_rule_match_ids?: Json | null
           created_at?: string
           end_time?: string | null
           funding_mode_snapshot?: string | null
@@ -4410,6 +4787,7 @@ export type Database = {
           color: string
           contact_email: string | null
           contact_phone: string | null
+          coverage_mode_override: string | null
           created_at: string
           custom_antecedents: Json | null
           custom_consequences: Json | null
@@ -4464,6 +4842,7 @@ export type Database = {
           color?: string
           contact_email?: string | null
           contact_phone?: string | null
+          coverage_mode_override?: string | null
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
@@ -4518,6 +4897,7 @@ export type Database = {
           color?: string
           contact_email?: string | null
           contact_phone?: string | null
+          coverage_mode_override?: string | null
           created_at?: string
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
@@ -5178,6 +5558,10 @@ export type Database = {
         Returns: number
       }
       generate_claim_number: { Args: never; Returns: string }
+      get_client_coverage_mode: {
+        Args: { _client_id: string }
+        Returns: string
+      }
       get_clinician_patient_count: {
         Args: { _user_id: string }
         Returns: number
@@ -5235,6 +5619,10 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_coverage_verification_due: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
       is_intake_coordinator: {
         Args: { check_user_id: string }
         Returns: boolean
