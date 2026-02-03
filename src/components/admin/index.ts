@@ -7,4 +7,5 @@ export { UserTagManager } from './UserTagManager';
 export { StaffCard } from './StaffCard';
 export { StaffManagement } from './StaffManagement';
 export { CredentialTracker } from './CredentialTracker';
+export { UserPermissionsManager } from './UserPermissionsManager';
 export type { StaffMember } from './StaffCard';

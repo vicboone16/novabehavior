@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BillingDashboard } from '@/components/billing/BillingDashboard';
 import { ClaimGenerator } from '@/components/billing/ClaimGenerator';
 import { DenialTracker } from '@/components/billing/DenialTracker';
+import { ARReadinessDashboard } from '@/components/scheduling/ARReadinessDashboard';
+import { GlobalAuthorizationDashboard } from '@/components/billing/GlobalAuthorizationDashboard';
 
 export default function Billing() {
   const navigate = useNavigate();
@@ -48,6 +50,14 @@ export default function Billing() {
               <DollarSign className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="ar-readiness" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              AR Readiness
+            </TabsTrigger>
+            <TabsTrigger value="authorizations" className="gap-2">
+              <Shield className="w-4 h-4" />
+              Authorizations
+            </TabsTrigger>
             <TabsTrigger value="claims" className="gap-2">
               <FileText className="w-4 h-4" />
               All Claims
@@ -60,6 +70,14 @@ export default function Billing() {
 
           <TabsContent value="dashboard">
             <BillingDashboard />
+          </TabsContent>
+
+          <TabsContent value="ar-readiness">
+            <ARReadinessDashboard />
+          </TabsContent>
+
+          <TabsContent value="authorizations">
+            <GlobalAuthorizationDashboard />
           </TabsContent>
 
           <TabsContent value="claims">
