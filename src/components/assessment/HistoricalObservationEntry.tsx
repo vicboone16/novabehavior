@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -75,7 +76,67 @@ interface LatencyEntryForm {
   instruction?: string;
 }
 
-export function HistoricalObservationEntry({ 
+// Simple inline component for creating a new behavior by name only
+function NewBehaviorDialog({ studentId, onSuccess }: { studentId: string; onSuccess: (behaviorId: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const { addBehaviorWithMethods } = useDataStore();
+
+  const handleCreate = () => {
+    if (!name.trim()) {
+      toast.error('Please enter a behavior name');
+      return;
+    }
+    addBehaviorWithMethods(studentId, name.trim(), ['abc']);
+    // Get the newly created behavior ID
+    setTimeout(() => {
+      const state = useDataStore.getState();
+      const student = state.students.find(s => s.id === studentId);
+      const newBehavior = student?.behaviors.find(b => b.name === name.trim());
+      if (newBehavior) {
+        onSuccess(newBehavior.id);
+      }
+      setName('');
+      setOpen(false);
+    }, 100);
+    toast.success(`Behavior "${name}" created`);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1">
+          <Plus className="w-3 h-3" />
+          New Behavior
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Create New Behavior</DialogTitle>
+          <DialogDescription>
+            Add a behavior by name. Data collection type can be assigned later.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1">
+            <Label>Behavior Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter behavior name..."
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreate}>Create</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function HistoricalObservationEntry({
   student, 
   open, 
   onOpenChange 
@@ -478,7 +539,7 @@ export function HistoricalObservationEntry({
 
               {/* ABC Tab */}
               <TabsContent value="abc" className="space-y-3">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Select onValueChange={addABCEntryForm}>
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Add ABC entry..." />
@@ -489,6 +550,12 @@ export function HistoricalObservationEntry({
                       ))}
                     </SelectContent>
                   </Select>
+                  <NewBehaviorDialog 
+                    studentId={student.id}
+                    onSuccess={(behaviorId) => {
+                      addABCEntryForm(behaviorId);
+                    }}
+                  />
                 </div>
 
                 {abcEntries.map((entry, idx) => (
