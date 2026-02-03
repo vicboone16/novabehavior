@@ -26,6 +26,8 @@ import Schedule from "./pages/Schedule";
 import SecuritySettings from "./pages/SecuritySettings";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import QuestionnaireForm from "./pages/QuestionnaireForm";
+import ConsentForm from "./pages/ConsentForm";
+import DocumentInbox from "./pages/DocumentInbox";
 import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
@@ -61,10 +63,12 @@ const App = () => {
         <Sonner />
         <SessionTimeoutWarning />
         <BrowserRouter>
-          <Routes>
+        <Routes>
             <Route path="/auth" element={<Auth />} />
             {/* Public questionnaire form - no auth required */}
             <Route path="/questionnaire/:token" element={<QuestionnaireForm />} />
+            {/* Public consent form - no auth required */}
+            <Route path="/consent/:token" element={<ConsentForm />} />
             <Route path="/pending-approval" element={
               <ProtectedRoute>
                 <PendingApproval />
@@ -146,6 +150,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <Analytics />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/inbox" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <DocumentInbox />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>

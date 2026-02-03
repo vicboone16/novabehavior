@@ -803,6 +803,136 @@ export type Database = {
           },
         ]
       }
+      consent_form_submissions: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          form_data: Json
+          id: string
+          pdf_url: string | null
+          referral_id: string | null
+          retention_until: string
+          signature_data: string | null
+          signature_ip_address: string | null
+          signature_user_agent: string | null
+          signed_at: string | null
+          signer_email: string | null
+          signer_name: string
+          signer_relationship: string | null
+          status: string
+          student_id: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          form_data?: Json
+          id?: string
+          pdf_url?: string | null
+          referral_id?: string | null
+          retention_until?: string
+          signature_data?: string | null
+          signature_ip_address?: string | null
+          signature_user_agent?: string | null
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name: string
+          signer_relationship?: string | null
+          status?: string
+          student_id?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          form_data?: Json
+          id?: string
+          pdf_url?: string | null
+          referral_id?: string | null
+          retention_until?: string
+          signature_data?: string | null
+          signature_ip_address?: string | null
+          signature_user_agent?: string | null
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name?: string
+          signer_relationship?: string | null
+          status?: string
+          student_id?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consent_form_submissions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_form_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consent_form_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "consent_form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consent_form_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fields: Json
+          form_type: string
+          id: string
+          is_active: boolean
+          name: string
+          signature_zones: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          signature_zones?: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          form_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          signature_zones?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       context_barriers_events: {
         Row: {
           created_at: string
@@ -1070,6 +1200,106 @@ export type Database = {
           {
             foreignKeyName: "data_access_logs_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_inbox: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_suggested_document_type: string | null
+          ai_suggested_student_id: string | null
+          assigned_referral_id: string | null
+          assigned_student_id: string | null
+          created_at: string
+          document_type: string | null
+          extracted_text: string | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          raw_content_url: string | null
+          received_at: string
+          retention_until: string
+          sender_info: string | null
+          source_type: string
+          status: string
+          subject_line: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_suggested_document_type?: string | null
+          ai_suggested_student_id?: string | null
+          assigned_referral_id?: string | null
+          assigned_student_id?: string | null
+          created_at?: string
+          document_type?: string | null
+          extracted_text?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          raw_content_url?: string | null
+          received_at?: string
+          retention_until?: string
+          sender_info?: string | null
+          source_type: string
+          status?: string
+          subject_line?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_suggested_document_type?: string | null
+          ai_suggested_student_id?: string | null
+          assigned_referral_id?: string | null
+          assigned_student_id?: string | null
+          created_at?: string
+          document_type?: string | null
+          extracted_text?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          raw_content_url?: string | null
+          received_at?: string
+          retention_until?: string
+          sender_info?: string | null
+          source_type?: string
+          status?: string
+          subject_line?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_inbox_ai_suggested_student_id_fkey"
+            columns: ["ai_suggested_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_inbox_assigned_referral_id_fkey"
+            columns: ["assigned_referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_inbox_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
@@ -2301,6 +2531,44 @@ export type Database = {
             columns: ["authorized_service_id"]
             isOneToOne: false
             referencedRelation: "authorized_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_audit_log: {
+        Row: {
+          action: string
+          id: string
+          ip_address: string | null
+          performed_at: string
+          performed_by: string | null
+          submission_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          submission_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          submission_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_audit_log_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "consent_form_submissions"
             referencedColumns: ["id"]
           },
         ]
