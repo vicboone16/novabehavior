@@ -657,10 +657,16 @@ const defaultPermissions: FeaturePermissions = {
 };
 
 export function useFeaturePermissions(): FeaturePermissions {
-  const { user, userRole } = useAuth();
+  const { user, userRole, roleLoading } = useAuth();
   const [permissions, setPermissions] = useState<FeaturePermissions>(defaultPermissions);
 
   useEffect(() => {
+    // Wait for role to finish loading before determining permissions
+    if (roleLoading) {
+      setPermissions({ ...defaultPermissions, loading: true });
+      return;
+    }
+
     if (!user) {
       setPermissions({ ...defaultPermissions, loading: false });
       return;
@@ -682,7 +688,7 @@ export function useFeaturePermissions(): FeaturePermissions {
           const { id, user_id, created_at, updated_at, ...perms } = data as any;
           setPermissions({ ...perms, loading: false });
         } else {
-          // Use role-based defaults
+          // Use role-based defaults - userRole is now guaranteed to be loaded
           const roleDefaults = DEFAULT_PERMISSIONS[userRole || 'viewer'] || DEFAULT_PERMISSIONS.viewer;
           setPermissions({ ...defaultPermissions, ...roleDefaults, loading: false });
         }
@@ -695,7 +701,7 @@ export function useFeaturePermissions(): FeaturePermissions {
     };
 
     fetchPermissions();
-  }, [user, userRole]);
+  }, [user, userRole, roleLoading]);
 
   return permissions;
 }

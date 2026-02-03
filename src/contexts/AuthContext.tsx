@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
+export type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
 interface Profile {
   id: string;
@@ -19,10 +19,12 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   userRole: AppRole | null;
+  roleLoading: boolean; // True while role is being fetched
   loading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshRole: () => Promise<void>; // Force refresh role from database
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,9 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const fetchUserDetails = async (userId: string) => {
+    setRoleLoading(true);
     try {
       // Fetch profile - explicitly exclude pin_hash for security
       const { data: profileData, error: profileError } = await supabase
@@ -58,12 +62,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (roleError) {
         console.error('Error fetching role:', roleError);
-        // Don't clear role on error - keep previous value if any
+        // Default to staff if no role found (shouldn't happen for approved users)
+        setUserRole('staff');
       } else if (roleData) {
         setUserRole(roleData.role as AppRole);
       }
     } catch (error) {
       console.error('Error fetching user details:', error);
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
+  // Explicit function to refresh role from database
+  const refreshRole = async () => {
+    if (!user) return;
+    setRoleLoading(true);
+    try {
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!roleError && roleData) {
+        setUserRole(roleData.role as AppRole);
+      }
+    } catch (error) {
+      console.error('Error refreshing role:', error);
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -128,11 +156,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     setProfile(null);
     setUserRole(null);
+    setRoleLoading(true);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userRole, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, userRole, roleLoading, loading, signUp, signIn, signOut, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );
