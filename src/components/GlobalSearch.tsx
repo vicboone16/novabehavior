@@ -27,6 +27,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
+import { getZodiacSign, ZODIAC_LABELS, ZODIAC_SYMBOLS, ZodiacSign } from '@/types/behavior';
+
 interface SearchResult {
   id: string;
   name: string;
@@ -37,6 +39,7 @@ interface SearchResult {
   caseTypes?: string[];
   assessmentMode?: boolean;
   isArchived?: boolean;
+  zodiacSign?: ZodiacSign;
 }
 
 interface SearchFilters {
@@ -47,11 +50,13 @@ interface SearchFilters {
   caseType: string;
   assessmentMode: 'all' | 'fba' | 'regular';
   status: 'active' | 'archived' | 'all';
+  zodiacSign: string;
 }
 
 const GRADES = ['Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'Post-Secondary'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const CASE_TYPES = ['ABA', 'Consultation', 'Assessment Only', 'School-Based', 'Home-Based', 'Telehealth'];
+const ZODIAC_SIGNS: ZodiacSign[] = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
 
 export function GlobalSearch() {
   const navigate = useNavigate();
@@ -74,6 +79,7 @@ export function GlobalSearch() {
     caseType: 'all',
     assessmentMode: 'all',
     status: 'active',
+    zodiacSign: 'all',
   });
 
   // Check if user is admin
@@ -140,8 +146,8 @@ export function GlobalSearch() {
       if (currentFilters.type === 'all' || currentFilters.type === 'students') {
         let studentsQuery = supabase
           .from('students')
-          .select('id, name, school, grade, user_id, case_types, assessment_mode_enabled, is_archived')
-          .limit(20);
+          .select('id, name, school, grade, user_id, case_types, assessment_mode_enabled, is_archived, date_of_birth')
+          .limit(50);
 
         // Apply status filter
         if (currentFilters.status === 'active') {
@@ -203,7 +209,17 @@ export function GlobalSearch() {
             });
           }
 
+          // Apply zodiac sign filter for students
+          if (currentFilters.zodiacSign !== 'all') {
+            accessibleStudents = accessibleStudents.filter(s => {
+              if (!s.date_of_birth) return false;
+              const zodiac = getZodiacSign(new Date(s.date_of_birth));
+              return zodiac === currentFilters.zodiacSign;
+            });
+          }
+
           accessibleStudents.forEach(s => {
+            const zodiac = s.date_of_birth ? getZodiacSign(new Date(s.date_of_birth)) : undefined;
             searchResults.push({
               id: s.id,
               name: s.name,
@@ -213,6 +229,7 @@ export function GlobalSearch() {
               caseTypes: (s.case_types as string[]) || [],
               assessmentMode: s.assessment_mode_enabled || false,
               isArchived: s.is_archived || false,
+              zodiacSign: zodiac,
               subtitle: [s.grade ? `Grade ${s.grade}` : null, s.school].filter(Boolean).join(' • ') || undefined,
             });
           });
@@ -223,8 +240,8 @@ export function GlobalSearch() {
       if (isAdmin && (currentFilters.type === 'all' || currentFilters.type === 'users')) {
         let profilesQuery = supabase
           .from('profiles')
-          .select('user_id, display_name, email, first_name, last_name')
-          .limit(10);
+          .select('user_id, display_name, email, first_name, last_name, date_of_birth')
+          .limit(30);
 
         if (searchQuery.length >= 2) {
           profilesQuery = profilesQuery.or(
@@ -242,17 +259,29 @@ export function GlobalSearch() {
         const { data: profilesData } = await profilesQuery;
 
         if (profilesData) {
-          profilesData.forEach(p => {
+          // Apply zodiac sign filter for users
+          let filteredProfiles = profilesData;
+          if (currentFilters.zodiacSign !== 'all') {
+            filteredProfiles = profilesData.filter(p => {
+              if (!p.date_of_birth) return false;
+              const zodiac = getZodiacSign(new Date(p.date_of_birth));
+              return zodiac === currentFilters.zodiacSign;
+            });
+          }
+
+          filteredProfiles.forEach(p => {
             const displayName = p.display_name || 
               [p.first_name, p.last_name].filter(Boolean).join(' ') || 
               p.email || 
               'Unknown User';
+            const zodiac = p.date_of_birth ? getZodiacSign(new Date(p.date_of_birth)) : undefined;
             
             searchResults.push({
               id: p.user_id,
               name: displayName,
               type: 'user',
               subtitle: p.email || undefined,
+              zodiacSign: zodiac,
             });
           });
         }
@@ -277,7 +306,8 @@ export function GlobalSearch() {
         filters.caseType !== 'all' ||
         filters.assessmentMode !== 'all' ||
         filters.status !== 'active' ||
-        filters.type !== 'all';
+        filters.type !== 'all' ||
+        filters.zodiacSign !== 'all';
 
       if (query.length >= 2 || hasActiveFilters) {
         performSearch(query, filters);
@@ -309,6 +339,7 @@ export function GlobalSearch() {
       caseType: 'all',
       assessmentMode: 'all',
       status: 'active',
+      zodiacSign: 'all',
     });
   };
 
@@ -320,6 +351,7 @@ export function GlobalSearch() {
     filters.caseType !== 'all',
     filters.assessmentMode !== 'all',
     filters.status !== 'active',
+    filters.zodiacSign !== 'all',
   ].filter(Boolean).length;
 
   const studentResults = results.filter(r => r.type === 'student');
@@ -520,7 +552,7 @@ export function GlobalSearch() {
               </div>
 
               {/* Assessment Mode Filter */}
-              <div className="col-span-2 space-y-1">
+              <div className="space-y-1">
                 <label className="text-xs text-muted-foreground flex items-center gap-1">
                   <Star className="w-3 h-3" /> Assessment Mode
                 </label>
@@ -535,6 +567,29 @@ export function GlobalSearch() {
                     <SelectItem value="all">All students</SelectItem>
                     <SelectItem value="fba">FBA/Assessment mode only</SelectItem>
                     <SelectItem value="regular">Regular students only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Zodiac Sign Filter */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground flex items-center gap-1">
+                  ✨ Zodiac
+                </label>
+                <Select
+                  value={filters.zodiacSign}
+                  onValueChange={(v) => setFilters(f => ({ ...f, zodiacSign: v }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Any sign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any sign</SelectItem>
+                    {ZODIAC_SIGNS.map(sign => (
+                      <SelectItem key={sign} value={sign}>
+                        {ZODIAC_SYMBOLS[sign]} {ZODIAC_LABELS[sign]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -576,6 +631,11 @@ export function GlobalSearch() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-sm truncate">{result.name}</p>
+                          {result.zodiacSign && (
+                            <span className="text-sm" title={ZODIAC_LABELS[result.zodiacSign]}>
+                              {ZODIAC_SYMBOLS[result.zodiacSign]}
+                            </span>
+                          )}
                           {result.assessmentMode && (
                             <Badge variant="secondary" className="text-[10px] px-1 py-0">FBA</Badge>
                           )}
@@ -614,7 +674,14 @@ export function GlobalSearch() {
                         <User className="w-4 h-4 text-secondary-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{result.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm truncate">{result.name}</p>
+                          {result.zodiacSign && (
+                            <span className="text-sm" title={ZODIAC_LABELS[result.zodiacSign]}>
+                              {ZODIAC_SYMBOLS[result.zodiacSign]}
+                            </span>
+                          )}
+                        </div>
                         {result.subtitle && (
                           <p className="text-xs text-muted-foreground truncate">{result.subtitle}</p>
                         )}

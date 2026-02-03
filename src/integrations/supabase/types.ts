@@ -4318,6 +4318,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           credential: string | null
+          date_of_birth: string | null
           display_name: string | null
           email: string | null
           employment_status: string | null
@@ -4364,6 +4365,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           credential?: string | null
+          date_of_birth?: string | null
           display_name?: string | null
           email?: string | null
           employment_status?: string | null
@@ -4410,6 +4412,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           credential?: string | null
+          date_of_birth?: string | null
           display_name?: string | null
           email?: string | null
           employment_status?: string | null
