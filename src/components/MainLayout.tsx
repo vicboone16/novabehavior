@@ -105,37 +105,37 @@ export default function MainLayout() {
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/supervision')}
-                className="gap-2 hidden lg:flex"
+                className="gap-1"
               >
                 <UserCheck className="w-4 h-4" />
-                <span className="hidden xl:inline">Supervision</span>
+                <span className="hidden sm:inline">Supervision</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/referrals')}
-                className="gap-2 hidden lg:flex"
+                className="gap-1"
               >
                 <UserPlus className="w-4 h-4" />
-                <span className="hidden xl:inline">Referrals</span>
+                <span className="hidden sm:inline">Referrals</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/billing')}
-                className="gap-2 hidden lg:flex"
+                className="gap-1"
               >
                 <DollarSign className="w-4 h-4" />
-                <span className="hidden xl:inline">Billing</span>
+                <span className="hidden sm:inline">Billing</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/analytics')}
-                className="gap-2 hidden lg:flex"
+                className="gap-1"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span className="hidden xl:inline">Analytics</span>
+                <span className="hidden sm:inline">Analytics</span>
               </Button>
               <Button
                 variant="outline"
