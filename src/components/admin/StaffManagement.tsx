@@ -70,7 +70,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     title: 'Clinician',
     supervisor_id: '',
     role: 'staff',
-    sendEmail: false,
+    emailOption: 'none' as 'none' | 'now' | 'later', // none = don't send, now = send immediately, later = save for later
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -275,7 +275,11 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
       toast({ 
         title: 'Staff member created', 
-        description: `${data.display_name} has been created successfully${newStaffForm.sendEmail ? '. Login email will be sent.' : '.'}` 
+        description: newStaffForm.emailOption === 'now' 
+          ? `${data.display_name} has been created. Login email will be sent.`
+          : newStaffForm.emailOption === 'later'
+          ? `${data.display_name} has been created. You can send the login email after completing their profile.`
+          : `${data.display_name} has been created. Share credentials manually: ${newStaffForm.email}`
       });
 
       // TODO: If sendEmail is true, trigger email sending
@@ -293,7 +297,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         title: 'Clinician',
         supervisor_id: '',
         role: 'staff',
-        sendEmail: false,
+        emailOption: 'none',
       });
       
       // Reload staff list
@@ -693,17 +697,50 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 pt-2 border-t">
-              <input
-                type="checkbox"
-                id="sendEmail"
-                checked={newStaffForm.sendEmail}
-                onChange={(e) => setNewStaffForm(f => ({ ...f, sendEmail: e.target.checked }))}
-                className="rounded border-border"
-              />
-              <Label htmlFor="sendEmail" className="text-sm font-normal cursor-pointer">
-                Send login credentials via email
-              </Label>
+            <div className="space-y-3 pt-2 border-t">
+              <Label className="text-sm font-medium">Login Email Notification</Label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="emailOption"
+                    value="none"
+                    checked={newStaffForm.emailOption === 'none'}
+                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'none' }))}
+                    className="rounded-full border-border"
+                  />
+                  <span className="text-sm">Don't send email (I'll share credentials manually)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="emailOption"
+                    value="now"
+                    checked={newStaffForm.emailOption === 'now'}
+                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'now' }))}
+                    className="rounded-full border-border"
+                  />
+                  <span className="text-sm">Send login email now</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="emailOption"
+                    value="later"
+                    checked={newStaffForm.emailOption === 'later'}
+                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'later' }))}
+                    className="rounded-full border-border"
+                  />
+                  <span className="text-sm">Schedule for later (I'll complete profile first)</span>
+                </label>
+              </div>
+              {newStaffForm.emailOption === 'none' && (
+                <p className="text-xs text-muted-foreground">
+                  Credentials: Email <span className="font-mono bg-muted px-1 rounded">{newStaffForm.email || '...'}</span> / 
+                  Password <span className="font-mono bg-muted px-1 rounded">{newStaffForm.password ? '••••••' : '...'}</span>
+                  {newStaffForm.pin && <> / PIN <span className="font-mono bg-muted px-1 rounded">••••••</span></>}
+                </p>
+              )}
             </div>
           </div>
 
