@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { 
-  ClipboardList, Eye, X
+  ClipboardList, Eye
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { ABAS3FormRenderer } from './ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -24,6 +25,13 @@ interface Question {
   type: 'text' | 'multiple_choice' | 'rating' | 'yes_no';
   options?: string[];
   required: boolean;
+}
+
+interface ABAS3Question {
+  id: string;
+  text: string;
+  domain: string;
+  number: number;
 }
 
 interface QuestionnairePreviewProps {
@@ -43,8 +51,9 @@ export function QuestionnairePreview({
   const [template, setTemplate] = useState<{
     name: string;
     description: string | null;
-    questions: Question[];
+    questions: Question[] | ABAS3Question[];
   } | null>(null);
+  const [previewResponses, setPreviewResponses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open || !templateId) return;
@@ -117,6 +126,7 @@ export function QuestionnairePreview({
   }
 
   const questions = template?.questions || [];
+  const isABAS3 = templateType === 'abas3';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,7 +144,7 @@ export function QuestionnairePreview({
         <ScrollArea className="flex-1 -mx-6 px-6">
           <div className="space-y-4 pb-4">
             {/* Preview Banner */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-amber-800 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-200">
+            <div className="bg-muted border border-border rounded-lg p-3 flex items-center gap-2 text-muted-foreground">
               <Eye className="w-4 h-4" />
               <span className="text-sm">Preview Mode - Responses will not be saved</span>
             </div>
@@ -153,75 +163,88 @@ export function QuestionnairePreview({
               </CardContent>
             </Card>
 
-            {/* Questions Preview */}
-            {questions.map((question, index) => (
-              <Card key={question.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
-                      {index + 1}
-                    </span>
-                    <span>
-                      {question.text || 'Question text...'}
-                      {question.required && <span className="text-destructive ml-1">*</span>}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {question.type === 'text' && (
-                    <Textarea
-                      placeholder="Respondent will enter text here..."
-                      disabled
-                      className="opacity-60"
-                      rows={3}
-                    />
-                  )}
-
-                  {question.type === 'multiple_choice' && question.options && (
-                    <RadioGroup disabled className="opacity-80">
-                      <div className="space-y-2">
-                        {question.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`preview-${question.id}-${optIndex}`} disabled />
-                            <Label htmlFor={`preview-${question.id}-${optIndex}`} className="cursor-default">
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </RadioGroup>
-                  )}
-
-                  {question.type === 'yes_no' && (
-                    <RadioGroup disabled className="flex gap-4 opacity-80">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="yes" id={`preview-${question.id}-yes`} disabled />
-                        <Label className="cursor-default">Yes</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id={`preview-${question.id}-no`} disabled />
-                        <Label className="cursor-default">No</Label>
-                      </div>
-                    </RadioGroup>
-                  )}
-
-                  {question.type === 'rating' && (
-                    <div className="flex gap-2 opacity-80">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <Button
-                          key={rating}
-                          variant="outline"
-                          className="w-12 h-12"
+            {/* ABAS-3 Preview */}
+            {isABAS3 ? (
+              <ABAS3FormRenderer
+                questions={questions as ABAS3Question[]}
+                responses={previewResponses}
+                onResponseChange={(questionId, value) =>
+                  setPreviewResponses((prev) => ({ ...prev, [questionId]: value }))
+                }
+              />
+            ) : (
+              <>
+                {/* Custom Form Questions Preview */}
+                {(questions as Question[]).map((question, index) => (
+                  <Card key={question.id}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-start gap-2">
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
+                          {index + 1}
+                        </span>
+                        <span>
+                          {question.text || 'Question text...'}
+                          {question.required && <span className="text-destructive ml-1">*</span>}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {question.type === 'text' && (
+                        <Textarea
+                          placeholder="Respondent will enter text here..."
                           disabled
-                        >
-                          {rating}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                          className="opacity-60"
+                          rows={3}
+                        />
+                      )}
+
+                      {question.type === 'multiple_choice' && question.options && (
+                        <RadioGroup disabled className="opacity-80">
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div key={optIndex} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`preview-${question.id}-${optIndex}`} disabled />
+                                <Label htmlFor={`preview-${question.id}-${optIndex}`} className="cursor-default">
+                                  {option}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </RadioGroup>
+                      )}
+
+                      {question.type === 'yes_no' && (
+                        <RadioGroup disabled className="flex gap-4 opacity-80">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id={`preview-${question.id}-yes`} disabled />
+                            <Label className="cursor-default">Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id={`preview-${question.id}-no`} disabled />
+                            <Label className="cursor-default">No</Label>
+                          </div>
+                        </RadioGroup>
+                      )}
+
+                      {question.type === 'rating' && (
+                        <div className="flex gap-2 opacity-80">
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <Button
+                              key={rating}
+                              variant="outline"
+                              className="w-12 h-12"
+                              disabled
+                            >
+                              {rating}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
 
             {/* Submit Button Preview */}
             <Button className="w-full h-12" disabled>

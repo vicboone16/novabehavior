@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ABAS3FormRenderer } from '@/components/questionnaire/ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -21,6 +22,13 @@ interface Question {
   type: 'text' | 'multiple_choice' | 'rating' | 'yes_no';
   options?: string[];
   required: boolean;
+}
+
+interface ABAS3Question {
+  id: string;
+  text: string;
+  domain: string;
+  number: number;
 }
 
 interface Invitation {
@@ -38,7 +46,8 @@ interface Template {
   id: string;
   name: string;
   description: string | null;
-  questions: Question[];
+  questions: Question[] | ABAS3Question[];
+  formType: string;
 }
 
 export default function QuestionnaireForm() {
@@ -140,7 +149,7 @@ export default function QuestionnaireForm() {
           return;
         }
 
-        const questions = (templateData.questions as unknown as Question[]) || [];
+        const questions = (templateData.questions as unknown as Question[] | ABAS3Question[]) || [];
         
         // Check if template has questions
         if (questions.length === 0) {
@@ -155,7 +164,8 @@ export default function QuestionnaireForm() {
           name: templateData.form_name || templateData.name || 'Assessment',
           description: templateData.description || null,
           questions: questions,
-        } as Template);
+          formType: formType,
+        });
 
         // Track that the questionnaire was opened
         await supabase
@@ -191,18 +201,32 @@ export default function QuestionnaireForm() {
       return;
     }
 
-    // Validate required questions
-    const unansweredRequired = template.questions.filter(
-      q => q.required && !responses[q.id]?.trim()
-    );
+    // Validate required questions based on form type
+    if (template.formType === 'abas3') {
+      const abas3Questions = template.questions as ABAS3Question[];
+      const unanswered = abas3Questions.filter(q => responses[q.id] === undefined);
+      if (unanswered.length > 0) {
+        toast({
+          title: 'Please complete all questions',
+          description: `${unanswered.length} question(s) not answered`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      const customQuestions = template.questions as Question[];
+      const unansweredRequired = customQuestions.filter(
+        q => q.required && !responses[q.id]?.trim()
+      );
 
-    if (unansweredRequired.length > 0) {
-      toast({
-        title: 'Please complete all required questions',
-        description: `${unansweredRequired.length} required question(s) not answered`,
-        variant: 'destructive',
-      });
-      return;
+      if (unansweredRequired.length > 0) {
+        toast({
+          title: 'Please complete all required questions',
+          description: `${unansweredRequired.length} required question(s) not answered`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -277,7 +301,7 @@ export default function QuestionnaireForm() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
+            <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-primary" />
             <h2 className="text-xl font-semibold mb-2">Thank You!</h2>
             <p className="text-sm text-muted-foreground mb-4">
               Your responses have been submitted successfully.
@@ -292,6 +316,7 @@ export default function QuestionnaireForm() {
   }
 
   const questions = template?.questions || [];
+  const isABAS3 = template?.formType === 'abas3';
   const progress = (Object.keys(responses).length / questions.length) * 100;
 
   return (
@@ -313,103 +338,116 @@ export default function QuestionnaireForm() {
           </p>
         </div>
 
-        {/* Progress */}
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </CardContent>
-        </Card>
-
-        {/* Questions */}
-        <div className="space-y-4">
-          {questions.map((question, index) => (
-            <Card key={question.id}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-start gap-2">
-                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
-                    {index + 1}
-                  </span>
-                  <span>
-                    {question.text}
-                    {question.required && <span className="text-destructive ml-1">*</span>}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {question.type === 'text' && (
-                  <Textarea
-                    placeholder="Enter your response..."
-                    value={responses[question.id] || ''}
-                    onChange={(e) =>
-                      setResponses(prev => ({ ...prev, [question.id]: e.target.value }))
-                    }
-                    rows={3}
-                  />
-                )}
-
-                {question.type === 'multiple_choice' && question.options && (
-                  <RadioGroup
-                    value={responses[question.id] || ''}
-                    onValueChange={(value) =>
-                      setResponses(prev => ({ ...prev, [question.id]: value }))
-                    }
-                  >
-                    <div className="space-y-2">
-                      {question.options.map((option, optIndex) => (
-                        <div key={optIndex} className="flex items-center space-x-2">
-                          <RadioGroupItem value={option} id={`${question.id}-${optIndex}`} />
-                          <Label htmlFor={`${question.id}-${optIndex}`} className="cursor-pointer">
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </RadioGroup>
-                )}
-
-                {question.type === 'yes_no' && (
-                  <RadioGroup
-                    value={responses[question.id] || ''}
-                    onValueChange={(value) =>
-                      setResponses(prev => ({ ...prev, [question.id]: value }))
-                    }
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id={`${question.id}-yes`} />
-                      <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id={`${question.id}-no`} />
-                      <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
-                    </div>
-                  </RadioGroup>
-                )}
-
-                {question.type === 'rating' && (
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((rating) => (
-                      <Button
-                        key={rating}
-                        variant={responses[question.id] === String(rating) ? 'default' : 'outline'}
-                        className="w-12 h-12"
-                        onClick={() =>
-                          setResponses(prev => ({ ...prev, [question.id]: String(rating) }))
-                        }
-                      >
-                        {rating}
-                      </Button>
-                    ))}
-                  </div>
-                )}
+        {/* ABAS-3 specific rendering */}
+        {isABAS3 ? (
+          <ABAS3FormRenderer
+            questions={questions as ABAS3Question[]}
+            responses={responses}
+            onResponseChange={(questionId, value) =>
+              setResponses(prev => ({ ...prev, [questionId]: value }))
+            }
+          />
+        ) : (
+          <>
+            {/* Progress for custom forms */}
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
               </CardContent>
             </Card>
-          ))}
-        </div>
+
+            {/* Questions for custom forms */}
+            <div className="space-y-4">
+              {(questions as Question[]).map((question, index) => (
+                <Card key={question.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-start gap-2">
+                      <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
+                        {index + 1}
+                      </span>
+                      <span>
+                        {question.text}
+                        {question.required && <span className="text-destructive ml-1">*</span>}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {question.type === 'text' && (
+                      <Textarea
+                        placeholder="Enter your response..."
+                        value={responses[question.id] || ''}
+                        onChange={(e) =>
+                          setResponses(prev => ({ ...prev, [question.id]: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                    )}
+
+                    {question.type === 'multiple_choice' && question.options && (
+                      <RadioGroup
+                        value={responses[question.id] || ''}
+                        onValueChange={(value) =>
+                          setResponses(prev => ({ ...prev, [question.id]: value }))
+                        }
+                      >
+                        <div className="space-y-2">
+                          {question.options.map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center space-x-2">
+                              <RadioGroupItem value={option} id={`${question.id}-${optIndex}`} />
+                              <Label htmlFor={`${question.id}-${optIndex}`} className="cursor-pointer">
+                                {option}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </RadioGroup>
+                    )}
+
+                    {question.type === 'yes_no' && (
+                      <RadioGroup
+                        value={responses[question.id] || ''}
+                        onValueChange={(value) =>
+                          setResponses(prev => ({ ...prev, [question.id]: value }))
+                        }
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="yes" id={`${question.id}-yes`} />
+                          <Label htmlFor={`${question.id}-yes`} className="cursor-pointer">Yes</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="no" id={`${question.id}-no`} />
+                          <Label htmlFor={`${question.id}-no`} className="cursor-pointer">No</Label>
+                        </div>
+                      </RadioGroup>
+                    )}
+
+                    {question.type === 'rating' && (
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((rating) => (
+                          <Button
+                            key={rating}
+                            variant={responses[question.id] === String(rating) ? 'default' : 'outline'}
+                            className="w-12 h-12"
+                            onClick={() =>
+                              setResponses(prev => ({ ...prev, [question.id]: String(rating) }))
+                            }
+                          >
+                            {rating}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Submit */}
         <Button

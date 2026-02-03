@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
 import { 
-  ClipboardList, CheckCircle2, Loader2, Users, UserCheck
+  CheckCircle2, Loader2, Users, UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -30,6 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { ABAS3FormRenderer } from './ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -37,6 +36,13 @@ interface Question {
   type: 'text' | 'multiple_choice' | 'rating' | 'yes_no';
   options?: string[];
   required: boolean;
+}
+
+interface ABAS3Question {
+  id: string;
+  text: string;
+  domain: string;
+  number: number;
 }
 
 interface InPersonCompletionProps {
@@ -66,7 +72,7 @@ export function InPersonCompletion({
   const [template, setTemplate] = useState<{
     name: string;
     description: string | null;
-    questions: Question[];
+    questions: Question[] | ABAS3Question[];
   } | null>(null);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [respondentName, setRespondentName] = useState('');
@@ -136,18 +142,32 @@ export function InPersonCompletion({
       return;
     }
 
-    // Validate required questions
-    const unansweredRequired = template.questions.filter(
-      (q) => q.required && !responses[q.id]?.trim()
-    );
+    // Validate required questions (ABAS-3 questions are all required by default)
+    if (templateType === 'abas3') {
+      const abas3Questions = template.questions as ABAS3Question[];
+      const unanswered = abas3Questions.filter(q => responses[q.id] === undefined);
+      if (unanswered.length > 0) {
+        toast({
+          title: 'Please complete all questions',
+          description: `${unanswered.length} question(s) not answered`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      const customQuestions = template.questions as Question[];
+      const unansweredRequired = customQuestions.filter(
+        (q) => q.required && !responses[q.id]?.trim()
+      );
 
-    if (unansweredRequired.length > 0) {
-      toast({
-        title: 'Please complete all required questions',
-        description: `${unansweredRequired.length} required question(s) not answered`,
-        variant: 'destructive',
-      });
-      return;
+      if (unansweredRequired.length > 0) {
+        toast({
+          title: 'Please complete all required questions',
+          description: `${unansweredRequired.length} required question(s) not answered`,
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -258,6 +278,7 @@ export function InPersonCompletion({
   }
 
   const questions = template?.questions || [];
+  const isABAS3 = templateType === 'abas3';
   const progress = (Object.keys(responses).length / Math.max(questions.length, 1)) * 100;
 
   return (
@@ -309,108 +330,122 @@ export function InPersonCompletion({
               </CardContent>
             </Card>
 
-            {/* Progress */}
-            <Card>
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium">{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {Object.keys(responses).length} of {questions.length} questions answered
-                </p>
-              </CardContent>
-            </Card>
 
-            {/* Questions */}
-            {questions.map((question, index) => (
-              <Card key={question.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-start gap-2">
-                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
-                      {index + 1}
-                    </span>
-                    <span>
-                      {question.text}
-                      {question.required && <span className="text-destructive ml-1">*</span>}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {question.type === 'text' && (
-                    <Textarea
-                      placeholder="Enter response..."
-                      value={responses[question.id] || ''}
-                      onChange={(e) =>
-                        setResponses((prev) => ({ ...prev, [question.id]: e.target.value }))
-                      }
-                      rows={3}
-                    />
-                  )}
+            {/* ABAS-3 Form Renderer */}
+            {isABAS3 ? (
+              <ABAS3FormRenderer
+                questions={questions as ABAS3Question[]}
+                responses={responses}
+                onResponseChange={(questionId, value) => 
+                  setResponses((prev) => ({ ...prev, [questionId]: value }))
+                }
+              />
+            ) : (
+              <>
+                {/* Progress for custom forms */}
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-medium">{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {Object.keys(responses).length} of {questions.length} questions answered
+                    </p>
+                  </CardContent>
+                </Card>
 
-                  {question.type === 'multiple_choice' && question.options && (
-                    <RadioGroup
-                      value={responses[question.id] || ''}
-                      onValueChange={(value) =>
-                        setResponses((prev) => ({ ...prev, [question.id]: value }))
-                      }
-                    >
-                      <div className="space-y-2">
-                        {question.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`ip-${question.id}-${optIndex}`} />
-                            <Label htmlFor={`ip-${question.id}-${optIndex}`} className="cursor-pointer">
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </RadioGroup>
-                  )}
+                {/* Custom form questions */}
+                {(questions as Question[]).map((question, index) => (
+                  <Card key={question.id}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-start gap-2">
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">
+                          {index + 1}
+                        </span>
+                        <span>
+                          {question.text}
+                          {question.required && <span className="text-destructive ml-1">*</span>}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {question.type === 'text' && (
+                        <Textarea
+                          placeholder="Enter response..."
+                          value={responses[question.id] || ''}
+                          onChange={(e) =>
+                            setResponses((prev) => ({ ...prev, [question.id]: e.target.value }))
+                          }
+                          rows={3}
+                        />
+                      )}
 
-                  {question.type === 'yes_no' && (
-                    <RadioGroup
-                      value={responses[question.id] || ''}
-                      onValueChange={(value) =>
-                        setResponses((prev) => ({ ...prev, [question.id]: value }))
-                      }
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="yes" id={`ip-${question.id}-yes`} />
-                        <Label htmlFor={`ip-${question.id}-yes`} className="cursor-pointer">
-                          Yes
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="no" id={`ip-${question.id}-no`} />
-                        <Label htmlFor={`ip-${question.id}-no`} className="cursor-pointer">
-                          No
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  )}
-
-                  {question.type === 'rating' && (
-                    <div className="flex gap-2">
-                      {[1, 2, 3, 4, 5].map((rating) => (
-                        <Button
-                          key={rating}
-                          variant={responses[question.id] === String(rating) ? 'default' : 'outline'}
-                          className="w-12 h-12"
-                          onClick={() =>
-                            setResponses((prev) => ({ ...prev, [question.id]: String(rating) }))
+                      {question.type === 'multiple_choice' && question.options && (
+                        <RadioGroup
+                          value={responses[question.id] || ''}
+                          onValueChange={(value) =>
+                            setResponses((prev) => ({ ...prev, [question.id]: value }))
                           }
                         >
-                          {rating}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div key={optIndex} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`ip-${question.id}-${optIndex}`} />
+                                <Label htmlFor={`ip-${question.id}-${optIndex}`} className="cursor-pointer">
+                                  {option}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </RadioGroup>
+                      )}
+
+                      {question.type === 'yes_no' && (
+                        <RadioGroup
+                          value={responses[question.id] || ''}
+                          onValueChange={(value) =>
+                            setResponses((prev) => ({ ...prev, [question.id]: value }))
+                          }
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id={`ip-${question.id}-yes`} />
+                            <Label htmlFor={`ip-${question.id}-yes`} className="cursor-pointer">
+                              Yes
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id={`ip-${question.id}-no`} />
+                            <Label htmlFor={`ip-${question.id}-no`} className="cursor-pointer">
+                              No
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      )}
+
+                      {question.type === 'rating' && (
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <Button
+                              key={rating}
+                              variant={responses[question.id] === String(rating) ? 'default' : 'outline'}
+                              className="w-12 h-12"
+                              onClick={() =>
+                                setResponses((prev) => ({ ...prev, [question.id]: String(rating) }))
+                              }
+                            >
+                              {rating}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
           </div>
         </ScrollArea>
 
