@@ -44,17 +44,25 @@ export function SessionPromptDialog({
     : null;
 
   const handleStartSession = async () => {
+    if (!appointment?.student_id) return;
+    
     setStarting(true);
     try {
       // Start the session in the data store - deselect all first, then select this student
       deselectAllStudents();
       toggleStudentSelection(appointment.student_id);
-      startSession();
+      
+      // Start session with the linked appointment ID
+      startSession(appointment.id);
 
-      // Update appointment status
+      // Update appointment status and link the session
+      const { currentSessionId } = useDataStore.getState();
       await supabase
         .from('appointments')
-        .update({ status: 'in_progress' })
+        .update({ 
+          status: 'in_progress',
+          linked_session_id: currentSessionId,
+        })
         .eq('id', appointment.id);
 
       toast({ title: 'Session started', description: `Starting session for ${student?.name}` });

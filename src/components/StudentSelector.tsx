@@ -54,13 +54,18 @@ export function StudentSelector() {
     // Select the student
     toggleStudentSelection(confirmStudent.id);
     
-    // Start session if not already started
+    // Start session if not already started, passing the linked appointment ID
     if (!sessionStartTime) {
-      startSession();
+      startSession(options.linkedAppointmentId);
+    } else if (options.linkedAppointmentId) {
+      // If session already running, still store the linked appointment ID
+      // This allows adding students to an existing session while keeping linkage
+      const { setLinkedAppointmentId, linkedAppointmentId } = useDataStore.getState();
+      // Only set if we don't already have one (first student wins)
+      if (!linkedAppointmentId) {
+        setLinkedAppointmentId(options.linkedAppointmentId);
+      }
     }
-    
-    // TODO: Store the linkedAppointmentId in session context for later use
-    // This could be stored in the dataStore or passed through context
     
     setConfirmStudent(null);
   };

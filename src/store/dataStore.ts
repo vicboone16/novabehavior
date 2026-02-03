@@ -63,6 +63,7 @@ interface DataState {
   sessionConfig: SessionConfig;
   sessions: Session[];
   currentSessionId: string | null;
+  linkedAppointmentId: string | null; // Track linked appointment for session-appointment sync
   sessionNotes: string;
   trackerOrder: TrackerOrder;
   syncedIntervalsRunning: boolean;
@@ -227,7 +228,9 @@ interface DataState {
   getSessionsByDate: (date: Date) => Session[];
   getSessionsByStudent: (studentId: string) => Session[];
   deleteSession: (sessionId: string) => void;
-  startSession: () => void;
+  startSession: (linkedAppointmentId?: string) => void;
+  setLinkedAppointmentId: (id: string | null) => void;
+  getLinkedAppointmentId: () => string | null;
   resetSession: () => void;
   setSessionLength: (minutes: number) => void;
   setSessionLengthOverride: (override: SessionLengthOverride) => void;
@@ -322,6 +325,7 @@ export const useDataStore = create<DataState>()(
       },
       sessions: [],
       currentSessionId: null,
+      linkedAppointmentId: null,
       sessionNotes: '',
       trackerOrder: {},
       syncedIntervalsRunning: false,
@@ -1866,17 +1870,25 @@ export const useDataStore = create<DataState>()(
         return { saved: true, isNew: true, hasChanges: true };
       },
 
-      startSession: () => {
+      startSession: (linkedAppointmentId?: string) => {
         set({ 
           sessionStartTime: new Date(),
           currentSessionId: crypto.randomUUID(),
+          linkedAppointmentId: linkedAppointmentId || null,
         });
       },
+
+      setLinkedAppointmentId: (id) => {
+        set({ linkedAppointmentId: id });
+      },
+
+      getLinkedAppointmentId: () => get().linkedAppointmentId,
 
       resetSession: () => {
         set({ 
           sessionStartTime: null,
           currentSessionId: null,
+          linkedAppointmentId: null,
         });
       },
 
