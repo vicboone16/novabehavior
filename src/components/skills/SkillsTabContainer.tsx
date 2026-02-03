@@ -9,6 +9,7 @@ import { TOILog } from '@/components/toi/TOILog';
 import { IEPGoalsManager } from '@/components/iep/IEPGoalsManager';
 import { ServiceMinutesReconciliation } from '@/components/iep/ServiceMinutesReconciliation';
 import { AccommodationsManager } from '@/components/iep/AccommodationsManager';
+import { StudentAccommodationsPanel } from '@/components/iep-library';
 import { useFundingMode } from '@/hooks/useFundingMode';
 import type { SkillsSubTab } from '@/types/curriculum';
 
@@ -81,6 +82,11 @@ export function SkillsTabContainer({ studentId, studentName, isAdmin = false }: 
 
         {showIEPTab && (
           <TabsContent value="iep" className="mt-4 space-y-6">
+            <StudentAccommodationsPanel 
+              studentId={studentId} 
+              studentName={studentName}
+              showRecommendations={true}
+            />
             <IEPGoalsManager clientId={studentId} />
             <AccommodationsManager clientId={studentId} />
             <ServiceMinutesReconciliation clientId={studentId} />

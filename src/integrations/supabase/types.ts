@@ -3211,6 +3211,143 @@ export type Database = {
           },
         ]
       }
+      iep_library_items: {
+        Row: {
+          acceptance_rate: number | null
+          agency_id: string | null
+          contraindications: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string
+          disability_tags: string[]
+          domains: string[]
+          evidence_notes: string | null
+          export_language: Json | null
+          grade_band: string[]
+          id: string
+          idea_compliance_level: string | null
+          implementation_notes: Json | null
+          item_type: string
+          setting_tags: string[]
+          source_reference: string[] | null
+          status: string
+          title: string
+          topics: string[] | null
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          acceptance_rate?: number | null
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          disability_tags?: string[]
+          domains?: string[]
+          evidence_notes?: string | null
+          export_language?: Json | null
+          grade_band?: string[]
+          id?: string
+          idea_compliance_level?: string | null
+          implementation_notes?: Json | null
+          item_type: string
+          setting_tags?: string[]
+          source_reference?: string[] | null
+          status?: string
+          title: string
+          topics?: string[] | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          acceptance_rate?: number | null
+          agency_id?: string | null
+          contraindications?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          disability_tags?: string[]
+          domains?: string[]
+          evidence_notes?: string | null
+          export_language?: Json | null
+          grade_band?: string[]
+          id?: string
+          idea_compliance_level?: string | null
+          implementation_notes?: Json | null
+          item_type?: string
+          setting_tags?: string[]
+          source_reference?: string[] | null
+          status?: string
+          title?: string
+          topics?: string[] | null
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_library_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iep_recommendation_logs: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          confidence: number | null
+          created_at: string
+          id: string
+          library_item_id: string
+          recommended_reason: string | null
+          student_id: string
+          student_profile_snapshot: Json | null
+          user_action: string | null
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          library_item_id: string
+          recommended_reason?: string | null
+          student_id: string
+          student_profile_snapshot?: Json | null
+          user_action?: string | null
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          library_item_id?: string
+          recommended_reason?: string | null
+          student_id?: string
+          student_profile_snapshot?: Json | null
+          user_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_recommendation_logs_library_item_id_fkey"
+            columns: ["library_item_id"]
+            isOneToOne: false
+            referencedRelation: "iep_library_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iep_recommendation_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intake_checklist_templates: {
         Row: {
           created_at: string
@@ -5123,6 +5260,131 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_files_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_iep_support_audit: {
+        Row: {
+          action: string
+          change_details: Json | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          previous_status: string | null
+          support_id: string
+        }
+        Insert: {
+          action: string
+          change_details?: Json | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          support_id: string
+        }
+        Update: {
+          action?: string
+          change_details?: Json | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          support_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_iep_support_audit_support_id_fkey"
+            columns: ["support_id"]
+            isOneToOne: false
+            referencedRelation: "student_iep_supports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_iep_supports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_description: string | null
+          custom_title: string | null
+          domains_override: string[] | null
+          id: string
+          is_primary_support: boolean | null
+          item_type: string
+          last_reviewed_at: string | null
+          last_reviewed_by: string | null
+          library_item_id: string | null
+          linked_goal_ids: string[] | null
+          notes: string | null
+          review_date: string | null
+          setting_tags_override: string[] | null
+          source: string
+          start_date: string | null
+          student_id: string
+          student_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_description?: string | null
+          custom_title?: string | null
+          domains_override?: string[] | null
+          id?: string
+          is_primary_support?: boolean | null
+          item_type: string
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
+          library_item_id?: string | null
+          linked_goal_ids?: string[] | null
+          notes?: string | null
+          review_date?: string | null
+          setting_tags_override?: string[] | null
+          source?: string
+          start_date?: string | null
+          student_id: string
+          student_status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_description?: string | null
+          custom_title?: string | null
+          domains_override?: string[] | null
+          id?: string
+          is_primary_support?: boolean | null
+          item_type?: string
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
+          library_item_id?: string | null
+          linked_goal_ids?: string[] | null
+          notes?: string | null
+          review_date?: string | null
+          setting_tags_override?: string[] | null
+          source?: string
+          start_date?: string | null
+          student_id?: string
+          student_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_iep_supports_library_item_id_fkey"
+            columns: ["library_item_id"]
+            isOneToOne: false
+            referencedRelation: "iep_library_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_iep_supports_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
