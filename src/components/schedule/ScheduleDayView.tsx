@@ -3,6 +3,7 @@ import { format, isSameDay, setHours, setMinutes, differenceInMinutes, startOfDa
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
+import { calculateOverlapPositions, getOverlapStyle } from '@/lib/scheduleOverlapUtils';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface ScheduleDayViewProps {
@@ -31,6 +32,12 @@ export function ScheduleDayView({
   const dayAppointments = useMemo(() => 
     appointments.filter(a => isSameDay(new Date(a.start_time), date)),
     [appointments, date]
+  );
+
+  // Calculate overlap positions for side-by-side rendering
+  const overlapPositions = useMemo(() => 
+    calculateOverlapPositions(dayAppointments),
+    [dayAppointments]
   );
 
   const getStudentName = (id?: string | null) => id ? students.find(s => s.id === id)?.name || 'Unknown' : null;
@@ -146,6 +153,7 @@ export function ScheduleDayView({
             const displayTitle = getDisplayTitle(appointment);
             const staffNames = getStaffNames(appointment);
             const studentName = getStudentName(appointment.student_id);
+            const overlapStyle = getOverlapStyle(appointment.id, overlapPositions, 4);
 
             return (
               <Tooltip key={appointment.id}>
@@ -155,7 +163,7 @@ export function ScheduleDayView({
                     onDragStart={(e) => handleDragStart(e, appointment)}
                     onClick={() => onAppointmentClick(appointment)}
                     className={cn(
-                      "absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer transition-all",
+                      "absolute rounded-md px-2 py-1 cursor-pointer transition-all",
                       "hover:shadow-md hover:z-10",
                       draggedId === appointment.id && "opacity-50",
                       isRetroactive && "border-2 border-dashed"
@@ -163,6 +171,8 @@ export function ScheduleDayView({
                     style={{
                       top,
                       height,
+                      left: overlapStyle.left,
+                      width: overlapStyle.width,
                       backgroundColor: `${studentColor}20`,
                       borderColor: studentColor,
                       borderWidth: isRetroactive ? 2 : 1,

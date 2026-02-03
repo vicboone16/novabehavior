@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { APPOINTMENT_CATEGORIES } from './AppointmentDialog';
+import { calculateOverlapPositions, getOverlapStyle } from '@/lib/scheduleOverlapUtils';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface ScheduleWeekViewProps {
@@ -202,42 +203,49 @@ export function ScheduleWeekView({
             ))}
 
             {/* Appointments */}
-            {getAppointmentsByDay(day).map(appointment => {
-              const { top, height } = getAppointmentStyle(appointment, day);
-              const studentColor = getStudentColor(appointment.student_id);
-              const statusColors = getStatusColors(appointment.status);
-              const isRetroactive = appointment.appointment_type === 'retroactive';
-              const displayTitle = getDisplayTitle(appointment);
-              const staffNames = getStaffNames(appointment);
-              const studentName = getStudentName(appointment.student_id);
-              const statusIcon = getStatusIcon(appointment.status);
+            {(() => {
+              const dayAppts = getAppointmentsByDay(day);
+              const dayOverlapPositions = calculateOverlapPositions(dayAppts);
+              
+              return dayAppts.map(appointment => {
+                const { top, height } = getAppointmentStyle(appointment, day);
+                const studentColor = getStudentColor(appointment.student_id);
+                const statusColors = getStatusColors(appointment.status);
+                const isRetroactive = appointment.appointment_type === 'retroactive';
+                const displayTitle = getDisplayTitle(appointment);
+                const staffNames = getStaffNames(appointment);
+                const studentName = getStudentName(appointment.student_id);
+                const statusIcon = getStatusIcon(appointment.status);
+                const overlapStyle = getOverlapStyle(appointment.id, dayOverlapPositions, 2);
 
-              // Use status colors if available, otherwise student color
-              const bgColor = statusColors?.bg || `${studentColor}25`;
-              const borderColor = statusColors?.border || studentColor;
-              const textColor = statusColors?.text || studentColor;
+                // Use status colors if available, otherwise student color
+                const bgColor = statusColors?.bg || `${studentColor}25`;
+                const borderColor = statusColors?.border || studentColor;
+                const textColor = statusColors?.text || studentColor;
 
-              return (
-                <Tooltip key={appointment.id}>
-                  <TooltipTrigger asChild>
-                    <div
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, appointment)}
-                      onClick={() => onAppointmentClick(appointment)}
-                      className={cn(
-                        "absolute left-0.5 right-0.5 rounded px-1 py-0.5 cursor-pointer",
-                        "text-[10px] overflow-hidden hover:z-10 hover:shadow-md transition-shadow",
-                        draggedId === appointment.id && "opacity-50",
-                        appointment.status === 'canceled' && "line-through opacity-60"
-                      )}
-                      style={{
-                        top,
-                        height,
-                        backgroundColor: bgColor,
-                        borderLeft: `3px solid ${borderColor}`,
-                        borderStyle: isRetroactive ? 'dashed' : 'solid'
-                      }}
-                    >
+                return (
+                  <Tooltip key={appointment.id}>
+                    <TooltipTrigger asChild>
+                      <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, appointment)}
+                        onClick={() => onAppointmentClick(appointment)}
+                        className={cn(
+                          "absolute rounded px-1 py-0.5 cursor-pointer",
+                          "text-[10px] overflow-hidden hover:z-10 hover:shadow-md transition-shadow",
+                          draggedId === appointment.id && "opacity-50",
+                          appointment.status === 'canceled' && "line-through opacity-60"
+                        )}
+                        style={{
+                          top,
+                          height,
+                          left: overlapStyle.left,
+                          width: overlapStyle.width,
+                          backgroundColor: bgColor,
+                          borderLeft: `3px solid ${borderColor}`,
+                          borderStyle: isRetroactive ? 'dashed' : 'solid'
+                        }}
+                      >
                       <p className="font-medium truncate flex items-center gap-1" style={{ color: textColor }}>
                         {statusIcon}
                         {displayTitle}
@@ -272,9 +280,10 @@ export function ScheduleWeekView({
                       {appointment.notes && <p className="text-muted-foreground italic">{appointment.notes}</p>}
                     </div>
                   </TooltipContent>
-                </Tooltip>
-              );
-            })}
+                  </Tooltip>
+                );
+              });
+            })()}
 
             {/* Current time indicator */}
             {isToday(day) && (

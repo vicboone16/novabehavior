@@ -35,7 +35,7 @@ interface IEPResultCardProps {
   item: IEPSupportItem;
   studentId?: string;
   existingLinkStatus?: LinkStatus;
-  onAction: (itemId: string, action: LinkStatus) => void;
+  onAction: (action: string, itemId?: string) => void;
   showActions?: boolean;
 }
 
@@ -60,13 +60,17 @@ export function IEPResultCard({
       setPendingAction(action);
       setShowConfirmDialog(true);
     } else {
-      onAction(item.id, action);
+      onAction(action, item.id);
     }
+  };
+
+  const handleAddClick = () => {
+    onAction('add');
   };
 
   const confirmAction = () => {
     if (pendingAction) {
-      onAction(item.id, pendingAction);
+      onAction(pendingAction, item.id);
       setShowConfirmDialog(false);
       setPendingAction(null);
     }
@@ -218,6 +222,15 @@ export function IEPResultCard({
 
             {/* Actions */}
             <div className="flex flex-col gap-1 shrink-0">
+              {/* Add button for library view (no studentId) */}
+              {showActions && !studentId && (
+                <Button size="sm" className="gap-1" onClick={handleAddClick}>
+                  <Plus className="w-4 h-4" />
+                  Add to Student
+                </Button>
+              )}
+              
+              {/* Status actions for student-specific view */}
               {showActions && studentId && !existingLinkStatus && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -226,7 +239,7 @@ export function IEPResultCard({
                       Add
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-popover border shadow-md z-50">
                     <DropdownMenuItem onClick={() => handleAction('existing')}>
                       <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
                       Mark as Existing
