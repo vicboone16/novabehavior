@@ -58,9 +58,10 @@ export function SessionStartConfirmation({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [matchingAppointment, setMatchingAppointment] = useState<Appointment | null>(null);
+  const [extendedMatchAppointment, setExtendedMatchAppointment] = useState<Appointment | null>(null);
   const [inProgressAppointment, setInProgressAppointment] = useState<Appointment | null>(null);
-  const [startOption, setStartOption] = useState<'continue' | 'link' | 'unlink' | 'create'>('link');
-
+  const [startOption, setStartOption] = useState<'continue' | 'link' | 'link-extended' | 'unlink' | 'create'>('link');
+  const [adjustAppointmentTime, setAdjustAppointmentTime] = useState(false);
   // Check for matching appointments when dialog opens
   useEffect(() => {
     if (open && student && user) {
@@ -73,7 +74,9 @@ export function SessionStartConfirmation({
     
     setLoading(true);
     setMatchingAppointment(null);
+    setExtendedMatchAppointment(null);
     setInProgressAppointment(null);
+    setAdjustAppointmentTime(false);
     
     try {
       const now = new Date();
@@ -103,33 +106,60 @@ export function SessionStartConfirmation({
         return;
       }
       
-      // Otherwise, look for scheduled appointments within a reasonable window
-      const windowStart = subMinutes(now, 30);
-      const windowEnd = addMinutes(now, 15);
+      // Look for scheduled appointments in exact window (±30 min / +15 min)
+      const exactWindowStart = subMinutes(now, 30);
+      const exactWindowEnd = addMinutes(now, 15);
       
-      const { data: appointments, error } = await supabase
+      const { data: exactAppointments, error: exactError } = await supabase
         .from('appointments')
         .select('*')
         .eq('student_id', student.id)
         .or(`staff_user_id.eq.${user.id},staff_user_ids.cs.{${user.id}}`)
-        .gte('start_time', windowStart.toISOString())
-        .lte('start_time', windowEnd.toISOString())
+        .gte('start_time', exactWindowStart.toISOString())
+        .lte('start_time', exactWindowEnd.toISOString())
         .in('status', ['scheduled', 'pending_verification'])
         .order('start_time', { ascending: true })
         .limit(1);
 
-      if (error) throw error;
+      if (exactError) throw exactError;
 
-      if (appointments && appointments.length > 0) {
-        setMatchingAppointment(appointments[0] as Appointment);
+      if (exactAppointments && exactAppointments.length > 0) {
+        setMatchingAppointment(exactAppointments[0] as Appointment);
         setStartOption('link');
-      } else {
-        setMatchingAppointment(null);
-        setStartOption('create');
+        setLoading(false);
+        return;
       }
+      
+      // If no exact match, look for appointments in extended window (up to 2 hours back)
+      const extendedWindowStart = subMinutes(now, 120); // 2 hours back
+      
+      const { data: extendedAppointments, error: extendedError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('student_id', student.id)
+        .or(`staff_user_id.eq.${user.id},staff_user_ids.cs.{${user.id}}`)
+        .gte('start_time', extendedWindowStart.toISOString())
+        .lt('start_time', exactWindowStart.toISOString()) // Before the exact window
+        .in('status', ['scheduled', 'pending_verification'])
+        .order('start_time', { ascending: false }) // Most recent first
+        .limit(1);
+
+      if (extendedError) throw extendedError;
+
+      if (extendedAppointments && extendedAppointments.length > 0) {
+        setExtendedMatchAppointment(extendedAppointments[0] as Appointment);
+        setStartOption('link-extended');
+        setAdjustAppointmentTime(true); // Default to adjusting time for extended matches
+        setLoading(false);
+        return;
+      }
+      
+      // No matching appointments found
+      setStartOption('create');
     } catch (error) {
       console.error('Error checking appointments:', error);
       setMatchingAppointment(null);
+      setExtendedMatchAppointment(null);
       setInProgressAppointment(null);
       setStartOption('create');
     } finally {
@@ -166,7 +196,7 @@ export function SessionStartConfirmation({
         });
         
       } else if (startOption === 'link' && matchingAppointment) {
-        // Link to existing scheduled appointment
+        // Link to existing scheduled appointment (exact match)
         linkedAppointmentId = matchingAppointment.id;
         
         // Update appointment status to in_progress and link the session
@@ -177,6 +207,59 @@ export function SessionStartConfirmation({
             linked_session_id: currentSessionId || newSessionId,
           })
           .eq('id', matchingAppointment.id);
+          
+      } else if (startOption === 'link-extended' && extendedMatchAppointment) {
+        // Link to an appointment from extended window (requires audit)
+        linkedAppointmentId = extendedMatchAppointment.id;
+        const now = new Date();
+        const originalStartTime = new Date(extendedMatchAppointment.start_time);
+        const timeDifferenceMinutes = Math.round((now.getTime() - originalStartTime.getTime()) / 60000);
+        
+        // Prepare update payload
+        const updatePayload: any = {
+          status: 'in_progress',
+          linked_session_id: currentSessionId || newSessionId,
+        };
+        
+        // If adjusting time, update the appointment start time
+        if (adjustAppointmentTime) {
+          const originalDuration = extendedMatchAppointment.duration_minutes;
+          updatePayload.start_time = now.toISOString();
+          updatePayload.end_time = addMinutes(now, originalDuration).toISOString();
+        }
+        
+        await supabase
+          .from('appointments')
+          .update(updatePayload)
+          .eq('id', extendedMatchAppointment.id);
+        
+        // Create audit log for supervisor review
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action: adjustAppointmentTime ? 'session_time_adjusted' : 'session_late_start',
+          resource_type: 'appointment',
+          resource_id: extendedMatchAppointment.id,
+          resource_name: `Session for ${student.name}`,
+          details: {
+            student_id: student.id,
+            student_name: student.name,
+            original_start_time: extendedMatchAppointment.start_time,
+            actual_start_time: now.toISOString(),
+            time_difference_minutes: timeDifferenceMinutes,
+            appointment_time_adjusted: adjustAppointmentTime,
+            requires_supervisor_review: true,
+            review_reason: adjustAppointmentTime 
+              ? `Appointment start time adjusted from ${format(originalStartTime, 'h:mm a')} to ${format(now, 'h:mm a')} (${timeDifferenceMinutes} min difference)`
+              : `Session started ${timeDifferenceMinutes} minutes after scheduled time without adjustment`,
+          },
+        });
+        
+        toast({
+          title: 'Session Started',
+          description: adjustAppointmentTime 
+            ? `Appointment time updated. A supervisor review has been flagged.`
+            : `Linked to earlier appointment. A supervisor review has been flagged.`,
+        });
           
       } else if (startOption === 'create') {
         // Create new appointment
@@ -209,7 +292,7 @@ export function SessionStartConfirmation({
         createAppointment: startOption === 'create',
       });
       
-      if (startOption !== 'continue') {
+      if (startOption !== 'continue' && startOption !== 'link-extended') {
         toast({
           title: 'Session Started',
           description: `Started session for ${student.name}${linkedAppointmentId ? ' (linked to appointment)' : ''}`,
@@ -375,6 +458,93 @@ export function SessionStartConfirmation({
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             Start session without connecting to any appointment
+                          </p>
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : extendedMatchAppointment ? (
+                <>
+                  {/* Found appointment in extended window (up to 2 hours back) */}
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg mb-3">
+                    <div className="flex items-center gap-2 text-sm text-warning mb-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="font-medium">Earlier appointment found</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      Scheduled for {format(new Date(extendedMatchAppointment.start_time), 'h:mm a')}
+                      <span className="text-warning">
+                        ({Math.round((Date.now() - new Date(extendedMatchAppointment.start_time).getTime()) / 60000)} min ago)
+                      </span>
+                    </div>
+                  </div>
+
+                  <Card className={`cursor-pointer transition-all ${startOption === 'link-extended' ? 'ring-2 ring-primary' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value="link-extended" id="link-extended" className="mt-1" />
+                        <Label htmlFor="link-extended" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Link2 className="w-4 h-4 text-primary" />
+                            Link to Earlier Appointment
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Connect to the scheduled appointment (will flag for supervisor review)
+                          </p>
+                          
+                          {startOption === 'link-extended' && (
+                            <div className="mt-3 p-2 bg-secondary/50 rounded-md">
+                              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={adjustAppointmentTime}
+                                  onChange={(e) => setAdjustAppointmentTime(e.target.checked)}
+                                  className="rounded border-border"
+                                />
+                                <span>Update appointment start time to now</span>
+                              </label>
+                              <p className="text-xs text-muted-foreground mt-1 ml-6">
+                                {adjustAppointmentTime 
+                                  ? 'Appointment will be adjusted to current time' 
+                                  : 'Original scheduled time will be kept'}
+                              </p>
+                            </div>
+                          )}
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={`cursor-pointer transition-all ${startOption === 'create' ? 'ring-2 ring-primary' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value="create" id="create-instead" className="mt-1" />
+                        <Label htmlFor="create-instead" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Plus className="w-4 h-4 text-primary" />
+                            Create New Appointment Instead
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Ignore the earlier appointment and create a new one
+                          </p>
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={`cursor-pointer transition-all ${startOption === 'unlink' ? 'ring-2 ring-primary' : ''}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value="unlink" id="unlink-extended" className="mt-1" />
+                        <Label htmlFor="unlink-extended" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Unlink className="w-4 h-4" />
+                            Start Without Linking
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Start session without any appointment
                           </p>
                         </Label>
                       </div>
