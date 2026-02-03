@@ -1,19 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// ABAS-3 uses a 4-point Likert scale: 0-3
-const ABAS3_SCALE = [
-  { value: '0', label: 'Is Not Able', description: 'Cannot perform skill' },
-  { value: '1', label: 'Never (or Almost Never) When Needed', description: 'Rarely/never performs' },
-  { value: '2', label: 'Sometimes When Needed', description: 'Sometimes performs' },
-  { value: '3', label: 'Always (or Almost Always) When Needed', description: 'Consistently performs' },
-];
+import {
+  ABASItem,
+  ABASResponse,
+  ABAS3_FREQ_0_3,
+  calcABASProgress,
+  canSubmitABAS,
+  validateABASBeforeSubmit,
+  createDefaultABASResponse,
+} from './ABASItem';
 
 // Domain full names and order (matches ABAS-3 standard)
 const DOMAIN_INFO: Record<string, { name: string; order: number }> = {
@@ -21,7 +21,7 @@ const DOMAIN_INFO: Record<string, { name: string; order: number }> = {
   CU: { name: 'Community Use', order: 2 },
   FA: { name: 'Functional Academics', order: 3 },
   HL: { name: 'Home Living', order: 4 },
-  SL: { name: 'School Living', order: 4 }, // Alternative to HL for teacher forms
+  SL: { name: 'School Living', order: 4 },
   HS: { name: 'Health and Safety', order: 5 },
   LE: { name: 'Leisure', order: 6 },
   SC: { name: 'Self-Care', order: 7 },
@@ -31,24 +31,19 @@ const DOMAIN_INFO: Record<string, { name: string; order: number }> = {
   WK: { name: 'Work', order: 11 },
 };
 
-interface ABAS3Question {
+export interface ABAS3Question {
   id: string;
   text: string;
   domain: string;
   number: number;
 }
 
-interface Domain {
-  code: string;
-  name: string;
-  questions: ABAS3Question[];
-}
-
 interface ABAS3FormRendererProps {
   questions: ABAS3Question[];
-  responses: Record<string, string>;
-  onResponseChange: (questionId: string, value: string) => void;
+  responses: Record<string, ABASResponse>;
+  onResponseChange: (questionId: string, response: ABASResponse) => void;
   isReadOnly?: boolean;
+  showValidation?: boolean;
   className?: string;
 }
 
@@ -57,22 +52,28 @@ export function ABAS3FormRenderer({
   responses,
   onResponseChange,
   isReadOnly = false,
+  showValidation = false,
   className,
 }: ABAS3FormRendererProps) {
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(() => {
-    // All domains expanded by default
     const initial: Record<string, boolean> = {};
-    questions.forEach(q => {
+    questions.forEach((q) => {
       initial[q.domain] = true;
     });
     return initial;
   });
 
+  // Create items array for validation utilities
+  const items = useMemo(
+    () => questions.map((q) => ({ id: q.id, required: true })),
+    [questions]
+  );
+
   // Group questions by domain
   const domains = useMemo(() => {
     const domainMap: Record<string, ABAS3Question[]> = {};
-    
-    questions.forEach(q => {
+
+    questions.forEach((q) => {
       const domain = q.domain || 'OTHER';
       if (!domainMap[domain]) {
         domainMap[domain] = [];
@@ -80,12 +81,10 @@ export function ABAS3FormRenderer({
       domainMap[domain].push(q);
     });
 
-    // Sort questions within each domain by number
-    Object.keys(domainMap).forEach(domain => {
+    Object.keys(domainMap).forEach((domain) => {
       domainMap[domain].sort((a, b) => a.number - b.number);
     });
 
-    // Convert to array and sort by domain order
     return Object.entries(domainMap)
       .map(([code, qs]) => ({
         code,
@@ -96,28 +95,44 @@ export function ABAS3FormRenderer({
       .sort((a, b) => a.order - b.order);
   }, [questions]);
 
-  // Calculate progress per domain and overall
+  // Calculate progress using utility function
+  const progress = useMemo(() => calcABASProgress(items, responses), [items, responses]);
+
+  // Domain-level progress
   const domainProgress = useMemo(() => {
-    const progress: Record<string, { answered: number; total: number }> = {};
-    
-    domains.forEach(domain => {
-      const answered = domain.questions.filter(q => responses[q.id] !== undefined).length;
-      progress[domain.code] = { answered, total: domain.questions.length };
+    const progressMap: Record<string, { answered: number; total: number }> = {};
+
+    domains.forEach((domain) => {
+      const answered = domain.questions.filter(
+        (q) => responses[q.id]?.score !== null && responses[q.id]?.score !== undefined
+      ).length;
+      progressMap[domain.code] = { answered, total: domain.questions.length };
     });
 
-    return progress;
+    return progressMap;
   }, [domains, responses]);
 
-  const totalAnswered = Object.values(domainProgress).reduce((sum, p) => sum + p.answered, 0);
-  const totalQuestions = Object.values(domainProgress).reduce((sum, p) => sum + p.total, 0);
-  const overallProgress = totalQuestions > 0 ? (totalAnswered / totalQuestions) * 100 : 0;
-
-  const toggleDomain = (code: string) => {
-    setExpandedDomains(prev => ({
+  const toggleDomain = useCallback((code: string) => {
+    setExpandedDomains((prev) => ({
       ...prev,
       [code]: !prev[code],
     }));
-  };
+  }, []);
+
+  const handleResponseChange = useCallback(
+    (questionId: string, response: ABASResponse) => {
+      onResponseChange(questionId, response);
+    },
+    [onResponseChange]
+  );
+
+  // Get response for a question, defaulting to empty
+  const getResponse = useCallback(
+    (questionId: string): ABASResponse => {
+      return responses[questionId] || createDefaultABASResponse();
+    },
+    [responses]
+  );
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -127,32 +142,41 @@ export function ABAS3FormRenderer({
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="font-medium">Overall Progress</span>
             <span className="text-muted-foreground">
-              {totalAnswered} of {totalQuestions} questions ({Math.round(overallProgress)}%)
+              {progress.answered} of {progress.total} items ({progress.pct}%)
             </span>
           </div>
-          <Progress value={overallProgress} className="h-2" />
+          <Progress value={progress.pct} className="h-2" />
+          {showValidation && progress.answered < progress.total && (
+            <div className="flex items-center gap-2 mt-2 text-destructive text-sm">
+              <AlertCircle className="w-4 h-4" />
+              <span>Please answer all {progress.total - progress.answered} remaining items.</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Response Scale Legend */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Response Scale</CardTitle>
+          <CardTitle className="text-sm">ABAS-3 Response Scale</CardTitle>
           <CardDescription className="text-xs">
             Rate how often the individual performs each skill when needed
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {ABAS3_SCALE.map(item => (
+            {ABAS3_FREQ_0_3.options.map((option) => (
               <div
-                key={item.value}
-                className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-xs"
+                key={option.value}
+                className="flex flex-col p-2 rounded-md bg-muted/50 text-xs"
               >
-                <Badge variant="outline" className="min-w-[20px] justify-center">
-                  {item.value}
-                </Badge>
-                <span className="font-medium truncate">{item.label}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="outline" className="min-w-[24px] justify-center font-bold">
+                    {option.value}
+                  </Badge>
+                  <span className="font-medium">{option.label.split(' — ')[1]}</span>
+                </div>
+                <span className="text-muted-foreground pl-8">{option.description}</span>
               </div>
             ))}
           </div>
@@ -160,14 +184,18 @@ export function ABAS3FormRenderer({
       </Card>
 
       {/* Domain Sections */}
-      {domains.map(domain => {
-        const progress = domainProgress[domain.code];
-        const isComplete = progress.answered === progress.total;
+      {domains.map((domain) => {
+        const domainProg = domainProgress[domain.code];
+        const isComplete = domainProg.answered === domainProg.total;
         const isExpanded = expandedDomains[domain.code];
+        const domainPct = domainProg.total > 0 ? (domainProg.answered / domainProg.total) * 100 : 0;
 
         return (
-          <Card key={domain.code} className={cn(isComplete && 'border-primary/30 bg-primary/5')}>
-            <CardHeader 
+          <Card
+            key={domain.code}
+            className={cn(isComplete && 'border-primary/30 bg-primary/5')}
+          >
+            <CardHeader
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => toggleDomain(domain.code)}
             >
@@ -180,9 +208,9 @@ export function ABAS3FormRenderer({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    {progress.answered}/{progress.total}
+                    {domainProg.answered}/{domainProg.total}
                   </span>
-                  <Progress value={(progress.answered / progress.total) * 100} className="h-2 w-24" />
+                  <Progress value={domainPct} className="h-2 w-24" />
                   <span className="text-lg">{isExpanded ? '−' : '+'}</span>
                 </div>
               </div>
@@ -192,50 +220,19 @@ export function ABAS3FormRenderer({
               <CardContent className="pt-0">
                 <Separator className="mb-4" />
                 <div className="space-y-3">
-                  {domain.questions.map(question => {
-                    const currentValue = responses[question.id];
-                    
-                    return (
-                      <div
-                        key={question.id}
-                        className={cn(
-                          'p-3 rounded-lg border transition-colors',
-                          currentValue !== undefined 
-                            ? 'bg-muted/30 border-primary/20' 
-                            : 'bg-background border-border'
-                        )}
-                      >
-                        <div className="flex gap-2 mb-3">
-                          <Badge variant="outline" className="text-xs min-w-[28px] justify-center">
-                            {question.number}
-                          </Badge>
-                          <p className="text-sm flex-1">{question.text}</p>
-                        </div>
-                        
-                        {/* Response buttons */}
-                        <div className="flex gap-1.5 flex-wrap">
-                          {ABAS3_SCALE.map(option => (
-                            <Button
-                              key={option.value}
-                              type="button"
-                              variant={currentValue === option.value ? 'default' : 'outline'}
-                              size="sm"
-                              className={cn(
-                                'flex-1 min-w-[60px] h-auto py-1.5 px-2 text-xs',
-                                currentValue === option.value && 'ring-2 ring-primary ring-offset-1'
-                              )}
-                              onClick={() => !isReadOnly && onResponseChange(question.id, option.value)}
-                              disabled={isReadOnly}
-                              title={option.description}
-                            >
-                              <span className="font-bold mr-1">{option.value}</span>
-                              <span className="hidden sm:inline truncate">{option.label.split(' ')[0]}</span>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {domain.questions.map((question) => (
+                    <ABASItem
+                      key={question.id}
+                      itemId={question.id}
+                      itemNumber={question.number}
+                      prompt={question.text}
+                      response={getResponse(question.id)}
+                      onChange={(next) => handleResponseChange(question.id, next)}
+                      required={true}
+                      showValidation={showValidation}
+                      disabled={isReadOnly}
+                    />
+                  ))}
                 </div>
               </CardContent>
             )}
@@ -245,3 +242,13 @@ export function ABAS3FormRenderer({
     </div>
   );
 }
+
+// Re-export utilities for use by parent components
+export type { ABASResponse } from './ABASItem';
+export {
+  ABAS3_FREQ_0_3,
+  calcABASProgress,
+  canSubmitABAS,
+  validateABASBeforeSubmit,
+  createDefaultABASResponse,
+} from './ABASItem';

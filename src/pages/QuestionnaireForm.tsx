@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ABAS3FormRenderer } from '@/components/questionnaire/ABAS3FormRenderer';
+import { ABAS3FormRenderer, ABASResponse, canSubmitABAS, validateABASBeforeSubmit } from '@/components/questionnaire/ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -61,6 +61,8 @@ export default function QuestionnaireForm() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [template, setTemplate] = useState<Template | null>(null);
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [abasResponses, setAbasResponses] = useState<Record<string, ABASResponse>>({});
+  const [showValidation, setShowValidation] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
@@ -204,13 +206,21 @@ export default function QuestionnaireForm() {
     // Validate required questions based on form type
     if (template.formType === 'abas3') {
       const abas3Questions = template.questions as ABAS3Question[];
-      const unanswered = abas3Questions.filter(q => responses[q.id] === undefined);
-      if (unanswered.length > 0) {
+      const items = abas3Questions.map(q => ({ id: q.id, required: true }));
+      const validation = validateABASBeforeSubmit(items, abasResponses);
+      
+      if (!validation.ok) {
+        setShowValidation(true);
         toast({
           title: 'Please complete all questions',
-          description: `${unanswered.length} question(s) not answered`,
+          description: `${validation.missingIds.length} question(s) not answered`,
           variant: 'destructive',
         });
+        // Scroll to first missing item
+        const firstMissing = document.getElementById(`abas-item-${validation.missingIds[0]}`);
+        if (firstMissing) {
+          firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
     } else {
@@ -232,19 +242,21 @@ export default function QuestionnaireForm() {
     setIsSubmitting(true);
 
     try {
-      // Save response
+      // Save response (use abasResponses for ABAS-3)
+      const responsesToSave = template.formType === 'abas3' ? abasResponses : responses;
+      
       const { error: responseError } = await supabase
         .from('questionnaire_responses')
-        .insert({
+        .insert([{
           invitation_id: invitation.id,
           student_id: invitation.student_id,
-          responses: responses,
+          responses: JSON.parse(JSON.stringify(responsesToSave)),
           respondent_info: {
             name: invitation.recipient_name,
             email: invitation.recipient_email,
             submitted_at: new Date().toISOString(),
           },
-        });
+        }]);
 
       if (responseError) throw responseError;
 
@@ -342,10 +354,11 @@ export default function QuestionnaireForm() {
         {isABAS3 ? (
           <ABAS3FormRenderer
             questions={questions as ABAS3Question[]}
-            responses={responses}
+            responses={abasResponses}
             onResponseChange={(questionId, value) =>
-              setResponses(prev => ({ ...prev, [questionId]: value }))
+              setAbasResponses(prev => ({ ...prev, [questionId]: value }))
             }
+            showValidation={showValidation}
           />
         ) : (
           <>

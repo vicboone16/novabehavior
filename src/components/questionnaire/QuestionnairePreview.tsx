@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { ABAS3FormRenderer } from './ABAS3FormRenderer';
+import { ABAS3FormRenderer, ABASResponse } from './ABAS3FormRenderer';
 
 interface Question {
   id: string;
@@ -54,6 +54,7 @@ export function QuestionnairePreview({
     questions: Question[] | ABAS3Question[];
   } | null>(null);
   const [previewResponses, setPreviewResponses] = useState<Record<string, string>>({});
+  const [abasPreviewResponses, setAbasPreviewResponses] = useState<Record<string, ABASResponse>>({});
 
   useEffect(() => {
     if (!open || !templateId) return;
@@ -167,9 +168,9 @@ export function QuestionnairePreview({
             {isABAS3 ? (
               <ABAS3FormRenderer
                 questions={questions as ABAS3Question[]}
-                responses={previewResponses}
+                responses={abasPreviewResponses}
                 onResponseChange={(questionId, value) =>
-                  setPreviewResponses((prev) => ({ ...prev, [questionId]: value }))
+                  setAbasPreviewResponses((prev) => ({ ...prev, [questionId]: value }))
                 }
               />
             ) : (
