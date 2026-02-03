@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
   History, Calendar, Clock, Save, Plus, Trash2, 
-  Hash, Timer as TimerIcon, BarChart3, FileText
+  Hash, Timer as TimerIcon, BarChart3, FileText, Target,
+  Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,12 +30,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDataStore } from '@/store/dataStore';
+import { useStudentTargets } from '@/hooks/useCurriculum';
 import { 
   Student, 
   ANTECEDENT_OPTIONS, 
   CONSEQUENCE_OPTIONS, 
   FUNCTION_OPTIONS,
-  BehaviorFunction 
+  BehaviorFunction,
+  PromptLevel,
+  PROMPT_LEVEL_LABELS,
+  PROMPT_LEVEL_ORDER,
 } from '@/types/behavior';
 import { toast } from 'sonner';
 
@@ -44,7 +49,7 @@ interface HistoricalObservationEntryProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type EntryMode = 'frequency' | 'duration' | 'abc' | 'interval' | 'latency';
+type EntryMode = 'frequency' | 'duration' | 'abc' | 'interval' | 'latency' | 'cold_probe';
 
 interface FrequencyEntry {
   behaviorId: string;
@@ -74,6 +79,16 @@ interface LatencyEntryForm {
   behaviorId: string;
   latencySeconds: number;
   instruction?: string;
+}
+
+interface ColdProbeEntryForm {
+  skillTargetId: string;
+  skillTargetName: string;
+  trials: Array<{
+    isCorrect: boolean;
+    promptLevel: PromptLevel;
+    note?: string;
+  }>;
 }
 
 // Simple inline component for creating a new behavior by name only
@@ -147,7 +162,11 @@ export function HistoricalObservationEntry({
     addABCEntry, 
     addLatencyEntry, 
     recordInterval,
+    updateStudentProfile,
   } = useDataStore();
+
+  // Fetch skill targets from Supabase
+  const { targets: skillTargets, loading: targetsLoading } = useStudentTargets(student.id);
 
   const [entryMode, setEntryMode] = useState<EntryMode>('frequency');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -170,8 +189,12 @@ export function HistoricalObservationEntry({
   
   // Latency entries
   const [latencyEntries, setLatencyEntries] = useState<LatencyEntryForm[]>([]);
+  
+  // Cold probe / skill acquisition entries
+  const [coldProbeEntries, setColdProbeEntries] = useState<ColdProbeEntryForm[]>([]);
 
   const activeBehaviors = student.behaviors.filter(b => !b.isArchived);
+  const activeTargets = skillTargets.filter(t => t.status !== 'mastered');
 
   const resetForm = () => {
     setFrequencyEntries([]);
@@ -179,6 +202,7 @@ export function HistoricalObservationEntry({
     setABCEntries([]);
     setIntervalEntries([]);
     setLatencyEntries([]);
+    setColdProbeEntries([]);
     setNotes('');
     setObservationDuration(30);
   };
@@ -228,6 +252,45 @@ export function HistoricalObservationEntry({
       latencySeconds: 0,
       instruction: '',
     }]);
+  };
+
+  // Add cold probe entry for a skill target
+  const addColdProbeEntry = (targetId: string) => {
+    const target = activeTargets.find(t => t.id === targetId);
+    if (!target) return;
+    
+    if (coldProbeEntries.some(e => e.skillTargetId === targetId)) {
+      toast.error('Skill target already added');
+      return;
+    }
+    
+    setColdProbeEntries(prev => [...prev, {
+      skillTargetId: targetId,
+      skillTargetName: target.title,
+      trials: [],
+    }]);
+  };
+
+  // Add a trial to a cold probe entry
+  const addTrialToColdProbe = (targetId: string, isCorrect: boolean, promptLevel: PromptLevel = 'independent') => {
+    setColdProbeEntries(prev => prev.map(entry => {
+      if (entry.skillTargetId !== targetId) return entry;
+      return {
+        ...entry,
+        trials: [...entry.trials, { isCorrect, promptLevel }],
+      };
+    }));
+  };
+
+  // Remove last trial from cold probe entry
+  const removeLastTrial = (targetId: string) => {
+    setColdProbeEntries(prev => prev.map(entry => {
+      if (entry.skillTargetId !== targetId) return entry;
+      return {
+        ...entry,
+        trials: entry.trials.slice(0, -1),
+      };
+    }));
   };
 
   const handleSave = async () => {
@@ -301,6 +364,37 @@ export function HistoricalObservationEntry({
         }
       }
 
+      // Save cold probe / skill acquisition entries as DTT sessions
+      for (const entry of coldProbeEntries) {
+        if (entry.trials.length > 0) {
+          const existingSessions = student.dttSessions || [];
+          const newSession = {
+            id: crypto.randomUUID(),
+            skillTargetId: entry.skillTargetId,
+            studentId: student.id,
+            date: timestamp,
+            trials: entry.trials.map((trial, idx) => ({
+              id: crypto.randomUUID(),
+              timestamp: new Date(timestamp.getTime() + idx * 1000),
+              isCorrect: trial.isCorrect,
+              promptLevel: trial.promptLevel,
+              notes: trial.note,
+            })),
+            percentCorrect: Math.round(
+              (entry.trials.filter(t => t.isCorrect).length / entry.trials.length) * 100
+            ),
+            percentIndependent: Math.round(
+              (entry.trials.filter(t => t.promptLevel === 'independent').length / entry.trials.length) * 100
+            ),
+            notes: `Historical entry from ${format(timestamp, 'MMM d, yyyy')}`,
+          };
+          
+          updateStudentProfile(student.id, {
+            dttSessions: [...existingSessions, newSession],
+          });
+        }
+      }
+
       toast.success('Historical observation saved successfully');
       resetForm();
       onOpenChange(false);
@@ -321,7 +415,8 @@ export function HistoricalObservationEntry({
     durationEntries.length > 0 ||
     abcEntries.length > 0 ||
     intervalEntries.length > 0 ||
-    latencyEntries.length > 0;
+    latencyEntries.length > 0 ||
+    coldProbeEntries.some(e => e.trials.length > 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -382,7 +477,7 @@ export function HistoricalObservationEntry({
 
             {/* Data Entry Tabs */}
             <Tabs value={entryMode} onValueChange={(v) => setEntryMode(v as EntryMode)}>
-              <TabsList className="grid grid-cols-5 w-full">
+              <TabsList className="grid grid-cols-6 w-full">
                 <TabsTrigger value="frequency" className="text-xs gap-1">
                   <Hash className="w-3 h-3" />
                   Frequency
@@ -402,6 +497,10 @@ export function HistoricalObservationEntry({
                 <TabsTrigger value="latency" className="text-xs gap-1">
                   <Clock className="w-3 h-3" />
                   Latency
+                </TabsTrigger>
+                <TabsTrigger value="cold_probe" className="text-xs gap-1">
+                  <Target className="w-3 h-3" />
+                  Skill/Probe
                 </TabsTrigger>
               </TabsList>
 
@@ -763,6 +862,143 @@ export function HistoricalObservationEntry({
                     </CardContent>
                   </Card>
                 ))}
+              </TabsContent>
+
+              {/* Cold Probe / Skill Acquisition Tab */}
+              <TabsContent value="cold_probe" className="space-y-3">
+                <div className="flex gap-2">
+                  <Select onValueChange={addColdProbeEntry}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Add skill target..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {targetsLoading ? (
+                        <SelectItem value="_loading" disabled>Loading targets...</SelectItem>
+                      ) : activeTargets.length === 0 ? (
+                        <SelectItem value="_empty" disabled>No active skill targets</SelectItem>
+                      ) : (
+                        activeTargets.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {coldProbeEntries.length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No skill targets added</p>
+                    <p className="text-xs">Select a skill target above to record cold probe data</p>
+                  </div>
+                )}
+
+                {coldProbeEntries.map((entry, idx) => {
+                  const correctCount = entry.trials.filter(t => t.isCorrect).length;
+                  const totalCount = entry.trials.length;
+                  const percentCorrect = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+                  
+                  return (
+                    <Card key={idx}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-primary" />
+                            <span>{entry.skillTargetName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {totalCount > 0 && (
+                              <Badge variant="secondary">
+                                {correctCount}/{totalCount} ({percentCorrect}%)
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => setColdProbeEntries(prev => prev.filter((_, i) => i !== idx))}
+                            >
+                              <Trash2 className="w-3 h-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {/* Quick entry buttons */}
+                        <div className="flex gap-2">
+                          <Button
+                            className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => addTrialToColdProbe(entry.skillTargetId, true, 'independent')}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Correct (+)
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="flex-1 h-10"
+                            onClick={() => addTrialToColdProbe(entry.skillTargetId, false, 'independent')}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Incorrect (−)
+                          </Button>
+                        </div>
+
+                        {/* Prompted responses */}
+                        <div className="border rounded-lg p-2 bg-muted/30 space-y-2">
+                          <Label className="text-xs">Prompted Responses</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {PROMPT_LEVEL_ORDER.filter(p => p !== 'independent').map(level => (
+                              <Button
+                                key={level}
+                                variant="outline"
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => addTrialToColdProbe(entry.skillTargetId, true, level)}
+                              >
+                                {PROMPT_LEVEL_LABELS[level]} +
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Trial display */}
+                        {entry.trials.length > 0 && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs">Trials</Label>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-xs"
+                                onClick={() => removeLastTrial(entry.skillTargetId)}
+                              >
+                                Undo Last
+                              </Button>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {entry.trials.map((trial, trialIdx) => (
+                                <div
+                                  key={trialIdx}
+                                  className={`
+                                    w-6 h-6 rounded text-xs flex items-center justify-center font-medium
+                                    ${trial.isCorrect 
+                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' 
+                                      : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}
+                                    ${trial.promptLevel !== 'independent' ? 'ring-2 ring-amber-500' : ''}
+                                  `}
+                                  title={trial.promptLevel !== 'independent' ? PROMPT_LEVEL_LABELS[trial.promptLevel] : 'Independent'}
+                                >
+                                  {trial.isCorrect ? '+' : '−'}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">Ring = prompted response</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </TabsContent>
             </Tabs>
 
