@@ -914,6 +914,48 @@ export type Database = {
           },
         ]
       }
+      bx_behavior_checklist_items: {
+        Row: {
+          active: boolean | null
+          behavior_number: number
+          checklist_id: string
+          checklist_item_id: string
+          created_at: string
+          domain: string
+          id: string
+          label: string
+          linked_problem_id: string | null
+          topics: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          behavior_number: number
+          checklist_id?: string
+          checklist_item_id: string
+          created_at?: string
+          domain: string
+          id?: string
+          label: string
+          linked_problem_id?: string | null
+          topics?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          behavior_number?: number
+          checklist_id?: string
+          checklist_item_id?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          label?: string
+          linked_problem_id?: string | null
+          topics?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bx_objective_strategy_links: {
         Row: {
           created_at: string
