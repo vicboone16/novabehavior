@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Users, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { SupervisionDashboard } from '@/components/supervision/SupervisionDashboard';
 import { FieldworkTracker } from '@/components/supervision/FieldworkTracker';
 import { SupervisionLogDialog } from '@/components/supervision/SupervisionLogDialog';
+import { SupervisionCalendar } from '@/components/supervision/SupervisionCalendar';
+import { SupervisionApprovalList } from '@/components/supervision/SupervisionApprovalList';
 
 export default function Supervision() {
   const navigate = useNavigate();
@@ -16,6 +17,13 @@ export default function Supervision() {
   const [showLogDialog, setShowLogDialog] = useState(false);
 
   const canManageSupervision = userRole === 'admin' || userRole === 'super_admin';
+
+  const handleRefresh = () => {
+    // Force refresh by changing activeTab briefly
+    const current = activeTab;
+    setActiveTab('');
+    setTimeout(() => setActiveTab(current), 0);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,6 +56,10 @@ export default function Supervision() {
               <Users className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              Calendar
+            </TabsTrigger>
             <TabsTrigger value="fieldwork" className="gap-2">
               <Clock className="w-4 h-4" />
               Fieldwork Hours
@@ -55,7 +67,18 @@ export default function Supervision() {
           </TabsList>
 
           <TabsContent value="dashboard">
-            <SupervisionDashboard />
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <SupervisionDashboard />
+              </div>
+              <div>
+                <SupervisionApprovalList />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <SupervisionCalendar />
           </TabsContent>
 
           <TabsContent value="fieldwork">
@@ -70,7 +93,7 @@ export default function Supervision() {
         onOpenChange={setShowLogDialog}
         onSuccess={() => {
           setShowLogDialog(false);
-          // Refresh data
+          handleRefresh();
         }}
       />
     </div>

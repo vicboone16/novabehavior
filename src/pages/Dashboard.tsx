@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ClipboardList, LayoutGrid, List, Rows3 } from 'lucide-react';
+import { ClipboardList, LayoutGrid, List, Rows3, Smartphone } from 'lucide-react';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -14,6 +14,7 @@ import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { TrashRecovery } from '@/components/TrashRecovery';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 import { ActiveStudentSessions } from '@/components/ActiveStudentSessions';
+import { MobileDataMode } from '@/components/mobile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const [activeTabStudentId, setActiveTabStudentId] = useState<string | null>(null);
+  const [showMobileMode, setShowMobileMode] = useState(false);
 
   // Check if any selected student has interval behaviors
   const hasIntervalBehaviors = selectedStudents.some(s => 
@@ -74,7 +76,23 @@ export default function Dashboard() {
         {hasAnyBehaviors && <EnhancedABCPopup />}
         {selectedStudentIds.length > 0 && <QuickABCCustomizer />}
         <EndAllSessionsButton />
+        {selectedStudentIds.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowMobileMode(true)}
+            className="gap-2"
+          >
+            <Smartphone className="w-4 h-4" />
+            Mobile Mode
+          </Button>
+        )}
       </div>
+
+      {/* Mobile Data Mode Overlay */}
+      {showMobileMode && (
+        <MobileDataMode onClose={() => setShowMobileMode(false)} />
+      )}
 
       {/* Synced Interval Controller */}
       {hasIntervalBehaviors && (

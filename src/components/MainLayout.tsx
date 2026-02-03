@@ -1,5 +1,20 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, LayoutDashboard, Users, FileBarChart, Loader2, ClipboardCheck, Target, Calendar, GraduationCap, FileCheck } from 'lucide-react';
+import { 
+  ClipboardList, 
+  LayoutDashboard, 
+  Users, 
+  FileBarChart, 
+  Loader2, 
+  ClipboardCheck, 
+  Target, 
+  Calendar, 
+  GraduationCap, 
+  FileCheck,
+  UserCheck,
+  UserPlus,
+  DollarSign,
+  BarChart3
+} from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
@@ -84,8 +99,44 @@ export default function MainLayout() {
                 <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <GlobalSearch />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/supervision')}
+                className="gap-2 hidden lg:flex"
+              >
+                <UserCheck className="w-4 h-4" />
+                <span className="hidden xl:inline">Supervision</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/referrals')}
+                className="gap-2 hidden lg:flex"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden xl:inline">Referrals</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/billing')}
+                className="gap-2 hidden lg:flex"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span className="hidden xl:inline">Billing</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/analytics')}
+                className="gap-2 hidden lg:flex"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden xl:inline">Analytics</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
