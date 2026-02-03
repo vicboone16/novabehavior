@@ -33,6 +33,7 @@ import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
+import { StaffProfilePage } from "./components/staff-profile";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -180,6 +181,7 @@ const App = () => {
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/notes-review" element={<NotesReview />} />
+              <Route path="/staff/:userId" element={<StaffProfilePage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
