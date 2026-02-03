@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { 
-  FileText, Edit2, Eye, Calendar, AlertTriangle
+  FileText, Edit2, Eye, Calendar, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +21,42 @@ import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BriefRecordReviewSavedData } from '@/types/behavior';
 
+// Form loading skeleton
+function FormLoadingSkeleton() {
+  return (
+    <div className="space-y-4 p-4">
+      <div className="grid md:grid-cols-4 gap-3">
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+        <Skeleton className="h-10" />
+      </div>
+      <Skeleton className="h-32" />
+      <Skeleton className="h-32" />
+      <Skeleton className="h-32" />
+    </div>
+  );
+}
+
+// Error display for form failures
+function FormErrorDisplay({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="p-6 text-center space-y-4">
+      <AlertTriangle className="w-12 h-12 mx-auto text-destructive" />
+      <div>
+        <h3 className="font-medium text-destructive">Failed to load form</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          There was an error loading the Brief Record Review form.
+        </p>
+      </div>
+      <Button variant="outline" onClick={onRetry}>
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Try Again
+      </Button>
+    </div>
+  );
+}
+
 interface BriefRecordReviewManagerProps {
   student: Student;
 }
@@ -31,6 +67,8 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formRenderError, setFormRenderError] = useState(false);
+  const [formKey, setFormKey] = useState(0); // Key to force re-mount form
 
   // Get the SINGLE record review from student profile with defensive parsing
   const existingReview = useMemo((): BriefRecordReviewSavedData | null => {
@@ -66,16 +104,24 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
     return () => clearTimeout(timeout);
   }, []);
   
-  // Reset form error when opening fresh
+  // Reset errors when dialog closes
   useEffect(() => {
     if (!showForm) {
       setFormError(null);
+      setFormRenderError(false);
     }
   }, [showForm]);
 
   const handleOpenReview = () => {
+    setFormRenderError(false);
+    setFormKey(prev => prev + 1); // Force fresh form mount
     setIsEditing(!!existingReview);
     setShowForm(true);
+  };
+
+  const handleFormRetry = () => {
+    setFormRenderError(false);
+    setFormKey(prev => prev + 1);
   };
 
   const handleSave = (data: BriefRecordReviewData, action: 'draft' | 'submit') => {
@@ -301,19 +347,32 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-120px)]">
-              <BriefRecordReviewForm
-                studentId={student.id}
-                studentName={student.displayName || student.name}
-                existingData={existingReview ? {
-                  ...existingReview,
-                  studentName: student.displayName || student.name,
-                  // Cast arrays to proper types
-                  academicAssessments: existingReview.academicAssessments as BriefRecordReviewData['academicAssessments'],
-                  disciplineRecords: existingReview.disciplineRecords as BriefRecordReviewData['disciplineRecords'],
-                } as Partial<BriefRecordReviewData> : undefined}
-                onSave={handleSave}
-                onCancel={() => setShowForm(false)}
-              />
+              {formRenderError ? (
+                <FormErrorDisplay onRetry={handleFormRetry} />
+              ) : (
+                <AssessmentErrorBoundary 
+                  onReset={handleFormRetry}
+                  fallbackMessage="Form failed to render"
+                >
+                  <BriefRecordReviewForm
+                    key={formKey}
+                    studentId={student.id}
+                    studentName={student.displayName || student.name}
+                    existingData={existingReview ? {
+                      ...existingReview,
+                      studentName: student.displayName || student.name,
+                      academicAssessments: Array.isArray(existingReview.academicAssessments) 
+                        ? existingReview.academicAssessments as BriefRecordReviewData['academicAssessments']
+                        : [],
+                      disciplineRecords: Array.isArray(existingReview.disciplineRecords)
+                        ? existingReview.disciplineRecords as BriefRecordReviewData['disciplineRecords']
+                        : [],
+                    } as Partial<BriefRecordReviewData> : undefined}
+                    onSave={handleSave}
+                    onCancel={() => setShowForm(false)}
+                  />
+                </AssessmentErrorBoundary>
+              )}
             </ScrollArea>
           </DialogContent>
         </Dialog>

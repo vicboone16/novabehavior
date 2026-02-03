@@ -155,41 +155,46 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
   };
 
   const handleSave = () => {
-    if (!respondentName.trim()) {
-      toast.error('Please enter the respondent name');
-      return;
+    try {
+      if (!respondentName.trim()) {
+        toast.error('Please enter the respondent name');
+        return;
+      }
+
+      if (problemBehaviors.length === 0 && !otherBehavior.trim()) {
+        toast.error('Please select at least one problem behavior');
+        return;
+      }
+
+      const data: BriefTeacherInputData = {
+        id: crypto.randomUUID(),
+        studentId: student.id,
+        respondentName: respondentName.trim(),
+        date: new Date(),
+        strengths: strengths.filter(s => s.trim()),
+        problemBehaviors: [...problemBehaviors, ...(otherBehavior ? [otherBehavior] : [])],
+        otherBehavior: otherBehavior || undefined,
+        behaviorDescription: behaviorDescription.trim(),
+        frequency: frequency.trim(),
+        duration: duration.trim(),
+        intensity: intensity.trim(),
+        triggers: [...triggers, ...(otherTrigger ? [otherTrigger] : [])],
+        otherTrigger: otherTrigger || undefined,
+        thingsObtained: [...thingsObtained, ...(otherObtained ? [otherObtained] : [])],
+        otherObtained: otherObtained || undefined,
+        thingsAvoided: [...thingsAvoided, ...(otherAvoided ? [otherAvoided] : [])],
+        otherAvoided: otherAvoided || undefined,
+        additionalNotes: additionalNotes.trim(),
+        inferredFunctions: inferFunctions(),
+      };
+
+      onSave?.(data);
+      toast.success('Brief Teacher Input saved to student profile');
+      handleReset();
+    } catch (error) {
+      console.error('Error saving Brief Teacher Input:', error);
+      toast.error('Failed to save. Please try again.');
     }
-
-    if (problemBehaviors.length === 0 && !otherBehavior.trim()) {
-      toast.error('Please select at least one problem behavior');
-      return;
-    }
-
-    const data: BriefTeacherInputData = {
-      id: crypto.randomUUID(),
-      studentId: student.id,
-      respondentName: respondentName.trim(),
-      date: new Date(),
-      strengths: strengths.filter(s => s.trim()),
-      problemBehaviors: [...problemBehaviors, ...(otherBehavior ? [otherBehavior] : [])],
-      otherBehavior: otherBehavior || undefined,
-      behaviorDescription: behaviorDescription.trim(),
-      frequency: frequency.trim(),
-      duration: duration.trim(),
-      intensity: intensity.trim(),
-      triggers: [...triggers, ...(otherTrigger ? [otherTrigger] : [])],
-      otherTrigger: otherTrigger || undefined,
-      thingsObtained: [...thingsObtained, ...(otherObtained ? [otherObtained] : [])],
-      otherObtained: otherObtained || undefined,
-      thingsAvoided: [...thingsAvoided, ...(otherAvoided ? [otherAvoided] : [])],
-      otherAvoided: otherAvoided || undefined,
-      additionalNotes: additionalNotes.trim(),
-      inferredFunctions: inferFunctions(),
-    };
-
-    onSave?.(data);
-    toast.success('Brief Teacher Input saved to student profile');
-    handleReset();
   };
 
   const inferredFunctions = inferFunctions();
