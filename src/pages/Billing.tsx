@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +10,7 @@ import { ClaimGenerator } from '@/components/billing/ClaimGenerator';
 import { DenialTracker } from '@/components/billing/DenialTracker';
 import { ARReadinessDashboard } from '@/components/scheduling/ARReadinessDashboard';
 import { GlobalAuthorizationDashboard } from '@/components/billing/GlobalAuthorizationDashboard';
+import { PatientPaymentPortal, EligibilityChecker, PriorAuthGenerator } from '@/components/payments';
 
 export default function Billing() {
   const navigate = useNavigate();
@@ -45,10 +46,22 @@ export default function Billing() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="dashboard" className="gap-2">
               <DollarSign className="w-4 h-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="gap-2">
+              <CreditCard className="w-4 h-4" />
+              Payments
+            </TabsTrigger>
+            <TabsTrigger value="eligibility" className="gap-2">
+              <Shield className="w-4 h-4" />
+              Eligibility
+            </TabsTrigger>
+            <TabsTrigger value="prior-auth" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              Prior Auth
             </TabsTrigger>
             <TabsTrigger value="ar-readiness" className="gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -70,6 +83,62 @@ export default function Billing() {
 
           <TabsContent value="dashboard">
             <BillingDashboard />
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Patient Payments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Select a patient from the Students page to collect payments, or use the payment portal below for demo purposes.
+                  </p>
+                  <PatientPaymentPortal studentId="demo" studentName="Demo Patient" />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="eligibility">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Insurance Eligibility Verification</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Real-time eligibility checking via pVerify. Select a patient to verify their insurance coverage.
+                  </p>
+                  <EligibilityChecker 
+                    studentId="demo" 
+                    studentName="Demo Patient"
+                    clientPayers={[]}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="prior-auth">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI-Powered Prior Authorization</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Generate clinical justifications for prior authorization requests using AI.
+                  </p>
+                  <PriorAuthGenerator 
+                    studentId="demo" 
+                    studentName="Demo Patient"
+                    payers={[]}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="ar-readiness">

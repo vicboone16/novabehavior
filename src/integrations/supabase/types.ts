@@ -814,6 +814,106 @@ export type Database = {
           },
         ]
       }
+      billing_payments: {
+        Row: {
+          amount: number
+          claim_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          failure_reason: string | null
+          id: string
+          payer_id: string | null
+          payment_method: string | null
+          payment_type: string
+          processed_at: string | null
+          receipt_url: string | null
+          reference_number: string | null
+          refund_amount: number | null
+          refund_reason: string | null
+          service_date_from: string | null
+          service_date_to: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_payment_method_id: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          claim_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          failure_reason?: string | null
+          id?: string
+          payer_id?: string | null
+          payment_method?: string | null
+          payment_type: string
+          processed_at?: string | null
+          receipt_url?: string | null
+          reference_number?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          service_date_from?: string | null
+          service_date_to?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          claim_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          failure_reason?: string | null
+          id?: string
+          payer_id?: string | null
+          payment_method?: string | null
+          payment_type?: string
+          processed_at?: string | null
+          receipt_url?: string | null
+          reference_number?: string | null
+          refund_amount?: number | null
+          refund_reason?: string | null
+          service_date_from?: string | null
+          service_date_to?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_payment_method_id?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_payments_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "billing_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_payments_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_line_items: {
         Row: {
           claim_id: string
@@ -2589,6 +2689,127 @@ export type Database = {
         }
         Relationships: []
       }
+      eligibility_checks: {
+        Row: {
+          aba_auth_required: boolean | null
+          aba_covered: boolean | null
+          aba_dollar_limit: number | null
+          aba_dollars_used: number | null
+          aba_visit_limit: number | null
+          aba_visits_used: number | null
+          check_type: string
+          client_payer_id: string | null
+          coinsurance_percent: number | null
+          copay_amount: number | null
+          created_at: string
+          deductible_remaining: number | null
+          deductible_total: number | null
+          eligibility_status: string | null
+          error_message: string | null
+          group_number: string | null
+          id: string
+          is_eligible: boolean | null
+          out_of_pocket_max: number | null
+          out_of_pocket_remaining: number | null
+          payer_id: string | null
+          performed_at: string
+          performed_by: string
+          plan_name: string | null
+          plan_number: string | null
+          pverify_request_id: string | null
+          pverify_response: Json | null
+          service_date: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          aba_auth_required?: boolean | null
+          aba_covered?: boolean | null
+          aba_dollar_limit?: number | null
+          aba_dollars_used?: number | null
+          aba_visit_limit?: number | null
+          aba_visits_used?: number | null
+          check_type: string
+          client_payer_id?: string | null
+          coinsurance_percent?: number | null
+          copay_amount?: number | null
+          created_at?: string
+          deductible_remaining?: number | null
+          deductible_total?: number | null
+          eligibility_status?: string | null
+          error_message?: string | null
+          group_number?: string | null
+          id?: string
+          is_eligible?: boolean | null
+          out_of_pocket_max?: number | null
+          out_of_pocket_remaining?: number | null
+          payer_id?: string | null
+          performed_at?: string
+          performed_by: string
+          plan_name?: string | null
+          plan_number?: string | null
+          pverify_request_id?: string | null
+          pverify_response?: Json | null
+          service_date?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          aba_auth_required?: boolean | null
+          aba_covered?: boolean | null
+          aba_dollar_limit?: number | null
+          aba_dollars_used?: number | null
+          aba_visit_limit?: number | null
+          aba_visits_used?: number | null
+          check_type?: string
+          client_payer_id?: string | null
+          coinsurance_percent?: number | null
+          copay_amount?: number | null
+          created_at?: string
+          deductible_remaining?: number | null
+          deductible_total?: number | null
+          eligibility_status?: string | null
+          error_message?: string | null
+          group_number?: string | null
+          id?: string
+          is_eligible?: boolean | null
+          out_of_pocket_max?: number | null
+          out_of_pocket_remaining?: number | null
+          payer_id?: string | null
+          performed_at?: string
+          performed_by?: string
+          plan_name?: string | null
+          plan_number?: string | null
+          pverify_request_id?: string | null
+          pverify_response?: Json | null
+          service_date?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eligibility_checks_client_payer_id_fkey"
+            columns: ["client_payer_id"]
+            isOneToOne: false
+            referencedRelation: "client_payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eligibility_checks_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eligibility_checks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enhanced_session_notes: {
         Row: {
           author_role: string
@@ -3871,6 +4092,81 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_plans: {
+        Row: {
+          auto_charge: boolean | null
+          completed_installments: number | null
+          created_at: string
+          created_by: string
+          frequency: string
+          id: string
+          installment_amount: number
+          next_payment_date: string | null
+          notes: string | null
+          original_claim_ids: string[] | null
+          start_date: string
+          status: string
+          stored_payment_method_id: string | null
+          student_id: string
+          total_amount: number
+          total_installments: number
+          updated_at: string
+        }
+        Insert: {
+          auto_charge?: boolean | null
+          completed_installments?: number | null
+          created_at?: string
+          created_by: string
+          frequency: string
+          id?: string
+          installment_amount: number
+          next_payment_date?: string | null
+          notes?: string | null
+          original_claim_ids?: string[] | null
+          start_date: string
+          status?: string
+          stored_payment_method_id?: string | null
+          student_id: string
+          total_amount: number
+          total_installments: number
+          updated_at?: string
+        }
+        Update: {
+          auto_charge?: boolean | null
+          completed_installments?: number | null
+          created_at?: string
+          created_by?: string
+          frequency?: string
+          id?: string
+          installment_amount?: number
+          next_payment_date?: string | null
+          notes?: string | null
+          original_claim_ids?: string[] | null
+          start_date?: string
+          status?: string
+          stored_payment_method_id?: string | null
+          student_id?: string
+          total_amount?: number
+          total_installments?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_plans_stored_payment_method_id_fkey"
+            columns: ["stored_payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "stored_payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pin_auth_attempts: {
         Row: {
           attempted_at: string
@@ -3897,6 +4193,121 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      prior_auth_requests: {
+        Row: {
+          ai_generated_justification: string | null
+          appeal_deadline: string | null
+          approved_units: number | null
+          authorization_id: string | null
+          clinical_summary: string | null
+          created_at: string
+          created_by: string
+          decision: string | null
+          decision_date: string | null
+          denial_reason: string | null
+          diagnosis_codes: string[] | null
+          id: string
+          medical_necessity: string | null
+          payer_id: string | null
+          payer_reference_number: string | null
+          request_type: string
+          service_codes: string[]
+          service_end_date: string
+          service_start_date: string
+          status: string
+          student_id: string
+          submission_method: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+          supporting_documentation: Json | null
+          treatment_goals: string[] | null
+          units_requested: number
+          updated_at: string
+        }
+        Insert: {
+          ai_generated_justification?: string | null
+          appeal_deadline?: string | null
+          approved_units?: number | null
+          authorization_id?: string | null
+          clinical_summary?: string | null
+          created_at?: string
+          created_by: string
+          decision?: string | null
+          decision_date?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: string[] | null
+          id?: string
+          medical_necessity?: string | null
+          payer_id?: string | null
+          payer_reference_number?: string | null
+          request_type: string
+          service_codes: string[]
+          service_end_date: string
+          service_start_date: string
+          status?: string
+          student_id: string
+          submission_method?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supporting_documentation?: Json | null
+          treatment_goals?: string[] | null
+          units_requested: number
+          updated_at?: string
+        }
+        Update: {
+          ai_generated_justification?: string | null
+          appeal_deadline?: string | null
+          approved_units?: number | null
+          authorization_id?: string | null
+          clinical_summary?: string | null
+          created_at?: string
+          created_by?: string
+          decision?: string | null
+          decision_date?: string | null
+          denial_reason?: string | null
+          diagnosis_codes?: string[] | null
+          id?: string
+          medical_necessity?: string | null
+          payer_id?: string | null
+          payer_reference_number?: string | null
+          request_type?: string
+          service_codes?: string[]
+          service_end_date?: string
+          service_start_date?: string
+          status?: string
+          student_id?: string
+          submission_method?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          supporting_documentation?: Json | null
+          treatment_goals?: string[] | null
+          units_requested?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prior_auth_requests_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prior_auth_requests_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prior_auth_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -5115,6 +5526,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      stored_payment_methods: {
+        Row: {
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
+          card_last4: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          nickname: string | null
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          nickname?: string | null
+          stripe_customer_id: string
+          stripe_payment_method_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
+          card_last4?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          nickname?: string | null
+          stripe_customer_id?: string
+          stripe_payment_method_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stored_payment_methods_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
         ]
       }
