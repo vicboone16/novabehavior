@@ -42,10 +42,38 @@ const queryClient = new QueryClient();
 // Generate unique error ID
 const generateErrorId = () => `ERR-${Date.now().toString(36).toUpperCase()}`;
 
+// Avoid spamming users with repeated unhandled rejection toasts
+let lastUnhandledRejectionKey = '';
+let lastUnhandledRejectionAt = 0;
+
 const App = () => {
   // Global unhandled rejection handler for defensive error handling
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const reasonText =
+        reason instanceof Error
+          ? `${reason.name}: ${reason.message}`
+          : typeof reason === 'string'
+            ? reason
+            : (() => {
+                try {
+                  return JSON.stringify(reason);
+                } catch {
+                  return String(reason);
+                }
+              })();
+
+      const key = reasonText.slice(0, 200);
+      const now = Date.now();
+      if (key && key === lastUnhandledRejectionKey && now - lastUnhandledRejectionAt < 8000) {
+        event.preventDefault();
+        return;
+      }
+
+      lastUnhandledRejectionKey = key;
+      lastUnhandledRejectionAt = now;
+
       const errorId = generateErrorId();
       console.error("Unhandled rejection:", event.reason);
       console.error(`Error ID: ${errorId}`);

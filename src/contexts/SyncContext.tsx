@@ -474,18 +474,45 @@ export function SyncProvider({ children }: SyncProviderProps) {
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
         
-        // Load live session data entries
-        const { data: liveEntries } = await supabase
+        // Decide whether we should resume the cloud session onto this device.
+        // NOTE: Even if there are *zero* session_data rows yet, we still need to resume
+        // the session metadata (session ID, start time, selected students) so the laptop
+        // doesn't prompt to start a new session.
+        const currentState = useDataStore.getState();
+        const hasLocalActiveSession = currentState.sessionStartTime !== null && currentState.currentSessionId !== null;
+        const isSameSession = currentState.currentSessionId === activeSessionData.id;
+        const localSessionHasData =
+          currentState.frequencyEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+          currentState.durationEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+          currentState.intervalEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+          currentState.abcEntries.some(e => e.sessionId === currentState.currentSessionId);
+
+        const shouldResumeCloudSession = !hasLocalActiveSession || isSameSession;
+
+        // Load live session data entries (may be empty for a freshly-started session)
+        const { data: liveEntries, error: liveEntriesError } = await supabase
           .from('session_data')
           .select('*')
           .eq('session_id', activeSessionData.id)
           .order('timestamp', { ascending: true });
 
-        if (liveEntries && liveEntries.length > 0) {
-          console.log('[Sync] Loading', liveEntries.length, 'live session entries');
-          
-          // Map to live frequency entries
-          const liveFrequency = liveEntries
+        if (liveEntriesError) {
+          console.error('[Sync] Error loading live session entries:', liveEntriesError);
+        }
+
+        if (shouldResumeCloudSession) {
+          if (!liveEntries || liveEntries.length === 0) {
+            useDataStore.setState({
+              currentSessionId: activeSessionData.id,
+              sessionStartTime: new Date(activeSessionData.start_time),
+              selectedStudentIds: activeSessionData.student_ids || [],
+            });
+            console.log('[Sync] Live session resumed from cloud (no entries yet):', activeSessionData.id);
+          } else {
+            console.log('[Sync] Loading', liveEntries.length, 'live session entries');
+
+            // Map to live frequency entries
+            const liveFrequency = liveEntries
             .filter(e => e.event_type === 'frequency')
             .map(e => ({
               id: e.id,
@@ -497,8 +524,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionId: e.session_id,
             }));
 
-          // Map to live duration entries
-          const liveDuration = liveEntries
+            // Map to live duration entries
+            const liveDuration = liveEntries
             .filter(e => e.event_type === 'duration')
             .map(e => ({
               id: e.id,
@@ -510,8 +537,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionId: e.session_id,
             }));
 
-          // Map to live interval entries
-          const liveInterval = liveEntries
+            // Map to live interval entries
+            const liveInterval = liveEntries
             .filter(e => e.event_type === 'interval')
             .map(e => ({
               id: e.id,
@@ -525,8 +552,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionId: e.session_id,
             }));
 
-          // Map to live ABC entries
-          const liveABC = liveEntries
+            // Map to live ABC entries
+            const liveABC = liveEntries
             .filter(e => e.event_type === 'abc')
             .map(e => ({
               id: e.id,
@@ -546,27 +573,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionId: e.session_id,
             }));
 
-          // Check if we should load the live session from another device
-          const currentState = useDataStore.getState();
-          
-          // Load live session if:
-          // 1. No local session is currently active, OR
-          // 2. Local session ID matches the cloud session (same session, sync data)
-          const hasLocalActiveSession = currentState.sessionStartTime !== null && currentState.currentSessionId !== null;
-          const isSameSession = currentState.currentSessionId === activeSessionData.id;
-          const localSessionHasData = currentState.frequencyEntries.some(e => e.sessionId === currentState.currentSessionId) ||
-                                      currentState.durationEntries.some(e => e.sessionId === currentState.currentSessionId) ||
-                                      currentState.intervalEntries.some(e => e.sessionId === currentState.currentSessionId) ||
-                                      currentState.abcEntries.some(e => e.sessionId === currentState.currentSessionId);
-          
-          // Cross-device resume: load live session if we don't have an active local session
-          if (!hasLocalActiveSession || isSameSession) {
             // Filter out entries that match the live session to avoid duplicates
             const existingFreqIds = new Set(currentState.frequencyEntries.map(e => e.id));
             const existingDurIds = new Set(currentState.durationEntries.map(e => e.id));
             const existingIntIds = new Set(currentState.intervalEntries.map(e => e.id));
             const existingAbcIds = new Set(currentState.abcEntries.map(e => e.id));
-            
+
             // Merge: keep existing + add new from cloud
             const mergedFrequency = [
               ...currentState.frequencyEntries.filter(e => e.sessionId !== activeSessionData.id),
@@ -584,7 +596,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
               ...currentState.abcEntries.filter(e => e.sessionId !== activeSessionData.id),
               ...liveABC.filter(e => !existingAbcIds.has(e.id))
             ];
-            
+
             useDataStore.setState({
               frequencyEntries: mergedFrequency,
               durationEntries: mergedDuration,
@@ -594,13 +606,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionStartTime: new Date(activeSessionData.start_time),
               selectedStudentIds: activeSessionData.student_ids || [],
             });
-            
+
             console.log('[Sync] Live session resumed from cloud:', activeSessionData.id);
-          } else if (hasLocalActiveSession && !isSameSession && localSessionHasData) {
-            // Different active sessions on different devices - don't overwrite, log conflict
-            console.warn('[Sync] Session conflict: local session differs from cloud session');
-            console.log('[Sync] Local session:', currentState.currentSessionId, 'Cloud session:', activeSessionData.id);
           }
+        } else if (hasLocalActiveSession && !isSameSession && localSessionHasData) {
+          // Different active sessions on different devices - don't overwrite, log conflict
+          console.warn('[Sync] Session conflict: local session differs from cloud session');
+          console.log('[Sync] Local session:', currentState.currentSessionId, 'Cloud session:', activeSessionData.id);
         }
       } else {
         // No active session in database - clear any stale local session state
