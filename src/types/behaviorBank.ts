@@ -4,7 +4,7 @@ import { BehaviorDefinition } from './behavior';
 export interface BehaviorDefinitionOverride {
   operationalDefinition?: string;
   category?: string;
-  updatedAt: Date;
+  updatedAt: Date | string; // Allow string for zustand persist serialization
 }
 
 // Extended behavior definition for global bank (promoted from custom)

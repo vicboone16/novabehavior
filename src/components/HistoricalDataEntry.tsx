@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { 
   Plus, Save, Clock, AlertCircle, TrendingUp, 
-  Timer, Grid3X3, FileText, X, Check
+  Timer, Grid3X3, FileText, X, Check, BookOpen, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,8 +36,111 @@ import {
   CONSEQUENCE_OPTIONS,
   FUNCTION_OPTIONS,
   BehaviorFunction,
-  DataCollectionMethod 
+  DataCollectionMethod,
+  BehaviorDefinition,
 } from '@/types/behavior';
+
+// Default behavior bank with operational definitions (same as BehaviorLibrary)
+const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
+  {
+    id: 'aggression-physical',
+    name: 'Physical Aggression',
+    operationalDefinition: 'Any instance of forceful physical contact towards another person including hitting, kicking, biting, scratching, pushing, or throwing objects at others with apparent intent to harm or intimidate.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'aggression-verbal',
+    name: 'Verbal Aggression',
+    operationalDefinition: 'Vocalized threats, name-calling, or hostile statements directed at others, including yelling obscenities, making threats of harm, or using derogatory language.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'sib',
+    name: 'Self-Injurious Behavior',
+    operationalDefinition: 'Any behavior that results in or has the potential to result in physical injury to oneself, including head-banging, biting self, hitting self, scratching self, or hair pulling.',
+    category: 'Self-Injury',
+    isGlobal: true,
+  },
+  {
+    id: 'property-destruction',
+    name: 'Property Destruction',
+    operationalDefinition: 'Any instance of damaging, breaking, or attempting to destroy property, including throwing objects, tearing materials, breaking items, or defacing property.',
+    category: 'Property Destruction',
+    isGlobal: true,
+  },
+  {
+    id: 'elopement',
+    name: 'Elopement',
+    operationalDefinition: 'Leaving or attempting to leave a designated area without permission, including running away, walking out of the classroom, or leaving the school grounds without authorization.',
+    category: 'Elopement',
+    isGlobal: true,
+  },
+  {
+    id: 'non-compliance',
+    name: 'Non-Compliance',
+    operationalDefinition: 'Failure to initiate a response to an instruction within 10 seconds of the instruction being given, or failure to complete the instructed task.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'task-refusal',
+    name: 'Task Refusal',
+    operationalDefinition: 'Verbal or non-verbal indication that the individual will not complete a requested task, including saying "no", shaking head, pushing materials away, or stating refusal.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'verbal-disruption',
+    name: 'Verbal Disruption',
+    operationalDefinition: 'Vocalizations that interrupt ongoing instruction or activities, including talking out of turn, making loud noises, singing, humming loudly, or calling out during lessons.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'out-of-seat',
+    name: 'Out of Seat',
+    operationalDefinition: 'Leaving assigned seat without permission, including standing up, walking around the classroom, or moving to a different location during instruction.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-motor',
+    name: 'Motor Stereotypy',
+    operationalDefinition: 'Repetitive motor movements that appear to have no adaptive function, including hand flapping, body rocking, finger flicking, spinning, or repetitive object manipulation.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-vocal',
+    name: 'Vocal Stereotypy',
+    operationalDefinition: 'Repetitive vocalizations that do not serve a communicative function, including scripting, echolalia, repetitive sounds, or humming.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'on-task',
+    name: 'On-Task Behavior',
+    operationalDefinition: 'Engagement in assigned task activities including looking at materials, writing, participating in discussions, following along during instruction, or completing work independently.',
+    category: 'Academic',
+    isGlobal: true,
+  },
+  {
+    id: 'hand-raising',
+    name: 'Appropriate Hand Raising',
+    operationalDefinition: 'Raising hand quietly and waiting to be called on before speaking during classroom instruction or group activities.',
+    category: 'Social Skills',
+    isGlobal: true,
+  },
+  {
+    id: 'appropriate-request',
+    name: 'Appropriate Requesting',
+    operationalDefinition: 'Using words, signs, or AAC device to request wants or needs in a calm voice without engaging in problem behavior.',
+    category: 'Communication',
+    isGlobal: true,
+  },
+];
 
 interface HistoricalDataEntryProps {
   student: Student;
@@ -77,6 +181,10 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [newBehaviorMethods, setNewBehaviorMethods] = useState<DataCollectionMethod[]>(['frequency']);
   const [newBehaviorDefinition, setNewBehaviorDefinition] = useState('');
+  
+  // Pick from bank dialog
+  const [showPickFromBank, setShowPickFromBank] = useState(false);
+  const [bankSearchQuery, setBankSearchQuery] = useState('');
 
   const { 
     addHistoricalFrequency, 
@@ -85,7 +193,71 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
     addBehaviorWithMethods,
     addCustomAntecedent,
     addCustomConsequence,
+    globalBehaviorBank,
+    behaviorDefinitionOverrides,
   } = useDataStore();
+
+  // Get all behaviors from the bank that aren't already on this student
+  const availableBankBehaviors = useMemo(() => {
+    const studentBehaviorNames = new Set(
+      student.behaviors.map(b => b.name.toLowerCase().trim())
+    );
+
+    // Apply overrides to default behaviors
+    const effectiveDefaults = DEFAULT_BEHAVIORS.map(behavior => {
+      const override = behaviorDefinitionOverrides[behavior.id];
+      if (override) {
+        return {
+          ...behavior,
+          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+          category: override.category || behavior.category,
+        };
+      }
+      return behavior;
+    });
+
+    // Combine built-in + organization behaviors
+    const allBank = [
+      ...effectiveDefaults.map(b => ({ ...b, source: 'built-in' as const })),
+      ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const })),
+    ];
+
+    // Filter out behaviors already on the student
+    return allBank.filter(b => 
+      !studentBehaviorNames.has(b.name.toLowerCase().trim())
+    );
+  }, [student.behaviors, globalBehaviorBank, behaviorDefinitionOverrides]);
+
+  // Filter bank behaviors by search
+  const filteredBankBehaviors = useMemo(() => {
+    if (!bankSearchQuery.trim()) return availableBankBehaviors;
+    const query = bankSearchQuery.toLowerCase();
+    return availableBankBehaviors.filter(b =>
+      b.name.toLowerCase().includes(query) ||
+      b.operationalDefinition.toLowerCase().includes(query) ||
+      b.category.toLowerCase().includes(query)
+    );
+  }, [availableBankBehaviors, bankSearchQuery]);
+
+  // Handle adding a behavior from the bank to the student
+  const handleAddFromBank = (behavior: BehaviorDefinition & { source: string }) => {
+    // Add behavior to student with default methods based on entry type
+    const methods: DataCollectionMethod[] = entryType === 'abc' 
+      ? ['abc', 'frequency'] 
+      : entryType === 'duration' 
+        ? ['duration'] 
+        : ['frequency'];
+
+    addBehaviorWithMethods(student.id, behavior.name, methods, {
+      operationalDefinition: behavior.operationalDefinition,
+      category: behavior.category,
+      baseBehaviorId: behavior.id,
+    });
+
+    toast.success(`Added "${behavior.name}" to ${student.name}'s behaviors`);
+    setShowPickFromBank(false);
+    setBankSearchQuery('');
+  };
 
   // Get all antecedent options including custom
   const allAntecedents = useMemo(() => {
@@ -467,30 +639,52 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
 
           {/* Behavior Selection */}
           <div className="space-y-2 mt-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <Label>Behaviors (select one or more)</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddBehavior(true)}
-                className="gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                New Behavior
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPickFromBank(true)}
+                  className="gap-1"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  Pick from Bank
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddBehavior(true)}
+                  className="gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  New Behavior
+                </Button>
+              </div>
             </div>
             
             {activeBehaviors.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
                 <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No behaviors configured</p>
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => setShowAddBehavior(true)}
-                >
-                  Add a behavior
-                </Button>
+                <p className="text-sm">No behaviors configured for this student</p>
+                <div className="flex gap-2 justify-center mt-2">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowPickFromBank(true)}
+                  >
+                    <BookOpen className="w-3 h-3 mr-1" />
+                    Pick from Bank
+                  </Button>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowAddBehavior(true)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Create New
+                  </Button>
+                </div>
               </div>
             ) : (
               <ScrollArea className="h-[200px] border rounded-md p-3">
@@ -919,6 +1113,101 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
             <Button onClick={handleAddNewBehavior} disabled={!newBehaviorName.trim()}>
               <Plus className="w-4 h-4 mr-1" />
               Add Behavior
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pick from Behavior Bank Dialog */}
+      <Dialog open={showPickFromBank} onOpenChange={setShowPickFromBank}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Pick from Behavior Bank
+            </DialogTitle>
+            <DialogDescription>
+              Add a behavior from the library to {student.name}'s chart
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search behaviors..."
+                value={bankSearchQuery}
+                onChange={(e) => setBankSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Behavior List */}
+            <ScrollArea className="h-[300px] border rounded-md">
+              {filteredBankBehaviors.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">
+                    {bankSearchQuery 
+                      ? 'No matching behaviors found' 
+                      : 'All behaviors from the bank are already on this student'}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2 space-y-2">
+                  {filteredBankBehaviors.map((behavior) => (
+                    <div
+                      key={behavior.id}
+                      className="p-3 border rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group"
+                      onClick={() => handleAddFromBank(behavior)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{behavior.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {behavior.source === 'built-in' ? 'Built-in' : 'Organization'}
+                            </Badge>
+                          </div>
+                          {behavior.operationalDefinition && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {behavior.operationalDefinition}
+                            </p>
+                          )}
+                          <Badge variant="secondary" className="mt-1 text-xs">
+                            {behavior.category}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddFromBank(behavior);
+                          }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+            
+            <p className="text-xs text-muted-foreground">
+              Click a behavior to add it to {student.name}'s chart, then you can select it for data entry.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowPickFromBank(false);
+              setBankSearchQuery('');
+            }}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

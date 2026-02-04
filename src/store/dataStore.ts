@@ -751,13 +751,14 @@ export const useDataStore = create<DataState>()(
           }));
         } else {
           // This is a built-in behavior - add/update override
+          // Use ISO string for Date to ensure proper serialization with zustand persist
           set((s) => ({
             behaviorDefinitionOverrides: {
               ...s.behaviorDefinitionOverrides,
               [behaviorId]: {
                 operationalDefinition: definition,
                 ...(category && { category }),
-                updatedAt: new Date(),
+                updatedAt: new Date().toISOString(),
               },
             },
           }));
