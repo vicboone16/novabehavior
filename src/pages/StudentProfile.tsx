@@ -80,15 +80,15 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
-  CommunicationTab,
   SchedulingTab,
   LocationsTab, 
   TeamAssignmentsTab,
   DocumentsTab,
-  CommunicationLogTab,
   TagsCaseAttributesTab,
+  CommunicationCombinedTab,
 } from '@/components/client-profile/tabs';
 import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -569,35 +569,7 @@ export default function StudentProfile() {
             <UserCheck className="w-3 h-3" />
             Teacher View
           </TabsTrigger>
-          {/* Profile 2.0 Tabs - Always visible */}
-          <TabsTrigger value="team" className="gap-1 text-xs">
-            <Users className="w-3 h-3" />
-            Team
-          </TabsTrigger>
-          <TabsTrigger value="contacts" className="gap-1 text-xs">
-            <Phone className="w-3 h-3" />
-            Contacts
-          </TabsTrigger>
-          <TabsTrigger value="locations" className="gap-1 text-xs">
-            <MapPin className="w-3 h-3" />
-            Locations
-          </TabsTrigger>
-          <TabsTrigger value="safety" className="gap-1 text-xs">
-            <HeartPulse className="w-3 h-3" />
-            Safety
-          </TabsTrigger>
-          <TabsTrigger value="scheduling" className="gap-1 text-xs">
-            <Calendar className="w-3 h-3" />
-            Scheduling
-          </TabsTrigger>
-          <TabsTrigger value="communication" className="gap-1 text-xs">
-            <MessageSquare className="w-3 h-3" />
-            Communication
-          </TabsTrigger>
-          <TabsTrigger value="comm-log" className="gap-1 text-xs">
-            <MessageSquare className="w-3 h-3" />
-            Comm Log
-          </TabsTrigger>
+          {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
           <TabsTrigger value="documents" className="gap-1 text-xs">
             <FolderOpen className="w-3 h-3" />
             Documents
@@ -620,7 +592,7 @@ export default function StudentProfile() {
           )}
         </TabsList>
 
-        {/* Profile Tab */}
+        {/* Profile Tab - Now includes consolidated sections */}
         <TabsContent value="profile" className="space-y-4">
           <StudentProfileInfo
             student={student}
@@ -630,6 +602,150 @@ export default function StudentProfile() {
             student={student}
             onUpdate={(updates) => updateStudentProfile(student.id, updates)}
           />
+          
+          {/* Team & Assignments Section */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Team & Assignments
+                    <Badge variant="secondary" className="ml-auto">{clientProfile.teamAssignments.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <TeamAssignmentsTab
+                    clientId={student.id}
+                    teamAssignments={clientProfile.teamAssignments}
+                    onRefetch={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Contacts Section */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Contacts
+                    <Badge variant="secondary" className="ml-auto">{clientProfile.contacts.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <ContactsTab
+                    clientId={student.id}
+                    contacts={clientProfile.contacts}
+                    onRefresh={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Locations Section */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Locations
+                    <Badge variant="secondary" className="ml-auto">{clientProfile.locations.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <LocationsTab
+                    clientId={student.id}
+                    locations={clientProfile.locations}
+                    onRefresh={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Safety & Medical Section */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <HeartPulse className="w-4 h-4" />
+                    Safety & Medical
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <SafetyMedicalTab
+                    clientId={student.id}
+                    data={clientProfile.safetyMedical}
+                    onRefresh={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Scheduling Section */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Scheduling Preferences
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <SchedulingTab
+                    clientId={student.id}
+                    data={clientProfile.schedulingPreferences}
+                    onRefresh={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Communication Section (Combined Log + Settings) */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    Communication
+                    <Badge variant="secondary" className="ml-auto">{clientProfile.communicationLog.length} logs</Badge>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <CommunicationCombinedTab
+                    clientId={student.id}
+                    communicationAccess={clientProfile.communicationAccess}
+                    communicationLog={clientProfile.communicationLog}
+                    contacts={clientProfile.contacts}
+                    onRefresh={clientProfile.refetch}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         </TabsContent>
 
         {/* Behaviors Tab */}
@@ -1372,69 +1488,8 @@ export default function StudentProfile() {
           </Card>
         </TabsContent>
 
-        {/* Profile 2.0 Tabs - Team & Assignments */}
-        <TabsContent value="team" className="space-y-4">
-          <TeamAssignmentsTab
-            clientId={student.id}
-            teamAssignments={clientProfile.teamAssignments}
-            onRefetch={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Contacts */}
-        <TabsContent value="contacts" className="space-y-4">
-          <ContactsTab
-            clientId={student.id}
-            contacts={clientProfile.contacts}
-            onRefresh={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Locations */}
-        <TabsContent value="locations" className="space-y-4">
-          <LocationsTab
-            clientId={student.id}
-            locations={clientProfile.locations}
-            onRefresh={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Safety & Medical */}
-        <TabsContent value="safety" className="space-y-4">
-          <SafetyMedicalTab
-            clientId={student.id}
-            data={clientProfile.safetyMedical}
-            onRefresh={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Scheduling */}
-        <TabsContent value="scheduling" className="space-y-4">
-          <SchedulingTab
-            clientId={student.id}
-            data={clientProfile.schedulingPreferences}
-            onRefresh={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Communication Access */}
-        <TabsContent value="communication" className="space-y-4">
-          <CommunicationTab
-            clientId={student.id}
-            data={clientProfile.communicationAccess}
-            onRefresh={clientProfile.refetch}
-          />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Communication Log */}
-        <TabsContent value="comm-log" className="space-y-4">
-          <CommunicationLogTab
-            clientId={student.id}
-            communicationLog={clientProfile.communicationLog}
-            contacts={clientProfile.contacts}
-            onRefetch={clientProfile.refetch}
-          />
-        </TabsContent>
+        {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
+            consolidated into the Profile tab as collapsible sections */}
 
         {/* Profile 2.0 Tabs - Documents */}
         <TabsContent value="documents" className="space-y-4">
