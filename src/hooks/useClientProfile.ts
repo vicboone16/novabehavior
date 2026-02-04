@@ -90,7 +90,14 @@ export function useClientProfile(clientId: string | undefined) {
     if (!studentData?.legal_last_name) missing.push('Legal last name');
     if (!studentData?.dob) missing.push('Date of birth');
     if (!studentData?.status) missing.push('Status');
-    if (!studentData?.primary_supervisor_staff_id) missing.push('Primary supervisor');
+    
+    // Check for supervisor via profile OR team assignments
+    const hasSupervisorViaTeam = teamAssignments.some(
+      t => t.is_active && (t.role === 'primary_supervisor' || t.role === 'bcba')
+    );
+    if (!studentData?.primary_supervisor_staff_id && !hasSupervisorViaTeam) {
+      missing.push('Primary supervisor');
+    }
 
     // Primary contact required
     const hasPrimaryContact = contacts.some(c => c.is_primary_guardian && c.phones?.length > 0);
@@ -131,13 +138,21 @@ export function useClientProfile(clientId: string | undefined) {
     return { status, score, missing, warnings };
   }, [contacts, communicationAccess, schedulingPreferences, locations, safetyMedical]);
 
-  const canActivate = useCallback((studentData: any): { canActivate: boolean; reasons: string[] } => {
+  const canActivate = useCallback((studentData: any, overrides?: { skipSupervisor?: boolean }): { canActivate: boolean; reasons: string[]; overridable: string[] } => {
     const reasons: string[] = [];
+    const overridable: string[] = [];
 
-    if (!studentData?.primary_supervisor_staff_id) {
-      reasons.push('Primary supervisor must be assigned');
+    // Check for supervisor - can be overridden
+    const hasSupervisorViaTeam = teamAssignments.some(
+      t => t.is_active && (t.role === 'primary_supervisor' || t.role === 'bcba')
+    );
+    if (!studentData?.primary_supervisor_staff_id && !hasSupervisorViaTeam) {
+      if (!overrides?.skipSupervisor) {
+        overridable.push('Primary supervisor must be assigned');
+      }
     }
 
+    // These cannot be overridden
     const hasActiveLocation = locations.some(l => l.is_active && l.geocode_status === 'success');
     if (!hasActiveLocation) {
       reasons.push('At least one active geocoded location is required');
@@ -157,8 +172,9 @@ export function useClientProfile(clientId: string | undefined) {
       reasons.push('At least one availability window is required');
     }
 
-    return { canActivate: reasons.length === 0, reasons };
-  }, [contacts, locations, communicationAccess, schedulingPreferences]);
+    const canActivateResult = reasons.length === 0 && (overrides?.skipSupervisor || overridable.length === 0);
+    return { canActivate: canActivateResult, reasons, overridable };
+  }, [contacts, locations, communicationAccess, schedulingPreferences, teamAssignments]);
 
   return {
     loading,

@@ -19,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleTimeline } from '@/components/schedule/ScheduleTimeline';
 import { SchedulingEngine } from '@/components/scheduling/SchedulingEngine';
+import { StaffAvailabilityPanel } from '@/components/schedule/StaffAvailabilityPanel';
 import { ScheduleDayView } from '@/components/schedule/ScheduleDayView';
 import { ScheduleWeekView } from '@/components/schedule/ScheduleWeekView';
 import { ScheduleMonthView } from '@/components/schedule/ScheduleMonthView';
@@ -570,6 +571,14 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
                   </Button>
                 </div>
               </div>
+
+              {/* Staff availability panel - visible in day/week views for admins */}
+              {isAdmin && (viewType === 'day' || viewType === 'week') && (
+                <StaffAvailabilityPanel 
+                  currentDate={currentDate} 
+                  viewType={viewType} 
+                />
+              )}
 
               {/* Calendar views */}
               {loading ? (
