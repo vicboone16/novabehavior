@@ -30,7 +30,8 @@ export function SessionHistory() {
 
   const filteredSessions = sessions.filter(session => {
     if (filterDate) {
-      const sessionDate = new Date(session.date).toISOString().split('T')[0];
+      // Use local date (avoid UTC conversion which can shift days on mobile/timezones)
+      const sessionDate = format(new Date(session.date), 'yyyy-MM-dd');
       if (sessionDate !== filterDate) return false;
     }
     if (filterStudent !== 'all') {
