@@ -5,3 +5,4 @@ export { BxInterventionLibrary } from './BxInterventionLibrary';
 export { BxImportDialog } from './BxImportDialog';
 export { AddProblemDialog } from './AddProblemDialog';
 export { StudentBxPlanView } from './StudentBxPlanView';
+export { BehaviorInterventionsPicker } from './BehaviorInterventionsPicker';

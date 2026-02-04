@@ -61,7 +61,7 @@ import { HistoricalSkillDataEditor } from '@/components/HistoricalSkillDataEdito
 import { StudentSkillsOverview } from '@/components/StudentSkillsOverview';
 import { TOILog } from '@/components/toi/TOILog';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
-import { StudentBxPlanView } from '@/components/behavior-interventions';
+import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
@@ -761,6 +761,10 @@ export default function StudentProfile() {
                   <Lightbulb className="w-4 h-4" />
                   Interventions
                 </TabsTrigger>
+                <TabsTrigger value="library" className="flex items-center gap-1">
+                  <Brain className="w-4 h-4" />
+                  Add from Library
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -833,6 +837,24 @@ export default function StudentProfile() {
                 studentId={student.id}
                 studentName={student.name}
               />
+            </TabsContent>
+
+            <TabsContent value="library" className="mt-0">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Add Behavior Interventions from Library</CardTitle>
+                  <CardDescription>
+                    Search and add interventions directly to {student.name}'s profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BehaviorInterventionsPicker 
+                    preSelectedStudentId={student.id}
+                    compact
+                    hideHeader
+                  />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </TabsContent>
