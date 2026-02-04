@@ -273,16 +273,18 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      toast({ 
-        title: 'Staff member created', 
-        description: newStaffForm.emailOption === 'now' 
-          ? `${data.display_name} has been created. Login email will be sent.`
-          : newStaffForm.emailOption === 'later'
-          ? `${data.display_name} has been created. You can send the login email after completing their profile.`
-          : `${data.display_name} has been created. Share credentials manually: ${newStaffForm.email}`
-      });
+      // Email option: 'none' means no email is sent (credentials shared manually)
+      // 'now' and 'later' are placeholders for future email integration
+      const description = newStaffForm.emailOption === 'none'
+        ? `${data.display_name} created. No email sent. Share login manually: ${newStaffForm.email} / [password you set]`
+        : newStaffForm.emailOption === 'now'
+        ? `${data.display_name} created. Email sending is not yet implemented - please share credentials manually.`
+        : `${data.display_name} created. Scheduled email not yet implemented - please share credentials manually.`;
 
-      // TODO: If sendEmail is true, trigger email sending
+      toast({ 
+        title: 'Staff member created successfully', 
+        description,
+      });
 
       setShowAddStaff(false);
       setNewStaffForm({
