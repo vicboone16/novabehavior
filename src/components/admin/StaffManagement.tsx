@@ -681,14 +681,14 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
               <div className="space-y-2">
                 <Label>Supervisor</Label>
                 <Select 
-                  value={newStaffForm.supervisor_id}
-                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v }))}
+                  value={newStaffForm.supervisor_id || '_none'}
+                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v === '_none' ? '' : v }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="_none">None</SelectItem>
                     {supervisors.map(s => (
                       <SelectItem key={s.id} value={s.user_id}>
                         {s.first_name} {s.last_name} ({s.credential || s.title})
