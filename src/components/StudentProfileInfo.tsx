@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { User, Calendar, School, GraduationCap, Briefcase, FlaskConical, Save, X, Edit2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Calendar, School, GraduationCap, Briefcase, FlaskConical, Save, X, Edit2, FileText, Stethoscope, MapPin, UserCheck, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Select,
   SelectContent,
@@ -17,6 +18,8 @@ import {
 import { Student, CaseType, CASE_TYPE_LABELS, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface StudentProfileInfoProps {
   student: Student;
@@ -33,13 +36,46 @@ const GRADE_OPTIONS = [
   'Post-Secondary', 'Adult Services'
 ];
 
+const PRONOUN_OPTIONS = [
+  'he/him',
+  'she/her',
+  'they/them',
+  'he/they',
+  'she/they',
+  'other'
+];
+
+const PRIMARY_SETTING_OPTIONS = [
+  { value: 'home', label: 'Home' },
+  { value: 'school', label: 'School' },
+  { value: 'clinic', label: 'Clinic' },
+  { value: 'community', label: 'Community' },
+  { value: 'telehealth', label: 'Telehealth' },
+];
+
+const ACTIVATION_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'pending_activation', label: 'Pending Activation' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'discharged', label: 'Discharged' },
+];
+
 export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [supervisors, setSupervisors] = useState<any[]>([]);
+  
+  // Basic Name Fields
   const [firstName, setFirstName] = useState(student.firstName || '');
   const [lastName, setLastName] = useState(student.lastName || '');
   const [displayName, setDisplayName] = useState(student.displayName || '');
+  const [legalFirstName, setLegalFirstName] = useState(student.legalFirstName || '');
+  const [legalLastName, setLegalLastName] = useState(student.legalLastName || '');
+  const [pronouns, setPronouns] = useState(student.pronouns || '');
+  
   // Parse date without timezone shift - treat as local date
-  const formatDateForInput = (date: Date | string): string => {
+  const formatDateForInput = (date: Date | string | undefined): string => {
+    if (!date) return '';
     const d = new Date(date);
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -53,8 +89,44 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   );
   const [grade, setGrade] = useState(student.grade || '');
   const [school, setSchool] = useState(student.school || '');
+  const [schoolName, setSchoolName] = useState(student.schoolName || '');
+  const [districtName, setDistrictName] = useState(student.districtName || '');
   const [caseTypes, setCaseTypes] = useState<CaseType[]>(student.caseTypes || []);
   const [assessmentMode, setAssessmentMode] = useState(student.assessmentModeEnabled || false);
+  
+  // Clinical Milestones
+  const [iepDate, setIepDate] = useState(formatDateForInput(student.iepDate));
+  const [iepEndDate, setIepEndDate] = useState(formatDateForInput(student.iepEndDate));
+  const [nextIepReviewDate, setNextIepReviewDate] = useState(formatDateForInput(student.nextIepReviewDate));
+  const [fbaDate, setFbaDate] = useState(formatDateForInput(student.fbaDate));
+  const [bipDate, setBipDate] = useState(formatDateForInput(student.bipDate));
+  
+  // Diagnoses
+  const [diagnosesText, setDiagnosesText] = useState((student.diagnoses || []).join(', '));
+  
+  // Settings
+  const [primarySetting, setPrimarySetting] = useState<string>(student.primarySetting || '');
+  const [primarySupervisorStaffId, setPrimarySupervisorStaffId] = useState(student.primarySupervisorStaffId || '');
+  
+  // Case Status
+  const [caseOpenedDate, setCaseOpenedDate] = useState(formatDateForInput(student.caseOpenedDate));
+  const [activationStatus, setActivationStatus] = useState(student.activationStatus || '');
+  
+  // Contact
+  const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
+  const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
+
+  // Load supervisors list
+  useEffect(() => {
+    const loadSupervisors = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, first_name, last_name, credential')
+        .in('credential', ['BCBA', 'BCaBA', 'BCBA-D']);
+      setSupervisors(data || []);
+    };
+    loadSupervisors();
+  }, []);
 
   const toggleCaseType = (type: CaseType) => {
     setCaseTypes(prev => 
@@ -64,6 +136,12 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     );
   };
 
+  const parseDate = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const handleSave = () => {
     // If first/last name are set, update the main name field too
     let fullName = student.name;
@@ -71,44 +149,72 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     }
     
-    // Parse date without timezone issues - split and create local date
-    let parsedDate: Date | undefined;
-    if (dob) {
-      const [year, month, day] = dob.split('-').map(Number);
-      parsedDate = new Date(year, month - 1, day);
-    }
-    
-    let parsedStartDate: Date | undefined;
-    if (dataCollectionStartDate) {
-      const [year, month, day] = dataCollectionStartDate.split('-').map(Number);
-      parsedStartDate = new Date(year, month - 1, day);
-    }
+    // Parse diagnoses from comma-separated text
+    const diagnosesArray = diagnosesText
+      .split(',')
+      .map(d => d.trim())
+      .filter(d => d.length > 0);
     
     onUpdate({
       name: fullName,
       firstName: firstName.trim() || undefined,
       lastName: lastName.trim() || undefined,
       displayName: displayName.trim() || undefined,
-      dateOfBirth: parsedDate,
-      dataCollectionStartDate: parsedStartDate,
+      legalFirstName: legalFirstName.trim() || undefined,
+      legalLastName: legalLastName.trim() || undefined,
+      pronouns: pronouns || undefined,
+      dateOfBirth: parseDate(dob),
+      dataCollectionStartDate: parseDate(dataCollectionStartDate),
       grade: grade || undefined,
       school: school || undefined,
+      schoolName: schoolName || undefined,
+      districtName: districtName || undefined,
       caseTypes: caseTypes.length > 0 ? caseTypes : undefined,
-      assessmentModeEnabled: assessmentMode
+      assessmentModeEnabled: assessmentMode,
+      iepDate: parseDate(iepDate),
+      iepEndDate: parseDate(iepEndDate),
+      nextIepReviewDate: parseDate(nextIepReviewDate),
+      fbaDate: parseDate(fbaDate),
+      bipDate: parseDate(bipDate),
+      diagnoses: diagnosesArray.length > 0 ? diagnosesArray : undefined,
+      primarySetting: primarySetting as Student['primarySetting'] || undefined,
+      primarySupervisorStaffId: primarySupervisorStaffId || undefined,
+      caseOpenedDate: parseDate(caseOpenedDate),
+      activationStatus: activationStatus as Student['activationStatus'] || undefined,
+      contactEmail: contactEmail || undefined,
+      contactPhone: contactPhone || undefined,
     });
     setIsEditing(false);
+    toast.success('Profile saved');
   };
 
   const handleCancel = () => {
     setFirstName(student.firstName || '');
     setLastName(student.lastName || '');
     setDisplayName(student.displayName || '');
+    setLegalFirstName(student.legalFirstName || '');
+    setLegalLastName(student.legalLastName || '');
+    setPronouns(student.pronouns || '');
     setDob(student.dateOfBirth ? formatDateForInput(new Date(student.dateOfBirth)) : '');
     setDataCollectionStartDate(student.dataCollectionStartDate ? formatDateForInput(new Date(student.dataCollectionStartDate)) : '');
     setGrade(student.grade || '');
     setSchool(student.school || '');
+    setSchoolName(student.schoolName || '');
+    setDistrictName(student.districtName || '');
     setCaseTypes(student.caseTypes || []);
     setAssessmentMode(student.assessmentModeEnabled || false);
+    setIepDate(formatDateForInput(student.iepDate));
+    setIepEndDate(formatDateForInput(student.iepEndDate));
+    setNextIepReviewDate(formatDateForInput(student.nextIepReviewDate));
+    setFbaDate(formatDateForInput(student.fbaDate));
+    setBipDate(formatDateForInput(student.bipDate));
+    setDiagnosesText((student.diagnoses || []).join(', '));
+    setPrimarySetting(student.primarySetting || '');
+    setPrimarySupervisorStaffId(student.primarySupervisorStaffId || '');
+    setCaseOpenedDate(formatDateForInput(student.caseOpenedDate));
+    setActivationStatus(student.activationStatus || '');
+    setContactEmail(student.contactEmail || '');
+    setContactPhone(student.contactPhone || '');
     setIsEditing(false);
   };
 
@@ -116,13 +222,17 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const ageInfo = student.dateOfBirth ? calculateAge(new Date(student.dateOfBirth)) : null;
   const zodiacSign = student.dateOfBirth ? getZodiacSign(new Date(student.dateOfBirth)) : null;
 
+  // Find supervisor name
+  const supervisorName = supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.display_name || 
+    supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.first_name || '';
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
-            Student Information
+            Client Information
             {zodiacSign && (
               <TooltipProvider>
                 <Tooltip>
@@ -159,154 +269,380 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       </CardHeader>
       <CardContent className="space-y-4">
         {isEditing ? (
-          <>
-            {/* First Name / Last Name */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>First Name</Label>
-                <Input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name</Label>
-                <Input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
-            {/* Display Name */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                Display Name
-                <span className="text-xs text-muted-foreground">(for data collection)</span>
-              </Label>
-              <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Preferred name or nickname"
-              />
-              <p className="text-xs text-muted-foreground">
-                This name will be shown on the dashboard during data collection sessions.
-              </p>
-            </div>
-
-            {/* Date of Birth */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Date of Birth
-              </Label>
-              <Input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-              />
-            </div>
-
-            {/* Data Collection Start Date */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Data Collection Start Date
-                <Badge variant="outline" className="text-xs">Required</Badge>
-              </Label>
-              <Input
-                type="date"
-                value={dataCollectionStartDate}
-                onChange={(e) => setDataCollectionStartDate(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                The date this student was added to the system. Graphs will show data from at least this date.
-              </p>
-            </div>
-
-            {/* Grade */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <GraduationCap className="w-4 h-4" />
-                Grade
-              </Label>
-              <Select value={grade} onValueChange={setGrade}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select grade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GRADE_OPTIONS.map((g) => (
-                    <SelectItem key={g} value={g}>{g}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* School/Site */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <School className="w-4 h-4" />
-                School / Site
-              </Label>
-              <Input
-                value={school}
-                onChange={(e) => setSchool(e.target.value)}
-                placeholder="Enter school or site name"
-              />
-            </div>
-
-            {/* Case Types - Multi-select */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                Case Type(s)
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                {CASE_TYPES.map((type) => (
-                  <div key={type} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`case-${type}`}
-                      checked={caseTypes.includes(type)}
-                      onCheckedChange={() => toggleCaseType(type)}
-                    />
-                    <Label htmlFor={`case-${type}`} className="text-sm cursor-pointer">
-                      {CASE_TYPE_LABELS[type]}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Assessment Mode Toggle */}
-            <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-              <div className="flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-warning" />
-                <div>
-                  <Label className="font-medium">Assessment Mode</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Hides long-term programming, shows FBA tools only
-                  </p>
+          <div className="space-y-6">
+            {/* === PERSONAL INFORMATION SECTION === */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Personal Information</h4>
+              
+              {/* First Name / Last Name */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>First Name</Label>
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                  />
                 </div>
               </div>
-              <Switch
-                checked={assessmentMode}
-                onCheckedChange={setAssessmentMode}
-              />
+
+              {/* Legal Names (for billing) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Legal First Name (for billing)</Label>
+                  <Input
+                    value={legalFirstName}
+                    onChange={(e) => setLegalFirstName(e.target.value)}
+                    placeholder="Legal first name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Legal Last Name (for billing)</Label>
+                  <Input
+                    value={legalLastName}
+                    onChange={(e) => setLegalLastName(e.target.value)}
+                    placeholder="Legal last name"
+                  />
+                </div>
+              </div>
+
+              {/* Display Name & Pronouns */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    Display Name
+                    <span className="text-xs text-muted-foreground">(for data collection)</span>
+                  </Label>
+                  <Input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Preferred name or nickname"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Pronouns</Label>
+                  <Select value={pronouns} onValueChange={setPronouns}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select pronouns" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRONOUN_OPTIONS.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Date of Birth & Data Start */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Date of Birth
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Data Collection Start Date
+                    <Badge variant="outline" className="text-xs">Required</Badge>
+                  </Label>
+                  <Input
+                    type="date"
+                    value={dataCollectionStartDate}
+                    onChange={(e) => setDataCollectionStartDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Grade & Primary Setting */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    Grade
+                  </Label>
+                  <Select value={grade} onValueChange={setGrade}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GRADE_OPTIONS.map((g) => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Primary Setting
+                  </Label>
+                  <Select value={primarySetting} onValueChange={setPrimarySetting}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select setting" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRIMARY_SETTING_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* School & District */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <School className="w-4 h-4" />
+                    School / Site
+                  </Label>
+                  <Input
+                    value={school || schoolName}
+                    onChange={(e) => {
+                      setSchool(e.target.value);
+                      setSchoolName(e.target.value);
+                    }}
+                    placeholder="Enter school or site name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>District</Label>
+                  <Input
+                    value={districtName}
+                    onChange={(e) => setDistrictName(e.target.value)}
+                    placeholder="School district"
+                  />
+                </div>
+              </div>
+
+              {/* Contact Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Contact Email
+                  </Label>
+                  <Input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Contact Phone
+                  </Label>
+                  <Input
+                    type="tel"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
             </div>
-          </>
+
+            {/* === CLINICAL MILESTONES SECTION === */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Clinical Milestones</h4>
+              
+              {/* IEP Dates */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    IEP Start Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={iepDate}
+                    onChange={(e) => setIepDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>IEP End Date</Label>
+                  <Input
+                    type="date"
+                    value={iepEndDate}
+                    onChange={(e) => setIepEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Next IEP Review</Label>
+                  <Input
+                    type="date"
+                    value={nextIepReviewDate}
+                    onChange={(e) => setNextIepReviewDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* FBA & BIP Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    FBA Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={fbaDate}
+                    onChange={(e) => setFbaDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>BIP Date</Label>
+                  <Input
+                    type="date"
+                    value={bipDate}
+                    onChange={(e) => setBipDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Diagnoses */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4" />
+                  Diagnoses
+                </Label>
+                <Textarea
+                  value={diagnosesText}
+                  onChange={(e) => setDiagnosesText(e.target.value)}
+                  placeholder="Enter diagnoses, separated by commas (e.g., ASD, ADHD, Anxiety)"
+                  className="min-h-[60px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separate multiple diagnoses with commas
+                </p>
+              </div>
+            </div>
+
+            {/* === CASE MANAGEMENT SECTION === */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Case Management</h4>
+
+              {/* Supervisor & Status */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Primary Supervisor
+                  </Label>
+                  <Select value={primarySupervisorStaffId} onValueChange={setPrimarySupervisorStaffId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select supervisor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supervisors.map((s) => (
+                        <SelectItem key={s.user_id} value={s.user_id}>
+                          {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credential})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Activation Status</Label>
+                  <Select value={activationStatus} onValueChange={setActivationStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTIVATION_STATUS_OPTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Case Opened Date */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Case Opened Date</Label>
+                  <Input
+                    type="date"
+                    value={caseOpenedDate}
+                    onChange={(e) => setCaseOpenedDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Case Types - Multi-select */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  Case Type(s)
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {CASE_TYPES.map((type) => (
+                    <div key={type} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`case-${type}`}
+                        checked={caseTypes.includes(type)}
+                        onCheckedChange={() => toggleCaseType(type)}
+                      />
+                      <Label htmlFor={`case-${type}`} className="text-sm cursor-pointer">
+                        {CASE_TYPE_LABELS[type]}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Assessment Mode Toggle */}
+              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <FlaskConical className="w-4 h-4 text-warning" />
+                  <div>
+                    <Label className="font-medium">Assessment Mode</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Hides long-term programming, shows FBA tools only
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={assessmentMode}
+                  onCheckedChange={setAssessmentMode}
+                />
+              </div>
+            </div>
+          </div>
         ) : (
           /* Display Mode */
           <div className="space-y-3">
             {/* Name Info */}
             {(student.firstName || student.lastName) && (
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <User className="w-4 h-4 text-muted-foreground" />
-                <span>{student.firstName} {student.lastName}</span>
+                <span className="font-medium">{student.firstName} {student.lastName}</span>
                 {student.displayName && (
                   <Badge variant="outline" className="text-xs">
                     "{student.displayName}"
+                  </Badge>
+                )}
+                {student.pronouns && (
+                  <Badge variant="secondary" className="text-xs">
+                    {student.pronouns}
                   </Badge>
                 )}
               </div>
@@ -331,19 +667,89 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
               </div>
             )}
 
-            {/* Grade */}
-            {student.grade && (
-              <div className="flex items-center gap-3 text-sm">
+            {/* Grade & Setting */}
+            {(student.grade || student.primarySetting) && (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                <span>{student.grade}</span>
+                {student.grade && <span>{student.grade}</span>}
+                {student.primarySetting && (
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    {student.primarySetting}
+                  </Badge>
+                )}
               </div>
             )}
 
-            {/* School */}
-            {student.school && (
+            {/* School & District */}
+            {(student.school || student.schoolName || student.districtName) && (
               <div className="flex items-center gap-3 text-sm">
                 <School className="w-4 h-4 text-muted-foreground" />
-                <span>{student.school}</span>
+                <span>{student.school || student.schoolName}</span>
+                {student.districtName && (
+                  <span className="text-muted-foreground">({student.districtName})</span>
+                )}
+              </div>
+            )}
+
+            {/* Supervisor */}
+            {supervisorName && (
+              <div className="flex items-center gap-3 text-sm">
+                <UserCheck className="w-4 h-4 text-muted-foreground" />
+                <span>Supervisor: {supervisorName}</span>
+              </div>
+            )}
+
+            {/* Clinical Milestones */}
+            {(student.iepDate || student.fbaDate || student.bipDate) && (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                {student.iepDate && (
+                  <Badge variant="outline" className="text-xs">
+                    IEP: {format(new Date(student.iepDate), 'MMM yyyy')}
+                  </Badge>
+                )}
+                {student.fbaDate && (
+                  <Badge variant="outline" className="text-xs">
+                    FBA: {format(new Date(student.fbaDate), 'MMM yyyy')}
+                  </Badge>
+                )}
+                {student.bipDate && (
+                  <Badge variant="outline" className="text-xs">
+                    BIP: {format(new Date(student.bipDate), 'MMM yyyy')}
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Diagnoses */}
+            {student.diagnoses && student.diagnoses.length > 0 && (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                <Stethoscope className="w-4 h-4 text-muted-foreground" />
+                <div className="flex flex-wrap gap-1">
+                  {student.diagnoses.map((dx, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {dx}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contact Info */}
+            {(student.contactEmail || student.contactPhone) && (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                {student.contactEmail && (
+                  <>
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span>{student.contactEmail}</span>
+                  </>
+                )}
+                {student.contactPhone && (
+                  <>
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span>{student.contactPhone}</span>
+                  </>
+                )}
               </div>
             )}
 
@@ -358,6 +764,18 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
                     </Badge>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Activation Status */}
+            {student.activationStatus && (
+              <div className="flex items-center gap-3 text-sm">
+                <Badge 
+                  variant={student.activationStatus === 'active' ? 'default' : 'outline'}
+                  className="text-xs capitalize"
+                >
+                  {student.activationStatus.replace('_', ' ')}
+                </Badge>
               </div>
             )}
 
