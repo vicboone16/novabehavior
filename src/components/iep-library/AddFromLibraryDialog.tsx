@@ -224,30 +224,37 @@ export function AddFromLibraryDialog({
           </Collapsible>
         </div>
 
-        {/* Results */}
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-2">
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading library items...
-              </div>
-            ) : availableItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No items found matching your criteria.
-              </div>
-            ) : (
-              availableItems.map(item => (
-                <LibraryItemRow
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedItems.includes(item.id)}
-                  onToggle={() => handleToggleItem(item.id)}
-                  onQuickAdd={handleQuickAdd}
-                />
-              ))
-            )}
-          </div>
-        </ScrollArea>
+        {/* Results - fixed height ScrollArea for proper scrolling */}
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-[400px] -mx-6 px-6">
+            <div className="space-y-2 pr-4">
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading library items...
+                </div>
+              ) : availableItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No items found matching your criteria.
+                </div>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Showing {availableItems.length} item(s)
+                  </div>
+                  {availableItems.map(item => (
+                    <LibraryItemRow
+                      key={item.id}
+                      item={item}
+                      isSelected={selectedItems.includes(item.id)}
+                      onToggle={() => handleToggleItem(item.id)}
+                      onQuickAdd={handleQuickAdd}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Footer Actions */}
         {selectedItems.length > 0 && (

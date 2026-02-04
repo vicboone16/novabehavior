@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { fetchAllRows } from '@/lib/supabasePagination';
 import type {
   IEPLibraryItem,
   StudentIEPSupport,
@@ -31,54 +32,57 @@ export function useIEPLibrary() {
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<IEPLibraryFilters>(DEFAULT_FILTERS);
 
-  // Fetch library items with filters
+  // Fetch library items with filters - uses pagination to avoid 1000 row limit
   const fetchLibraryItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      let query = supabase
-        .from('iep_library_items')
-        .select('*')
-        .eq('status', 'active');
+      // Build query factory for pagination helper
+      const buildQuery = (from: number, to: number) => {
+        let query = supabase
+          .from('iep_library_items')
+          .select('*')
+          .eq('status', 'active');
 
-      // Apply filters
-      if (filters.item_type !== 'all') {
-        query = query.eq('item_type', filters.item_type);
-      }
+        // Apply filters
+        if (filters.item_type !== 'all') {
+          query = query.eq('item_type', filters.item_type);
+        }
 
-      if (filters.domains.length > 0) {
-        query = query.overlaps('domains', filters.domains);
-      }
+        if (filters.domains.length > 0) {
+          query = query.overlaps('domains', filters.domains);
+        }
 
-      if (filters.disability_tags.length > 0) {
-        query = query.overlaps('disability_tags', filters.disability_tags);
-      }
+        if (filters.disability_tags.length > 0) {
+          query = query.overlaps('disability_tags', filters.disability_tags);
+        }
 
-      if (filters.grade_band.length > 0) {
-        query = query.overlaps('grade_band', filters.grade_band);
-      }
+        if (filters.grade_band.length > 0) {
+          query = query.overlaps('grade_band', filters.grade_band);
+        }
 
-      if (filters.setting_tags.length > 0) {
-        query = query.overlaps('setting_tags', filters.setting_tags);
-      }
+        if (filters.setting_tags.length > 0) {
+          query = query.overlaps('setting_tags', filters.setting_tags);
+        }
 
-      // Apply sorting
-      switch (filters.sort_by) {
-        case 'most_used':
-          query = query.order('usage_count', { ascending: false });
-          break;
-        case 'most_accepted':
-          query = query.order('acceptance_rate', { ascending: false });
-          break;
-        case 'recently_added':
-          query = query.order('created_at', { ascending: false });
-          break;
-        default:
-          query = query.order('title', { ascending: true });
-      }
+        // Apply sorting
+        switch (filters.sort_by) {
+          case 'most_used':
+            query = query.order('usage_count', { ascending: false });
+            break;
+          case 'most_accepted':
+            query = query.order('acceptance_rate', { ascending: false });
+            break;
+          case 'recently_added':
+            query = query.order('created_at', { ascending: false });
+            break;
+          default:
+            query = query.order('title', { ascending: true });
+        }
 
-      const { data, error } = await query;
+        return query.range(from, to);
+      };
 
-      if (error) throw error;
+      const data = await fetchAllRows<Record<string, unknown>>(buildQuery);
 
       // Client-side search filtering and type conversion
       let filteredData = (data || []).map(item => {
