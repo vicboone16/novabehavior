@@ -356,7 +356,7 @@ export function AgencySwitcher() {
                 <Badge variant="outline">{unassignedStudents} unassigned</Badge>
               </div>
               
-              <ScrollArea className="h-[300px] border rounded-lg">
+              <div className="h-[300px] border rounded-lg overflow-y-auto">
                 <div className="p-2 space-y-1">
                   {allStudents.length === 0 ? (
                     <p className="text-center py-4 text-muted-foreground">No clients found</p>
@@ -403,7 +403,7 @@ export function AgencySwitcher() {
                     })
                   )}
                 </div>
-              </ScrollArea>
+              </div>
               
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowManageClientsDialog(false)}>
