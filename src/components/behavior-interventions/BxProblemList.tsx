@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, AlertTriangle, Shield, AlertCircle, Info } from 'lucide-react';
+import { Search, AlertTriangle, Shield, AlertCircle, Info, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { BxPresentingProblem, RiskLevel } from '@/types/behaviorIntervention';
@@ -18,13 +19,15 @@ interface BxProblemListProps {
   loading: boolean;
   selectedProblem: BxPresentingProblem | null;
   onSelectProblem: (problem: BxPresentingProblem) => void;
+  onAddToStudent?: (problem: BxPresentingProblem) => void;
 }
 
 export function BxProblemList({ 
   problems, 
   loading, 
   selectedProblem, 
-  onSelectProblem 
+  onSelectProblem,
+  onAddToStudent
 }: BxProblemListProps) {
   const [search, setSearch] = useState('');
 
@@ -62,41 +65,61 @@ export function BxProblemList({
             filtered.map((problem) => {
               const risk = RISK_CONFIG[problem.risk_level];
               return (
-                <button
+                <div
                   key={problem.id}
-                  onClick={() => onSelectProblem(problem)}
                   className={cn(
                     "w-full text-left p-3 rounded-lg transition-colors",
                     "hover:bg-accent border border-transparent",
                     selectedProblem?.id === problem.id && "bg-accent border-border"
                   )}
                 >
-                  <div className="flex items-start gap-2">
-                    <Badge 
-                      variant="outline" 
-                      className={cn("text-xs shrink-0", risk.color)}
-                    >
-                      {risk.icon}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {problem.problem_code}
-                        </span>
-                      </div>
-                      <h4 className="font-medium text-sm truncate">{problem.title}</h4>
-                      {problem.function_tags && problem.function_tags.length > 0 && (
-                        <div className="flex gap-1 mt-1 flex-wrap">
-                          {problem.function_tags.slice(0, 3).map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs capitalize">
-                              {tag}
-                            </Badge>
-                          ))}
+                  <button
+                    onClick={() => onSelectProblem(problem)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Badge 
+                        variant="outline" 
+                        className={cn("text-xs shrink-0", risk.color)}
+                      >
+                        {risk.icon}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {problem.problem_code}
+                          </span>
                         </div>
-                      )}
+                        <h4 className="font-medium text-sm truncate">{problem.title}</h4>
+                        {problem.function_tags && problem.function_tags.length > 0 && (
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {problem.function_tags.slice(0, 3).map(tag => (
+                              <Badge key={tag} variant="secondary" className="text-xs capitalize">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  {onAddToStudent && (
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddToStudent(problem);
+                        }}
+                      >
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Add to Student
+                      </Button>
+                    </div>
+                  )}
+                </div>
               );
             })
           )}

@@ -8,3 +8,4 @@ export { ServicesAuthorizationsTab } from './ServicesAuthorizationsTab';
 export { DocumentsTab } from './DocumentsTab';
 export { CommunicationLogTab } from './CommunicationLogTab';
 export { TagsCaseAttributesTab } from './TagsCaseAttributesTab';
+export { CommunicationCombinedTab } from './CommunicationCombinedTab';
