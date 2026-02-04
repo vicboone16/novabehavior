@@ -14,7 +14,8 @@ import {
   UserPlus,
   DollarSign,
   BarChart3,
-  BookOpen
+  BookOpen,
+  Smartphone
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -26,12 +27,19 @@ import { AgencySwitcher } from '@/components/AgencySwitcher';
 import { useSync } from '@/contexts/SyncContext';
 import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotification';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsDeviceMobile } from '@/hooks/use-mobile';
+import { useMobilePreference } from '@/hooks/useMobilePreference';
 
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isLoading } = useSync();
   const { userRole } = useAuth();
+  const isDeviceMobile = useIsDeviceMobile();
+  const { preference, setMobilePreference } = useMobilePreference();
+  
+  // Show "Return to Mobile" button when user opted for desktop on a mobile device
+  const showMobileButton = isDeviceMobile && preference === 'desktop';
   
   // Check if user can view notes review (admin or super_admin)
   const canViewNotesReview = userRole === 'admin' || userRole === 'super_admin';
@@ -233,6 +241,18 @@ export default function MainLayout() {
       <main className="container py-4">
         <Outlet />
       </main>
+
+      {/* Floating "Return to Mobile View" button when opted for desktop on mobile */}
+      {showMobileButton && (
+        <Button
+          onClick={() => setMobilePreference('auto')}
+          className="fixed bottom-4 right-4 z-40 shadow-lg gap-2"
+          size="sm"
+        >
+          <Smartphone className="w-4 h-4" />
+          Mobile View
+        </Button>
+      )}
     </div>
   );
 }
