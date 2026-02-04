@@ -121,6 +121,7 @@ export function SessionEndFlow({
     try {
       const now = new Date();
       const sessionStart = sessionStartTime || now;
+      const sessionMinutes = Math.max(0, (now.getTime() - sessionStart.getTime()) / 60000);
       
       // End sessions for all target students
       for (const student of targetStudents) {
@@ -189,6 +190,25 @@ export function SessionEndFlow({
             });
           }
         }
+      }
+
+      // Mark the parent session as completed so it doesn't remain "active" across devices
+      if (currentSessionId && user?.id) {
+        await supabase
+          .from('sessions')
+          .upsert(
+            {
+              id: currentSessionId,
+              user_id: user.id,
+              name: `Session - ${mode === 'all' ? `${targetStudents.length} students` : (targetStudents[0]?.name || 'Student')}`,
+              start_time: sessionStart.toISOString(),
+              end_time: now.toISOString(),
+              session_length_minutes: Math.round(sessionMinutes),
+              student_ids: targetStudentIds,
+              status: 'completed',
+            } as any,
+            { onConflict: 'id' }
+          );
       }
 
       // Move to note decision step

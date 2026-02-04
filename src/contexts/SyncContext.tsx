@@ -50,6 +50,59 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const currentSessionId = useDataStore((state) => state.currentSessionId);
   const sessionStartTime = useDataStore((state) => state.sessionStartTime);
   const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
+  const sessionLengthMinutes = useDataStore((state) => state.sessionLengthMinutes);
+
+  // Track live-session presence sync to support cross-device resume even before any data rows exist.
+  const lastPresenceKeyRef = useRef<string>('');
+  const presenceSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastKnownActiveSessionIdRef = useRef<string | null>(null);
+
+  const syncLiveSessionPresence = useCallback(async () => {
+    if (!user) return;
+    if (!currentSessionId || !sessionStartTime || selectedStudentIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .upsert(
+          {
+            id: currentSessionId,
+            user_id: user.id,
+            name: 'Active Session',
+            start_time: new Date(sessionStartTime).toISOString(),
+            session_length_minutes: sessionLengthMinutes,
+            interval_length_seconds: 15,
+            student_ids: selectedStudentIds,
+            status: 'active',
+          } as any,
+          { onConflict: 'id' }
+        );
+
+      if (error) {
+        console.error('[Sync] Failed to sync live session presence:', error);
+      } else {
+        lastKnownActiveSessionIdRef.current = currentSessionId;
+      }
+    } catch (e) {
+      // Defensive: never allow presence sync to create an unhandled rejection.
+      console.error('[Sync] Presence sync threw:', e);
+    }
+  }, [user, currentSessionId, sessionStartTime, selectedStudentIds, sessionLengthMinutes]);
+
+  const markLiveSessionCompleted = useCallback(async (sessionId: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+
+      if (error) console.error('[Sync] Failed to mark session completed:', error);
+    } catch (e) {
+      console.error('[Sync] Mark completed threw:', e);
+    }
+  }, [user]);
 
   const clearLocalCache = useCallback(() => {
     // On some mobile browsers / privacy modes, localStorage can throw.
@@ -634,6 +687,36 @@ export function SyncProvider({ children }: SyncProviderProps) {
       setIsLoading(false);
     }
   }, [user]);
+
+  // Ensure other devices can discover the active session immediately (even if no data has been recorded yet)
+  useEffect(() => {
+    if (!user || !hasFetched.current || isLoading) return;
+
+    // If we had an active session and it was cleared locally, mark it completed in the backend.
+    if ((!currentSessionId || !sessionStartTime) && lastKnownActiveSessionIdRef.current) {
+      const toComplete = lastKnownActiveSessionIdRef.current;
+      lastKnownActiveSessionIdRef.current = null;
+      void markLiveSessionCompleted(toComplete);
+    }
+
+    const presenceKey = `${currentSessionId || ''}|${sessionStartTime ? new Date(sessionStartTime).toISOString() : ''}|${selectedStudentIds.join(',')}`;
+    if (!currentSessionId || !sessionStartTime || selectedStudentIds.length === 0) return;
+    if (presenceKey === lastPresenceKeyRef.current) return;
+
+    lastPresenceKeyRef.current = presenceKey;
+
+    if (presenceSyncTimeoutRef.current) {
+      clearTimeout(presenceSyncTimeoutRef.current);
+    }
+
+    presenceSyncTimeoutRef.current = setTimeout(() => {
+      void syncLiveSessionPresence();
+    }, 700);
+
+    return () => {
+      if (presenceSyncTimeoutRef.current) clearTimeout(presenceSyncTimeoutRef.current);
+    };
+  }, [user, isLoading, currentSessionId, sessionStartTime, selectedStudentIds, syncLiveSessionPresence, markLiveSessionCompleted]);
 
   const reloadFromCloud = useCallback(async () => {
     if (!user) return;
@@ -1266,6 +1349,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 };
               });
             }
+          } catch (e) {
+            console.error('[Sync] Realtime students handler error:', e);
           } finally {
             setTimeout(() => {
               isProcessingRealtimeRef.current = false;
@@ -1283,81 +1368,88 @@ export function SyncProvider({ children }: SyncProviderProps) {
         },
         async (payload) => {
           if (isProcessingRealtimeRef.current) return;
-          
-          const session = payload.new as any;
-          const existingSession = useDataStore.getState().sessions.find(s => s.id === session.id);
-          
-          if (!existingSession) {
-            // Fetch session data entries for this session
-            const { data: sessionDataEntries } = await supabase
-              .from('session_data')
-              .select('*')
-              .eq('session_id', session.id)
-              .order('timestamp', { ascending: true });
-              
-            const entries = sessionDataEntries || [];
-            
-            const mappedSession: Session = {
-              id: session.id,
-              date: new Date(session.start_time),
-              notes: session.name || '',
-              studentIds: session.student_ids || [],
-              sessionLengthMinutes: session.session_length_minutes,
-              abcEntries: entries
-                .filter(e => e.event_type === 'abc')
-                .map(e => ({
-                  id: e.id,
-                  studentId: e.student_id,
-                  behaviorId: e.behavior_id,
-                  antecedent: (e.abc_data as any)?.antecedent || '',
-                  behavior: (e.abc_data as any)?.behavior || '',
-                  consequence: (e.abc_data as any)?.consequence || '',
-                  frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
-                  timestamp: new Date(e.timestamp),
-                  sessionId: e.session_id,
-                })),
-              frequencyEntries: entries
-                .filter(e => e.event_type === 'frequency')
-                .map(e => ({
-                  id: e.id,
-                  studentId: e.student_id,
-                  behaviorId: e.behavior_id,
-                  count: (e.abc_data as any)?.count || 1,
-                  timestamp: new Date(e.timestamp),
-                  timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
-                  sessionId: e.session_id,
-                })),
-              durationEntries: entries
-                .filter(e => e.event_type === 'duration')
-                .map(e => ({
-                  id: e.id,
-                  studentId: e.student_id,
-                  behaviorId: e.behavior_id,
-                  duration: e.duration_seconds || 0,
-                  startTime: new Date(e.timestamp),
-                  endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
-                  sessionId: e.session_id,
-                })),
-              intervalEntries: entries
-                .filter(e => e.event_type === 'interval')
-                .map(e => ({
-                  id: e.id,
-                  studentId: e.student_id,
-                  behaviorId: e.behavior_id,
-                  intervalNumber: e.interval_index || 0,
-                  occurred: (e.abc_data as any)?.occurred || false,
-                  timestamp: new Date(e.timestamp),
-                  voided: (e.abc_data as any)?.voided,
-                  voidReason: (e.abc_data as any)?.voidReason,
-                  sessionId: e.session_id,
-                })),
-            };
-            
-            useDataStore.setState((state) => {
-              const newSessions = [mappedSession, ...state.sessions];
-              previousSessionsRef.current = JSON.stringify(newSessions.map(s => s.id));
-              return { sessions: newSessions };
-            });
+          try {
+            const session = payload.new as any;
+            const existingSession = useDataStore.getState().sessions.find(s => s.id === session.id);
+
+            if (!existingSession) {
+              // Fetch session data entries for this session
+              const { data: sessionDataEntries, error: sessionDataError } = await supabase
+                .from('session_data')
+                .select('*')
+                .eq('session_id', session.id)
+                .order('timestamp', { ascending: true });
+
+              if (sessionDataError) {
+                console.error('[Sync] Realtime sessions handler failed to load session_data:', sessionDataError);
+              }
+
+              const entries = sessionDataEntries || [];
+
+              const mappedSession: Session = {
+                id: session.id,
+                date: new Date(session.start_time),
+                notes: session.name || '',
+                studentIds: session.student_ids || [],
+                sessionLengthMinutes: session.session_length_minutes,
+                abcEntries: entries
+                  .filter(e => e.event_type === 'abc')
+                  .map(e => ({
+                    id: e.id,
+                    studentId: e.student_id,
+                    behaviorId: e.behavior_id,
+                    antecedent: (e.abc_data as any)?.antecedent || '',
+                    behavior: (e.abc_data as any)?.behavior || '',
+                    consequence: (e.abc_data as any)?.consequence || '',
+                    frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
+                    timestamp: new Date(e.timestamp),
+                    sessionId: e.session_id,
+                  })),
+                frequencyEntries: entries
+                  .filter(e => e.event_type === 'frequency')
+                  .map(e => ({
+                    id: e.id,
+                    studentId: e.student_id,
+                    behaviorId: e.behavior_id,
+                    count: (e.abc_data as any)?.count || 1,
+                    timestamp: new Date(e.timestamp),
+                    timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
+                    sessionId: e.session_id,
+                  })),
+                durationEntries: entries
+                  .filter(e => e.event_type === 'duration')
+                  .map(e => ({
+                    id: e.id,
+                    studentId: e.student_id,
+                    behaviorId: e.behavior_id,
+                    duration: e.duration_seconds || 0,
+                    startTime: new Date(e.timestamp),
+                    endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
+                    sessionId: e.session_id,
+                  })),
+                intervalEntries: entries
+                  .filter(e => e.event_type === 'interval')
+                  .map(e => ({
+                    id: e.id,
+                    studentId: e.student_id,
+                    behaviorId: e.behavior_id,
+                    intervalNumber: e.interval_index || 0,
+                    occurred: (e.abc_data as any)?.occurred || false,
+                    timestamp: new Date(e.timestamp),
+                    voided: (e.abc_data as any)?.voided,
+                    voidReason: (e.abc_data as any)?.voidReason,
+                    sessionId: e.session_id,
+                  })),
+              };
+
+              useDataStore.setState((state) => {
+                const newSessions = [mappedSession, ...state.sessions];
+                previousSessionsRef.current = JSON.stringify(newSessions.map(s => s.id));
+                return { sessions: newSessions };
+              });
+            }
+          } catch (e) {
+            console.error('[Sync] Realtime sessions handler error:', e);
           }
         }
       )
@@ -1384,7 +1476,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
     }
 
     const timeout = setTimeout(() => {
-      syncToCloud();
+      // Defensive: never allow auto-sync to create an unhandled rejection
+      void syncToCloud();
     }, 2000);
 
     return () => clearTimeout(timeout);
@@ -1406,7 +1499,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
     const hasNewSessions = sessions.some(s => !previousIds.has(s.id));
     
     if (hasNewSessions) {
-      syncToCloud();
+      // Defensive: never allow auto-sync to create an unhandled rejection
+      void syncToCloud();
     }
     
     previousSessionsRef.current = currentSessionIds;
