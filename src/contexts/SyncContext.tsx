@@ -176,6 +176,15 @@ export function SyncProvider({ children }: SyncProviderProps) {
               timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
             })),
           } : { frequencyEntries: [], durationEntries: [] },
+          // Brief Record Review (single instance)
+          briefRecordReview: s.brief_record_review || null,
+          // Brief Teacher Inputs (multiple respondents)
+          briefTeacherInputs: Array.isArray(s.brief_teacher_inputs) 
+            ? s.brief_teacher_inputs.map((input: any) => ({
+                ...input,
+                date: input.date ? new Date(input.date) : new Date(),
+              }))
+            : [],
         }));
 
         const goals = studentsData.flatMap((s) => {
@@ -764,6 +773,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
               })),
             } : { frequencyEntries: [], durationEntries: [] },
+            // Brief Record Review (single instance)
+            brief_record_review: student.briefRecordReview || null,
+            // Brief Teacher Inputs (multiple respondents)
+            brief_teacher_inputs: (student.briefTeacherInputs || []).map(input => ({
+              ...input,
+              date: input.date ? new Date(input.date).toISOString() : new Date().toISOString(),
+            })),
           } as any, { onConflict: 'id' });
       }
 

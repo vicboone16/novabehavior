@@ -86,14 +86,19 @@ export function StaffAssignmentsTab({
 
   const loadAvailableStaff = async () => {
     try {
+      // Load all staff with supervisor credentials (BCBA, BCaBA) OR admins
+      // Also include the current user's own profile so they can assign themselves
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, display_name, first_name, last_name, credential')
-        .in('credential', ['BCBA', 'BCaBA'])
-        .neq('user_id', userId);
+        .or(`credential.in.(BCBA,BCaBA),user_id.eq.${userId}`);
 
       if (error) throw error;
-      setAvailableStaff(data || []);
+      // Filter out duplicates (in case current user is already a BCBA)
+      const uniqueStaff = data?.filter((staff, index, self) => 
+        index === self.findIndex(s => s.user_id === staff.user_id)
+      ) || [];
+      setAvailableStaff(uniqueStaff);
     } catch (error) {
       console.error('Error loading staff:', error);
     }
