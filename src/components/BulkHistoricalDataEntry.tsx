@@ -3,7 +3,7 @@ import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isValid, pa
 import { 
   Users, Calendar, Save, X, Check, Minus, 
   ChevronDown, ChevronUp, AlertCircle, Timer, Grid3X3, TrendingUp,
-  Edit2, Clock
+  Edit2, Clock, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,109 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
-import { Behavior } from '@/types/behavior';
+import { Behavior, BehaviorDefinition, DataCollectionMethod } from '@/types/behavior';
+
+// Default behavior bank (same as in BehaviorLibrary and HistoricalDataEntry)
+const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
+  {
+    id: 'aggression-physical',
+    name: 'Physical Aggression',
+    operationalDefinition: 'Any instance of forceful physical contact towards another person including hitting, kicking, biting, scratching, pushing, or throwing objects at others with apparent intent to harm or intimidate.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'aggression-verbal',
+    name: 'Verbal Aggression',
+    operationalDefinition: 'Vocalized threats, name-calling, or hostile statements directed at others, including yelling obscenities, making threats of harm, or using derogatory language.',
+    category: 'Aggression',
+    isGlobal: true,
+  },
+  {
+    id: 'sib',
+    name: 'Self-Injurious Behavior',
+    operationalDefinition: 'Any behavior that results in or has the potential to result in physical injury to oneself, including head-banging, biting self, hitting self, scratching self, or hair pulling.',
+    category: 'Self-Injury',
+    isGlobal: true,
+  },
+  {
+    id: 'property-destruction',
+    name: 'Property Destruction',
+    operationalDefinition: 'Any instance of damaging, breaking, or attempting to destroy property, including throwing objects, tearing materials, breaking items, or defacing property.',
+    category: 'Property Destruction',
+    isGlobal: true,
+  },
+  {
+    id: 'elopement',
+    name: 'Elopement',
+    operationalDefinition: 'Leaving or attempting to leave a designated area without permission, including running away, walking out of the classroom, or leaving the school grounds without authorization.',
+    category: 'Elopement',
+    isGlobal: true,
+  },
+  {
+    id: 'non-compliance',
+    name: 'Non-Compliance',
+    operationalDefinition: 'Failure to initiate a response to an instruction within 10 seconds of the instruction being given, or failure to complete the instructed task.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'task-refusal',
+    name: 'Task Refusal',
+    operationalDefinition: 'Verbal or non-verbal indication that the individual will not complete a requested task, including saying "no", shaking head, pushing materials away, or stating refusal.',
+    category: 'Non-Compliance',
+    isGlobal: true,
+  },
+  {
+    id: 'verbal-disruption',
+    name: 'Verbal Disruption',
+    operationalDefinition: 'Vocalizations that interrupt ongoing instruction or activities, including talking out of turn, making loud noises, singing, humming loudly, or calling out during lessons.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'out-of-seat',
+    name: 'Out of Seat',
+    operationalDefinition: 'Leaving assigned seat without permission, including standing up, walking around the classroom, or moving to a different location during instruction.',
+    category: 'Verbal Disruption',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-motor',
+    name: 'Motor Stereotypy',
+    operationalDefinition: 'Repetitive motor movements that appear to have no adaptive function, including hand flapping, body rocking, finger flicking, spinning, or repetitive object manipulation.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'stereotypy-vocal',
+    name: 'Vocal Stereotypy',
+    operationalDefinition: 'Repetitive vocalizations that do not serve a communicative function, including scripting, echolalia, repetitive sounds, or humming.',
+    category: 'Stereotypy',
+    isGlobal: true,
+  },
+  {
+    id: 'on-task',
+    name: 'On-Task Behavior',
+    operationalDefinition: 'Engagement in assigned task activities including looking at materials, writing, participating in discussions, following along during instruction, or completing work independently.',
+    category: 'Academic',
+    isGlobal: true,
+  },
+  {
+    id: 'hand-raising',
+    name: 'Appropriate Hand Raising',
+    operationalDefinition: 'Raising hand quietly and waiting to be called on before speaking during classroom instruction or group activities.',
+    category: 'Social Skills',
+    isGlobal: true,
+  },
+  {
+    id: 'appropriate-request',
+    name: 'Appropriate Requesting',
+    operationalDefinition: 'Using words, signs, or AAC device to request wants or needs in a calm voice without engaging in problem behavior.',
+    category: 'Communication',
+    isGlobal: true,
+  },
+];
 
 // Custom hook for debounced date inputs
 function useDebouncedDateRange(initialStart: string, initialEnd: string, delay: number = 500) {
@@ -133,11 +235,19 @@ interface BulkHistoricalDataEntryProps {
 }
 
 export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDataEntryProps) {
-  const { students, addHistoricalFrequencyBatch, addHistoricalDurationBatch, recordInterval } = useDataStore();
+  const { 
+    students, 
+    addHistoricalFrequencyBatch, 
+    addHistoricalDurationBatch, 
+    recordInterval,
+    addBehaviorWithMethods,
+    globalBehaviorBank,
+    behaviorDefinitionOverrides,
+  } = useDataStore();
   
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]);
+  const [selectedBehaviorIds, setSelectedBehaviorIds] = useState<string[]>([]); // Now stores behavior names (normalized)
   
   // Use debounced date range to prevent freezing when typing
   const initialStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -180,10 +290,35 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     [students]
   );
 
-  // Get all unique behaviors across selected students
+  // Get effective default behaviors with overrides applied
+  const effectiveDefaultBehaviors = useMemo(() => {
+    return DEFAULT_BEHAVIORS.map(behavior => {
+      const override = behaviorDefinitionOverrides[behavior.id];
+      if (override) {
+        return {
+          ...behavior,
+          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+          category: override.category || behavior.category,
+        };
+      }
+      return behavior;
+    });
+  }, [behaviorDefinitionOverrides]);
+
+  // Get ALL behaviors: student behaviors + bank behaviors (deduplicated by name)
+  // This allows selecting any behavior from the bank even if no student has it yet
   const availableBehaviors = useMemo(() => {
-    const behaviorMap = new Map<string, Behavior & { studentIds: string[] }>();
+    const behaviorMap = new Map<string, { 
+      id: string;
+      name: string;
+      operationalDefinition?: string;
+      category?: string;
+      studentIds: string[]; // Which students already have this behavior
+      source: 'student' | 'built-in' | 'organization';
+      baseBehaviorId?: string; // For bank behaviors, the original ID
+    }>();
     
+    // First, add all behaviors from selected students
     selectedStudentIds.forEach(studentId => {
       const student = activeStudents.find(s => s.id === studentId);
       if (!student) return;
@@ -191,18 +326,59 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       student.behaviors
         .filter(b => !b.isArchived && !b.isMastered)
         .forEach(behavior => {
-          const key = behavior.name.toLowerCase();
+          const key = behavior.name.toLowerCase().trim();
           const existing = behaviorMap.get(key);
           if (existing) {
-            existing.studentIds.push(studentId);
+            if (!existing.studentIds.includes(studentId)) {
+              existing.studentIds.push(studentId);
+            }
           } else {
-            behaviorMap.set(key, { ...behavior, studentIds: [studentId] });
+            behaviorMap.set(key, { 
+              id: behavior.id,
+              name: behavior.name,
+              operationalDefinition: behavior.operationalDefinition,
+              category: behavior.category,
+              studentIds: [studentId],
+              source: 'student',
+            });
           }
         });
     });
     
-    return Array.from(behaviorMap.values());
-  }, [selectedStudentIds, activeStudents]);
+    // Then, add built-in behaviors that aren't already in the map
+    effectiveDefaultBehaviors.forEach(behavior => {
+      const key = behavior.name.toLowerCase().trim();
+      if (!behaviorMap.has(key)) {
+        behaviorMap.set(key, {
+          id: `bank-${behavior.id}`,
+          name: behavior.name,
+          operationalDefinition: behavior.operationalDefinition,
+          category: behavior.category,
+          studentIds: [], // No students have this yet
+          source: 'built-in',
+          baseBehaviorId: behavior.id,
+        });
+      }
+    });
+    
+    // Finally, add organization behaviors that aren't already in the map
+    globalBehaviorBank.forEach(behavior => {
+      const key = behavior.name.toLowerCase().trim();
+      if (!behaviorMap.has(key)) {
+        behaviorMap.set(key, {
+          id: `bank-${behavior.id}`,
+          name: behavior.name,
+          operationalDefinition: behavior.operationalDefinition,
+          category: behavior.category,
+          studentIds: [], // No students have this yet
+          source: 'organization',
+          baseBehaviorId: behavior.id,
+        });
+      }
+    });
+    
+    return Array.from(behaviorMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedStudentIds, activeStudents, effectiveDefaultBehaviors, globalBehaviorBank]);
 
   // Generate dates from range
   const dates = useMemo(() => {
@@ -251,7 +427,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     });
   };
 
-  // Apply defaults to all cells
+  // Apply defaults to all cells (using behavior name as key for bank behaviors)
   const applyDefaultsToAll = () => {
     const newData: BulkDataMap = {};
     
@@ -260,13 +436,22 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       if (!student) return;
 
       selectedBehaviorIds.forEach(behaviorName => {
-        const behavior = student.behaviors.find(b => 
-          b.name.toLowerCase() === behaviorName.toLowerCase() && !b.isArchived && !b.isMastered
+        // First check if student has the behavior
+        const existingBehavior = student.behaviors.find(b => 
+          b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim() && !b.isArchived && !b.isMastered
         );
-        if (!behavior) return;
+        
+        // Get the behavior info from available behaviors (for bank behaviors)
+        const bankBehaviorInfo = availableBehaviors.find(
+          b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+        );
+        
+        // Use existing behavior ID if available, otherwise use the bank behavior ID
+        const behaviorId = existingBehavior?.id || bankBehaviorInfo?.id;
+        if (!behaviorId) return;
 
         dates.forEach(date => {
-          const key = getCellKey(studentId, behavior.id, date);
+          const key = getCellKey(studentId, behaviorId, date);
           newData[key] = {
             status: defaultStatus,
             count: defaultStatus === 'zero' ? 0 : defaultCount,
@@ -290,13 +475,22 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     if (!student) return;
 
     selectedBehaviorIds.forEach(behaviorName => {
-      const behavior = student.behaviors.find(b => 
-        b.name.toLowerCase() === behaviorName.toLowerCase() && !b.isArchived && !b.isMastered
+      // First check if student has the behavior
+      const existingBehavior = student.behaviors.find(b => 
+        b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim() && !b.isArchived && !b.isMastered
       );
-      if (!behavior) return;
+      
+      // Get the behavior info from available behaviors (for bank behaviors)
+      const bankBehaviorInfo = availableBehaviors.find(
+        b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+      );
+      
+      // Use existing behavior ID if available, otherwise use the bank behavior ID
+      const behaviorId = existingBehavior?.id || bankBehaviorInfo?.id;
+      if (!behaviorId) return;
 
       dates.forEach(date => {
-        setCellData(studentId, behavior.id, date, { 
+        setCellData(studentId, behaviorId, date, { 
           status, 
           count: status === 'zero' ? 0 : (status === 'collected' ? 1 : 0),
           occurredIntervals: status === 'zero' ? [] : undefined,
@@ -314,21 +508,56 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     );
   };
 
+  // Helper to get or create behavior ID for a student
+  const getOrCreateBehaviorId = (studentId: string, behaviorName: string): string | null => {
+    const student = activeStudents.find(s => s.id === studentId);
+    if (!student) return null;
+
+    // Check if student already has this behavior
+    const existingBehavior = student.behaviors.find(
+      b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim() && !b.isArchived
+    );
+    
+    if (existingBehavior) {
+      return existingBehavior.id;
+    }
+
+    // Student doesn't have this behavior - add it from the bank
+    const bankBehavior = availableBehaviors.find(
+      b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+    );
+
+    if (!bankBehavior) return null;
+
+    // Determine methods based on data type
+    const methods: DataCollectionMethod[] = dataType === 'interval' 
+      ? ['interval', 'frequency'] 
+      : ['frequency'];
+
+    // Add the behavior to the student
+    addBehaviorWithMethods(studentId, bankBehavior.name, methods, {
+      operationalDefinition: bankBehavior.operationalDefinition,
+      category: bankBehavior.category,
+      baseBehaviorId: bankBehavior.baseBehaviorId,
+    });
+
+    // Get the newly created behavior ID from the updated store
+    const updatedStudents = useDataStore.getState().students;
+    const updatedStudent = updatedStudents.find(s => s.id === studentId);
+    const newBehavior = updatedStudent?.behaviors.find(
+      b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+    );
+
+    return newBehavior?.id || null;
+  };
+
   // Handle save with batching to prevent freeze
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
 
-    const parseBulkKey = (key: string) => {
-      // Key format: studentId-behaviorId-yyyy-MM-dd
-      // NOTE: studentId and behaviorId are UUIDs that contain dashes.
-      // We parse deterministically from the end using the fixed date length.
-      const dateStr = key.slice(-10);
-      const rest = key.slice(0, -(10 + 1)); // strip trailing '-' before date
-      const studentId = rest.slice(0, 36);
-      const behaviorId = rest.slice(37); // skip '-' between ids
-      return { studentId, behaviorId, dateStr };
-    };
+    // Track which behaviors were added to which students
+    const behaviorsAdded: { studentName: string; behaviorName: string }[] = [];
 
     const frequencyEntries: Array<{
       studentId: string;
@@ -347,56 +576,108 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     
     let skippedCount = 0;
 
-    // Collect all entries first without triggering state updates
-    Object.entries(bulkData).forEach(([key, data]) => {
-      if (data.status === 'no_data') {
-        skippedCount++;
-        return;
-      }
+    // Process each selected behavior for each selected student
+    selectedBehaviorIds.forEach(behaviorName => {
+      selectedStudentIds.forEach(studentId => {
+        const student = activeStudents.find(s => s.id === studentId);
+        if (!student) return;
 
-      const { studentId, behaviorId, dateStr } = parseBulkKey(key);
-      const timestamp = new Date(dateStr + 'T12:00:00');
+        // Check if student already has this behavior
+        const existingBehavior = student.behaviors.find(
+          b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim() && !b.isArchived
+        );
 
-      if (dataType === 'frequency') {
-        // Collect frequency entry
-        frequencyEntries.push({
-          studentId,
-          behaviorId,
-          count: data.status === 'zero' ? 0 : data.count,
-          timestamp,
-          observationDurationMinutes: data.observationMinutes,
-        });
-
-        // Collect duration if present
-        if (data.durationSeconds && data.durationSeconds > 0) {
-          durationEntries.push({
-            studentId,
-            behaviorId,
-            durationSeconds: data.durationSeconds,
-            timestamp,
-          });
-        }
-      } else if (dataType === 'interval') {
-        // Record interval data (still individual calls for now)
-        const total = data.totalIntervals || defaultTotalIntervals;
-        const occurred = data.occurredIntervals || [];
+        let behaviorId: string;
         
-        for (let i = 0; i < total; i++) {
-          recordInterval(studentId, behaviorId, i, occurred.includes(i));
+        if (existingBehavior) {
+          behaviorId = existingBehavior.id;
+        } else {
+          // Need to add behavior to student
+          const bankBehavior = availableBehaviors.find(
+            b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+          );
+
+          if (!bankBehavior) return;
+
+          // Determine methods based on data type
+          const methods: DataCollectionMethod[] = dataType === 'interval' 
+            ? ['interval', 'frequency'] 
+            : ['frequency'];
+
+          // Add the behavior to the student
+          addBehaviorWithMethods(studentId, bankBehavior.name, methods, {
+            operationalDefinition: bankBehavior.operationalDefinition,
+            category: bankBehavior.category,
+            baseBehaviorId: bankBehavior.baseBehaviorId,
+          });
+
+          // Get the newly created behavior ID
+          const updatedStudents = useDataStore.getState().students;
+          const updatedStudent = updatedStudents.find(s => s.id === studentId);
+          const newBehavior = updatedStudent?.behaviors.find(
+            b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+          );
+
+          if (!newBehavior) return;
+          
+          behaviorId = newBehavior.id;
+          behaviorsAdded.push({ studentName: student.name, behaviorName: bankBehavior.name });
         }
-      }
+
+        // Now process all dates for this student-behavior combination
+        dates.forEach(date => {
+          const key = getCellKey(studentId, behaviorId, date);
+          // Also check for keys using the bank behavior ID format
+          const bankBehaviorInfo = availableBehaviors.find(
+            b => b.name.toLowerCase().trim() === behaviorName.toLowerCase().trim()
+          );
+          const altKey = bankBehaviorInfo ? getCellKey(studentId, bankBehaviorInfo.id, date) : null;
+          
+          const data = bulkData[key] || (altKey ? bulkData[altKey] : null);
+          
+          if (!data || data.status === 'no_data') {
+            if (data) skippedCount++;
+            return;
+          }
+
+          const timestamp = new Date(format(date, 'yyyy-MM-dd') + 'T12:00:00');
+
+          if (dataType === 'frequency') {
+            frequencyEntries.push({
+              studentId,
+              behaviorId,
+              count: data.status === 'zero' ? 0 : data.count,
+              timestamp,
+              observationDurationMinutes: data.observationMinutes,
+            });
+
+            if (data.durationSeconds && data.durationSeconds > 0) {
+              durationEntries.push({
+                studentId,
+                behaviorId,
+                durationSeconds: data.durationSeconds,
+                timestamp,
+              });
+            }
+          } else if (dataType === 'interval') {
+            const total = data.totalIntervals || defaultTotalIntervals;
+            const occurred = data.occurredIntervals || [];
+            
+            for (let i = 0; i < total; i++) {
+              recordInterval(studentId, behaviorId, i, occurred.includes(i));
+            }
+          }
+        });
+      });
     });
 
     try {
-      // Yield once so the UI can paint before the (potentially large) persist write.
       await new Promise((r) => setTimeout(r, 0));
 
-      // Batch save all frequency entries in one state update
       if (frequencyEntries.length > 0) {
         addHistoricalFrequencyBatch(frequencyEntries);
       }
 
-      // Batch save all duration entries in one state update
       if (durationEntries.length > 0) {
         addHistoricalDurationBatch(durationEntries);
       }
@@ -406,9 +687,14 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
         : Object.keys(bulkData).filter((k) => bulkData[k].status !== 'no_data').length;
 
       if (savedCount > 0) {
-        toast.success(
-          `Saved ${savedCount} ${dataType} entries${skippedCount > 0 ? ` (${skippedCount} skipped - no data)` : ''}`
-        );
+        let message = `Saved ${savedCount} ${dataType} entries`;
+        if (skippedCount > 0) {
+          message += ` (${skippedCount} skipped - no data)`;
+        }
+        if (behaviorsAdded.length > 0) {
+          message += `. Added ${behaviorsAdded.length} new behavior(s) to students.`;
+        }
+        toast.success(message);
         resetAndClose();
       } else if (skippedCount > 0) {
         toast.info('All entries marked as "No Data" - nothing saved');
@@ -789,44 +1075,68 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
               <CardHeader className="py-3">
                 <CardTitle className="text-sm flex items-center gap-2">
                   Behaviors ({selectedBehaviorIds.length})
+                  {availableBehaviors.some(b => b.studentIds.length === 0) && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      <BookOpen className="w-3 h-3 mr-1" />
+                      Bank behaviors included
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-0 pb-3">
-                <ScrollArea className="h-32">
+                <ScrollArea className="h-40">
                   {availableBehaviors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2">
                       Select students first to see behaviors
                     </p>
                   ) : (
                     <div className="space-y-1">
-                      {availableBehaviors.map(behavior => (
-                        <div key={behavior.name} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`behavior-${behavior.name}`}
-                            checked={selectedBehaviorIds.includes(behavior.name.toLowerCase())}
-                            onCheckedChange={(checked) => {
-                              const key = behavior.name.toLowerCase();
-                              if (checked) {
-                                setSelectedBehaviorIds(prev => [...prev, key]);
-                              } else {
-                                setSelectedBehaviorIds(prev => prev.filter(id => id !== key));
-                              }
-                            }}
-                          />
-                          <label 
-                            htmlFor={`behavior-${behavior.name}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {behavior.name}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              ({behavior.studentIds.length} student{behavior.studentIds.length !== 1 ? 's' : ''})
-                            </span>
-                          </label>
-                        </div>
-                      ))}
+                      {availableBehaviors.map(behavior => {
+                        const isFromBank = behavior.studentIds.length === 0;
+                        return (
+                          <div key={behavior.name} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`behavior-${behavior.name}`}
+                              checked={selectedBehaviorIds.includes(behavior.name.toLowerCase())}
+                              onCheckedChange={(checked) => {
+                                const key = behavior.name.toLowerCase();
+                                if (checked) {
+                                  setSelectedBehaviorIds(prev => [...prev, key]);
+                                } else {
+                                  setSelectedBehaviorIds(prev => prev.filter(id => id !== key));
+                                }
+                              }}
+                            />
+                            <label 
+                              htmlFor={`behavior-${behavior.name}`}
+                              className="text-sm cursor-pointer flex items-center gap-1 flex-wrap"
+                            >
+                              <span>{behavior.name}</span>
+                              {isFromBank ? (
+                                <Badge variant="secondary" className="text-xs h-5">
+                                  <BookOpen className="w-3 h-3 mr-1" />
+                                  {behavior.source === 'built-in' ? 'Built-in' : 'Org'}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  ({behavior.studentIds.length} student{behavior.studentIds.length !== 1 ? 's' : ''})
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
+                {selectedBehaviorIds.some(name => 
+                  availableBehaviors.find(b => b.name.toLowerCase() === name)?.studentIds.length === 0
+                ) && (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Bank behaviors will be auto-added to students when data is saved
+                  </p>
+                )}
               </CardContent>
             </Card>
 
