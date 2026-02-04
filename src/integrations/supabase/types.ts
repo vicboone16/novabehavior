@@ -6664,6 +6664,7 @@ export type Database = {
           background_info: Json | null
           behaviors: Json | null
           bip_data: Json | null
+          bip_date: string | null
           brief_record_review: Json | null
           brief_teacher_inputs: Json | null
           case_closed_date: string | null
@@ -6684,6 +6685,7 @@ export type Database = {
           district_name: string | null
           dob: string | null
           documents: Json | null
+          fba_date: string | null
           fba_findings: Json | null
           fba_workflow_progress: Json | null
           first_name: string | null
@@ -6692,6 +6694,8 @@ export type Database = {
           grade: string | null
           historical_data: Json | null
           id: string
+          iep_date: string | null
+          iep_end_date: string | null
           indirect_assessments: Json | null
           insurance_alerts_background: boolean | null
           insurance_tracking_state: string | null
@@ -6701,6 +6705,7 @@ export type Database = {
           legal_last_name: string | null
           name: string
           narrative_notes: Json | null
+          next_iep_review_date: string | null
           notes_required: boolean | null
           preferred_name: string | null
           primary_setting: string | null
@@ -6720,6 +6725,7 @@ export type Database = {
           background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
+          bip_date?: string | null
           brief_record_review?: Json | null
           brief_teacher_inputs?: Json | null
           case_closed_date?: string | null
@@ -6740,6 +6746,7 @@ export type Database = {
           district_name?: string | null
           dob?: string | null
           documents?: Json | null
+          fba_date?: string | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
           first_name?: string | null
@@ -6748,6 +6755,8 @@ export type Database = {
           grade?: string | null
           historical_data?: Json | null
           id?: string
+          iep_date?: string | null
+          iep_end_date?: string | null
           indirect_assessments?: Json | null
           insurance_alerts_background?: boolean | null
           insurance_tracking_state?: string | null
@@ -6757,6 +6766,7 @@ export type Database = {
           legal_last_name?: string | null
           name: string
           narrative_notes?: Json | null
+          next_iep_review_date?: string | null
           notes_required?: boolean | null
           preferred_name?: string | null
           primary_setting?: string | null
@@ -6776,6 +6786,7 @@ export type Database = {
           background_info?: Json | null
           behaviors?: Json | null
           bip_data?: Json | null
+          bip_date?: string | null
           brief_record_review?: Json | null
           brief_teacher_inputs?: Json | null
           case_closed_date?: string | null
@@ -6796,6 +6807,7 @@ export type Database = {
           district_name?: string | null
           dob?: string | null
           documents?: Json | null
+          fba_date?: string | null
           fba_findings?: Json | null
           fba_workflow_progress?: Json | null
           first_name?: string | null
@@ -6804,6 +6816,8 @@ export type Database = {
           grade?: string | null
           historical_data?: Json | null
           id?: string
+          iep_date?: string | null
+          iep_end_date?: string | null
           indirect_assessments?: Json | null
           insurance_alerts_background?: boolean | null
           insurance_tracking_state?: string | null
@@ -6813,6 +6827,7 @@ export type Database = {
           legal_last_name?: string | null
           name?: string
           narrative_notes?: Json | null
+          next_iep_review_date?: string | null
           notes_required?: boolean | null
           preferred_name?: string | null
           primary_setting?: string | null

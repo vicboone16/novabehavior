@@ -410,6 +410,11 @@ export interface Student {
   firstName?: string;
   lastName?: string;
   displayName?: string; // Preferred/display name for data collection
+  // Legal name fields (for billing/official docs)
+  legalFirstName?: string;
+  legalLastName?: string;
+  preferredName?: string;
+  pronouns?: string;
   behaviors: Behavior[];
   color: string;
   customAntecedents?: string[];
@@ -420,10 +425,30 @@ export interface Student {
   dateOfBirth?: Date;
   grade?: string;
   school?: string;
+  schoolName?: string; // Additional school field from Profile 2.0
+  districtName?: string;
   caseTypes?: CaseType[];
   assessmentModeEnabled?: boolean;
   // Data collection start date - ensures graphs show data from at least this date
   dataCollectionStartDate?: Date;
+  // Clinical Milestones (IEP, FBA dates)
+  iepDate?: Date;
+  iepEndDate?: Date;
+  nextIepReviewDate?: Date;
+  fbaDate?: Date;
+  bipDate?: Date;
+  // Diagnoses list
+  diagnoses?: string[];
+  // Primary Setting
+  primarySetting?: 'home' | 'school' | 'clinic' | 'community' | 'telehealth';
+  // Primary Supervisor
+  primarySupervisorStaffId?: string;
+  // Case Status
+  caseOpenedDate?: Date;
+  caseClosedDate?: Date;
+  dischargeReason?: string;
+  activationStatus?: 'draft' | 'pending_activation' | 'active' | 'inactive' | 'discharged';
+  profileCompletenessStatus?: 'incomplete' | 'partial' | 'complete';
   // Contact info
   contactEmail?: string;
   contactPhone?: string;
