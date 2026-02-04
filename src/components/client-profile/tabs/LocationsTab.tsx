@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,24 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
-import { MapPin, Plus, Pencil, Trash2, CheckCircle2, AlertCircle, Navigation } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, CheckCircle2, AlertCircle, Navigation, Building2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import type { ClientLocation } from '@/types/clientProfile';
+
+interface AgencyLocation {
+  id: string;
+  name: string;
+  address_line1: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  location_type: string;
+  geocode_lat: number | null;
+  geocode_lng: number | null;
+  phone: string | null;
+}
 
 interface LocationsTabProps {
   clientId: string;
@@ -38,7 +52,10 @@ const US_STATES = [
 ];
 
 export function LocationsTab({ clientId, locations, onRefresh }: LocationsTabProps) {
+  const { currentAgency } = useAgencyContext();
   const [showDialog, setShowDialog] = useState(false);
+  const [showAgencyLocations, setShowAgencyLocations] = useState(false);
+  const [agencyLocations, setAgencyLocations] = useState<AgencyLocation[]>([]);
   const [editingLocation, setEditingLocation] = useState<ClientLocation | null>(null);
   const [saving, setSaving] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
@@ -221,6 +238,53 @@ export function LocationsTab({ clientId, locations, onRefresh }: LocationsTabPro
     }
   };
 
+  const loadAgencyLocations = async () => {
+    if (!currentAgency) return;
+    try {
+      const { data } = await supabase
+        .from('agency_locations')
+        .select('id, name, address_line1, city, state, zip_code, location_type, geocode_lat, geocode_lng, phone')
+        .eq('agency_id', currentAgency.id)
+        .eq('is_active', true);
+      if (data) setAgencyLocations(data as AgencyLocation[]);
+    } catch (error) {
+      console.error('Error loading agency locations:', error);
+    }
+  };
+
+  const handleCopyFromAgency = async (agencyLoc: AgencyLocation) => {
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('client_locations')
+        .insert({
+          client_id: clientId,
+          location_type: agencyLoc.location_type as ClientLocation['location_type'],
+          location_name: agencyLoc.name,
+          address_line1: agencyLoc.address_line1 || '',
+          city: agencyLoc.city || '',
+          state: agencyLoc.state || '',
+          zip_code: agencyLoc.zip_code || '',
+          geocode_lat: agencyLoc.geocode_lat,
+          geocode_lng: agencyLoc.geocode_lng,
+          geocode_status: agencyLoc.geocode_lat ? 'success' : 'pending',
+          onsite_contact_phone: agencyLoc.phone,
+          is_active: true,
+          is_primary_service_site: locations.length === 0,
+        });
+      
+      if (error) throw error;
+      toast.success(`Copied "${agencyLoc.name}" to client locations`);
+      setShowAgencyLocations(false);
+      onRefresh();
+    } catch (error) {
+      console.error('Error copying location:', error);
+      toast.error('Failed to copy location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const activeLocations = locations.filter(l => l.is_active);
   const hasActiveGeocodedLocation = activeLocations.some(l => l.geocode_status === 'success');
 
@@ -235,10 +299,21 @@ export function LocationsTab({ clientId, locations, onRefresh }: LocationsTabPro
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Service Locations ({locations.length})</h3>
-        <Button onClick={() => { resetForm(); setShowDialog(true); }}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add Location
-        </Button>
+        <div className="flex gap-2">
+          {currentAgency && (
+            <Button 
+              variant="outline" 
+              onClick={() => { loadAgencyLocations(); setShowAgencyLocations(true); }}
+            >
+              <Building2 className="h-4 w-4 mr-1" />
+              Copy from Agency
+            </Button>
+          )}
+          <Button onClick={() => { resetForm(); setShowDialog(true); }}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Location
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -524,6 +599,57 @@ export function LocationsTab({ clientId, locations, onRefresh }: LocationsTabPro
               {saving ? 'Saving...' : 'Save Location'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy from Agency Locations Dialog */}
+      <Dialog open={showAgencyLocations} onOpenChange={setShowAgencyLocations}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Copy from Agency Locations
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Select an agency location template to copy to this client's service locations.
+          </p>
+          {agencyLocations.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No agency locations available</p>
+              <p className="text-xs mt-1">Add locations in Agency Settings first</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {agencyLocations.map((loc) => (
+                <Card 
+                  key={loc.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleCopyFromAgency(loc)}
+                >
+                  <CardContent className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{loc.name}</p>
+                        {loc.address_line1 && (
+                          <p className="text-sm text-muted-foreground">
+                            {loc.address_line1}
+                            {loc.city && `, ${loc.city}`}
+                            {loc.state && `, ${loc.state}`}
+                          </p>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="sm" disabled={saving}>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

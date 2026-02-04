@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +31,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AgencySettingsDialog } from '@/components/agency/AgencySettingsDialog';
 
 export function AgencySwitcher() {
   const { user, userRole } = useAuth();
@@ -39,6 +39,7 @@ export function AgencySwitcher() {
   const [switching, setSwitching] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showManageClientsDialog, setShowManageClientsDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newAgencyName, setNewAgencyName] = useState('');
 
@@ -281,7 +282,10 @@ export function AgencySwitcher() {
                 <Users className="h-4 w-4 mr-2" />
                 Manage Clients
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem 
+                onClick={() => setShowSettingsDialog(true)}
+                className="cursor-pointer"
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 Agency Settings
               </DropdownMenuItem>
@@ -424,6 +428,12 @@ export function AgencySwitcher() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Agency Settings Dialog */}
+      <AgencySettingsDialog 
+        open={showSettingsDialog} 
+        onOpenChange={setShowSettingsDialog} 
+      />
     </>
   );
 }

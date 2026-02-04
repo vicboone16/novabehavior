@@ -282,6 +282,77 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_locations: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          agency_id: string
+          city: string | null
+          created_at: string
+          geocode_lat: number | null
+          geocode_lng: number | null
+          geocode_status: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          location_type: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          agency_id: string
+          city?: string | null
+          created_at?: string
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          location_type?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          agency_id?: string
+          city?: string | null
+          created_at?: string
+          geocode_lat?: number | null
+          geocode_lng?: number | null
+          geocode_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          location_type?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_locations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_memberships: {
         Row: {
           agency_id: string
