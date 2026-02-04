@@ -333,7 +333,7 @@ export function AgencySwitcher() {
 
       {/* Manage Clients Dialog */}
       <Dialog open={showManageClientsDialog} onOpenChange={setShowManageClientsDialog}>
-        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -356,7 +356,7 @@ export function AgencySwitcher() {
                 <Badge variant="outline">{unassignedStudents} unassigned</Badge>
               </div>
               
-              <ScrollArea className="flex-1 max-h-[400px] border rounded-lg">
+              <ScrollArea className="h-[300px] border rounded-lg">
                 <div className="p-2 space-y-1">
                   {allStudents.length === 0 ? (
                     <p className="text-center py-4 text-muted-foreground">No clients found</p>
