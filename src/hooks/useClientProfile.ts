@@ -63,7 +63,28 @@ export function useClientProfile(clientId: string | undefined) {
       if (commAccessRes.data) setCommunicationAccess(commAccessRes.data as unknown as ClientCommunicationAccess);
       if (schedRes.data) setSchedulingPreferences(schedRes.data as unknown as ClientSchedulingPreferences);
       if (locationsRes.data) setLocations(locationsRes.data as unknown as ClientLocation[]);
-      if (teamRes.data) setTeamAssignments(teamRes.data as unknown as ClientTeamAssignment[]);
+      
+      // For team assignments, we need to manually fetch staff profiles since there's no FK constraint
+      if (teamRes.data && teamRes.data.length > 0) {
+        const staffUserIds = [...new Set(teamRes.data.map((t: any) => t.staff_user_id).filter(Boolean))];
+        if (staffUserIds.length > 0) {
+          const { data: staffProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, display_name, first_name, last_name, credential')
+            .in('user_id', staffUserIds);
+          
+          const profileMap = new Map((staffProfiles || []).map(p => [p.user_id, p]));
+          const enrichedTeam = teamRes.data.map((t: any) => ({
+            ...t,
+            staff_profile: profileMap.get(t.staff_user_id) || null
+          }));
+          setTeamAssignments(enrichedTeam as unknown as ClientTeamAssignment[]);
+        } else {
+          setTeamAssignments(teamRes.data as unknown as ClientTeamAssignment[]);
+        }
+      } else {
+        setTeamAssignments([]);
+      }
       if (servicesRes.data) setServiceLines(servicesRes.data as unknown as ClientServiceLine[]);
       if (docsRes.data) setDocuments(docsRes.data as unknown as ClientDocument[]);
       if (commLogRes.data) setCommunicationLog(commLogRes.data as unknown as ClientCommunicationLog[]);
