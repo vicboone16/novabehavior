@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { MapPin, Plus, Pencil, Trash2, CheckCircle2, AlertCircle, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -338,6 +339,27 @@ export function LocationsTab({ clientId, locations, onRefresh }: LocationsTabPro
                   placeholder="e.g., Family Home, Lincoln Elementary"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Address Search</Label>
+              <AddressAutocomplete
+                value={formData.address_line1}
+                onSelect={(parsed) => {
+                  setFormData({
+                    ...formData,
+                    address_line1: parsed.address_line1,
+                    city: parsed.city || formData.city,
+                    state: parsed.state || formData.state,
+                    zip_code: parsed.zip_code || formData.zip_code,
+                    geocode_lat: parsed.lat,
+                    geocode_lng: parsed.lng,
+                    geocode_status: 'success',
+                  });
+                }}
+                placeholder="Start typing an address..."
+              />
+              <p className="text-xs text-muted-foreground">Type to search or manually enter below</p>
             </div>
 
             <div className="space-y-2">
