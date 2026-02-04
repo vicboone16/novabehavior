@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +28,7 @@ import {
   Plus, 
   Loader2,
   Settings,
+  Users,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,10 +38,94 @@ export function AgencySwitcher() {
   const { currentAgency, agencies, loading, switchAgency, refreshAgencies, isAgencyAdmin } = useAgencyContext();
   const [switching, setSwitching] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showManageClientsDialog, setShowManageClientsDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newAgencyName, setNewAgencyName] = useState('');
 
+  // Client management state
+  const [allStudents, setAllStudents] = useState<{ id: string; name: string; agency_id: string | null }[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [savingStudents, setSavingStudents] = useState(false);
+
   const isSuperAdmin = userRole === 'super_admin';
+
+  // Load all students when manage dialog opens
+  useEffect(() => {
+    if (showManageClientsDialog && currentAgency) {
+      loadStudents();
+    }
+  }, [showManageClientsDialog, currentAgency]);
+
+  const loadStudents = async () => {
+    setLoadingStudents(true);
+    try {
+      // Super admins and agency admins can see all students
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, name, agency_id')
+        .eq('is_archived', false)
+        .order('name');
+      
+      if (error) throw error;
+      setAllStudents(data || []);
+      
+      // Pre-select students already in this agency
+      const currentAgencyStudents = (data || [])
+        .filter(s => s.agency_id === currentAgency?.id)
+        .map(s => s.id);
+      setSelectedStudentIds(currentAgencyStudents);
+    } catch (err) {
+      console.error('Error loading students:', err);
+      toast.error('Failed to load clients');
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleSaveClientAssignments = async () => {
+    if (!currentAgency) return;
+    
+    setSavingStudents(true);
+    try {
+      // Get current assignments
+      const currentlyAssigned = allStudents
+        .filter(s => s.agency_id === currentAgency.id)
+        .map(s => s.id);
+      
+      // Students to add to this agency
+      const toAdd = selectedStudentIds.filter(id => !currentlyAssigned.includes(id));
+      
+      // Students to remove from this agency (set to null)
+      const toRemove = currentlyAssigned.filter(id => !selectedStudentIds.includes(id));
+      
+      // Update students being added
+      if (toAdd.length > 0) {
+        const { error } = await supabase
+          .from('students')
+          .update({ agency_id: currentAgency.id })
+          .in('id', toAdd);
+        if (error) throw error;
+      }
+      
+      // Update students being removed (set agency_id to null)
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('students')
+          .update({ agency_id: null })
+          .in('id', toRemove);
+        if (error) throw error;
+      }
+      
+      toast.success(`Updated client assignments: ${toAdd.length} added, ${toRemove.length} removed`);
+      setShowManageClientsDialog(false);
+    } catch (err) {
+      console.error('Error saving assignments:', err);
+      toast.error('Failed to save client assignments');
+    } finally {
+      setSavingStudents(false);
+    }
+  };
 
   const handleSwitch = async (agencyId: string) => {
     if (agencyId === currentAgency?.id) return;
@@ -50,8 +136,6 @@ export function AgencySwitcher() {
     
     if (success) {
       toast.success('Switched agency');
-      // Optionally reload the page to refresh all data
-      // window.location.reload();
     } else {
       toast.error('Failed to switch agency');
     }
@@ -62,7 +146,6 @@ export function AgencySwitcher() {
     
     setCreating(true);
     try {
-      // Create the agency
       const { data: agency, error: agencyError } = await supabase
         .from('agencies')
         .insert({
@@ -74,14 +157,13 @@ export function AgencySwitcher() {
 
       if (agencyError) throw agencyError;
 
-      // Create membership for creator as owner
       const { error: membershipError } = await supabase
         .from('agency_memberships')
         .insert({
           agency_id: agency.id,
           user_id: user.id,
           role: 'owner',
-          is_primary: agencies.length === 0, // Make primary if first agency
+          is_primary: agencies.length === 0,
           status: 'active',
           joined_at: new Date().toISOString(),
         });
@@ -92,8 +174,6 @@ export function AgencySwitcher() {
       setShowCreateDialog(false);
       setNewAgencyName('');
       await refreshAgencies();
-      
-      // Switch to the new agency
       await switchAgency(agency.id);
     } catch (error) {
       console.error('Error creating agency:', error);
@@ -103,12 +183,10 @@ export function AgencySwitcher() {
     }
   };
 
-  // Don't show if no agencies and not super admin
   if (!loading && agencies.length === 0 && !isSuperAdmin) {
     return null;
   }
 
-  // Show loading state
   if (loading) {
     return (
       <Button variant="outline" size="sm" disabled className="gap-2">
@@ -118,7 +196,6 @@ export function AgencySwitcher() {
     );
   }
 
-  // Single agency - just show name, no dropdown
   if (agencies.length === 1 && !isSuperAdmin) {
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg">
@@ -127,6 +204,10 @@ export function AgencySwitcher() {
       </div>
     );
   }
+
+  // Get counts for UI
+  const studentsInCurrentAgency = allStudents.filter(s => s.agency_id === currentAgency?.id).length;
+  const unassignedStudents = allStudents.filter(s => !s.agency_id).length;
 
   return (
     <>
@@ -190,9 +271,16 @@ export function AgencySwitcher() {
             </>
           )}
 
-          {isAgencyAdmin && currentAgency && (
+          {(isAgencyAdmin || isSuperAdmin) && currentAgency && (
             <>
               <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setShowManageClientsDialog(true)}
+                className="cursor-pointer"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Manage Clients
+              </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <Settings className="h-4 w-4 mr-2" />
                 Agency Settings
@@ -240,6 +328,100 @@ export function AgencySwitcher() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Clients Dialog */}
+      <Dialog open={showManageClientsDialog} onOpenChange={setShowManageClientsDialog}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Manage Clients for {currentAgency?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <p className="text-sm text-muted-foreground">
+            Select clients to assign to this agency. Clients can only belong to one agency at a time.
+          </p>
+
+          {loadingStudents ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2 text-xs text-muted-foreground mb-2">
+                <Badge variant="secondary">{selectedStudentIds.length} selected</Badge>
+                <Badge variant="outline">{unassignedStudents} unassigned</Badge>
+              </div>
+              
+              <ScrollArea className="flex-1 max-h-[400px] border rounded-lg">
+                <div className="p-2 space-y-1">
+                  {allStudents.length === 0 ? (
+                    <p className="text-center py-4 text-muted-foreground">No clients found</p>
+                  ) : (
+                    allStudents.map((student) => {
+                      const isInOtherAgency = student.agency_id && student.agency_id !== currentAgency?.id;
+                      const otherAgency = isInOtherAgency 
+                        ? agencies.find(a => a.agency_id === student.agency_id)?.agency.name 
+                        : null;
+                      
+                      return (
+                        <label 
+                          key={student.id} 
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted/50 ${
+                            isInOtherAgency ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <Checkbox
+                            checked={selectedStudentIds.includes(student.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedStudentIds(prev => [...prev, student.id]);
+                              } else {
+                                setSelectedStudentIds(prev => prev.filter(id => id !== student.id));
+                              }
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium">{student.name}</span>
+                            {isInOtherAgency && (
+                              <p className="text-xs text-muted-foreground">
+                                Currently in: {otherAgency || 'Another agency'}
+                              </p>
+                            )}
+                            {!student.agency_id && (
+                              <p className="text-xs text-destructive">Unassigned</p>
+                            )}
+                          </div>
+                          {student.agency_id === currentAgency?.id && (
+                            <Badge variant="secondary" className="text-xs">Current</Badge>
+                          )}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setShowManageClientsDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveClientAssignments} disabled={savingStudents}>
+                  {savingStudents ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Assignments'
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
