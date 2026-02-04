@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { isSameDay } from 'date-fns';
 import { Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDataStore } from '@/store/dataStore';
@@ -14,12 +15,25 @@ export function OneHandTally({ studentId, behavior, studentColor }: OneHandTally
   const { incrementFrequency, decrementFrequency, frequencyEntries } = useDataStore();
   const [pulseKey, setPulseKey] = useState(0);
 
-  // Count for this behavior today
-  const todayCount = frequencyEntries.filter(e => 
-    e.studentId === studentId && 
-    e.behaviorId === behavior.id &&
-    new Date(e.timestamp).toDateString() === new Date().toDateString()
-  ).length;
+  const entry = useMemo(
+    () => frequencyEntries.find((e) => e.studentId === studentId && e.behaviorId === behavior.id),
+    [frequencyEntries, studentId, behavior.id]
+  );
+
+  // Count for this behavior today.
+  // NOTE: frequencyEntries store a single row per (studentId, behaviorId) with an aggregated `count`.
+  const todayCount = useMemo(() => {
+    if (!entry) return 0;
+    const today = new Date();
+
+    const ts = (entry as any).timestamps as unknown[] | undefined;
+    if (Array.isArray(ts) && ts.length > 0) {
+      return ts.filter((t) => isSameDay(new Date(t as any), today)).length;
+    }
+
+    const entryDate = new Date((entry as any).timestamp);
+    return isSameDay(entryDate, today) ? (entry as any).count ?? 0 : 0;
+  }, [entry]);
 
   const handleTap = useCallback(() => {
     // Haptic feedback if available
@@ -39,7 +53,7 @@ export function OneHandTally({ studentId, behavior, studentColor }: OneHandTally
         navigator.vibrate([50, 50, 50]);
       }
     }
-  }, [frequencyEntries, studentId, behavior.id]);
+  }, [todayCount, decrementFrequency, studentId, behavior.id]);
 
   return (
     <div className="flex-1 flex flex-col relative overflow-hidden">

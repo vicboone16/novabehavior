@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { isSameDay } from 'date-fns';
 import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDataStore } from '@/store/dataStore';
@@ -14,12 +15,28 @@ export function MobileFrequencyTally({ studentId, behavior, studentColor }: Mobi
   const { incrementFrequency, decrementFrequency, frequencyEntries } = useDataStore();
   const [pulseKey, setPulseKey] = useState(0);
 
-  // Count for this behavior today
-  const todayCount = frequencyEntries.filter(e => 
-    e.studentId === studentId && 
-    e.behaviorId === behavior.id &&
-    new Date(e.timestamp).toDateString() === new Date().toDateString()
-  ).length;
+  const entry = useMemo(
+    () => frequencyEntries.find((e) => e.studentId === studentId && e.behaviorId === behavior.id),
+    [frequencyEntries, studentId, behavior.id]
+  );
+
+  // Count for this behavior today.
+  // NOTE: frequencyEntries store a single row per (studentId, behaviorId) with an aggregated `count`.
+  // Using `.filter(...).length` would get stuck at 1 once an entry exists.
+  const todayCount = useMemo(() => {
+    if (!entry) return 0;
+    const today = new Date();
+
+    // Prefer per-occurrence timestamps when present (supports partial-day / historical entries).
+    const ts = (entry as any).timestamps as unknown[] | undefined;
+    if (Array.isArray(ts) && ts.length > 0) {
+      return ts.filter((t) => isSameDay(new Date(t as any), today)).length;
+    }
+
+    // Fall back to aggregated count if the entry itself is on today's date.
+    const entryDate = new Date((entry as any).timestamp);
+    return isSameDay(entryDate, today) ? (entry as any).count ?? 0 : 0;
+  }, [entry]);
 
   const handleIncrement = useCallback(() => {
     // Haptic feedback if available
