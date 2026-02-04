@@ -56,27 +56,80 @@ export function StaffAssignmentsTab({
 
   const loadCaseload = async () => {
     try {
-      const { data, error } = await supabase
-        .from('staff_caseloads')
-        .select(`
-          id,
-          student_id,
-          status,
-          start_date,
-          students:student_id (name)
-        `)
-        .eq('clinician_user_id', userId)
-        .eq('status', 'active');
+      // Load from BOTH staff_caseloads AND client_team_assignments
+      const [caseloadRes, teamRes] = await Promise.all([
+        supabase
+          .from('staff_caseloads')
+          .select(`
+            id,
+            student_id,
+            status,
+            start_date,
+            students:student_id (name)
+          `)
+          .eq('clinician_user_id', userId)
+          .eq('status', 'active'),
+        supabase
+          .from('client_team_assignments')
+          .select(`
+            id,
+            client_id,
+            role,
+            start_date,
+            is_active
+          `)
+          .eq('staff_user_id', userId)
+          .eq('is_active', true)
+      ]);
 
-      if (error) throw error;
-      setCaseload(data?.map((d: any) => ({
-        id: d.id,
-        student_id: d.student_id,
-        status: d.status,
-        role: 'clinician',
-        start_date: d.start_date,
-        student: d.students
-      })) || []);
+      // Get unique client IDs from team assignments to fetch names
+      const teamClientIds = [...new Set((teamRes.data || []).map((t: any) => t.client_id))];
+      let clientNameMap = new Map<string, string>();
+      
+      if (teamClientIds.length > 0) {
+        const { data: students } = await supabase
+          .from('students')
+          .select('id, name')
+          .in('id', teamClientIds);
+        
+        clientNameMap = new Map((students || []).map(s => [s.id, s.name]));
+      }
+
+      // Combine and deduplicate by student/client ID
+      const seenIds = new Set<string>();
+      const combined: CaseloadAssignment[] = [];
+      
+      // Add from staff_caseloads first
+      (caseloadRes.data || []).forEach((d: any) => {
+        if (!seenIds.has(d.student_id)) {
+          seenIds.add(d.student_id);
+          combined.push({
+            id: d.id,
+            student_id: d.student_id,
+            status: d.status,
+            role: 'clinician',
+            start_date: d.start_date,
+            student: d.students
+          });
+        }
+      });
+      
+      // Add from client_team_assignments if not already present
+      (teamRes.data || []).forEach((t: any) => {
+        if (!seenIds.has(t.client_id)) {
+          seenIds.add(t.client_id);
+          combined.push({
+            id: t.id,
+            student_id: t.client_id,
+            status: 'active',
+            role: t.role,
+            start_date: t.start_date,
+            student: { name: clientNameMap.get(t.client_id) || 'Unknown' }
+          });
+        }
+      });
+      
+      setCaseload(combined);
     } catch (error) {
       console.error('Error loading caseload:', error);
     } finally {

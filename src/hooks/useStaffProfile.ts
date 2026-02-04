@@ -38,9 +38,17 @@ export function useStaffProfile(userId: string | undefined) {
       const superviseeRes = await supabase.from('supervisor_links').select('*').eq('supervisor_staff_id', userId);
       if (superviseeRes.data) setSuperviseeLinks(superviseeRes.data as unknown as SupervisorLink[]);
       
-      // Fetch caseload count
-      const caseloadRes = await supabase.from('staff_caseloads').select('id', { count: 'exact' }).eq('clinician_user_id', userId).eq('status', 'active');
-      if (caseloadRes.count !== null) setCaseloadCount(caseloadRes.count);
+      // Fetch caseload count from BOTH staff_caseloads and client_team_assignments
+      const [caseloadRes, teamAssignmentRes] = await Promise.all([
+        supabase.from('staff_caseloads').select('student_id', { count: 'exact' }).eq('clinician_user_id', userId).eq('status', 'active'),
+        supabase.from('client_team_assignments').select('client_id', { count: 'exact' }).eq('staff_user_id', userId).eq('is_active', true)
+      ]);
+      
+      // Combine unique client IDs from both sources
+      const caseloadStudentIds = new Set((caseloadRes.data || []).map((c: any) => c.student_id));
+      const teamClientIds = new Set((teamAssignmentRes.data || []).map((t: any) => t.client_id));
+      const allClientIds = new Set([...caseloadStudentIds, ...teamClientIds]);
+      setCaseloadCount(allClientIds.size);
 
     } catch (error) {
       console.error('Error loading staff profile:', error);
