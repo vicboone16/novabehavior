@@ -24,6 +24,7 @@ import {
 import { useStudentBxPlan } from '@/hooks/useBehaviorInterventions';
 import type { StudentBxPlanLink, LinkStatus } from '@/types/behaviorIntervention';
 import { cn } from '@/lib/utils';
+import { InterventionWizard } from './InterventionWizard';
 
 const STATUS_CONFIG: Record<LinkStatus, { label: string; icon: React.ReactNode; color: string }> = {
   existing: { label: 'Existing', icon: <CheckCircle className="w-4 h-4" />, color: 'text-primary' },
@@ -36,6 +37,7 @@ const STATUS_CONFIG: Record<LinkStatus, { label: string; icon: React.ReactNode; 
 interface StudentBxPlanViewProps {
   studentId: string;
   studentName: string;
+  /** @deprecated Use the built-in wizard instead */
   onAddIntervention?: () => void;
   onGenerateRecommendations?: () => void;
 }
@@ -207,6 +209,15 @@ export function StudentBxPlanView({
   } = useStudentBxPlan(studentId);
 
   const [activeTab, setActiveTab] = useState<LinkStatus>('existing');
+  const [showWizard, setShowWizard] = useState(false);
+
+  const handleAddClick = () => {
+    if (onAddIntervention) {
+      onAddIntervention();
+    } else {
+      setShowWizard(true);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -224,14 +235,20 @@ export function StudentBxPlanView({
               Generate Recommendations
             </Button>
           )}
-          {onAddIntervention && (
-            <Button onClick={onAddIntervention}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Intervention
-            </Button>
-          )}
+          <Button onClick={handleAddClick}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Intervention
+          </Button>
         </div>
       </div>
+
+      {/* Intervention Wizard */}
+      <InterventionWizard
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        studentId={studentId}
+        studentName={studentName}
+      />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as LinkStatus)}>
         <TabsList>
