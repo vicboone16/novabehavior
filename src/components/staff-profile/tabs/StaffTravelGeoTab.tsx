@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, Car, Bus, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { MapPin, Navigation, Car, Bus, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StaffTravelGeoTabProps {
@@ -21,51 +20,10 @@ const TRANSPORT_METHODS = [
 ];
 
 export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabProps) {
-  const [geocoding, setGeocoding] = useState(false);
   const [address, setAddress] = useState(profile.home_base_address || '');
   const [radius, setRadius] = useState(profile.max_travel_radius_miles || 15);
   const [buffer, setBuffer] = useState(profile.min_buffer_minutes || 15);
   const [transportMethod, setTransportMethod] = useState(profile.transportation_method || 'car');
-
-  const handleGeocode = async () => {
-    if (!address.trim()) {
-      toast.error('Please enter an address');
-      return;
-    }
-
-    setGeocoding(true);
-    try {
-      // Use OpenStreetMap Nominatim for geocoding
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
-      );
-      const data = await response.json();
-
-      if (data.length === 0) {
-        toast.error('Address not found. Please try a more specific address.');
-        return;
-      }
-
-      const { lat, lon, display_name } = data[0];
-      
-      const success = await updateProfile({
-        home_base_address: display_name,
-        geocode_lat: parseFloat(lat),
-        geocode_lng: parseFloat(lon),
-        geocode_status: 'success',
-      });
-
-      if (success) {
-        setAddress(display_name);
-        toast.success('Address geocoded successfully');
-      }
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      toast.error('Failed to geocode address');
-    } finally {
-      setGeocoding(false);
-    }
-  };
 
   const handleSaveRadius = async () => {
     const success = await updateProfile({
@@ -95,27 +53,25 @@ export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <Input
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter your home base address..."
-              />
-            </div>
-            <Button onClick={handleGeocode} disabled={geocoding}>
-              {geocoding ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Geocoding...
-                </>
-              ) : (
-                <>
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Geocode
-                </>
-              )}
-            </Button>
+          <div className="space-y-2">
+            <Label>Home Base Address</Label>
+            <AddressAutocomplete
+              value={address}
+              onSelect={async (parsed) => {
+                setAddress(parsed.display_name);
+                const success = await updateProfile({
+                  home_base_address: parsed.display_name,
+                  geocode_lat: parsed.lat,
+                  geocode_lng: parsed.lng,
+                  geocode_status: 'success',
+                });
+                if (success) {
+                  toast.success('Address geocoded successfully');
+                }
+              }}
+              placeholder="Start typing your address..."
+            />
+            <p className="text-xs text-muted-foreground">Type to search and auto-geocode</p>
           </div>
 
           {/* Geocode Status */}
