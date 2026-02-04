@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown, FileText, Trophy, ArchiveRestore } from 'lucide-react';
+import { Plus, Settings, Trash2, Activity, Edit2, Check, X, BookOpen, ChevronDown, FileText, Trophy, ArchiveRestore, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,11 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
 import { DataCollectionMethod, METHOD_LABELS, Behavior, BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
+import { BehaviorInterventionsPicker } from '@/components/behavior-interventions';
 import { toast } from 'sonner';
 
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
@@ -155,7 +157,7 @@ export function BehaviorManager() {
           Manage Behaviors
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary" />
@@ -163,7 +165,20 @@ export function BehaviorManager() {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <Tabs defaultValue="behaviors" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="behaviors" className="gap-2">
+              <Activity className="w-4 h-4" />
+              Behaviors to Track
+            </TabsTrigger>
+            <TabsTrigger value="interventions" className="gap-2">
+              <Brain className="w-4 h-4" />
+              Behavior Interventions
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="behaviors" className="flex-1 overflow-y-auto mt-4">
+            <div className="space-y-4">
           {/* Add new behavior */}
           <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
             <h3 className="font-medium text-sm text-foreground">Add New Behavior</h3>
@@ -516,7 +531,13 @@ export function BehaviorManager() {
               </p>
             )}
           </div>
-        </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="interventions" className="flex-1 overflow-y-auto mt-4">
+            <BehaviorInterventionsPicker compact hideHeader />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
