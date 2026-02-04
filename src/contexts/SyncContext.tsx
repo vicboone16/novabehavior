@@ -546,28 +546,60 @@ export function SyncProvider({ children }: SyncProviderProps) {
               sessionId: e.session_id,
             }));
 
-          // Merge with existing entries (don't overwrite if local has more recent data)
+          // Check if we should load the live session from another device
           const currentState = useDataStore.getState();
           
-          // Only load live data if local data is empty (fresh load scenario)
-          if (currentState.frequencyEntries.length === 0 && 
-              currentState.durationEntries.length === 0 && 
-              currentState.intervalEntries.length === 0 &&
-              currentState.abcEntries.length === 0) {
+          // Load live session if:
+          // 1. No local session is currently active, OR
+          // 2. Local session ID matches the cloud session (same session, sync data)
+          const hasLocalActiveSession = currentState.sessionStartTime !== null && currentState.currentSessionId !== null;
+          const isSameSession = currentState.currentSessionId === activeSessionData.id;
+          const localSessionHasData = currentState.frequencyEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+                                      currentState.durationEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+                                      currentState.intervalEntries.some(e => e.sessionId === currentState.currentSessionId) ||
+                                      currentState.abcEntries.some(e => e.sessionId === currentState.currentSessionId);
+          
+          // Cross-device resume: load live session if we don't have an active local session
+          if (!hasLocalActiveSession || isSameSession) {
+            // Filter out entries that match the live session to avoid duplicates
+            const existingFreqIds = new Set(currentState.frequencyEntries.map(e => e.id));
+            const existingDurIds = new Set(currentState.durationEntries.map(e => e.id));
+            const existingIntIds = new Set(currentState.intervalEntries.map(e => e.id));
+            const existingAbcIds = new Set(currentState.abcEntries.map(e => e.id));
+            
+            // Merge: keep existing + add new from cloud
+            const mergedFrequency = [
+              ...currentState.frequencyEntries.filter(e => e.sessionId !== activeSessionData.id),
+              ...liveFrequency.filter(e => !existingFreqIds.has(e.id))
+            ];
+            const mergedDuration = [
+              ...currentState.durationEntries.filter(e => e.sessionId !== activeSessionData.id),
+              ...liveDuration.filter(e => !existingDurIds.has(e.id))
+            ];
+            const mergedInterval = [
+              ...currentState.intervalEntries.filter(e => e.sessionId !== activeSessionData.id),
+              ...liveInterval.filter(e => !existingIntIds.has(e.id))
+            ];
+            const mergedABC = [
+              ...currentState.abcEntries.filter(e => e.sessionId !== activeSessionData.id),
+              ...liveABC.filter(e => !existingAbcIds.has(e.id))
+            ];
             
             useDataStore.setState({
-              frequencyEntries: liveFrequency,
-              durationEntries: liveDuration,
-              intervalEntries: liveInterval,
-              abcEntries: liveABC,
+              frequencyEntries: mergedFrequency,
+              durationEntries: mergedDuration,
+              intervalEntries: mergedInterval,
+              abcEntries: mergedABC,
               currentSessionId: activeSessionData.id,
               sessionStartTime: new Date(activeSessionData.start_time),
               selectedStudentIds: activeSessionData.student_ids || [],
             });
             
-            console.log('[Sync] Live session data loaded into active counters');
-          } else {
-            console.log('[Sync] Local data exists, skipping live data load to prevent overwrite');
+            console.log('[Sync] Live session resumed from cloud:', activeSessionData.id);
+          } else if (hasLocalActiveSession && !isSameSession && localSessionHasData) {
+            // Different active sessions on different devices - don't overwrite, log conflict
+            console.warn('[Sync] Session conflict: local session differs from cloud session');
+            console.log('[Sync] Local session:', currentState.currentSessionId, 'Cloud session:', activeSessionData.id);
           }
         }
       } else {
@@ -919,17 +951,23 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
       // Sync LIVE session data (current unsaved session)
       // This enables real-time sync between devices during active data collection
-      const liveSessionId = currentSessionId || 'live-session';
       const hasLiveData = frequencyEntries.some(e => e.count > 0) || 
                           durationEntries.length > 0 || 
                           intervalEntries.length > 0 ||
                           abcEntries.length > 0;
 
-      if (hasLiveData) {
+      if (hasLiveData && selectedStudentIds.length > 0) {
         console.log('[Sync] Syncing live session data...');
         
-        // Create or update the live session record
-        await supabase.from('sessions').upsert({
+        // Ensure we have a valid session ID - generate one if needed
+        let liveSessionId = currentSessionId;
+        if (!liveSessionId) {
+          liveSessionId = crypto.randomUUID();
+          useDataStore.setState({ currentSessionId: liveSessionId });
+        }
+        
+        // Create or update the live session record FIRST to satisfy FK constraint
+        const { error: sessionError } = await supabase.from('sessions').upsert({
           id: liveSessionId,
           user_id: user.id,
           name: 'Active Session',
@@ -939,6 +977,11 @@ export function SyncProvider({ children }: SyncProviderProps) {
           student_ids: selectedStudentIds,
           status: 'active',
         }, { onConflict: 'id' });
+
+        if (sessionError) {
+          console.error('[Sync] Failed to create/update session:', sessionError);
+          throw sessionError;
+        }
 
         // Build live session data entries
         const liveEntries = [
@@ -1007,10 +1050,14 @@ export function SyncProvider({ children }: SyncProviderProps) {
           })),
         ];
 
-        // Insert live entries
+        // Insert live entries with error handling
         for (let i = 0; i < liveEntries.length; i += 50) {
           const batch = liveEntries.slice(i, i + 50);
-          await supabase.from('session_data').upsert(batch, { onConflict: 'id' });
+          const { error: dataError } = await supabase.from('session_data').upsert(batch, { onConflict: 'id' });
+          if (dataError) {
+            console.error('[Sync] Failed to upsert session_data batch:', dataError);
+            // Continue with other batches, don't throw
+          }
         }
         
         console.log('[Sync] Live session data synced:', liveEntries.length, 'entries');
