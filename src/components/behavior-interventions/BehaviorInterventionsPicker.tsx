@@ -6,36 +6,47 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Plus, UserPlus, BookOpen, Loader2, Brain, ChevronRight } from 'lucide-react';
+import { Search, Plus, UserPlus, BookOpen, Loader2, Brain, ChevronRight, Target } from 'lucide-react';
 import { usePresentingProblems } from '@/hooks/useBehaviorInterventions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { BxPresentingProblem } from '@/types/behaviorIntervention';
+import { InterventionWizard } from './InterventionWizard';
 
 interface BehaviorInterventionsPickerProps {
   /** Pre-select a specific student (useful when used within a student profile) */
   preSelectedStudentId?: string;
+  /** Pre-selected student name for display in wizard */
+  preSelectedStudentName?: string;
   /** Compact mode for embedding in other dialogs */
   compact?: boolean;
   /** Hide the header */
   hideHeader?: boolean;
   /** Callback when intervention is added to students */
   onAddToStudents?: (problemId: string, studentIds: string[]) => void;
+  /** Enable the full wizard flow (problem→objective→strategy) */
+  enableWizard?: boolean;
 }
 
 export function BehaviorInterventionsPicker({
   preSelectedStudentId,
+  preSelectedStudentName,
   compact = false,
   hideHeader = false,
   onAddToStudents,
+  enableWizard = true,
 }: BehaviorInterventionsPickerProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [expandedProblem, setExpandedProblem] = useState<string | null>(null);
 
-  // Student picker state
+  // Wizard state
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardProblemId, setWizardProblemId] = useState<string | undefined>();
+
+  // Student picker state (fallback for non-wizard mode)
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
   const [showStudentPicker, setShowStudentPicker] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -91,6 +102,14 @@ export function BehaviorInterventionsPicker({
   }, [user]);
 
   const handleAddToStudentsClick = (problem: BxPresentingProblem) => {
+    // If wizard is enabled and we have a pre-selected student, use the wizard
+    if (enableWizard && preSelectedStudentId) {
+      setWizardProblemId(problem.id);
+      setShowWizard(true);
+      return;
+    }
+
+    // Otherwise, fall back to the simple student picker
     setProblemToAdd(problem);
     if (preSelectedStudentId) {
       // Auto-select the pre-selected student
@@ -344,6 +363,17 @@ export function BehaviorInterventionsPicker({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Intervention Wizard for full Problem → Objective → Strategy flow */}
+      {enableWizard && preSelectedStudentId && (
+        <InterventionWizard
+          open={showWizard}
+          onOpenChange={setShowWizard}
+          studentId={preSelectedStudentId}
+          studentName={preSelectedStudentName || 'Student'}
+          initialProblemId={wizardProblemId}
+        />
+      )}
     </div>
   );
 }

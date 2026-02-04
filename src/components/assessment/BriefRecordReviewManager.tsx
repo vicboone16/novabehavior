@@ -68,20 +68,15 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formRenderError, setFormRenderError] = useState(false);
-  const [formKey, setFormKey] = useState(0); // Key to force re-mount form
+  const [formKey, setFormKey] = useState(0);
 
   // Get the SINGLE record review from student profile with defensive parsing
   const existingReview = useMemo((): BriefRecordReviewSavedData | null => {
     try {
-      // Safety check for student object
       if (!student) return null;
-      
-      // Check new single-instance field first
       if (student.briefRecordReview && typeof student.briefRecordReview === 'object') {
         return student.briefRecordReview;
       }
-      
-      // Fall back to legacy array format
       const reviews = student.briefRecordReviews;
       if (Array.isArray(reviews) && reviews.length > 0) {
         const review = reviews[0];
@@ -89,28 +84,38 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
           return review.data;
         }
       }
-      
       return null;
     } catch (error) {
       console.error('Error parsing brief record review:', error);
-      setFormError('Failed to load existing review data');
       return null;
     }
   }, [student?.briefRecordReview, student?.briefRecordReviews]);
 
   useEffect(() => {
-    // Safely delay loading state
     const timeout = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timeout);
   }, []);
   
-  // Reset errors when dialog closes
   useEffect(() => {
     if (!showForm) {
       setFormError(null);
       setFormRenderError(false);
     }
   }, [showForm]);
+
+  // Safety check - if no student, show placeholder
+  if (!student || !student.id) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No student selected</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // These hooks were already defined above, remove duplicates
 
   const handleOpenReview = () => {
     setFormRenderError(false);
@@ -199,44 +204,7 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
     );
   }
 
-  if (formError) {
-    return (
-      <Card className="border-destructive/50 bg-destructive/5">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-4 h-4" />
-            Error Loading Record Review
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{formError}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2"
-            onClick={() => {
-              setFormError(null);
-              setIsLoading(true);
-              setTimeout(() => setIsLoading(false), 100);
-            }}
-          >
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Safety check for student
-  if (!student || !student.id) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          <p className="text-sm">No student selected</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Remove duplicate check - early return handled at top of component
 
   return (
     <AssessmentErrorBoundary>

@@ -70,15 +70,13 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
   const [responseToReplace, setResponseToReplace] = useState<string | null>(null);
   const [componentError, setComponentError] = useState<string | null>(null);
   const [formRenderError, setFormRenderError] = useState(false);
-  const [formKey, setFormKey] = useState(0); // Key to force re-mount form
+  const [formKey, setFormKey] = useState(0);
 
-  // Initialize loading state
   useEffect(() => {
     const timeout = setTimeout(() => setIsLoading(false), 100);
     return () => clearTimeout(timeout);
   }, []);
 
-  // Reset errors when form closes
   useEffect(() => {
     if (!showForm) {
       setFormRenderError(false);
@@ -96,14 +94,24 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
       if (!student) return [];
       const inputs = student.briefTeacherInputs;
       if (!Array.isArray(inputs)) return [];
-      // Filter out any malformed entries
       return inputs.filter(item => item && typeof item === 'object' && item.id);
     } catch (error) {
       console.error('Error parsing brief teacher inputs:', error);
-      setComponentError('Failed to load saved responses');
       return [];
     }
   }, [student?.briefTeacherInputs]);
+
+  // Safety check - if no student, show placeholder (after all hooks)
+  if (!student || !student.id) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No student selected</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleNewResponse = () => {
     // Check if responses already exist - if so, show duplicate prompt
