@@ -134,17 +134,21 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [showResults, setShowResults] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSavedAssessments, setShowSavedAssessments] = useState(false);
-  const [showRecordReview, setShowRecordReview] = useState(false);
+
+  // Distinguish rating-scale assessments from interview/review forms
+  const isRatingScale = ['FAST', 'MAS', 'QABF'].includes(activeAssessment);
 
   const currentItems = useMemo(() => {
     switch (activeAssessment) {
       case 'FAST': return FAST_ITEMS;
       case 'MAS': return MAS_ITEMS;
       case 'QABF': return QABF_ITEMS;
+      default: return [];
     }
   }, [activeAssessment]);
 
   const progress = useMemo(() => {
+    if (currentItems.length === 0) return 0;
     const answered = Object.keys(responses).filter(k => 
       currentItems.some(i => i.id === k)
     ).length;
@@ -328,16 +332,18 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
                 Rating scales to help identify behavior functions
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Reset
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={progress < 100}>
-                <Save className="w-3 h-3 mr-1" />
-                Save
-              </Button>
-            </div>
+            {isRatingScale && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Reset
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={progress < 100}>
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -346,7 +352,6 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
             setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF' | 'BRIEF' | 'RECORD_REVIEW');
             setResponses({});
             setShowResults(false);
-            setShowRecordReview(v === 'RECORD_REVIEW');
           }}>
             <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="FAST" className="text-xs">
@@ -470,7 +475,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       )}
 
       {/* Assessment Items - only for rating scales */}
-      {activeAssessment !== 'BRIEF' && (
+      {isRatingScale && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">
@@ -530,7 +535,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       )}
 
       {/* Notes - only for rating scales */}
-      {activeAssessment !== 'BRIEF' && activeAssessment !== 'RECORD_REVIEW' && (
+      {isRatingScale && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Assessment Notes</CardTitle>
