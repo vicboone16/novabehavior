@@ -42,6 +42,7 @@ interface StudentPayer {
   is_active: boolean;
   effective_date?: string;
   termination_date?: string;
+  billing_order: number;
   created_at: string;
   payer?: {
     id: string;
@@ -50,6 +51,12 @@ interface StudentPayer {
     payer_id?: string;
   };
 }
+
+const BILLING_ORDER_LABELS: Record<number, string> = {
+  1: 'Primary',
+  2: 'Secondary',
+  3: 'Tertiary',
+};
 
 interface StudentPayerAssignmentsProps {
   studentId: string;
@@ -72,7 +79,7 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
   const [selectedPayerId, setSelectedPayerId] = useState('');
   const [memberId, setMemberId] = useState('');
   const [groupNumber, setGroupNumber] = useState('');
-  const [isPrimary, setIsPrimary] = useState(false);
+  const [billingOrder, setBillingOrder] = useState<number>(1);
   const [effectiveDate, setEffectiveDate] = useState('');
   
   // Contract form state
@@ -95,7 +102,7 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
           payer:payers(id, name, payer_type, payer_id)
         `)
         .eq('student_id', studentId)
-        .order('is_primary', { ascending: false });
+        .order('billing_order', { ascending: true });
 
       if (error) throw error;
       
@@ -110,6 +117,7 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
         is_active: row.is_active,
         effective_date: row.effective_date || undefined,
         termination_date: row.termination_date || undefined,
+        billing_order: row.billing_order || 1,
         created_at: row.created_at,
         payer: row.payer ? {
           id: row.payer.id,
@@ -131,20 +139,16 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
     if (!selectedPayerId || !user) return;
 
     try {
-      // If marking as primary, unset other primaries first
-      if (isPrimary) {
-        await supabase
-          .from('student_payers')
-          .update({ is_primary: false })
-          .eq('student_id', studentId);
-      }
+      // Determine next billing order if not explicitly set
+      const nextOrder = billingOrder || (activePayers.length + 1);
 
       const { error } = await supabase.from('student_payers').insert({
         student_id: studentId,
         payer_id: selectedPayerId,
         member_id: memberId || null,
         group_number: groupNumber || null,
-        is_primary: isPrimary,
+        is_primary: nextOrder === 1,
+        billing_order: nextOrder,
         is_active: true,
         effective_date: effectiveDate || null,
         created_by: user.id,
@@ -152,13 +156,17 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
 
       if (error) throw error;
       
-      toast.success('Insurance payer added');
+      toast.success(`${BILLING_ORDER_LABELS[nextOrder] || `#${nextOrder}`} insurance added`);
       resetForm();
       setShowAddDialog(false);
       loadInsurancePayers();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding payer:', err);
-      toast.error('Failed to add insurance payer');
+      if (err.code === '23505') {
+        toast.error('A payer with this billing order already exists');
+      } else {
+        toast.error('Failed to add insurance payer');
+      }
     }
   };
 
@@ -201,7 +209,7 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
     setSelectedPayerId('');
     setMemberId('');
     setGroupNumber('');
-    setIsPrimary(false);
+    setBillingOrder(activePayers.length + 1);
     setEffectiveDate('');
     setSelectedContractId('');
     setFundingSource('district_funded');
@@ -252,17 +260,25 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
                   className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <Building2 className="w-5 h-5 text-primary" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                      {payer.billing_order}
+                    </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{payer.payer?.name}</span>
-                        {payer.is_primary && (
-                          <Badge variant="default" className="text-xs">Primary</Badge>
-                        )}
+                        <Badge 
+                          variant={payer.billing_order === 1 ? 'default' : 'secondary'} 
+                          className="text-xs"
+                        >
+                          {BILLING_ORDER_LABELS[payer.billing_order] || `#${payer.billing_order}`}
+                        </Badge>
                       </div>
                       <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
                         {payer.member_id && <span>Member: {payer.member_id}</span>}
                         {payer.group_number && <span>Group: {payer.group_number}</span>}
+                        {payer.effective_date && (
+                          <span>Eff: {format(new Date(payer.effective_date), 'MMM d, yyyy')}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -415,17 +431,24 @@ export function StudentPayerAssignments({ studentId, studentName }: StudentPayer
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isPrimary"
-                  checked={isPrimary}
-                  onChange={(e) => setIsPrimary(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="isPrimary" className="cursor-pointer">
-                  Set as primary payer
-                </Label>
+              <div className="space-y-2">
+                <Label>Billing Order</Label>
+                <Select 
+                  value={billingOrder.toString()} 
+                  onValueChange={(v) => setBillingOrder(parseInt(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Primary (billed first)</SelectItem>
+                    <SelectItem value="2">Secondary (billed after primary)</SelectItem>
+                    <SelectItem value="3">Tertiary</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Primary insurance is billed first. Secondary is billed for remaining balance.
+                </p>
               </div>
             </TabsContent>
 

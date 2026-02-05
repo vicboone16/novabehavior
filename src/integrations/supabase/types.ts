@@ -7075,6 +7075,7 @@ export type Database = {
       }
       student_payers: {
         Row: {
+          billing_order: number
           created_at: string
           created_by: string | null
           effective_date: string | null
@@ -7092,6 +7093,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billing_order?: number
           created_at?: string
           created_by?: string | null
           effective_date?: string | null
@@ -7109,6 +7111,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billing_order?: number
           created_at?: string
           created_by?: string | null
           effective_date?: string | null
