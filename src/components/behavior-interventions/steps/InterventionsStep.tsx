@@ -5,11 +5,13 @@
  import { Checkbox } from '@/components/ui/checkbox';
  import { Label } from '@/components/ui/label';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
  import { cn } from '@/lib/utils';
- import { Plus, Zap, Clock, Lightbulb, CheckCircle2, Target, Loader2, AlertTriangle } from 'lucide-react';
+import { Plus, Zap, Clock, Lightbulb, CheckCircle2, Target, Loader2, AlertTriangle, ChevronDown, Pencil } from 'lucide-react';
  import { useObjectiveStrategies } from '@/hooks/useBehaviorInterventions';
  import type { BxPresentingProblem, BxStrategy, StrategyPhase } from '@/types/behaviorIntervention';
  import type { BxSkillProgramReplacementGoal, BxSkillProgramObjective, BxSkillProgramIntervention } from '@/types/behavior';
+import type { TunnelState, TunnelStep } from '../GuidedInterventionTracker';
  
  interface InterventionsStepProps {
    selectedProblem: BxPresentingProblem | null;
@@ -17,6 +19,8 @@
    supportingObjectives: BxSkillProgramObjective[];
    selectedInterventions: BxSkillProgramIntervention[];
    onInterventionsChange: (interventions: BxSkillProgramIntervention[]) => void;
+  tunnelState?: TunnelState;
+  onEditStep?: (step: TunnelStep) => void;
  }
  
  const PHASE_CONFIG: Record<StrategyPhase, { label: string; icon: React.ReactNode; color: string }> = {
@@ -33,11 +37,14 @@
    supportingObjectives,
    selectedInterventions,
    onInterventionsChange,
+  tunnelState,
+  onEditStep,
  }: InterventionsStepProps) {
    // Get strategies linked to the replacement goal
    const { strategies, loading } = useObjectiveStrategies(selectedReplacementGoal?.goalId);
    const [customIntervention, setCustomIntervention] = useState('');
    const [customPhase, setCustomPhase] = useState<StrategyPhase>('teaching');
+  const [summaryOpen, setSummaryOpen] = useState(false);
  
    // Group strategies by phase
    const strategiesByPhase = useMemo(() => {
@@ -93,6 +100,79 @@
  
    return (
      <div className="space-y-4">
+      {/* Mobile Summary - Only visible on mobile since sidebar is hidden */}
+      <div className="lg:hidden">
+        <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
+          <Card className="border-primary/30">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="py-3 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  Review Selections
+                </CardTitle>
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-transform",
+                  summaryOpen && "rotate-180"
+                )} />
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-3">
+                {/* Problem */}
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Problem</p>
+                    <p className="text-sm font-medium truncate">{selectedProblem?.title || 'Not selected'}</p>
+                  </div>
+                  {onEditStep && selectedProblem && (
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => onEditStep(1)}>
+                      <Pencil className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Replacement Goal */}
+                <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      Replacement Goal
+                      <Badge variant="default" className="text-[10px] py-0 px-1">Primary</Badge>
+                    </p>
+                    <p className="text-sm font-medium">{selectedReplacementGoal?.value || 'Not selected'}</p>
+                  </div>
+                  {onEditStep && selectedReplacementGoal && (
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => onEditStep(2)}>
+                      <Pencil className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Objectives */}
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground">Objectives ({supportingObjectives.length})</p>
+                    {supportingObjectives.length > 0 ? (
+                      <p className="text-sm truncate">{supportingObjectives[0].title}{supportingObjectives.length > 1 ? ` +${supportingObjectives.length - 1} more` : ''}</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">None selected</p>
+                    )}
+                  </div>
+                  {onEditStep && (
+                    <Button variant="ghost" size="sm" className="h-7" onClick={() => onEditStep(3)}>
+                      <Pencil className="w-3 h-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      </div>
+
        <div>
         <h3 className="text-lg font-semibold mb-1">Step 4: Intervention Strategies</h3>
          <p className="text-sm text-muted-foreground">

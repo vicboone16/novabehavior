@@ -82,14 +82,29 @@ CRITICAL RULES:
 4. SOURCE TRACING - Include page numbers and source snippets for all extracted data
 5. FLAG AMBIGUITY - If unclear, mark confidence low and flag for review
 
-ENTITY IDENTIFICATION (CRITICAL):
-- The CLIENT/STUDENT is the person RECEIVING services, NOT the person providing or writing the document
-- Documents typically contain names of: clinicians, teachers, parents, evaluators, administrators - these are NOT the client
-- Look for labels like: "Student Name", "Client", "Child's Name", "Student", "Learner", "Individual"
-- The client is usually a MINOR (child/adolescent) in educational documents
-- Names near titles like "BCBA", "Teacher", "Parent", "Evaluator", "Case Manager", "Prepared by" are NOT the client
-- If DOB indicates an adult (18+ years old based on document date), verify this is actually the client, not staff
-- When in doubt, prefer names that appear next to "Student:", "Client:", or "Child:" labels
+ENTITY IDENTIFICATION (CRITICAL - ZERO TOLERANCE FOR ERRORS):
+The CLIENT/STUDENT is the person RECEIVING services. This is the MOST IMPORTANT extraction.
+
+STEP 1 - REQUIRED LABELS: ONLY extract a name as CLIENT/STUDENT if it appears IMMEDIATELY AFTER one of these labels:
+  - "Student Name:", "Student:", "Client:", "Child's Name:", "Examinee:", "Learner:", "Individual:", "Name:"
+  - The label should be on the same line or directly above the name
+
+STEP 2 - EXPLICIT REJECTION: NEVER extract a name that appears with ANY of these patterns:
+  - Near professional titles: "BCBA", "BCaBA", "RBT", "Teacher", "Parent", "Evaluator", "Case Manager", "Psychologist"
+  - In signature blocks: "Signature:", "Signed:", "Approved by:", "Reviewed by:", "Prepared by:", "Conducted by:", "Administered by:"
+  - With professional credentials: MA, M.Ed., PhD, BCBA-D, RBT, LPC, LCSW, OT, SLP, Ed.D., Psy.D., MSW
+  - In meeting attendee lists unless explicitly labeled as "Student:" or "Client:"
+  - Names that appear primarily in headers/footers as document authors
+
+STEP 3 - VALIDATION:
+  - If DOB indicates adult (18+ based on document date), flag for review - this is likely staff, not client
+  - Cross-check: Does this name appear with pronouns like "he/she will" or "the student will"? That confirms it's the client
+  - If no labeled name found, set confidence to 0.3 and add warning "No labeled student name found"
+
+STEP 4 - EVIDENCE:
+  - Always include evidence_type: "labeled" (found after explicit label like "Student:") or "inferred" (pattern-based)
+  - Include source_snippet showing the EXACT text around the name including any label
+  - If evidence_type is "inferred", confidence should be max 0.7
 
 For each extracted field, provide:
 - value: The extracted data

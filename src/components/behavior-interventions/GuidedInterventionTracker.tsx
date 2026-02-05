@@ -3,7 +3,6 @@
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
  import { Card, CardContent } from '@/components/ui/card';
- import { ScrollArea } from '@/components/ui/scroll-area';
  import { Separator } from '@/components/ui/separator';
  import { cn } from '@/lib/utils';
  import { toast } from 'sonner';
@@ -139,6 +138,21 @@ import { InterventionsStep } from './steps/InterventionsStep';
      return tunnelState.completedSteps.includes(step);
    };
  
+  const canNavigateToStep = (step: TunnelStep): boolean => {
+    if (step === 1) return true;
+    // Can navigate to any completed step or current step
+    return tunnelState.completedSteps.includes((step - 1) as TunnelStep) || step <= tunnelState.currentStep;
+  };
+
+  const handleStepClick = (step: TunnelStep) => {
+    if (canNavigateToStep(step) && step !== tunnelState.currentStep) {
+      setTunnelState((prev) => ({
+        ...prev,
+        currentStep: step,
+      }));
+    }
+  };
+
    const handleProblemSelect = (problem: BxPresentingProblem) => {
      setTunnelState((prev) => ({
        ...prev,
@@ -212,8 +226,8 @@ import { InterventionsStep } from './steps/InterventionsStep';
  
    return (
      <Dialog open={open} onOpenChange={onOpenChange}>
-       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-         <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="shrink-0 p-6 pb-0">
            <DialogTitle className="flex items-center gap-2">
              <Target className="w-5 h-5 text-primary" />
              Create Skill Program for {studentName}
@@ -224,10 +238,13 @@ import { InterventionsStep } from './steps/InterventionsStep';
          </DialogHeader>
  
          {/* Step Progress Indicator */}
-         <div className="flex items-center justify-between py-3 px-1">
+        <div className="flex items-center justify-between py-3 px-6 shrink-0">
            {([1, 2, 3, 4] as TunnelStep[]).map((step) => (
              <div key={step} className="flex items-center flex-1">
-               <div
+              <button
+                type="button"
+                onClick={() => handleStepClick(step)}
+                disabled={!canNavigateToStep(step)}
                  className={cn(
                    'flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all',
                    tunnelState.currentStep === step
@@ -236,7 +253,9 @@ import { InterventionsStep } from './steps/InterventionsStep';
                      ? 'bg-primary/80 text-primary-foreground'
                      : isStepLocked(step)
                      ? 'bg-muted text-muted-foreground'
-                     : 'bg-muted text-foreground'
+                    : 'bg-muted text-foreground',
+                  canNavigateToStep(step) && step !== tunnelState.currentStep && 'cursor-pointer hover:ring-2 hover:ring-primary/30',
+                  !canNavigateToStep(step) && 'cursor-not-allowed'
                  )}
                >
                  {isStepComplete(step) ? (
@@ -246,7 +265,7 @@ import { InterventionsStep } from './steps/InterventionsStep';
                  ) : (
                    step
                  )}
-               </div>
+              </button>
                <div className="ml-2 hidden sm:block">
                  <p
                    className={cn(
@@ -273,14 +292,13 @@ import { InterventionsStep } from './steps/InterventionsStep';
            ))}
          </div>
  
-         <Separator />
+        <Separator className="shrink-0" />
  
          {/* Main Content Area */}
-         <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+        <div className="flex-1 flex gap-4 min-h-0 px-6">
            {/* Left: Step Content */}
-           <div className="flex-1 min-w-0 overflow-hidden">
-             <ScrollArea className="h-full">
-               <div className="pr-4 pb-4">
+          <div className="flex-1 min-w-0 overflow-y-auto">
+            <div className="pr-4 pb-24">
                  {tunnelState.currentStep === 1 && (
                    <ProblemStep
                      selectedProblem={tunnelState.selectedProblem}
@@ -313,22 +331,27 @@ import { InterventionsStep } from './steps/InterventionsStep';
                      supportingObjectives={tunnelState.supportingObjectives}
                      selectedInterventions={tunnelState.selectedInterventions}
                      onInterventionsChange={handleInterventionsChange}
+                    tunnelState={tunnelState}
+                    onEditStep={handleStepClick}
                    />
                  )}
-               </div>
-             </ScrollArea>
+            </div>
            </div>
  
            {/* Right: Summary Panel */}
            <div className="w-64 shrink-0 hidden lg:block">
-             <TunnelSummaryPanel tunnelState={tunnelState} />
+            <TunnelSummaryPanel 
+              tunnelState={tunnelState} 
+              currentStep={tunnelState.currentStep}
+              onEditStep={handleStepClick}
+            />
            </div>
          </div>
  
-         <Separator />
+        <Separator className="shrink-0" />
  
          {/* Footer Navigation */}
-         <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between p-6 pt-4 shrink-0 bg-background">
            <Button
              variant="outline"
              onClick={handleBack}
