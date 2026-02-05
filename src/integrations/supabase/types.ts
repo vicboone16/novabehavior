@@ -7242,6 +7242,47 @@ export type Database = {
           },
         ]
       }
+      supervision_chain_violations: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          detected_at: string | null
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          staff_user_id: string
+          violation_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          detected_at?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          staff_user_id: string
+          violation_type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          detected_at?: string | null
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          staff_user_id?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervision_chain_violations_staff_user_id_fkey"
+            columns: ["staff_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       supervision_logs: {
         Row: {
           activities: Json | null
@@ -7882,6 +7923,13 @@ export type Database = {
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
+      can_schedule_rbt: {
+        Args: { _session_date: string; _staff_user_id: string }
+        Returns: {
+          allowed: boolean
+          reason: string
+        }[]
+      }
       check_pin_rate_limit: {
         Args: { _email: string; _ip_address: string }
         Returns: boolean
