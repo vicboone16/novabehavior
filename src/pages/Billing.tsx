@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles } from 'lucide-react';
+ import { useNavigate } from 'react-router-dom';
+ import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -79,6 +79,10 @@ export default function Billing() {
               <AlertCircle className="w-4 h-4" />
               Denials
             </TabsTrigger>
+             <TabsTrigger value="payers" className="gap-2">
+               <Building2 className="w-4 h-4" />
+               Payer Config
+             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard">
@@ -156,6 +160,26 @@ export default function Billing() {
           <TabsContent value="denials">
             <DenialTracker />
           </TabsContent>
+
+           <TabsContent value="payers">
+             <Card>
+               <CardHeader>
+                 <CardTitle className="flex items-center gap-2">
+                   <Building2 className="w-5 h-5" />
+                   Payer Configuration
+                 </CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <p className="text-muted-foreground mb-4">
+                   Configure payer-specific billing rules, CPT codes, rates, and CMS-1500 mapping defaults.
+                 </p>
+                 <Button onClick={() => navigate('/billing/payers')} className="gap-2">
+                   <Building2 className="w-4 h-4" />
+                   Open Payer Directory
+                 </Button>
+               </CardContent>
+             </Card>
+           </TabsContent>
         </Tabs>
       </main>
 

@@ -35,6 +35,9 @@ import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import IEPLibrary from "./pages/IEPLibrary";
 import { StaffProfilePage } from "./components/staff-profile";
+ import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
+ import PayerDetailPage from "./pages/payers/PayerDetailPage";
+ import ServiceDetailPage from "./pages/payers/ServiceDetailPage";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -184,6 +187,33 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+             <Route path="/billing/payers" element={
+               <ProtectedRoute>
+                 <ApprovalCheck>
+                   <SyncProvider>
+                     <PayerDirectoryPage />
+                   </SyncProvider>
+                 </ApprovalCheck>
+               </ProtectedRoute>
+             } />
+             <Route path="/billing/payers/:payerId" element={
+               <ProtectedRoute>
+                 <ApprovalCheck>
+                   <SyncProvider>
+                     <PayerDetailPage />
+                   </SyncProvider>
+                 </ApprovalCheck>
+               </ProtectedRoute>
+             } />
+             <Route path="/billing/payers/:payerId/services/:serviceId" element={
+               <ProtectedRoute>
+                 <ApprovalCheck>
+                   <SyncProvider>
+                     <ServiceDetailPage />
+                   </SyncProvider>
+                 </ApprovalCheck>
+               </ProtectedRoute>
+             } />
             <Route path="/analytics" element={
               <ProtectedRoute>
                 <ApprovalCheck>
