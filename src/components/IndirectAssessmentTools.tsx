@@ -134,7 +134,6 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [showResults, setShowResults] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSavedAssessments, setShowSavedAssessments] = useState(false);
-  const [showBriefTeacherInput, setShowBriefTeacherInput] = useState(false);
   const [showRecordReview, setShowRecordReview] = useState(false);
 
   const currentItems = useMemo(() => {
@@ -347,7 +346,6 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
             setActiveAssessment(v as 'FAST' | 'MAS' | 'QABF' | 'BRIEF' | 'RECORD_REVIEW');
             setResponses({});
             setShowResults(false);
-            setShowBriefTeacherInput(v === 'BRIEF');
             setShowRecordReview(v === 'RECORD_REVIEW');
           }}>
             <TabsList className="grid grid-cols-5 w-full">
@@ -432,31 +430,6 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
           )}
         </CardContent>
       </Card>
-
-      {/* Brief Teacher Input Form */}
-      {activeAssessment === 'BRIEF' && (
-        <BriefTeacherInput
-          student={student}
-          onSave={(data: BriefTeacherInputData) => {
-            // Save to narrative notes with specific tag
-            const noteContent = {
-              type: 'brief-teacher-input',
-              ...data,
-            };
-            const observationNote = {
-              id: data.id,
-              studentId: student.id,
-              content: JSON.stringify(noteContent),
-              timestamp: new Date(),
-              tags: ['brief-teacher-input', 'indirect-assessment'],
-            };
-            const existingNotes = student.narrativeNotes || [];
-            updateStudentProfile(student.id, {
-              narrativeNotes: [...existingNotes, observationNote],
-            });
-          }}
-        />
-      )}
 
       {/* Results Card (shown when complete) - only for rating scales */}
       {showResults && activeAssessment !== 'BRIEF' && (
