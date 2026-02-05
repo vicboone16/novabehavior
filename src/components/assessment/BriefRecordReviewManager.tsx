@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { 
-  FileText, Edit2, Eye, Calendar, AlertTriangle, RefreshCw
+  FileText, Edit2, Eye, Calendar, AlertTriangle, RefreshCw, Download, Printer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,6 +20,11 @@ import { BriefRecordReviewForm, BriefRecordReviewData } from './BriefRecordRevie
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BriefRecordReviewSavedData } from '@/types/behavior';
+import { 
+  exportBriefRecordReviewToDocx, 
+  generateBriefRecordReviewPrintHtml, 
+  printAssessmentContent 
+} from '@/lib/assessmentExport';
 
 // Form loading skeleton
 function FormLoadingSkeleton() {
@@ -124,6 +129,23 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
     setShowForm(true);
   };
 
+  const handleExportReview = async () => {
+    if (!existingReview) return;
+    try {
+      await exportBriefRecordReviewToDocx(existingReview, student);
+      toast.success('Record Review exported to Word');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export Record Review');
+    }
+  };
+
+  const handlePrintReview = () => {
+    if (!existingReview) return;
+    const html = generateBriefRecordReviewPrintHtml(existingReview, student);
+    printAssessmentContent(`Brief Record Review - ${student.displayName || student.name}`, html);
+  };
+
   const handleFormRetry = () => {
     setFormRenderError(false);
     setFormKey(prev => prev + 1);
@@ -221,19 +243,33 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
                   FBA records review for {student.displayName || student.name}
                 </CardDescription>
               </div>
-              <Button size="sm" onClick={handleOpenReview}>
-                {existingReview ? (
+              <div className="flex gap-2">
+                {existingReview && (
                   <>
-                    <Edit2 className="w-3 h-3 mr-1" />
-                    Edit Review
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-3 h-3 mr-1" />
-                    Start Review
+                    <Button variant="outline" size="sm" onClick={handleExportReview}>
+                      <Download className="w-3 h-3 mr-1" />
+                      Export
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handlePrintReview}>
+                      <Printer className="w-3 h-3 mr-1" />
+                      Print
+                    </Button>
                   </>
                 )}
-              </Button>
+                <Button size="sm" onClick={handleOpenReview}>
+                  {existingReview ? (
+                    <>
+                      <Edit2 className="w-3 h-3 mr-1" />
+                      Edit Review
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-3 h-3 mr-1" />
+                      Start Review
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
