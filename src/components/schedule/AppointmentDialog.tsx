@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, addMinutes, setHours, setMinutes } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -33,9 +34,10 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Trash2, X, Users, Sparkles } from 'lucide-react';
+import { CalendarIcon, Trash2, X, Users, Sparkles, AlertTriangle, Link2Off } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SchedulingEngine } from '@/components/scheduling/SchedulingEngine';
+import { checkMultipleStaffSupervision, type SupervisionStatus } from '@/hooks/useSupervisionChain';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface AppointmentDialogProps {
@@ -127,6 +129,68 @@ export function AppointmentDialog({
   const [notes, setNotes] = useState('');
   const [showStaffSelector, setShowStaffSelector] = useState(false);
   const [showFindStaffSheet, setShowFindStaffSheet] = useState(false);
+  
+  // Supervision chain enforcement
+  const [supervisionStatuses, setSupervisionStatuses] = useState<Map<string, SupervisionStatus>>(new Map());
+  const [checkingSupervision, setCheckingSupervision] = useState(false);
+
+  // Check supervision status when selected staff changes
+  useEffect(() => {
+    const checkSupervision = async () => {
+      if (selectedStaffIds.length === 0) {
+        setSupervisionStatuses(new Map());
+        return;
+      }
+
+      // Get RBT/BT staff from selected IDs
+      const rbtStaff = selectedStaffIds.filter(id => {
+        const staffMember = staff.find(s => s.id === id);
+        return staffMember?.credential === 'RBT' || staffMember?.credential === 'BT';
+      });
+
+      if (rbtStaff.length === 0) {
+        setSupervisionStatuses(new Map());
+        return;
+      }
+
+      setCheckingSupervision(true);
+      try {
+        const statuses = await checkMultipleStaffSupervision(rbtStaff);
+        setSupervisionStatuses(statuses);
+      } finally {
+        setCheckingSupervision(false);
+      }
+    };
+
+    checkSupervision();
+  }, [selectedStaffIds, staff]);
+
+  // Calculate supervision blocking status
+  const supervisionBlockers = useMemo(() => {
+    const blockers: { staffId: string; name: string; reason: string }[] = [];
+    
+    for (const [staffId, status] of supervisionStatuses) {
+      if (!status.hasActiveSupervisor) {
+        const staffMember = staff.find(s => s.id === staffId);
+        blockers.push({
+          staffId,
+          name: staffMember?.name || 'Unknown',
+          reason: 'Missing supervisor chain',
+        });
+      }
+    }
+    
+    return blockers;
+  }, [supervisionStatuses, staff]);
+
+  const hasSupervisionWarnings = useMemo(() => {
+    for (const status of supervisionStatuses.values()) {
+      if (status.linkExpiring) return true;
+    }
+    return false;
+  }, [supervisionStatuses]);
+
+  const isBlocked = supervisionBlockers.length > 0;
   useEffect(() => {
     if (appointment) {
       const start = new Date(appointment.start_time);
@@ -242,6 +306,31 @@ export function AppointmentDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Supervision Chain Warnings */}
+          {isBlocked && (
+            <Alert variant="destructive">
+              <Link2Off className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Scheduling blocked:</strong> The following staff require an active supervisor:
+                <ul className="mt-1 ml-4 list-disc">
+                  {supervisionBlockers.map(b => (
+                    <li key={b.staffId}>{b.name} (RBT/BT)</li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs">Assign a supervisor before scheduling.</p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {hasSupervisionWarnings && !isBlocked && (
+            <Alert className="border-warning/50 bg-warning/10">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertDescription className="text-warning">
+                Some staff have supervisor links expiring soon. Please review.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Title field - at the top */}
           <div className="space-y-2">
             <Label>Appointment Title</Label>
@@ -469,8 +558,8 @@ export function AppointmentDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            {appointment ? 'Update' : 'Create'}
+          <Button onClick={handleSave} disabled={isBlocked}>
+            {isBlocked ? 'Blocked' : appointment ? 'Update' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>

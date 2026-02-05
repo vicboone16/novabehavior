@@ -120,13 +120,14 @@ export default function Schedule() {
   const loadStaff = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('user_id, display_name, email, first_name, last_name')
+      .select('user_id, display_name, email, first_name, last_name, credential')
       .eq('is_approved', true);
 
     if (data) {
       setStaff(data.map(p => ({
         id: p.user_id,
-        name: p.display_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.email || 'Unknown'
+        name: p.display_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.email || 'Unknown',
+        credential: p.credential || undefined,
       })));
     }
   };

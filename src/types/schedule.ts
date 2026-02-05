@@ -48,4 +48,5 @@ export interface CalendarStudent {
 export interface CalendarStaff {
   id: string;
   name: string;
+  credential?: string;
 }
