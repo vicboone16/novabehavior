@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Edit2, Save, X, User, Mail, Phone, Calendar } from 'lucide-react';
 import type { SupervisorLink } from '@/types/staffProfile';
 import { format } from 'date-fns';
+import { SupervisionChainWarning } from '@/components/supervision/SupervisionChainWarning';
+import { AssignSupervisorDialog } from '@/components/supervision/AssignSupervisorDialog';
 
 interface StaffOverviewTabProps {
   profile: any;
@@ -33,6 +34,7 @@ const ROLES = [
 
 export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, superviseeLinks }: StaffOverviewTabProps) {
   const [editing, setEditing] = useState(false);
+  const [showAssignSupervisorDialog, setShowAssignSupervisorDialog] = useState(false);
   const [formData, setFormData] = useState({
     first_name: profile.first_name || '',
     last_name: profile.last_name || '',
@@ -45,6 +47,10 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     hire_date: profile.hire_date || '',
     npi_number: profile.npi_number || '',
   });
+  
+  const staffName = profile.display_name || 
+    `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 
+    'Unknown';
 
   const handleSave = async () => {
     const success = await updateProfile(formData);
@@ -63,6 +69,13 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
 
   return (
     <div className="space-y-6 mt-6">
+      {/* Supervision Chain Warning */}
+      <SupervisionChainWarning
+        staffUserId={profile.user_id}
+        credential={profile.credential}
+        onAssignSupervisor={() => setShowAssignSupervisorDialog(true)}
+      />
+      
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -288,6 +301,18 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
           </CardContent>
         </Card>
       </div>
+
+      {/* Assign Supervisor Dialog */}
+      <AssignSupervisorDialog
+        open={showAssignSupervisorDialog}
+        onOpenChange={setShowAssignSupervisorDialog}
+        staffUserId={profile.user_id}
+        staffName={staffName}
+        onAssigned={() => {
+          // Refresh the page to show updated supervision status
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
