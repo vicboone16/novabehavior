@@ -1,130 +1,48 @@
 
 
-## Fix Brief Teacher Interview Crash - Complete Solution
+## Fix Brief Teacher Interview and Record Review Crash
 
-### Problem Identified
+### Problem
 
-The **Brief Teacher Interview** and **Record Review** tabs crash because of unsafe `useMemo` calculations in `IndirectAssessmentTools.tsx`. When switching to these tabs:
+The **Brief Teacher Interview** and **Record Review** tabs crash to a blank screen when selected. This happens because:
 
-1. `currentItems` returns `undefined` (only defined for FAST/MAS/QABF)
-2. `progress` computation calls `currentItems.some()` and `currentItems.length` on `undefined`
-3. `scores` computation calls `currentItems.forEach()` on `undefined`
-4. `maxPossibleScore` does the same
+1. `currentItems` returns `undefined` for these assessment types (only defined for FAST/MAS/QABF)
+2. Calculations like `progress`, `scores`, and `maxPossibleScore` crash when calling methods on `undefined`
+3. UI elements (Reset/Save buttons, progress bar, items list) render incorrectly
 
-This causes a runtime error that blanks the entire component.
+### Solution
 
----
+Fix the crash in `src/components/IndirectAssessmentTools.tsx` by:
 
-### Solution Overview
-
-| Change | Purpose |
-|--------|---------|
-| Add `isRatingScale` flag | Distinguish FAST/MAS/QABF from BRIEF/RECORD_REVIEW |
-| Safe `currentItems` default | Return empty array `[]` instead of `undefined` |
-| Guard all computations | Avoid divide-by-zero and undefined access |
-| Hide rating-scale UI | Don't show Reset/Save/Progress for BRIEF/RECORD_REVIEW |
-
----
+1. Adding a flag to detect rating-scale assessments vs. interview/review forms
+2. Making `currentItems` return an empty array instead of `undefined`
+3. Guarding all calculations to prevent divide-by-zero errors
+4. Conditionally hiding rating-scale UI elements for Brief Teacher and Record Review tabs
 
 ### Technical Changes
 
 **File: `src/components/IndirectAssessmentTools.tsx`**
 
-#### 1. Add rating scale detection
-```typescript
-const isRatingScale = activeAssessment === 'FAST' || 
-                      activeAssessment === 'MAS' || 
-                      activeAssessment === 'QABF';
-```
+| Change | Purpose |
+|--------|---------|
+| Add `isRatingScale` flag | Distinguish FAST/MAS/QABF from BRIEF/RECORD_REVIEW |
+| Add `default: return []` to `currentItems` switch | Prevent `undefined` return value |
+| Guard `progress` calculation | Check `currentItems.length > 0` before dividing |
+| Wrap Reset/Save buttons in `isRatingScale &&` | Hide for non-rating-scale tabs |
+| Wrap progress bar in `isRatingScale &&` | Hide for non-rating-scale tabs |
+| Wrap items card in `isRatingScale &&` | Hide for non-rating-scale tabs |
+| Remove unused `showRecordReview` state | Clean up dead code |
 
-#### 2. Fix `currentItems` to always return an array
-```typescript
-const currentItems = useMemo(() => {
-  switch (activeAssessment) {
-    case 'FAST': return FAST_ITEMS;
-    case 'MAS': return MAS_ITEMS;
-    case 'QABF': return QABF_ITEMS;
-    default: return []; // Safe fallback for BRIEF/RECORD_REVIEW
-  }
-}, [activeAssessment]);
-```
+### Expected Result After Fix
 
-#### 3. Fix `progress` to avoid divide-by-zero
-```typescript
-const progress = useMemo(() => {
-  if (currentItems.length === 0) return 0; // Prevent NaN
-  const answered = Object.keys(responses).filter(k => 
-    currentItems.some(i => i.id === k)
-  ).length;
-  return (answered / currentItems.length) * 100;
-}, [responses, currentItems]);
-```
+| Tab | What Displays |
+|-----|--------------|
+| FAST / MAS / QABF | Full rating scale with Reset/Save, progress bar, items list |
+| Brief Teacher | Card with "New Response" button and saved responses list |
+| Record Review | Card with "Start Review" or "Edit Review" button |
 
-#### 4. Conditionally show header action buttons
-```typescript
-{/* Only show Reset/Save for rating scale assessments */}
-{isRatingScale && (
-  <div className="flex gap-2">
-    <Button variant="outline" size="sm" onClick={handleReset}>
-      <RotateCcw className="w-3 h-3 mr-1" />
-      Reset
-    </Button>
-    <Button size="sm" onClick={handleSave} disabled={progress < 100}>
-      <Save className="w-3 h-3 mr-1" />
-      Save
-    </Button>
-  </div>
-)}
-```
+### Notes
 
-#### 5. Fix items rendering condition
-Currently checks `activeAssessment !== 'BRIEF'` which still tries to render for RECORD_REVIEW with empty items. Change to:
-```typescript
-{isRatingScale && currentItems.length > 0 && (
-  <Card>
-    {/* ... Items list ... */}
-  </Card>
-)}
-```
-
-#### 6. Fix notes section condition
-```typescript
-{isRatingScale && (
-  <Card>
-    {/* ... Notes ... */}
-  </Card>
-)}
-```
-
----
-
-### Multi-Select Support Confirmation
-
-The Brief Teacher Interview form **already supports multi-select** for:
-- Problem Behaviors (11 checkboxes)
-- Triggers/Antecedents (6 checkboxes + Other)
-- Things Obtained (4 checkboxes + Other)
-- Things Avoided (5 checkboxes + Other)
-
-This is implemented in `BriefTeacherInput.tsx` using the `toggleCheckbox` helper function and `Checkbox` components. The multi-select data is saved correctly as arrays in the student profile.
-
----
-
-### Expected Behavior After Fix
-
-| Tab | What Should Appear |
-|-----|-------------------|
-| FAST/MAS/QABF | Full rating scale with Reset/Save, progress bar, items list |
-| Brief Teacher | Card with "New Response" button, saved responses list |
-| Record Review | Card with "Start Review"/"Edit Review" button |
-
----
-
-### Files to Modify
-
-1. **`src/components/IndirectAssessmentTools.tsx`** - Fix crash and conditional rendering
-
-No changes needed to:
-- `BriefTeacherInput.tsx` - Questions and multi-select already work correctly
-- `BriefTeacherInputManager.tsx` - Manager component is properly structured
+- No changes needed to `BriefTeacherInput.tsx` or `BriefRecordReviewManager.tsx` - they already work correctly
+- Multi-select support for behaviors, triggers, and consequences is already implemented in the Brief Teacher form
 
