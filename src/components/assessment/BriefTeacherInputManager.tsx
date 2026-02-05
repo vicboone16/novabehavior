@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { 
-  Users, Plus, Eye, Trash2, Calendar, CheckCircle, AlertCircle, RefreshCw
+  Users, Plus, Eye, Trash2, Calendar, CheckCircle, AlertCircle, RefreshCw,
+  Download, Printer, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,6 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +40,11 @@ import { BriefTeacherInput, BriefTeacherInputData } from './BriefTeacherInput';
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BriefTeacherInputSaved } from '@/types/behavior';
+import { 
+  exportBriefTeacherInputToDocx, 
+  generateBriefTeacherInputPrintHtml, 
+  printAssessmentContent 
+} from '@/lib/assessmentExport';
 
 // Form error display component
 function FormErrorDisplay({ onRetry }: { onRetry: () => void }) {
@@ -226,6 +238,21 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
     return colors[fn] || 'bg-muted';
   };
 
+  const handleExportResponse = async (response: BriefTeacherInputSaved) => {
+    try {
+      await exportBriefTeacherInputToDocx(response, student);
+      toast.success('Response exported to Word');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export response');
+    }
+  };
+
+  const handlePrintResponse = (response: BriefTeacherInputSaved) => {
+    const html = generateBriefTeacherInputPrintHtml(response, student);
+    printAssessmentContent(`Brief Teacher Input - ${student.displayName || student.name}`, html);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -346,7 +373,47 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
                           )}
                         </div>
                       )}
-                      <Eye className="w-4 h-4 text-muted-foreground" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <MoreHorizontal className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedResponse(response);
+                            setShowResponsesDialog(true);
+                          }}>
+                            <Eye className="w-3 h-3 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportResponse(response);
+                          }}>
+                            <Download className="w-3 h-3 mr-2" />
+                            Export to Word
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintResponse(response);
+                          }}>
+                            <Printer className="w-3 h-3 mr-2" />
+                            Print
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(response.id);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 ))}
@@ -481,6 +548,22 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
               </ScrollArea>
             )}
             <DialogFooter>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectedResponse && handleExportResponse(selectedResponse)}
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectedResponse && handlePrintResponse(selectedResponse)}
+              >
+                <Printer className="w-3 h-3 mr-1" />
+                Print
+              </Button>
               <Button
                 variant="destructive"
                 size="sm"

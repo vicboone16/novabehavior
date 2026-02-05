@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { 
   ClipboardList, Save, RotateCcw, ChevronDown, ChevronUp, 
-  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2, FileText
+  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2, FileText,
+  Download, Printer, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,6 +15,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
@@ -21,6 +28,11 @@ import { format } from 'date-fns';
 import { BriefTeacherInput, BriefTeacherInputData } from '@/components/assessment/BriefTeacherInput';
 import { BriefTeacherInputManager } from '@/components/assessment/BriefTeacherInputManager';
 import { BriefRecordReviewManager } from '@/components/assessment/BriefRecordReviewManager';
+import { 
+  exportRatingScaleToDocx, 
+  generateRatingScalePrintHtml, 
+  printAssessmentContent 
+} from '@/lib/assessmentExport';
 
 interface IndirectAssessmentToolsProps {
   student: Student;
@@ -263,6 +275,35 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
 
   const savedAssessments = student.indirectAssessments || [];
 
+  const handleExportAssessment = async (assessment: IndirectAssessmentResult) => {
+    try {
+      await exportRatingScaleToDocx(assessment, student);
+      toast.success('Assessment exported to Word');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export assessment');
+    }
+  };
+
+  const handlePrintAssessment = (assessment: IndirectAssessmentResult) => {
+    const html = generateRatingScalePrintHtml(assessment, student);
+    printAssessmentContent(`${assessment.type} - ${student.displayName || student.name}`, html);
+  };
+
+  const handleExportAllAssessments = async () => {
+    if (savedAssessments.length === 0) return;
+    
+    try {
+      for (const assessment of savedAssessments) {
+        await exportRatingScaleToDocx(assessment, student);
+      }
+      toast.success(`Exported ${savedAssessments.length} assessment(s)`);
+    } catch (error) {
+      console.error('Export all error:', error);
+      toast.error('Failed to export assessments');
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Saved Assessments Summary */}
@@ -274,13 +315,25 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                 Saved Assessments ({savedAssessments.length})
               </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowSavedAssessments(!showSavedAssessments)}
-              >
-                {showSavedAssessments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </Button>
+              <div className="flex gap-2">
+                {savedAssessments.length > 1 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleExportAllAssessments}
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Export All
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowSavedAssessments(!showSavedAssessments)}
+                >
+                  {showSavedAssessments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           {showSavedAssessments && (
@@ -303,14 +356,30 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
                     <Badge className={getFunctionColor(assessment.primaryFunction)}>
                       {getFunctionLabel(assessment.primaryFunction)}
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => handleDeleteAssessment(assessment.id)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <MoreHorizontal className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExportAssessment(assessment)}>
+                          <Download className="w-3 h-3 mr-2" />
+                          Export to Word
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePrintAssessment(assessment)}>
+                          <Printer className="w-3 h-3 mr-2" />
+                          Print
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteAssessment(assessment.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))}
