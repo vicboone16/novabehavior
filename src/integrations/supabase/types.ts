@@ -5151,6 +5151,8 @@ export type Database = {
           pin_hash: string | null
           preferred_regions: Json | null
           primary_agency_id: string | null
+          push_enabled: boolean | null
+          push_preferences: Json | null
           secondary_email: string | null
           secondary_phone: string | null
           session_length_preferences: Json | null
@@ -5198,6 +5200,8 @@ export type Database = {
           pin_hash?: string | null
           preferred_regions?: Json | null
           primary_agency_id?: string | null
+          push_enabled?: boolean | null
+          push_preferences?: Json | null
           secondary_email?: string | null
           secondary_phone?: string | null
           session_length_preferences?: Json | null
@@ -5245,6 +5249,8 @@ export type Database = {
           pin_hash?: string | null
           preferred_regions?: Json | null
           primary_agency_id?: string | null
+          push_enabled?: boolean | null
+          push_preferences?: Json | null
           secondary_email?: string | null
           secondary_phone?: string | null
           session_length_preferences?: Json | null
@@ -5276,6 +5282,36 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string | null
+          device_name: string | null
+          id: string
+          is_active: boolean | null
+          subscription: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          subscription: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          subscription?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       questionnaire_invitations: {
         Row: {
