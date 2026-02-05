@@ -66,6 +66,7 @@ import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
 import { SessionNotesTab } from '@/components/session-notes';
+import { FidelityDashboard } from '@/components/fidelity';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
@@ -1356,6 +1357,12 @@ export default function StudentProfile() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Treatment Fidelity Dashboard */}
+            <FidelityDashboard
+              studentId={student.id}
+              studentName={student.name}
+            />
 
             {/* Empty State */}
             {!student.fbaFindings && (!student.indirectAssessments || student.indirectAssessments.length === 0) && !student.bipData && (

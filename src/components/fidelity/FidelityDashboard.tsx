@@ -6,11 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ClipboardCheck, Plus, TrendingUp, TrendingDown, Minus, 
-  AlertTriangle, Calendar, User, Trash2
+  AlertTriangle, Calendar, User, Trash2, FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTreatmentFidelity } from '@/hooks/useTreatmentFidelity';
 import { FidelityCheckForm } from './FidelityCheckForm';
+import { FidelityTemplateBuilder } from './FidelityTemplateBuilder';
 import type { TreatmentFidelityCheck } from '@/types/treatmentFidelity';
 import {
   AlertDialog,
@@ -29,8 +30,9 @@ interface FidelityDashboardProps {
 }
 
 export function FidelityDashboard({ studentId, studentName }: FidelityDashboardProps) {
-  const { checks, templates, stats, loading, createCheck, deleteCheck } = useTreatmentFidelity(studentId);
+  const { checks, templates, stats, loading, createCheck, deleteCheck, createTemplate } = useTreatmentFidelity(studentId);
   const [showForm, setShowForm] = useState(false);
+  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const [deleteCheckId, setDeleteCheckId] = useState<string | null>(null);
 
   const getPercentageColor = (pct: number) => {
@@ -80,10 +82,16 @@ export function FidelityDashboard({ studentId, studentName }: FidelityDashboardP
               Track BIP implementation adherence
             </CardDescription>
           </div>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Check
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowTemplateBuilder(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Check
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Stats Summary */}
@@ -154,6 +162,15 @@ export function FidelityDashboard({ studentId, studentName }: FidelityDashboardP
         studentId={studentId}
         templates={templates}
         onSubmit={createCheck}
+      />
+
+      {/* Template Builder */}
+      <FidelityTemplateBuilder
+        open={showTemplateBuilder}
+        onOpenChange={setShowTemplateBuilder}
+        studentId={studentId}
+        templates={templates}
+        onCreateTemplate={createTemplate}
       />
 
       {/* Delete Confirmation */}
