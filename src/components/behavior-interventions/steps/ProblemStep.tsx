@@ -1,9 +1,8 @@
  import { useState, useMemo, useEffect } from 'react';
  import { Input } from '@/components/ui/input';
  import { Badge } from '@/components/ui/badge';
- import { ScrollArea } from '@/components/ui/scroll-area';
  import { cn } from '@/lib/utils';
- import { Search, BookOpen, Loader2 } from 'lucide-react';
+import { Search, BookOpen, Loader2, Sparkles } from 'lucide-react';
  import { usePresentingProblems } from '@/hooks/useBehaviorInterventions';
  import type { BxPresentingProblem } from '@/types/behaviorIntervention';
  import { BX_DOMAINS } from '@/types/behaviorIntervention';
@@ -24,6 +23,71 @@
  
    const { problems, loading } = usePresentingProblems(selectedDomain || undefined);
  
+  // Scoring weights for loose search (based on schema)
+  const SEARCH_WEIGHTS = {
+    exactTitleMatch: 10,
+    aliasMatch: 7,
+    tokenOverlap: 5,
+    domainMatch: 4,
+    tagMatch: 3,
+    exampleMatch: 2,
+  };
+
+  // Token-based search scoring
+  const getTokenOverlapScore = (query: string, text: string): number => {
+    const queryTokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+    const textTokens = text.toLowerCase().split(/\s+/);
+    let matches = 0;
+    for (const qt of queryTokens) {
+      if (textTokens.some(tt => tt.includes(qt))) matches++;
+    }
+    return queryTokens.length > 0 ? matches / queryTokens.length : 0;
+  };
+
+  // Score a problem against search query (loose/fuzzy search)
+  const scoreProblem = (problem: BxPresentingProblem, query: string): number => {
+    if (!query.trim()) return 0;
+    const q = query.toLowerCase();
+    let score = 0;
+
+    // Exact title match (highest priority)
+    if (problem.title.toLowerCase().includes(q)) {
+      score += SEARCH_WEIGHTS.exactTitleMatch;
+    }
+
+    // Alias/example match (examples serve as aliases)
+    if (problem.examples?.some(ex => ex.toLowerCase().includes(q))) {
+      score += SEARCH_WEIGHTS.aliasMatch;
+    }
+
+    // Token overlap on title and definition
+    const titleOverlap = getTokenOverlapScore(q, problem.title);
+    const defOverlap = problem.definition ? getTokenOverlapScore(q, problem.definition) : 0;
+    score += Math.max(titleOverlap, defOverlap) * SEARCH_WEIGHTS.tokenOverlap;
+
+    // Domain match
+    if (problem.domain.toLowerCase().includes(q)) {
+      score += SEARCH_WEIGHTS.domainMatch;
+    }
+
+    // Tag matches (topics, triggers, functions)
+    const allTags = [
+      ...(problem.topics || []),
+      ...(problem.trigger_tags || []),
+      ...(problem.function_tags || []),
+    ];
+    if (allTags.some(tag => tag.toLowerCase().includes(q))) {
+      score += SEARCH_WEIGHTS.tagMatch;
+    }
+
+    // Problem code match
+    if (problem.problem_code.toLowerCase().includes(q)) {
+      score += SEARCH_WEIGHTS.exampleMatch;
+    }
+
+    return score;
+  };
+
    // Initialize with problem if provided
    useEffect(() => {
      if (initialProblemId && problems.length > 0 && !selectedProblem) {
@@ -34,21 +98,23 @@
      }
    }, [initialProblemId, problems, selectedProblem, onProblemSelect]);
  
-   // Fuzzy search implementation
-   const filteredProblems = useMemo(() => {
-     if (!searchQuery.trim()) return problems;
-     const q = searchQuery.toLowerCase();
-     return problems.filter(
-       (p) =>
-         p.title.toLowerCase().includes(q) ||
-         p.problem_code.toLowerCase().includes(q) ||
-         p.definition?.toLowerCase().includes(q) ||
-         p.domain.toLowerCase().includes(q) ||
-         p.examples?.some((ex) => ex.toLowerCase().includes(q)) ||
-         p.trigger_tags?.some((tag) => tag.toLowerCase().includes(q)) ||
-         p.function_tags?.some((tag) => tag.toLowerCase().includes(q))
-     );
-   }, [problems, searchQuery]);
+  // Loose search with scoring
+  const scoredProblems = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return problems.map(p => ({ problem: p, score: 0 }));
+    }
+    return problems
+      .map(problem => ({
+        problem,
+        score: scoreProblem(problem, searchQuery),
+      }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score);
+  }, [problems, searchQuery]);
+
+  const filteredProblems = useMemo(() => {
+    return scoredProblems.map(({ problem }) => problem);
+  }, [scoredProblems]);
  
    // Group by domain
    const groupedProblems = useMemo(() => {
@@ -69,7 +135,7 @@
        <div>
          <h3 className="text-lg font-semibold mb-1">Step 1: Select Presenting Problem</h3>
          <p className="text-sm text-muted-foreground">
-           Search for and select the target behavior or presenting problem
+          Search using keywords, phrases, or descriptions — loose matching is supported
          </p>
        </div>
  
@@ -77,7 +143,7 @@
        <div className="relative">
          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
          <Input
-           placeholder="Search by problem name, code, triggers, functions..."
+          placeholder="Search loose: 'help', 'won't ask', 'routine', 'group work'..."
            value={searchQuery}
            onChange={(e) => setSearchQuery(e.target.value)}
            className="pl-9"
@@ -85,6 +151,19 @@
          />
        </div>
  
+      {/* Search results indicator */}
+      {searchQuery.trim() && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Sparkles className="w-3 h-3" />
+          <span>
+            {filteredProblems.length} match{filteredProblems.length !== 1 ? 'es' : ''} found
+            {scoredProblems.length > 0 && scoredProblems[0].score >= 10 && (
+              <span className="text-primary ml-1">(high confidence)</span>
+            )}
+          </span>
+        </div>
+      )}
+
        {/* Domain filter */}
        <div className="flex flex-wrap gap-1">
          <Badge

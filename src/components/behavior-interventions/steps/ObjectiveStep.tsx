@@ -7,22 +7,25 @@
  import { Card, CardContent } from '@/components/ui/card';
  import { cn } from '@/lib/utils';
  import { Plus, Target, Info, Loader2 } from 'lucide-react';
- import { useProblemObjectives } from '@/hooks/useBehaviorInterventions';
+import { useGoalObjectives } from '@/hooks/useBehaviorInterventions';
  import type { BxPresentingProblem, BxObjective } from '@/types/behaviorIntervention';
- import type { BxSkillProgramObjective } from '@/types/behavior';
+import type { BxSkillProgramObjective, BxSkillProgramReplacementGoal } from '@/types/behavior';
  
  interface ObjectiveStepProps {
    selectedProblem: BxPresentingProblem | null;
+  selectedReplacementGoal: BxSkillProgramReplacementGoal | null;
    supportingObjectives: BxSkillProgramObjective[];
    onObjectivesChange: (objectives: BxSkillProgramObjective[]) => void;
  }
  
  export function ObjectiveStep({
    selectedProblem,
+  selectedReplacementGoal,
    supportingObjectives,
    onObjectivesChange,
  }: ObjectiveStepProps) {
-   const { objectives, loading } = useProblemObjectives(selectedProblem?.id);
+  // Objectives are now filtered by the selected replacement goal
+  const { objectives, loading } = useGoalObjectives(selectedReplacementGoal?.goalId);
    const [customObjective, setCustomObjective] = useState('');
  
    const isObjectiveSelected = (objectiveId: string) => {
@@ -68,10 +71,10 @@
    return (
      <div className="space-y-4">
        <div>
-         <h3 className="text-lg font-semibold mb-1">Step 2: Supporting Objectives (Optional)</h3>
+        <h3 className="text-lg font-semibold mb-1">Step 3: Objectives / Data Targets (Optional)</h3>
          <p className="text-sm text-muted-foreground">
-           Select objectives as optional supporting context. These do <strong>not</strong> create
-           intervention targets on their own.
+          Select measurable replacement behaviors/data targets linked to the goal. These are the
+          specific skills you will track data on.
          </p>
        </div>
  
@@ -80,21 +83,22 @@
          <CardContent className="p-3 flex items-start gap-2">
            <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
            <p className="text-xs text-muted-foreground">
-             Objectives are subordinate/supporting components. The <strong>Replacement Goal</strong>{' '}
-             (next step) is the primary intervention target that gets saved and linked to interventions.
+            Objectives are children of the selected Replacement Goal. They represent measurable
+            behaviors you will collect data on. The goal remains the primary intervention target.
            </p>
          </CardContent>
        </Card>
  
-       {/* Selected problem reference */}
-       {selectedProblem && (
+      {/* Selected goal reference */}
+      {selectedReplacementGoal && (
          <Card>
            <CardContent className="p-3">
-             <div className="flex items-center gap-2">
-               <Badge variant="outline" className="text-xs font-mono">
-                 {selectedProblem.problem_code}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Objectives for:</p>
+              <p className="font-medium text-sm">{selectedReplacementGoal.value}</p>
+              <Badge variant={selectedReplacementGoal.isCustom ? 'secondary' : 'outline'} className="text-xs">
+                {selectedReplacementGoal.isCustom ? 'Custom Goal' : 'From Library'}
                </Badge>
-               <span className="font-medium text-sm">{selectedProblem.title}</span>
              </div>
            </CardContent>
          </Card>

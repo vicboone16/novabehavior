@@ -76,7 +76,7 @@
        <div>
          <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
            <Target className="w-5 h-5 text-primary" />
-           Step 3: Replacement Goal
+          Step 2: Replacement Goal
            <Badge variant="default" className="text-xs">Primary Target</Badge>
          </h3>
          <p className="text-sm text-muted-foreground">
