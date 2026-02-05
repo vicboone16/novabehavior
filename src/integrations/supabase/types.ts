@@ -7073,6 +7073,75 @@ export type Database = {
           },
         ]
       }
+      student_payers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_date: string | null
+          group_number: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          member_id: string | null
+          notes: string | null
+          payer_id: string
+          student_id: string
+          subscriber_name: string | null
+          subscriber_relationship: string | null
+          termination_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          group_number?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          member_id?: string | null
+          notes?: string | null
+          payer_id: string
+          student_id: string
+          subscriber_name?: string | null
+          subscriber_relationship?: string | null
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_date?: string | null
+          group_number?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          member_id?: string | null
+          notes?: string | null
+          payer_id?: string
+          student_id?: string
+          subscriber_name?: string | null
+          subscriber_relationship?: string | null
+          termination_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_payers_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_payers_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_session_status: {
         Row: {
           created_at: string
