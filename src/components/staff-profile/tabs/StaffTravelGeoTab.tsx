@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
-import { MapPin, Navigation, Car, Bus, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AddressAutocomplete, type ParsedAddress } from '@/components/ui/address-autocomplete';
+import { MapPin, Navigation, Car, Bus, CheckCircle, AlertTriangle, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StaffTravelGeoTabProps {
@@ -24,15 +24,63 @@ export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabP
   const [radius, setRadius] = useState(profile.max_travel_radius_miles || 15);
   const [buffer, setBuffer] = useState(profile.min_buffer_minutes || 15);
   const [transportMethod, setTransportMethod] = useState(profile.transportation_method || 'car');
+  const [pendingAddress, setPendingAddress] = useState<ParsedAddress | null>(null);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
-  const handleSaveRadius = async () => {
-    const success = await updateProfile({
-      max_travel_radius_miles: radius,
-      min_buffer_minutes: buffer,
-      transportation_method: transportMethod,
-    });
-    if (success) {
-      toast.success('Travel settings saved');
+  // Sync state when profile changes
+  useEffect(() => {
+    setAddress(profile.home_base_address || '');
+    setRadius(profile.max_travel_radius_miles || 15);
+    setBuffer(profile.min_buffer_minutes || 15);
+    setTransportMethod(profile.transportation_method || 'car');
+  }, [profile]);
+
+  const handleAddressSelect = (parsed: ParsedAddress) => {
+    setAddress(parsed.display_name);
+    setPendingAddress(parsed);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!pendingAddress) return;
+    
+    setSavingAddress(true);
+    try {
+      const success = await updateProfile({
+        home_base_address: pendingAddress.display_name,
+        geocode_lat: pendingAddress.lat,
+        geocode_lng: pendingAddress.lng,
+        geocode_status: 'success',
+      });
+      
+      if (success) {
+        toast.success('Address saved and geocoded successfully');
+        setPendingAddress(null);
+      }
+    } catch (error) {
+      console.error('Failed to save address:', error);
+      toast.error('Failed to save address');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const success = await updateProfile({
+        max_travel_radius_miles: radius,
+        min_buffer_minutes: buffer,
+        transportation_method: transportMethod,
+      });
+      if (success) {
+        toast.success('Travel settings saved');
+      }
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -57,35 +105,62 @@ export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabP
             <Label>Home Base Address</Label>
             <AddressAutocomplete
               value={address}
-              onSelect={async (parsed) => {
-                setAddress(parsed.display_name);
-                const success = await updateProfile({
-                  home_base_address: parsed.display_name,
-                  geocode_lat: parsed.lat,
-                  geocode_lng: parsed.lng,
-                  geocode_status: 'success',
-                });
-                if (success) {
-                  toast.success('Address geocoded successfully');
-                }
-              }}
+              onSelect={handleAddressSelect}
               placeholder="Start typing your address..."
             />
-            <p className="text-xs text-muted-foreground">Type to search and auto-geocode</p>
+            <p className="text-xs text-muted-foreground">
+              Type to search, select an address, then click Save Address
+            </p>
           </div>
+
+          {/* Pending Address Confirmation */}
+          {pendingAddress && (
+            <div className="p-3 rounded-lg border border-primary/50 bg-primary/5 space-y-2">
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 mt-0.5 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">Selected Address</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {pendingAddress.display_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Coordinates: {pendingAddress.lat.toFixed(4)}, {pendingAddress.lng.toFixed(4)}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleSaveAddress} 
+                disabled={savingAddress}
+                className="w-full"
+                size="sm"
+              >
+                {savingAddress ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Address
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Geocode Status */}
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
             {hasCoordinates ? (
               <>
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">Location Verified</p>
-                  <p className="text-xs text-muted-foreground">
-                    Coordinates: {profile.geocode_lat?.toFixed(4)}, {profile.geocode_lng?.toFixed(4)}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {profile.home_base_address || `${profile.geocode_lat?.toFixed(4)}, ${profile.geocode_lng?.toFixed(4)}`}
                   </p>
                 </div>
-                <Badge variant="outline" className="ml-auto">
+                <Badge variant="outline" className="shrink-0">
                   {geocodeStatus || 'success'}
                 </Badge>
               </>
@@ -95,7 +170,7 @@ export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabP
                 <div>
                   <p className="font-medium text-sm">Location Not Set</p>
                   <p className="text-xs text-muted-foreground">
-                    Enter an address and click Geocode to set your home base
+                    Search for an address above and save it
                   </p>
                 </div>
               </>
@@ -170,8 +245,15 @@ export function StaffTravelGeoTab({ profile, updateProfile }: StaffTravelGeoTabP
             </div>
           </div>
 
-          <Button onClick={handleSaveRadius} className="w-full">
-            Save Travel Settings
+          <Button onClick={handleSaveSettings} className="w-full" disabled={savingSettings}>
+            {savingSettings ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Travel Settings'
+            )}
           </Button>
         </CardContent>
       </Card>
