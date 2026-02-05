@@ -286,6 +286,330 @@ After:
 ```
 
 ---
+---
+
+## Plan: Behavior Intervention Tracker – Guided Tunnel Upgrade
+
+### Overview
+
+This plan upgrades the existing Behavior Intervention Tracker to add a guided step-by-step "tunnel" flow while preserving the current multi-column layout. The upgrade introduces auto-population of recommended goals, custom overrides, multi-select objectives, integration with Skill Acquisition, and export connections to BIP and FBA Report generators.
+
+---
+
+### Current Architecture Summary
+
+**Existing Components:**
+- `InterventionWizard.tsx` - 4-step dialog wizard (Problem → Objective → Strategies → Confirm)
+- `StudentBxPlanView.tsx` - Tab-based view of student's intervention links
+- `BxInterventionLibrary.tsx` - 3-column library browser (Domains → Problems → Detail)
+- `BxProblemList.tsx` - Problem search and list display
+- `BxProblemDetail.tsx` - Problem overview with objectives and strategies tabs
+
+**Database Tables:**
+- `bx_presenting_problems` - Presenting problems with domains, functions, triggers
+- `bx_objectives` - Objectives (replacement goals)
+- `bx_strategies` - Intervention strategies
+- `bx_problem_objective_links` - Problem → Objective mappings
+- `bx_objective_strategy_links` - Objective → Strategy mappings
+- `student_bx_plan_links` - Student's assigned interventions
+
+---
+
+### Technical Changes
+
+#### A) Discovery + Auto-Population
+
+| File | Change |
+|------|--------|
+| `src/components/behavior-interventions/BxProblemList.tsx` | Enhance search with loose matching using Levenshtein distance or fuzzy search via lowercase includes on title, definition, examples, and trigger tags |
+| `src/components/behavior-interventions/InterventionWizard.tsx` | When problem is selected, auto-fetch linked objectives for selection |
+
+**Fuzzy Search Implementation:**
+```text
+Filter problems where:
+  - title.toLowerCase().includes(query) OR
+  - definition.toLowerCase().includes(query) OR
+  - problem_code.toLowerCase().includes(query) OR
+  - examples.some(ex => ex.toLowerCase().includes(query)) OR
+  - trigger_tags.some(tag => tag.toLowerCase().includes(query)) OR
+  - domain label includes query
+```
+
+---
+
+#### B) Step-by-Step Tunnel Flow with Locked Steps
+
+| File | Change |
+|------|--------|
+| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` (new) | Create new component with 4-step visible columns that lock until "Continue" is clicked |
+
+**Flow Structure:**
+```text
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│ Step 1: Problem    │ Step 2: Objective  │ Step 3: Replacement Goal │ Step 4: Interventions │
+│ [ACTIVE]           │ [LOCKED]           │ [LOCKED]                 │ [LOCKED]              │
+│                    │                    │                          │                       │
+│ Search problems... │ Dropdown + Other   │ Auto-populated           │ Recommended strategies│
+│ [Problem cards]    │ Custom objective   │ + Custom override        │ + Custom intervention │
+│                    │                    │                          │                       │
+│ [Continue →]       │ [Continue →]       │ [Continue →]             │ [Assign to Student]   │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Step State Management:**
+```typescript
+interface TunnelState {
+  currentStep: 1 | 2 | 3 | 4;
+  selectedProblem: BxPresentingProblem | null;
+  selectedObjective: { type: 'library' | 'custom'; objectiveId?: string; title: string } | null;
+  additionalObjectives: Array<{ type: 'library' | 'custom'; objectiveId?: string; title: string }>;
+  selectedReplacementGoal: { type: 'library' | 'custom'; value: string } | null;
+  selectedInterventions: Array<{ type: 'library' | 'custom'; strategyId?: string; name: string; phase?: string }>;
+}
+```
+
+---
+
+#### C) Objective Selection + Custom Override (Step 2)
+
+| File | Change |
+|------|---------|
+| `src/components/behavior-interventions/ObjectiveStep.tsx` (new) | Create objective selection step with dropdown of linked objectives and custom text input |
+
+**UI Specifications:**
+- Dropdown showing linked objectives from the selected problem (ordered by priority)
+- First linked objective is auto-selected as default
+- Text input labeled "Other objective (custom)" 
+- When user types in custom field and confirms, it becomes the selected objective
+- Custom objectives saved to student's skill program, not the library
+- Optional: "Add Additional Objectives" section with checkbox list of remaining linked objectives
+
+---
+
+#### D) Replacement Goal Selection + Custom Override (Step 3)
+
+| File | Change |
+|------|---------|
+| `src/components/behavior-interventions/ReplacementGoalStep.tsx` (new) | Create replacement goal selection step with dropdown and custom text input |
+
+**UI Specifications:**
+- Dropdown showing auto-suggested replacement goals based on the selected objective
+- First linked goal is pre-selected as default
+- Text input labeled "Other replacement goal (custom)"
+- When user types in custom field, it becomes the selected goal
+- Custom goals saved to student profile, not the library
+
+---
+
+#### E) Recommended Interventions Multi-Select (Step 4)
+
+| File | Change |
+|------|---------|
+| `src/components/behavior-interventions/InterventionsStep.tsx` (new) | Create interventions selection with auto-recommendations |
+
+**Auto-Population Logic:**
+1. Fetch strategies linked to selected objectives
+2. Match strategies where `strategy_type` tags align with selected objective tags
+3. Display grouped by phase (Prevention, Teaching, Reinforcement, Maintenance, Crisis)
+
+**UI Specifications:**
+- Multi-select checklist with phase badges
+- Strategy type tags displayed (antecedent/teaching/reinforcement/etc.)
+- "Add custom intervention" free text input
+
+---
+
+#### F) Assign to Student + Skill Program Creation
+
+| File | Change |
+|------|---------|
+| `src/types/behavior.ts` | Add `BxSkillProgram` interface |
+| `src/store/dataStore.ts` | Add `addBxSkillProgram` action |
+| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` | Implement assign action creating skill program record |
+
+**New Type:**
+```typescript
+interface BxSkillProgram {
+  id: string;
+  studentId: string;
+  problemId: string;
+  problemTitle: string;
+  selectedObjective: {
+    objectiveId?: string;
+    title: string;
+    isCustom: boolean;
+  };
+  additionalObjectives: Array<{
+    objectiveId?: string;
+    title: string;
+    isCustom: boolean;
+  }>;
+  replacementGoal: string;
+  isCustomGoal: boolean;
+  interventions: Array<{
+    strategyId?: string;
+    name: string;
+    phase?: string;
+    isCustom: boolean;
+  }>;
+  status: 'active' | 'archived';
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string;
+}
+```
+
+**Save Logic:**
+1. Create `BxSkillProgram` record in student profile (`student.bxSkillPrograms[]`)
+2. For each objective, optionally create a corresponding SkillTarget for data collection
+3. Toast success: "Skill program saved"
+
+**Linked Skill Target Section on Behavior Cards:**
+| File | Change |
+|------|---------|
+| `src/components/ABCTracker.tsx` | Add "Linked Skill Target" section showing goal + objectives if behavior has a linked program |
+| `src/components/FrequencyTracker.tsx` | Same as above |
+| `src/components/StudentDataCard.tsx` | Pass linked skill programs to child trackers |
+
+---
+
+#### G) BIP Generator Integration
+
+| File | Change |
+|------|---------|
+| `src/components/BIPGenerator.tsx` | Add import from BxSkillPrograms, display replacement goals and objectives |
+
+**Integration Points:**
+1. Add "Import from Skill Programs" button in the Import step
+2. When clicked, populate:
+   - Target behaviors from `program.problemTitle`
+   - Replacement behaviors from `program.selectedObjective` + `program.additionalObjectives`
+   - Teaching strategies from `program.interventions.filter(i => i.phase === 'teaching')`
+   - Preventative from `phase === 'prevention'`
+   - Reinforcement from `phase === 'reinforcement'`
+   - Reactive from `phase === 'crisis' || phase === 'maintenance'`
+
+---
+
+#### H) FBA Report Generator Integration
+
+| File | Change |
+|------|---------|
+| `src/components/FBAReportGenerator.tsx` | Add "Replacement Skill Plan" section pulling from BxSkillPrograms |
+
+**New Export Section:**
+```text
+REPLACEMENT SKILL PLAN
+
+Target Behavior: [problem.title]
+Primary Objective: [program.selectedObjective.title]
+Replacement Goal: [program.replacementGoal]
+
+Additional Objectives:
+  • [objective 1]
+  • [objective 2]
+
+Recommended Interventions:
+  Prevention:
+    • [intervention 1]
+  Teaching:
+    • [intervention 2]
+  Reinforcement:
+    • [intervention 3]
+```
+
+Add checkbox in `includeSections`: `replacementPlan: true`
+
+---
+
+#### I) Backward Compatibility
+
+| Consideration | Approach |
+|---------------|----------|
+| Existing `student_bx_plan_links` | Continue to work; new system adds `bxSkillPrograms` as a parallel structure |
+| Existing wizard usage | Keep `InterventionWizard.tsx` for quick add; new `GuidedInterventionTracker` for full tunnel |
+| Column-based library | `BxInterventionLibrary.tsx` unchanged, can launch guided flow from "Add to Student" |
+
+---
+
+### Database Changes
+
+**No new tables required** - storing `bxSkillPrograms` in student profile JSON field (similar to existing `bx_problem_links` pattern in `background_info`).
+
+**Optional Future Migration:**
+If needed, can migrate to a dedicated `bx_skill_programs` table with columns matching the interface above.
+
+---
+
+### New Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` | Main container for 4-step guided flow |
+| `src/components/behavior-interventions/ObjectiveStep.tsx` | Step 2: Objective selection with dropdown + custom override |
+| `src/components/behavior-interventions/ReplacementGoalStep.tsx` | Step 3: Goal selection with custom override |
+| `src/components/behavior-interventions/InterventionsStep.tsx` | Step 4: Multi-select interventions |
+| `src/components/behavior-interventions/TunnelSummaryPanel.tsx` | Summary sidebar showing all selections |
+| `src/components/behavior-interventions/LinkedSkillProgramCard.tsx` | Card component showing linked program on behavior trackers |
+
+---
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/types/behavior.ts` | Add `BxSkillProgram` interface |
+| `src/store/dataStore.ts` | Add `addBxSkillProgram`, `updateBxSkillProgram`, `getBxSkillProgramsForStudent` actions |
+| `src/components/behavior-interventions/BxProblemList.tsx` | Enhance fuzzy search |
+| `src/components/behavior-interventions/InterventionWizard.tsx` | Auto-populate recommended objective from problem |
+| `src/components/BIPGenerator.tsx` | Add import from skill programs section |
+| `src/components/FBAReportGenerator.tsx` | Add Replacement Skill Plan section |
+| `src/components/ABCTracker.tsx` | Add Linked Skill Target section |
+| `src/components/FrequencyTracker.tsx` | Add Linked Skill Target section |
+| `src/components/behavior-interventions/index.ts` | Export new components |
+| `src/hooks/useBehaviorInterventions.ts` | Add `useBxSkillPrograms` hook |
+
+---
+
+### Implementation Order
+
+1. **Phase 1: Type Definitions**
+   - Add `BxSkillProgram` interface to types
+   - Add store actions for skill programs
+
+2. **Phase 2: Guided Tunnel Flow**
+   - Create `GuidedInterventionTracker.tsx` shell
+   - Implement step 1 (Problem) with enhanced search
+   - Implement step 2 (Objective) with dropdown + custom override
+   - Implement step 3 (Replacement Goal) with auto-populate and custom override
+   - Implement step 4 (Interventions) with auto-recommendations
+   - Add summary panel
+
+3. **Phase 3: Assign to Student**
+   - Implement save logic creating `BxSkillProgram`
+   - Add student selector if not in student context
+   - Create `LinkedSkillProgramCard` component
+   - Integrate into behavior trackers (ABC, Frequency)
+
+4. **Phase 4: Report Integration**
+   - Update `BIPGenerator.tsx` with skill program import
+   - Update `FBAReportGenerator.tsx` with Replacement Skill Plan section
+   - Update Word export templates
+
+5. **Phase 5: Testing & Polish**
+   - End-to-end test the full tunnel flow
+   - Verify backward compatibility with existing interventions
+   - Add "Go to Skill Program" navigation button
+
+---
+
+### UX Summary
+
+- **Locked Steps**: Later steps show dimmed content with "Complete previous step" message until user clicks "Continue"
+- **Summary Panel**: Right sidebar showing: Problem → Objective → Replacement Goal → Interventions as user progresses
+- **Navigation**: "Continue" buttons advance to next step; "Back" buttons allow revision
+- **Final Screen**: Clear summary with "Assign to Student" button
+- **Post-Save**: Toast notification, option to "Go to Skill Program" or "Add Another"
 
 ### Testing Checklist
 
