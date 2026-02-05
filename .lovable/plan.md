@@ -292,7 +292,12 @@ After:
 
 ### Overview
 
-This plan upgrades the existing Behavior Intervention Tracker to add a guided step-by-step "tunnel" flow while preserving the current multi-column layout. The upgrade introduces auto-population of recommended goals, custom overrides, multi-select objectives, integration with Skill Acquisition, and export connections to BIP and FBA Report generators.
+This plan upgrades the existing Behavior Intervention Tracker to add a guided step-by-step "tunnel" flow while preserving the current multi-column layout. The upgrade introduces auto-population of recommended goals, custom overrides, supporting objectives, integration with Skill Acquisition, and export connections to BIP and FBA Report generators.
+
+**CRITICAL: Entity Hierarchy**
+- **Replacement Goal = PRIMARY intervention target** (the entity that gets saved, linked to interventions, and passed forward)
+- **Objectives = SUBORDINATE/supporting components** (optional context for the goal, do NOT create intervention targets on their own)
+- Interventions attach to the **Replacement Goal**, not to objectives
 
 ---
 
@@ -361,61 +366,66 @@ Filter problems where:
 interface TunnelState {
   currentStep: 1 | 2 | 3 | 4;
   selectedProblem: BxPresentingProblem | null;
-  selectedObjective: { type: 'library' | 'custom'; objectiveId?: string; title: string } | null;
-  additionalObjectives: Array<{ type: 'library' | 'custom'; objectiveId?: string; title: string }>;
-  selectedReplacementGoal: { type: 'library' | 'custom'; value: string } | null;
+  // Step 2: Optional supporting objectives (NOT the primary target)
+  supportingObjectives: Array<{ type: 'library' | 'custom'; objectiveId?: string; title: string }>;
+  // Step 3: THE PRIMARY INTERVENTION TARGET
+  selectedReplacementGoal: { type: 'library' | 'custom'; goalId?: string; value: string } | null;
+  // Step 4: Interventions link to the replacement goal
   selectedInterventions: Array<{ type: 'library' | 'custom'; strategyId?: string; name: string; phase?: string }>;
 }
 ```
 
 ---
 
-#### C) Objective Selection + Custom Override (Step 2)
+#### C) Supporting Objectives Selection (Step 2) - OPTIONAL
 
 | File | Change |
 |------|---------|
-| `src/components/behavior-interventions/ObjectiveStep.tsx` (new) | Create objective selection step with dropdown of linked objectives and custom text input |
+| `src/components/behavior-interventions/ObjectiveStep.tsx` (new) | Create optional objective selection step with dropdown and custom text input |
 
 **UI Specifications:**
-- Dropdown showing linked objectives from the selected problem (ordered by priority)
-- First linked objective is auto-selected as default
-- Text input labeled "Other objective (custom)" 
-- When user types in custom field and confirms, it becomes the selected objective
-- Custom objectives saved to student's skill program, not the library
-- Optional: "Add Additional Objectives" section with checkbox list of remaining linked objectives
+- Dropdown showing linked objectives from the selected problem (ordered by priority) - **NO auto-selection**
+- Multi-select checkbox list of available objectives as optional supporting context
+- Text input labeled "Other objective (custom)" with "Add" button
+- **IMPORTANT**: Selecting objectives does NOT create an intervention target
+- Objectives are stored as supporting context only
+- User can skip this step entirely (objectives are optional)
 
 ---
 
-#### D) Replacement Goal Selection + Custom Override (Step 3)
+#### D) Replacement Goal Selection (Step 3) - THE PRIMARY TARGET
 
 | File | Change |
 |------|---------|
-| `src/components/behavior-interventions/ReplacementGoalStep.tsx` (new) | Create replacement goal selection step with dropdown and custom text input |
+| `src/components/behavior-interventions/ReplacementGoalStep.tsx` (new) | Create replacement goal selection step - THIS IS THE MAIN INTERVENTION TARGET |
 
 **UI Specifications:**
-- Dropdown showing auto-suggested replacement goals based on the selected objective
+- Dropdown showing auto-suggested replacement goals based on the selected problem
 - First linked goal is pre-selected as default
 - Text input labeled "Other replacement goal (custom)"
 - When user types in custom field, it becomes the selected goal
-- Custom goals saved to student profile, not the library
+- **THIS is the entity that gets saved as the intervention target**
+- The replacement goal ID is passed forward and linked to interventions
+- Custom goals saved to student profile (not the library)
 
 ---
 
-#### E) Recommended Interventions Multi-Select (Step 4)
+#### E) Recommended Interventions Multi-Select (Step 4) - ATTACHED TO GOAL
 
 | File | Change |
 |------|---------|
 | `src/components/behavior-interventions/InterventionsStep.tsx` (new) | Create interventions selection with auto-recommendations |
 
 **Auto-Population Logic:**
-1. Fetch strategies linked to selected objectives
-2. Match strategies where `strategy_type` tags align with selected objective tags
+1. Fetch strategies linked to the **selected replacement goal** (not objectives)
+2. Match strategies where `strategy_type` tags align with goal/problem tags
 3. Display grouped by phase (Prevention, Teaching, Reinforcement, Maintenance, Crisis)
 
 **UI Specifications:**
 - Multi-select checklist with phase badges
 - Strategy type tags displayed (antecedent/teaching/reinforcement/etc.)
 - "Add custom intervention" free text input
+- **All selected interventions attach to the replacement goal**
 
 ---
 
@@ -434,18 +444,19 @@ interface BxSkillProgram {
   studentId: string;
   problemId: string;
   problemTitle: string;
-  selectedObjective: {
-    objectiveId?: string;
-    title: string;
+  // THE PRIMARY TARGET - Replacement Goal
+  replacementGoal: {
+    goalId?: string;
+    value: string;
     isCustom: boolean;
   };
-  additionalObjectives: Array<{
+  // OPTIONAL supporting objectives (not the primary target)
+  supportingObjectives: Array<{
     objectiveId?: string;
     title: string;
     isCustom: boolean;
   }>;
-  replacementGoal: string;
-  isCustomGoal: boolean;
+  // Interventions are linked to the replacement goal
   interventions: Array<{
     strategyId?: string;
     name: string;
@@ -460,14 +471,15 @@ interface BxSkillProgram {
 ```
 
 **Save Logic:**
-1. Create `BxSkillProgram` record in student profile (`student.bxSkillPrograms[]`)
-2. For each objective, optionally create a corresponding SkillTarget for data collection
+1. Create `BxSkillProgram` record with **replacement goal as the primary target**
+2. Store supporting objectives as optional context
+3. Link all selected interventions to the replacement goal
 3. Toast success: "Skill program saved"
 
 **Linked Skill Target Section on Behavior Cards:**
 | File | Change |
 |------|---------|
-| `src/components/ABCTracker.tsx` | Add "Linked Skill Target" section showing goal + objectives if behavior has a linked program |
+| `src/components/ABCTracker.tsx` | Add "Linked Skill Target" section showing **replacement goal** as primary, objectives as supporting |
 | `src/components/FrequencyTracker.tsx` | Same as above |
 | `src/components/StudentDataCard.tsx` | Pass linked skill programs to child trackers |
 
@@ -483,7 +495,8 @@ interface BxSkillProgram {
 1. Add "Import from Skill Programs" button in the Import step
 2. When clicked, populate:
    - Target behaviors from `program.problemTitle`
-   - Replacement behaviors from `program.selectedObjective` + `program.additionalObjectives`
+   - **Replacement Goal** as the primary replacement behavior from `program.replacementGoal.value`
+   - Supporting objectives as secondary context from `program.supportingObjectives`
    - Teaching strategies from `program.interventions.filter(i => i.phase === 'teaching')`
    - Preventative from `phase === 'prevention'`
    - Reinforcement from `phase === 'reinforcement'`
@@ -502,14 +515,13 @@ interface BxSkillProgram {
 REPLACEMENT SKILL PLAN
 
 Target Behavior: [problem.title]
-Primary Objective: [program.selectedObjective.title]
-Replacement Goal: [program.replacementGoal]
+Replacement Goal (Primary Target): [program.replacementGoal.value]
 
-Additional Objectives:
+Supporting Objectives (Optional):
   • [objective 1]
   • [objective 2]
 
-Recommended Interventions:
+Interventions (Attached to Replacement Goal):
   Prevention:
     • [intervention 1]
   Teaching:
@@ -580,9 +592,9 @@ If needed, can migrate to a dedicated `bx_skill_programs` table with columns mat
 2. **Phase 2: Guided Tunnel Flow**
    - Create `GuidedInterventionTracker.tsx` shell
    - Implement step 1 (Problem) with enhanced search
-   - Implement step 2 (Objective) with dropdown + custom override
-   - Implement step 3 (Replacement Goal) with auto-populate and custom override
-   - Implement step 4 (Interventions) with auto-recommendations
+   - Implement step 2 (Supporting Objectives) - optional multi-select
+   - Implement step 3 (Replacement Goal) - **THE PRIMARY TARGET** with auto-populate and custom override
+   - Implement step 4 (Interventions) - attached to replacement goal
    - Add summary panel
 
 3. **Phase 3: Assign to Student**
@@ -606,10 +618,21 @@ If needed, can migrate to a dedicated `bx_skill_programs` table with columns mat
 ### UX Summary
 
 - **Locked Steps**: Later steps show dimmed content with "Complete previous step" message until user clicks "Continue"
-- **Summary Panel**: Right sidebar showing: Problem → Objective → Replacement Goal → Interventions as user progresses
+- **Summary Panel**: Right sidebar showing: Problem → (Objectives) → **Replacement Goal** → Interventions as user progresses
 - **Navigation**: "Continue" buttons advance to next step; "Back" buttons allow revision
 - **Final Screen**: Clear summary with "Assign to Student" button
 - **Post-Save**: Toast notification, option to "Go to Skill Program" or "Add Another"
+
+---
+
+### Key Behavior Clarifications
+
+| Step | Creates Intervention Target? | What Gets Saved |
+|------|------------------------------|-----------------|
+| Step 1: Problem | No | Reference to presenting problem |
+| Step 2: Objectives | **NO** - objectives are optional supporting context | Array of supporting objectives (can be empty) |
+| Step 3: Replacement Goal | **YES - THIS IS THE PRIMARY TARGET** | Goal ID/value, linked to all interventions |
+| Step 4: Interventions | No (attach to goal) | Array of strategies linked to the replacement goal |
 
 ### Testing Checklist
 
