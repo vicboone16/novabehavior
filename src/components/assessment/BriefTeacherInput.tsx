@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   ClipboardList, Save, RotateCcw, CheckCircle2, Users, 
-  AlertTriangle, FileText, Trash2 
+  AlertTriangle, FileText, Trash2, CircleAlert, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -104,6 +104,38 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
   const [otherAvoided, setOtherAvoided] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
 
+  // Calculate section completion counts
+  const behaviorCount = problemBehaviors.length + (otherBehavior.trim() ? 1 : 0);
+  const triggerCount = triggers.length + (otherTrigger.trim() ? 1 : 0);
+  const obtainedCount = thingsObtained.length + (otherObtained.trim() ? 1 : 0);
+  const avoidedCount = thingsAvoided.length + (otherAvoided.trim() ? 1 : 0);
+  const consequenceCount = obtainedCount + avoidedCount;
+
+  // Section completion helper
+  const SectionIndicator = ({ count, label, required = false }: { count: number; label: string; required?: boolean }) => {
+    if (count > 0) {
+      return (
+        <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+          <Check className="w-3 h-3 mr-1" />
+          {count} {label}
+        </Badge>
+      );
+    }
+    if (required) {
+      return (
+        <Badge variant="secondary" className="bg-destructive/10 text-destructive text-xs">
+          Required
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-muted-foreground text-xs">
+        <CircleAlert className="w-3 h-3 mr-1" />
+        None selected
+      </Badge>
+    );
+  };
+
   const handleReset = () => {
     setRespondentName('');
     setStrengths(['', '']);
@@ -166,6 +198,12 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
         return;
       }
 
+      // Build summary counts for toast
+      const summaryParts: string[] = [];
+      if (behaviorCount > 0) summaryParts.push(`${behaviorCount} behavior${behaviorCount > 1 ? 's' : ''}`);
+      if (triggerCount > 0) summaryParts.push(`${triggerCount} trigger${triggerCount > 1 ? 's' : ''}`);
+      if (consequenceCount > 0) summaryParts.push(`${consequenceCount} consequence${consequenceCount > 1 ? 's' : ''}`);
+
       const data: BriefTeacherInputData = {
         id: crypto.randomUUID(),
         studentId: student.id,
@@ -189,7 +227,10 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
       };
 
       onSave?.(data);
-      toast.success('Brief Teacher Input saved to student profile');
+      toast.success(
+        `Saved: ${summaryParts.length > 0 ? summaryParts.join(', ') : 'Response saved'}`,
+        { description: `for ${student.displayName || student.name}` }
+      );
       handleReset();
     } catch (error) {
       console.error('Error saving Brief Teacher Input:', error);
@@ -290,10 +331,13 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
           {/* Problem Behavior */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                Problem Behavior
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  Problem Behavior
+                </CardTitle>
+                <SectionIndicator count={behaviorCount} label="selected" required />
+              </div>
               <CardDescription className="text-xs">
                 Select the most concerning problem behaviors
               </CardDescription>
@@ -373,7 +417,10 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
           {/* Antecedents/Triggers */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Antecedents (Triggers)</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Antecedents (Triggers)</CardTitle>
+                <SectionIndicator count={triggerCount} label="selected" />
+              </div>
               <CardDescription className="text-xs">
                 What events predict when the problem behavior will occur?
               </CardDescription>
@@ -413,7 +460,10 @@ export function BriefTeacherInput({ student, onSave }: BriefTeacherInputProps) {
           {/* Consequences */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Consequences</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Consequences</CardTitle>
+                <SectionIndicator count={consequenceCount} label="selected" />
+              </div>
               <CardDescription className="text-xs">
                 What consequences appear to maintain the problem behavior?
               </CardDescription>
