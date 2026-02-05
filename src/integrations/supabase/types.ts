@@ -4061,6 +4061,69 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_reports: {
+        Row: {
+          branding_id: string | null
+          content: Json | null
+          date_range_end: string | null
+          date_range_start: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          is_public: boolean | null
+          pdf_url: string | null
+          public_token: string | null
+          report_type: string
+          shared_with: Json | null
+          student_id: string | null
+        }
+        Insert: {
+          branding_id?: string | null
+          content?: Json | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          is_public?: boolean | null
+          pdf_url?: string | null
+          public_token?: string | null
+          report_type: string
+          shared_with?: Json | null
+          student_id?: string | null
+        }
+        Update: {
+          branding_id?: string | null
+          content?: Json | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          is_public?: boolean | null
+          pdf_url?: string | null
+          public_token?: string | null
+          report_type?: string
+          shared_with?: Json | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_reports_branding_id_fkey"
+            columns: ["branding_id"]
+            isOneToOne: false
+            referencedRelation: "report_branding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goal_links: {
         Row: {
           created_at: string
@@ -4250,6 +4313,65 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iep_meeting_preps: {
+        Row: {
+          attendees: Json | null
+          created_at: string | null
+          created_by: string | null
+          data_summary: Json | null
+          documents_checklist: Json | null
+          generated_report_url: string | null
+          goal_progress: Json | null
+          id: string
+          meeting_date: string
+          meeting_type: string
+          recommendations: Json | null
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          attendees?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          data_summary?: Json | null
+          documents_checklist?: Json | null
+          generated_report_url?: string | null
+          goal_progress?: Json | null
+          id?: string
+          meeting_date: string
+          meeting_type?: string
+          recommendations?: Json | null
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          attendees?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          data_summary?: Json | null
+          documents_checklist?: Json | null
+          generated_report_url?: string | null
+          goal_progress?: Json | null
+          id?: string
+          meeting_date?: string
+          meeting_type?: string
+          recommendations?: Json | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_meeting_preps_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -4589,6 +4711,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      observation_requests: {
+        Row: {
+          access_token: string
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          instructions: string | null
+          opened_at: string | null
+          recipient_email: string
+          recipient_name: string
+          recipient_role: string | null
+          request_type: string
+          response_data: Json | null
+          sent_at: string | null
+          status: string | null
+          student_id: string
+          target_behaviors: string[] | null
+        }
+        Insert: {
+          access_token?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          instructions?: string | null
+          opened_at?: string | null
+          recipient_email: string
+          recipient_name: string
+          recipient_role?: string | null
+          request_type?: string
+          response_data?: Json | null
+          sent_at?: string | null
+          status?: string | null
+          student_id: string
+          target_behaviors?: string[] | null
+        }
+        Update: {
+          access_token?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          instructions?: string | null
+          opened_at?: string | null
+          recipient_email?: string
+          recipient_name?: string
+          recipient_role?: string | null
+          request_type?: string
+          response_data?: Json | null
+          sent_at?: string | null
+          status?: string | null
+          student_id?: string
+          target_behaviors?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observation_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       org_coverage_settings: {
         Row: {
@@ -5674,6 +5864,56 @@ export type Database = {
             columns: ["converted_student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_branding: {
+        Row: {
+          agency_id: string | null
+          contact_info: Json | null
+          created_at: string | null
+          footer_text: string | null
+          id: string
+          is_default: boolean | null
+          logo_url: string | null
+          organization_name: string
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          contact_info?: Json | null
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          is_default?: boolean | null
+          logo_url?: string | null
+          organization_name: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          contact_info?: Json | null
+          created_at?: string | null
+          footer_text?: string | null
+          id?: string
+          is_default?: boolean | null
+          logo_url?: string | null
+          organization_name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_branding_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
