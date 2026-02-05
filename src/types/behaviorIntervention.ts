@@ -71,6 +71,9 @@ export interface BxPresentingProblem {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  // Search optimization fields
+  aliases?: string[];
+  searchBoostPhrases?: string[];
 }
 
 export interface BxObjective {

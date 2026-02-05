@@ -44,56 +44,56 @@
  
          <Separator />
  
-         {/* Supporting Objectives */}
-         <div>
+        {/* Replacement Goal - PRIMARY */}
+        <div className="bg-primary/5 rounded-lg p-2 -mx-2">
            <p className="text-xs text-muted-foreground mb-1">
-             2. Supporting Objectives ({supportingObjectives.length})
+            <Target className="w-3 h-3 inline mr-1" />
+            2. Replacement Goal
+            <Badge variant="default" className="text-[10px] py-0 px-1 ml-1">
+              Primary
+            </Badge>
            </p>
-           {supportingObjectives.length > 0 ? (
-             <div className="space-y-1">
-               {supportingObjectives.slice(0, 3).map((obj, idx) => (
-                 <p key={idx} className="text-xs truncate flex items-center gap-1">
-                   <Lightbulb className="w-3 h-3 text-muted-foreground shrink-0" />
-                   {obj.title}
-                 </p>
-               ))}
-               {supportingObjectives.length > 3 && (
-                 <p className="text-xs text-muted-foreground">
-                   +{supportingObjectives.length - 3} more
-                 </p>
-               )}
+          {selectedReplacementGoal ? (
+            <div className="flex items-center gap-1 text-primary">
+              <CheckCircle className="w-3 h-3 shrink-0" />
+              <span className="font-medium text-xs">{selectedReplacementGoal.value}</span>
              </div>
            ) : (
-             <p className="text-xs text-muted-foreground italic">Optional - none selected</p>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <AlertCircle className="w-3 h-3" />
+              <span className="text-xs">Required - not selected</span>
+            </div>
+          )}
+          {selectedReplacementGoal?.isCustom && (
+            <Badge variant="secondary" className="text-[10px] mt-1">
+              Custom
+            </Badge>
            )}
          </div>
  
          <Separator />
  
-         {/* Replacement Goal - PRIMARY */}
-         <div className="bg-primary/5 rounded-lg p-2 -mx-2">
-           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-             <Target className="w-3 h-3" />
-             3. Replacement Goal
-             <Badge variant="default" className="text-[10px] py-0 px-1 ml-1">
-               Primary
-             </Badge>
+        {/* Supporting Objectives */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">
+            3. Objectives / Data Targets ({supportingObjectives.length})
            </p>
-           {selectedReplacementGoal ? (
-             <div className="flex items-center gap-1 text-primary">
-               <CheckCircle className="w-3 h-3 shrink-0" />
-               <span className="font-medium text-xs">{selectedReplacementGoal.value}</span>
+          {supportingObjectives.length > 0 ? (
+            <div className="space-y-1">
+              {supportingObjectives.slice(0, 3).map((obj, idx) => (
+                <p key={idx} className="text-xs truncate flex items-center gap-1">
+                  <Lightbulb className="w-3 h-3 text-muted-foreground shrink-0" />
+                  {obj.title}
+                </p>
+              ))}
+              {supportingObjectives.length > 3 && (
+                <p className="text-xs text-muted-foreground">
+                  +{supportingObjectives.length - 3} more
+                </p>
+              )}
              </div>
            ) : (
-             <div className="flex items-center gap-1 text-muted-foreground">
-               <AlertCircle className="w-3 h-3" />
-               <span className="text-xs">Required - not selected</span>
-             </div>
-           )}
-           {selectedReplacementGoal?.isCustom && (
-             <Badge variant="secondary" className="text-[10px] mt-1">
-               Custom
-             </Badge>
+            <p className="text-xs text-muted-foreground italic">Optional - none selected</p>
            )}
          </div>
  

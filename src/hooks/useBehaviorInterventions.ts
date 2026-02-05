@@ -96,6 +96,65 @@ export function useProblemObjectives(problemId?: string) {
   return { objectives, loading };
 }
 
+// Hook for fetching objectives linked to a replacement goal
+export function useGoalObjectives(goalId?: string) {
+  const [objectives, setObjectives] = useState<BxObjective[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!goalId) {
+      setObjectives([]);
+      return;
+    }
+
+    const fetchObjectives = async () => {
+      setLoading(true);
+      try {
+        // Goals are objectives in this system - fetch linked objectives via bx_objective_strategy_links
+        // Or alternatively, objectives linked to the same problem
+        const { data: links, error: linksError } = await supabase
+          .from('bx_problem_objective_links')
+          .select('objective_id, priority, problem_id')
+          .order('priority');
+
+        if (linksError) throw linksError;
+
+        // Get the problem that this goal belongs to (goal is an objective)
+        const goalProblemLink = links?.find(l => l.objective_id === goalId);
+        
+        if (goalProblemLink) {
+          // Get all objectives for the same problem
+          const problemObjectives = links?.filter(l => l.problem_id === goalProblemLink.problem_id) || [];
+          const objectiveIds = problemObjectives.map(l => l.objective_id);
+          
+          if (objectiveIds.length > 0) {
+            const { data: objectivesData, error: objError } = await supabase
+              .from('bx_objectives')
+              .select('*')
+              .in('id', objectiveIds)
+              .eq('status', 'active');
+
+            if (objError) throw objError;
+            setObjectives((objectivesData || []) as BxObjective[]);
+          } else {
+            setObjectives([]);
+          }
+        } else {
+          setObjectives([]);
+        }
+      } catch (error) {
+        console.error('Error fetching goal objectives:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchObjectives();
+  }, [goalId]);
+
+  return { objectives, loading };
+}
+
 // Hook for fetching strategies linked to an objective
 export function useObjectiveStrategies(objectiveId?: string) {
   const [strategies, setStrategies] = useState<Array<BxStrategy & { phase: string }>>([]);

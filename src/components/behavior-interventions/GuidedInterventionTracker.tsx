@@ -16,10 +16,10 @@
    Loader2,
    Save,
  } from 'lucide-react';
- import { ProblemStep } from './steps/ProblemStep';
- import { ObjectiveStep } from './steps/ObjectiveStep';
- import { ReplacementGoalStep } from './steps/ReplacementGoalStep';
- import { InterventionsStep } from './steps/InterventionsStep';
+import { ProblemStep } from './steps/ProblemStep';
+import { ReplacementGoalStep } from './steps/ReplacementGoalStep';
+import { ObjectiveStep } from './steps/ObjectiveStep';
+import { InterventionsStep } from './steps/InterventionsStep';
  import { TunnelSummaryPanel } from './TunnelSummaryPanel';
  import type {
    BxPresentingProblem,
@@ -55,8 +55,8 @@
  
  const STEP_LABELS: Record<TunnelStep, string> = {
    1: 'Problem',
-   2: 'Objectives',
-   3: 'Replacement Goal',
+  2: 'Replacement Goal',
+  3: 'Objectives',
    4: 'Interventions',
  };
  
@@ -105,7 +105,7 @@
        return;
      }
      
-     if (currentStep === 3 && !tunnelState.selectedReplacementGoal) {
+    if (currentStep === 2 && !tunnelState.selectedReplacementGoal) {
        toast.error('Please select or enter a replacement goal');
        return;
      }
@@ -290,14 +290,6 @@
                  )}
  
                  {tunnelState.currentStep === 2 && (
-                   <ObjectiveStep
-                     selectedProblem={tunnelState.selectedProblem}
-                     supportingObjectives={tunnelState.supportingObjectives}
-                     onObjectivesChange={handleObjectivesChange}
-                   />
-                 )}
- 
-                 {tunnelState.currentStep === 3 && (
                    <ReplacementGoalStep
                      selectedProblem={tunnelState.selectedProblem}
                      selectedReplacementGoal={tunnelState.selectedReplacementGoal}
@@ -305,6 +297,15 @@
                    />
                  )}
  
+                {tunnelState.currentStep === 3 && (
+                  <ObjectiveStep
+                    selectedProblem={tunnelState.selectedProblem}
+                    selectedReplacementGoal={tunnelState.selectedReplacementGoal}
+                    supportingObjectives={tunnelState.supportingObjectives}
+                    onObjectivesChange={handleObjectivesChange}
+                  />
+                )}
+
                  {tunnelState.currentStep === 4 && (
                    <InterventionsStep
                      selectedProblem={tunnelState.selectedProblem}

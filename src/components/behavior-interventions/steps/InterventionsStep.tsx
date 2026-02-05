@@ -94,10 +94,10 @@
    return (
      <div className="space-y-4">
        <div>
-         <h3 className="text-lg font-semibold mb-1">Step 4: Select Interventions</h3>
+        <h3 className="text-lg font-semibold mb-1">Step 4: Intervention Strategies</h3>
          <p className="text-sm text-muted-foreground">
-           Choose strategies linked to the replacement goal. All interventions attach to the{' '}
-           <strong>Replacement Goal</strong>.
+          Select intervention strategies to support the replacement goal. All interventions are
+          linked to the primary <strong>Replacement Goal</strong>.
          </p>
        </div>
  
