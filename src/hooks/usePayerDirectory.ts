@@ -142,7 +142,27 @@
      addPayerFromDirectory,
      addCustomPayer,
    };
- }
+}
+
+// Hook to get all configured payers for dropdowns/selects
+export function useAllConfiguredPayers() {
+  const { data: payers, isLoading } = useQuery({
+    queryKey: ['configured-payers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payers')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data as unknown as ConfiguredPayer[];
+    },
+  });
+
+  return { payers: payers || [], isLoading };
+}
+
  
  export function useConfiguredPayer(payerId: string) {
    const queryClient = useQueryClient();
