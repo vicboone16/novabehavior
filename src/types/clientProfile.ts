@@ -307,17 +307,30 @@ export const PERMISSION_SCOPES = [
 ];
 
 export const DOCUMENT_TYPES = [
-  { value: 'consent', label: 'Consent Form' },
-  { value: 'iep', label: 'IEP' },
-  { value: 'fba', label: 'FBA' },
-  { value: 'bip', label: 'BIP' },
-  { value: 'assessment', label: 'Assessment' },
-  { value: 'medical', label: 'Medical Record' },
-  { value: 'authorization', label: 'Authorization' },
-  { value: 'insurance', label: 'Insurance Document' },
-  { value: 'progress_report', label: 'Progress Report' },
-  { value: 'correspondence', label: 'Correspondence' },
-  { value: 'other', label: 'Other' },
+  // Clinical Documents
+  { value: 'consent', label: 'Consent Form', category: 'clinical' },
+  { value: 'iep', label: 'IEP', category: 'clinical' },
+  { value: 'fba', label: 'FBA', category: 'clinical' },
+  { value: 'bip', label: 'BIP', category: 'clinical' },
+  { value: 'progress_report', label: 'Progress Report', category: 'clinical' },
+  // Assessments
+  { value: 'assessment', label: 'General Assessment', category: 'assessment' },
+  { value: 'assessment_vbmapp', label: 'VB-MAPP', category: 'assessment' },
+  { value: 'assessment_ablls', label: 'ABLLS-R', category: 'assessment' },
+  { value: 'assessment_vineland', label: 'Vineland', category: 'assessment' },
+  { value: 'assessment_abas', label: 'ABAS-3', category: 'assessment' },
+  { value: 'assessment_peak', label: 'PEAK', category: 'assessment' },
+  { value: 'assessment_afls', label: 'AFLS', category: 'assessment' },
+  { value: 'assessment_psychoed', label: 'Psychological/Educational Evaluation', category: 'assessment' },
+  { value: 'assessment_other', label: 'Other Assessment', category: 'assessment' },
+  // Administrative
+  { value: 'medical', label: 'Medical Record', category: 'administrative' },
+  { value: 'authorization', label: 'Authorization', category: 'administrative' },
+  { value: 'insurance', label: 'Insurance Document', category: 'administrative' },
+  { value: 'correspondence', label: 'Correspondence', category: 'administrative' },
+  { value: 'intake', label: 'Intake Form', category: 'administrative' },
+  { value: 'discharge', label: 'Discharge Summary', category: 'administrative' },
+  { value: 'other', label: 'Other', category: 'other' },
 ];
 
 export const CONTACT_METHODS = [

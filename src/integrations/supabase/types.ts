@@ -1921,6 +1921,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_current_version: boolean | null
+          legacy_file_id: string | null
           mime_type: string | null
           notes: string | null
           previous_version_id: string | null
@@ -1933,6 +1934,7 @@ export type Database = {
           updated_at: string
           upload_date: string
           uploaded_by: string | null
+          uploaded_by_user_id: string | null
           version_number: number | null
           visibility_permission: string
         }
@@ -1947,6 +1949,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_current_version?: boolean | null
+          legacy_file_id?: string | null
           mime_type?: string | null
           notes?: string | null
           previous_version_id?: string | null
@@ -1959,6 +1962,7 @@ export type Database = {
           updated_at?: string
           upload_date?: string
           uploaded_by?: string | null
+          uploaded_by_user_id?: string | null
           version_number?: number | null
           visibility_permission?: string
         }
@@ -1973,6 +1977,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_current_version?: boolean | null
+          legacy_file_id?: string | null
           mime_type?: string | null
           notes?: string | null
           previous_version_id?: string | null
@@ -1985,6 +1990,7 @@ export type Database = {
           updated_at?: string
           upload_date?: string
           uploaded_by?: string | null
+          uploaded_by_user_id?: string | null
           version_number?: number | null
           visibility_permission?: string
         }
@@ -7841,6 +7847,10 @@ export type Database = {
       }
       has_agency_access: {
         Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_agency_student_access: {
+        Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }

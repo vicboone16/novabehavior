@@ -3,6 +3,7 @@ import {
   Upload, FileText, FileCheck, Trash2, Check, X, Eye, Loader2, 
   AlertCircle, Plus, ChevronDown, ChevronUp, Download 
 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -259,6 +260,11 @@ export function DocumentUpload({
                 setExtractedData(data.extractedData);
                 setShowExtractedData(true);
                 toast.success('Document analyzed successfully');
+                
+                // Check for low-confidence student name
+                if (data.extractedData.student?.confidence && data.extractedData.student.confidence < 0.9) {
+                  toast.warning(`Student name confidence is low (${Math.round(data.extractedData.student.confidence * 100)}%). Please verify: "${data.extractedData.student.name || 'Unknown'}"`);
+                }
               } else if (data?.error) {
                 toast.error(data.error);
               }
@@ -295,6 +301,11 @@ export function DocumentUpload({
               setExtractedData(data.extractedData);
               setShowExtractedData(true);
               toast.success('Document analyzed successfully');
+              
+              // Check for low-confidence student name  
+              if (data.extractedData.student?.confidence && data.extractedData.student.confidence < 0.9) {
+                toast.warning(`Student name confidence is low (${Math.round(data.extractedData.student.confidence * 100)}%). Please verify: "${data.extractedData.student.name || 'Unknown'}"`);
+              }
             } else if (data?.error) {
               toast.error(data.error);
             }

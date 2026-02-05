@@ -36,16 +36,42 @@ Additionally, extract any background information about the student that you find
 const EXTRACTION_PROMPTS: Record<string, string> = {
   fba: `You are an expert at analyzing Functional Behavior Assessments (FBAs). Extract the following information from the document text provided:
 
-1. Target Behaviors: List each target behavior with its operational definition
-2. Antecedents: Common triggers or events that occur before the behavior
-3. Consequences: What happens after the behavior occurs
-4. Hypothesized Functions: The hypothesized function(s) of the behavior (attention, escape, tangible, sensory)
-5. Setting Events: Environmental or contextual factors
-6. Assessment Tools Used: Any assessment tools mentioned (FAST, QABF, MAS, etc.)
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT/STUDENT is the person RECEIVING services (the child being assessed), NOT the clinician or evaluator.
+- ONLY use names that appear IMMEDIATELY AFTER these labels: "Student Name:", "Student:", "Client:", "Child's Name:", "Examinee:", "Learner:"
+- REJECT any name appearing near: "BCBA", "Teacher", "Parent", "Evaluator", "Prepared by:", "Signature:", "Conducted by:"
+- REJECT names with credentials: MA, M.Ed., PhD, BCBA-D, RBT, LPC
+- If no labeled student name exists, set studentConfidence to 0.3
+- Include sourceLabel showing the exact label found (e.g., "Found after 'Student Name:'")
+
+Extract:
+
+1. Student Information:
+   - student_name: The student's name (following rules above)
+   - student_dob: Date of birth
+   - student_grade: Grade level
+   - student_school: School name
+   - studentConfidence: 0-1 confidence score
+   - sourceLabel: The label that preceded the name
+
+2. Target Behaviors: List each target behavior with its operational definition
+3. Antecedents: Common triggers or events that occur before the behavior
+4. Consequences: What happens after the behavior occurs
+5. Hypothesized Functions: The hypothesized function(s) of the behavior (attention, escape, tangible, sensory)
+6. Setting Events: Environmental or contextual factors
+7. Assessment Tools Used: Any assessment tools mentioned (FAST, QABF, MAS, etc.)
 ${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
+  "student": {
+    "name": "string",
+    "dob": "string",
+    "grade": "string",
+    "school": "string",
+    "confidence": number,
+    "sourceLabel": "string"
+  },
   "targetBehaviors": [{"name": "string", "definition": "string"}],
   "antecedents": [{"value": "string"}],
   "consequences": [{"value": "string"}],
@@ -59,15 +85,36 @@ Only include fields that are found in the document. If a field is not found, omi
 
   bip: `You are an expert at analyzing Behavior Intervention Plans (BIPs). Extract the following information from the document text provided:
 
-1. Replacement Behaviors: Alternative behaviors being taught
-2. Preventative Strategies: Antecedent modifications and prevention strategies
-3. Teaching Strategies: How replacement behaviors will be taught
-4. Reactive Strategies: Response procedures when problem behavior occurs
-5. Crisis Procedures: Emergency or crisis management procedures
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT/STUDENT is the person RECEIVING services (the child with the behavior plan), NOT the staff implementing it.
+- ONLY use names that appear IMMEDIATELY AFTER these labels: "Student Name:", "Student:", "Client:", "Child's Name:", "Learner:"
+- REJECT any name appearing near: "BCBA", "Teacher", "Parent", "Case Manager", "Prepared by:", "Signature:"
+- REJECT names with credentials: MA, M.Ed., PhD, BCBA-D, RBT
+- If no labeled student name exists, set studentConfidence to 0.3
+
+Extract:
+
+1. Student Information:
+   - student_name, student_dob, student_grade, student_school
+   - studentConfidence: 0-1, sourceLabel: the label found
+
+2. Replacement Behaviors: Alternative behaviors being taught
+3. Preventative Strategies: Antecedent modifications and prevention strategies
+4. Teaching Strategies: How replacement behaviors will be taught
+5. Reactive Strategies: Response procedures when problem behavior occurs
+6. Crisis Procedures: Emergency or crisis management procedures
 ${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
+  "student": {
+    "name": "string",
+    "dob": "string",
+    "grade": "string",
+    "school": "string",
+    "confidence": number,
+    "sourceLabel": "string"
+  },
   "replacementBehaviors": [{"name": "string", "definition": "string"}],
   "preventativeStrategies": [{"value": "string"}],
   "teachingStrategies": [{"value": "string"}],
@@ -80,15 +127,36 @@ Only include fields that are found in the document. If a field is not found, omi
 
   iep: `You are an expert at analyzing Individualized Education Programs (IEPs). Extract the following information from the document text provided:
 
-1. Goals: Academic, behavioral, and social-emotional learning goals
-2. Accommodations: Classroom and testing accommodations
-3. Behavior Supports: Any behavior support plans or strategies
-4. Service Minutes: Related services and their frequency/duration
-5. Review Dates: Important dates for review or reassessment
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT/STUDENT is the person RECEIVING services (the student the IEP is written FOR), NOT teachers or staff.
+- ONLY use names that appear IMMEDIATELY AFTER these labels: "Student Name:", "Student:", "Child's Name:", "Learner:", "Name of Student:"
+- REJECT any name appearing near: "Teacher", "Parent", "Case Manager", "Special Education Teacher", "Signature:"
+- REJECT names with credentials or job titles
+- If no labeled student name exists, set studentConfidence to 0.3
+
+Extract:
+
+1. Student Information:
+   - student_name, student_dob, student_grade, student_school
+   - studentConfidence: 0-1, sourceLabel: the label found
+
+2. Goals: Academic, behavioral, and social-emotional learning goals
+3. Accommodations: Classroom and testing accommodations
+4. Behavior Supports: Any behavior support plans or strategies
+5. Service Minutes: Related services and their frequency/duration
+6. Review Dates: Important dates for review or reassessment
 ${BACKGROUND_INFO_PROMPT}
 
 Return the data as a JSON object with the following structure:
 {
+  "student": {
+    "name": "string",
+    "dob": "string",
+    "grade": "string",
+    "school": "string",
+    "confidence": number,
+    "sourceLabel": "string"
+  },
   "goals": [{"text": "string", "type": "academic|behavioral|sel"}],
   "accommodations": [{"value": "string"}],
   "behaviorSupports": [{"value": "string"}],
@@ -101,31 +169,59 @@ Only include fields that are found in the document. If a field is not found, omi
 
   'psycho-ed': `You are an expert at analyzing psychological and educational evaluation reports. Extract key information including:
 
-1. Cognitive/IQ Scores
-2. Achievement Scores
-3. Diagnoses
-4. Recommendations
-5. Eligibility Determinations
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT is the person BEING EVALUATED (usually a child), NOT the examiner or psychologist.
+- ONLY use names after labels: "Examinee:", "Student:", "Client:", "Child's Name:", "Name:"
+- REJECT any name near: "Examiner:", "Psychologist:", "Evaluator:", "Administered by:", "Ph.D.", "Psy.D."
+- If no labeled name found, set confidence to 0.3
+
+1. Student/Examinee Information (name, dob, grade, school, confidence, sourceLabel)
+2. Cognitive/IQ Scores
+3. Achievement Scores
+4. Diagnoses
+5. Recommendations
+6. Eligibility Determinations
 ${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`,
+Return the data as a JSON object with student info and relevant fields found in the document, including backgroundInfo.`,
 
   'progress-report': `You are an expert at analyzing progress reports. Extract key information including:
 
-1. Goals and Current Progress
-2. Data Trends
-3. Recommendations
-4. Next Steps
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT is the person the progress report is ABOUT (the student), NOT the therapist writing it.
+- ONLY use names after labels: "Student:", "Client:", "Learner:", "Name:"
+- REJECT any name near: "BCBA:", "Therapist:", "Prepared by:", "Written by:"
+- If no labeled name found, set confidence to 0.3
+
+1. Student Information (name, dob, grade, school, confidence, sourceLabel)
+2. Goals and Current Progress
+3. Data Trends
+4. Recommendations
+5. Next Steps
 ${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`,
+Return the data as a JSON object with student info and relevant fields found in the document, including backgroundInfo.`,
 
   intake: `You are an expert at analyzing client intake documents. Extract key background information from the document.
+
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+The CLIENT is the person BEING REFERRED for services (usually a child), NOT the parent or referrer.
+- ONLY use names after labels: "Client:", "Child:", "Student:", "Patient:", "Name of Child:"
+- Parent/guardian names should go in a separate field, NOT as the client
+- If no labeled client name found, set confidence to 0.3
+
+1. Client Information (name, dob, grade, school, confidence, sourceLabel)
 ${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with the backgroundInfo object containing all relevant fields found in the document.`,
+Return the data as a JSON object with client info and the backgroundInfo object containing all relevant fields found in the document.`,
 
   other: `Extract any relevant educational or behavioral information from this document. Look for:
+
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST (if present):
+The CLIENT/STUDENT is the person RECEIVING services, NOT staff or document authors.
+- ONLY use names after labels: "Student:", "Client:", "Child:", "Learner:", "Name:"
+- REJECT names with credentials (BCBA, PhD, etc.) or near signature blocks
+- If no labeled name found, set confidence to 0.3
 
 1. Student information
 2. Goals or objectives
@@ -134,7 +230,7 @@ Return the data as a JSON object with the backgroundInfo object containing all r
 5. Services or supports
 ${BACKGROUND_INFO_PROMPT}
 
-Return the data as a JSON object with relevant fields found in the document, including backgroundInfo.`
+Return the data as a JSON object with student info (if found) and relevant fields, including backgroundInfo.`
 };
 
 // Validate file URL to prevent SSRF attacks
