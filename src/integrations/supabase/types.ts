@@ -3901,6 +3901,50 @@ export type Database = {
         }
         Relationships: []
       }
+      fidelity_check_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          intervention_id: string | null
+          is_active: boolean | null
+          items: Json
+          name: string
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          intervention_id?: string | null
+          is_active?: boolean | null
+          items?: Json
+          name: string
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          intervention_id?: string | null
+          is_active?: boolean | null
+          items?: Json
+          name?: string
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fidelity_check_templates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fieldwork_hours: {
         Row: {
           created_at: string
@@ -7605,6 +7649,88 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_fidelity_checks: {
+        Row: {
+          check_date: string
+          created_at: string | null
+          duration_minutes: number | null
+          fidelity_percentage: number | null
+          id: string
+          implementer_user_id: string | null
+          intervention_id: string | null
+          items: Json
+          items_implemented: number
+          items_total: number
+          notes: string | null
+          observer_user_id: string
+          session_id: string | null
+          setting: string | null
+          student_id: string
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          check_date?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          fidelity_percentage?: number | null
+          id?: string
+          implementer_user_id?: string | null
+          intervention_id?: string | null
+          items?: Json
+          items_implemented?: number
+          items_total?: number
+          notes?: string | null
+          observer_user_id: string
+          session_id?: string | null
+          setting?: string | null
+          student_id: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          check_date?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          fidelity_percentage?: number | null
+          id?: string
+          implementer_user_id?: string | null
+          intervention_id?: string | null
+          items?: Json
+          items_implemented?: number
+          items_total?: number
+          notes?: string | null
+          observer_user_id?: string
+          session_id?: string | null
+          setting?: string | null
+          student_id?: string
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_fidelity_checks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_fidelity_checks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "fidelity_check_templates"
             referencedColumns: ["id"]
           },
         ]
