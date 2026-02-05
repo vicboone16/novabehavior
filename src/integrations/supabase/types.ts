@@ -2652,6 +2652,74 @@ export type Database = {
           },
         ]
       }
+      contract_rates: {
+        Row: {
+          agency_id: string | null
+          billing_frequency: string | null
+          contract_end_date: string | null
+          contract_number: string | null
+          contract_start_date: string
+          contract_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          invoice_due_days: number | null
+          notes: string | null
+          organization_id: string | null
+          organization_name: string
+          requires_signature: boolean | null
+          services: Json
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          billing_frequency?: string | null
+          contract_end_date?: string | null
+          contract_number?: string | null
+          contract_start_date: string
+          contract_type: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          invoice_due_days?: number | null
+          notes?: string | null
+          organization_id?: string | null
+          organization_name: string
+          requires_signature?: boolean | null
+          services?: Json
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          billing_frequency?: string | null
+          contract_end_date?: string | null
+          contract_number?: string | null
+          contract_start_date?: string
+          contract_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          invoice_due_days?: number | null
+          notes?: string | null
+          organization_id?: string | null
+          organization_name?: string
+          requires_signature?: boolean | null
+          services?: Json
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_rates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coverage_checks: {
         Row: {
           client_id: string
@@ -6628,6 +6696,63 @@ export type Database = {
           },
           {
             foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_contract_assignments: {
+        Row: {
+          authorized_hours_per_week: number | null
+          contract_id: string
+          created_at: string | null
+          created_by: string | null
+          end_date: string | null
+          funding_source: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          start_date: string
+          student_id: string
+        }
+        Insert: {
+          authorized_hours_per_week?: number | null
+          contract_id: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          start_date: string
+          student_id: string
+        }
+        Update: {
+          authorized_hours_per_week?: number | null
+          contract_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          funding_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          start_date?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_contract_assignments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_rates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_contract_assignments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
