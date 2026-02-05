@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { gunzip } from "https://deno.land/x/compress@v0.5.0/zlib/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -271,164 +270,6 @@ function detectDocumentType(text: string, hint?: string): string {
   }
   
   return 'OTHER';
-}
-
-// ============ Native DOCX Text Extraction ============
-
-async function extractTextFromDOCX(bytes: Uint8Array): Promise<string> {
-  console.log('Attempting native DOCX extraction...');
-  
-  try {
-    // DOCX is a ZIP file - find the word/document.xml entry
-    // ZIP files have a specific structure with local file headers
-    
-    let text = '';
-    let pos = 0;
-    
-    while (pos < bytes.length - 30) {
-      // Look for local file header signature (0x04034b50)
-      if (bytes[pos] !== 0x50 || bytes[pos + 1] !== 0x4b || 
-          bytes[pos + 2] !== 0x03 || bytes[pos + 3] !== 0x04) {
-        pos++;
-        continue;
-      }
-      
-      // Parse local file header
-      const compressionMethod = bytes[pos + 8] | (bytes[pos + 9] << 8);
-      const compressedSize = bytes[pos + 18] | (bytes[pos + 19] << 8) | 
-                            (bytes[pos + 20] << 16) | (bytes[pos + 21] << 24);
-      const uncompressedSize = bytes[pos + 22] | (bytes[pos + 23] << 8) | 
-                               (bytes[pos + 24] << 16) | (bytes[pos + 25] << 24);
-      const filenameLen = bytes[pos + 26] | (bytes[pos + 27] << 8);
-      const extraLen = bytes[pos + 28] | (bytes[pos + 29] << 8);
-      
-      const filenameBytes = bytes.subarray(pos + 30, pos + 30 + filenameLen);
-      const filename = new TextDecoder().decode(filenameBytes);
-      
-      const dataStart = pos + 30 + filenameLen + extraLen;
-      const dataEnd = dataStart + compressedSize;
-      
-      // Check if this is the main document.xml
-      if (filename === 'word/document.xml') {
-        const compressedData = bytes.subarray(dataStart, dataEnd);
-        
-        let xmlContent: string;
-        if (compressionMethod === 0) {
-          // Stored (no compression)
-          xmlContent = new TextDecoder().decode(compressedData);
-        } else if (compressionMethod === 8) {
-          // Deflate compression
-          try {
-            const decompressed = gunzip(compressedData);
-            xmlContent = new TextDecoder().decode(decompressed);
-          } catch (decompError) {
-            console.error('Decompression error:', decompError);
-            // Try raw deflate if gunzip fails
-            try {
-              const stream = new DecompressionStream('deflate-raw');
-              const writer = stream.writable.getWriter();
-              // Create a new ArrayBuffer copy to avoid SharedArrayBuffer issues
-              const copyBuffer = new ArrayBuffer(compressedData.length);
-              const copyView = new Uint8Array(copyBuffer);
-              copyView.set(compressedData);
-              writer.write(copyView);
-              writer.close();
-              
-              const reader = stream.readable.getReader();
-              const chunks: Uint8Array[] = [];
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                chunks.push(value);
-              }
-              
-              const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
-              const result = new Uint8Array(totalLen);
-              let offset = 0;
-              for (const chunk of chunks) {
-                result.set(chunk, offset);
-                offset += chunk.length;
-              }
-              xmlContent = new TextDecoder().decode(result);
-            } catch (rawError) {
-              console.error('Raw deflate error:', rawError);
-              pos = dataEnd;
-              continue;
-            }
-          }
-        } else {
-          pos = dataEnd;
-          continue;
-        }
-        
-        // Extract text from <w:t> tags
-        const textMatches = xmlContent.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g);
-        const paragraphs: string[] = [];
-        let currentParagraph = '';
-        
-        // Also track paragraph breaks
-        let lastEnd = 0;
-        for (const match of xmlContent.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>|<w:p[^>]*>|<\/w:p>/g)) {
-          if (match[0].startsWith('<w:p') && !match[0].startsWith('<w:p ')) {
-            if (currentParagraph.trim()) {
-              paragraphs.push(currentParagraph.trim());
-            }
-            currentParagraph = '';
-          } else if (match[0] === '</w:p>') {
-            if (currentParagraph.trim()) {
-              paragraphs.push(currentParagraph.trim());
-            }
-            currentParagraph = '';
-          } else if (match[1]) {
-            currentParagraph += match[1] + ' ';
-          }
-        }
-        
-        if (currentParagraph.trim()) {
-          paragraphs.push(currentParagraph.trim());
-        }
-        
-        text = paragraphs.join('\n\n');
-        break;
-      }
-      
-      pos = dataEnd;
-    }
-    
-    if (text.length > 50) {
-      console.log(`DOCX extraction successful: ${text.length} chars`);
-      return text;
-    }
-    
-    throw new Error('Could not extract sufficient text from DOCX');
-  } catch (error) {
-    console.error('DOCX extraction error:', error);
-    throw error;
-  }
-}
-
-// ============ Check Text Quality ============
-
-function checkTextQuality(text: string): { quality: 'good' | 'poor'; reason?: string } {
-  if (!text || text.length < 100) {
-    return { quality: 'poor', reason: 'Text too short' };
-  }
-  
-  // Count actual letters vs total characters
-  const letterCount = (text.match(/[a-zA-Z]/g) || []).length;
-  const letterRatio = letterCount / text.length;
-  
-  if (letterRatio < 0.3) {
-    return { quality: 'poor', reason: 'Low letter ratio - may be scanned/garbled' };
-  }
-  
-  // Check for common OCR garbage patterns
-  const garbagePatterns = /[^\x00-\x7F]{10,}|(.)\1{10,}/g;
-  if (garbagePatterns.test(text)) {
-    return { quality: 'poor', reason: 'Contains garbled text patterns' };
-  }
-  
-  return { quality: 'good' };
 }
 
 // ============ Extract with Vision ============
@@ -873,37 +714,8 @@ serve(async (req) => {
         const base64 = btoa(binary);
         
         documentText = await extractWithVision(base64, contentType, LOVABLE_API_KEY);
-      } else if (contentType.includes('wordprocessingml') || 
-                 request.file_url?.toLowerCase().endsWith('.docx')) {
-        // DOCX files - extract text natively
-        try {
-          documentText = await extractTextFromDOCX(bytes);
-          console.log('Native DOCX extraction succeeded');
-        } catch (docxError) {
-          console.error('Native DOCX extraction failed, will try vision:', docxError);
-          
-          // Fallback: try vision API with the document
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-            binary += String.fromCharCode.apply(null, Array.from(chunk));
-          }
-          const base64 = btoa(binary);
-          
-          // For DOCX, we need to inform user to try PDF
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'Word document extraction failed. Please save the document as PDF and try again.',
-              suggestion: 'Word documents work best when saved as PDF before uploading.'
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      } else if (contentType.includes('pdf') || 
-                 request.file_url?.toLowerCase().endsWith('.pdf')) {
-        // PDF files - use vision with proper multimodal format
+      } else {
+        // For PDFs, try text extraction first
         let binary = '';
         const chunkSize = 8192;
         for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -912,9 +724,7 @@ serve(async (req) => {
         }
         const base64 = btoa(binary);
 
-        console.log(`PDF size: ${bytes.length} bytes, base64 length: ${base64.length}`);
-        
-        // Use Gemini with proper multimodal format (image_url with data URI)
+        // Use Gemini to extract from PDF
         const pdfResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -923,116 +733,20 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: "google/gemini-2.5-pro",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: `Extract ALL text from this PDF document. Preserve:
-- Document structure and sections
-- Tables (format as structured text)
-- Headers, bullet points, and numbered lists
-- All text content verbatim
+            messages: [{
+              role: "user",
+              content: `Extract ALL text from this PDF document (base64 encoded). Preserve structure, tables, and formatting:
 
-Return the complete extracted text, organized by page if possible.`
-                  },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: `data:application/pdf;base64,${base64}`
-                    }
-                  }
-                ]
-              }
-            ],
+${base64.substring(0, 60000)}
+
+Return the complete extracted text.`
+            }]
           }),
         });
 
-        if (!pdfResponse.ok) {
-          const errorText = await pdfResponse.text();
-          console.error('PDF vision extraction failed:', pdfResponse.status, errorText);
-          
-          if (pdfResponse.status === 429) {
-            return new Response(
-              JSON.stringify({ success: false, error: 'Rate limit exceeded. Please try again later.' }),
-              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-          if (pdfResponse.status === 402) {
-            return new Response(
-              JSON.stringify({ success: false, error: 'AI credits exhausted. Please add credits.' }),
-              { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-          
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'PDF extraction failed. The document may be too large or corrupted.',
-              suggestion: 'Try a smaller PDF or ensure the file is not password-protected.'
-            }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        
-        const pdfResult = await pdfResponse.json();
-        documentText = pdfResult.choices?.[0]?.message?.content || '';
-        
-        // Check text quality
-        const quality = checkTextQuality(documentText);
-        if (quality.quality === 'poor') {
-          console.warn('PDF text quality poor:', quality.reason);
-        }
-        
-        console.log(`PDF extraction result: ${documentText.length} chars`);
-      } else {
-        // Other document types - try generic text extraction
-        try {
-          // Try to decode as text
-          documentText = new TextDecoder().decode(bytes);
-        } catch {
-          let binary = '';
-          const chunkSize = 8192;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-            binary += String.fromCharCode.apply(null, Array.from(chunk));
-          }
-          const base64 = btoa(binary);
-          
-          // Use vision as last resort
-          const pdfResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-pro",
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: `Extract ALL text from this document. Return the complete extracted text.`
-                    },
-                    {
-                      type: "image_url",
-                      image_url: {
-                        url: `data:${contentType || 'application/octet-stream'};base64,${base64}`
-                      }
-                    }
-                  ]
-                }
-              ],
-            }),
-          });
-          
-          if (pdfResponse.ok) {
-            const pdfResult = await pdfResponse.json();
-            documentText = pdfResult.choices?.[0]?.message?.content || '';
-          }
+        if (pdfResponse.ok) {
+          const pdfResult = await pdfResponse.json();
+          documentText = pdfResult.choices?.[0]?.message?.content || '';
         }
       }
 
@@ -1040,19 +754,10 @@ Return the complete extracted text, organized by page if possible.`
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Could not extract text from document.',
-            suggestion: 'Ensure the document is not password-protected. For best results, use PDF format with selectable text (not scanned images).'
+            error: 'Could not extract text from document. Try a different format.' 
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
-      }
-      
-      // Extract filename from URL
-      try {
-        const urlPath = new URL(request.file_url).pathname;
-        filename = urlPath.split('/').pop() || 'document';
-      } catch {
-        filename = 'document';
       }
     }
 
