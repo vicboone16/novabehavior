@@ -4606,6 +4606,83 @@ export type Database = {
         }
         Relationships: []
       }
+      payer_auth_rules: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          if_conditions: Json
+          payer_id: string
+          rule_name: string
+          then_actions: Json
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          if_conditions?: Json
+          payer_id: string
+          rule_name: string
+          then_actions?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          if_conditions?: Json
+          payer_id?: string
+          rule_name?: string
+          then_actions?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payer_auth_rules_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payer_directory: {
+        Row: {
+          active: boolean | null
+          aliases: string[] | null
+          created_at: string | null
+          eligibility_supported: boolean | null
+          id: string
+          payer_id: string
+          payer_name: string
+          source: Json
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          aliases?: string[] | null
+          created_at?: string | null
+          eligibility_supported?: boolean | null
+          id?: string
+          payer_id: string
+          payer_name: string
+          source?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          aliases?: string[] | null
+          created_at?: string | null
+          eligibility_supported?: boolean | null
+          id?: string
+          payer_id?: string
+          payer_name?: string
+          source?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payer_plans: {
         Row: {
           client_id: string
@@ -4668,47 +4745,161 @@ export type Database = {
           },
         ]
       }
+      payer_services: {
+        Row: {
+          agency_id: string | null
+          auth: Json
+          cms1500_defaults: Json
+          cpt_hcpcs_code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          modifiers: Json
+          payer_id: string
+          rate: Json
+          service_category: string | null
+          service_name: string
+          sort_order: number | null
+          status: string | null
+          units: Json
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          auth?: Json
+          cms1500_defaults?: Json
+          cpt_hcpcs_code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          modifiers?: Json
+          payer_id: string
+          rate?: Json
+          service_category?: string | null
+          service_name: string
+          sort_order?: number | null
+          status?: string | null
+          units?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          auth?: Json
+          cms1500_defaults?: Json
+          cpt_hcpcs_code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          modifiers?: Json
+          payer_id?: string
+          rate?: Json
+          service_category?: string | null
+          service_name?: string
+          sort_order?: number | null
+          status?: string | null
+          units?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payer_services_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payer_services_payer_id_fkey"
+            columns: ["payer_id"]
+            isOneToOne: false
+            referencedRelation: "payers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payers: {
         Row: {
           address: string | null
+          agency_id: string | null
           billing_notes: string | null
+          claims_submission_method: string | null
+          contact: Json | null
           created_at: string
+          directory_link: Json | null
+          directory_payer_id: string | null
+          eligibility: Json | null
           email: string | null
           fax: string | null
           id: string
           is_active: boolean | null
           name: string
+          payer_id: string | null
           payer_type: string | null
           phone: string | null
+          timely_filing_days: number | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          agency_id?: string | null
           billing_notes?: string | null
+          claims_submission_method?: string | null
+          contact?: Json | null
           created_at?: string
+          directory_link?: Json | null
+          directory_payer_id?: string | null
+          eligibility?: Json | null
           email?: string | null
           fax?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          payer_id?: string | null
           payer_type?: string | null
           phone?: string | null
+          timely_filing_days?: number | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          agency_id?: string | null
           billing_notes?: string | null
+          claims_submission_method?: string | null
+          contact?: Json | null
           created_at?: string
+          directory_link?: Json | null
+          directory_payer_id?: string | null
+          eligibility?: Json | null
           email?: string | null
           fax?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          payer_id?: string | null
           payer_type?: string | null
           phone?: string | null
+          timely_filing_days?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payers_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payers_directory_payer_id_fkey"
+            columns: ["directory_payer_id"]
+            isOneToOne: false
+            referencedRelation: "payer_directory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_plans: {
         Row: {
