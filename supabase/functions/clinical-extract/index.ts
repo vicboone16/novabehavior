@@ -82,6 +82,15 @@ CRITICAL RULES:
 4. SOURCE TRACING - Include page numbers and source snippets for all extracted data
 5. FLAG AMBIGUITY - If unclear, mark confidence low and flag for review
 
+ENTITY IDENTIFICATION (CRITICAL):
+- The CLIENT/STUDENT is the person RECEIVING services, NOT the person providing or writing the document
+- Documents typically contain names of: clinicians, teachers, parents, evaluators, administrators - these are NOT the client
+- Look for labels like: "Student Name", "Client", "Child's Name", "Student", "Learner", "Individual"
+- The client is usually a MINOR (child/adolescent) in educational documents
+- Names near titles like "BCBA", "Teacher", "Parent", "Evaluator", "Case Manager", "Prepared by" are NOT the client
+- If DOB indicates an adult (18+ years old based on document date), verify this is actually the client, not staff
+- When in doubt, prefer names that appear next to "Student:", "Client:", or "Child:" labels
+
 For each extracted field, provide:
 - value: The extracted data
 - confidence: 0-1 score based on clarity and certainty
@@ -93,10 +102,13 @@ const DOC_TYPE_PROMPTS: Record<string, string> = {
   IEP: `Extract from this IEP document:
 
 1. CLIENT IDENTITY (critical - must be accurate):
-   - full_name: Student's complete name
+   - full_name: Student's complete name (the CHILD receiving services, NOT teachers/staff/parents)
    - dob: Date of birth
    - grade: Current grade level
    - school: School name
+   
+   IMPORTANT: The student is the person the IEP is ABOUT, not the people who wrote it or attend meetings.
+   Look for "Student Name:", "Student:", or similar labels. Ignore names near "Teacher:", "Parent:", "Case Manager:", etc.
 
 2. GOALS (each with source reference):
    - goal_text: Full goal text verbatim
@@ -126,7 +138,11 @@ Return as JSON with confidence scores and source references for each field.`,
   FBA: `Extract from this Functional Behavior Assessment:
 
 1. CLIENT IDENTITY (critical):
-   - full_name, dob, grade, school
+   - full_name: The STUDENT/CLIENT whose behavior is being assessed (NOT the clinician/evaluator)
+   - dob, grade, school
+   
+   IMPORTANT: The client is the child/student being evaluated, NOT the BCBA, psychologist, or teacher who conducted the assessment.
+   Look for labels like "Student:", "Client:", "Individual:". Ignore names near "Conducted by:", "Evaluator:", "BCBA:", etc.
 
 2. TARGET BEHAVIORS (for each):
    - behavior_name: Name of behavior
@@ -154,7 +170,10 @@ Return as JSON with confidence scores and source references.`,
   BIP: `Extract from this Behavior Intervention Plan:
 
 1. CLIENT IDENTITY (critical):
-   - full_name, dob, grade, school
+   - full_name: The STUDENT/CLIENT for whom the plan was created (NOT staff members)
+   - dob, grade, school
+   
+   IMPORTANT: The client is the child receiving behavioral support, NOT the teachers, therapists, or parents implementing the plan.
 
 2. TARGET BEHAVIORS:
    - List of behaviors addressed
@@ -177,7 +196,11 @@ Return as JSON with confidence scores and source references.`,
   ASSESSMENT_REPORT: `Extract from this assessment/evaluation report:
 
 1. CLIENT IDENTITY (critical):
-   - full_name, dob, grade, school
+   - full_name: The STUDENT/CLIENT being assessed (NOT the examiner/evaluator)
+   - dob, grade, school
+   
+   IMPORTANT: The client is the individual being evaluated, NOT the professional who administered the assessment.
+   Look for "Examinee:", "Student:", "Client:". Ignore "Examiner:", "Administered by:", "Evaluator:".
 
 2. ASSESSMENT TYPE:
    - Type of assessment (VB-MAPP, ABLLS-R, Vineland, etc.)
@@ -199,7 +222,11 @@ Return as JSON with confidence scores and source references.`,
 
   OTHER: `Extract any relevant educational/clinical information:
 
-1. CLIENT IDENTITY if present
+1. CLIENT IDENTITY if present:
+   - The CLIENT is the person RECEIVING services (usually a child/student)
+   - NOT the clinician, teacher, parent, or evaluator
+   - Look for "Student:", "Client:", "Child:" labels
+   
 2. Any goals, services, or accommodations
 3. Assessment data
 4. Recommendations
