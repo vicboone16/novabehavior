@@ -1,213 +1,301 @@
 
 
-## Plan: Brief Teacher Interview Validation + Document Extraction Fix (PDF & DOCX)
+## Plan: Add Export/Print for Indirect Assessment Tools
 
 ### Overview
 
-This plan addresses three issues:
-1. Add validation to ensure Brief Teacher Interview responses save properly with multi-select fields
-2. Fix PDF document extraction that's currently failing
-3. Fix Word document (DOCX) extraction that's not working
+This plan adds the ability to export and print completed assessments from the Indirect Assessment Tools. Users will be able to export rating scales (FAST, MAS, QABF), Brief Teacher Interview responses, and Record Reviews to professional Word documents (.docx) or print them directly.
 
 ---
 
-## Issue 1: Brief Teacher Interview Validation
+### Assessment Types Covered
 
-### Current State
-The Brief Teacher Interview form in `BriefTeacherInput.tsx` already has basic validation:
-- Requires respondent name
-- Requires at least one problem behavior
-
-However, there's no visual feedback for section completion or detailed save confirmation.
-
-### Proposed Enhancements
-
-| File | Change | Purpose |
-|------|--------|---------|
-| `src/components/assessment/BriefTeacherInput.tsx` | Add section completion indicators | Show checkmarks next to completed sections |
-| `src/components/assessment/BriefTeacherInput.tsx` | Add warning for empty optional sections | Alert users when triggers/consequences are empty |
-| `src/components/assessment/BriefTeacherInput.tsx` | Enhanced save toast with field counts | Show "Saved: 3 behaviors, 2 triggers, 2 consequences" |
-| `src/components/assessment/BriefTeacherInputManager.tsx` | Add confirmation dialog before save | Prevent accidental incomplete submissions |
-
-### Validation Indicators to Add
-- Green checkmark when section has at least one selection
-- Yellow warning icon when section is empty (optional sections)
-- Count badges showing number of selections per section
+| Assessment Type | Data Location | Export Format |
+|-----------------|---------------|---------------|
+| FAST Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
+| MAS Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
+| QABF Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
+| Brief Teacher Input | `student.briefTeacherInputs` | Word (.docx) with behavior details and inferred functions |
+| Brief Record Review | `student.briefRecordReview` | Word (.docx) with all 6 sections and tables |
 
 ---
 
-## Issue 2 & 3: Document Extraction Not Working
+### User Experience
 
-### Root Cause Analysis
+**Rating Scales (FAST, MAS, QABF)**
+- Export button appears in the saved assessments list (top card)
+- Each saved assessment row gets a dropdown menu with "Export to Word" and "Print" options
+- Exports include: student name, target behavior, respondent, date, all item responses, function scores with percentages, and primary function indicated
 
-Looking at the edge function code (lines 718-751), I found the core problems:
+**Brief Teacher Input**
+- Export button added to the response detail dialog
+- Also available from the response list row (dropdown)
+- Exports include: student info, respondent, date, strengths, problem behaviors, frequency/duration/intensity, triggers, consequences, inferred functions, and notes
 
-**PDF Extraction Issue (Lines 728-750):**
-```typescript
-// Current broken approach - sends raw base64 as TEXT
-body: JSON.stringify({
-  model: "google/gemini-2.5-pro",
-  messages: [{
-    role: "user",
-    content: `Extract ALL text from this PDF document (base64 encoded)...
-${base64.substring(0, 60000)}  // <-- Truncated and sent as plain text!
-`
-  }]
-})
-```
+**Brief Record Review**
+- Export button added to the main card and the form dialog header
+- Exports include: all 6 sections with reviewed checkboxes, academic assessment tables, discipline tables, and IEP information
 
-**Problems:**
-1. PDF base64 is being sent as plain text in the prompt, not as a proper file attachment
-2. The base64 is truncated to 60,000 characters (only ~45KB of data) - most PDFs are larger
-3. Gemini cannot parse raw base64 text - it needs the file sent using the `inline_data` format with proper MIME type
+---
 
-**DOCX Extraction Issue:**
-- No DOCX-specific handling exists at all
-- DOCX files fall through to the PDF handler which fails
+### Files to Create
 
-### Solution: Two-Stage Extraction with Proper File Handling
+**`src/lib/assessmentExport.ts`** (new file)
 
-#### Stage 1: Native Text Extraction (Fast, no AI cost for digital docs)
-For PDFs: Use `pdf-parse` library to extract text from digitally-created PDFs
+This utility file will contain export functions for all assessment types:
 
-#### Stage 2: Vision API Fallback (For scanned/image-based documents)
-If native extraction fails or returns poor quality text, send the document to Gemini properly formatted with:
-- `inline_data` format (not raw base64 in prompt)
-- Correct MIME type
-- Full file contents (not truncated)
-
-### Technical Implementation
-
-**File: `supabase/functions/clinical-extract/index.ts`**
-
-#### Add Native PDF Parsing
 ```text
-Import pdf-parse library
-Create extractPdfText() function:
-  1. Parse PDF using pdf-parse
-  2. Check text quality (>500 chars, >100 letters)
-  3. Return { text, quality: 'good' | 'poor' }
+Functions:
+- exportRatingScaleToDocx(assessment, student, items): Exports FAST/MAS/QABF
+- exportBriefTeacherInputToDocx(response, student): Exports Brief Teacher Input
+- exportBriefRecordReviewToDocx(review, student): Exports Brief Record Review
+- printAssessment(contentRef): Triggers browser print for a component
 ```
 
-#### Add Native DOCX Parsing
+Document structure for rating scales:
 ```text
-Create extractDocxText() function:
-  1. Detect DOCX by MIME type or extension
-  2. Locate word/document.xml in ZIP structure
-  3. Decompress and extract text from <w:t> tags
-  4. Return extracted text
+FUNCTIONAL BEHAVIOR ASSESSMENT - INDIRECT ASSESSMENT
+[FAST / MAS / QABF] Rating Scale
+
+Student: [Name]
+Target Behavior: [Behavior]
+Completed By: [Respondent]
+Date: [Date]
+
+FUNCTION SCORES
+-------------------------------------
+| Function          | Score | Max | % |
+|-------------------|-------|-----|---|
+| Social Attention  |   12  |  16 | 75% |
+| Escape/Avoidance  |    8  |  16 | 50% |
+| Tangible/Access   |    4  |  16 | 25% |
+| Sensory/Automatic |    2  |  16 | 13% |
+-------------------------------------
+
+PRIMARY FUNCTION: Social Attention
+
+ITEM RESPONSES
+[List of all items with responses]
+
+NOTES
+[Any clinical notes]
 ```
 
-#### Fix Vision API Format
+Document structure for Brief Teacher Input:
 ```text
-Update extractWithVision() to use proper inline_data format:
-  messages: [{
-    role: "user",
-    content: [
-      { type: "text", text: "Extract ALL text..." },
-      { 
-        type: "image_url",  
-        image_url: { 
-          url: `data:application/pdf;base64,${fullBase64}`  // Full file, proper format
-        }
-      }
-    ]
-  }]
+BRIEF FBA TEACHER/STAFF INTERVIEW
+
+Student: [Name]
+Respondent: [Name]
+Date: [Date]
+
+STUDENT STRENGTHS
+- Strength 1
+- Strength 2
+
+PROBLEM BEHAVIORS
+[Checkbox list with selected items]
+Description: [text]
+Frequency: [text] | Duration: [text] | Intensity: [text]
+
+ANTECEDENTS (TRIGGERS)
+[List of selected triggers]
+
+CONSEQUENCES
+Things Obtained: [list]
+Things Avoided: [list]
+
+INFERRED FUNCTIONS
+[Based on analysis: Attention, Escape, etc.]
+
+ADDITIONAL NOTES
+[text]
 ```
 
-#### Add Smart Routing Logic
+Document structure for Brief Record Review:
 ```text
-if (isPDF) {
-  // Try native extraction first
-  const native = await extractPdfText(bytes);
-  if (native.quality === 'good') {
-    documentText = native.text;
-  } else {
-    // Fallback to vision for scanned PDFs
-    documentText = await extractWithVision(base64, 'application/pdf', apiKey);
-  }
-} else if (isDOCX) {
-  documentText = await extractDocxText(bytes);
-} else if (isImage) {
-  documentText = await extractWithVision(base64, contentType, apiKey);
-}
+BRIEF RECORD REVIEW - FBA
+
+Student: [Name] | Grade: [Grade]
+Reviewer: [Name] | Date: [Date]
+
+1. HEALTH INFORMATION [✓ Reviewed]
+   Health History: [text]
+   Medical Diagnoses: [text]
+   Mental Health Diagnoses: [text]
+   Medications: [text]
+
+2. ACADEMIC/BENCHMARK ASSESSMENTS [✓ Reviewed]
+   [Table of assessments with BOY/MOY/EOY scores]
+
+3. PREVIOUS INTERVENTIONS [✓ Reviewed]
+   Behavior: [text]
+   Academic: [text]
+   Previous FBA/BIP: [text]
+
+4. ATTENDANCE [✓ Reviewed]
+   Previous Concerns: Yes/No
+   Tardy: [text] | Early Dismissal: [text] | Absent: [text]
+
+5. DISCIPLINE [✓ Reviewed]
+   [Table of discipline records]
+   Notes: [text]
+
+6. IEP REVIEW [✓ Reviewed]
+   Eligibility/Disability: [text]
+   Services: [text]
+   Program Modifications: [text]
+   Other Information: [text]
 ```
 
 ---
 
-## Implementation Order
+### Files to Modify
 
-### Phase 1: Brief Teacher Validation
-1. Add completion indicators to section headers
-2. Add enhanced save toast with counts
-3. Add optional confirmation dialog
+**`src/components/IndirectAssessmentTools.tsx`**
+- Add import for `Download`, `Printer` icons from lucide-react
+- Add import for export functions from `assessmentExport.ts`
+- Add import for `DropdownMenu` components
+- Modify the saved assessments list (lines 288-319) to include a dropdown menu per row with Export/Print options
+- Add an "Export All" button to the Saved Assessments card header
 
-### Phase 2: Document Extraction Fix
-1. Add `pdf-parse` import for native PDF extraction
-2. Add DOCX text extraction function
-3. Fix the vision API call format (use `inline_data` properly)
-4. Add smart routing based on extraction quality
-5. Add better error messages for users
+**`src/components/assessment/BriefTeacherInputManager.tsx`**
+- Add import for export function
+- Add "Export" button to the response detail dialog footer (line 483-495)
+- Add dropdown menu to each response row in the list
 
----
-
-## Expected Results After Fix
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| Brief Teacher save | Generic "saved" toast | "Saved: 4 behaviors, 3 triggers, 2 consequences" |
-| Digital PDF upload | Fails - sends truncated base64 as text | Extracts text natively, fast and accurate |
-| Scanned PDF upload | Fails | Uses vision API with proper format |
-| DOCX upload | Fails silently | Extracts text from XML structure |
-| Error handling | Generic "Could not extract" | Specific: "Scanned PDF detected, try a clearer image" |
+**`src/components/assessment/BriefRecordReviewManager.tsx`**
+- Add import for export function
+- Add "Export" button to the main card header (next to "Edit Review" button)
+- Add "Export" button to the form dialog footer when viewing existing review
 
 ---
 
-## Files to Modify
+### Implementation Details
 
-| File | Changes |
-|------|---------|
-| `src/components/assessment/BriefTeacherInput.tsx` | Add section completion indicators, enhanced save toast |
-| `supabase/functions/clinical-extract/index.ts` | Add pdf-parse, DOCX extraction, fix vision API format |
+**Export Utility Functions (assessmentExport.ts)**
+
+The file will use the existing `docx` library pattern from `pdfExport.ts`:
+- Import `Document`, `Packer`, `Paragraph`, `TextRun`, `Table`, `TableRow`, `TableCell` from docx
+- Import `saveAs` from file-saver
+- Import `format` from date-fns
+
+For tables (academic assessments, discipline records), use the Table/TableRow/TableCell pattern with proper borders and cell widths.
+
+**Dropdown Menu Pattern**
+
+Each assessment row will have:
+```text
+[Assessment Info] [Function Badge] [MoreHorizontal Icon]
+                                          |
+                                   ┌──────────────┐
+                                   │ Export Word  │
+                                   │ Print        │
+                                   │ Delete       │
+                                   └──────────────┘
+```
 
 ---
 
-## Technical Notes
+### Technical Implementation Order
 
-### Why the Current PDF Extraction Fails
+1. Create `src/lib/assessmentExport.ts` with all export functions
+2. Update `IndirectAssessmentTools.tsx` to add export/print for saved rating scales
+3. Update `BriefTeacherInputManager.tsx` to add export/print for teacher input responses
+4. Update `BriefRecordReviewManager.tsx` to add export/print for record review
 
-The current code does this:
-```javascript
-content: `Extract ALL text from this PDF document (base64 encoded):
-${base64.substring(0, 60000)}`
+---
+
+### Dependencies
+
+Uses existing installed packages:
+- `docx` (already installed, version ^9.5.1)
+- `file-saver` (already installed, version ^2.0.5)
+- `date-fns` (already installed, version ^3.6.0)
+
+---
+
+### Expected UI Changes
+
+**Saved Assessments Card (Rating Scales)**
+
+Before:
+```text
+┌─────────────────────────────────────────────────┐
+│ ✓ Saved Assessments (2)              [▲ Expand] │
+├─────────────────────────────────────────────────┤
+│ [FAST] Hitting  Jan 15, 2025  [Attention] [🗑] │
+│ [MAS]  Yelling  Jan 20, 2025  [Escape]    [🗑] │
+└─────────────────────────────────────────────────┘
 ```
 
-This is wrong because:
-1. Gemini sees "JVBERi0xLjcKJeLjz9MK..." as literal text, not a file
-2. Truncating to 60k chars loses most of the document
-3. The model cannot decode base64 from a text prompt
-
-### Correct Vision API Format
-
-For Gemini to actually process a PDF/image file, it must be sent as:
-```javascript
-content: [
-  { type: "text", text: "Extract text from this document" },
-  { 
-    type: "image_url",
-    image_url: { url: `data:${mimeType};base64,${base64}` }
-  }
-]
+After:
+```text
+┌─────────────────────────────────────────────────┐
+│ ✓ Saved Assessments (2)    [Export All] [▲]    │
+├─────────────────────────────────────────────────┤
+│ [FAST] Hitting  Jan 15, 2025  [Attention] [⋮]  │
+│ [MAS]  Yelling  Jan 20, 2025  [Escape]    [⋮]  │
+└─────────────────────────────────────────────────┘
+                                           │
+                                    ┌──────┴──────┐
+                                    │ Export Word │
+                                    │ Print       │
+                                    │ Delete      │
+                                    └─────────────┘
 ```
 
-### DOCX Structure
-DOCX files are ZIP archives containing:
-```
-word/document.xml  <- Main content here
-word/styles.xml
-[Content_Types].xml
-...
+**Brief Teacher Input Response Dialog**
+
+Before:
+```text
+┌────────────────────────────────────┐
+│ Response Details                   │
+├────────────────────────────────────┤
+│ [Response content...]              │
+├────────────────────────────────────┤
+│              [Delete] [Close]      │
+└────────────────────────────────────┘
 ```
 
-Text lives in `<w:t>` tags within `document.xml`.
+After:
+```text
+┌────────────────────────────────────┐
+│ Response Details                   │
+├────────────────────────────────────┤
+│ [Response content...]              │
+├────────────────────────────────────┤
+│ [Export Word] [Print]  [Delete] [Close] │
+└────────────────────────────────────┘
+```
+
+**Brief Record Review Card**
+
+Before:
+```text
+┌─────────────────────────────────────────────────┐
+│ Brief Record Review                [Edit Review]│
+└─────────────────────────────────────────────────┘
+```
+
+After:
+```text
+┌─────────────────────────────────────────────────┐
+│ Brief Record Review      [Export] [Edit Review] │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### Testing Checklist
+
+After implementation, verify:
+- [ ] FAST assessment exports with correct 16 items and 4 function scores
+- [ ] MAS assessment exports with correct items and scoring
+- [ ] QABF assessment exports with correct 25 items and scoring
+- [ ] Brief Teacher Input exports all sections including multi-select fields
+- [ ] Brief Record Review exports all 6 sections with tables
+- [ ] Print functionality opens browser print dialog with formatted content
+- [ ] Export filenames include student name and date
+- [ ] Tables render correctly in Word with borders and alignment
 
