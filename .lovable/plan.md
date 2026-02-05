@@ -1,73 +1,130 @@
 
 
-## Brief Teacher Interview Assessment - Fix Plan
+## Fix Brief Teacher Interview Crash - Complete Solution
 
-### Summary of the Issue
+### Problem Identified
 
-The Brief Teacher Interview assessment appears blank when clicked because of a **duplicate rendering bug** in `IndirectAssessmentTools.tsx`. The component renders BOTH:
-1. `BriefTeacherInputManager` inside the main Card (correct)
-2. `BriefTeacherInput` form outside the Card (incorrect duplicate)
+The **Brief Teacher Interview** and **Record Review** tabs crash because of unsafe `useMemo` calculations in `IndirectAssessmentTools.tsx`. When switching to these tabs:
 
-This causes UI conflicts and may result in a blank or broken display.
+1. `currentItems` returns `undefined` (only defined for FAST/MAS/QABF)
+2. `progress` computation calls `currentItems.some()` and `currentItems.length` on `undefined`
+3. `scores` computation calls `currentItems.forEach()` on `undefined`
+4. `maxPossibleScore` does the same
 
-### Current Questions/Flow (Already Implemented)
+This causes a runtime error that blanks the entire component.
 
-The Brief Teacher Input form has a complete set of questions organized in sections:
+---
 
-| Section | Questions/Fields |
-|---------|-----------------|
-| **Student Strengths** | 2+ text fields for student strengths |
-| **Problem Behaviors** | 11 checkboxes (Destruction of property, Physical aggression, Disruptive, Work refusal, Unresponsive, Inappropriate language, Insubordinate, Withdrawn, Verbally inappropriate, Verbal harassment, Self-injury) + custom "Other" field |
-| **Behavior Details** | Description, Frequency, Duration, Intensity |
-| **Triggers/Antecedents** | 6 checkboxes (Academic tasks, Unstructured time, Isolated, Transitions, Reprimands, Non-academic activities) |
-| **Things Obtained** | 4 checkboxes (Adult attention, Peer attention, Activity, Preferred objects) |
-| **Things Avoided** | 5 checkboxes (Hard tasks, Physical effort, Reprimands, Peer negatives, Adult attention) |
-| **Inferred Functions** | Auto-calculated from selections (Attention, Escape, Tangible, Sensory) |
-| **Additional Notes** | Free-text field |
+### Solution Overview
 
-### The Fix
+| Change | Purpose |
+|--------|---------|
+| Add `isRatingScale` flag | Distinguish FAST/MAS/QABF from BRIEF/RECORD_REVIEW |
+| Safe `currentItems` default | Return empty array `[]` instead of `undefined` |
+| Guard all computations | Avoid divide-by-zero and undefined access |
+| Hide rating-scale UI | Don't show Reset/Save/Progress for BRIEF/RECORD_REVIEW |
+
+---
+
+### Technical Changes
 
 **File: `src/components/IndirectAssessmentTools.tsx`**
 
-Remove the duplicate `BriefTeacherInput` rendering block (lines 436-459). The `BriefTeacherInputManager` already handles the complete flow properly:
-- Shows empty state when no responses exist
-- Has "New Response" button that opens a dialog with the form
-- Lists saved responses with view/delete capabilities
-
-### Technical Details
-
-```text
-Current (broken):
-┌─────────────────────────────────────────┐
-│  IndirectAssessmentTools                │
-│  ┌───────────────────────────────────┐  │
-│  │ Card with BriefTeacherInputManager│  │  ← Correct
-│  └───────────────────────────────────┘  │
-│  ┌───────────────────────────────────┐  │
-│  │ BriefTeacherInput (duplicate)     │  │  ← REMOVE THIS
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
-
-Fixed:
-┌─────────────────────────────────────────┐
-│  IndirectAssessmentTools                │
-│  ┌───────────────────────────────────┐  │
-│  │ Card with BriefTeacherInputManager│  │  ← Only this
-│  └───────────────────────────────────┘  │
-└─────────────────────────────────────────┘
+#### 1. Add rating scale detection
+```typescript
+const isRatingScale = activeAssessment === 'FAST' || 
+                      activeAssessment === 'MAS' || 
+                      activeAssessment === 'QABF';
 ```
 
-### Changes Summary
+#### 2. Fix `currentItems` to always return an array
+```typescript
+const currentItems = useMemo(() => {
+  switch (activeAssessment) {
+    case 'FAST': return FAST_ITEMS;
+    case 'MAS': return MAS_ITEMS;
+    case 'QABF': return QABF_ITEMS;
+    default: return []; // Safe fallback for BRIEF/RECORD_REVIEW
+  }
+}, [activeAssessment]);
+```
 
-1. **Remove duplicate rendering** - Delete lines 436-459 in `IndirectAssessmentTools.tsx` that render `BriefTeacherInput` outside the main structure
-2. **Remove unused state** - Delete `showBriefTeacherInput` state variable (line 137) since it's no longer needed
-3. **Clean up tab change handler** - Remove the `setShowBriefTeacherInput` call in the tab change logic (line 350)
+#### 3. Fix `progress` to avoid divide-by-zero
+```typescript
+const progress = useMemo(() => {
+  if (currentItems.length === 0) return 0; // Prevent NaN
+  const answered = Object.keys(responses).filter(k => 
+    currentItems.some(i => i.id === k)
+  ).length;
+  return (answered / currentItems.length) * 100;
+}, [responses, currentItems]);
+```
+
+#### 4. Conditionally show header action buttons
+```typescript
+{/* Only show Reset/Save for rating scale assessments */}
+{isRatingScale && (
+  <div className="flex gap-2">
+    <Button variant="outline" size="sm" onClick={handleReset}>
+      <RotateCcw className="w-3 h-3 mr-1" />
+      Reset
+    </Button>
+    <Button size="sm" onClick={handleSave} disabled={progress < 100}>
+      <Save className="w-3 h-3 mr-1" />
+      Save
+    </Button>
+  </div>
+)}
+```
+
+#### 5. Fix items rendering condition
+Currently checks `activeAssessment !== 'BRIEF'` which still tries to render for RECORD_REVIEW with empty items. Change to:
+```typescript
+{isRatingScale && currentItems.length > 0 && (
+  <Card>
+    {/* ... Items list ... */}
+  </Card>
+)}
+```
+
+#### 6. Fix notes section condition
+```typescript
+{isRatingScale && (
+  <Card>
+    {/* ... Notes ... */}
+  </Card>
+)}
+```
+
+---
+
+### Multi-Select Support Confirmation
+
+The Brief Teacher Interview form **already supports multi-select** for:
+- Problem Behaviors (11 checkboxes)
+- Triggers/Antecedents (6 checkboxes + Other)
+- Things Obtained (4 checkboxes + Other)
+- Things Avoided (5 checkboxes + Other)
+
+This is implemented in `BriefTeacherInput.tsx` using the `toggleCheckbox` helper function and `Checkbox` components. The multi-select data is saved correctly as arrays in the student profile.
+
+---
 
 ### Expected Behavior After Fix
 
-When clicking the "Brief Teacher" tab:
-1. The `BriefTeacherInputManager` card displays
-2. If no responses exist: Shows "No Teacher Input responses yet" with "New Response" button
-3. Clicking "New Response" opens a dialog with the full form (all questions listed above)
-4. Saved responses appear as clickable cards with respondent name, date, and inferred functions
+| Tab | What Should Appear |
+|-----|-------------------|
+| FAST/MAS/QABF | Full rating scale with Reset/Save, progress bar, items list |
+| Brief Teacher | Card with "New Response" button, saved responses list |
+| Record Review | Card with "Start Review"/"Edit Review" button |
+
+---
+
+### Files to Modify
+
+1. **`src/components/IndirectAssessmentTools.tsx`** - Fix crash and conditional rendering
+
+No changes needed to:
+- `BriefTeacherInput.tsx` - Questions and multi-select already work correctly
+- `BriefTeacherInputManager.tsx` - Manager component is properly structured
 
