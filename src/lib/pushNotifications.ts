@@ -1,189 +1,216 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Check if push notifications are supported
-export function isPushSupported(): boolean {
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+// Convert base64 to Uint8Array for applicationServerKey
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
 
-// Get current notification permission status
-export function getNotificationPermission(): NotificationPermission {
-  if (!('Notification' in window)) return 'denied';
-  return Notification.permission;
+export interface PushNotificationStatus {
+  supported: boolean;
+  permission: NotificationPermission | 'unsupported';
+  subscribed: boolean;
+  vapidConfigured: boolean;
 }
 
-// Request notification permission
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!('Notification' in window)) return 'denied';
+export async function checkPushSupport(): Promise<PushNotificationStatus> {
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const vapidConfigured = !!VAPID_PUBLIC_KEY;
   
+  if (!supported) {
+    return { 
+      supported: false, 
+      permission: 'unsupported', 
+      subscribed: false,
+      vapidConfigured 
+    };
+  }
+
+  const permission = Notification.permission;
+  let subscribed = false;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration('/sw-push.js');
+    if (registration) {
+      const subscription = await registration.pushManager.getSubscription();
+      subscribed = !!subscription;
+    }
+  } catch (error) {
+    console.error('Error checking push subscription:', error);
+  }
+
+  return { supported, permission, subscribed, vapidConfigured };
+}
+
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service workers not supported');
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register('/sw-push.js', {
+      scope: '/'
+    });
+    console.log('Push service worker registered:', registration);
+    return registration;
+  } catch (error) {
+    console.error('Service worker registration failed:', error);
+    return null;
+  }
+}
+
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (!('Notification' in window)) {
+    return 'denied';
+  }
+
+  if (Notification.permission === 'granted') {
+    return 'granted';
+  }
+
   const permission = await Notification.requestPermission();
   return permission;
 }
 
-// Subscribe to push notifications
-export async function subscribeToPush(vapidPublicKey: string): Promise<PushSubscription | null> {
-  if (!isPushSupported()) {
-    console.warn('Push notifications not supported');
+export async function subscribeToPush(userId: string): Promise<PushSubscription | null> {
+  if (!VAPID_PUBLIC_KEY) {
+    console.error('VAPID public key not configured');
     return null;
   }
 
   try {
-    // Register service worker if not already registered
-    const registration = await navigator.serviceWorker.register('/sw-push.js');
+    let registration = await navigator.serviceWorker.getRegistration('/sw-push.js');
+    
+    if (!registration) {
+      registration = await registerServiceWorker();
+    }
+
+    if (!registration) {
+      throw new Error('Failed to register service worker');
+    }
+
+    // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
 
-    // Subscribe to push
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: vapidPublicKey,
-    });
+    // Check for existing subscription
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      // Create new subscription
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer
+      });
+    }
+
+    // Save subscription to database
+    const subscriptionJson = subscription.toJSON();
+    
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .insert([{
+        user_id: userId,
+        subscription: JSON.parse(JSON.stringify(subscriptionJson)),
+        device_name: getDeviceName(),
+        user_agent: navigator.userAgent,
+        is_active: true
+      }]);
+
+    if (error) {
+      // If duplicate, update instead
+      if (error.message.includes('duplicate')) {
+        await supabase
+          .from('push_subscriptions')
+          .update({ 
+            is_active: true,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('user_id', userId);
+      } else {
+        console.error('Error saving push subscription:', error);
+      }
+    }
 
     return subscription;
   } catch (error) {
-    console.error('Failed to subscribe to push:', error);
+    console.error('Error subscribing to push:', error);
     return null;
   }
 }
 
-// Unsubscribe from push notifications
-export async function unsubscribeFromPush(): Promise<boolean> {
+export async function unsubscribeFromPush(userId: string): Promise<boolean> {
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const registration = await navigator.serviceWorker.getRegistration('/sw-push.js');
     
-    if (subscription) {
-      await subscription.unsubscribe();
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Failed to unsubscribe from push:', error);
-    return false;
-  }
-}
-
-// Get current push subscription
-export async function getCurrentSubscription(): Promise<PushSubscription | null> {
-  if (!isPushSupported()) return null;
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    return await registration.pushManager.getSubscription();
-  } catch {
-    return null;
-  }
-}
-
-// Save subscription to database
-export async function saveSubscriptionToDatabase(
-  subscription: PushSubscription,
-  deviceName?: string
-): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    const subscriptionJson = JSON.parse(JSON.stringify(subscription.toJSON()));
-
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .insert({
-        user_id: user.id,
-        subscription: subscriptionJson,
-        device_name: deviceName || getBrowserName(),
-        is_active: true,
-      });
-
-    if (error && error.code === '23505') {
-      // Unique constraint violation - subscription exists, update it
-      const { error: updateError } = await supabase
-        .from('push_subscriptions')
-        .update({
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
-      return !updateError;
+    if (registration) {
+      const subscription = await registration.pushManager.getSubscription();
+      
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
     }
 
-    return !error;
-  } catch (error) {
-    console.error('Failed to save subscription:', error);
-    return false;
-  }
-}
-
-// Remove subscription from database
-export async function removeSubscriptionFromDatabase(): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    // Delete all subscriptions for this user on this device
-    const { error } = await supabase
+    // Remove subscription from database
+    await supabase
       .from('push_subscriptions')
       .delete()
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
-    return !error;
+    return true;
   } catch (error) {
-    console.error('Failed to remove subscription:', error);
+    console.error('Error unsubscribing from push:', error);
     return false;
   }
 }
 
-// Update push preferences
-export async function updatePushPreferences(
-  preferences: Record<string, boolean>
-): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        push_preferences: preferences,
-      })
-      .eq('user_id', user.id);
-
-    return !error;
-  } catch (error) {
-    console.error('Failed to update preferences:', error);
-    return false;
-  }
-}
-
-// Toggle push notifications on/off
-export async function togglePushEnabled(enabled: boolean): Promise<boolean> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ push_enabled: enabled })
-      .eq('user_id', user.id);
-
-    return !error;
-  } catch (error) {
-    console.error('Failed to toggle push:', error);
-    return false;
-  }
-}
-
-// Helper: Get browser name for device identification
-function getBrowserName(): string {
+function getDeviceName(): string {
   const ua = navigator.userAgent;
-  if (ua.includes('Firefox')) return 'Firefox';
-  if (ua.includes('Chrome')) return 'Chrome';
-  if (ua.includes('Safari')) return 'Safari';
-  if (ua.includes('Edge')) return 'Edge';
-  return 'Browser';
+  
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    return 'iOS Device';
+  } else if (/Android/.test(ua)) {
+    return 'Android Device';
+  } else if (/Windows/.test(ua)) {
+    return 'Windows PC';
+  } else if (/Mac/.test(ua)) {
+    return 'Mac';
+  } else if (/Linux/.test(ua)) {
+    return 'Linux PC';
+  }
+  
+  return 'Unknown Device';
 }
 
-// Show a local notification (for testing or fallback)
-export function showLocalNotification(title: string, options?: NotificationOptions): void {
-  if (Notification.permission === 'granted') {
-    new Notification(title, options);
+export async function sendTestNotification(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        test: true
+      }
+    });
+
+    if (error) {
+      console.error('Error sending test notification:', error);
+      return false;
+    }
+
+    return data?.success || false;
+  } catch (error) {
+    console.error('Error sending test notification:', error);
+    return false;
   }
 }

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { SetupPinDialog } from '@/components/PinLogin';
+import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
 
 interface ProfileData {
   display_name: string | null;
@@ -313,6 +314,9 @@ export default function UserProfile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Push Notifications */}
+        <NotificationPreferences />
       </main>
 
       {user && (
