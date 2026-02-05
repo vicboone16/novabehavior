@@ -1,671 +1,412 @@
 
+# Comprehensive Fix Plan: Document Extraction + Wizard Scrolling + Agency Isolation + Document Consolidation
 
-## Plan: Add Export/Print for Indirect Assessment Tools
+## Overview
 
-### Overview
+This plan addresses four interconnected issues:
 
-This plan adds the ability to export and print completed assessments from the Indirect Assessment Tools. Users will be able to export rating scales (FAST, MAS, QABF), Brief Teacher Interview responses, and Record Reviews to professional Word documents (.docx) or print them directly.
-
----
-
-### Assessment Types Covered
-
-| Assessment Type | Data Location | Export Format |
-|-----------------|---------------|---------------|
-| FAST Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
-| MAS Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
-| QABF Rating Scale | `student.indirectAssessments` | Word (.docx) with scores and function analysis |
-| Brief Teacher Input | `student.briefTeacherInputs` | Word (.docx) with behavior details and inferred functions |
-| Brief Record Review | `student.briefRecordReview` | Word (.docx) with all 6 sections and tables |
+1. **Behavior Intervention Wizard** - Scrolling broken on mobile, cannot edit previous steps
+2. **Document Extraction Accuracy** - Student names incorrectly extracted (pulling staff names instead)
+3. **Agency Data Isolation** - Staff seeing clients outside their agency
+4. **Document/Files Consolidation** - Two separate systems need merging with unified labeling
 
 ---
 
-### User Experience
+## Part 1: Fix Behavior Intervention Wizard Scrolling & Navigation
 
-**Rating Scales (FAST, MAS, QABF)**
-- Export button appears in the saved assessments list (top card)
-- Each saved assessment row gets a dropdown menu with "Export to Word" and "Print" options
-- Exports include: student name, target behavior, respondent, date, all item responses, function scores with percentages, and primary function indicated
+### Problem
+- Cannot scroll on Step 4 (mobile) to see the "Add to Plan" button
+- Cannot navigate back to edit previous selections from the final step
 
-**Brief Teacher Input**
-- Export button added to the response detail dialog
-- Also available from the response list row (dropdown)
-- Exports include: student info, respondent, date, strengths, problem behaviors, frequency/duration/intensity, triggers, consequences, inferred functions, and notes
+### Solution
 
-**Brief Record Review**
-- Export button added to the main card and the form dialog header
-- Exports include: all 6 sections with reviewed checkboxes, academic assessment tables, discipline tables, and IEP information
+#### 1.1 Fix Scrolling Layout
+**File**: `src/components/behavior-interventions/GuidedInterventionTracker.tsx`
+
+Replace the `ScrollArea` component with native scrolling:
+- Change content area from `overflow-hidden` to `overflow-y-auto`
+- Make footer buttons sticky with `shrink-0 border-t bg-background`
+- Add `pb-24` padding to content for safe scroll area on mobile
+
+```text
+Fixed Layout Structure:
++---------------------------------------+
+| DialogContent (flex flex-col          |
+|   max-h-[90vh] p-0)                   |
+| +-----------------------------------+ |
+| | Header (shrink-0 p-6)             | |
+| +-----------------------------------+ |
+| | Step Indicator (shrink-0 px-6)    | |
+| +-----------------------------------+ |
+| | Content (flex-1 min-h-0           | |
+| |   overflow-y-auto px-6 pb-24)     | |
+| +-----------------------------------+ |
+| | Footer (shrink-0 border-t p-4     | |
+| |   bg-background)                  | |
++---------------------------------------+
+```
+
+#### 1.2 Make Step Indicators Clickable
+**File**: `src/components/behavior-interventions/GuidedInterventionTracker.tsx`
+
+- Add `onClick` handler to step circles
+- Allow navigation to any completed or current step
+- Add visual cursor feedback: `cursor-pointer hover:ring-2 hover:ring-primary/20`
+
+#### 1.3 Add Edit Buttons to Summary Panel
+**File**: `src/components/behavior-interventions/TunnelSummaryPanel.tsx`
+
+- Add `onEditStep?: (step: TunnelStep) => void` prop
+- Show "Edit" buttons next to each section header when on Step 4
+- Clicking "Edit" navigates back to that step
+
+#### 1.4 Add Mobile Summary on Step 4
+**File**: `src/components/behavior-interventions/steps/InterventionsStep.tsx`
+
+- Add collapsible inline summary at top for mobile (since sidebar is hidden)
+- Show Problem, Goal, Objectives with edit links
+- Use `Collapsible` component
 
 ---
 
-### Files to Create
+## Part 2: Fix Document Extraction Student Name Accuracy
 
-**`src/lib/assessmentExport.ts`** (new file)
+### Problem
+The document extraction in the Assessment Dashboard sometimes pulls staff names (BCBA, teacher) instead of the student's name from clinical documents.
 
-This utility file will contain export functions for all assessment types:
+### Root Causes Identified
+1. The `extract-document` function (used by DocumentUpload in Assessment Dashboard) does NOT extract student identity at all - it only extracts behavioral content
+2. The `clinical-extract` function has student name extraction but the prompts aren't strict enough about rejecting staff names
+3. No two-stage OCR fallback for scanned PDFs (per project documentation)
 
-```text
-Functions:
-- exportRatingScaleToDocx(assessment, student, items): Exports FAST/MAS/QABF
-- exportBriefTeacherInputToDocx(response, student): Exports Brief Teacher Input
-- exportBriefRecordReviewToDocx(review, student): Exports Brief Record Review
-- printAssessment(contentRef): Triggers browser print for a component
-```
+### Solution
 
-Document structure for rating scales:
-```text
-FUNCTIONAL BEHAVIOR ASSESSMENT - INDIRECT ASSESSMENT
-[FAST / MAS / QABF] Rating Scale
+#### 2.1 Add Student Identity Extraction to `extract-document`
+**File**: `supabase/functions/extract-document/index.ts`
 
-Student: [Name]
-Target Behavior: [Behavior]
-Completed By: [Respondent]
-Date: [Date]
+Update all extraction prompts (IEP, FBA, BIP, etc.) to include student identity extraction:
 
-FUNCTION SCORES
--------------------------------------
-| Function          | Score | Max | % |
-|-------------------|-------|-----|---|
-| Social Attention  |   12  |  16 | 75% |
-| Escape/Avoidance  |    8  |  16 | 50% |
-| Tangible/Access   |    4  |  16 | 25% |
-| Sensory/Automatic |    2  |  16 | 13% |
--------------------------------------
-
-PRIMARY FUNCTION: Social Attention
-
-ITEM RESPONSES
-[List of all items with responses]
-
-NOTES
-[Any clinical notes]
-```
-
-Document structure for Brief Teacher Input:
-```text
-BRIEF FBA TEACHER/STAFF INTERVIEW
-
-Student: [Name]
-Respondent: [Name]
-Date: [Date]
-
-STUDENT STRENGTHS
-- Strength 1
-- Strength 2
-
-PROBLEM BEHAVIORS
-[Checkbox list with selected items]
-Description: [text]
-Frequency: [text] | Duration: [text] | Intensity: [text]
-
-ANTECEDENTS (TRIGGERS)
-[List of selected triggers]
-
-CONSEQUENCES
-Things Obtained: [list]
-Things Avoided: [list]
-
-INFERRED FUNCTIONS
-[Based on analysis: Attention, Escape, etc.]
-
-ADDITIONAL NOTES
-[text]
-```
-
-Document structure for Brief Record Review:
-```text
-BRIEF RECORD REVIEW - FBA
-
-Student: [Name] | Grade: [Grade]
-Reviewer: [Name] | Date: [Date]
-
-1. HEALTH INFORMATION [✓ Reviewed]
-   Health History: [text]
-   Medical Diagnoses: [text]
-   Mental Health Diagnoses: [text]
-   Medications: [text]
-
-2. ACADEMIC/BENCHMARK ASSESSMENTS [✓ Reviewed]
-   [Table of assessments with BOY/MOY/EOY scores]
-
-3. PREVIOUS INTERVENTIONS [✓ Reviewed]
-   Behavior: [text]
-   Academic: [text]
-   Previous FBA/BIP: [text]
-
-4. ATTENDANCE [✓ Reviewed]
-   Previous Concerns: Yes/No
-   Tardy: [text] | Early Dismissal: [text] | Absent: [text]
-
-5. DISCIPLINE [✓ Reviewed]
-   [Table of discipline records]
-   Notes: [text]
-
-6. IEP REVIEW [✓ Reviewed]
-   Eligibility/Disability: [text]
-   Services: [text]
-   Program Modifications: [text]
-   Other Information: [text]
-```
-
----
-
-### Files to Modify
-
-**`src/components/IndirectAssessmentTools.tsx`**
-- Add import for `Download`, `Printer` icons from lucide-react
-- Add import for export functions from `assessmentExport.ts`
-- Add import for `DropdownMenu` components
-- Modify the saved assessments list (lines 288-319) to include a dropdown menu per row with Export/Print options
-- Add an "Export All" button to the Saved Assessments card header
-
-**`src/components/assessment/BriefTeacherInputManager.tsx`**
-- Add import for export function
-- Add "Export" button to the response detail dialog footer (line 483-495)
-- Add dropdown menu to each response row in the list
-
-**`src/components/assessment/BriefRecordReviewManager.tsx`**
-- Add import for export function
-- Add "Export" button to the main card header (next to "Edit Review" button)
-- Add "Export" button to the form dialog footer when viewing existing review
-
----
-
-### Implementation Details
-
-**Export Utility Functions (assessmentExport.ts)**
-
-The file will use the existing `docx` library pattern from `pdfExport.ts`:
-- Import `Document`, `Packer`, `Paragraph`, `TextRun`, `Table`, `TableRow`, `TableCell` from docx
-- Import `saveAs` from file-saver
-- Import `format` from date-fns
-
-For tables (academic assessments, discipline records), use the Table/TableRow/TableCell pattern with proper borders and cell widths.
-
-**Dropdown Menu Pattern**
-
-Each assessment row will have:
-```text
-[Assessment Info] [Function Badge] [MoreHorizontal Icon]
-                                          |
-                                   ┌──────────────┐
-                                   │ Export Word  │
-                                   │ Print        │
-                                   │ Delete       │
-                                   └──────────────┘
-```
-
----
-
-### Technical Implementation Order
-
-1. Create `src/lib/assessmentExport.ts` with all export functions
-2. Update `IndirectAssessmentTools.tsx` to add export/print for saved rating scales
-3. Update `BriefTeacherInputManager.tsx` to add export/print for teacher input responses
-4. Update `BriefRecordReviewManager.tsx` to add export/print for record review
-
----
-
-### Dependencies
-
-Uses existing installed packages:
-- `docx` (already installed, version ^9.5.1)
-- `file-saver` (already installed, version ^2.0.5)
-- `date-fns` (already installed, version ^3.6.0)
-
----
-
-### Expected UI Changes
-
-**Saved Assessments Card (Rating Scales)**
-
-Before:
-```text
-┌─────────────────────────────────────────────────┐
-│ ✓ Saved Assessments (2)              [▲ Expand] │
-├─────────────────────────────────────────────────┤
-│ [FAST] Hitting  Jan 15, 2025  [Attention] [🗑] │
-│ [MAS]  Yelling  Jan 20, 2025  [Escape]    [🗑] │
-└─────────────────────────────────────────────────┘
-```
-
-After:
-```text
-┌─────────────────────────────────────────────────┐
-│ ✓ Saved Assessments (2)    [Export All] [▲]    │
-├─────────────────────────────────────────────────┤
-│ [FAST] Hitting  Jan 15, 2025  [Attention] [⋮]  │
-│ [MAS]  Yelling  Jan 20, 2025  [Escape]    [⋮]  │
-└─────────────────────────────────────────────────┘
-                                           │
-                                    ┌──────┴──────┐
-                                    │ Export Word │
-                                    │ Print       │
-                                    │ Delete      │
-                                    └─────────────┘
-```
-
-**Brief Teacher Input Response Dialog**
-
-Before:
-```text
-┌────────────────────────────────────┐
-│ Response Details                   │
-├────────────────────────────────────┤
-│ [Response content...]              │
-├────────────────────────────────────┤
-│              [Delete] [Close]      │
-└────────────────────────────────────┘
-```
-
-After:
-```text
-┌────────────────────────────────────┐
-│ Response Details                   │
-├────────────────────────────────────┤
-│ [Response content...]              │
-├────────────────────────────────────┤
-│ [Export Word] [Print]  [Delete] [Close] │
-└────────────────────────────────────┘
-```
-
-**Brief Record Review Card**
-
-Before:
-```text
-┌─────────────────────────────────────────────────┐
-│ Brief Record Review                [Edit Review]│
-└─────────────────────────────────────────────────┘
-```
-
-After:
-```text
-┌─────────────────────────────────────────────────┐
-│ Brief Record Review      [Export] [Edit Review] │
-└─────────────────────────────────────────────────┘
-```
-
----
----
-
-## Plan: Behavior Intervention Tracker – Guided Tunnel Upgrade
-
-### Overview
-
-This plan upgrades the existing Behavior Intervention Tracker to add a guided step-by-step "tunnel" flow while preserving the current multi-column layout. The upgrade introduces auto-population of recommended goals, custom overrides, supporting objectives, integration with Skill Acquisition, and export connections to BIP and FBA Report generators.
-
-**CRITICAL: Entity Hierarchy**
-- **Replacement Goal = PRIMARY intervention target** (the entity that gets saved, linked to interventions, and passed forward)
-- **Objectives = SUBORDINATE/supporting components** (optional context for the goal, do NOT create intervention targets on their own)
-- Interventions attach to the **Replacement Goal**, not to objectives
-
----
-
-### Current Architecture Summary
-
-**Existing Components:**
-- `InterventionWizard.tsx` - 4-step dialog wizard (Problem → Objective → Strategies → Confirm)
-- `StudentBxPlanView.tsx` - Tab-based view of student's intervention links
-- `BxInterventionLibrary.tsx` - 3-column library browser (Domains → Problems → Detail)
-- `BxProblemList.tsx` - Problem search and list display
-- `BxProblemDetail.tsx` - Problem overview with objectives and strategies tabs
-
-**Database Tables:**
-- `bx_presenting_problems` - Presenting problems with domains, functions, triggers
-- `bx_objectives` - Objectives (replacement goals)
-- `bx_strategies` - Intervention strategies
-- `bx_problem_objective_links` - Problem → Objective mappings
-- `bx_objective_strategy_links` - Objective → Strategy mappings
-- `student_bx_plan_links` - Student's assigned interventions
-
----
-
-### Technical Changes
-
-#### A) Discovery + Auto-Population
-
-| File | Change |
-|------|--------|
-| `src/components/behavior-interventions/BxProblemList.tsx` | Enhance search with loose matching using Levenshtein distance or fuzzy search via lowercase includes on title, definition, examples, and trigger tags |
-| `src/components/behavior-interventions/InterventionWizard.tsx` | When problem is selected, auto-fetch linked objectives for selection |
-
-**Fuzzy Search Implementation:**
-```text
-Filter problems where:
-  - title.toLowerCase().includes(query) OR
-  - definition.toLowerCase().includes(query) OR
-  - problem_code.toLowerCase().includes(query) OR
-  - examples.some(ex => ex.toLowerCase().includes(query)) OR
-  - trigger_tags.some(tag => tag.toLowerCase().includes(query)) OR
-  - domain label includes query
-```
-
----
-
-#### B) Step-by-Step Tunnel Flow with Locked Steps
-
-| File | Change |
-|------|--------|
-| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` (new) | Create new component with 4-step visible columns that lock until "Continue" is clicked |
-
-**Flow Structure:**
-```text
-┌───────────────────────────────────────────────────────────────────────────────────────────┐
-│ Step 1: Problem    │ Step 2: Objective  │ Step 3: Replacement Goal │ Step 4: Interventions │
-│ [ACTIVE]           │ [LOCKED]           │ [LOCKED]                 │ [LOCKED]              │
-│                    │                    │                          │                       │
-│ Search problems... │ Dropdown + Other   │ Auto-populated           │ Recommended strategies│
-│ [Problem cards]    │ Custom objective   │ + Custom override        │ + Custom intervention │
-│                    │                    │                          │                       │
-│ [Continue →]       │ [Continue →]       │ [Continue →]             │ [Assign to Student]   │
-└───────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Step State Management:**
 ```typescript
-interface TunnelState {
-  currentStep: 1 | 2 | 3 | 4;
-  selectedProblem: BxPresentingProblem | null;
-  // Step 2: Optional supporting objectives (NOT the primary target)
-  supportingObjectives: Array<{ type: 'library' | 'custom'; objectiveId?: string; title: string }>;
-  // Step 3: THE PRIMARY INTERVENTION TARGET
-  selectedReplacementGoal: { type: 'library' | 'custom'; goalId?: string; value: string } | null;
-  // Step 4: Interventions link to the replacement goal
-  selectedInterventions: Array<{ type: 'library' | 'custom'; strategyId?: string; name: string; phase?: string }>;
+// Add to each prompt:
+CRITICAL - EXTRACT CLIENT IDENTITY FIRST:
+1. The CLIENT/STUDENT is the person RECEIVING services (usually a child)
+2. Look for these labels ONLY: "Student Name:", "Student:", "Client:", "Child's Name:", "Examinee:", "Learner:"
+3. REJECT any name appearing near: "BCBA", "Teacher", "Parent", "Evaluator", "Prepared by:", "Signature:"
+4. Include the EXACT label you found (e.g., "Found after 'Student Name:'")
+5. If no labeled student name exists, set studentConfidence to 0.3
+
+Return: {
+  "student": {
+    "name": "string",
+    "dob": "string",
+    "grade": "string", 
+    "school": "string",
+    "confidence": number,
+    "sourceLabel": "string"
+  },
+  ...existing fields...
 }
 ```
 
----
+#### 2.2 Strengthen `clinical-extract` Prompts
+**File**: `supabase/functions/clinical-extract/index.ts`
 
-#### C) Supporting Objectives Selection (Step 2) - OPTIONAL
+Update `CLINICAL_SYSTEM_PROMPT` with explicit rejection rules:
 
-| File | Change |
-|------|---------|
-| `src/components/behavior-interventions/ObjectiveStep.tsx` (new) | Create optional objective selection step with dropdown and custom text input |
-
-**UI Specifications:**
-- Dropdown showing linked objectives from the selected problem (ordered by priority) - **NO auto-selection**
-- Multi-select checkbox list of available objectives as optional supporting context
-- Text input labeled "Other objective (custom)" with "Add" button
-- **IMPORTANT**: Selecting objectives does NOT create an intervention target
-- Objectives are stored as supporting context only
-- User can skip this step entirely (objectives are optional)
-
----
-
-#### D) Replacement Goal Selection (Step 3) - THE PRIMARY TARGET
-
-| File | Change |
-|------|---------|
-| `src/components/behavior-interventions/ReplacementGoalStep.tsx` (new) | Create replacement goal selection step - THIS IS THE MAIN INTERVENTION TARGET |
-
-**UI Specifications:**
-- Dropdown showing auto-suggested replacement goals based on the selected problem
-- First linked goal is pre-selected as default
-- Text input labeled "Other replacement goal (custom)"
-- When user types in custom field, it becomes the selected goal
-- **THIS is the entity that gets saved as the intervention target**
-- The replacement goal ID is passed forward and linked to interventions
-- Custom goals saved to student profile (not the library)
-
-**Student-Level Editability:**
-- When a library goal is selected, a **copy** is saved to the student's profile
-- Display indicator: "Selected from library - you can edit this on the student's page"
-- The student-specific copy is fully editable on the Student Profile / Skill Program page
-- Edits to the student's copy do NOT affect the original library entry
-- Custom goals created via "Other" are also editable on the student page
-
----
-
-#### E) Recommended Interventions Multi-Select (Step 4) - ATTACHED TO GOAL
-
-| File | Change |
-|------|---------|
-| `src/components/behavior-interventions/InterventionsStep.tsx` (new) | Create interventions selection with auto-recommendations |
-
-**Auto-Population Logic:**
-1. Fetch strategies linked to the **selected replacement goal** (not objectives)
-2. Match strategies where `strategy_type` tags align with goal/problem tags
-3. Display grouped by phase (Prevention, Teaching, Reinforcement, Maintenance, Crisis)
-
-**UI Specifications:**
-- Multi-select checklist with phase badges
-- Strategy type tags displayed (antecedent/teaching/reinforcement/etc.)
-- "Add custom intervention" free text input
-- **All selected interventions attach to the replacement goal**
-
----
-
-#### F) Assign to Student + Skill Program Creation
-
-| File | Change |
-|------|---------|
-| `src/types/behavior.ts` | Add `BxSkillProgram` interface |
-| `src/store/dataStore.ts` | Add `addBxSkillProgram` action |
-| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` | Implement assign action creating skill program record |
-
-**New Type:**
 ```typescript
-interface BxSkillProgram {
-  id: string;
-  studentId: string;
-  problemId: string;
-  problemTitle: string;
-  // THE PRIMARY TARGET - Replacement Goal
-  replacementGoal: {
-    goalId?: string;
-    value: string;
-    isCustom: boolean;
-  };
-  // OPTIONAL supporting objectives (not the primary target)
-  supportingObjectives: Array<{
-    objectiveId?: string;
-    title: string;
-    isCustom: boolean;
-  }>;
-  // Interventions are linked to the replacement goal
-  interventions: Array<{
-    strategyId?: string;
-    name: string;
-    phase?: string;
-    isCustom: boolean;
-  }>;
-  status: 'active' | 'archived';
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy?: string;
+ENTITY IDENTIFICATION (CRITICAL - ZERO TOLERANCE FOR ERRORS):
+- ONLY extract a name as CLIENT/STUDENT if it appears IMMEDIATELY AFTER one of these labels:
+  * "Student Name:", "Student:", "Client:", "Child's Name:", "Examinee:", "Learner:", "Individual:"
+- If no such labeled name exists, return confidence: 0.3 and flag for review
+- EXPLICITLY REJECT any name that appears with these patterns:
+  * Near "BCBA", "Teacher", "Parent", "Evaluator", "Case Manager", "Prepared by"
+  * In signature blocks: "Signature:", "Signed:", "Approved by:", "Reviewed by:"
+  * With professional suffixes: "MA", "M.Ed.", "PhD", "BCBA-D", "RBT", "LPC", "LCSW"
+- Cross-validate: If DOB indicates adult (18+), flag for review
+- Always include evidence_type: "labeled" (found after explicit label) vs "inferred" (pattern-based)
+```
+
+#### 2.3 Add Two-Stage OCR Fallback
+**File**: `supabase/functions/extract-document/index.ts`
+
+Implement quality check and vision fallback for scanned PDFs:
+
+```typescript
+// After PDF text extraction:
+function checkTextQuality(text: string): boolean {
+  // Minimum 500 chars and 100+ letters indicates good extraction
+  const hasGoodText = text.length > 500 && 
+    (text.match(/[a-zA-Z]/g) || []).length > 100;
+  return hasGoodText;
+}
+
+// If native extraction is poor, fall back to Vision API
+if (!checkTextQuality(extractedText)) {
+  console.log('Native extraction poor, using Vision API...');
+  extractedText = await extractWithVision(pdfBase64, 'application/pdf', apiKey);
 }
 ```
 
-**Save Logic:**
-1. Create `BxSkillProgram` record with **replacement goal as the primary target**
-2. **Copy the replacement goal value to student's profile** (creates editable student-specific version)
-3. Store supporting objectives as optional context
-4. Link all selected interventions to the replacement goal
-5. Toast success: "Skill program saved"
+#### 2.4 Add Expected Student Name Parameter
+**File**: `supabase/functions/clinical-extract/index.ts`
 
-**Linked Skill Target Section on Behavior Cards:**
-| File | Change |
-|------|---------|
-| `src/components/ABCTracker.tsx` | Add "Linked Skill Target" section showing **replacement goal** as primary, objectives as supporting |
-| `src/components/FrequencyTracker.tsx` | Same as above |
-| `src/components/StudentDataCard.tsx` | Pass linked skill programs to child trackers |
+When document is uploaded from a student profile (studentId is known):
+- Look up the student's name from the database
+- Add to prompt: "Expected student name: '{name}'. Verify this matches extraction."
+- If mismatch, add warning and lower confidence
 
-**Student Profile Editing:**
-| File | Change |
-|------|---------|
-| `src/components/behavior-interventions/StudentBxPlanView.tsx` | Add edit capability for the saved replacement goal |
+#### 2.5 UI Warning for Low-Confidence Names
+**File**: `src/components/DocumentUpload.tsx`
 
-- Display the replacement goal with an "Edit" button
-- Inline editing or modal to modify goal text
-- Show source indicator: "From library: [Original Goal Name]" or "Custom goal"
-- Changes save to the student's skill program only (not the library)
+After extraction, display warning if student confidence is low:
 
----
-
-#### G) BIP Generator Integration
-
-| File | Change |
-|------|---------|
-| `src/components/BIPGenerator.tsx` | Add import from BxSkillPrograms, display replacement goals and objectives |
-
-**Integration Points:**
-1. Add "Import from Skill Programs" button in the Import step
-2. When clicked, populate:
-   - Target behaviors from `program.problemTitle`
-   - **Replacement Goal** as the primary replacement behavior from `program.replacementGoal.value`
-   - Supporting objectives as secondary context from `program.supportingObjectives`
-   - Teaching strategies from `program.interventions.filter(i => i.phase === 'teaching')`
-   - Preventative from `phase === 'prevention'`
-   - Reinforcement from `phase === 'reinforcement'`
-   - Reactive from `phase === 'crisis' || phase === 'maintenance'`
-
----
-
-#### H) FBA Report Generator Integration
-
-| File | Change |
-|------|---------|
-| `src/components/FBAReportGenerator.tsx` | Add "Replacement Skill Plan" section pulling from BxSkillPrograms |
-
-**New Export Section:**
-```text
-REPLACEMENT SKILL PLAN
-
-Target Behavior: [problem.title]
-Replacement Goal (Primary Target): [program.replacementGoal.value]
-
-Supporting Objectives (Optional):
-  • [objective 1]
-  • [objective 2]
-
-Interventions (Attached to Replacement Goal):
-  Prevention:
-    • [intervention 1]
-  Teaching:
-    • [intervention 2]
-  Reinforcement:
-    • [intervention 3]
+```tsx
+{extractedData?.student?.confidence < 0.9 && (
+  <div className="p-3 bg-warning/10 text-warning rounded-lg flex items-center gap-2">
+    <AlertTriangle className="w-4 h-4" />
+    <span>Student name confidence is low. Please verify: "{extractedData.student.name}"</span>
+  </div>
+)}
 ```
 
-Add checkbox in `includeSections`: `replacementPlan: true`
+---
+
+## Part 3: Agency Data Isolation
+
+### Problem
+Staff can see all students regardless of agency assignment. Need to enforce agency-based data isolation.
+
+### Solution
+
+#### 3.1 Create Agency Access Helper Function
+**Migration SQL**:
+
+```sql
+CREATE OR REPLACE FUNCTION has_agency_student_access(
+  _user_id UUID,
+  _student_id UUID
+) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER STABLE
+AS $$
+DECLARE
+  _student_agency_id UUID;
+  _user_in_agency BOOLEAN;
+BEGIN
+  SELECT agency_id INTO _student_agency_id
+  FROM students WHERE id = _student_id;
+  
+  IF _student_agency_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+  
+  SELECT EXISTS(
+    SELECT 1 FROM agency_memberships
+    WHERE user_id = _user_id
+    AND agency_id = _student_agency_id
+    AND status = 'active'
+  ) INTO _user_in_agency;
+  
+  RETURN _user_in_agency;
+END;
+$$;
+```
+
+#### 3.2 Update RLS Policies
+**Migration SQL**:
+
+```sql
+-- Update students SELECT policy
+DROP POLICY IF EXISTS "Users can view accessible students" ON students;
+CREATE POLICY "Users can view accessible students" ON students
+  FOR SELECT TO authenticated
+  USING (
+    auth.uid() = user_id
+    OR has_student_access(id, auth.uid())
+    OR has_tag_based_access(auth.uid(), id)
+    OR has_agency_student_access(auth.uid(), id)
+    OR is_admin(auth.uid())
+  );
+```
+
+Apply similar changes to related tables:
+- `student_files`
+- `client_documents`
+- `session_data`
+- `behaviors`
+- `student_targets`
+
+#### 3.3 Add Staff Profile Agency Filtering
+**Migration SQL**:
+
+```sql
+CREATE POLICY "Users can view staff in their agencies"
+ON staff_profiles FOR SELECT TO authenticated
+USING (
+  user_id = auth.uid()
+  OR EXISTS(
+    SELECT 1 FROM agency_memberships am1
+    JOIN agency_memberships am2 ON am1.agency_id = am2.agency_id
+    WHERE am1.user_id = auth.uid()
+    AND am2.user_id = staff_profiles.user_id
+    AND am1.status = 'active'
+    AND am2.status = 'active'
+  )
+  OR is_admin(auth.uid())
+);
+```
+
+#### 3.4 Update AgencySwitcher to Refresh Data
+**File**: `src/components/AgencySwitcher.tsx`
+
+After switching agencies:
+- Clear cached student data from dataStore
+- Re-fetch students for the new agency context
+- Invalidate React Query caches
 
 ---
 
-#### I) Backward Compatibility
+## Part 4: Document/Files Consolidation
 
-| Consideration | Approach |
-|---------------|----------|
-| Existing `student_bx_plan_links` | Continue to work; new system adds `bxSkillPrograms` as a parallel structure |
-| Existing wizard usage | Keep `InterventionWizard.tsx` for quick add; new `GuidedInterventionTracker` for full tunnel |
-| Column-based library | `BxInterventionLibrary.tsx` unchanged, can launch guided flow from "Add to Student" |
+### Problem
+Two separate document systems exist:
+1. `client_documents` table - Rich metadata, permissions, clinical labeling
+2. `student_files` table - Basic file storage
+
+### Solution
+
+#### 4.1 Migrate student_files to client_documents
+**Migration SQL**:
+
+```sql
+-- Add columns to track migration
+ALTER TABLE client_documents
+ADD COLUMN IF NOT EXISTS legacy_file_id UUID,
+ADD COLUMN IF NOT EXISTS uploaded_by_user_id UUID REFERENCES auth.users(id);
+
+-- Migrate existing files
+INSERT INTO client_documents (
+  client_id, doc_type, title, file_url, file_name, file_size, mime_type,
+  visibility_permission, uploaded_by_user_id, legacy_file_id, upload_date
+)
+SELECT
+  student_id, 'other', file_name, file_path, file_name, file_size, file_type,
+  'internal_only', user_id, id, created_at
+FROM student_files
+WHERE NOT EXISTS (
+  SELECT 1 FROM client_documents cd 
+  WHERE cd.legacy_file_id = student_files.id
+);
+```
+
+#### 4.2 Extend Document Types
+**File**: `src/types/clientProfile.ts`
+
+Add assessment sub-types and categories:
+
+```typescript
+export const DOCUMENT_TYPES = [
+  // Clinical
+  { value: 'consent', label: 'Consent Form', category: 'clinical' },
+  { value: 'iep', label: 'IEP', category: 'clinical' },
+  { value: 'fba', label: 'FBA', category: 'clinical' },
+  { value: 'bip', label: 'BIP', category: 'clinical' },
+  { value: 'progress_report', label: 'Progress Report', category: 'clinical' },
+  
+  // Assessments (sub-types)
+  { value: 'assessment_vbmapp', label: 'VB-MAPP', category: 'assessment' },
+  { value: 'assessment_ablls', label: 'ABLLS-R', category: 'assessment' },
+  { value: 'assessment_vineland', label: 'Vineland', category: 'assessment' },
+  { value: 'assessment_abas', label: 'ABAS-3', category: 'assessment' },
+  { value: 'assessment_other', label: 'Other Assessment', category: 'assessment' },
+  
+  // Administrative
+  { value: 'medical', label: 'Medical Record', category: 'administrative' },
+  { value: 'authorization', label: 'Authorization', category: 'administrative' },
+  { value: 'insurance', label: 'Insurance Document', category: 'administrative' },
+  { value: 'correspondence', label: 'Correspondence', category: 'administrative' },
+  { value: 'other', label: 'Other', category: 'other' },
+];
+```
+
+#### 4.3 Update StudentFileManager to Use Unified System
+**File**: `src/components/StudentFileManager.tsx`
+
+Refactor to:
+- Query `client_documents` instead of `student_files`
+- Use same upload flow as DocumentsTab
+- Add doc_type selector with all categories
+- Add visibility_permission selector
+
+#### 4.4 Add Visibility-Based RLS
+**Migration SQL**:
+
+```sql
+CREATE POLICY "Users can view documents based on visibility"
+ON client_documents FOR SELECT TO authenticated
+USING (
+  uploaded_by_user_id = auth.uid()
+  OR (
+    visibility_permission = 'clinical_team' AND
+    has_agency_student_access(auth.uid(), client_id)
+  )
+  OR (
+    visibility_permission = 'internal_only' AND
+    (has_student_access(client_id, auth.uid()) OR auth.uid() = uploaded_by_user_id)
+  )
+  OR is_admin(auth.uid())
+);
+```
 
 ---
 
-### Database Changes
+## Implementation Phases
 
-**No new tables required** - storing `bxSkillPrograms` in student profile JSON field (similar to existing `bx_problem_links` pattern in `background_info`).
+### Phase 1: Immediate Fixes (Scrolling + Extraction)
+1. Fix wizard scrolling in `GuidedInterventionTracker.tsx`
+2. Add clickable step navigation
+3. Add edit buttons to summary panel
+4. Strengthen extraction prompts in both edge functions
+5. Add OCR fallback for scanned PDFs
 
-**Optional Future Migration:**
-If needed, can migrate to a dedicated `bx_skill_programs` table with columns matching the interface above.
+### Phase 2: Agency Isolation
+1. Create `has_agency_student_access` function
+2. Update RLS policies for students and related tables
+3. Add staff profile filtering
+4. Update AgencySwitcher refresh logic
 
----
-
-### New Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/components/behavior-interventions/GuidedInterventionTracker.tsx` | Main container for 4-step guided flow |
-| `src/components/behavior-interventions/ObjectiveStep.tsx` | Step 2: Objective selection with dropdown + custom override |
-| `src/components/behavior-interventions/ReplacementGoalStep.tsx` | Step 3: Goal selection with custom override |
-| `src/components/behavior-interventions/InterventionsStep.tsx` | Step 4: Multi-select interventions |
-| `src/components/behavior-interventions/TunnelSummaryPanel.tsx` | Summary sidebar showing all selections |
-| `src/components/behavior-interventions/LinkedSkillProgramCard.tsx` | Card component showing linked program on behavior trackers |
-
----
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/types/behavior.ts` | Add `BxSkillProgram` interface |
-| `src/store/dataStore.ts` | Add `addBxSkillProgram`, `updateBxSkillProgram`, `getBxSkillProgramsForStudent` actions |
-| `src/components/behavior-interventions/BxProblemList.tsx` | Enhance fuzzy search |
-| `src/components/behavior-interventions/InterventionWizard.tsx` | Auto-populate recommended objective from problem |
-| `src/components/BIPGenerator.tsx` | Add import from skill programs section |
-| `src/components/FBAReportGenerator.tsx` | Add Replacement Skill Plan section |
-| `src/components/ABCTracker.tsx` | Add Linked Skill Target section |
-| `src/components/FrequencyTracker.tsx` | Add Linked Skill Target section |
-| `src/components/behavior-interventions/index.ts` | Export new components |
-| `src/hooks/useBehaviorInterventions.ts` | Add `useBxSkillPrograms` hook |
+### Phase 3: Document Consolidation
+1. Run migration to move student_files to client_documents
+2. Extend document types with assessment categories
+3. Update StudentFileManager to use unified system
+4. Add visibility-based RLS policies
 
 ---
 
-### Implementation Order
+## Files to Create/Modify
 
-1. **Phase 1: Type Definitions**
-   - Add `BxSkillProgram` interface to types
-   - Add store actions for skill programs
-
-2. **Phase 2: Guided Tunnel Flow**
-   - Create `GuidedInterventionTracker.tsx` shell
-   - Implement step 1 (Problem) with enhanced search
-   - Implement step 2 (Supporting Objectives) - optional multi-select
-   - Implement step 3 (Replacement Goal) - **THE PRIMARY TARGET** with auto-populate and custom override
-   - Implement step 4 (Interventions) - attached to replacement goal
-   - Add summary panel
-
-3. **Phase 3: Assign to Student**
-   - Implement save logic creating `BxSkillProgram`
-   - Add student selector if not in student context
-   - Create `LinkedSkillProgramCard` component
-   - Integrate into behavior trackers (ABC, Frequency)
-
-4. **Phase 4: Report Integration**
-   - Update `BIPGenerator.tsx` with skill program import
-   - Update `FBAReportGenerator.tsx` with Replacement Skill Plan section
-   - Update Word export templates
-
-5. **Phase 5: Testing & Polish**
-   - End-to-end test the full tunnel flow
-   - Verify backward compatibility with existing interventions
-   - Add "Go to Skill Program" navigation button
+| Phase | File | Action |
+|-------|------|--------|
+| 1 | `src/components/behavior-interventions/GuidedInterventionTracker.tsx` | Modify - fix scrolling, clickable steps |
+| 1 | `src/components/behavior-interventions/TunnelSummaryPanel.tsx` | Modify - add edit buttons |
+| 1 | `src/components/behavior-interventions/steps/InterventionsStep.tsx` | Modify - mobile summary |
+| 1 | `supabase/functions/extract-document/index.ts` | Modify - add student extraction, OCR fallback |
+| 1 | `supabase/functions/clinical-extract/index.ts` | Modify - strengthen prompts |
+| 1 | `src/components/DocumentUpload.tsx` | Modify - low-confidence warning |
+| 2 | Migration SQL | Create - agency access function + RLS |
+| 2 | `src/components/AgencySwitcher.tsx` | Modify - refresh on switch |
+| 3 | Migration SQL | Create - migrate files, visibility RLS |
+| 3 | `src/types/clientProfile.ts` | Modify - extend document types |
+| 3 | `src/components/StudentFileManager.tsx` | Modify - use unified system |
 
 ---
 
-### UX Summary
+## Technical Notes
 
-- **Locked Steps**: Later steps show dimmed content with "Complete previous step" message until user clicks "Continue"
-- **Summary Panel**: Right sidebar showing: Problem → (Objectives) → **Replacement Goal** → Interventions as user progresses
-- **Navigation**: "Continue" buttons advance to next step; "Back" buttons allow revision
-- **Final Screen**: Clear summary with "Assign to Student" button
-- **Post-Save**: Toast notification, option to "Go to Skill Program" or "Add Another"
+### Extraction Accuracy Approach
+The key insight is that the AI model needs explicit "rejection rules" not just "preference rules". By telling it to explicitly reject names near professional credentials and requiring a labeled anchor ("Student Name:"), accuracy should significantly improve.
 
----
+### OCR Fallback Logic
+Following the project's documented pattern: try native PDF text extraction first (faster, free), check quality (500+ chars, 100+ letters), fall back to Gemini Vision API only if poor quality indicates a scanned document.
 
-### Key Behavior Clarifications
-
-| Step | Creates Intervention Target? | What Gets Saved |
-|------|------------------------------|-----------------|
-| Step 1: Problem | No | Reference to presenting problem |
-| Step 2: Objectives | **NO** - objectives are optional supporting context | Array of supporting objectives (can be empty) |
-| Step 3: Replacement Goal | **YES - THIS IS THE PRIMARY TARGET** | Goal copied to student profile, editable on student page |
-| Step 4: Interventions | No (attach to goal) | Array of strategies linked to the replacement goal |
-
-**Editability Rules:**
-- Library goals: Original stays unchanged; student gets editable copy
-- Custom goals: Fully editable on student page
-- All edits are student-specific and do not propagate to the library
-
-### Testing Checklist
-
-After implementation, verify:
-- [ ] FAST assessment exports with correct 16 items and 4 function scores
-- [ ] MAS assessment exports with correct items and scoring
-- [ ] QABF assessment exports with correct 25 items and scoring
-- [ ] Brief Teacher Input exports all sections including multi-select fields
-- [ ] Brief Record Review exports all 6 sections with tables
-- [ ] Print functionality opens browser print dialog with formatted content
-- [ ] Export filenames include student name and date
-- [ ] Tables render correctly in Word with borders and alignment
-
+### Agency Isolation Security
+Using `SECURITY DEFINER` function to avoid recursive RLS issues. The function runs with elevated privileges but only returns a boolean, maintaining security while enabling cross-table checks.
