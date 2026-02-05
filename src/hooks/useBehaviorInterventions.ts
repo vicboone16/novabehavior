@@ -11,6 +11,20 @@ import type {
   BxObjectiveStrategyLink
 } from '@/types/behaviorIntervention';
 
+// Type for replacement goals
+export interface BxReplacementGoal {
+  id: string;
+  goal_code: string;
+  goal_title: string;
+  domain: string;
+  tags: string[];
+  status: string;
+  agency_id?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Hook for fetching presenting problems
 export function usePresentingProblems(domain?: string) {
   const [problems, setProblems] = useState<BxPresentingProblem[]>([]);
@@ -96,8 +110,56 @@ export function useProblemObjectives(problemId?: string) {
   return { objectives, loading };
 }
 
+// Hook for fetching replacement goals linked to a problem
+export function useProblemGoals(problemId?: string) {
+  const [goals, setGoals] = useState<BxReplacementGoal[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!problemId) {
+      setGoals([]);
+      return;
+    }
+
+    const fetchGoals = async () => {
+      setLoading(true);
+      try {
+        const { data: links, error: linksError } = await supabase
+          .from('bx_problem_goal_links')
+          .select('goal_id, priority')
+          .eq('problem_id', problemId)
+          .order('priority');
+
+        if (linksError) throw linksError;
+
+        if (links && links.length > 0) {
+          const goalIds = links.map(l => l.goal_id);
+          const { data: goalsData, error: goalsError } = await supabase
+            .from('bx_replacement_goals')
+            .select('*')
+            .in('id', goalIds)
+            .eq('status', 'active');
+
+          if (goalsError) throw goalsError;
+          setGoals((goalsData || []) as BxReplacementGoal[]);
+        } else {
+          setGoals([]);
+        }
+      } catch (error) {
+        console.error('Error fetching goals:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGoals();
+  }, [problemId]);
+
+  return { goals, loading };
+}
+
 // Hook for fetching objectives linked to a replacement goal
-export function useGoalObjectives(goalId?: string) {
+export function useGoalObjectives(goalId?: string | null) {
   const [objectives, setObjectives] = useState<BxObjective[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -110,35 +172,31 @@ export function useGoalObjectives(goalId?: string) {
     const fetchObjectives = async () => {
       setLoading(true);
       try {
-        // Goals are objectives in this system - fetch linked objectives via bx_objective_strategy_links
-        // Or alternatively, objectives linked to the same problem
+        // Fetch objectives linked to this goal via bx_goal_objective_links
         const { data: links, error: linksError } = await supabase
-          .from('bx_problem_objective_links')
-          .select('objective_id, priority, problem_id')
+          .from('bx_goal_objective_links')
+          .select('objective_id, priority')
+          .eq('goal_id', goalId)
           .order('priority');
 
         if (linksError) throw linksError;
 
-        // Get the problem that this goal belongs to (goal is an objective)
-        const goalProblemLink = links?.find(l => l.objective_id === goalId);
-        
-        if (goalProblemLink) {
-          // Get all objectives for the same problem
-          const problemObjectives = links?.filter(l => l.problem_id === goalProblemLink.problem_id) || [];
-          const objectiveIds = problemObjectives.map(l => l.objective_id);
-          
-          if (objectiveIds.length > 0) {
-            const { data: objectivesData, error: objError } = await supabase
-              .from('bx_objectives')
-              .select('*')
-              .in('id', objectiveIds)
-              .eq('status', 'active');
+        if (links && links.length > 0) {
+          const objectiveIds = links.map(l => l.objective_id);
+          const { data: objectivesData, error: objError } = await supabase
+            .from('bx_objectives')
+            .select('*')
+            .in('id', objectiveIds)
+            .eq('status', 'active');
 
-            if (objError) throw objError;
-            setObjectives((objectivesData || []) as BxObjective[]);
-          } else {
-            setObjectives([]);
-          }
+          if (objError) throw objError;
+          
+          // Sort by priority order from links
+          const sortedObjectives = objectiveIds
+            .map(id => objectivesData?.find(o => o.id === id))
+            .filter(Boolean) as BxObjective[];
+          
+          setObjectives(sortedObjectives);
         } else {
           setObjectives([]);
         }
