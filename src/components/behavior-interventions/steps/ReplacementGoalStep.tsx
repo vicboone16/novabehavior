@@ -1,14 +1,15 @@
- import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
  import { Input } from '@/components/ui/input';
  import { Label } from '@/components/ui/label';
  import { Badge } from '@/components/ui/badge';
  import { Card, CardContent } from '@/components/ui/card';
  import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
  import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
  import { cn } from '@/lib/utils';
  import { Target, Lightbulb, Edit3, Info } from 'lucide-react';
- import { useProblemObjectives } from '@/hooks/useBehaviorInterventions';
- import type { BxPresentingProblem, BxObjective } from '@/types/behaviorIntervention';
+import { useProblemGoals, type BxReplacementGoal } from '@/hooks/useBehaviorInterventions';
+import type { BxPresentingProblem } from '@/types/behaviorIntervention';
  import type { BxSkillProgramReplacementGoal } from '@/types/behavior';
  
  interface ReplacementGoalStepProps {
@@ -22,22 +23,22 @@
    selectedReplacementGoal,
    onReplacementGoalChange,
  }: ReplacementGoalStepProps) {
-   const { objectives, loading } = useProblemObjectives(selectedProblem?.id);
+  const { goals, loading } = useProblemGoals(selectedProblem?.id);
    const [customGoal, setCustomGoal] = useState('');
    const [selectionMode, setSelectionMode] = useState<'library' | 'custom'>('library');
  
-   // Auto-select first objective as default replacement goal
+  // Auto-select first goal as default replacement goal
    useEffect(() => {
-     if (objectives.length > 0 && !selectedReplacementGoal && selectionMode === 'library') {
-       const firstObj = objectives[0];
+    if (goals.length > 0 && !selectedReplacementGoal && selectionMode === 'library') {
+      const firstGoal = goals[0];
        onReplacementGoalChange({
-         goalId: firstObj.id,
-         value: firstObj.objective_title,
+        goalId: firstGoal.id,
+        value: firstGoal.goal_title,
          isCustom: false,
-         sourceLibraryGoal: firstObj.objective_title,
+        sourceLibraryGoal: firstGoal.goal_title,
        });
      }
-   }, [objectives, selectedReplacementGoal, selectionMode, onReplacementGoalChange]);
+  }, [goals, selectedReplacementGoal, selectionMode, onReplacementGoalChange]);
  
    // Update custom goal
    useEffect(() => {
@@ -49,13 +50,13 @@
      }
    }, [customGoal, selectionMode, onReplacementGoalChange]);
  
-   const handleLibraryGoalSelect = (objective: BxObjective) => {
+  const handleLibraryGoalSelect = (goal: BxReplacementGoal) => {
      setSelectionMode('library');
      onReplacementGoalChange({
-       goalId: objective.id,
-       value: objective.objective_title,
+      goalId: goal.id,
+      value: goal.goal_title,
        isCustom: false,
-       sourceLibraryGoal: objective.objective_title,
+      sourceLibraryGoal: goal.goal_title,
      });
    };
  
@@ -109,37 +110,49 @@
  
        {/* Goal selection */}
        <div className="space-y-3">
-         {/* Library goals */}
-         {objectives.length > 0 && (
+        {/* Loading state */}
+        {loading && (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        )}
+
+        {/* Library goals from bx_replacement_goals */}
+        {!loading && goals.length > 0 && (
            <div className="space-y-2">
              <h4 className="text-sm font-medium">Select from Library</h4>
              <RadioGroup
                value={selectionMode === 'library' ? selectedReplacementGoal?.goalId || '' : ''}
                onValueChange={(val) => {
-                 const obj = objectives.find((o) => o.id === val);
-                 if (obj) handleLibraryGoalSelect(obj);
+                const goal = goals.find((g) => g.id === val);
+                if (goal) handleLibraryGoalSelect(goal);
                }}
              >
-               {objectives.map((obj) => (
+              {goals.map((goal) => (
                  <div
-                   key={obj.id}
+                  key={goal.id}
                    className={cn(
                      'p-3 rounded-lg border transition-colors',
-                     selectionMode === 'library' && selectedReplacementGoal?.goalId === obj.id
+                    selectionMode === 'library' && selectedReplacementGoal?.goalId === goal.id
                        ? 'bg-primary/10 border-primary ring-1 ring-primary'
                        : 'bg-card border-border hover:bg-muted/50'
                    )}
                  >
                    <div className="flex items-start gap-3">
-                     <RadioGroupItem value={obj.id} id={obj.id} className="mt-1" />
+                    <RadioGroupItem value={goal.id} id={goal.id} className="mt-1" />
                      <div className="flex-1">
-                       <Label htmlFor={obj.id} className="text-sm font-medium cursor-pointer">
-                         {obj.objective_title}
+                      <Label htmlFor={goal.id} className="text-sm font-medium cursor-pointer">
+                        {goal.goal_title}
                        </Label>
-                       {obj.operational_definition && (
-                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                           {obj.operational_definition}
-                         </p>
+                      {goal.tags && goal.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {goal.tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                        )}
                      </div>
                    </div>
@@ -149,7 +162,7 @@
            </div>
          )}
  
-         {objectives.length === 0 && !loading && (
+        {!loading && goals.length === 0 && (
            <Card className="bg-muted/30 border-dashed">
              <CardContent className="p-4 text-center text-muted-foreground">
                <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />

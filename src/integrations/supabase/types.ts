@@ -1027,6 +1027,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bx_goal_objective_links: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          objective_id: string
+          priority: number | null
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          objective_id: string
+          priority?: number | null
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          objective_id?: string
+          priority?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_goal_objective_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "bx_replacement_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bx_goal_objective_links_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "bx_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bx_objective_strategy_links: {
         Row: {
           created_at: string
@@ -1205,6 +1244,45 @@ export type Database = {
           },
         ]
       }
+      bx_problem_goal_links: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          priority: number | null
+          problem_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          priority?: number | null
+          problem_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          priority?: number | null
+          problem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_problem_goal_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "bx_replacement_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bx_problem_goal_links_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "bx_presenting_problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bx_problem_objective_links: {
         Row: {
           created_at: string
@@ -1326,6 +1404,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bx_recommendation_settings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_replacement_goals: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string | null
+          domain: string
+          goal_code: string
+          goal_title: string
+          id: string
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          domain: string
+          goal_code: string
+          goal_title: string
+          id?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          domain?: string
+          goal_code?: string
+          goal_title?: string
+          id?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_replacement_goals_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
