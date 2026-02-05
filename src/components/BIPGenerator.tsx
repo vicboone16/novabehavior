@@ -25,6 +25,7 @@ import {
   BehaviorFunction, 
   FUNCTION_OPTIONS,
   BIPData,
+  BxSkillProgram,
 } from '@/types/behavior';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -361,6 +362,78 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
     setActiveTab('behaviors');
   };
 
+  // Get skill programs for import
+  const skillPrograms = useMemo(() => {
+    if (!selectedStudent) return [];
+    return ((selectedStudent as any).bxSkillPrograms || []) as BxSkillProgram[];
+  }, [selectedStudent]);
+
+  const importFromSkillProgram = (program: BxSkillProgram) => {
+    // Import problem as target behavior
+    const existingBehaviors = [...targetBehaviors];
+    const problemExists = existingBehaviors.some(b => b.name === program.problemTitle);
+    if (!problemExists) {
+      existingBehaviors.push({
+        name: program.problemTitle,
+        definition: '',
+      });
+    }
+    setTargetBehaviors(existingBehaviors);
+
+    // Import replacement goal as replacement behavior
+    const existingReplacements = [...replacementBehaviors];
+    const goalExists = existingReplacements.some(b => b.name === program.replacementGoal.value);
+    if (!goalExists) {
+      existingReplacements.push({
+        name: program.replacementGoal.value,
+        definition: program.supportingObjectives.length > 0 
+          ? `Supporting objectives: ${program.supportingObjectives.map(o => o.title).join('; ')}`
+          : '',
+        teachingPlan: '',
+      });
+    }
+    setReplacementBehaviors(existingReplacements);
+
+    // Import interventions by phase
+    const newPreventative = [...preventativeStrategies];
+    const newTeaching = [...teachingStrategies];
+    const newReinforcement = [...reinforcementStrategies];
+    const newReactive = [...reactiveStrategies];
+
+    program.interventions.forEach(intervention => {
+      switch (intervention.phase) {
+        case 'prevention':
+          if (!newPreventative.includes(intervention.name)) {
+            newPreventative.push(intervention.name);
+          }
+          break;
+        case 'teaching':
+          if (!newTeaching.includes(intervention.name)) {
+            newTeaching.push(intervention.name);
+          }
+          break;
+        case 'reinforcement':
+          if (!newReinforcement.includes(intervention.name)) {
+            newReinforcement.push(intervention.name);
+          }
+          break;
+        case 'crisis':
+        case 'maintenance':
+          if (!newReactive.includes(intervention.name)) {
+            newReactive.push(intervention.name);
+          }
+          break;
+      }
+    });
+
+    setPreventativeStrategies(newPreventative);
+    setTeachingStrategies(newTeaching);
+    setReinforcementStrategies(newReinforcement);
+    setReactiveStrategies(newReactive);
+
+    toast.success(`Imported from skill program: ${program.replacementGoal.value}`);
+  };
+
   const addStrategy = (type: 'preventative' | 'teaching' | 'reinforcement' | 'reactive', strategy: string) => {
     switch (type) {
       case 'preventative':
@@ -694,7 +767,53 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-sm">Manual Entry</CardTitle>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Import from Skill Programs
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Import replacement goals and interventions from saved skill programs
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {skillPrograms.length > 0 ? (
+                        <div className="space-y-2">
+                          {skillPrograms.filter(p => p.status === 'active').map((program) => (
+                            <div
+                              key={program.id}
+                              className="p-3 border rounded-lg flex items-center justify-between hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">
+                                  {program.replacementGoal.value}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  Problem: {program.problemTitle} • {program.interventions.length} interventions
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => importFromSkillProgram(program)}
+                              >
+                                <ArrowRight className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No skill programs saved</p>
+                          <p className="text-xs">Create skill programs from the Intervention Tracker</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Manual Function Selection</CardTitle>
                       <CardDescription className="text-xs">
                         Select primary function to get intervention templates
                       </CardDescription>
