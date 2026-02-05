@@ -1,791 +1,741 @@
 
-# Insurance Billing Configuration Module with Payer Directory
+# Comprehensive Feature Enhancement Plan
 
-## Overview
+## Executive Summary
 
-This plan implements a comprehensive payer configuration system with:
-1. **Searchable Payer Directory** - Built-in national payer database searchable by name or payer ID
-2. **Payer Detail Pages** - Full payer configuration with tabbed interface
-3. **Payer Services** - CPT/HCPCS code management with rates, units, and CMS-1500 mapping
-4. **Service Detail Pages** - Complete configuration for each billable service
-5. **Claim Generation Integration** - Automatic unit calculation and validation
+This plan addresses 12 major feature requests to transform the platform into a differentiated, ABA-forward, school-focused practice management system with robust staff management, mobile-first data collection, and advanced communication capabilities.
 
 ---
 
-## Database Schema
+## Feature Priority Matrix
 
-### 1. `payer_directory` Table (Built-in Searchable Payer List)
+| Priority | Feature | Business Impact | Technical Effort |
+|----------|---------|-----------------|------------------|
+| 1 | Fix Staff Geocoding | HIGH - Currently broken | LOW |
+| 2 | Voice-to-Text Session Notes | HIGH - Clinician efficiency | MEDIUM |
+| 3 | Offline-First Data Collection | HIGH - Field reliability | HIGH |
+| 4 | Supervision Chain Enforcement | HIGH - Compliance critical | MEDIUM |
+| 5 | Push Notifications | MEDIUM - Engagement | MEDIUM |
+| 6 | Treatment Fidelity Tracking | HIGH - Clinical outcomes | MEDIUM |
+| 7 | Contract Rate Management | HIGH - Revenue accuracy | MEDIUM |
+| 8 | Travel Route Optimization | MEDIUM - Staff efficiency | MEDIUM |
+| 9 | IEP Meeting Prep Wizard | HIGH - School partnerships | MEDIUM |
+| 10 | Teacher Observation Requests | HIGH - Collaboration | MEDIUM |
+| 11 | White-Label School Reports | HIGH - Deal closer | MEDIUM |
+| 12 | External Document Sharing | HIGH - Parent engagement | MEDIUM |
 
+---
+
+## Phase 1: Critical Fixes & Core Infrastructure
+
+### 1.1 Fix Staff Geocoding (PRIORITY 1)
+
+**Current Issue**: The `AddressAutocomplete` component uses Nominatim (OpenStreetMap) which works, but the results are not being properly saved/displayed in the Staff Travel & Geo tab.
+
+**Root Cause Analysis**:
+- The `StaffTravelGeoTab` correctly calls `updateProfile()` with geocode data
+- Need to verify the `profiles` table has the geocode columns and RLS allows updates
+- The popover may be closing before selection registers
+
+**Database Changes**:
 ```sql
-CREATE TABLE payer_directory (
+-- Ensure columns exist (may already be present)
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS home_base_address TEXT,
+ADD COLUMN IF NOT EXISTS geocode_lat NUMERIC(10, 7),
+ADD COLUMN IF NOT EXISTS geocode_lng NUMERIC(10, 7),
+ADD COLUMN IF NOT EXISTS geocode_status TEXT DEFAULT 'pending',
+ADD COLUMN IF NOT EXISTS max_travel_radius_miles INTEGER DEFAULT 15,
+ADD COLUMN IF NOT EXISTS min_buffer_minutes INTEGER DEFAULT 15,
+ADD COLUMN IF NOT EXISTS transportation_method TEXT DEFAULT 'car';
+```
+
+**Code Fixes**:
+- Fix `AddressAutocomplete` popover focus handling
+- Add error handling and loading states
+- Add manual "Save Address" button as fallback
+- Display clear success/error feedback
+
+**Files to Modify**:
+- `src/components/ui/address-autocomplete.tsx`
+- `src/components/staff-profile/tabs/StaffTravelGeoTab.tsx`
+- `src/hooks/useStaffProfile.ts`
+
+---
+
+### 1.2 Voice-to-Text Session Notes (PRIORITY 2)
+
+**Current State**: `VoiceNoteRecorder.tsx` exists but uses mock transcription. Need to integrate real speech-to-text.
+
+**Implementation**:
+
+**New Backend Function**:
+```typescript
+// supabase/functions/elevenlabs-transcribe/index.ts
+// Uses ElevenLabs Scribe v2 for transcription
+```
+
+**Frontend Changes**:
+- Integrate ElevenLabs SDK (`@elevenlabs/react`) for real-time transcription
+- Add "Dictate" button to `NoteCreationDialog.tsx` and `NoteEditorDialog.tsx`
+- Support both batch (upload audio) and real-time (live dictation) modes
+- Auto-insert transcribed text into note content
+
+**Files to Create**:
+- `supabase/functions/elevenlabs-transcribe/index.ts`
+- `supabase/functions/elevenlabs-scribe-token/index.ts`
+- `src/components/session-notes/VoiceNoteIntegration.tsx`
+
+**Files to Modify**:
+- `src/components/mobile/VoiceNoteRecorder.tsx` (integrate real transcription)
+- `src/components/session-notes/NoteCreationDialog.tsx`
+- `src/components/session-notes/NoteEditorDialog.tsx`
+
+**Dependencies**:
+- Requires `ELEVENLABS_API_KEY` secret to be configured
+
+---
+
+### 1.3 Offline-First Data Collection (PRIORITY 3)
+
+**Current State**: Basic localStorage persistence via Zustand. `OfflineIndicator.tsx` exists but sync queue is placeholder.
+
+**Implementation Strategy**:
+
+**IndexedDB Integration**:
+```typescript
+// src/lib/offlineStorage.ts
+// Using idb library for IndexedDB wrapper
+interface OfflineQueue {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  table: string;
+  data: any;
+  timestamp: Date;
+  retryCount: number;
+}
+```
+
+**Key Components**:
+1. **IndexedDB Store**: Replace localStorage with IndexedDB for larger data capacity
+2. **Sync Queue Manager**: Queue mutations when offline, sync when online
+3. **Conflict Resolution**: Last-write-wins with merge prompts for conflicts
+4. **Service Worker**: Cache critical assets for offline access
+
+**Database Changes**:
+```sql
+-- Add sync tracking columns
+ALTER TABLE session_data
+ADD COLUMN IF NOT EXISTS local_id TEXT,
+ADD COLUMN IF NOT EXISTS synced_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS client_timestamp TIMESTAMPTZ;
+
+-- Create sync_queue table for server-side conflict tracking
+CREATE TABLE sync_conflicts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payer_name TEXT NOT NULL,
-  payer_id TEXT NOT NULL,                    -- National payer ID (e.g., "60054" for Aetna)
-  source JSONB NOT NULL DEFAULT '{"source_name": "system", "source_type": "embedded_list"}',
-  aliases TEXT[] DEFAULT '{}',
-  eligibility_supported BOOLEAN DEFAULT true,
-  active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  
-  UNIQUE(payer_id)
+  user_id UUID REFERENCES auth.users(id),
+  table_name TEXT NOT NULL,
+  record_id UUID,
+  local_data JSONB,
+  server_data JSONB,
+  resolved BOOLEAN DEFAULT false,
+  resolution TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### 2. Modify Existing `payers` Table
+**Files to Create**:
+- `src/lib/offlineStorage.ts` (IndexedDB wrapper)
+- `src/lib/syncQueue.ts` (Queue manager)
+- `src/hooks/useOfflineSync.ts`
+- `public/sw.js` (Service Worker)
 
+**Files to Modify**:
+- `src/contexts/SyncContext.tsx` (integrate IndexedDB)
+- `src/components/mobile/OfflineIndicator.tsx`
+- `src/store/dataStore.ts` (add offline queue)
+- `index.html` (register service worker)
+
+---
+
+## Phase 2: Staff Management & Compliance
+
+### 2.1 Supervision Chain Enforcement (PRIORITY 4)
+
+**Current State**: `supervisor_links` table exists, `SupervisionDashboard` tracks compliance. Need stricter enforcement.
+
+**Enhancements**:
+
+**Database Changes**:
 ```sql
-ALTER TABLE payers
-ADD COLUMN payer_id TEXT,                              -- National payer ID
-ADD COLUMN directory_payer_id UUID REFERENCES payer_directory(id),
-ADD COLUMN directory_link JSONB,                       -- {source_name, payer_directory_key}
-ADD COLUMN contact JSONB,                              -- {phone, fax, website, notes}
-ADD COLUMN eligibility JSONB,                          -- {supports_270_271, eligibility_notes}
-ADD COLUMN agency_id UUID REFERENCES agencies(id),
-ADD COLUMN timely_filing_days INTEGER DEFAULT 90,
-ADD COLUMN claims_submission_method TEXT DEFAULT 'manual';
+-- Add supervision chain validation
+CREATE TABLE supervision_chain_violations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_user_id UUID NOT NULL REFERENCES profiles(user_id),
+  violation_type TEXT NOT NULL, -- 'missing_supervisor', 'expired_link', 'ratio_exceeded'
+  detected_at TIMESTAMPTZ DEFAULT now(),
+  resolved_at TIMESTAMPTZ,
+  resolution_notes TEXT,
+  created_by UUID REFERENCES auth.users(id)
+);
+
+-- Function to check if RBT can be scheduled
+CREATE OR REPLACE FUNCTION can_schedule_rbt(_staff_user_id UUID, _session_date DATE)
+RETURNS TABLE(allowed BOOLEAN, reason TEXT) AS $$
+BEGIN
+  -- Check for active supervisor link
+  IF NOT EXISTS (
+    SELECT 1 FROM supervisor_links
+    WHERE supervisee_staff_id = _staff_user_id
+    AND status = 'active'
+    AND (end_date IS NULL OR end_date >= _session_date)
+  ) THEN
+    RETURN QUERY SELECT false, 'No active supervisor assigned';
+    RETURN;
+  END IF;
+  
+  RETURN QUERY SELECT true, 'OK';
+END;
+$$ LANGUAGE plpgsql;
 ```
 
-### 3. `payer_services` Table (Per-Payer Service Configuration)
+**UI Enhancements**:
+- Block scheduling for RBTs without active supervisor (hard block)
+- Warning banner on Staff Profile when supervisor chain is broken
+- Supervision compliance alerts in `NotificationBell`
+- Supervisor assignment quick-action from scheduling dialog
 
+**Files to Create**:
+- `src/components/supervision/SupervisionChainWarning.tsx`
+- `src/components/supervision/AssignSupervisorDialog.tsx`
+
+**Files to Modify**:
+- `src/components/scheduling/SchedulingEngine.tsx` (add hard blocks)
+- `src/components/staff-profile/tabs/StaffOverviewTab.tsx` (warning banner)
+- `src/hooks/useStaffProfile.ts` (add chain validation)
+
+---
+
+### 2.2 Travel Route Optimization (PRIORITY 8)
+
+**Current State**: Distance calculation exists in `SchedulingEngine.tsx` (Haversine formula). Need route optimization.
+
+**Implementation**:
+
+**Database Changes**:
 ```sql
-CREATE TABLE payer_services (
+-- Store route calculations for caching
+CREATE TABLE travel_routes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payer_id UUID NOT NULL REFERENCES payers(id) ON DELETE CASCADE,
-  agency_id UUID REFERENCES agencies(id),
+  from_location_id UUID,
+  to_location_id UUID,
+  from_lat NUMERIC(10, 7),
+  from_lng NUMERIC(10, 7),
+  to_lat NUMERIC(10, 7),
+  to_lng NUMERIC(10, 7),
+  distance_miles NUMERIC(8, 2),
+  travel_time_minutes INTEGER,
+  calculated_at TIMESTAMPTZ DEFAULT now(),
+  transport_mode TEXT DEFAULT 'driving',
+  UNIQUE(from_lat, from_lng, to_lat, to_lng, transport_mode)
+);
+
+CREATE INDEX idx_travel_routes_coords ON travel_routes(from_lat, from_lng, to_lat, to_lng);
+```
+
+**Features**:
+1. **Multi-Stop Route Optimizer**: For staff with multiple clients/day
+2. **Travel Time Matrix**: Pre-calculate common routes
+3. **Buffer Enforcement**: Warn when travel + buffer exceeds gap between sessions
+4. **Map Visualization**: Show staff coverage area and client locations
+
+**Files to Create**:
+- `src/lib/routeOptimization.ts`
+- `src/components/scheduling/TravelRouteOptimizer.tsx`
+- `src/components/scheduling/StaffCoverageMap.tsx`
+
+**Files to Modify**:
+- `src/components/scheduling/SchedulingEngine.tsx`
+- `src/components/staff-profile/tabs/StaffTravelGeoTab.tsx`
+
+---
+
+## Phase 3: Clinical Features
+
+### 3.1 Treatment Fidelity Tracking (PRIORITY 6)
+
+**New Feature**: Track whether interventions are implemented as designed (BIP adherence).
+
+**Database Schema**:
+```sql
+CREATE TABLE treatment_fidelity_checks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES sessions(id),
+  student_id UUID NOT NULL REFERENCES students(id),
+  observer_user_id UUID NOT NULL REFERENCES auth.users(id),
+  implementer_user_id UUID REFERENCES auth.users(id),
+  check_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  intervention_id UUID, -- Link to behavior_interventions
   
-  -- Service Identification
-  service_name TEXT NOT NULL,
-  service_category TEXT DEFAULT 'aba',  -- aba, ot, pt, speech, psych, other
-  cpt_hcpcs_code TEXT NOT NULL,
-  description TEXT,
+  -- Fidelity scoring
+  items JSONB NOT NULL, -- Array of {item_text, implemented: boolean, notes}
+  items_implemented INTEGER NOT NULL,
+  items_total INTEGER NOT NULL,
+  fidelity_percentage NUMERIC(5, 2) GENERATED ALWAYS AS 
+    (CASE WHEN items_total > 0 THEN (items_implemented::numeric / items_total) * 100 ELSE 0 END) STORED,
   
-  -- Modifiers (JSONB object matching schema)
-  modifiers JSONB NOT NULL DEFAULT '{
-    "modifier_1": null,
-    "modifier_2": null,
-    "modifier_3": null,
-    "modifier_4": null,
-    "modifier_required": false,
-    "modifier_notes": null
-  }',
+  -- Context
+  setting TEXT,
+  duration_minutes INTEGER,
+  notes TEXT,
   
-  -- Rate (JSONB object matching schema)
-  rate JSONB NOT NULL DEFAULT '{
-    "rate_type": "per_unit",
-    "rate_amount": 0,
-    "currency": "USD",
-    "allow_override_on_claim": false
-  }',
-  
-  -- Units (JSONB object matching schema)
-  units JSONB NOT NULL DEFAULT '{
-    "unit_definition": "15_min",
-    "rounding_rule": "nearest"
-  }',
-  
-  -- Authorization (JSONB object matching schema)
-  auth JSONB NOT NULL DEFAULT '{
-    "auth_required": true,
-    "auth_unit_type": "units",
-    "auth_period": "per_auth_span",
-    "enforcement": "warn"
-  }',
-  
-  -- CMS-1500 Defaults (JSONB object matching schema)
-  cms1500_defaults JSONB NOT NULL DEFAULT '{
-    "place_of_service_default": "11",
-    "diagnosis_pointer_mode": "auto",
-    "rendering_provider_required": true,
-    "supervising_provider_required": false
-  }',
-  
-  -- Status
-  status TEXT DEFAULT 'active',
-  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Fidelity check templates (per intervention/BIP)
+CREATE TABLE fidelity_check_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID REFERENCES students(id),
+  intervention_id UUID,
+  name TEXT NOT NULL,
+  items JSONB NOT NULL, -- Array of check items
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**UI Components**:
+- Fidelity Check Form (checklist-style during observation)
+- Fidelity Dashboard (trends over time, by staff, by intervention)
+- Fidelity Alerts (when scores drop below threshold)
+
+**Files to Create**:
+- `src/types/treatmentFidelity.ts`
+- `src/hooks/useTreatmentFidelity.ts`
+- `src/components/fidelity/FidelityCheckForm.tsx`
+- `src/components/fidelity/FidelityDashboard.tsx`
+- `src/components/fidelity/FidelityTemplateBuilder.tsx`
+
+---
+
+### 3.2 IEP Meeting Prep Wizard (PRIORITY 9)
+
+**New Feature**: Guided workflow to prepare for IEP/504 meetings with data summaries.
+
+**Implementation**:
+
+**Database Schema**:
+```sql
+CREATE TABLE iep_meeting_preps (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES students(id),
+  meeting_date DATE NOT NULL,
+  meeting_type TEXT NOT NULL, -- 'annual', 'triennial', 'amendment', '504'
+  
+  -- Pulled data
+  data_summary JSONB, -- Behavior trends, skill progress, attendance
+  goal_progress JSONB, -- Current goal status
+  recommendations JSONB, -- AI-suggested or clinician-entered
+  
+  -- Documents to bring
+  documents_checklist JSONB, -- {doc_type, included: boolean}
+  
+  -- Team
+  attendees JSONB, -- Expected attendees with roles
+  
+  -- Output
+  generated_report_url TEXT,
+  
+  status TEXT DEFAULT 'draft', -- draft, ready, completed
   created_by UUID REFERENCES auth.users(id),
-  
-  UNIQUE(payer_id, cpt_hcpcs_code, (modifiers->>'modifier_1'), (modifiers->>'modifier_2'))
-);
-```
-
-### 4. `payer_auth_rules` Table (Payer-Wide Authorization Rules)
-
-```sql
-CREATE TABLE payer_auth_rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payer_id UUID NOT NULL REFERENCES payers(id) ON DELETE CASCADE,
-  
-  rule_name TEXT NOT NULL,
-  if_conditions JSONB NOT NULL DEFAULT '{}',    -- {cpt_in: [], place_of_service_in: [], modifier_required: bool}
-  then_actions JSONB NOT NULL DEFAULT '{}',     -- {auth_required, auth_unit_type, auth_period, max_units_per_period, enforcement}
-  active BOOLEAN DEFAULT true,
-  
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### 5. Seed Payer Directory Data
+**Wizard Steps**:
+1. **Meeting Details**: Date, type, attendees
+2. **Data Review**: Auto-pull behavior trends (30/60/90 days)
+3. **Goal Progress**: Current goal status with visual graphs
+4. **Recommendations**: Suggest goal modifications based on data
+5. **Document Checklist**: FBA, BIP, progress reports
+6. **Generate Report**: Create printable/shareable summary
 
-Pre-populate with 50+ common payers:
+**Files to Create**:
+- `src/types/iepMeeting.ts`
+- `src/components/iep/IEPMeetingPrepWizard.tsx`
+- `src/components/iep/MeetingDataSummary.tsx`
+- `src/components/iep/MeetingReportGenerator.tsx`
+- `src/hooks/useIEPMeetingPrep.ts`
 
+---
+
+## Phase 4: Communication & Reporting
+
+### 4.1 Push Notifications (PRIORITY 5)
+
+**Current State**: In-app `NotificationBell` with database-backed notifications and realtime subscriptions.
+
+**Enhancement**: Add browser push notifications.
+
+**Implementation**:
+
+**Backend Changes**:
 ```sql
-INSERT INTO payer_directory (payer_name, payer_id, source, aliases, eligibility_supported) VALUES
-('Aetna', '60054', '{"source_name": "CAQH CORE", "source_type": "embedded_list", "source_version": "2024.1"}', ARRAY['Aetna Behavioral Health', 'Aetna Better Health'], true),
-('Anthem Blue Cross', '47198', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Anthem BCBS'], true),
-('Blue Cross Blue Shield', '00060', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['BCBS'], true),
-('Cigna', '62308', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Cigna Healthcare'], true),
-('Humana', '61101', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY[], true),
-('Kaiser Permanente', '91617', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Kaiser'], true),
-('UnitedHealthcare', '87726', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['UHC', 'Optum'], true),
-('Tricare', '99726', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Tricare West', 'Tricare East'], true),
-('Medicare', '00882', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['CMS'], true),
-('Medicaid - California', 'CAID1', '{"source_name": "state_medicaid", "source_type": "embedded_list"}', ARRAY['Medi-Cal'], true),
-('Medicaid - Texas', 'TXMCD', '{"source_name": "state_medicaid", "source_type": "embedded_list"}', ARRAY['Texas Medicaid'], true),
-('Medicaid - Florida', 'FLMCD', '{"source_name": "state_medicaid", "source_type": "embedded_list"}', ARRAY['Florida Medicaid'], true),
-('Beacon Health Options', '25133', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Beacon'], true),
-('Magellan Health', '77074', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Magellan Behavioral'], true),
-('Molina Healthcare', '20149', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY[], true),
-('Centene', '68069', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['WellCare', 'Ambetter'], true),
-('Health Net', '95378', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY[], true),
-('Oscar Health', 'OSCAR', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY[], true),
-('Highmark BCBS', '54154', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Highmark'], true),
-('Premera Blue Cross', '91080', '{"source_name": "CAQH CORE", "source_type": "embedded_list"}', ARRAY['Premera'], true);
--- ... additional payers
+-- Store push subscriptions
+CREATE TABLE push_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  subscription JSONB NOT NULL, -- Web Push subscription object
+  device_name TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, subscription)
+);
+
+-- Notification preferences
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS push_preferences JSONB DEFAULT '{
+  "session_reminders": true,
+  "supervision_alerts": true,
+  "questionnaire_responses": true,
+  "approval_requests": true
+}';
 ```
 
----
-
-## TypeScript Types
-
-### New File: `src/types/payerConfig.ts`
-
+**New Edge Function**:
 ```typescript
-// ========== Payer Directory ==========
-export interface PayerDirectorySource {
-  source_name: string;
-  source_type: 'embedded_list' | 'file_import' | 'api_sync';
-  source_version?: string;
-}
-
-export interface PayerDirectoryEntry {
-  id: string;
-  payer_name: string;
-  payer_id: string;
-  source: PayerDirectorySource;
-  aliases: string[];
-  eligibility_supported: boolean;
-  active: boolean;
-  created_at: string;
-}
-
-// ========== Payer ==========
-export type PayerType = 'commercial' | 'medicaid' | 'medicare' | 'tricare' | 'other';
-export type PayerStatus = 'active' | 'inactive';
-
-export interface PayerDirectoryLink {
-  source_name: string;
-  payer_directory_key: string;
-}
-
-export interface PayerContact {
-  phone?: string;
-  fax?: string;
-  website?: string;
-  notes?: string;
-}
-
-export interface PayerEligibility {
-  supports_270_271?: boolean;
-  eligibility_notes?: string;
-}
-
-export interface Payer {
-  id: string;
-  name: string;
-  payer_id?: string;
-  payer_type: PayerType;
-  status: PayerStatus;
-  directory_payer_id?: string;
-  directory_link?: PayerDirectoryLink;
-  contact?: PayerContact;
-  eligibility?: PayerEligibility;
-  agency_id?: string;
-  timely_filing_days?: number;
-  claims_submission_method?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-// ========== Payer Service ==========
-export type ServiceCategory = 'aba' | 'ot' | 'pt' | 'speech' | 'psych' | 'other';
-export type RateType = 'per_unit' | 'per_hour' | 'flat_fee';
-export type UnitDefinition = '15_min' | '30_min' | '60_min' | 'per_session' | 'per_day' | 'per_month';
-export type RoundingRule = 'none' | 'nearest' | 'up' | 'down';
-export type AuthUnitType = 'units' | 'hours' | 'visits' | 'dollars' | 'monthly_allowance';
-export type AuthPeriod = 'per_month' | 'per_week' | 'per_auth_span' | 'per_calendar_year';
-export type AuthEnforcement = 'warn' | 'block';
-export type DiagnosisPointerMode = 'auto' | 'manual';
-
-export interface ServiceModifiers {
-  modifier_1?: string;
-  modifier_2?: string;
-  modifier_3?: string;
-  modifier_4?: string;
-  modifier_required: boolean;
-  modifier_notes?: string;
-}
-
-export interface ServiceRate {
-  rate_type: RateType;
-  rate_amount: number;
-  currency: string;
-  effective_start_date?: string;
-  effective_end_date?: string;
-  allow_override_on_claim: boolean;
-}
-
-export interface ServiceUnits {
-  unit_definition: UnitDefinition;
-  rounding_rule: RoundingRule;
-  max_units_per_day?: number;
-  max_units_per_auth_period?: number;
-  unit_notes?: string;
-}
-
-export interface ServiceAuth {
-  auth_required: boolean;
-  auth_unit_type: AuthUnitType;
-  auth_period: AuthPeriod;
-  enforcement: AuthEnforcement;
-}
-
-export interface ServiceCMS1500Defaults {
-  place_of_service_default: string;
-  diagnosis_pointer_mode: DiagnosisPointerMode;
-  rendering_provider_required: boolean;
-  supervising_provider_required: boolean;
-}
-
-export interface PayerService {
-  id: string;
-  payer_id: string;
-  agency_id?: string;
-  service_name: string;
-  service_category: ServiceCategory;
-  cpt_hcpcs_code: string;
-  description?: string;
-  modifiers: ServiceModifiers;
-  rate: ServiceRate;
-  units: ServiceUnits;
-  auth: ServiceAuth;
-  cms1500_defaults: ServiceCMS1500Defaults;
-  status: 'active' | 'inactive';
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-// ========== Auth Rule ==========
-export interface AuthRuleConditions {
-  cpt_in?: string[];
-  place_of_service_in?: string[];
-  modifier_required?: boolean;
-}
-
-export interface AuthRuleActions {
-  auth_required?: boolean;
-  auth_unit_type?: AuthUnitType;
-  auth_period?: AuthPeriod;
-  max_units_per_period?: number;
-  enforcement?: AuthEnforcement;
-}
-
-export interface PayerAuthRule {
-  id: string;
-  payer_id: string;
-  rule_name: string;
-  if_conditions: AuthRuleConditions;
-  then_actions: AuthRuleActions;
-  active: boolean;
-  created_at: string;
-}
-
-// ========== Claim Line ==========
-export interface ClaimLineAuthReference {
-  auth_id: string;
-  remaining_units_before: number;
-  remaining_units_after: number;
-}
-
-export interface ClaimLine {
-  id: string;
-  payer_id: string;
-  service_id: string;
-  date_of_service_from: string;
-  date_of_service_to: string;
-  place_of_service: string;
-  cpt_hcpcs_code: string;
-  modifiers: string[];
-  diagnosis_pointers: number[];
-  units: number;
-  charge_amount: number;
-  rate_used: number;
-  unit_definition_used: UnitDefinition;
-  rendering_provider_npi?: string;
-  supervising_provider_npi?: string;
-  auth_reference?: ClaimLineAuthReference;
-}
-
-// ========== Constants ==========
-export const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
-  { value: 'aba', label: 'ABA Therapy' },
-  { value: 'ot', label: 'Occupational Therapy' },
-  { value: 'pt', label: 'Physical Therapy' },
-  { value: 'speech', label: 'Speech Therapy' },
-  { value: 'psych', label: 'Psychological Services' },
-  { value: 'other', label: 'Other' },
-];
-
-export const RATE_TYPES: { value: RateType; label: string }[] = [
-  { value: 'per_unit', label: 'Per Unit' },
-  { value: 'per_hour', label: 'Per Hour' },
-  { value: 'flat_fee', label: 'Flat Fee' },
-];
-
-export const UNIT_DEFINITIONS: { value: UnitDefinition; label: string; description: string }[] = [
-  { value: '15_min', label: '15-Minute Increments', description: 'Units are billed as 15-minute increments' },
-  { value: '30_min', label: '30-Minute Increments', description: 'Units are billed as 30-minute increments' },
-  { value: '60_min', label: '60-Minute Increments', description: 'Units are billed as hourly increments' },
-  { value: 'per_session', label: 'Per Session', description: 'Units are billed per session' },
-  { value: 'per_day', label: 'Per Day', description: 'Units are billed per day' },
-  { value: 'per_month', label: 'Per Month', description: 'Units are billed monthly' },
-];
-
-export const ROUNDING_RULES: { value: RoundingRule; label: string }[] = [
-  { value: 'none', label: 'No Rounding' },
-  { value: 'nearest', label: 'Round to Nearest' },
-  { value: 'up', label: 'Round Up' },
-  { value: 'down', label: 'Round Down' },
-];
-
-export const AUTH_UNIT_TYPES: { value: AuthUnitType; label: string }[] = [
-  { value: 'units', label: 'Units' },
-  { value: 'hours', label: 'Hours' },
-  { value: 'visits', label: 'Visits' },
-  { value: 'dollars', label: 'Dollars' },
-  { value: 'monthly_allowance', label: 'Monthly Allowance' },
-];
-
-export const AUTH_PERIODS: { value: AuthPeriod; label: string }[] = [
-  { value: 'per_month', label: 'Per Month' },
-  { value: 'per_week', label: 'Per Week' },
-  { value: 'per_auth_span', label: 'Per Authorization Span' },
-  { value: 'per_calendar_year', label: 'Per Calendar Year' },
-];
-
-export const PAYER_TYPES: { value: PayerType; label: string }[] = [
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'medicaid', label: 'Medicaid' },
-  { value: 'medicare', label: 'Medicare' },
-  { value: 'tricare', label: 'Tricare' },
-  { value: 'other', label: 'Other' },
-];
-
-export const EXTENDED_PLACE_OF_SERVICE_CODES: { code: string; description: string }[] = [
-  { code: '02', description: 'Telehealth (Other than Home)' },
-  { code: '03', description: 'School' },
-  { code: '10', description: 'Telehealth (Patient Home)' },
-  { code: '11', description: 'Office' },
-  { code: '12', description: 'Home' },
-  { code: '13', description: 'Assisted Living Facility' },
-  { code: '14', description: 'Group Home' },
-  { code: '22', description: 'Outpatient Hospital' },
-  { code: '31', description: 'Skilled Nursing Facility' },
-  { code: '32', description: 'Nursing Facility' },
-  { code: '99', description: 'Other' },
-];
+// supabase/functions/send-push-notification/index.ts
+// Uses Web Push API with VAPID keys
 ```
+
+**Files to Create**:
+- `supabase/functions/send-push-notification/index.ts`
+- `src/lib/pushNotifications.ts`
+- `src/components/settings/NotificationPreferences.tsx`
+- `public/sw-push.js` (Push service worker)
+
+**Files to Modify**:
+- `src/components/NotificationBell.tsx` (add push subscription UI)
+- `index.html` (register push service worker)
+
+**Secrets Required**:
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
 
 ---
 
-## Page & Component Architecture
+### 4.2 Teacher Observation Requests (PRIORITY 10)
 
-### New Routes (Add to `App.tsx`)
+**New Feature**: Send observation/data collection requests to teachers.
 
-```typescript
-<Route path="/billing/payers" element={<PayerDirectoryPage />} />
-<Route path="/billing/payers/:payerId" element={<PayerDetailPage />} />
-<Route path="/billing/payers/:payerId/services/:serviceId" element={<ServiceDetailPage />} />
-```
-
-### Component Structure
-
-```
-src/
-├── pages/
-│   └── payers/
-│       ├── PayerDirectoryPage.tsx      # /billing/payers
-│       ├── PayerDetailPage.tsx         # /billing/payers/:payerId
-│       └── ServiceDetailPage.tsx       # /billing/payers/:payerId/services/:serviceId
-│
-├── components/billing/
-│   ├── payer-directory/
-│   │   ├── PayerDirectorySearch.tsx    # Search input + filters
-│   │   ├── PayerDirectoryTable.tsx     # Results table
-│   │   └── AddCustomPayerDialog.tsx    # Create non-directory payer
-│   │
-│   ├── payer-detail/
-│   │   ├── PayerOverviewTab.tsx        # Payer info & settings
-│   │   ├── PayerServicesTab.tsx        # Services table
-│   │   ├── PayerAuthRulesTab.tsx       # Auth rules config
-│   │   ├── PayerCMS1500Tab.tsx         # Global CMS-1500 settings
-│   │   └── PayerEligibilityTab.tsx     # Eligibility settings
-│   │
-│   ├── service-detail/
-│   │   ├── ServiceCodeModifiersSection.tsx   # Section A
-│   │   ├── ServiceRateSection.tsx            # Section B
-│   │   ├── ServiceUnitsSection.tsx           # Section C
-│   │   ├── ServiceAuthSection.tsx            # Section D
-│   │   ├── ServiceCMS1500Section.tsx         # Section E
-│   │   ├── ServiceCMS1500Preview.tsx         # Section F
-│   │   └── ServiceValidationWarnings.tsx     # Denial risk warnings
-│   │
-│   └── shared/
-│       ├── DuplicateServiceDialog.tsx
-│       └── ImportServiceTemplateDialog.tsx
-│
-├── hooks/
-│   ├── usePayerDirectory.ts            # Directory search
-│   ├── usePayerServices.ts             # Services CRUD
-│   ├── usePayerAuthRules.ts            # Auth rules CRUD
-│   └── useClaimLineCalculation.ts      # Unit calculation
-│
-└── types/
-    └── payerConfig.ts                  # All types above
-```
-
----
-
-## Page Designs
-
-### 1. Payer Directory Page (`/billing/payers`)
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ ← Billing & Claims                                               │
-│ Payer Directory                                    [+ Add Custom]│
-├──────────────────────────────────────────────────────────────────┤
-│ ┌──────────────────────────────────────────────────────────────┐ │
-│ │ 🔍 Search payer name or payer ID...                          │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│ Showing 20 of 50 payers                                          │
-├──────────────────────────────────────────────────────────────────┤
-│ Payer Name              │ Payer ID  │ Type       │ Action       │
-│─────────────────────────┼───────────┼────────────┼──────────────│
-│ Aetna                   │ 60054     │ Commercial │ [+ Add]      │
-│ Anthem Blue Cross       │ 47198     │ Commercial │ [Configured] │
-│ Blue Cross Blue Shield  │ 00060     │ Commercial │ [+ Add]      │
-│ Cigna                   │ 62308     │ Commercial │ [+ Add]      │
-│ Medicaid - California   │ CAID1     │ Medicaid   │ [+ Add]      │
-│ UnitedHealthcare        │ 87726     │ Commercial │ [Configured] │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### 2. Payer Detail Page (`/billing/payers/:payerId`)
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ ← Back to Payers                                                 │
-│ Aetna (60054)                                [Edit] [Deactivate] │
-├──────────────────────────────────────────────────────────────────┤
-│ Overview │ Services │ Auth Rules │ CMS-1500 │ Eligibility        │
-├══════════════════════════════════════════════════════════════════┤
-│                                                                  │
-│ ┌─ Overview Tab ───────────────────────────────────────────────┐ │
-│ │ ┌─────────────────────┐ ┌─────────────────────┐              │ │
-│ │ │ Payer Information   │ │ Claim Settings      │              │ │
-│ │ │ Name: Aetna         │ │ Filing Limit: 90d   │              │ │
-│ │ │ ID: 60054           │ │ Method: Electronic  │              │ │
-│ │ │ Type: Commercial    │ │ ERA: ✓ Enabled      │              │ │
-│ │ │ Status: Active      │ │                     │              │ │
-│ │ └─────────────────────┘ └─────────────────────┘              │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ Services Tab ───────────────────────────────────────────────┐ │
-│ │ Services                    [+ Add Service] [Import Template]│ │
-│ │ ──────────────────────────────────────────────────────────── │ │
-│ │ Service       │ CPT   │ Mod  │ Rate   │ Units   │ Auth │ ⋮  │ │
-│ │───────────────┼───────┼──────┼────────┼─────────┼──────┼────│ │
-│ │ ABA Direct    │ 97153 │ HM   │ $15.00 │ 15-min  │ Req  │ ⋮  │ │
-│ │ ABA Supervise │ 97155 │ HO   │ $75.00 │ 15-min  │ Req  │ ⋮  │ │
-│ │ Assessment    │ 97151 │ HO   │ $100   │ per unit│ Req  │ ⋮  │ │
-│ │ Parent Train  │ 97156 │ HO,GT│ $50.00 │ 15-min  │ Req  │ ⋮  │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### 3. Service Detail Page (`/billing/payers/:payerId/services/:serviceId`)
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ ← Back to Aetna Services                                         │
-│ ABA Direct Therapy (97153)                       [Save] [Delete] │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│ ┌─ A. Code & Modifiers ────────────────────────────────────────┐ │
-│ │ CPT/HCPCS Code*: [97153    ]                                 │ │
-│ │ Modifier 1: [HM ▼]  Modifier 2: [   ▼]  3: [   ▼]  4: [   ▼]│ │
-│ │ [✓] Modifiers required for billing                          │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ B. Rate ────────────────────────────────────────────────────┐ │
-│ │ Rate Type: [Per Unit ▼]     Rate Amount: [$15.00    ]        │ │
-│ │ [✓] Allow override on claim                                  │ │
-│ │ Effective: [01/01/2024] to [12/31/2024] (optional)          │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ C. Units & Rounding ────────────────────────────────────────┐ │
-│ │ Unit Definition: [15-minute increments ▼]                    │ │
-│ │ ℹ️ "Units are billed as 15-minute increments"                │ │
-│ │ Rounding Rule: [Round Up ▼]                                  │ │
-│ │ Max Units/Day: [32    ] (8 hours)                            │ │
-│ │ Max Units/Auth Period: [480   ] (120 hours)                  │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ D. Authorization ───────────────────────────────────────────┐ │
-│ │ [✓] Authorization required                                   │ │
-│ │ Auth Unit Type: [Units ▼]  Auth Period: [Per Month ▼]       │ │
-│ │ Enforcement: [○ Warn  ● Block]                               │ │
-│ │ ⚠️ Claims exceeding remaining auth units will be blocked    │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ E. CMS-1500 Defaults ───────────────────────────────────────┐ │
-│ │ Place of Service (Box 24B): [11 - Office ▼]                  │ │
-│ │ Diagnosis Pointer Mode: [● Auto  ○ Manual]                   │ │
-│ │ [✓] Rendering Provider Required (Box 24J)                    │ │
-│ │ [ ] Supervising Provider Required                            │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│ ┌─ F. CMS-1500 Line 24 Mapping Preview ────────────────────────┐ │
-│ │ This service will generate claim lines as follows:           │ │
-│ │ ──────────────────────────────────────────────────────────── │ │
-│ │ 24A: Dates of Service    → From session start/end           │ │
-│ │ 24B: Place of Service    → 11 (Office) - editable at claim  │ │
-│ │ 24D: Procedures/Services → 97153 HM                          │ │
-│ │ 24E: Diagnosis Pointer   → Auto-assigned from claim Dx       │ │
-│ │ 24F: Charges             → Rate × Units = $15.00 × N         │ │
-│ │ 24G: Days or Units       → Calculated from session duration  │ │
-│ │                           (duration ÷ 15 min, rounded up)    │ │
-│ │ 24J: Rendering Provider  → Required ✓                        │ │
-│ │ ──────────────────────────────────────────────────────────── │ │
-│ │ ⚠️ Modifiers required: HM must be present                   │ │
-│ └──────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Business Logic
-
-### Unit Calculation Function
-
-```typescript
-// src/lib/claimCalculations.ts
-
-export function calculateUnits(
-  sessionDurationMinutes: number,
-  service: PayerService
-): number {
-  const { unit_definition, rounding_rule } = service.units;
-  
-  let rawUnits: number;
-  
-  switch (unit_definition) {
-    case '15_min':
-      rawUnits = sessionDurationMinutes / 15;
-      break;
-    case '30_min':
-      rawUnits = sessionDurationMinutes / 30;
-      break;
-    case '60_min':
-      rawUnits = sessionDurationMinutes / 60;
-      break;
-    case 'per_session':
-    case 'per_day':
-    case 'per_month':
-      rawUnits = 1;
-      break;
-    default:
-      rawUnits = sessionDurationMinutes / 15;
-  }
-  
-  switch (rounding_rule) {
-    case 'up':
-      return Math.ceil(rawUnits);
-    case 'down':
-      return Math.floor(rawUnits);
-    case 'nearest':
-      return Math.round(rawUnits);
-    default:
-      return rawUnits;
-  }
-}
-
-export function calculateCharges(
-  units: number,
-  service: PayerService
-): number {
-  if (service.rate.rate_type === 'flat_fee') {
-    return service.rate.rate_amount;
-  }
-  return units * service.rate.rate_amount;
-}
-
-export function validateServiceConfig(service: PayerService): string[] {
-  const warnings: string[] = [];
-  
-  if (!service.cpt_hcpcs_code) {
-    warnings.push('CPT/HCPCS code is required');
-  }
-  
-  if (service.rate.rate_amount <= 0) {
-    warnings.push('Rate amount must be greater than 0');
-  }
-  
-  if (service.modifiers.modifier_required && 
-      !service.modifiers.modifier_1) {
-    warnings.push('Modifiers are marked required but none specified');
-  }
-  
-  if (service.auth.auth_required && 
-      service.auth.enforcement === 'block') {
-    warnings.push('Auth enforcement is set to BLOCK - claims will fail without active authorization');
-  }
-  
-  return warnings;
-}
-```
-
-### Claim Generation Integration
-
-Update `ClaimGenerator.tsx` to:
-1. Look up `payer_services` for the selected payer
-2. Use service configuration for unit calculation
-3. Apply rounding rules
-4. Validate authorization requirements
-5. Show warnings for missing/expired authorizations
-
----
-
-## Implementation Phases
-
-### Phase 1: Database & Types
-1. Create migration for `payer_directory`, modify `payers`, create `payer_services`, `payer_auth_rules`
-2. Seed payer directory with 20+ common payers
-3. Create `src/types/payerConfig.ts` with all type definitions
-4. Add RLS policies for agency isolation
-
-### Phase 2: Payer Directory Page
-1. Create `PayerDirectoryPage.tsx`
-2. Create `PayerDirectorySearch.tsx` component
-3. Create `PayerDirectoryTable.tsx` with sortable columns
-4. Implement "Add Payer" action that creates payer record
-5. Create `AddCustomPayerDialog.tsx` for non-directory payers
-6. Add route to `App.tsx`
-7. Add "Payer Config" tab to Billing page
-
-### Phase 3: Payer Detail Page
-1. Create `PayerDetailPage.tsx` with tabs
-2. Implement `PayerOverviewTab.tsx`
-3. Implement `PayerServicesTab.tsx` with services table
-4. Implement service CRUD operations
-5. Create hooks: `usePayerServices.ts`
-
-### Phase 4: Service Detail Page
-1. Create `ServiceDetailPage.tsx`
-2. Create section components (A-F)
-3. Implement `ServiceCMS1500Preview.tsx`
-4. Add validation warnings
-5. Implement "Duplicate Service" functionality
-6. Create `ImportServiceTemplateDialog.tsx` with ABA presets
-
-### Phase 5: Claim Integration
-1. Update `ClaimGenerator.tsx` to use payer services
-2. Implement unit calculation from session duration
-3. Add authorization validation (warn/block)
-4. Auto-populate claim lines from service defaults
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/types/payerConfig.ts` | All payer/service type definitions |
-| `src/pages/payers/PayerDirectoryPage.tsx` | Directory listing page |
-| `src/pages/payers/PayerDetailPage.tsx` | Payer detail with tabs |
-| `src/pages/payers/ServiceDetailPage.tsx` | Service configuration page |
-| `src/components/billing/payer-directory/PayerDirectorySearch.tsx` | Search component |
-| `src/components/billing/payer-directory/PayerDirectoryTable.tsx` | Results table |
-| `src/components/billing/payer-directory/AddCustomPayerDialog.tsx` | Custom payer form |
-| `src/components/billing/payer-detail/PayerOverviewTab.tsx` | Payer info |
-| `src/components/billing/payer-detail/PayerServicesTab.tsx` | Services list |
-| `src/components/billing/payer-detail/PayerAuthRulesTab.tsx` | Auth rules |
-| `src/components/billing/service-detail/ServiceCodeModifiersSection.tsx` | Section A |
-| `src/components/billing/service-detail/ServiceRateSection.tsx` | Section B |
-| `src/components/billing/service-detail/ServiceUnitsSection.tsx` | Section C |
-| `src/components/billing/service-detail/ServiceAuthSection.tsx` | Section D |
-| `src/components/billing/service-detail/ServiceCMS1500Section.tsx` | Section E |
-| `src/components/billing/service-detail/ServiceCMS1500Preview.tsx` | Section F |
-| `src/hooks/usePayerDirectory.ts` | Directory search hook |
-| `src/hooks/usePayerServices.ts` | Services CRUD hook |
-| `src/hooks/useClaimLineCalculation.ts` | Unit/charge calculation |
-| `src/lib/claimCalculations.ts` | Business logic functions |
-| Migration SQL | Schema changes + seed data |
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/App.tsx` | Add routes for payer pages |
-| `src/pages/Billing.tsx` | Add "Payer Config" tab |
-| `src/types/billing.ts` | Import/export from payerConfig.ts |
-| `src/components/billing/ClaimGenerator.tsx` | Use payer services for unit calculation |
-
----
-
-## Technical Notes
-
-### Agency Isolation
-All payer services are scoped to the current agency via `agency_id` column. RLS policies will enforce:
+**Database Schema**:
 ```sql
-CREATE POLICY "Users can view payer services in their agency"
-ON payer_services FOR SELECT TO authenticated
-USING (
-  agency_id IS NULL  -- Global services visible to all
-  OR has_agency_access(auth.uid(), agency_id)
-  OR is_admin(auth.uid())
+CREATE TABLE observation_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES students(id),
+  
+  -- Request details
+  request_type TEXT NOT NULL, -- 'behavior_observation', 'skills_checklist', 'antecedent_log'
+  target_behaviors UUID[], -- Specific behaviors to observe
+  instructions TEXT,
+  
+  -- Recipient
+  recipient_name TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  recipient_role TEXT, -- 'teacher', 'aide', 'parent'
+  
+  -- Tracking
+  access_token TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending', -- pending, sent, opened, in_progress, completed, expired
+  sent_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  opened_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  
+  -- Response
+  response_data JSONB,
+  
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### Validation & Warnings
-The Service Detail Page will display real-time warnings for configurations that may cause claim denials:
-- Missing required modifiers
-- No authorization when `auth_required` is true
-- Units exceeding `max_units_per_day`
-- Expired effective date range
-- Missing rendering provider when required
+**Features**:
+- Teacher-friendly observation form (simplified ABC, frequency counts)
+- Email with magic link (no login required)
+- Mobile-optimized data entry
+- Automatic data import into student record
+- Reminders for incomplete requests
 
-### Service Templates
-Include ABA service templates for quick setup:
-- 97151 Assessment ($100/unit)
-- 97153 Direct Therapy by RBT ($15/15-min, HM modifier)
-- 97155 Supervision by BCBA ($75/15-min, HO modifier)
-- 97156 Parent Training ($50/15-min, HO modifier)
+**Files to Create**:
+- `src/types/observationRequest.ts`
+- `src/components/observation-requests/CreateRequestDialog.tsx`
+- `src/components/observation-requests/RequestStatusTable.tsx`
+- `src/pages/TeacherObservationForm.tsx` (public route)
+- `supabase/functions/send-observation-request/index.ts`
+
+---
+
+### 4.3 White-Label School Reports (PRIORITY 11)
+
+**New Feature**: Generate branded reports for schools/districts.
+
+**Database Schema**:
+```sql
+CREATE TABLE report_branding (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agency_id UUID REFERENCES agencies(id),
+  organization_name TEXT,
+  logo_url TEXT,
+  primary_color TEXT DEFAULT '#3B82F6',
+  secondary_color TEXT DEFAULT '#1E40AF',
+  footer_text TEXT,
+  contact_info JSONB,
+  is_default BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE generated_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID REFERENCES students(id),
+  report_type TEXT NOT NULL, -- 'progress', 'fba_summary', 'behavior_data', 'iep_prep'
+  branding_id UUID REFERENCES report_branding(id),
+  
+  -- Content
+  date_range_start DATE,
+  date_range_end DATE,
+  content JSONB, -- Report data
+  
+  -- Output
+  pdf_url TEXT,
+  generated_at TIMESTAMPTZ DEFAULT now(),
+  generated_by UUID REFERENCES auth.users(id),
+  
+  -- Sharing
+  shared_with JSONB, -- [{email, access_token, sent_at}]
+  is_public BOOLEAN DEFAULT false,
+  public_token TEXT UNIQUE
+);
+```
+
+**Report Types**:
+1. **Progress Report**: Behavior trends, goal progress, session summary
+2. **FBA Summary**: Parent-friendly FBA findings
+3. **Data Summary**: Charts and graphs for IEP meetings
+4. **Attendance/Billing Summary**: For districts with contracts
+
+**Files to Create**:
+- `src/types/reportBranding.ts`
+- `src/components/reports/ReportBrandingEditor.tsx`
+- `src/components/reports/WhiteLabelReportGenerator.tsx`
+- `src/components/reports/ReportShareDialog.tsx`
+- `src/pages/PublicReportView.tsx` (public route)
+
+---
+
+### 4.4 External Document Sharing (PRIORITY 12)
+
+**New Feature**: Share documents and request signatures from parents/teachers.
+
+**Implementation**:
+
+**Database Schema**:
+```sql
+CREATE TABLE document_shares (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID REFERENCES students(id),
+  document_type TEXT NOT NULL, -- 'consent', 'report', 'iep_summary', 'questionnaire'
+  document_url TEXT,
+  document_content JSONB, -- For dynamic documents
+  
+  -- Recipient
+  recipient_name TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  recipient_role TEXT,
+  
+  -- Access
+  access_token TEXT NOT NULL UNIQUE,
+  requires_signature BOOLEAN DEFAULT false,
+  signature_data JSONB, -- {signed: bool, signature_image, signed_at}
+  
+  -- Tracking
+  status TEXT DEFAULT 'pending',
+  sent_at TIMESTAMPTZ,
+  viewed_at TIMESTAMPTZ,
+  signed_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ,
+  
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Features**:
+- Email documents with secure magic links
+- Track opens/views
+- Collect e-signatures using existing `SignaturePad`
+- Send reminders for unsigned documents
+- Bulk send to multiple recipients
+
+**Files to Create**:
+- `src/types/documentSharing.ts`
+- `src/components/documents/ShareDocumentDialog.tsx`
+- `src/components/documents/DocumentSharingStatus.tsx`
+- `src/pages/SharedDocumentView.tsx` (public route)
+- `supabase/functions/send-document-share/index.ts`
+
+---
+
+## Phase 5: Billing Enhancements
+
+### 5.1 Contract Rate Management (PRIORITY 7)
+
+**New Feature**: Manage district/school-specific contracted rates separate from insurance.
+
+**Database Schema**:
+```sql
+CREATE TABLE contract_rates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agency_id UUID REFERENCES agencies(id),
+  
+  -- Contract party
+  contract_type TEXT NOT NULL, -- 'district', 'school', 'agency_partner'
+  organization_name TEXT NOT NULL,
+  organization_id UUID, -- Optional link to external org table
+  
+  -- Contract terms
+  contract_start_date DATE NOT NULL,
+  contract_end_date DATE,
+  contract_number TEXT,
+  
+  -- Rate details
+  services JSONB NOT NULL, -- Array of {service_type, cpt_code, rate, unit_type}
+  
+  -- Billing settings
+  billing_frequency TEXT DEFAULT 'monthly', -- weekly, biweekly, monthly
+  invoice_due_days INTEGER DEFAULT 30,
+  requires_signature BOOLEAN DEFAULT false,
+  
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Link students to contracts
+CREATE TABLE student_contract_assignments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES students(id),
+  contract_id UUID NOT NULL REFERENCES contract_rates(id),
+  start_date DATE NOT NULL,
+  end_date DATE,
+  funding_source TEXT, -- 'district_funded', 'grant', 'settlement'
+  is_active BOOLEAN DEFAULT true,
+  UNIQUE(student_id, contract_id)
+);
+```
+
+**UI Components**:
+- Contract Rate Manager (CRUD for contracts)
+- Student Contract Assignment
+- Contract vs Insurance rate comparison
+- Invoice generation for contract clients
+
+**Files to Create**:
+- `src/types/contractRates.ts`
+- `src/hooks/useContractRates.ts`
+- `src/components/billing/ContractRateManager.tsx`
+- `src/components/billing/StudentContractAssignment.tsx`
+- `src/components/billing/ContractInvoiceGenerator.tsx`
+
+---
+
+## Implementation Roadmap
+
+### Sprint 1 (Weeks 1-2): Critical Fixes
+- Fix Staff Geocoding
+- Voice-to-Text Integration (ElevenLabs)
+- Supervision Chain Hard Blocks
+
+### Sprint 2 (Weeks 3-4): Offline & Push
+- IndexedDB Integration
+- Sync Queue Manager
+- Service Worker
+- Push Notifications (VAPID)
+
+### Sprint 3 (Weeks 5-6): Clinical Features
+- Treatment Fidelity Tracking
+- IEP Meeting Prep Wizard
+- Contract Rate Management
+
+### Sprint 4 (Weeks 7-8): Communication
+- Teacher Observation Requests
+- External Document Sharing
+- White-Label Reports
+
+### Sprint 5 (Weeks 9-10): Polish & Optimization
+- Travel Route Optimization
+- Map Visualizations
+- Performance Optimization
+- Testing & Bug Fixes
+
+---
+
+## Technical Requirements
+
+### New Dependencies
+```json
+{
+  "idb": "^8.0.0",           // IndexedDB wrapper
+  "@elevenlabs/react": "^0.0.4",  // Voice transcription
+  "web-push": "^3.6.0"       // Push notifications (edge function)
+}
+```
+
+### Secrets Required
+| Secret | Purpose |
+|--------|---------|
+| `ELEVENLABS_API_KEY` | Voice transcription |
+| `VAPID_PUBLIC_KEY` | Push notifications |
+| `VAPID_PRIVATE_KEY` | Push notifications |
+
+### New Public Routes
+- `/observation/:token` - Teacher observation form
+- `/document/:token` - Shared document view
+- `/report/:token` - Public report view
+
+---
+
+## Success Metrics
+
+| Feature | KPI |
+|---------|-----|
+| Geocoding Fix | 100% successful address saves |
+| Voice Notes | 80% transcription accuracy |
+| Offline Mode | <1% data loss during offline |
+| Push Notifications | 90% delivery rate |
+| Treatment Fidelity | Average fidelity score tracked |
+| Teacher Requests | Response rate >60% |
+| White-Label Reports | Report generation time <5s |
+
+---
+
+## Files Summary
+
+### New Files to Create (~40 files)
+- 8 Edge Functions
+- 6 Type definition files
+- 12 Component files
+- 8 Hook files
+- 4 Library/utility files
+- 3 Public page routes
+
+### Files to Modify (~15 files)
+- Scheduling and staff profile components
+- Sync context and data store
+- Session notes components
+- Billing pages
+- App routing
+
