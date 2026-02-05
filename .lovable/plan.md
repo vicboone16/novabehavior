@@ -408,6 +408,13 @@ interface TunnelState {
 - The replacement goal ID is passed forward and linked to interventions
 - Custom goals saved to student profile (not the library)
 
+**Student-Level Editability:**
+- When a library goal is selected, a **copy** is saved to the student's profile
+- Display indicator: "Selected from library - you can edit this on the student's page"
+- The student-specific copy is fully editable on the Student Profile / Skill Program page
+- Edits to the student's copy do NOT affect the original library entry
+- Custom goals created via "Other" are also editable on the student page
+
 ---
 
 #### E) Recommended Interventions Multi-Select (Step 4) - ATTACHED TO GOAL
@@ -472,9 +479,10 @@ interface BxSkillProgram {
 
 **Save Logic:**
 1. Create `BxSkillProgram` record with **replacement goal as the primary target**
-2. Store supporting objectives as optional context
-3. Link all selected interventions to the replacement goal
-3. Toast success: "Skill program saved"
+2. **Copy the replacement goal value to student's profile** (creates editable student-specific version)
+3. Store supporting objectives as optional context
+4. Link all selected interventions to the replacement goal
+5. Toast success: "Skill program saved"
 
 **Linked Skill Target Section on Behavior Cards:**
 | File | Change |
@@ -482,6 +490,16 @@ interface BxSkillProgram {
 | `src/components/ABCTracker.tsx` | Add "Linked Skill Target" section showing **replacement goal** as primary, objectives as supporting |
 | `src/components/FrequencyTracker.tsx` | Same as above |
 | `src/components/StudentDataCard.tsx` | Pass linked skill programs to child trackers |
+
+**Student Profile Editing:**
+| File | Change |
+|------|---------|
+| `src/components/behavior-interventions/StudentBxPlanView.tsx` | Add edit capability for the saved replacement goal |
+
+- Display the replacement goal with an "Edit" button
+- Inline editing or modal to modify goal text
+- Show source indicator: "From library: [Original Goal Name]" or "Custom goal"
+- Changes save to the student's skill program only (not the library)
 
 ---
 
@@ -631,8 +649,13 @@ If needed, can migrate to a dedicated `bx_skill_programs` table with columns mat
 |------|------------------------------|-----------------|
 | Step 1: Problem | No | Reference to presenting problem |
 | Step 2: Objectives | **NO** - objectives are optional supporting context | Array of supporting objectives (can be empty) |
-| Step 3: Replacement Goal | **YES - THIS IS THE PRIMARY TARGET** | Goal ID/value, linked to all interventions |
+| Step 3: Replacement Goal | **YES - THIS IS THE PRIMARY TARGET** | Goal copied to student profile, editable on student page |
 | Step 4: Interventions | No (attach to goal) | Array of strategies linked to the replacement goal |
+
+**Editability Rules:**
+- Library goals: Original stays unchanged; student gets editable copy
+- Custom goals: Fully editable on student page
+- All edits are student-specific and do not propagate to the library
 
 ### Testing Checklist
 
