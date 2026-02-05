@@ -1,48 +1,213 @@
 
 
-## Fix Brief Teacher Interview and Record Review Crash
+## Plan: Brief Teacher Interview Validation + Document Extraction Fix (PDF & DOCX)
 
-### Problem
+### Overview
 
-The **Brief Teacher Interview** and **Record Review** tabs crash to a blank screen when selected. This happens because:
+This plan addresses three issues:
+1. Add validation to ensure Brief Teacher Interview responses save properly with multi-select fields
+2. Fix PDF document extraction that's currently failing
+3. Fix Word document (DOCX) extraction that's not working
 
-1. `currentItems` returns `undefined` for these assessment types (only defined for FAST/MAS/QABF)
-2. Calculations like `progress`, `scores`, and `maxPossibleScore` crash when calling methods on `undefined`
-3. UI elements (Reset/Save buttons, progress bar, items list) render incorrectly
+---
 
-### Solution
+## Issue 1: Brief Teacher Interview Validation
 
-Fix the crash in `src/components/IndirectAssessmentTools.tsx` by:
+### Current State
+The Brief Teacher Interview form in `BriefTeacherInput.tsx` already has basic validation:
+- Requires respondent name
+- Requires at least one problem behavior
 
-1. Adding a flag to detect rating-scale assessments vs. interview/review forms
-2. Making `currentItems` return an empty array instead of `undefined`
-3. Guarding all calculations to prevent divide-by-zero errors
-4. Conditionally hiding rating-scale UI elements for Brief Teacher and Record Review tabs
+However, there's no visual feedback for section completion or detailed save confirmation.
 
-### Technical Changes
+### Proposed Enhancements
 
-**File: `src/components/IndirectAssessmentTools.tsx`**
+| File | Change | Purpose |
+|------|--------|---------|
+| `src/components/assessment/BriefTeacherInput.tsx` | Add section completion indicators | Show checkmarks next to completed sections |
+| `src/components/assessment/BriefTeacherInput.tsx` | Add warning for empty optional sections | Alert users when triggers/consequences are empty |
+| `src/components/assessment/BriefTeacherInput.tsx` | Enhanced save toast with field counts | Show "Saved: 3 behaviors, 2 triggers, 2 consequences" |
+| `src/components/assessment/BriefTeacherInputManager.tsx` | Add confirmation dialog before save | Prevent accidental incomplete submissions |
 
-| Change | Purpose |
-|--------|---------|
-| Add `isRatingScale` flag | Distinguish FAST/MAS/QABF from BRIEF/RECORD_REVIEW |
-| Add `default: return []` to `currentItems` switch | Prevent `undefined` return value |
-| Guard `progress` calculation | Check `currentItems.length > 0` before dividing |
-| Wrap Reset/Save buttons in `isRatingScale &&` | Hide for non-rating-scale tabs |
-| Wrap progress bar in `isRatingScale &&` | Hide for non-rating-scale tabs |
-| Wrap items card in `isRatingScale &&` | Hide for non-rating-scale tabs |
-| Remove unused `showRecordReview` state | Clean up dead code |
+### Validation Indicators to Add
+- Green checkmark when section has at least one selection
+- Yellow warning icon when section is empty (optional sections)
+- Count badges showing number of selections per section
 
-### Expected Result After Fix
+---
 
-| Tab | What Displays |
-|-----|--------------|
-| FAST / MAS / QABF | Full rating scale with Reset/Save, progress bar, items list |
-| Brief Teacher | Card with "New Response" button and saved responses list |
-| Record Review | Card with "Start Review" or "Edit Review" button |
+## Issue 2 & 3: Document Extraction Not Working
 
-### Notes
+### Root Cause Analysis
 
-- No changes needed to `BriefTeacherInput.tsx` or `BriefRecordReviewManager.tsx` - they already work correctly
-- Multi-select support for behaviors, triggers, and consequences is already implemented in the Brief Teacher form
+Looking at the edge function code (lines 718-751), I found the core problems:
+
+**PDF Extraction Issue (Lines 728-750):**
+```typescript
+// Current broken approach - sends raw base64 as TEXT
+body: JSON.stringify({
+  model: "google/gemini-2.5-pro",
+  messages: [{
+    role: "user",
+    content: `Extract ALL text from this PDF document (base64 encoded)...
+${base64.substring(0, 60000)}  // <-- Truncated and sent as plain text!
+`
+  }]
+})
+```
+
+**Problems:**
+1. PDF base64 is being sent as plain text in the prompt, not as a proper file attachment
+2. The base64 is truncated to 60,000 characters (only ~45KB of data) - most PDFs are larger
+3. Gemini cannot parse raw base64 text - it needs the file sent using the `inline_data` format with proper MIME type
+
+**DOCX Extraction Issue:**
+- No DOCX-specific handling exists at all
+- DOCX files fall through to the PDF handler which fails
+
+### Solution: Two-Stage Extraction with Proper File Handling
+
+#### Stage 1: Native Text Extraction (Fast, no AI cost for digital docs)
+For PDFs: Use `pdf-parse` library to extract text from digitally-created PDFs
+
+#### Stage 2: Vision API Fallback (For scanned/image-based documents)
+If native extraction fails or returns poor quality text, send the document to Gemini properly formatted with:
+- `inline_data` format (not raw base64 in prompt)
+- Correct MIME type
+- Full file contents (not truncated)
+
+### Technical Implementation
+
+**File: `supabase/functions/clinical-extract/index.ts`**
+
+#### Add Native PDF Parsing
+```text
+Import pdf-parse library
+Create extractPdfText() function:
+  1. Parse PDF using pdf-parse
+  2. Check text quality (>500 chars, >100 letters)
+  3. Return { text, quality: 'good' | 'poor' }
+```
+
+#### Add Native DOCX Parsing
+```text
+Create extractDocxText() function:
+  1. Detect DOCX by MIME type or extension
+  2. Locate word/document.xml in ZIP structure
+  3. Decompress and extract text from <w:t> tags
+  4. Return extracted text
+```
+
+#### Fix Vision API Format
+```text
+Update extractWithVision() to use proper inline_data format:
+  messages: [{
+    role: "user",
+    content: [
+      { type: "text", text: "Extract ALL text..." },
+      { 
+        type: "image_url",  
+        image_url: { 
+          url: `data:application/pdf;base64,${fullBase64}`  // Full file, proper format
+        }
+      }
+    ]
+  }]
+```
+
+#### Add Smart Routing Logic
+```text
+if (isPDF) {
+  // Try native extraction first
+  const native = await extractPdfText(bytes);
+  if (native.quality === 'good') {
+    documentText = native.text;
+  } else {
+    // Fallback to vision for scanned PDFs
+    documentText = await extractWithVision(base64, 'application/pdf', apiKey);
+  }
+} else if (isDOCX) {
+  documentText = await extractDocxText(bytes);
+} else if (isImage) {
+  documentText = await extractWithVision(base64, contentType, apiKey);
+}
+```
+
+---
+
+## Implementation Order
+
+### Phase 1: Brief Teacher Validation
+1. Add completion indicators to section headers
+2. Add enhanced save toast with counts
+3. Add optional confirmation dialog
+
+### Phase 2: Document Extraction Fix
+1. Add `pdf-parse` import for native PDF extraction
+2. Add DOCX text extraction function
+3. Fix the vision API call format (use `inline_data` properly)
+4. Add smart routing based on extraction quality
+5. Add better error messages for users
+
+---
+
+## Expected Results After Fix
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| Brief Teacher save | Generic "saved" toast | "Saved: 4 behaviors, 3 triggers, 2 consequences" |
+| Digital PDF upload | Fails - sends truncated base64 as text | Extracts text natively, fast and accurate |
+| Scanned PDF upload | Fails | Uses vision API with proper format |
+| DOCX upload | Fails silently | Extracts text from XML structure |
+| Error handling | Generic "Could not extract" | Specific: "Scanned PDF detected, try a clearer image" |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/assessment/BriefTeacherInput.tsx` | Add section completion indicators, enhanced save toast |
+| `supabase/functions/clinical-extract/index.ts` | Add pdf-parse, DOCX extraction, fix vision API format |
+
+---
+
+## Technical Notes
+
+### Why the Current PDF Extraction Fails
+
+The current code does this:
+```javascript
+content: `Extract ALL text from this PDF document (base64 encoded):
+${base64.substring(0, 60000)}`
+```
+
+This is wrong because:
+1. Gemini sees "JVBERi0xLjcKJeLjz9MK..." as literal text, not a file
+2. Truncating to 60k chars loses most of the document
+3. The model cannot decode base64 from a text prompt
+
+### Correct Vision API Format
+
+For Gemini to actually process a PDF/image file, it must be sent as:
+```javascript
+content: [
+  { type: "text", text: "Extract text from this document" },
+  { 
+    type: "image_url",
+    image_url: { url: `data:${mimeType};base64,${base64}` }
+  }
+]
+```
+
+### DOCX Structure
+DOCX files are ZIP archives containing:
+```
+word/document.xml  <- Main content here
+word/styles.xml
+[Content_Types].xml
+...
+```
+
+Text lives in `<w:t>` tags within `document.xml`.
 
