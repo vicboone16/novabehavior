@@ -7,3 +7,5 @@ export { AddProblemDialog } from './AddProblemDialog';
 export { StudentBxPlanView } from './StudentBxPlanView';
 export { BehaviorInterventionsPicker } from './BehaviorInterventionsPicker';
 export { InterventionWizard } from './InterventionWizard';
+export { GuidedInterventionTracker } from './GuidedInterventionTracker';
+export { TunnelSummaryPanel } from './TunnelSummaryPanel';

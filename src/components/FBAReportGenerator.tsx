@@ -27,6 +27,7 @@ import {
   ABCEntry, 
   BehaviorFunction, 
   FUNCTION_OPTIONS,
+  BxSkillProgram,
 } from '@/types/behavior';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
@@ -258,6 +259,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     hypothesis: true,
     recommendations: true,
     summary: true,
+    replacementPlan: true,
   });
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['preview']));
   const reportRef = useRef<HTMLDivElement>(null);
@@ -282,6 +284,12 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     students.find(s => s.id === selectedStudentId),
     [students, selectedStudentId]
   );
+
+  // Get skill programs for replacement plan section
+  const skillPrograms = useMemo(() => {
+    if (!selectedStudent) return [];
+    return ((selectedStudent as any).bxSkillPrograms || []) as BxSkillProgram[];
+  }, [selectedStudent]);
 
   // Analyze ABC data
   const analysisData = useMemo(() => {

@@ -772,3 +772,48 @@ export const BEHAVIOR_CATEGORIES = [
   'Academic',
   'Other'
 ];
+
+// Behavior Intervention Skill Program Types
+// The Replacement Goal is the PRIMARY intervention target
+// Objectives are SUBORDINATE/supporting components
+
+export interface BxSkillProgramObjective {
+  objectiveId?: string;
+  title: string;
+  isCustom: boolean;
+}
+
+export interface BxSkillProgramIntervention {
+  strategyId?: string;
+  name: string;
+  phase?: 'prevention' | 'teaching' | 'reinforcement' | 'maintenance' | 'crisis';
+  isCustom: boolean;
+}
+
+export interface BxSkillProgramReplacementGoal {
+  goalId?: string; // Library goal ID if from library
+  value: string; // The goal text
+  isCustom: boolean;
+  sourceLibraryGoal?: string; // Original library goal name for reference
+}
+
+export interface BxSkillProgram {
+  id: string;
+  studentId: string;
+  // Presenting problem reference
+  problemId?: string;
+  problemTitle: string;
+  problemCode?: string;
+  // THE PRIMARY TARGET - Replacement Goal
+  replacementGoal: BxSkillProgramReplacementGoal;
+  // OPTIONAL supporting objectives (subordinate, not the primary target)
+  supportingObjectives: BxSkillProgramObjective[];
+  // Interventions are linked to the replacement goal
+  interventions: BxSkillProgramIntervention[];
+  // Status and metadata
+  status: 'active' | 'archived';
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string;
+  notes?: string;
+}
