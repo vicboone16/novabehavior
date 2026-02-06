@@ -11,9 +11,14 @@ import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { SkillProgressReports } from '@/components/skills/SkillProgressReports';
-import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target } from 'lucide-react';
+import { ReportBrandingEditor } from '@/components/reports';
+import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function Reports() {
+  const [showBrandingEditor, setShowBrandingEditor] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -23,7 +28,13 @@ export default function Reports() {
             View session history, generate reports, and analyze behavior trends
           </p>
         </div>
-        <EnhancedExportOptions />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowBrandingEditor(true)}>
+            <Palette className="w-4 h-4 mr-1" />
+            Branding
+          </Button>
+          <EnhancedExportOptions />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -147,7 +158,22 @@ export default function Reports() {
           </p>
           <ParentFriendlyFBASummary />
         </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <FileBarChart className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">White-Label Reports</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Generate branded reports for schools and districts. Open a student profile and use the White-Label Report Generator from there.
+          </p>
+        </div>
       </div>
+
+      <ReportBrandingEditor
+        open={showBrandingEditor}
+        onOpenChange={setShowBrandingEditor}
+      />
     </div>
   );
 }
