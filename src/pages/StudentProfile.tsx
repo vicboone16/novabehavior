@@ -68,6 +68,8 @@ import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttenda
 import { SessionNotesTab } from '@/components/session-notes';
 import { FidelityDashboard } from '@/components/fidelity';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
+import { StudentObservationsTab } from '@/components/observation-requests/StudentObservationsTab';
+import { StudentIEPPrepTab } from '@/components/iep/StudentIEPPrepTab';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
@@ -569,6 +571,14 @@ export default function StudentProfile() {
           <TabsTrigger value="teacher" className="gap-1 text-xs">
             <UserCheck className="w-3 h-3" />
             Teacher View
+          </TabsTrigger>
+          <TabsTrigger value="observations" className="gap-1 text-xs">
+            <ClipboardCheck className="w-3 h-3" />
+            Observations
+          </TabsTrigger>
+          <TabsTrigger value="iep-prep" className="gap-1 text-xs">
+            <Lightbulb className="w-3 h-3" />
+            IEP Prep
           </TabsTrigger>
           {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
           <TabsTrigger value="documents" className="gap-1 text-xs">
@@ -1551,6 +1561,16 @@ export default function StudentProfile() {
             <AuthorizationUsagePage studentId={student.id} />
           </TabsContent>
         )}
+
+        {/* Observation Requests Tab */}
+        <TabsContent value="observations" className="space-y-4">
+          <StudentObservationsTab studentId={student.id} studentName={student.name} />
+        </TabsContent>
+
+        {/* IEP Meeting Prep Tab */}
+        <TabsContent value="iep-prep" className="space-y-4">
+          <StudentIEPPrepTab studentId={student.id} />
+        </TabsContent>
       </Tabs>
 
       {/* Add Behavior Dialog */}
