@@ -1,0 +1,110 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import type { JobPosting, JobApplicant, OnboardingTemplate, OnboardingTask, MentorAssignment } from '@/types/recruiting';
+
+export function useRecruiting() {
+  const { user } = useAuth();
+  const [postings, setPostings] = useState<JobPosting[]>([]);
+  const [applicants, setApplicants] = useState<JobApplicant[]>([]);
+  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
+  const [tasks, setTasks] = useState<OnboardingTask[]>([]);
+  const [mentorAssignments, setMentorAssignments] = useState<MentorAssignment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchPostings = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from('job_postings').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setPostings((data || []) as unknown as JobPosting[]);
+    } catch (err: any) {
+      toast.error('Failed to load job postings: ' + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchApplicants = useCallback(async (postingId?: string) => {
+    let query = supabase.from('job_applicants').select('*').order('created_at', { ascending: false });
+    if (postingId) query = query.eq('job_posting_id', postingId);
+    const { data, error } = await query;
+    if (error) throw error;
+    setApplicants((data || []) as unknown as JobApplicant[]);
+  }, []);
+
+  const createPosting = useCallback(async (posting: Partial<JobPosting>) => {
+    if (!user) return null;
+    const { data, error } = await supabase.from('job_postings').insert({ ...posting, created_by: user.id } as any).select().single();
+    if (error) throw error;
+    toast.success('Job posting created');
+    return data;
+  }, [user]);
+
+  const updatePosting = useCallback(async (id: string, updates: Partial<JobPosting>) => {
+    const { error } = await supabase.from('job_postings').update(updates as any).eq('id', id);
+    if (error) throw error;
+    toast.success('Job posting updated');
+  }, []);
+
+  const addApplicant = useCallback(async (applicant: Partial<JobApplicant>) => {
+    const { data, error } = await supabase.from('job_applicants').insert(applicant as any).select().single();
+    if (error) throw error;
+    toast.success('Applicant added');
+    return data;
+  }, []);
+
+  const updateApplicantStatus = useCallback(async (id: string, status: string) => {
+    const { error } = await supabase.from('job_applicants').update({ pipeline_status: status } as any).eq('id', id);
+    if (error) throw error;
+    toast.success('Applicant status updated');
+  }, []);
+
+  const fetchOnboardingTemplates = useCallback(async () => {
+    const { data, error } = await supabase.from('onboarding_templates').select('*').order('name');
+    if (error) throw error;
+    setTemplates((data || []) as unknown as OnboardingTemplate[]);
+  }, []);
+
+  const createOnboardingTemplate = useCallback(async (template: Partial<OnboardingTemplate>) => {
+    const { data, error } = await supabase.from('onboarding_templates').insert({ ...template, created_by: user?.id } as any).select().single();
+    if (error) throw error;
+    toast.success('Onboarding template created');
+    return data;
+  }, [user]);
+
+  const fetchTasks = useCallback(async (userId?: string) => {
+    let query = supabase.from('onboarding_tasks').select('*').order('due_date');
+    if (userId) query = query.eq('new_hire_user_id', userId);
+    const { data, error } = await query;
+    if (error) throw error;
+    setTasks((data || []) as unknown as OnboardingTask[]);
+  }, []);
+
+  const updateTask = useCallback(async (id: string, updates: Partial<OnboardingTask>) => {
+    const { error } = await supabase.from('onboarding_tasks').update(updates as any).eq('id', id);
+    if (error) throw error;
+  }, []);
+
+  const fetchMentorAssignments = useCallback(async () => {
+    const { data, error } = await supabase.from('mentor_assignments').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    setMentorAssignments((data || []) as unknown as MentorAssignment[]);
+  }, []);
+
+  const assignMentor = useCallback(async (assignment: Partial<MentorAssignment>) => {
+    const { data, error } = await supabase.from('mentor_assignments').insert(assignment as any).select().single();
+    if (error) throw error;
+    toast.success('Mentor assigned');
+    return data;
+  }, []);
+
+  return {
+    postings, applicants, templates, tasks, mentorAssignments, isLoading,
+    fetchPostings, fetchApplicants, createPosting, updatePosting,
+    addApplicant, updateApplicantStatus,
+    fetchOnboardingTemplates, createOnboardingTemplate, fetchTasks, updateTask,
+    fetchMentorAssignments, assignMentor,
+  };
+}

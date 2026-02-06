@@ -1526,6 +1526,286 @@ export type Database = {
           },
         ]
       }
+      caregiver_competency_checks: {
+        Row: {
+          caregiver_name: string
+          check_date: string
+          checklist_items: Json | null
+          created_at: string
+          evaluator_id: string
+          id: string
+          notes: string | null
+          passed: boolean | null
+          percent_correct: number | null
+          program_id: string | null
+          setting: string | null
+          student_id: string
+        }
+        Insert: {
+          caregiver_name: string
+          check_date?: string
+          checklist_items?: Json | null
+          created_at?: string
+          evaluator_id: string
+          id?: string
+          notes?: string | null
+          passed?: boolean | null
+          percent_correct?: number | null
+          program_id?: string | null
+          setting?: string | null
+          student_id: string
+        }
+        Update: {
+          caregiver_name?: string
+          check_date?: string
+          checklist_items?: Json | null
+          created_at?: string
+          evaluator_id?: string
+          id?: string
+          notes?: string | null
+          passed?: boolean | null
+          percent_correct?: number | null
+          program_id?: string | null
+          setting?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregiver_competency_checks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caregiver_generalization_probes: {
+        Row: {
+          caregiver_name: string
+          created_at: string
+          fidelity_percentage: number | null
+          id: string
+          items_observed: Json | null
+          notes: string | null
+          observer_id: string
+          probe_date: string
+          program_id: string | null
+          setting: string
+          student_id: string
+        }
+        Insert: {
+          caregiver_name: string
+          created_at?: string
+          fidelity_percentage?: number | null
+          id?: string
+          items_observed?: Json | null
+          notes?: string | null
+          observer_id: string
+          probe_date?: string
+          program_id?: string | null
+          setting: string
+          student_id: string
+        }
+        Update: {
+          caregiver_name?: string
+          created_at?: string
+          fidelity_percentage?: number | null
+          id?: string
+          items_observed?: Json | null
+          notes?: string | null
+          observer_id?: string
+          probe_date?: string
+          program_id?: string | null
+          setting?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregiver_generalization_probes_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caregiver_training_programs: {
+        Row: {
+          agency_id: string | null
+          bst_steps: Json | null
+          category: string | null
+          competency_criteria: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          estimated_duration_hours: number | null
+          id: string
+          status: string
+          target_skills: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          bst_steps?: Json | null
+          category?: string | null
+          competency_criteria?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          status?: string
+          target_skills?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          bst_steps?: Json | null
+          category?: string | null
+          competency_criteria?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          status?: string
+          target_skills?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregiver_training_programs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caregiver_training_sessions: {
+        Row: {
+          bst_phase: string
+          caregiver_name: string
+          caregiver_relationship: string | null
+          competency_rating: number | null
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          program_id: string | null
+          session_date: string
+          skills_addressed: Json | null
+          staff_user_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          bst_phase?: string
+          caregiver_name: string
+          caregiver_relationship?: string | null
+          competency_rating?: number | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          program_id?: string | null
+          session_date?: string
+          skills_addressed?: Json | null
+          staff_user_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          bst_phase?: string
+          caregiver_name?: string
+          caregiver_relationship?: string | null
+          competency_rating?: number | null
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          program_id?: string | null
+          session_date?: string
+          skills_addressed?: Json | null
+          staff_user_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caregiver_training_sessions_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ceu_records: {
+        Row: {
+          activity_type: string
+          agency_id: string | null
+          bacb_requirement_category: string | null
+          certificate_url: string | null
+          created_at: string
+          credits_earned: number
+          date_completed: string
+          expiration_date: string | null
+          id: string
+          notes: string | null
+          provider: string | null
+          staff_user_id: string
+          title: string
+          updated_at: string
+          verification_status: string | null
+        }
+        Insert: {
+          activity_type?: string
+          agency_id?: string | null
+          bacb_requirement_category?: string | null
+          certificate_url?: string | null
+          created_at?: string
+          credits_earned?: number
+          date_completed: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          staff_user_id: string
+          title: string
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Update: {
+          activity_type?: string
+          agency_id?: string | null
+          bacb_requirement_category?: string | null
+          certificate_url?: string | null
+          created_at?: string
+          credits_earned?: number
+          date_completed?: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          staff_user_id?: string
+          title?: string
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ceu_records_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_line_items: {
         Row: {
           claim_id: string
@@ -1588,6 +1868,109 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_submission_history: {
+        Row: {
+          claim_id: string
+          clearinghouse_claim_id: string | null
+          clearinghouse_status: string | null
+          created_at: string
+          id: string
+          rejection_reasons: string[] | null
+          response_data: Json | null
+          response_date: string | null
+          submission_id: string | null
+        }
+        Insert: {
+          claim_id: string
+          clearinghouse_claim_id?: string | null
+          clearinghouse_status?: string | null
+          created_at?: string
+          id?: string
+          rejection_reasons?: string[] | null
+          response_data?: Json | null
+          response_date?: string | null
+          submission_id?: string | null
+        }
+        Update: {
+          claim_id?: string
+          clearinghouse_claim_id?: string | null
+          clearinghouse_status?: string | null
+          created_at?: string
+          id?: string
+          rejection_reasons?: string[] | null
+          response_data?: Json | null
+          response_date?: string | null
+          submission_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_submission_history_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "clearinghouse_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clearinghouse_submissions: {
+        Row: {
+          agency_id: string | null
+          batch_number: string
+          claim_count: number | null
+          clearinghouse: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          notes: string | null
+          response_data: Json | null
+          status: string
+          submission_date: string
+          submitted_by: string
+          total_charges: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          batch_number: string
+          claim_count?: number | null
+          clearinghouse?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          response_data?: Json | null
+          status?: string
+          submission_date?: string
+          submitted_by: string
+          total_charges?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          batch_number?: string
+          claim_count?: number | null
+          clearinghouse?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          response_data?: Json | null
+          status?: string
+          submission_date?: string
+          submitted_by?: string
+          total_charges?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clearinghouse_submissions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -3107,6 +3490,124 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_form_submissions: {
+        Row: {
+          created_at: string
+          form_id: string
+          id: string
+          respondent_email: string | null
+          respondent_name: string | null
+          respondent_relationship: string | null
+          responses: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          signature_data: string | null
+          signed_at: string | null
+          status: string
+          student_id: string | null
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_id: string
+          id?: string
+          respondent_email?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          responses?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          status?: string
+          student_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_id?: string
+          id?: string
+          respondent_email?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          responses?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          status?: string
+          student_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_forms: {
+        Row: {
+          agency_id: string | null
+          auto_populate_fields: Json | null
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          form_schema: Json | null
+          id: string
+          requires_signature: boolean | null
+          status: string
+          title: string
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          agency_id?: string | null
+          auto_populate_fields?: Json | null
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          form_schema?: Json | null
+          id?: string
+          requires_signature?: boolean | null
+          status?: string
+          title: string
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          agency_id?: string | null
+          auto_populate_fields?: Json | null
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          form_schema?: Json | null
+          id?: string
+          requires_signature?: boolean | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_forms_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_summaries: {
         Row: {
           comments: string | null
@@ -3595,42 +4096,220 @@ export type Database = {
           },
         ]
       }
+      era_imports: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          file_size: number | null
+          filename: string
+          id: string
+          imported_by: string
+          matched_count: number | null
+          parse_error: string | null
+          parse_status: string
+          raw_content: string | null
+          total_amount: number | null
+          total_remittances: number | null
+          unmatched_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          filename: string
+          id?: string
+          imported_by: string
+          matched_count?: number | null
+          parse_error?: string | null
+          parse_status?: string
+          raw_content?: string | null
+          total_amount?: number | null
+          total_remittances?: number | null
+          unmatched_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          file_size?: number | null
+          filename?: string
+          id?: string
+          imported_by?: string
+          matched_count?: number | null
+          parse_error?: string | null
+          parse_status?: string
+          raw_content?: string | null
+          total_amount?: number | null
+          total_remittances?: number | null
+          unmatched_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "era_imports_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      era_line_items: {
+        Row: {
+          adjustment_amounts: number[] | null
+          adjustment_reason_codes: string[] | null
+          allowed_amount: number | null
+          billed_amount: number | null
+          claim_id: string | null
+          claim_line_item_id: string | null
+          claim_number: string | null
+          cpt_code: string | null
+          created_at: string
+          id: string
+          match_confidence: number | null
+          match_status: string
+          modifiers: string[] | null
+          paid_amount: number | null
+          patient_id: string | null
+          patient_name: string | null
+          patient_responsibility: number | null
+          posted: boolean | null
+          posted_at: string | null
+          remark_codes: string[] | null
+          remittance_id: string
+          service_date_from: string | null
+          service_date_to: string | null
+        }
+        Insert: {
+          adjustment_amounts?: number[] | null
+          adjustment_reason_codes?: string[] | null
+          allowed_amount?: number | null
+          billed_amount?: number | null
+          claim_id?: string | null
+          claim_line_item_id?: string | null
+          claim_number?: string | null
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_status?: string
+          modifiers?: string[] | null
+          paid_amount?: number | null
+          patient_id?: string | null
+          patient_name?: string | null
+          patient_responsibility?: number | null
+          posted?: boolean | null
+          posted_at?: string | null
+          remark_codes?: string[] | null
+          remittance_id: string
+          service_date_from?: string | null
+          service_date_to?: string | null
+        }
+        Update: {
+          adjustment_amounts?: number[] | null
+          adjustment_reason_codes?: string[] | null
+          allowed_amount?: number | null
+          billed_amount?: number | null
+          claim_id?: string | null
+          claim_line_item_id?: string | null
+          claim_number?: string | null
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_status?: string
+          modifiers?: string[] | null
+          paid_amount?: number | null
+          patient_id?: string | null
+          patient_name?: string | null
+          patient_responsibility?: number | null
+          posted?: boolean | null
+          posted_at?: string | null
+          remark_codes?: string[] | null
+          remittance_id?: string
+          service_date_from?: string | null
+          service_date_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "era_line_items_remittance_id_fkey"
+            columns: ["remittance_id"]
+            isOneToOne: false
+            referencedRelation: "era_remittances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       era_remittances: {
         Row: {
           adjustment_codes: Json | null
           check_number: string | null
+          claim_count: number | null
           claim_id: string | null
           created_at: string
           id: string
+          import_id: string | null
           paid_amount: number
+          payee_name: string | null
+          payee_npi: string | null
           payer_claim_number: string | null
+          payer_id_code: string | null
+          payer_name: string | null
+          payment_date: string | null
+          payment_method: string | null
           raw_data: Json | null
           remark_codes: Json | null
           remittance_date: string
+          status: string | null
+          total_adjustments: number | null
+          total_patient_responsibility: number | null
         }
         Insert: {
           adjustment_codes?: Json | null
           check_number?: string | null
+          claim_count?: number | null
           claim_id?: string | null
           created_at?: string
           id?: string
+          import_id?: string | null
           paid_amount: number
+          payee_name?: string | null
+          payee_npi?: string | null
           payer_claim_number?: string | null
+          payer_id_code?: string | null
+          payer_name?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
           raw_data?: Json | null
           remark_codes?: Json | null
           remittance_date: string
+          status?: string | null
+          total_adjustments?: number | null
+          total_patient_responsibility?: number | null
         }
         Update: {
           adjustment_codes?: Json | null
           check_number?: string | null
+          claim_count?: number | null
           claim_id?: string | null
           created_at?: string
           id?: string
+          import_id?: string | null
           paid_amount?: number
+          payee_name?: string | null
+          payee_npi?: string | null
           payer_claim_number?: string | null
+          payer_id_code?: string | null
+          payer_name?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
           raw_data?: Json | null
           remark_codes?: Json | null
           remittance_date?: string
+          status?: string | null
+          total_adjustments?: number | null
+          total_patient_responsibility?: number | null
         }
         Relationships: [
           {
@@ -4157,6 +4836,108 @@ export type Database = {
         }
         Relationships: []
       }
+      graph_annotations: {
+        Row: {
+          annotation_type: string
+          behavior_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          end_value: number | null
+          id: string
+          label_text: string | null
+          position_date: string | null
+          position_value: number | null
+          student_id: string
+          style: Json | null
+          target_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          annotation_type: string
+          behavior_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_value?: number | null
+          id?: string
+          label_text?: string | null
+          position_date?: string | null
+          position_value?: number | null
+          student_id: string
+          style?: Json | null
+          target_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annotation_type?: string
+          behavior_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_value?: number | null
+          id?: string
+          label_text?: string | null
+          position_date?: string | null
+          position_value?: number | null
+          student_id?: string
+          style?: Json | null
+          target_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      graph_configurations: {
+        Row: {
+          annotation_ids: string[] | null
+          chart_type: string
+          created_at: string
+          created_by: string | null
+          data_sources: Json | null
+          date_range_end: string | null
+          date_range_start: string | null
+          display_options: Json | null
+          id: string
+          is_default: boolean | null
+          name: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          annotation_ids?: string[] | null
+          chart_type?: string
+          created_at?: string
+          created_by?: string | null
+          data_sources?: Json | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          display_options?: Json | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annotation_ids?: string[] | null
+          chart_type?: string
+          created_at?: string
+          created_by?: string | null
+          data_sources?: Json | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          display_options?: Json | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       iep_goals: {
         Row: {
           baseline_summary: string | null
@@ -4558,6 +5339,206 @@ export type Database = {
           },
         ]
       }
+      job_applicants: {
+        Row: {
+          agency_id: string | null
+          cover_letter: string | null
+          created_at: string
+          email: string
+          first_name: string
+          hire_date: string | null
+          id: string
+          interview_date: string | null
+          job_posting_id: string | null
+          last_name: string
+          notes: string | null
+          offer_date: string | null
+          phone: string | null
+          pipeline_status: string
+          rating: number | null
+          resume_url: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          hire_date?: string | null
+          id?: string
+          interview_date?: string | null
+          job_posting_id?: string | null
+          last_name: string
+          notes?: string | null
+          offer_date?: string | null
+          phone?: string | null
+          pipeline_status?: string
+          rating?: number | null
+          resume_url?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          hire_date?: string | null
+          id?: string
+          interview_date?: string | null
+          job_posting_id?: string | null
+          last_name?: string
+          notes?: string | null
+          offer_date?: string | null
+          phone?: string | null
+          pipeline_status?: string
+          rating?: number | null
+          resume_url?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applicants_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applicants_job_posting_id_fkey"
+            columns: ["job_posting_id"]
+            isOneToOne: false
+            referencedRelation: "job_postings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_postings: {
+        Row: {
+          agency_id: string | null
+          closing_date: string | null
+          created_at: string
+          created_by: string
+          credential_required: string | null
+          description: string | null
+          employment_type: string | null
+          id: string
+          location: string | null
+          posted_date: string | null
+          requirements: string | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          closing_date?: string | null
+          created_at?: string
+          created_by: string
+          credential_required?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          location?: string | null
+          posted_date?: string | null
+          requirements?: string | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          closing_date?: string | null
+          created_at?: string
+          created_by?: string
+          credential_required?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          location?: string | null
+          posted_date?: string | null
+          requirements?: string | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_assignments: {
+        Row: {
+          agency_id: string | null
+          applicant_id: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          mentor_user_id: string
+          new_hire_user_id: string | null
+          notes: string | null
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          applicant_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          mentor_user_id: string
+          new_hire_user_id?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          applicant_id?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          mentor_user_id?: string
+          new_hire_user_id?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_assignments_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_assignments_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "job_applicants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_requirements: {
         Row: {
           created_at: string
@@ -4776,6 +5757,119 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_tasks: {
+        Row: {
+          applicant_id: string | null
+          assigned_to: string | null
+          category: string
+          completed_date: string | null
+          created_at: string
+          description: string | null
+          document_url: string | null
+          due_date: string | null
+          id: string
+          new_hire_user_id: string | null
+          status: string
+          task_name: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicant_id?: string | null
+          assigned_to?: string | null
+          category?: string
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          new_hire_user_id?: string | null
+          status?: string
+          task_name: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string | null
+          assigned_to?: string | null
+          category?: string
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          document_url?: string | null
+          due_date?: string | null
+          id?: string
+          new_hire_user_id?: string | null
+          status?: string
+          task_name?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_tasks_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "job_applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_templates: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string | null
+          estimated_days: number | null
+          id: string
+          items: Json | null
+          name: string
+          role_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_days?: number | null
+          id?: string
+          items?: Json | null
+          name: string
+          role_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_days?: number | null
+          id?: string
+          items?: Json | null
+          name?: string
+          role_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -5278,6 +6372,56 @@ export type Database = {
           },
         ]
       }
+      payroll_exports: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          export_format: string
+          exported_by: string
+          file_url: string | null
+          id: string
+          pay_period_end: string
+          pay_period_start: string
+          staff_count: number | null
+          total_amount: number | null
+          total_hours: number | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          export_format: string
+          exported_by: string
+          file_url?: string | null
+          id?: string
+          pay_period_end: string
+          pay_period_start: string
+          staff_count?: number | null
+          total_amount?: number | null
+          total_hours?: number | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          export_format?: string
+          exported_by?: string
+          file_url?: string | null
+          id?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          staff_count?: number | null
+          total_amount?: number | null
+          total_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_exports_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pin_auth_attempts: {
         Row: {
           attempted_at: string
@@ -5582,6 +6726,142 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      protocol_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_staff: string[] | null
+          created_at: string
+          customizations: Json | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          protocol_template_id: string
+          start_date: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_staff?: string[] | null
+          created_at?: string
+          customizations?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          protocol_template_id: string
+          start_date?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_staff?: string[] | null
+          created_at?: string
+          customizations?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          protocol_template_id?: string
+          start_date?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_assignments_protocol_template_id_fkey"
+            columns: ["protocol_template_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_templates: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string | null
+          curriculum_item_id: string | null
+          curriculum_system: string | null
+          data_collection_method: string | null
+          description: string | null
+          domain: string | null
+          error_correction_procedure: string | null
+          estimated_duration_minutes: number | null
+          generalization_guidelines: string | null
+          id: string
+          is_template: boolean | null
+          level: string | null
+          mastery_criteria: Json | null
+          materials_needed: string[] | null
+          prompt_hierarchy: Json | null
+          status: string
+          steps: Json | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          curriculum_item_id?: string | null
+          curriculum_system?: string | null
+          data_collection_method?: string | null
+          description?: string | null
+          domain?: string | null
+          error_correction_procedure?: string | null
+          estimated_duration_minutes?: number | null
+          generalization_guidelines?: string | null
+          id?: string
+          is_template?: boolean | null
+          level?: string | null
+          mastery_criteria?: Json | null
+          materials_needed?: string[] | null
+          prompt_hierarchy?: Json | null
+          status?: string
+          steps?: Json | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          curriculum_item_id?: string | null
+          curriculum_system?: string | null
+          data_collection_method?: string | null
+          description?: string | null
+          domain?: string | null
+          error_correction_procedure?: string | null
+          estimated_duration_minutes?: number | null
+          generalization_guidelines?: string | null
+          id?: string
+          is_template?: boolean | null
+          level?: string | null
+          mastery_criteria?: Json | null
+          materials_needed?: string[] | null
+          prompt_hierarchy?: Json | null
+          status?: string
+          steps?: Json | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -6726,6 +8006,74 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      staff_timesheets: {
+        Row: {
+          agency_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          billable_hours: number | null
+          created_at: string
+          drive_time_hours: number | null
+          id: string
+          non_billable_hours: number | null
+          notes: string | null
+          pay_period_end: string
+          pay_period_start: string
+          staff_user_id: string
+          status: string
+          submitted_at: string | null
+          total_hours: number | null
+          total_mileage: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          billable_hours?: number | null
+          created_at?: string
+          drive_time_hours?: number | null
+          id?: string
+          non_billable_hours?: number | null
+          notes?: string | null
+          pay_period_end: string
+          pay_period_start: string
+          staff_user_id: string
+          status?: string
+          submitted_at?: string | null
+          total_hours?: number | null
+          total_mileage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          billable_hours?: number | null
+          created_at?: string
+          drive_time_hours?: number | null
+          id?: string
+          non_billable_hours?: number | null
+          notes?: string | null
+          pay_period_end?: string
+          pay_period_start?: string
+          staff_user_id?: string
+          status?: string
+          submitted_at?: string | null
+          total_hours?: number | null
+          total_mileage?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_timesheets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8049,6 +9397,68 @@ export type Database = {
         }
         Relationships: []
       }
+      timesheet_entries: {
+        Row: {
+          appointment_id: string | null
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          entry_date: string
+          entry_type: string
+          id: string
+          is_billable: boolean | null
+          mileage: number | null
+          pay_rate: number | null
+          student_id: string | null
+          timesheet_id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          entry_date: string
+          entry_type?: string
+          id?: string
+          is_billable?: boolean | null
+          mileage?: number | null
+          pay_rate?: number | null
+          student_id?: string | null
+          timesheet_id: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          is_billable?: boolean | null
+          mileage?: number | null
+          pay_rate?: number | null
+          student_id?: string | null
+          timesheet_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_timesheet_id_fkey"
+            columns: ["timesheet_id"]
+            isOneToOne: false
+            referencedRelation: "staff_timesheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       toi_daily_logs: {
         Row: {
           created_at: string
@@ -8086,6 +9496,130 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_date: string | null
+          attempts: number | null
+          completed_date: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          module_id: string
+          notes: string | null
+          score: number | null
+          staff_user_id: string
+          status: string
+          time_spent_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_date?: string | null
+          attempts?: number | null
+          completed_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          module_id: string
+          notes?: string | null
+          score?: number | null
+          staff_user_id: string
+          status?: string
+          time_spent_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_date?: string | null
+          attempts?: number | null
+          completed_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          module_id?: string
+          notes?: string | null
+          score?: number | null
+          staff_user_id?: string
+          status?: string
+          time_spent_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_modules: {
+        Row: {
+          agency_id: string | null
+          category: string | null
+          ceu_credits: number | null
+          content_data: Json | null
+          content_type: string
+          content_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          duration_estimate_minutes: number | null
+          id: string
+          pass_criteria: Json | null
+          required_roles: string[] | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          category?: string | null
+          ceu_credits?: number | null
+          content_data?: Json | null
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          duration_estimate_minutes?: number | null
+          id?: string
+          pass_criteria?: Json | null
+          required_roles?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          category?: string | null
+          ceu_credits?: number | null
+          content_data?: Json | null
+          content_type?: string
+          content_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          duration_estimate_minutes?: number | null
+          id?: string
+          pass_criteria?: Json | null
+          required_roles?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_modules_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
