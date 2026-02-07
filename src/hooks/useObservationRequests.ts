@@ -4,11 +4,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ObservationRequest, ObservationResponseData } from '@/types/observationRequest';
 
-export function useObservationRequests(studentId?: string) {
-  const { user } = useAuth();
+export function useObservationRequests(studentId?: string, showAll?: boolean) {
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const [requests, setRequests] = useState<ObservationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Admins and super_admins can see all requests
+  const canViewAll = showAll || userRole === 'admin' || userRole === 'super_admin';
 
   const fetchRequests = useCallback(async () => {
     if (!user) return;
@@ -18,8 +21,12 @@ export function useObservationRequests(studentId?: string) {
       let query = supabase
         .from('observation_requests')
         .select('*')
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
+
+      // Only filter by creator for non-admin roles
+      if (!canViewAll) {
+        query = query.eq('created_by', user.id);
+      }
 
       if (studentId) {
         query = query.eq('student_id', studentId);
@@ -33,7 +40,7 @@ export function useObservationRequests(studentId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, studentId]);
+  }, [user, studentId, canViewAll]);
 
   useEffect(() => {
     fetchRequests();
@@ -83,20 +90,35 @@ export function useObservationRequests(studentId?: string) {
 
   const sendRequest = async (requestId: string) => {
     try {
-      const { error } = await supabase
-        .from('observation_requests')
-        .update({ 
-          status: 'sent', 
-          sent_at: new Date().toISOString() 
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Request Sent',
-        description: 'Email sent to recipient',
+      // Call the edge function to actually send the email
+      const { data, error: fnError } = await supabase.functions.invoke('send-observation-email', {
+        body: { requestId },
       });
+
+      if (fnError) {
+        console.error('Edge function error:', fnError);
+        // Fallback: just update status if edge function fails (e.g. no RESEND_API_KEY)
+        const { error } = await supabase
+          .from('observation_requests')
+          .update({ 
+            status: 'sent', 
+            sent_at: new Date().toISOString() 
+          })
+          .eq('id', requestId);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Request Marked as Sent',
+          description: 'Email delivery failed but the link has been generated. Use "Copy Link" to share manually.',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Email Sent',
+          description: 'Observation request email delivered successfully',
+        });
+      }
 
       await fetchRequests();
     } catch (error) {
@@ -120,12 +142,32 @@ export function useObservationRequests(studentId?: string) {
 
       toast({
         title: 'Request Cancelled',
-        description: 'Observation request has been cancelled',
+        description: 'Observation request has been voided',
       });
 
       await fetchRequests();
     } catch (error) {
       console.error('Error cancelling request:', error);
+    }
+  };
+
+  const voidRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('observation_requests')
+        .update({ status: 'expired' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Request Voided',
+        description: 'Observation request has been voided',
+      });
+
+      await fetchRequests();
+    } catch (error) {
+      console.error('Error voiding request:', error);
     }
   };
 
@@ -135,6 +177,7 @@ export function useObservationRequests(studentId?: string) {
     createRequest,
     sendRequest,
     cancelRequest,
+    voidRequest,
     refresh: fetchRequests,
   };
 }

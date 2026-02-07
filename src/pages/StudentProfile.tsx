@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb, Heart, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +70,8 @@ import { FidelityDashboard } from '@/components/fidelity';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { StudentObservationsTab } from '@/components/observation-requests/StudentObservationsTab';
 import { StudentIEPPrepTab } from '@/components/iep/StudentIEPPrepTab';
+import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverTrainingTab';
+import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
@@ -579,6 +581,14 @@ export default function StudentProfile() {
           <TabsTrigger value="iep-prep" className="gap-1 text-xs">
             <Lightbulb className="w-3 h-3" />
             IEP Prep
+          </TabsTrigger>
+          <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
+            <Heart className="w-3 h-3" />
+            Caregiver Training
+          </TabsTrigger>
+          <TabsTrigger value="protocols" className="gap-1 text-xs">
+            <BookOpen className="w-3 h-3" />
+            Protocols
           </TabsTrigger>
           {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
           <TabsTrigger value="documents" className="gap-1 text-xs">
@@ -1277,7 +1287,18 @@ export default function StudentProfile() {
         <TabsContent value="assessment" className="space-y-4">
           <div className="grid gap-4">
             {/* Active Observation Banner */}
-            <ActiveObservationsBanner />
+            <ActiveObservationsBanner 
+              onEndObservation={(sid) => {
+                const store = useDataStore.getState();
+                store.endStudentSession(sid);
+                toast.success('Observation ended for student');
+              }}
+              onDeleteObservation={(sid) => {
+                const store = useDataStore.getState();
+                store.endStudentSession(sid);
+                toast.success('Observation deleted');
+              }}
+            />
 
             {/* FBA Workflow Progress - shows completed steps and navigation */}
             <FBAWorkflowProgress student={student} />
@@ -1570,6 +1591,16 @@ export default function StudentProfile() {
         {/* IEP Meeting Prep Tab */}
         <TabsContent value="iep-prep" className="space-y-4">
           <StudentIEPPrepTab studentId={student.id} />
+        </TabsContent>
+
+        {/* Caregiver Training Tab */}
+        <TabsContent value="caregiver-training" className="space-y-4">
+          <CaregiverTrainingTab studentId={student.id} />
+        </TabsContent>
+
+        {/* Protocols Tab */}
+        <TabsContent value="protocols" className="space-y-4">
+          <ProtocolAssignmentManager studentId={student.id} />
         </TabsContent>
       </Tabs>
 

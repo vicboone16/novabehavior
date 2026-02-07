@@ -1,44 +1,37 @@
 import { useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { 
-  Send, 
-  MoreHorizontal, 
-  ExternalLink, 
-  XCircle, 
-  Copy, 
-  Eye,
-  Loader2 
+  Send, MoreHorizontal, ExternalLink, XCircle, Copy, Eye, Loader2, Ban
 } from 'lucide-react';
 import { useObservationRequests } from '@/hooks/useObservationRequests';
 import { ObservationRequest, REQUEST_TYPE_LABELS, STATUS_LABELS } from '@/types/observationRequest';
 import { useToast } from '@/hooks/use-toast';
 import { ResponseViewerDialog } from './ResponseViewerDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RequestStatusTableProps {
   studentId?: string;
+  showAll?: boolean;
 }
 
-export function RequestStatusTable({ studentId }: RequestStatusTableProps) {
-  const { requests, isLoading, sendRequest, cancelRequest } = useObservationRequests(studentId);
+export function RequestStatusTable({ studentId, showAll }: RequestStatusTableProps) {
+  const { requests, isLoading, sendRequest, cancelRequest, voidRequest } = useObservationRequests(studentId, showAll);
   const { toast } = useToast();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [viewingRequest, setViewingRequest] = useState<ObservationRequest | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const filteredRequests = statusFilter === 'all' 
+    ? requests 
+    : requests.filter(r => r.status === statusFilter);
 
   const handleSendRequest = async (requestId: string) => {
     setSendingId(requestId);
@@ -83,6 +76,24 @@ export function RequestStatusTable({ studentId }: RequestStatusTableProps) {
 
   return (
     <>
+      {/* Status filter */}
+      <div className="flex items-center gap-2 mb-3">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="sent">Sent</SelectItem>
+            <SelectItem value="opened">Opened</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="expired">Expired/Voided</SelectItem>
+          </SelectContent>
+        </Select>
+        <Badge variant="outline" className="text-xs">{filteredRequests.length} requests</Badge>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -95,7 +106,7 @@ export function RequestStatusTable({ studentId }: RequestStatusTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.map((request) => (
+          {filteredRequests.map((request) => (
             <TableRow key={request.id}>
               <TableCell>
                 <div>
@@ -149,13 +160,23 @@ export function RequestStatusTable({ studentId }: RequestStatusTableProps) {
                       Open Form
                     </DropdownMenuItem>
                     {request.status !== 'completed' && request.status !== 'expired' && (
-                      <DropdownMenuItem 
-                        onClick={() => cancelRequest(request.id)}
-                        className="text-destructive"
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Cancel Request
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => voidRequest(request.id)}
+                          className="text-destructive"
+                        >
+                          <Ban className="w-4 h-4 mr-2" />
+                          Void Request
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => cancelRequest(request.id)}
+                          className="text-destructive"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Cancel Request
+                        </DropdownMenuItem>
+                      </>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
