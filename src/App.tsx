@@ -33,6 +33,8 @@ import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
 import Analytics from "./pages/Analytics";
+import Recruiting from "./pages/Recruiting";
+import LMS from "./pages/LMS";
 import NotFound from "./pages/NotFound";
 import IEPLibrary from "./pages/IEPLibrary";
 import { StaffProfilePage } from "./components/staff-profile";
@@ -222,6 +224,24 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <Analytics />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/recruiting" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Recruiting />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/lms" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <LMS />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
