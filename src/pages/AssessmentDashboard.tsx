@@ -26,6 +26,7 @@ import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
+import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -776,6 +777,20 @@ export default function AssessmentDashboard() {
                 <InternalVBMAPPEntry 
                   studentId={selectedStudent.id} 
                   studentName={selectedStudent.name} 
+                />
+
+                {/* AFLS Internal Tracker */}
+                <InternalTrackerEntry
+                  studentId={selectedStudent.id}
+                  studentName={selectedStudent.name}
+                  trackerType="afls"
+                />
+
+                {/* ABLLS-R Internal Tracker */}
+                <InternalTrackerEntry
+                  studentId={selectedStudent.id}
+                  studentName={selectedStudent.name}
+                  trackerType="ablls-r"
                 />
                 
                 {/* Questionnaire Manager - Sent out forms */}
