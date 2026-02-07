@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,9 @@ import { ARReadinessDashboard } from '@/components/scheduling/ARReadinessDashboa
 import { GlobalAuthorizationDashboard } from '@/components/billing/GlobalAuthorizationDashboard';
 import { PatientPaymentPortal, EligibilityChecker, PriorAuthGenerator } from '@/components/payments';
 import { ContractRateManager } from '@/components/billing/ContractRateManager';
+import { TimesheetDashboard } from '@/components/payroll/TimesheetDashboard';
+import { ERAProcessingTab } from '@/components/billing/ERAProcessingTab';
+import { ClearinghouseTab } from '@/components/billing/ClearinghouseTab';
 
 export default function Billing() {
   const navigate = useNavigate();
@@ -87,6 +90,18 @@ export default function Billing() {
             <TabsTrigger value="contracts" className="gap-2">
               <ScrollText className="w-4 h-4" />
               Contracts
+            </TabsTrigger>
+            <TabsTrigger value="timesheets" className="gap-2">
+              <Clock className="w-4 h-4" />
+              Timesheets
+            </TabsTrigger>
+            <TabsTrigger value="era" className="gap-2">
+              <Upload className="w-4 h-4" />
+              ERA/835
+            </TabsTrigger>
+            <TabsTrigger value="clearinghouse" className="gap-2">
+              <Send className="w-4 h-4" />
+              Clearinghouse
             </TabsTrigger>
           </TabsList>
 
@@ -188,6 +203,18 @@ export default function Billing() {
 
           <TabsContent value="contracts">
             <ContractRateManager />
+          </TabsContent>
+
+          <TabsContent value="timesheets">
+            <TimesheetDashboard />
+          </TabsContent>
+
+          <TabsContent value="era">
+            <ERAProcessingTab />
+          </TabsContent>
+
+          <TabsContent value="clearinghouse">
+            <ClearinghouseTab />
           </TabsContent>
         </Tabs>
       </main>
