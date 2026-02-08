@@ -89,14 +89,14 @@ export function SessionPromptDialog({
             Start Session?
           </DialogTitle>
           <DialogDescription>
-            {appointment.appointment_type === 'telehealth'
+            {(appointment as any).is_telehealth
               ? 'This telehealth appointment is ready to begin.'
               : 'This appointment is ready to begin.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-3">
-          {appointment.appointment_type === 'telehealth' && (
+          {(appointment as any).is_telehealth && (
             <Badge variant="secondary" className="gap-1">
               <Video className="w-3 h-3" />
               Telehealth Session
@@ -130,7 +130,7 @@ export function SessionPromptDialog({
           </div>
 
           {/* Send link option for telehealth */}
-          {appointment.appointment_type === 'telehealth' && onSendLink && (
+          {(appointment as any).is_telehealth && onSendLink && (
             <Button
               variant="outline"
               size="sm"
@@ -150,7 +150,7 @@ export function SessionPromptDialog({
           <Button variant="outline" onClick={onClose} className="flex-1">
             Not Now
           </Button>
-          {appointment.appointment_type === 'telehealth' && onJoinVideo && (
+          {(appointment as any).is_telehealth && onJoinVideo && (
             <Button
               variant="secondary"
               onClick={() => {
@@ -165,7 +165,7 @@ export function SessionPromptDialog({
           )}
           <Button onClick={handleStartSession} disabled={starting} className="flex-1">
             <Play className="w-4 h-4 mr-1" />
-            {appointment.appointment_type === 'telehealth' ? 'Start Session + Video' : 'Start Session'}
+            {(appointment as any).is_telehealth ? 'Start Session + Video' : 'Start Session'}
           </Button>
         </DialogFooter>
       </DialogContent>
