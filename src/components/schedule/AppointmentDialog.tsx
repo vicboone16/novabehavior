@@ -99,6 +99,7 @@ export const APPOINTMENT_CATEGORIES = [
   { value: 'assessment', label: 'Assessment' },
   { value: 'supervision', label: 'Supervision' },
   { value: 'parent_training', label: 'Parent Training' },
+  { value: 'telehealth', label: 'Telehealth' },
   { value: 'admin', label: 'Admin' },
   { value: 'collaboration', label: 'Collaboration' },
   { value: 'iep_meeting', label: 'IEP Meeting' },

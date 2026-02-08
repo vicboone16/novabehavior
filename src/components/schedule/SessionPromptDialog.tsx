@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Play, Calendar, Clock, User } from 'lucide-react';
+import { Play, Calendar, Clock, User, Video } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
@@ -22,13 +22,15 @@ interface SessionPromptDialogProps {
   onClose: () => void;
   students: CalendarStudent[];
   staff: CalendarStaff[];
+  onJoinVideo?: (appointment: Appointment) => void;
 }
 
 export function SessionPromptDialog({
   appointment,
   onClose,
   students,
-  staff
+  staff,
+  onJoinVideo,
 }: SessionPromptDialogProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -84,7 +86,9 @@ export function SessionPromptDialog({
             Start Session?
           </DialogTitle>
           <DialogDescription>
-            This appointment is ready to begin.
+            {appointment.appointment_type === 'telehealth'
+              ? 'This telehealth appointment is ready to begin.'
+              : 'This appointment is ready to begin.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,9 +124,22 @@ export function SessionPromptDialog({
           <Button variant="outline" onClick={onClose} className="flex-1">
             Not Now
           </Button>
+          {appointment.appointment_type === 'telehealth' && onJoinVideo && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onJoinVideo(appointment);
+                onClose();
+              }}
+              className="flex-1"
+            >
+              <Video className="w-4 h-4 mr-1" />
+              Join Video
+            </Button>
+          )}
           <Button onClick={handleStartSession} disabled={starting} className="flex-1">
             <Play className="w-4 h-4 mr-1" />
-            Start Session
+            {appointment.appointment_type === 'telehealth' ? 'Start Session + Video' : 'Start Session'}
           </Button>
         </DialogFooter>
       </DialogContent>
