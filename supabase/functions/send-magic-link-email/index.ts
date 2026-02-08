@@ -179,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlContent = buildEmailHtml(emailPayload);
 
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Nova Behavior <onboarding@resend.dev>",
+      from: "Nova Behavior <noreply@novabehavior.com>",
       to: [emailPayload.recipientEmail],
       subject: emailPayload.subject,
       html: htmlContent,
