@@ -1890,6 +1890,10 @@ export const useDataStore = create<DataState>()(
           sessionStartTime: null,
           currentSessionId: null,
           linkedAppointmentId: null,
+          selectedStudentIds: [],
+          studentSessionStatus: [],
+          studentIntervalStatus: [],
+          syncedIntervalsRunning: false,
         });
       },
 

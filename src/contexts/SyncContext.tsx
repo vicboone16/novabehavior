@@ -358,9 +358,21 @@ export function SyncProvider({ children }: SyncProviderProps) {
         const mappedSessions: Session[] = sessionsData.map((session) => {
           const entries = sessionDataEntries?.filter(e => e.session_id === session.id) || [];
           
+          // Use the earliest data entry timestamp as the session date (collection date),
+          // falling back to the session start_time if no data entries exist
+          const earliestEntryTimestamp = entries.length > 0
+            ? entries.reduce((earliest, e) => {
+                const t = new Date(e.timestamp).getTime();
+                return t < earliest ? t : earliest;
+              }, Infinity)
+            : null;
+          const sessionDate = earliestEntryTimestamp 
+            ? new Date(earliestEntryTimestamp) 
+            : new Date(session.start_time);
+          
           return {
             id: session.id,
-            date: new Date(session.start_time),
+            date: sessionDate,
             notes: session.name || '',
             studentIds: session.student_ids || [],
             sessionLengthMinutes: session.session_length_minutes,
