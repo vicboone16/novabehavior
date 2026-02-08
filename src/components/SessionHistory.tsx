@@ -28,17 +28,20 @@ export function SessionHistory() {
     });
   };
 
-  const filteredSessions = sessions.filter(session => {
-    if (filterDate) {
-      // Use local date (avoid UTC conversion which can shift days on mobile/timezones)
-      const sessionDate = format(new Date(session.date), 'yyyy-MM-dd');
-      if (sessionDate !== filterDate) return false;
-    }
-    if (filterStudent !== 'all') {
-      if (!session.studentIds.includes(filterStudent)) return false;
-    }
-    return true;
-  });
+  const filteredSessions = sessions
+    .filter(session => {
+      if (filterDate) {
+        // Use local date (avoid UTC conversion which can shift days on mobile/timezones)
+        const sessionDate = format(new Date(session.date), 'yyyy-MM-dd');
+        if (sessionDate !== filterDate) return false;
+      }
+      if (filterStudent !== 'all') {
+        if (!session.studentIds.includes(filterStudent)) return false;
+      }
+      return true;
+    })
+    // Sort by data collection date (most recent first)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

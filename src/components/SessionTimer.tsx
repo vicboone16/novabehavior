@@ -109,9 +109,10 @@ export function SessionTimer() {
   };
 
   const handleEndFlowComplete = () => {
-    // Reset timer state after session ends
-    setIsPaused(true);
+    // Reset ALL timer state after session ends
+    setIsPaused(false);
     setPausedAt(null);
+    setPausedTime(0);
     setElapsed(0);
     // Clear session data from the summary display
     resetSessionData();
