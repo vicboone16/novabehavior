@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-staff]
 verify_jwt = false
+
+[functions.send-magic-link-email]
+verify_jwt = false

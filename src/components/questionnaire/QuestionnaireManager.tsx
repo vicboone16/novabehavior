@@ -199,7 +199,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     }
   }, [user, studentId]);
 
-  const handleSendQuestionnaire = async () => {
+  const handleSendQuestionnaire = async (sendEmail: boolean = false) => {
     if (!selectedTemplateId || !recipientName.trim() || !recipientEmail.trim()) {
       toast({
         title: 'Please fill in all fields',
@@ -221,7 +221,7 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
           recipient_email: recipientEmail.trim(),
           recipient_type: recipientType,
           created_by: user?.id,
-          sent_at: new Date().toISOString(),
+          sent_at: sendEmail ? null : new Date().toISOString(),
           form_type: selectedTemplateType,
         })
         .select()
@@ -232,7 +232,6 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
       let assessmentName = 'Questionnaire';
 
       if (selectedTemplateType === 'abas3') {
-        // Create the ABAS-3 assessment record
         const { error: assessError } = await supabase
           .from('abas3_assessments')
           .insert({
@@ -245,11 +244,9 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
             respondent_relationship: recipientType,
             status: 'pending',
           });
-
         if (assessError) throw assessError;
         assessmentName = 'ABAS-3 Assessment';
       } else if (selectedTemplateType === 'vbmapp') {
-        // Create the VB-MAPP assessment record
         const { error: assessError } = await supabase
           .from('vbmapp_assessments')
           .insert({
@@ -262,11 +259,9 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
             respondent_relationship: recipientType,
             status: 'pending',
           });
-
         if (assessError) throw assessError;
         assessmentName = 'VB-MAPP Assessment';
       } else if (selectedTemplateType === 'socially_savvy') {
-        // Create the Socially Savvy assessment record
         const { error: assessError } = await supabase
           .from('socially_savvy_assessments')
           .insert({
@@ -279,15 +274,33 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
             respondent_relationship: recipientType,
             status: 'pending',
           });
-
         if (assessError) throw assessError;
         assessmentName = 'Socially Savvy Assessment';
       }
 
-      toast({
-        title: `${assessmentName} Created!`,
-        description: 'Copy the link to share with the recipient.',
-      });
+      // Send email if requested
+      if (sendEmail) {
+        const { error: emailError } = await supabase.functions.invoke('send-magic-link-email', {
+          body: { type: 'questionnaire', recordId: invitation.id },
+        });
+        if (emailError) {
+          console.error('Email send failed:', emailError);
+          toast({
+            title: `${assessmentName} Created`,
+            description: 'Email delivery failed. Use "Copy Link" or "Send Email" from the table to share.',
+          });
+        } else {
+          toast({
+            title: `${assessmentName} Created & Emailed!`,
+            description: `Email sent to ${recipientEmail.trim()}`,
+          });
+        }
+      } else {
+        toast({
+          title: `${assessmentName} Created!`,
+          description: 'Copy the link to share with the recipient.',
+        });
+      }
 
       setShowSendDialog(false);
       setSelectedTemplateId('');
@@ -311,6 +324,41 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
     const url = `${window.location.origin}/questionnaire/${token}`;
     navigator.clipboard.writeText(url);
     toast({ title: 'Link copied to clipboard!' });
+  };
+
+  const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
+
+  const sendInvitationEmail = async (invitationId: string) => {
+    setIsSendingEmail(invitationId);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('send-magic-link-email', {
+        body: { type: 'questionnaire', recordId: invitationId },
+      });
+
+      if (fnError) {
+        console.error('Edge function error:', fnError);
+        toast({
+          title: 'Email Failed',
+          description: 'Could not send email. Use "Copy Link" to share manually.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Email Sent',
+          description: 'Questionnaire link emailed to recipient successfully',
+        });
+        loadData();
+      }
+    } catch (error) {
+      console.error('Error sending invitation email:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send email',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingEmail(null);
+    }
   };
 
   const getStatusBadge = (inv: Invitation) => {
@@ -751,19 +799,34 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
                               <TooltipContent>View Responses</TooltipContent>
                             </Tooltip>
                           )}
-                          {inv.status === 'pending' && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => copyLink(inv.access_token)}
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy Link</TooltipContent>
-                            </Tooltip>
+                          {(inv.status === 'pending' || inv.status === 'sent') && !isInPerson && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => sendInvitationEmail(inv.id)}
+                                    disabled={isSendingEmail === inv.id}
+                                  >
+                                    <Send className={`w-4 h-4 ${isSendingEmail === inv.id ? 'animate-pulse' : ''}`} />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{inv.status === 'sent' ? 'Resend Email' : 'Send Email'}</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyLink(inv.access_token)}
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy Link</TooltipContent>
+                              </Tooltip>
+                            </>
                           )}
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -993,12 +1056,16 @@ export function QuestionnaireManager({ studentId, studentName }: QuestionnaireMa
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowSendDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSendQuestionnaire} disabled={isSending}>
+            <Button variant="outline" onClick={() => handleSendQuestionnaire(false)} disabled={isSending}>
               {isSending ? 'Creating...' : 'Create & Get Link'}
+            </Button>
+            <Button onClick={() => handleSendQuestionnaire(true)} disabled={isSending}>
+              <Mail className="w-4 h-4 mr-2" />
+              {isSending ? 'Sending...' : 'Create & Send Email'}
             </Button>
           </DialogFooter>
         </DialogContent>
