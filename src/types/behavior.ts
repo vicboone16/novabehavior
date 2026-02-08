@@ -643,6 +643,7 @@ export interface IntervalEntry {
   voidReason?: 'late_arrival' | 'early_departure' | 'not_present' | 'fire_drill' | 'break' | 'transition' | 'other';
   voidReasonCustom?: string; // Custom reason text when voidReason is 'other'
   sessionId?: string;
+  isHistorical?: boolean;
 }
 
 export interface StudentIntervalStatus {

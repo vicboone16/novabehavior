@@ -239,7 +239,6 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     students, 
     addHistoricalFrequencyBatch, 
     addHistoricalDurationBatch, 
-    recordInterval,
     addBehaviorWithMethods,
     globalBehaviorBank,
     behaviorDefinitionOverrides,
@@ -662,10 +661,43 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
           } else if (dataType === 'interval') {
             const total = data.totalIntervals || defaultTotalIntervals;
             const occurred = data.occurredIntervals || [];
+            const intervalSecs = 30; // Default 30-second intervals for historical data
+            const sessionId = crypto.randomUUID();
+            const sessionDate = new Date(format(date, 'yyyy-MM-dd') + 'T12:00:00');
             
+            const intervalEntries: import('@/types/behavior').IntervalEntry[] = [];
             for (let i = 0; i < total; i++) {
-              recordInterval(studentId, behaviorId, i, occurred.includes(i));
+              const entryTimestamp = new Date(sessionDate.getTime() + (i * intervalSecs * 1000));
+              intervalEntries.push({
+                id: crypto.randomUUID(),
+                studentId,
+                behaviorId,
+                intervalNumber: i,
+                occurred: occurred.includes(i),
+                timestamp: entryTimestamp,
+                markedAt: entryTimestamp,
+                sessionId,
+                isHistorical: true,
+              });
             }
+
+            // Create a dedicated historical session for this interval data
+            const newSession = {
+              id: sessionId,
+              date: sessionDate,
+              notes: 'Historical interval data entry',
+              studentIds: [studentId],
+              sessionLengthMinutes: Math.ceil((total * intervalSecs) / 60),
+              abcEntries: [] as any[],
+              frequencyEntries: [] as any[],
+              durationEntries: [] as any[],
+              intervalEntries,
+            };
+
+            useDataStore.setState((state) => ({
+              sessions: [newSession, ...state.sessions],
+              intervalEntries: [...state.intervalEntries, ...intervalEntries],
+            }));
           }
         });
       });
