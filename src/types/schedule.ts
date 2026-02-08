@@ -28,6 +28,8 @@ export interface Appointment {
   verified_at?: string;
   verified_by?: string;
   is_telehealth?: boolean;
+  telehealth_provider?: string;
+  meeting_link?: string;
 }
 
 export type ScheduleViewType = 'day' | 'week' | 'month' | 'timeline';

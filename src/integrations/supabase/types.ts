@@ -416,6 +416,7 @@ export type Database = {
           is_telehealth: boolean
           linked_session_id: string | null
           location_detail: string | null
+          meeting_link: string | null
           notes: string | null
           recurrence_rule: Json | null
           service_setting: string | null
@@ -425,6 +426,7 @@ export type Database = {
           start_time: string
           status: string
           student_id: string | null
+          telehealth_provider: string | null
           title: string | null
           updated_at: string
           verification_required: boolean | null
@@ -444,6 +446,7 @@ export type Database = {
           is_telehealth?: boolean
           linked_session_id?: string | null
           location_detail?: string | null
+          meeting_link?: string | null
           notes?: string | null
           recurrence_rule?: Json | null
           service_setting?: string | null
@@ -453,6 +456,7 @@ export type Database = {
           start_time: string
           status?: string
           student_id?: string | null
+          telehealth_provider?: string | null
           title?: string | null
           updated_at?: string
           verification_required?: boolean | null
@@ -472,6 +476,7 @@ export type Database = {
           is_telehealth?: boolean
           linked_session_id?: string | null
           location_detail?: string | null
+          meeting_link?: string | null
           notes?: string | null
           recurrence_rule?: Json | null
           service_setting?: string | null
@@ -481,6 +486,7 @@ export type Database = {
           start_time?: string
           status?: string
           student_id?: string | null
+          telehealth_provider?: string | null
           title?: string | null
           updated_at?: string
           verification_required?: boolean | null
