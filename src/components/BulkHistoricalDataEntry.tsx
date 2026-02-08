@@ -6,6 +6,7 @@ import {
   Edit2, Clock, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { HistoricalSyncStatusBadge } from '@/components/HistoricalSyncStatusBadge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -1505,6 +1506,11 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
         </div>
 
         <DialogFooter className="gap-2">
+          <div className="flex items-center gap-2 mr-auto">
+            {selectedStudentIds.map(id => (
+              <HistoricalSyncStatusBadge key={id} studentId={id} />
+            ))}
+          </div>
           <Button variant="outline" onClick={resetAndClose}>
             Cancel
           </Button>

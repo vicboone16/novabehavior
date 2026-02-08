@@ -4,6 +4,7 @@ import {
   Plus, Save, Clock, AlertCircle, TrendingUp, 
   Timer, Grid3X3, FileText, X, Check, BookOpen, Search
 } from 'lucide-react';
+import { HistoricalSyncStatusBadge } from '@/components/HistoricalSyncStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -883,14 +884,17 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               )}
             </div>
 
-            <Button
-              className="w-full"
-              onClick={handleSubmitFrequency}
-              disabled={selectedBehaviors.length === 0}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Add Frequency Data
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                className="flex-1"
+                onClick={handleSubmitFrequency}
+                disabled={selectedBehaviors.length === 0}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Add Frequency Data
+              </Button>
+              <HistoricalSyncStatusBadge studentId={student.id} />
+            </div>
           </TabsContent>
 
           {/* Duration-specific fields */}
@@ -899,14 +903,17 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               Enter the duration for each selected behavior above.
             </p>
 
-            <Button
-              className="w-full"
-              onClick={handleSubmitDuration}
-              disabled={selectedBehaviors.length === 0 || !selectedBehaviors.some(b => b.durationSeconds && b.durationSeconds > 0)}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Add Duration Data
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                className="flex-1"
+                onClick={handleSubmitDuration}
+                disabled={selectedBehaviors.length === 0 || !selectedBehaviors.some(b => b.durationSeconds && b.durationSeconds > 0)}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Add Duration Data
+              </Button>
+              <HistoricalSyncStatusBadge studentId={student.id} />
+            </div>
           </TabsContent>
 
           {/* ABC-specific fields */}
@@ -1045,14 +1052,17 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               <p><strong>Frequency per behavior:</strong> Set the count for each behavior to reflect how many times it occurred (e.g., if one behavior happened 3× during an episode).</p>
             </div>
 
-            <Button
-              className="w-full"
-              onClick={handleSubmitABC}
-              disabled={selectedBehaviors.length === 0 || selectedAntecedents.length === 0 || selectedConsequences.length === 0}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Add ABC Entry
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                className="flex-1"
+                onClick={handleSubmitABC}
+                disabled={selectedBehaviors.length === 0 || selectedAntecedents.length === 0 || selectedConsequences.length === 0}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Add ABC Entry
+              </Button>
+              <HistoricalSyncStatusBadge studentId={student.id} />
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

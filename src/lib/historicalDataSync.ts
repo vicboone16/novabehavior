@@ -7,7 +7,39 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 
-// Event emitter for historical data changes (avoids circular dep with dataStore)
+// ── Sync status types ──────────────────────────────────────────────────────────
+export type HistoricalSyncStatus = 'idle' | 'pending' | 'synced' | 'error';
+
+type SyncStatusListener = (studentId: string, status: HistoricalSyncStatus) => void;
+const statusListeners: SyncStatusListener[] = [];
+
+// Per-student sync status
+const syncStatusMap = new Map<string, HistoricalSyncStatus>();
+
+/**
+ * Get the current sync status for a student.
+ */
+export function getHistoricalSyncStatus(studentId: string): HistoricalSyncStatus {
+  return syncStatusMap.get(studentId) || 'idle';
+}
+
+/**
+ * Subscribe to sync status changes. Returns an unsubscribe function.
+ */
+export function onSyncStatusChanged(listener: SyncStatusListener) {
+  statusListeners.push(listener);
+  return () => {
+    const idx = statusListeners.indexOf(listener);
+    if (idx >= 0) statusListeners.splice(idx, 1);
+  };
+}
+
+function setSyncStatus(studentId: string, status: HistoricalSyncStatus) {
+  syncStatusMap.set(studentId, status);
+  statusListeners.forEach(l => l(studentId, status));
+}
+
+// ── Historical data change events ──────────────────────────────────────────────
 type HistoricalDataListener = (studentId: string) => void;
 const listeners: HistoricalDataListener[] = [];
 
@@ -55,6 +87,7 @@ export function initHistoricalDataSync(
 ) {
   return onHistoricalDataChanged((studentId: string) => {
     pendingHistoricalChanges.add(studentId);
+    setSyncStatus(studentId, 'pending');
     
     // Clear any existing timeout for this student
     const existing = saveTimeouts.get(studentId);
@@ -69,6 +102,7 @@ export function initHistoricalDataSync(
         if (!historicalData) {
           console.warn('[HistoricalSync] Student not found:', studentId);
           pendingHistoricalChanges.delete(studentId);
+          setSyncStatus(studentId, 'idle');
           return;
         }
 
@@ -90,14 +124,17 @@ export function initHistoricalDataSync(
 
         if (error) {
           console.error('[HistoricalSync] Failed to save historical data:', error);
+          setSyncStatus(studentId, 'error');
           return;
         }
 
         console.log('[HistoricalSync] Saved historical data for student:', studentId, 
           `(${serialized.frequencyEntries.length} freq, ${serialized.durationEntries.length} dur)`);
         pendingHistoricalChanges.delete(studentId);
+        setSyncStatus(studentId, 'synced');
       } catch (e) {
         console.error('[HistoricalSync] Error saving historical data:', e);
+        setSyncStatus(studentId, 'error');
       }
     }, 500);
     
@@ -125,8 +162,14 @@ export async function flushPendingHistoricalData(
       saveTimeouts.delete(studentId);
     }
     
+    setSyncStatus(studentId, 'pending');
+    
     const historicalData = getStudentHistoricalData(studentId);
-    if (!historicalData) continue;
+    if (!historicalData) {
+      pendingHistoricalChanges.delete(studentId);
+      setSyncStatus(studentId, 'idle');
+      continue;
+    }
 
     const serialized = {
       frequencyEntries: (historicalData.frequencyEntries || []).map((e: any) => ({
@@ -146,6 +189,19 @@ export async function flushPendingHistoricalData(
 
     if (!error) {
       pendingHistoricalChanges.delete(studentId);
+      setSyncStatus(studentId, 'synced');
+    } else {
+      setSyncStatus(studentId, 'error');
     }
   }
+}
+
+// ── Test helpers (only used by tests) ────────────────────────────────────────
+export function _testResetState() {
+  pendingHistoricalChanges.clear();
+  saveTimeouts.forEach(t => clearTimeout(t));
+  saveTimeouts.clear();
+  syncStatusMap.clear();
+  listeners.length = 0;
+  statusListeners.length = 0;
 }
