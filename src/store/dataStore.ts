@@ -27,6 +27,50 @@ import {
   BehaviorDefinition,
 } from '@/types/behavior';
 import { BehaviorDefinitionOverride, GlobalBankBehavior } from '@/types/behaviorBank';
+import { supabase } from '@/integrations/supabase/client';
+import { emitHistoricalDataChanged } from '@/lib/historicalDataSync';
+
+// Direct save of historical data to database - bypasses sync debounce
+const historicalSaveTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+function saveHistoricalDataDirect(studentId: string) {
+  const existing = historicalSaveTimeouts.get(studentId);
+  if (existing) clearTimeout(existing);
+  
+  const timeout = setTimeout(async () => {
+    historicalSaveTimeouts.delete(studentId);
+    try {
+      const student = useDataStore.getState().students.find(s => s.id === studentId);
+      if (!student?.historicalData) return;
+      
+      const serialized = {
+        frequencyEntries: (student.historicalData.frequencyEntries || []).map((e: any) => ({
+          ...e,
+          timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
+        })),
+        durationEntries: (student.historicalData.durationEntries || []).map((e: any) => ({
+          ...e,
+          timestamp: e.timestamp ? new Date(e.timestamp).toISOString() : new Date().toISOString(),
+        })),
+      };
+
+      const { error } = await supabase
+        .from('students')
+        .update({ historical_data: serialized as any })
+        .eq('id', studentId);
+
+      if (error) {
+        console.error('[HistoricalSync] Failed to save:', error);
+      } else {
+        console.log('[HistoricalSync] Saved for student:', studentId,
+          `(${serialized.frequencyEntries.length} freq, ${serialized.durationEntries.length} dur)`);
+      }
+    } catch (e) {
+      console.error('[HistoricalSync] Error:', e);
+    }
+  }, 500);
+  
+  historicalSaveTimeouts.set(studentId, timeout);
+}
 
 interface CollapsedState {
   methods: { [studentId: string]: DataCollectionMethod[] }; // collapsed method sections
@@ -1130,6 +1174,8 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        // Immediately persist to database (bypass debounced sync)
+        saveHistoricalDataDirect(entry.studentId);
       },
 
       addHistoricalFrequencyBatch: (entries) => {
@@ -1190,6 +1236,9 @@ export const useDataStore = create<DataState>()(
             students: updatedStudents,
           };
         });
+        // Immediately persist to database for all affected students
+        const affectedStudentIds = [...new Set(entries.map(e => e.studentId))];
+        affectedStudentIds.forEach(id => saveHistoricalDataDirect(id));
       },
 
       addHistoricalDurationBatch: (entries) => {
@@ -1247,6 +1296,9 @@ export const useDataStore = create<DataState>()(
             students: updatedStudents,
           };
         });
+        // Immediately persist to database for all affected students
+        const affectedStudentIds = [...new Set(entries.map(e => e.studentId))];
+        affectedStudentIds.forEach(id => saveHistoricalDataDirect(id));
       },
 
       deleteFrequencyEntry: (id) => {
@@ -1278,6 +1330,10 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        // Persist deletion to database
+        if (entry?.isHistorical) {
+          saveHistoricalDataDirect(entry.studentId);
+        }
       },
 
       deleteHistoricalFrequency: (studentId, entryId) => {
@@ -1295,6 +1351,8 @@ export const useDataStore = create<DataState>()(
               : s
           ),
         }));
+        // Persist deletion to database
+        saveHistoricalDataDirect(studentId);
       },
 
       updateFrequencyEntry: (id, updates) => {
