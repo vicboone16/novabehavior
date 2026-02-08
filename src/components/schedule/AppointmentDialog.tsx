@@ -128,6 +128,8 @@ export function AppointmentDialog({
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [isTelehealth, setIsTelehealth] = useState(false);
+  const [telehealthProvider, setTelehealthProvider] = useState<string>('whereby');
+  const [meetingLink, setMeetingLink] = useState('');
   const [showStaffSelector, setShowStaffSelector] = useState(false);
   const [showFindStaffSheet, setShowFindStaffSheet] = useState(false);
   
@@ -228,6 +230,8 @@ export function AppointmentDialog({
       
       setNotes(appointment.notes || '');
       setIsTelehealth(!!(appointment as any).is_telehealth);
+      setTelehealthProvider((appointment as any).telehealth_provider || 'whereby');
+      setMeetingLink((appointment as any).meeting_link || '');
     } else {
       // Reset to defaults
       setTitle('');
@@ -240,6 +244,8 @@ export function AppointmentDialog({
       setSelectedStaffIds([]);
       setNotes('');
       setIsTelehealth(false);
+      setTelehealthProvider('whereby');
+      setMeetingLink('');
     }
   }, [appointment, open, defaultStudentId]);
 
@@ -297,6 +303,8 @@ export function AppointmentDialog({
       status: 'scheduled',
       appointment_type: appointmentType,
       is_telehealth: isTelehealth,
+      telehealth_provider: isTelehealth ? telehealthProvider : null,
+      meeting_link: isTelehealth && meetingLink.trim() ? meetingLink.trim() : null,
     } as any);
   };
 
@@ -458,6 +466,35 @@ export function AppointmentDialog({
               </p>
             </div>
           </div>
+
+          {/* Telehealth provider & link - shown when telehealth is checked */}
+          {isTelehealth && (
+            <div className="space-y-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <div className="space-y-2">
+                <Label>Video Provider *</Label>
+                <Select value={telehealthProvider} onValueChange={setTelehealthProvider}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="whereby">Whereby</SelectItem>
+                    <SelectItem value="zoom">Zoom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Meeting Link</Label>
+                <Input
+                  value={meetingLink}
+                  onChange={(e) => setMeetingLink(e.target.value)}
+                  placeholder={telehealthProvider === 'zoom' ? 'https://zoom.us/j/...' : 'https://whereby.com/...'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional. You can add the link now or later before the session.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Staff selection - Multiple */}
           <div className="space-y-2">
