@@ -7,6 +7,7 @@ import { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAllRows } from '@/lib/supabasePagination';
+import { hasUnsavedHistoricalData, flushPendingHistoricalData, initHistoricalDataSync } from '@/lib/historicalDataSync';
 
 interface SyncContextType {
   isSyncing: boolean;
@@ -56,6 +57,15 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const lastPresenceKeyRef = useRef<string>('');
   const presenceSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastKnownActiveSessionIdRef = useRef<string | null>(null);
+
+  // Initialize historical data sync listener - immediately saves historical data to DB
+  useEffect(() => {
+    const unsubscribe = initHistoricalDataSync((studentId: string) => {
+      const st = useDataStore.getState().students.find(s => s.id === studentId);
+      return st?.historicalData || null;
+    });
+    return unsubscribe;
+  }, []);
 
   const syncLiveSessionPresence = useCallback(async () => {
     if (!user) return;
@@ -843,6 +853,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
     setSyncStatus('syncing');
     
     try {
+      // Flush any pending historical data changes first
+      const getHistData = (id: string) => {
+        const st = useDataStore.getState().students.find(s => s.id === id);
+        return st?.historicalData || null;
+      };
+      await flushPendingHistoricalData(getHistData);
+      
       // Sync students
       const { data: existingStudents } = await supabase
         .from('students')
@@ -1285,40 +1302,60 @@ export function SyncProvider({ children }: SyncProviderProps) {
                   uploadedAt: d.uploadedAt ? new Date(d.uploadedAt) : new Date(),
                 })),
                 // Historical data for frequency/duration entries
-                historicalData: s.historical_data ? {
-                  frequencyEntries: ((s.historical_data as any).frequencyEntries || []).map((e: any) => ({
-                    ...e,
-                    timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
-                  })),
-                  durationEntries: ((s.historical_data as any).durationEntries || []).map((e: any) => ({
-                    ...e,
-                    timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
-                  })),
-                } : { frequencyEntries: [], durationEntries: [] },
+                // CRITICAL: If this student has pending local historical changes, preserve local data
+                historicalData: hasUnsavedHistoricalData(s.id) 
+                  ? (useDataStore.getState().students.find(st => st.id === s.id)?.historicalData || { frequencyEntries: [], durationEntries: [] })
+                  : (s.historical_data ? {
+                    frequencyEntries: ((s.historical_data as any).frequencyEntries || []).map((e: any) => ({
+                      ...e,
+                      timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+                    })),
+                    durationEntries: ((s.historical_data as any).durationEntries || []).map((e: any) => ({
+                      ...e,
+                      timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
+                    })),
+                  } : { frequencyEntries: [], durationEntries: [] }),
               };
               
               const studentGoals = ((s.goals as unknown as BehaviorGoal[]) || []).map(g => ({ ...g, studentId: s.id }));
               
               // Hydrate historical entries for this student
-              const studentHistoricalFreq = (mappedStudent.historicalData?.frequencyEntries || []).map((e: any) => ({
-                id: e.id,
-                studentId: s.id,
-                behaviorId: e.behaviorId,
-                count: e.count,
-                timestamp: e.timestamp,
-                timestamps: Array(e.count).fill(e.timestamp),
-                observationDurationMinutes: e.observationDurationMinutes,
-                isHistorical: true,
-              }));
+              // CRITICAL: If pending local changes, use local historical entries instead of cloud
+              let studentHistoricalFreq: any[];
+              let studentHistoricalDur: any[];
               
-              const studentHistoricalDur = (mappedStudent.historicalData?.durationEntries || []).map((e: any) => ({
-                id: e.id,
-                studentId: s.id,
-                behaviorId: e.behaviorId,
-                duration: e.durationSeconds,
-                startTime: e.timestamp,
-                endTime: new Date(new Date(e.timestamp).getTime() + e.durationSeconds * 1000),
-              }));
+              if (hasUnsavedHistoricalData(s.id)) {
+                // Keep existing local historical entries - don't overwrite with stale cloud data
+                const currentState = useDataStore.getState();
+                studentHistoricalFreq = currentState.frequencyEntries.filter(e => 
+                  e.isHistorical && e.studentId === s.id
+                );
+                studentHistoricalDur = currentState.durationEntries.filter(e => 
+                  !e.sessionId && e.studentId === s.id
+                );
+                console.log('[Sync] Preserving local historical data for student:', s.id, 
+                  `(${studentHistoricalFreq.length} freq, ${studentHistoricalDur.length} dur)`);
+              } else {
+                studentHistoricalFreq = (mappedStudent.historicalData?.frequencyEntries || []).map((e: any) => ({
+                  id: e.id,
+                  studentId: s.id,
+                  behaviorId: e.behaviorId,
+                  count: e.count,
+                  timestamp: e.timestamp,
+                  timestamps: Array(e.count).fill(e.timestamp),
+                  observationDurationMinutes: e.observationDurationMinutes,
+                  isHistorical: true,
+                }));
+                
+                studentHistoricalDur = (mappedStudent.historicalData?.durationEntries || []).map((e: any) => ({
+                  id: e.id,
+                  studentId: s.id,
+                  behaviorId: e.behaviorId,
+                  duration: e.durationSeconds,
+                  startTime: e.timestamp,
+                  endTime: new Date(new Date(e.timestamp).getTime() + e.durationSeconds * 1000),
+                }));
+              }
               
               useDataStore.setState((state) => {
                 const existingIndex = state.students.findIndex(st => st.id === s.id);
