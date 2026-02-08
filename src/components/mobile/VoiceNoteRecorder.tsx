@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, X, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface VoiceNoteRecorderProps {
@@ -101,14 +102,19 @@ export function VoiceNoteRecorder({ studentId, onClose, onSave }: VoiceNoteRecor
     setIsTranscribing(true);
     
     try {
-      // Simulate transcription - in production would call edge function
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      formData.append('audio', new File([audioBlob], 'recording.webm', { type: 'audio/webm' }));
+
+      const { data, error } = await supabase.functions.invoke('elevenlabs-transcribe', {
+        body: formData,
+      });
+
+      if (error) throw new Error(error.message);
       
-      // Mock transcription result
-      const mockTranscription = "Voice note recorded for session. Patient showed good engagement during activities.";
-      setTranscription(mockTranscription);
+      const transcriptionText = data?.text || 'No speech detected';
+      setTranscription(transcriptionText);
       toast.success('Transcription complete');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Transcription error:', error);
       toast.error('Failed to transcribe audio');
     } finally {
