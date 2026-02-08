@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Plus, Users, User, Clock, Loader2, Download, AlertTriangle, Sparkles 
+  Plus, Users, User, Clock, Loader2, Download, AlertTriangle, Sparkles, Video
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScheduleTimeline } from '@/components/schedule/ScheduleTimeline';
@@ -27,6 +27,7 @@ import { AppointmentDialog } from '@/components/schedule/AppointmentDialog';
 import { SessionPromptDialog } from '@/components/schedule/SessionPromptDialog';
 import { VerificationDialog } from '@/components/schedule/VerificationDialog';
 import { VerificationQueue } from '@/components/schedule/VerificationQueue';
+import { SendTelehealthLinkDialog } from '@/components/telehealth/SendTelehealthLinkDialog';
 import type { Appointment, ScheduleViewType, FilterMode } from '@/types/schedule';
 
 type ScheduleTab = 'calendar' | 'planning';
@@ -54,6 +55,8 @@ export default function Schedule() {
   const [showVerificationQueue, setShowVerificationQueue] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
+  const [showSendTelehealthLink, setShowSendTelehealthLink] = useState(false);
+  const [telehealthLinkAppointment, setTelehealthLinkAppointment] = useState<Appointment | null>(null);
   const scheduleRef = useRef<HTMLDivElement>(null);
 
   // Check admin status and set appropriate filter mode for non-admins
@@ -240,6 +243,7 @@ export default function Schedule() {
     const endTime = new Date(appointment.end_time);
     const timeDiffStart = differenceInMinutes(startTime, now); // minutes until start
     const isPastEnd = isPast(endTime);
+    const isTelehealth = appointment.appointment_type === 'telehealth';
     
     // If past the appointment end time and unverified, show verification dialog
     if (isPastEnd && appointment.status === 'scheduled' && 
@@ -249,10 +253,24 @@ export default function Schedule() {
     // If within 15 minutes of start time or past start time but before end, offer to start session
     else if (timeDiffStart <= 15 && !isPast(endTime) && appointment.status === 'scheduled' && !appointment.linked_session_id) {
       setShowSessionPrompt(appointment);
+    }
+    // For telehealth appointments that are upcoming but outside 15-min window, still show session prompt so they can join video / send link
+    else if (isTelehealth && !isPastEnd && appointment.status === 'scheduled') {
+      setShowSessionPrompt(appointment);
     } else if (isAdmin) {
       // Only admins can edit appointments
       handleEditAppointment(appointment);
     }
+  };
+
+  const handleSendTelehealthLink = (appointment: Appointment) => {
+    setTelehealthLinkAppointment(appointment);
+    setShowSendTelehealthLink(true);
+  };
+
+  const handleJoinVideo = (appointment: Appointment) => {
+    // For now, show session prompt which has the Join Video option
+    setShowSessionPrompt(appointment);
   };
 
   const handleSaveAppointment = async (data: Partial<Appointment>) => {
@@ -652,6 +670,17 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
         onClose={() => setShowSessionPrompt(null)}
         students={students}
         staff={staff}
+        onJoinVideo={handleJoinVideo}
+        onSendLink={handleSendTelehealthLink}
+      />
+
+      {/* Send Telehealth Link Dialog */}
+      <SendTelehealthLinkDialog
+        open={showSendTelehealthLink}
+        onOpenChange={setShowSendTelehealthLink}
+        studentName={students.find(s => s.id === telehealthLinkAppointment?.student_id)?.name || 'Student'}
+        staffName={staff.find(s => s.id === telehealthLinkAppointment?.staff_user_id)?.name}
+        scheduledTime={telehealthLinkAppointment?.start_time}
       />
 
       {/* Verification Dialog */}
