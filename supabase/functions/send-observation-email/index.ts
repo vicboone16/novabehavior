@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "Observations <onboarding@resend.dev>",
+      from: "Nova Behavior <noreply@novabehavior.com>",
       to: [request.recipient_email],
       subject: `Observation Request: ${requestTypeLabel}`,
       html: htmlContent,
