@@ -1058,20 +1058,21 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
       // Sync LIVE session data (current unsaved session)
       // This enables real-time sync between devices during active data collection
-      const hasLiveData = frequencyEntries.some(e => e.count > 0) || 
-                          durationEntries.length > 0 || 
-                          intervalEntries.length > 0 ||
-                          abcEntries.length > 0;
+      // CRITICAL: Filter out historical entries - they are synced via student.historicalData
+      const liveFrequencyEntries = frequencyEntries.filter(e => !e.isHistorical && e.sessionId === currentSessionId);
+      const liveDurationEntries = durationEntries.filter(e => e.sessionId === currentSessionId);
+      const liveIntervalEntries = intervalEntries.filter(e => e.sessionId === currentSessionId);
+      const liveAbcEntries = abcEntries.filter(e => e.sessionId === currentSessionId);
+      
+      const hasLiveData = liveFrequencyEntries.some(e => e.count > 0) || 
+                          liveDurationEntries.length > 0 || 
+                          liveIntervalEntries.length > 0 ||
+                          liveAbcEntries.length > 0;
 
-      if (hasLiveData && selectedStudentIds.length > 0) {
+      if (hasLiveData && selectedStudentIds.length > 0 && currentSessionId && sessionStartTime) {
         console.log('[Sync] Syncing live session data...');
         
-        // Ensure we have a valid session ID - generate one if needed
-        let liveSessionId = currentSessionId;
-        if (!liveSessionId) {
-          liveSessionId = crypto.randomUUID();
-          useDataStore.setState({ currentSessionId: liveSessionId });
-        }
+        const liveSessionId = currentSessionId;
         
         // Create or update the live session record FIRST to satisfy FK constraint
         const { error: sessionError } = await supabase.from('sessions').upsert({
@@ -1090,9 +1091,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
           throw sessionError;
         }
 
-        // Build live session data entries
+        // Build live session data entries (using filtered lists that exclude historical data)
         const liveEntries = [
-          ...abcEntries.map(e => ({
+          ...liveAbcEntries.map(e => ({
             id: e.id,
             user_id: user.id,
             session_id: liveSessionId,
@@ -1113,7 +1114,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
               durationMinutes: e.durationMinutes,
             } as Json,
           })),
-          ...frequencyEntries.filter(e => e.count > 0).map(e => ({
+          ...liveFrequencyEntries.filter(e => e.count > 0).map(e => ({
             id: e.id,
             user_id: user.id,
             session_id: liveSessionId,
@@ -1126,7 +1127,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
               timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
             } as Json,
           })),
-          ...durationEntries.filter(e => e.duration > 0 || e.endTime).map(e => ({
+          ...liveDurationEntries.filter(e => e.duration > 0 || e.endTime).map(e => ({
             id: e.id,
             user_id: user.id,
             session_id: liveSessionId,
@@ -1139,7 +1140,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
               endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
             } as Json,
           })),
-          ...intervalEntries.map(e => ({
+          ...liveIntervalEntries.map(e => ({
             id: e.id,
             user_id: user.id,
             session_id: liveSessionId,
