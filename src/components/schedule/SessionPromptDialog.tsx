@@ -13,7 +13,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Play, Calendar, Clock, User, Video } from 'lucide-react';
+import { Play, Calendar, Clock, User, Video, Send } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
@@ -23,6 +24,7 @@ interface SessionPromptDialogProps {
   students: CalendarStudent[];
   staff: CalendarStaff[];
   onJoinVideo?: (appointment: Appointment) => void;
+  onSendLink?: (appointment: Appointment) => void;
 }
 
 export function SessionPromptDialog({
@@ -31,6 +33,7 @@ export function SessionPromptDialog({
   students,
   staff,
   onJoinVideo,
+  onSendLink,
 }: SessionPromptDialogProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -93,6 +96,13 @@ export function SessionPromptDialog({
         </DialogHeader>
 
         <div className="py-4 space-y-3">
+          {appointment.appointment_type === 'telehealth' && (
+            <Badge variant="secondary" className="gap-1">
+              <Video className="w-3 h-3" />
+              Telehealth Session
+            </Badge>
+          )}
+
           <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg">
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -118,6 +128,22 @@ export function SessionPromptDialog({
             {format(new Date(appointment.start_time), 'h:mm a')} - {format(new Date(appointment.end_time), 'h:mm a')}
             <span>({appointment.duration_minutes} min)</span>
           </div>
+
+          {/* Send link option for telehealth */}
+          {appointment.appointment_type === 'telehealth' && onSendLink && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                onSendLink(appointment);
+                onClose();
+              }}
+            >
+              <Send className="w-4 h-4 mr-1" />
+              Send Link to Parent/Participant
+            </Button>
+          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
