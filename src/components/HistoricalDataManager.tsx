@@ -4,6 +4,7 @@ import {
   History, Trash2, Pencil, Clock, TrendingUp, Save, X,
   ChevronDown, ChevronUp, AlertCircle, Filter
 } from 'lucide-react';
+import { HistoricalSyncStatusBadge } from '@/components/HistoricalSyncStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -176,6 +177,7 @@ export function HistoricalDataManager({ studentId }: HistoricalDataManagerProps)
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5 text-primary" />
               Historical Data Manager - {student.name}
+              <HistoricalSyncStatusBadge studentId={studentId} className="ml-auto" />
             </DialogTitle>
           </DialogHeader>
 
