@@ -28,6 +28,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import QuestionnaireForm from "./pages/QuestionnaireForm";
 import ConsentForm from "./pages/ConsentForm";
 import TeacherObservationForm from "./pages/TeacherObservationForm";
+import PublicFormPage from "./pages/PublicFormPage";
 import DocumentInbox from "./pages/DocumentInbox";
 import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
@@ -107,6 +108,8 @@ const App = () => {
             <Route path="/consent/:token" element={<ConsentForm />} />
             {/* Public teacher observation form - no auth required */}
             <Route path="/observation/:token" element={<TeacherObservationForm />} />
+            {/* Public custom form - no auth required */}
+            <Route path="/form/:token" element={<PublicFormPage />} />
             <Route path="/pending-approval" element={
               <ProtectedRoute>
                 <PendingApproval />

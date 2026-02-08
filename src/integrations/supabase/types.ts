@@ -3492,7 +3492,10 @@ export type Database = {
       }
       custom_form_submissions: {
         Row: {
+          access_token: string | null
           created_at: string
+          created_by: string | null
+          expires_at: string | null
           form_id: string
           id: string
           respondent_email: string | null
@@ -3501,6 +3504,7 @@ export type Database = {
           responses: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
+          sent_at: string | null
           signature_data: string | null
           signed_at: string | null
           status: string
@@ -3509,7 +3513,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_token?: string | null
           created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
           form_id: string
           id?: string
           respondent_email?: string | null
@@ -3518,6 +3525,7 @@ export type Database = {
           responses?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          sent_at?: string | null
           signature_data?: string | null
           signed_at?: string | null
           status?: string
@@ -3526,7 +3534,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_token?: string | null
           created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
           form_id?: string
           id?: string
           respondent_email?: string | null
@@ -3535,6 +3546,7 @@ export type Database = {
           responses?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          sent_at?: string | null
           signature_data?: string | null
           signed_at?: string | null
           status?: string

@@ -60,8 +60,65 @@ export function useFormBuilder() {
     return data;
   }, []);
 
+  // Create a magic link submission and optionally send email
+  const createMagicLinkSubmission = useCallback(async (opts: {
+    formId: string;
+    studentId?: string;
+    recipientName: string;
+    recipientEmail: string;
+    recipientRelationship?: string;
+    sendEmail?: boolean;
+  }) => {
+    if (!user) return null;
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 day expiry
+
+    const { data, error } = await supabase
+      .from('custom_form_submissions')
+      .insert({
+        form_id: opts.formId,
+        student_id: opts.studentId || null,
+        respondent_name: opts.recipientName,
+        respondent_email: opts.recipientEmail,
+        respondent_relationship: opts.recipientRelationship || null,
+        created_by: user.id,
+        status: 'draft',
+        expires_at: expiresAt.toISOString(),
+      } as any)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (opts.sendEmail && data) {
+      const { error: emailError } = await supabase.functions.invoke('send-magic-link-email', {
+        body: { type: 'custom_form', recordId: data.id },
+      });
+
+      if (emailError) {
+        console.error('Email send failed:', emailError);
+        toast.success('Form link created but email delivery failed. Copy the link to share.');
+      } else {
+        toast.success(`Form emailed to ${opts.recipientEmail}`);
+      }
+    } else {
+      toast.success('Form link created');
+    }
+
+    return data;
+  }, [user]);
+
+  // Copy magic link for a submission
+  const copyFormLink = useCallback((accessToken: string) => {
+    const url = `${window.location.origin}/form/${accessToken}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Form link copied to clipboard');
+  }, []);
+
   return {
     forms, submissions, isLoading,
     fetchForms, fetchSubmissions, createForm, updateForm, deleteForm, submitForm,
+    createMagicLinkSubmission, copyFormLink,
   };
 }

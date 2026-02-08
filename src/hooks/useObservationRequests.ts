@@ -90,14 +90,14 @@ export function useObservationRequests(studentId?: string, showAll?: boolean) {
 
   const sendRequest = async (requestId: string) => {
     try {
-      // Call the edge function to actually send the email
-      const { data, error: fnError } = await supabase.functions.invoke('send-observation-email', {
-        body: { requestId },
+      // Call the unified magic link email function
+      const { data, error: fnError } = await supabase.functions.invoke('send-magic-link-email', {
+        body: { type: 'observation', recordId: requestId },
       });
 
       if (fnError) {
         console.error('Edge function error:', fnError);
-        // Fallback: just update status if edge function fails (e.g. no RESEND_API_KEY)
+        // Fallback: just update status if edge function fails
         const { error } = await supabase
           .from('observation_requests')
           .update({ 
