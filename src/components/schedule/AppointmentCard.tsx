@@ -57,7 +57,7 @@ export function AppointmentCard({
   const now = new Date();
   const isPastAppointment = isPast(endTime);
   const isWithinStartWindow = differenceInMinutes(startTime, now) <= 15 && !isPast(startTime);
-  const isTelehealth = appointment.appointment_type === 'telehealth';
+  const isTelehealth = !!(appointment as any).is_telehealth;
   const isUpcoming = !isPastAppointment && appointment.status === 'scheduled';
   const needsVerification = isPastAppointment && 
     appointment.status === 'scheduled' && 

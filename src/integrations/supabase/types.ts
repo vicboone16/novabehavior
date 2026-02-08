@@ -413,6 +413,7 @@ export type Database = {
           end_time: string
           id: string
           is_recurring: boolean | null
+          is_telehealth: boolean
           linked_session_id: string | null
           location_detail: string | null
           notes: string | null
@@ -440,6 +441,7 @@ export type Database = {
           end_time: string
           id?: string
           is_recurring?: boolean | null
+          is_telehealth?: boolean
           linked_session_id?: string | null
           location_detail?: string | null
           notes?: string | null
@@ -467,6 +469,7 @@ export type Database = {
           end_time?: string
           id?: string
           is_recurring?: boolean | null
+          is_telehealth?: boolean
           linked_session_id?: string | null
           location_detail?: string | null
           notes?: string | null

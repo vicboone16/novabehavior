@@ -99,7 +99,6 @@ export const APPOINTMENT_CATEGORIES = [
   { value: 'assessment', label: 'Assessment' },
   { value: 'supervision', label: 'Supervision' },
   { value: 'parent_training', label: 'Parent Training' },
-  { value: 'telehealth', label: 'Telehealth' },
   { value: 'admin', label: 'Admin' },
   { value: 'collaboration', label: 'Collaboration' },
   { value: 'iep_meeting', label: 'IEP Meeting' },
@@ -128,6 +127,7 @@ export function AppointmentDialog({
   const [studentId, setStudentId] = useState('');
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [isTelehealth, setIsTelehealth] = useState(false);
   const [showStaffSelector, setShowStaffSelector] = useState(false);
   const [showFindStaffSheet, setShowFindStaffSheet] = useState(false);
   
@@ -227,6 +227,7 @@ export function AppointmentDialog({
       }
       
       setNotes(appointment.notes || '');
+      setIsTelehealth(!!(appointment as any).is_telehealth);
     } else {
       // Reset to defaults
       setTitle('');
@@ -238,6 +239,7 @@ export function AppointmentDialog({
       setStudentId(defaultStudentId || '');
       setSelectedStaffIds([]);
       setNotes('');
+      setIsTelehealth(false);
     }
   }, [appointment, open, defaultStudentId]);
 
@@ -293,8 +295,9 @@ export function AppointmentDialog({
       duration_minutes: duration,
       notes: notes || null,
       status: 'scheduled',
-      appointment_type: appointmentType
-    });
+      appointment_type: appointmentType,
+      is_telehealth: isTelehealth,
+    } as any);
   };
 
   return (
@@ -430,10 +433,31 @@ export function AppointmentDialog({
           {/* Duration display */}
           <p className="text-xs text-muted-foreground -mt-2">
             Duration: {formatDuration(calculateDuration(startTime, endTime))}
-            {calculateDuration(startTime, endTime) > 0 && calculateDuration(startTime, endTime) <= startTime.split(':').map(Number)[0] * 60 + startTime.split(':').map(Number)[1] && 
+            {(() => {
+              const [endH, endM] = endTime.split(':').map(Number);
+              const [startH, startM] = startTime.split(':').map(Number);
+              return (endH * 60 + endM) <= (startH * 60 + startM);
+            })() && (
               <span className="ml-1 text-warning">(spans to next day)</span>
-            }
+            )}
           </p>
+
+          {/* Telehealth toggle */}
+          <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+            <Checkbox 
+              id="is-telehealth"
+              checked={isTelehealth}
+              onCheckedChange={(checked) => setIsTelehealth(!!checked)}
+            />
+            <div className="space-y-0.5">
+              <Label htmlFor="is-telehealth" className="text-sm font-medium cursor-pointer">
+                Telehealth Session
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enable if this session will be conducted via video call
+              </p>
+            </div>
+          </div>
 
           {/* Staff selection - Multiple */}
           <div className="space-y-2">

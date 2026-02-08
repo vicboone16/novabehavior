@@ -27,6 +27,7 @@ export interface Appointment {
   verification_required?: boolean;
   verified_at?: string;
   verified_by?: string;
+  is_telehealth?: boolean;
 }
 
 export type ScheduleViewType = 'day' | 'week' | 'month' | 'timeline';

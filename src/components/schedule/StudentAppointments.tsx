@@ -211,7 +211,7 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                               {apt.appointment_type === 'retroactive' && (
                                 <Badge variant="outline" className="text-xs">Retroactive</Badge>
                               )}
-                              {apt.appointment_type === 'telehealth' && (
+                              {(apt as any).is_telehealth && (
                                 <Badge variant="outline" className="text-xs gap-1">
                                   <Video className="w-3 h-3" />
                                   Telehealth
@@ -225,7 +225,7 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                               </p>
                             )}
                             {/* Telehealth actions */}
-                            {apt.appointment_type === 'telehealth' && apt.status === 'scheduled' && (
+                            {(apt as any).is_telehealth && apt.status === 'scheduled' && (
                               <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                   variant="outline"

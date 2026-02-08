@@ -243,7 +243,7 @@ export default function Schedule() {
     const endTime = new Date(appointment.end_time);
     const timeDiffStart = differenceInMinutes(startTime, now); // minutes until start
     const isPastEnd = isPast(endTime);
-    const isTelehealth = appointment.appointment_type === 'telehealth';
+    const isTelehealth = !!(appointment as any).is_telehealth;
     
     // If past the appointment end time and unverified, show verification dialog
     if (isPastEnd && appointment.status === 'scheduled' && 
