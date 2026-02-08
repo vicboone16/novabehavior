@@ -2,7 +2,7 @@ import { format, isPast, differenceInMinutes } from 'date-fns';
 import { 
   Clock, User, MapPin, FileText, Calendar,
   CheckCircle2, XCircle, AlertTriangle, Link2,
-  MoreVertical, Play, Edit2
+  MoreVertical, Play, Edit2, Video, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,8 @@ interface AppointmentCardProps {
   onMarkCanceled?: () => void;
   onMarkNoShow?: () => void;
   onCloseWithoutSession?: () => void;
+  onJoinVideo?: () => void;
+  onSendTelehealthLink?: () => void;
 }
 
 export function AppointmentCard({
@@ -42,6 +44,8 @@ export function AppointmentCard({
   onMarkCanceled,
   onMarkNoShow,
   onCloseWithoutSession,
+  onJoinVideo,
+  onSendTelehealthLink,
 }: AppointmentCardProps) {
   const student = students.find(s => s.id === appointment.student_id);
   const staffMember = appointment.staff_user_id 
@@ -53,6 +57,8 @@ export function AppointmentCard({
   const now = new Date();
   const isPastAppointment = isPast(endTime);
   const isWithinStartWindow = differenceInMinutes(startTime, now) <= 15 && !isPast(startTime);
+  const isTelehealth = appointment.appointment_type === 'telehealth';
+  const isUpcoming = !isPastAppointment && appointment.status === 'scheduled';
   const needsVerification = isPastAppointment && 
     appointment.status === 'scheduled' && 
     (!appointment.verification_status || appointment.verification_status === 'unverified');
@@ -118,6 +124,18 @@ export function AppointmentCard({
                 <DropdownMenuItem onClick={onStartSession}>
                   <Play className="w-4 h-4 mr-2" />
                   Start Session
+                </DropdownMenuItem>
+              )}
+              {isTelehealth && isUpcoming && onJoinVideo && (
+                <DropdownMenuItem onClick={onJoinVideo}>
+                  <Video className="w-4 h-4 mr-2" />
+                  Join Video
+                </DropdownMenuItem>
+              )}
+              {isTelehealth && isUpcoming && onSendTelehealthLink && (
+                <DropdownMenuItem onClick={onSendTelehealthLink}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Link to Participant
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -217,9 +235,22 @@ export function AppointmentCard({
               Verify
             </Button>
           ) : isWithinStartWindow && appointment.status === 'scheduled' && onStartSession ? (
-            <Button onClick={onStartSession} className="flex-1" size="sm">
-              <Play className="w-4 h-4 mr-1" />
-              Start Session
+            <>
+              <Button onClick={onStartSession} className="flex-1" size="sm">
+                <Play className="w-4 h-4 mr-1" />
+                Start Session
+              </Button>
+              {isTelehealth && onJoinVideo && (
+                <Button onClick={onJoinVideo} variant="secondary" size="sm">
+                  <Video className="w-4 h-4 mr-1" />
+                  Join Video
+                </Button>
+              )}
+            </>
+          ) : isTelehealth && isUpcoming && onJoinVideo ? (
+            <Button onClick={onJoinVideo} variant="secondary" className="flex-1" size="sm">
+              <Video className="w-4 h-4 mr-1" />
+              Join Video
             </Button>
           ) : null}
         </div>

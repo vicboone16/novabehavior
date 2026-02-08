@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Calendar, Clock, User, Plus, ExternalLink, 
-  Loader2, CalendarDays, CheckCircle2, XCircle 
+  Loader2, CalendarDays, CheckCircle2, XCircle, Video, Send
 } from 'lucide-react';
 import { AppointmentDialog } from './AppointmentDialog';
+import { SendTelehealthLinkDialog } from '@/components/telehealth/SendTelehealthLinkDialog';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
 
 interface StudentAppointmentsProps {
@@ -28,6 +29,8 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
   const [staff, setStaff] = useState<CalendarStaff[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [showSendLink, setShowSendLink] = useState(false);
+  const [sendLinkAppointment, setSendLinkAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadData();
@@ -208,6 +211,12 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                               {apt.appointment_type === 'retroactive' && (
                                 <Badge variant="outline" className="text-xs">Retroactive</Badge>
                               )}
+                              {apt.appointment_type === 'telehealth' && (
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <Video className="w-3 h-3" />
+                                  Telehealth
+                                </Badge>
+                              )}
                             </div>
                             {getStaffNames(apt) && (
                               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -215,11 +224,29 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
                                 {getStaffNames(apt)}
                               </p>
                             )}
+                            {/* Telehealth actions */}
+                            {apt.appointment_type === 'telehealth' && apt.status === 'scheduled' && (
+                              <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    setSendLinkAppointment(apt);
+                                    setShowSendLink(true);
+                                  }}
+                                >
+                                  <Send className="w-3 h-3 mr-1" />
+                                  Send Link
+                                </Button>
+                              </div>
+                            )}
                           </div>
                           {getStatusBadge(apt.status)}
                         </div>
                       </div>
                     ))}
+
                   </div>
                 </div>
               )}
@@ -287,6 +314,14 @@ export function StudentAppointments({ studentId, studentName, studentColor }: St
         onSave={handleSave}
         onDelete={editingAppointment ? () => handleDelete(editingAppointment.id) : undefined}
         defaultStudentId={studentId}
+      />
+
+      <SendTelehealthLinkDialog
+        open={showSendLink}
+        onOpenChange={setShowSendLink}
+        studentName={studentName}
+        staffName={sendLinkAppointment ? getStaffNames(sendLinkAppointment) || undefined : undefined}
+        scheduledTime={sendLinkAppointment?.start_time}
       />
     </>
   );
