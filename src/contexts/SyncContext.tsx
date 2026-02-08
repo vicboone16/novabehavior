@@ -1075,11 +1075,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
       // Sync LIVE session data (current unsaved session)
       // This enables real-time sync between devices during active data collection
-      // CRITICAL: Filter out historical entries - they are synced via student.historicalData
+      // CRITICAL: Filter out historical entries - they are synced via their own historical sessions
+      // Only sync entries that belong to the CURRENT live session and are NOT historical
       const liveFrequencyEntries = frequencyEntries.filter(e => !e.isHistorical && e.sessionId === currentSessionId);
-      const liveDurationEntries = durationEntries.filter(e => e.sessionId === currentSessionId);
-      const liveIntervalEntries = intervalEntries.filter(e => e.sessionId === currentSessionId);
-      const liveAbcEntries = abcEntries.filter(e => e.sessionId === currentSessionId);
+      const liveDurationEntries = durationEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
+      const liveIntervalEntries = intervalEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
+      const liveAbcEntries = abcEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
       
       const hasLiveData = liveFrequencyEntries.some(e => e.count > 0) || 
                           liveDurationEntries.length > 0 || 
