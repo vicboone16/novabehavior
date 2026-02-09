@@ -2067,14 +2067,37 @@ export const useDataStore = create<DataState>()(
         if (toMerge.length < 2) return;
 
         const primary = toMerge[0];
+        
+        // For frequency entries, deduplicate by student+behavior, keeping the latest (most updated) value
+        const allFreqEntries = toMerge.flatMap(s => s.frequencyEntries || []);
+        const freqByKey = new Map<string, typeof allFreqEntries[0]>();
+        for (const entry of allFreqEntries) {
+          const key = `${entry.studentId}:${entry.behaviorId}`;
+          const existing = freqByKey.get(key);
+          if (!existing || entry.count > existing.count) {
+            freqByKey.set(key, entry);
+          }
+        }
+
+        // For duration entries, deduplicate by student+behavior, keeping the latest value
+        const allDurEntries = toMerge.flatMap(s => s.durationEntries || []);
+        const durByKey = new Map<string, typeof allDurEntries[0]>();
+        for (const entry of allDurEntries) {
+          const key = `${entry.studentId}:${entry.behaviorId}`;
+          const existing = durByKey.get(key);
+          if (!existing || entry.duration > existing.duration) {
+            durByKey.set(key, entry);
+          }
+        }
+
         const mergedSession: Session = {
           ...primary,
           notes: toMerge.map(s => s.notes).filter(Boolean).join('\n---\n'),
           studentIds: [...new Set(toMerge.flatMap(s => s.studentIds))],
-          sessionLengthMinutes: toMerge.reduce((sum, s) => sum + s.sessionLengthMinutes, 0),
+          sessionLengthMinutes: Math.max(...toMerge.map(s => s.sessionLengthMinutes)),
           abcEntries: toMerge.flatMap(s => s.abcEntries || []),
-          frequencyEntries: toMerge.flatMap(s => s.frequencyEntries || []),
-          durationEntries: toMerge.flatMap(s => s.durationEntries || []),
+          frequencyEntries: Array.from(freqByKey.values()),
+          durationEntries: Array.from(durByKey.values()),
           intervalEntries: toMerge.flatMap(s => s.intervalEntries || []),
         };
 
