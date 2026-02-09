@@ -27,7 +27,7 @@ interface ABCTrackerProps {
 }
 
 export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProps) {
-  const { addABCEntry, abcEntries, updateABCEntry, deleteABCEntry, students, getStudentAntecedents, getStudentConsequences } = useDataStore();
+  const { addEnhancedABCEntry, abcEntries, updateABCEntry, deleteABCEntry, students, getStudentAntecedents, getStudentConsequences } = useDataStore();
   const [selectedAntecedents, setSelectedAntecedents] = useState<string[]>([]);
   const [selectedBehavior, setSelectedBehavior] = useState<string | null>(null);
   const [selectedConsequences, setSelectedConsequences] = useState<string[]>([]);
@@ -72,7 +72,8 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
 
   const handleRecord = () => {
     if (selectedAntecedents.length > 0 && selectedBehavior && selectedConsequences.length > 0) {
-      addABCEntry({
+      // Use addEnhancedABCEntry to also sync with frequency counts
+      addEnhancedABCEntry({
         studentId,
         behaviorId: behavior.id,
         antecedent: selectedAntecedents[0], // Primary for legacy

@@ -52,7 +52,16 @@ export function StudentSessionTimer({
 
     const updateElapsed = () => {
       // Use global session start time as the base
-      const startMs = new Date(sessionStartTime).getTime();
+      // Handle both Date objects and ISO strings (from zustand persist restoration)
+      const startDate = sessionStartTime instanceof Date ? sessionStartTime : new Date(sessionStartTime);
+      const startMs = startDate.getTime();
+      
+      // Guard against invalid dates
+      if (isNaN(startMs)) {
+        setElapsed(0);
+        return;
+      }
+      
       const now = Date.now();
       
       // Calculate total pause time from pause durations array

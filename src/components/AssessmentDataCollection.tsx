@@ -18,6 +18,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useDataStore } from '@/store/dataStore';
 import { ABCTracker } from '@/components/ABCTracker';
+import { FrequencyTracker } from '@/components/FrequencyTracker';
+import { DurationTracker } from '@/components/DurationTracker';
 import { StudentSessionTimer } from '@/components/StudentSessionTimer';
 import { ColdProbeTracker, ColdProbeSession } from '@/components/ColdProbeTracker';
 import { StructuredObservationForm, StructuredObservationData } from '@/components/StructuredObservationForm';
@@ -155,8 +157,10 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   // Notify parent of observation state changes (kept for backwards compatibility)
   useEffect(() => {
     if (!onObservationChange) return;
-    const durationMinutes = sessionStartTime
-      ? (Date.now() - new Date(sessionStartTime).getTime()) / 60000
+    const startDate = sessionStartTime instanceof Date ? sessionStartTime : new Date(sessionStartTime);
+    const startMs = startDate.getTime();
+    const durationMinutes = !isNaN(startMs)
+      ? (Date.now() - startMs) / 60000
       : 0;
     onObservationChange(isLiveObservationActive, durationMinutes);
   }, [isLiveObservationActive, onObservationChange, sessionStartTime]);
@@ -783,65 +787,130 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
         {/* Frequency Tab */}
         <TabsContent value="frequency" className="space-y-4">
-          <Card>
-            <CardContent className="py-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Use the ABC tab for quick frequency recording, or add a Novel Behavior with frequency count.
-              </p>
-              <Dialog open={showNovelDialog} onOpenChange={setShowNovelDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full gap-2">
-                    <Zap className="w-4 h-4" />
-                    Record Novel Behavior with Frequency
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </CardContent>
-          </Card>
+          {student.behaviors.filter(b => b.methods?.includes('frequency')).length > 0 ? (
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-3">
+                {student.behaviors
+                  .filter(b => b.methods?.includes('frequency'))
+                  .map((behavior) => (
+                    <FrequencyTracker
+                      key={behavior.id}
+                      studentId={student.id}
+                      behavior={behavior}
+                      studentColor={student.color}
+                    />
+                  ))}
+              </div>
+            </ScrollArea>
+          ) : (
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  No behaviors configured for frequency tracking. Add a novel behavior or configure existing behaviors.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          <Dialog open={showNovelDialog} onOpenChange={setShowNovelDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full gap-2" onClick={() => setNovelRecordingMode('frequency')}>
+                <Zap className="w-4 h-4" />
+                Record Novel Behavior (Frequency)
+              </Button>
+            </DialogTrigger>
+          </Dialog>
         </TabsContent>
 
         {/* Duration Tab */}
         <TabsContent value="duration" className="space-y-4">
-          <Card>
-            <CardContent className="py-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Use the Novel Behavior recorder to capture duration for new behaviors.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full gap-2"
-                onClick={() => {
-                  setNovelRecordingMode('duration');
-                  setShowNovelDialog(true);
-                }}
-              >
-                <Clock className="w-4 h-4" />
-                Record Duration for Novel Behavior
-              </Button>
-            </CardContent>
-          </Card>
+          {student.behaviors.filter(b => b.methods?.includes('duration')).length > 0 ? (
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-3">
+                {student.behaviors
+                  .filter(b => b.methods?.includes('duration'))
+                  .map((behavior) => (
+                    <DurationTracker
+                      key={behavior.id}
+                      studentId={student.id}
+                      behavior={behavior}
+                      studentColor={student.color}
+                    />
+                  ))}
+              </div>
+            </ScrollArea>
+          ) : (
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  No behaviors configured for duration tracking. Add a novel behavior or configure existing behaviors.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          <Button 
+            variant="outline" 
+            className="w-full gap-2"
+            onClick={() => {
+              setNovelRecordingMode('duration');
+              setShowNovelDialog(true);
+            }}
+          >
+            <Clock className="w-4 h-4" />
+            Record Novel Behavior (Duration)
+          </Button>
         </TabsContent>
 
         {/* Latency Tab */}
         <TabsContent value="latency" className="space-y-4">
-          <Card>
-            <CardContent className="py-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Measure time between instruction and behavior onset.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full gap-2"
-                onClick={() => {
-                  setNovelRecordingMode('latency');
-                  setShowNovelDialog(true);
-                }}
-              >
-                <Timer className="w-4 h-4" />
-                Record Latency for Novel Behavior
-              </Button>
-            </CardContent>
-          </Card>
+          {student.behaviors.filter(b => b.methods?.includes('latency')).length > 0 ? (
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-3">
+                {student.behaviors
+                  .filter(b => b.methods?.includes('latency'))
+                  .map((behavior) => (
+                    <Card key={behavior.id}>
+                      <CardContent className="py-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{behavior.name}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Start latency timer for this behavior
+                              setNovelBehaviorName(behavior.name);
+                              setNovelRecordingMode('latency');
+                              setShowNovelDialog(true);
+                            }}
+                          >
+                            <Timer className="w-4 h-4 mr-1" />
+                            Start Timer
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            </ScrollArea>
+          ) : (
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  No behaviors configured for latency tracking. Add a novel behavior or configure existing behaviors.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          <Button 
+            variant="outline" 
+            className="w-full gap-2"
+            onClick={() => {
+              setNovelRecordingMode('latency');
+              setShowNovelDialog(true);
+            }}
+          >
+            <Timer className="w-4 h-4" />
+            Record Novel Behavior (Latency)
+          </Button>
         </TabsContent>
 
         {/* Cold Probe Tab */}
