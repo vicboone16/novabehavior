@@ -362,7 +362,9 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     }>();
 
     studentABC.forEach(entry => {
-      const functions = entry.functions || ['unknown' as BehaviorFunction];
+      // Only include entries with explicitly tagged functions — don't default to 'unknown'
+      if (!entry.functions || entry.functions.length === 0) return;
+      const functions = entry.functions;
       const antecedents = entry.antecedents || [entry.antecedent];
       const consequences = entry.consequences || [entry.consequence];
 

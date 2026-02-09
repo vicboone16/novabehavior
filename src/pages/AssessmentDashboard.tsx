@@ -181,13 +181,14 @@ export default function AssessmentDashboard() {
       s.studentIds?.includes(selectedStudentId)
     );
 
-    // Calculate function distribution
+    // Calculate function distribution - only count entries that have functions tagged
     const functionCounts = new Map<BehaviorFunction, number>();
     studentABC.forEach(entry => {
-      const functions = entry.functions || ['unknown' as BehaviorFunction];
-      functions.forEach(fn => {
-        functionCounts.set(fn, (functionCounts.get(fn) || 0) + 1);
-      });
+      if (entry.functions && entry.functions.length > 0) {
+        entry.functions.forEach(fn => {
+          functionCounts.set(fn, (functionCounts.get(fn) || 0) + 1);
+        });
+      }
     });
 
     const functionDistribution = Array.from(functionCounts.entries())
@@ -198,12 +199,15 @@ export default function AssessmentDashboard() {
       }))
       .sort((a, b) => b.count - a.count);
 
+    const secondaryFunctions = functionDistribution.length > 1 ? functionDistribution.slice(1) : [];
+
     return {
       abcCount: studentABC.length,
       sessionCount: studentSessions.length,
       behaviorCount: selectedStudent.behaviors.length,
       functionDistribution,
       primaryFunction: functionDistribution[0] || null,
+      secondaryFunctions,
     };
   }, [selectedStudent, selectedStudentId, abcEntries, sessions]);
 
@@ -515,7 +519,7 @@ export default function AssessmentDashboard() {
                   </div>
 
                   {studentStats?.primaryFunction && (
-                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 space-y-2">
                       <p className="text-xs text-muted-foreground mb-1">Primary Function</p>
                       <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${getFunctionColor(studentStats.primaryFunction.function)}`} />
@@ -524,6 +528,20 @@ export default function AssessmentDashboard() {
                           {studentStats.primaryFunction.count} entries
                         </Badge>
                       </div>
+                      {studentStats.secondaryFunctions.length > 0 && (
+                        <div className="pt-1 border-t border-primary/10">
+                          <p className="text-xs text-muted-foreground mb-1">Secondary Function{studentStats.secondaryFunctions.length > 1 ? 's' : ''}</p>
+                          {studentStats.secondaryFunctions.map(sf => (
+                            <div key={sf.function} className="flex items-center gap-2 mt-1">
+                              <div className={`w-2.5 h-2.5 rounded-full ${getFunctionColor(sf.function)}`} />
+                              <span className="text-sm">{sf.label}</span>
+                              <Badge variant="outline" className="text-xs ml-auto">
+                                {sf.count} entries
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
