@@ -523,11 +523,11 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 Record Novel Behavior
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>Record Novel Behavior</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-4 overflow-y-auto flex-1">
                 <div className="space-y-2">
                   <Label>Behavior Name</Label>
                   <Input
