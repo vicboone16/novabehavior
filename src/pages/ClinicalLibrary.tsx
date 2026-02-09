@@ -62,5 +62,5 @@ function IEPLibraryContent() {
 
 // Wrapper that renders BehaviorLibrary content without its own header/nav
 function BehaviorLibraryContent() {
-  return <BehaviorLibrary />;
+  return <BehaviorLibrary embedded />;
 }
