@@ -108,6 +108,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
   // Observation session state
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [behaviorToRemove, setBehaviorToRemove] = useState<{ id: string; name: string } | null>(null);
   const [showHistoricalEntry, setShowHistoricalEntry] = useState(false);
   const [showAddTarget, setShowAddTarget] = useState(false);
 
@@ -502,16 +503,29 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                     open={expandedBehaviors.has(behavior.id)}
                     onOpenChange={() => toggleBehaviorExpand(behavior.id)}
                   >
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/80">
-                        <span className="font-medium text-sm">{behavior.name}</span>
-                        {expandedBehaviors.has(behavior.id) ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </div>
-                    </CollapsibleTrigger>
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted/80">
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center gap-2 flex-1 cursor-pointer">
+                          <span className="font-medium text-sm">{behavior.name}</span>
+                          {expandedBehaviors.has(behavior.id) ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </div>
+                      </CollapsibleTrigger>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBehaviorToRemove({ id: behavior.id, name: behavior.name });
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                     <CollapsibleContent className="pt-2">
                       <ABCTracker
                         studentId={student.id}
@@ -1478,6 +1492,23 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         confirmLabel="Delete Observation"
         cancelLabel="Cancel"
         onConfirm={handleDeleteObservation}
+        variant="destructive"
+      />
+
+      <ConfirmDialog
+        open={!!behaviorToRemove}
+        onOpenChange={() => setBehaviorToRemove(null)}
+        title={`Remove "${behaviorToRemove?.name}"?`}
+        description="This will remove this behavior from the student's profile. Any recorded data for this behavior in previous sessions will be preserved."
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          if (behaviorToRemove) {
+            removeBehavior(student.id, behaviorToRemove.id);
+            toast.success(`"${behaviorToRemove.name}" removed`);
+            setBehaviorToRemove(null);
+          }
+        }}
         variant="destructive"
       />
 
