@@ -484,7 +484,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               </CardContent>
             </Card>
           ) : (
-            <ScrollArea className="max-h-[600px]">
+            <div className="max-h-[600px] overflow-y-auto">
               <div className="space-y-3">
                 {student.behaviors.map((behavior) => (
                   <Collapsible
@@ -512,7 +512,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                   </Collapsible>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           )}
 
           {/* Novel Behavior Button */}
