@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useDataStore } from '@/store/dataStore';
+import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { Session } from '@/types/behavior';
 import { toast } from '@/hooks/use-toast';
 
@@ -28,13 +29,14 @@ interface ObservationHistoryProps {
 }
 
 export function ObservationHistory({ studentId }: ObservationHistoryProps) {
-  const { sessions, students, abcEntries, deleteSession, updateSession, mergeSessions } = useDataStore();
+  const { sessions, students, abcEntries, deleteSession, updateSession, mergeSessions, deleteFrequencyEntry, deleteDurationEntry, deleteABCEntry } = useDataStore();
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editDuration, setEditDuration] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteEntryConfirm, setDeleteEntryConfirm] = useState<{ id: string; type: 'frequency' | 'duration' | 'abc' | 'interval'; label: string } | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<string[]>([]);
 
@@ -304,8 +306,17 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
                                   {data.frequencyEntries.map((entry, idx) => {
                                     const behavior = student?.behaviors.find(b => b.id === entry.behaviorId);
                                     return (
-                                      <Badge key={idx} variant="secondary" className="text-xs">
+                                      <Badge key={idx} variant="secondary" className="text-xs gap-1 pr-1">
                                         {behavior?.name || 'Unknown'}: {entry.count}
+                                        <button
+                                          className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeleteEntryConfirm({ id: entry.id, type: 'frequency', label: `${behavior?.name || 'Unknown'}: ${entry.count}` });
+                                          }}
+                                        >
+                                          <X className="w-3 h-3 text-destructive" />
+                                        </button>
                                       </Badge>
                                     );
                                   })}
@@ -316,16 +327,24 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
                             {/* ABC summary */}
                             {data.abcEntries.length > 0 && (
                               <div className="space-y-1">
-                                <p className="text-xs font-medium text-muted-foreground">ABC Summary</p>
-                                <div className="text-xs text-muted-foreground">
-                                  {data.abcEntries.slice(0, 3).map((entry, idx) => (
-                                    <p key={idx} className="truncate">
-                                      A: {entry.antecedent} → B: {entry.behavior} → C: {entry.consequence}
-                                    </p>
+                                <p className="text-xs font-medium text-muted-foreground">ABC Entries</p>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  {data.abcEntries.map((entry, idx) => (
+                                    <div key={idx} className="flex items-start justify-between gap-1 bg-background p-2 rounded">
+                                      <p className="truncate flex-1">
+                                        A: {entry.antecedent} → B: {entry.behavior} → C: {entry.consequence}
+                                      </p>
+                                      <button
+                                        className="shrink-0 rounded-full hover:bg-destructive/20 p-0.5"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDeleteEntryConfirm({ id: entry.id, type: 'abc', label: `ABC: ${entry.behavior}` });
+                                        }}
+                                      >
+                                        <X className="w-3 h-3 text-destructive" />
+                                      </button>
+                                    </div>
                                   ))}
-                                  {data.abcEntries.length > 3 && (
-                                    <p className="text-primary">+{data.abcEntries.length - 3} more entries</p>
-                                  )}
                                 </div>
                               </div>
                             )}
@@ -360,7 +379,7 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
         </CardContent>
       </Card>
 
-      {/* Delete confirmation */}
+      {/* Delete session confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -380,6 +399,25 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete individual entry confirmation */}
+      <ConfirmDialog
+        open={!!deleteEntryConfirm}
+        onOpenChange={(open) => !open && setDeleteEntryConfirm(null)}
+        title="Delete Entry?"
+        description={`Are you sure you want to delete "${deleteEntryConfirm?.label}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (!deleteEntryConfirm) return;
+          const { id, type } = deleteEntryConfirm;
+          if (type === 'frequency') deleteFrequencyEntry(id);
+          else if (type === 'duration') deleteDurationEntry(id);
+          else if (type === 'abc') deleteABCEntry(id);
+          setDeleteEntryConfirm(null);
+          toast({ title: 'Entry deleted' });
+        }}
+      />
     </>
   );
 }
