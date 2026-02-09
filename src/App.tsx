@@ -38,6 +38,7 @@ import Recruiting from "./pages/Recruiting";
 import LMS from "./pages/LMS";
 import NotFound from "./pages/NotFound";
 import IEPLibrary from "./pages/IEPLibrary";
+import ClinicalLibrary from "./pages/ClinicalLibrary";
 import { StaffProfilePage } from "./components/staff-profile";
  import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
  import PayerDetailPage from "./pages/payers/PayerDetailPage";
@@ -155,6 +156,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <IEPLibrary />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/clinical-library" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ClinicalLibrary />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>

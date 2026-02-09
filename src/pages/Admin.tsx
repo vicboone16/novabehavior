@@ -64,6 +64,7 @@ import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
 import { StaffManagement } from '@/components/admin/StaffManagement';
 import { CredentialTracker } from '@/components/admin/CredentialTracker';
 import { UserPermissionsManager } from '@/components/admin/UserPermissionsManager';
+import RecruitingPage from '@/pages/Recruiting';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
@@ -514,7 +515,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-5xl grid-cols-8">
+          <TabsList className="grid w-full max-w-6xl grid-cols-9">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Pending</span>
@@ -547,6 +548,10 @@ export default function Admin() {
             <TabsTrigger value="students" className="gap-2">
               <UserCog className="w-4 h-4" />
               <span className="hidden sm:inline">Students</span>
+            </TabsTrigger>
+            <TabsTrigger value="recruiting" className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Recruiting</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="w-4 h-4" />
@@ -843,6 +848,11 @@ export default function Admin() {
               availableTags={tags} 
               onTagsChange={loadData}
             />
+          </TabsContent>
+
+          {/* Recruiting Tab */}
+          <TabsContent value="recruiting">
+            <RecruitingPage />
           </TabsContent>
 
           {/* Settings Tab */}
