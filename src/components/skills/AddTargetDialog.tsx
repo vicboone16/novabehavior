@@ -32,6 +32,8 @@ const DATA_COLLECTION_TYPES = [
   { value: 'discrete_trial', label: 'Discrete Trial (DTT)' },
   { value: 'frequency', label: 'Frequency' },
   { value: 'duration', label: 'Duration' },
+  { value: 'latency', label: 'Latency' },
+  { value: 'interval', label: 'Interval Recording' },
   { value: 'task_analysis', label: 'Task Analysis' },
   { value: 'probe', label: 'Probe/Cold Probe' },
 ];

@@ -85,6 +85,15 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const novelTimerRef = useRef<NodeJS.Timeout | null>(null);
   const novelStartRef = useRef<Date | null>(null);
 
+  // Manual duration/latency entry state
+  const [manualDurationMinutes, setManualDurationMinutes] = useState<number>(0);
+  const [manualDurationSeconds, setManualDurationSeconds] = useState<number>(0);
+  const [manualDurationBehaviorId, setManualDurationBehaviorId] = useState('');
+  const [manualLatencySeconds, setManualLatencySeconds] = useState<number>(0);
+  const [manualLatencyBehaviorId, setManualLatencyBehaviorId] = useState('');
+  const [showManualDuration, setShowManualDuration] = useState(false);
+  const [showManualLatency, setShowManualLatency] = useState(false);
+
   // Interval recording state
   const [intervalConfig, setIntervalConfig] = useState<IntervalConfig>({
     intervalLength: 10,
@@ -847,6 +856,88 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               </CardContent>
             </Card>
           )}
+
+          {/* Manual Duration Entry */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Manual Duration Entry
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Enter duration data collected without the timer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs">Behavior</Label>
+                <Select value={manualDurationBehaviorId} onValueChange={setManualDurationBehaviorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select behavior..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {student.behaviors.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Minutes</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={manualDurationMinutes || ''}
+                    onChange={(e) => setManualDurationMinutes(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Seconds</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={59}
+                    value={manualDurationSeconds || ''}
+                    onChange={(e) => setManualDurationSeconds(Number(e.target.value))}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <Button
+                className="w-full"
+                size="sm"
+                disabled={!manualDurationBehaviorId || (manualDurationMinutes === 0 && manualDurationSeconds === 0)}
+                onClick={() => {
+                  const totalSeconds = manualDurationMinutes * 60 + manualDurationSeconds;
+                  // Use startDuration + stopDuration to record a manual entry
+                  const now = new Date();
+                  const fakeStart = new Date(now.getTime() - totalSeconds * 1000);
+                  // Add a duration entry directly
+                  const { durationEntries } = useDataStore.getState();
+                  useDataStore.setState({
+                    durationEntries: [...durationEntries, {
+                      id: crypto.randomUUID(),
+                      studentId: student.id,
+                      behaviorId: manualDurationBehaviorId,
+                      startTime: fakeStart,
+                      endTime: now,
+                      duration: totalSeconds,
+                    }],
+                  });
+                  toast.success(`Duration of ${manualDurationMinutes}m ${manualDurationSeconds}s recorded`);
+                  setManualDurationMinutes(0);
+                  setManualDurationSeconds(0);
+                  setManualDurationBehaviorId('');
+                }}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Record Duration
+              </Button>
+            </CardContent>
+          </Card>
+
           <Button 
             variant="outline" 
             className="w-full gap-2"
@@ -876,7 +967,6 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Start latency timer for this behavior
                               setNovelBehaviorName(behavior.name);
                               setNovelRecordingMode('latency');
                               setShowNovelDialog(true);
@@ -900,6 +990,67 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               </CardContent>
             </Card>
           )}
+
+          {/* Manual Latency Entry */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Timer className="w-4 h-4" />
+                Manual Latency Entry
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Enter latency data collected without the timer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-xs">Behavior</Label>
+                <Select value={manualLatencyBehaviorId} onValueChange={setManualLatencyBehaviorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select behavior..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {student.behaviors.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Latency (seconds)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={manualLatencySeconds || ''}
+                  onChange={(e) => setManualLatencySeconds(Number(e.target.value))}
+                  placeholder="Enter seconds..."
+                />
+              </div>
+              <Button
+                className="w-full"
+                size="sm"
+                disabled={!manualLatencyBehaviorId || manualLatencySeconds <= 0}
+                onClick={() => {
+                  const now = new Date();
+                  addLatencyEntry({
+                    studentId: student.id,
+                    behaviorId: manualLatencyBehaviorId,
+                    antecedentTime: new Date(now.getTime() - manualLatencySeconds * 1000),
+                    behaviorOnsetTime: now,
+                    latencySeconds: manualLatencySeconds,
+                    notes: 'Manual entry',
+                  });
+                  toast.success(`Latency of ${manualLatencySeconds}s recorded`);
+                  setManualLatencySeconds(0);
+                  setManualLatencyBehaviorId('');
+                }}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Record Latency
+              </Button>
+            </CardContent>
+          </Card>
+
           <Button 
             variant="outline" 
             className="w-full gap-2"
@@ -913,7 +1064,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
           </Button>
         </TabsContent>
 
-        {/* Cold Probe Tab */}
+        {/* Cold Probe / Skill Targets Tab */}
         <TabsContent value="cold_probe" className="space-y-4">
           {/* Add Target Button */}
           <div className="flex justify-end gap-2">
@@ -941,53 +1092,294 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
           {targetsLoading ? (
             <div className="text-sm text-muted-foreground text-center py-4">Loading skill targets...</div>
           ) : (
-            <ColdProbeTracker
-              studentId={student.id}
-              skillTargets={supabaseSkillTargets.map(t => ({
-                id: t.id,
-                studentId: student.id,
-                name: t.title || '',
-                operationalDefinition: t.description || undefined,
-                domain: (t.domain as any)?.name || undefined,
-                method: (t.data_collection_type === 'probe' ? 'probe' : 'dtt') as any,
-                status: (t.status || 'active') as any,
-                masteryCriteria: t.mastery_criteria ? { 
-                  type: 'percent_correct' as const, 
-                  percentCorrect: 80 
-                } : undefined,
-                createdAt: new Date(t.created_at || Date.now()),
-                updatedAt: new Date(t.updated_at || Date.now()),
-              }))}
-              studentColor={student.color}
-              onSaveSession={(session: ColdProbeSession) => {
-                // Save cold probe session - could store in student.dttSessions or separate storage
-                toast.success(`Cold probe session saved with ${session.trials.length} trials`);
-                // Update student profile with cold probe data
-                const existingData = student.dttSessions || [];
-                updateStudentProfile(student.id, {
-                  dttSessions: [...existingData, {
-                    id: session.id,
-                    skillTargetId: session.trials[0]?.skillTargetId || '',
-                    studentId: student.id,
-                    date: session.date,
-                    trials: session.trials.map(t => ({
-                      id: t.id,
-                      timestamp: t.timestamp,
-                      isCorrect: t.isCorrect,
-                      promptLevel: t.promptLevel || 'independent',
-                      notes: t.note,
-                    })),
-                    percentCorrect: Math.round(
-                      (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
-                    ),
-                    percentIndependent: Math.round(
-                      (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
-                    ),
-                    notes: session.notes,
-                  }],
-                });
-              }}
-            />
+            <>
+              {/* Probe/DTT Targets */}
+              {(() => {
+                const probeTargets = supabaseSkillTargets.filter(t => 
+                  !t.data_collection_type || t.data_collection_type === 'probe' || t.data_collection_type === 'discrete_trial' || t.data_collection_type === 'task_analysis'
+                );
+                return probeTargets.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Probe / DTT Targets</Label>
+                    <ColdProbeTracker
+                      studentId={student.id}
+                      skillTargets={probeTargets.map(t => ({
+                        id: t.id,
+                        studentId: student.id,
+                        name: t.title || '',
+                        operationalDefinition: t.description || undefined,
+                        domain: (t.domain as any)?.name || undefined,
+                        method: (t.data_collection_type === 'probe' ? 'probe' : 'dtt') as any,
+                        status: (t.status || 'active') as any,
+                        masteryCriteria: t.mastery_criteria ? { 
+                          type: 'percent_correct' as const, 
+                          percentCorrect: 80 
+                        } : undefined,
+                        createdAt: new Date(t.created_at || Date.now()),
+                        updatedAt: new Date(t.updated_at || Date.now()),
+                      }))}
+                      studentColor={student.color}
+                      onSaveSession={(session: ColdProbeSession) => {
+                        toast.success(`Cold probe session saved with ${session.trials.length} trials`);
+                        const existingData = student.dttSessions || [];
+                        updateStudentProfile(student.id, {
+                          dttSessions: [...existingData, {
+                            id: session.id,
+                            skillTargetId: session.trials[0]?.skillTargetId || '',
+                            studentId: student.id,
+                            date: session.date,
+                            trials: session.trials.map(t => ({
+                              id: t.id,
+                              timestamp: t.timestamp,
+                              isCorrect: t.isCorrect,
+                              promptLevel: t.promptLevel || 'independent',
+                              notes: t.note,
+                            })),
+                            percentCorrect: Math.round(
+                              (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
+                            ),
+                            percentIndependent: Math.round(
+                              (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
+                            ),
+                            notes: session.notes,
+                          }],
+                        });
+                      }}
+                    />
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Frequency Skill Targets */}
+              {(() => {
+                const freqTargets = supabaseSkillTargets.filter(t => t.data_collection_type === 'frequency');
+                return freqTargets.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Frequency Targets</Label>
+                    {freqTargets.map(t => {
+                      const existingBehavior = student.behaviors.find(b => b.name === t.title);
+                      return (
+                        <Card key={t.id}>
+                          <CardContent className="py-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-medium">{t.title}</span>
+                                <Badge variant="outline" className="ml-2 text-xs">Frequency</Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {existingBehavior ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      incrementFrequency(student.id, existingBehavior.id);
+                                      toast.success(`${t.title} count incremented`);
+                                    }}
+                                  >
+                                    <Hash className="w-4 h-4 mr-1" />
+                                    Count
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Add as behavior to count</span>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Duration Skill Targets */}
+              {(() => {
+                const durTargets = supabaseSkillTargets.filter(t => t.data_collection_type === 'duration');
+                return durTargets.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Duration Targets</Label>
+                    {durTargets.map(t => {
+                      const existingBehavior = student.behaviors.find(b => b.name === t.title);
+                      return (
+                        <Card key={t.id}>
+                          <CardContent className="py-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-sm font-medium">{t.title}</span>
+                                <Badge variant="outline" className="ml-2 text-xs">Duration</Badge>
+                              </div>
+                              {existingBehavior ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const { getActiveDuration, startDuration, stopDuration } = useDataStore.getState();
+                                    const active = getActiveDuration(student.id, existingBehavior.id);
+                                    if (active) {
+                                      stopDuration(student.id, existingBehavior.id);
+                                      toast.success('Duration stopped');
+                                    } else {
+                                      startDuration(student.id, existingBehavior.id);
+                                      toast.success('Duration timer started');
+                                    }
+                                  }}
+                                >
+                                  <Clock className="w-4 h-4 mr-1" />
+                                  Timer
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Add as behavior for timer</span>
+                              )}
+                            </div>
+                            {/* Manual entry inline */}
+                            <div className="flex gap-2 items-end">
+                              <div className="flex-1 grid grid-cols-2 gap-1">
+                                <Input type="number" min={0} placeholder="Min" className="h-8 text-xs" id={`dur-min-${t.id}`} />
+                                <Input type="number" min={0} max={59} placeholder="Sec" className="h-8 text-xs" id={`dur-sec-${t.id}`} />
+                              </div>
+                              <Button size="sm" variant="secondary" className="h-8 text-xs"
+                                onClick={() => {
+                                  const minEl = document.getElementById(`dur-min-${t.id}`) as HTMLInputElement;
+                                  const secEl = document.getElementById(`dur-sec-${t.id}`) as HTMLInputElement;
+                                  const mins = Number(minEl?.value || 0);
+                                  const secs = Number(secEl?.value || 0);
+                                  const total = mins * 60 + secs;
+                                  if (total <= 0) { toast.error('Enter a duration'); return; }
+                                  const now = new Date();
+                                  const { durationEntries } = useDataStore.getState();
+                                  useDataStore.setState({
+                                    durationEntries: [...durationEntries, {
+                                      id: crypto.randomUUID(),
+                                      studentId: student.id,
+                                      behaviorId: existingBehavior?.id || t.id,
+                                      startTime: new Date(now.getTime() - total * 1000),
+                                      endTime: now,
+                                      duration: total,
+                                    }],
+                                  });
+                                  toast.success(`${mins}m ${secs}s recorded for ${t.title}`);
+                                  if (minEl) minEl.value = '';
+                                  if (secEl) secEl.value = '';
+                                }}
+                              >
+                                Manual Save
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Latency Skill Targets */}
+              {(() => {
+                const latTargets = supabaseSkillTargets.filter(t => t.data_collection_type === 'latency');
+                return latTargets.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Latency Targets</Label>
+                    {latTargets.map(t => (
+                      <Card key={t.id}>
+                        <CardContent className="py-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm font-medium">{t.title}</span>
+                              <Badge variant="outline" className="ml-2 text-xs">Latency</Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setNovelBehaviorName(t.title || '');
+                                setNovelRecordingMode('latency');
+                                setShowNovelDialog(true);
+                              }}
+                            >
+                              <Timer className="w-4 h-4 mr-1" />
+                              Timer
+                            </Button>
+                          </div>
+                          {/* Manual entry inline */}
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1">
+                              <Input type="number" min={0} placeholder="Seconds" className="h-8 text-xs" id={`lat-sec-${t.id}`} />
+                            </div>
+                            <Button size="sm" variant="secondary" className="h-8 text-xs"
+                              onClick={() => {
+                                const secEl = document.getElementById(`lat-sec-${t.id}`) as HTMLInputElement;
+                                const secs = Number(secEl?.value || 0);
+                                if (secs <= 0) { toast.error('Enter latency seconds'); return; }
+                                const now = new Date();
+                                const existingBehavior = student.behaviors.find(b => b.name === t.title);
+                                addLatencyEntry({
+                                  studentId: student.id,
+                                  behaviorId: existingBehavior?.id || t.id,
+                                  antecedentTime: new Date(now.getTime() - secs * 1000),
+                                  behaviorOnsetTime: now,
+                                  latencySeconds: secs,
+                                  notes: 'Manual entry - skill target',
+                                });
+                                toast.success(`${secs}s latency recorded for ${t.title}`);
+                                if (secEl) secEl.value = '';
+                              }}
+                            >
+                              Manual Save
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Interval Skill Targets */}
+              {(() => {
+                const intTargets = supabaseSkillTargets.filter(t => t.data_collection_type === 'interval');
+                return intTargets.length > 0 ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Interval Targets</Label>
+                    {intTargets.map(t => (
+                      <Card key={t.id}>
+                        <CardContent className="py-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm font-medium">{t.title}</span>
+                              <Badge variant="outline" className="ml-2 text-xs">Interval</Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setActiveMode('interval');
+                                const existingBehavior = student.behaviors.find(b => b.name === t.title);
+                                if (existingBehavior) {
+                                  setSelectedIntervalBehavior(existingBehavior.id);
+                                }
+                              }}
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Go to Interval Tab
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+
+              {supabaseSkillTargets.length === 0 && (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <Target className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">No skill targets found</p>
+                    <p className="text-xs text-muted-foreground">Add targets from Skills & Curriculum or use the button above</p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </TabsContent>
 
