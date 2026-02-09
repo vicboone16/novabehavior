@@ -13,11 +13,8 @@ import {
   UserCheck,
   UserPlus,
   DollarSign,
-  BarChart3,
   BookOpen,
-  Smartphone,
-  Briefcase,
-  GraduationCap as GraduationCapIcon
+  Smartphone
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -146,40 +143,11 @@ export default function MainLayout() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/analytics')}
-                className="gap-1"
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Analytics</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/iep-library')}
+                onClick={() => navigate('/clinical-library')}
                 className="gap-1"
               >
                 <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">IEP Library</span>
-              </Button>
-              {(userRole === 'admin' || userRole === 'super_admin') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/recruiting')}
-                  className="gap-1"
-                >
-                  <Briefcase className="w-4 h-4" />
-                  <span className="hidden sm:inline">Recruiting</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/lms')}
-                className="gap-1"
-              >
-                <GraduationCapIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">LMS</span>
+                <span className="hidden sm:inline">Clinical Library</span>
               </Button>
               <Button
                 variant="outline"

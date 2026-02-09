@@ -180,11 +180,11 @@ export function UserMenu() {
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
-              navigate('/behaviors');
+              navigate('/lms');
             }}
           >
             <BookOpen className="mr-2 h-4 w-4" />
-            Behavior Library
+            LMS / Training
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={(e) => {

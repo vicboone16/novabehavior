@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send, Download, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,13 +15,27 @@ import { ContractRateManager } from '@/components/billing/ContractRateManager';
 import { TimesheetDashboard } from '@/components/payroll/TimesheetDashboard';
 import { ERAProcessingTab } from '@/components/billing/ERAProcessingTab';
 import { ClearinghouseTab } from '@/components/billing/ClearinghouseTab';
-
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
+import { subDays } from 'date-fns';
 export default function Billing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { userRole } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const initialTab = searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showClaimGenerator, setShowClaimGenerator] = useState(false);
 
+  // Analytics state
+  const [analyticsTab, setAnalyticsTab] = useState('overview');
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [analyticsFilters, setAnalyticsFilters] = useState({
+    staffId: null as string | null,
+    payerId: null as string | null,
+  });
   const canManageBilling = userRole === 'admin' || userRole === 'super_admin';
 
   return (
@@ -35,8 +49,8 @@ export default function Billing() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-lg font-bold text-foreground">Billing & Claims</h1>
-                <p className="text-xs text-muted-foreground">CMS-1500 claim generation and tracking</p>
+                <h1 className="text-lg font-bold text-foreground">Billing & Analytics</h1>
+                <p className="text-xs text-muted-foreground">Claims, payments, and business intelligence</p>
               </div>
             </div>
             <Button onClick={() => setShowClaimGenerator(true)} className="gap-2">
@@ -102,6 +116,10 @@ export default function Billing() {
             <TabsTrigger value="clearinghouse" className="gap-2">
               <Send className="w-4 h-4" />
               Clearinghouse
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <LineChart className="w-4 h-4" />
+              Analytics
             </TabsTrigger>
           </TabsList>
 
@@ -215,6 +233,38 @@ export default function Billing() {
 
           <TabsContent value="clearinghouse">
             <ClearinghouseTab />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Tabs value={analyticsTab} onValueChange={setAnalyticsTab}>
+                  <TabsList>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="revenue">Revenue</TabsTrigger>
+                    <TabsTrigger value="utilization">Utilization</TabsTrigger>
+                    <TabsTrigger value="productivity">Productivity</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <div className="flex items-center gap-2">
+                  <AnalyticsFilters
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                    filters={analyticsFilters}
+                    onFiltersChange={setAnalyticsFilters}
+                  />
+                  <Button variant="outline" className="gap-2">
+                    <Download className="w-4 h-4" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+              <AnalyticsDashboard
+                dateRange={dateRange}
+                filters={analyticsFilters}
+                view={analyticsTab as 'overview' | 'revenue' | 'utilization' | 'productivity'}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </main>
