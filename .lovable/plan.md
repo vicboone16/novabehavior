@@ -1,97 +1,82 @@
 
 
-## Plan: Sync Status Indicator + Historical Data Sync Tests + E2E Verification
+# Navigation Consolidation Plan
 
-This plan covers three deliverables:
-1. A visual sync status indicator for historical data entries
-2. Automated unit tests for the `historicalDataSync.ts` module
-3. An end-to-end browser test of the historical data entry flow
+## Goal
+Reduce the number of buttons in the main header by merging related features and relocating others, so everything fits on one screen.
 
----
+## Changes Overview
 
-### 1. Visual Sync Status Indicator for Historical Data
+```text
+BEFORE (header buttons):                 AFTER (header buttons):
++------------------+                     +------------------+
+| Supervision      |                     | Supervision      |
+| Referrals        |                     | Referrals        |
+| Billing          | ─┐                  | Billing & Analytics (combined) |
+| Analytics        | ─┘                  | Clinical Library (IEP + Behavior) |
+| IEP Library      | ─┐                  | Teacher Mode     |
+| Recruiting       |  │                  +------------------+
+| LMS              |  │
+| Teacher Mode     |  │                  MOVED:
++------------------+  │                  - LMS → UserMenu dropdown
+                      │                  - Recruiting → Admin page tab
+                      └─ merged          - Behavior Library → merged into Clinical Library
+```
 
-**What it does:** Shows users a small badge/icon near the save button and in the bulk entry dialog indicating whether their historical data has been saved to the cloud (synced), is still being saved (pending), or encountered an error.
+## Detailed Changes
 
-**Implementation approach:**
+### 1. Merge Billing and Analytics into one page
+- Create a new combined "Billing & Analytics" page that uses internal tabs/headers to switch between the existing Billing content and the existing Analytics content.
+- The header button label will change to "Billing" with a single DollarSign icon; the Analytics content will appear as an internal tab within that page.
+- Remove the separate Analytics header button from `MainLayout.tsx`.
+- The `/analytics` route will remain functional but redirect to `/billing` with the analytics tab active (or be kept as a secondary route).
 
-- **Extend `historicalDataSync.ts`** to expose observable sync state:
-  - Add a `historicalSyncStatus` map tracking per-student status: `'idle' | 'pending' | 'synced' | 'error'`
-  - Export a `getHistoricalSyncStatus(studentId)` function
-  - Add a `onSyncStatusChanged` event emitter so React components can subscribe
-  - Update the save flow to set status to `'pending'` when data changes, `'synced'` on success, and `'error'` on failure
+### 2. Merge IEP Library and Behavior Bank into a "Clinical Library"
+- Create a new combined page (e.g., `/clinical-library`) with internal tabs: "IEP Supports" and "Behavior Bank".
+- The IEP Library tab will render the existing `IEPLibrary` page content.
+- The Behavior Bank tab will render the existing `BehaviorLibrary` page content.
+- Replace the separate "IEP Library" header button with a single "Clinical Library" button.
+- Remove the "Behavior Library" entry from the UserMenu dropdown (since it is now accessible from the Clinical Library page).
 
-- **Create a `HistoricalSyncStatusBadge` component** (`src/components/HistoricalSyncStatusBadge.tsx`):
-  - Subscribes to sync status changes via `useEffect` + the event emitter
-  - Renders a small inline indicator:
-    - Pending: orange dot + "Saving..." text with a spinner
-    - Synced: green checkmark + "Saved" text (auto-fades after 3 seconds)
-    - Error: red warning icon + "Save failed" text with retry option
-  - Uses existing `Badge` component and Lucide icons (Cloud, CloudOff, Loader2, Check)
+### 3. Move Recruiting into the Admin page
+- Remove the "Recruiting" button from the header in `MainLayout.tsx`.
+- Add a "Recruiting" tab inside the existing Admin page, rendering the current Recruiting page content as a tab panel.
+- Only admins/super_admins can access the Admin page, so this naturally enforces the admin-only restriction.
 
-- **Integrate the badge in key locations:**
-  - `HistoricalDataEntry.tsx`: Show status after the save button
-  - `BulkHistoricalDataEntry.tsx`: Show status in the dialog footer near the save button
-  - `HistoricalDataManager.tsx`: Show a summary status in the card header
-
----
-
-### 2. Automated Tests for `historicalDataSync.ts`
-
-**Test file:** `src/lib/__tests__/historicalDataSync.test.ts`
-
-**Test cases:**
-
-- **Event system tests:**
-  - `onHistoricalDataChanged` registers a listener and returns an unsubscribe function
-  - `emitHistoricalDataChanged` calls all registered listeners with the correct studentId
-  - Unsubscribing removes the listener so it no longer fires
-
-- **Pending state tracking tests:**
-  - `hasUnsavedHistoricalData` returns `false` for unknown students
-  - After emitting a change, `hasUnsavedHistoricalData` returns `true` for that student
-  - After a successful save completes (mocked Supabase), it returns `false`
-
-- **Save flow tests (with mocked Supabase):**
-  - `initHistoricalDataSync` saves data to Supabase after the 500ms debounce
-  - Multiple rapid emissions for the same student are debounced into a single save
-  - If the getter returns `null`, the pending state is cleared without a Supabase call
-  - Supabase errors are logged and pending state is retained
-
-- **Flush tests:**
-  - `flushPendingHistoricalData` saves all pending students immediately
-  - Clears scheduled timeouts to avoid duplicate saves
-  - On Supabase error, the pending state is retained for that student
-
-**Mocking strategy:** Mock `@/integrations/supabase/client` with `vi.mock()` to intercept `.from('students').update().eq()` calls and control success/error responses.
+### 4. Move LMS into the UserMenu dropdown
+- Remove the "LMS" button from the header in `MainLayout.tsx`.
+- Add an "LMS / Training" menu item in `UserMenu.tsx` (alongside Profile, Behavior Library, etc.), which navigates to `/lms`.
 
 ---
 
-### 3. End-to-End Browser Test
+## Technical Details
 
-After implementing the above, use the browser tool to:
+### Files to create:
+- **`src/pages/ClinicalLibrary.tsx`** -- New combined page with two tabs ("IEP Supports" rendering IEPLibrary content, "Behavior Bank" rendering BehaviorLibrary content). Uses Tabs component with internal state management.
 
-1. Open the preview and navigate to a student profile
-2. Open the historical data entry form
-3. Add a new historical frequency entry (e.g., Physical Aggression, Count: 3)
-4. Verify the sync status badge shows "Saving..." then "Saved"
-5. Perform a Force Refresh from the user menu
-6. Navigate back to the student and confirm the entry persists in the historical data list
-7. Take screenshots at each verification step
+### Files to modify:
 
----
+**`src/components/MainLayout.tsx`**
+- Remove individual buttons for: Analytics, IEP Library, Recruiting, LMS
+- Update Billing button label (keep as "Billing" or change to "Billing & Analytics")
+- Add a new "Clinical Library" button navigating to `/clinical-library`
 
-### Technical Details
+**`src/pages/Billing.tsx`**
+- Add an "Analytics" tab at the end of the existing tab list
+- Import and render the `AnalyticsDashboard` component (and filters) within that tab's content panel
+- Update page title to "Billing & Analytics"
 
-**Files to create:**
-- `src/components/HistoricalSyncStatusBadge.tsx` - React component for sync indicator
-- `src/lib/__tests__/historicalDataSync.test.ts` - Unit tests
+**`src/pages/Admin.tsx`**
+- Add a "Recruiting" tab that renders the existing Recruiting page content inline
 
-**Files to modify:**
-- `src/lib/historicalDataSync.ts` - Add observable status tracking and status change events
-- `src/components/HistoricalDataEntry.tsx` - Add sync status badge near save button
-- `src/components/BulkHistoricalDataEntry.tsx` - Add sync status badge in dialog footer
-- `src/components/HistoricalDataManager.tsx` - Add sync status indicator in header
+**`src/components/UserMenu.tsx`**
+- Remove the "Behavior Library" menu item (now accessible via Clinical Library)
+- Add an "LMS / Training" menu item that navigates to `/lms`
 
-**No database changes required.** This is purely frontend logic and testing.
+**`src/App.tsx`**
+- Add route for `/clinical-library`
+- Keep existing `/billing`, `/analytics`, `/lms`, `/recruiting`, `/behaviors`, `/iep-library` routes functional for backward compatibility (direct URL access)
+
+### No database changes required
+This is purely a UI/navigation restructuring. All existing pages, components, and data remain intact.
 
