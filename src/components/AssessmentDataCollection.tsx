@@ -77,7 +77,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   // Novel behavior state
   const [showNovelDialog, setShowNovelDialog] = useState(false);
   const [novelBehaviorName, setNovelBehaviorName] = useState('');
-  const [novelRecordingMode, setNovelRecordingMode] = useState<'frequency' | 'duration' | 'latency'>('frequency');
+  const [novelRecordingMode, setNovelRecordingMode] = useState<'abc' | 'frequency' | 'duration' | 'latency'>('abc');
   const [novelCount, setNovelCount] = useState(0);
   const [novelObservationMinutes, setNovelObservationMinutes] = useState<number>(0);
   const [novelTimerRunning, setNovelTimerRunning] = useState(false);
@@ -212,9 +212,14 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const handleSaveNovelBehavior = () => {
     if (!novelBehaviorName.trim()) return;
 
-    // Add behavior to student
-    const methods: DataCollectionMethod[] = [novelRecordingMode];
-    if (novelRecordingMode === 'frequency') methods.push('abc');
+    // Add behavior to student with appropriate methods
+    const methods: DataCollectionMethod[] = [];
+    if (novelRecordingMode === 'abc') {
+      methods.push('abc', 'frequency');
+    } else {
+      methods.push(novelRecordingMode);
+      if (novelRecordingMode === 'frequency') methods.push('abc');
+    }
     addBehaviorWithMethods(student.id, novelBehaviorName.trim(), methods);
 
     // Get the newly created behavior ID
@@ -534,7 +539,16 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
                 <div className="space-y-2">
                   <Label>Recording Type</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={novelRecordingMode === 'abc' ? 'default' : 'outline'}
+                      onClick={() => setNovelRecordingMode('abc')}
+                      className="flex-1 gap-1"
+                      size="sm"
+                    >
+                      <FileText className="w-3 h-3" />
+                      ABC
+                    </Button>
                     <Button
                       variant={novelRecordingMode === 'frequency' ? 'default' : 'outline'}
                       onClick={() => setNovelRecordingMode('frequency')}
@@ -564,6 +578,15 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                     </Button>
                   </div>
                 </div>
+
+                {novelRecordingMode === 'abc' && (
+                  <div className="bg-secondary/30 rounded-lg p-4 text-center space-y-2">
+                    <FileText className="w-8 h-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      This behavior will be added to the student's ABC tracking list. You can record ABC data for it after saving.
+                    </p>
+                  </div>
+                )}
 
                 {novelRecordingMode === 'frequency' && (
                   <div className="space-y-4">
