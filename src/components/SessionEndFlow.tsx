@@ -137,6 +137,7 @@ export function SessionEndFlow({
             session_id: currentSessionId,
             student_id: student.id,
             status: 'ended',
+            started_at: sessionStart.toISOString(),
             ended_at: now.toISOString(),
             total_active_duration_seconds: Math.round(effectiveMinutes * 60),
           }, {
@@ -177,17 +178,19 @@ export function SessionEndFlow({
               .eq('id', appointmentToUpdate);
           } else {
             // Create retroactive appointment to show the session on the calendar
-            await supabase.from('appointments').insert({
-              student_id: student.id,
-              created_by: user?.id,
-              start_time: sessionStart.toISOString(),
-              end_time: now.toISOString(),
-              duration_minutes: Math.round(effectiveMinutes),
-              status: 'completed',
-              appointment_type: 'retroactive',
-              linked_session_id: currentSessionId,
-              notes: 'Auto-created from completed session',
-            });
+            if (user?.id) {
+              await supabase.from('appointments').insert({
+                student_id: student.id,
+                created_by: user.id,
+                start_time: sessionStart.toISOString(),
+                end_time: now.toISOString(),
+                duration_minutes: Math.round(effectiveMinutes),
+                status: 'completed',
+                appointment_type: 'retroactive',
+                linked_session_id: currentSessionId,
+                notes: 'Auto-created from completed session',
+              });
+            }
           }
         }
       }
