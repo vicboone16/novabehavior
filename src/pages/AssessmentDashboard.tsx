@@ -76,7 +76,7 @@ const FBA_WORKFLOW_STEPS = [
 ];
 
 export default function AssessmentDashboard() {
-  const { students, abcEntries, frequencyEntries, sessions, updateStudentProfile } = useDataStore();
+  const { students, abcEntries, frequencyEntries, sessions, updateStudentProfile, selectedStudentIds: activeSessionStudentIds, sessionStartTime, isStudentSessionEnded } = useDataStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -93,6 +93,15 @@ export default function AssessmentDashboard() {
   const handleObservationChange = useCallback((isActive: boolean, durationMinutes: number) => {
     setActiveObservation({ isActive, durationMinutes });
   }, []);
+
+  // Students with active observations (for quick-switch)
+  const studentsWithActiveObs = useMemo(() => {
+    if (!sessionStartTime) return [];
+    return activeSessionStudentIds
+      .filter(id => !isStudentSessionEnded(id))
+      .map(id => students.find(s => s.id === id))
+      .filter(Boolean);
+  }, [sessionStartTime, activeSessionStudentIds, students, isStudentSessionEnded]);
 
   // Filter to students with assessment mode enabled
   const assessmentStudents = useMemo(() => {
@@ -246,18 +255,26 @@ export default function AssessmentDashboard() {
                 <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                   Assessment Mode Students
                 </div>
-                {assessmentStudents.map(student => (
-                  <SelectItem key={student.id} value={student.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: student.color }}
-                      />
-                      {student.name}
-                      <Badge variant="secondary" className="text-xs ml-1">FBA</Badge>
-                    </div>
-                  </SelectItem>
-                ))}
+                {assessmentStudents.map(student => {
+                  const hasActiveObs = studentsWithActiveObs.some(s => s?.id === student.id);
+                  return (
+                    <SelectItem key={student.id} value={student.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: student.color }}
+                        />
+                        {student.name}
+                        <Badge variant="secondary" className="text-xs ml-1">FBA</Badge>
+                        {hasActiveObs && (
+                          <Badge variant="default" className="text-[10px] ml-1 gap-0.5 px-1">
+                            <Eye className="w-2.5 h-2.5" /> Live
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </>
             )}
             {allActiveStudents.filter(s => !s.assessmentModeEnabled).length > 0 && (
@@ -265,17 +282,25 @@ export default function AssessmentDashboard() {
                 <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-2">
                   Other Students
                 </div>
-                {allActiveStudents.filter(s => !s.assessmentModeEnabled).map(student => (
-                  <SelectItem key={student.id} value={student.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: student.color }}
-                      />
-                      {student.name}
-                    </div>
-                  </SelectItem>
-                ))}
+                {allActiveStudents.filter(s => !s.assessmentModeEnabled).map(student => {
+                  const hasActiveObs = studentsWithActiveObs.some(s => s?.id === student.id);
+                  return (
+                    <SelectItem key={student.id} value={student.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: student.color }}
+                        />
+                        {student.name}
+                        {hasActiveObs && (
+                          <Badge variant="default" className="text-[10px] ml-1 gap-0.5 px-1">
+                            <Eye className="w-2.5 h-2.5" /> Live
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </>
             )}
           </SelectContent>
@@ -292,6 +317,28 @@ export default function AssessmentDashboard() {
           }
         }}
       />
+
+      {/* Quick-switch bar for students with active observations */}
+      {studentsWithActiveObs.length > 1 && (
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Switch student:</span>
+          <div className="flex gap-1 flex-wrap">
+            {studentsWithActiveObs.map(student => student && (
+              <Button
+                key={student.id}
+                size="sm"
+                variant={student.id === selectedStudentId ? 'default' : 'outline'}
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setSelectedStudentId(student.id)}
+              >
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: student.color }} />
+                {student.displayName || student.name}
+                <Eye className="w-3 h-3 animate-pulse" />
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Overview Stats - FBA Students is always global, other 3 are student-specific when selected */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

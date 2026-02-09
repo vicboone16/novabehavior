@@ -272,6 +272,8 @@ interface DataState {
   getSessionsByDate: (date: Date) => Session[];
   getSessionsByStudent: (studentId: string) => Session[];
   deleteSession: (sessionId: string) => void;
+  updateSession: (sessionId: string, updates: Partial<Session>) => void;
+  mergeSessions: (sessionIds: string[]) => void;
   startSession: (linkedAppointmentId?: string) => void;
   setLinkedAppointmentId: (id: string | null) => void;
   getLinkedAppointmentId: () => string | null;
@@ -1908,10 +1910,8 @@ export const useDataStore = create<DataState>()(
         if (!hasChanges) {
           return { saved: false, isNew: false, hasChanges: false };
         }
-        
-        const session: Session = {
-          id: crypto.randomUUID(),
-          date: new Date(),
+
+        const sessionData = {
           notes: state.sessionNotes,
           studentIds: state.selectedStudentIds,
           sessionLengthMinutes: state.sessionLengthMinutes,
@@ -1921,8 +1921,31 @@ export const useDataStore = create<DataState>()(
           durationEntries: [...state.durationEntries],
           intervalEntries: [...state.intervalEntries],
         };
-        set((state) => ({
-          sessions: [...state.sessions, session],
+
+        // If we already have a currentSessionId, update the existing session instead of creating a new one
+        const existingSession = state.currentSessionId 
+          ? state.sessions.find(s => s.id === state.currentSessionId) 
+          : null;
+
+        if (existingSession) {
+          set((s) => ({
+            sessions: s.sessions.map(sess => 
+              sess.id === state.currentSessionId 
+                ? { ...sess, ...sessionData }
+                : sess
+            ),
+            lastSavedDataHash: currentHash,
+          }));
+          return { saved: true, isNew: false, hasChanges: true };
+        }
+
+        const session: Session = {
+          id: state.currentSessionId || crypto.randomUUID(),
+          date: new Date(),
+          ...sessionData,
+        };
+        set((s) => ({
+          sessions: [...s.sessions, session],
           currentSessionId: session.id,
           lastSavedDataHash: currentHash,
         }));
@@ -2024,6 +2047,42 @@ export const useDataStore = create<DataState>()(
       deleteSession: (sessionId) => {
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== sessionId),
+        }));
+      },
+
+      updateSession: (sessionId, updates) => {
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === sessionId ? { ...s, ...updates } : s
+          ),
+        }));
+      },
+
+      mergeSessions: (sessionIds) => {
+        const state = get();
+        const toMerge = state.sessions
+          .filter((s) => sessionIds.includes(s.id))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        if (toMerge.length < 2) return;
+
+        const primary = toMerge[0];
+        const mergedSession: Session = {
+          ...primary,
+          notes: toMerge.map(s => s.notes).filter(Boolean).join('\n---\n'),
+          studentIds: [...new Set(toMerge.flatMap(s => s.studentIds))],
+          sessionLengthMinutes: toMerge.reduce((sum, s) => sum + s.sessionLengthMinutes, 0),
+          abcEntries: toMerge.flatMap(s => s.abcEntries || []),
+          frequencyEntries: toMerge.flatMap(s => s.frequencyEntries || []),
+          durationEntries: toMerge.flatMap(s => s.durationEntries || []),
+          intervalEntries: toMerge.flatMap(s => s.intervalEntries || []),
+        };
+
+        set((state) => ({
+          sessions: [
+            ...state.sessions.filter((s) => !sessionIds.includes(s.id)),
+            mergedSession,
+          ],
         }));
       },
 
