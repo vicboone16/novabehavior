@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb } from 'lucide-react';
+import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +31,11 @@ import { EditBehaviorDialog } from '@/components/behavior-library/EditBehaviorDi
 import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteToStandardDialog';
 import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
 import { BxInterventionLibrary } from '@/components/behavior-interventions';
+import { AddBehaviorToStudentDialog } from '@/components/behavior-library/AddBehaviorToStudentDialog';
+
+interface BehaviorLibraryProps {
+  embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
+}
 
 // Default behavior bank with operational definitions
 const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
@@ -141,7 +146,7 @@ const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
   },
 ];
 
-export default function BehaviorLibrary() {
+export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const students = useDataStore((state) => state.students);
@@ -174,8 +179,11 @@ export default function BehaviorLibrary() {
   const [newName, setNewName] = useState('');
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
+  const [newLevel, setNewLevel] = useState<'organization' | 'built-in'>('organization');
 
-  // Apply overrides to default behaviors
+  // Add to student dialog state
+  const [behaviorToAdd, setBehaviorToAdd] = useState<BehaviorDefinition | null>(null);
+  const [showAddToStudentDialog, setShowAddToStudentDialog] = useState(false);
   const effectiveDefaultBehaviors = useMemo(() => {
     return DEFAULT_BEHAVIORS.map(behavior => {
       const override = behaviorDefinitionOverrides[behavior.id];
@@ -233,10 +241,14 @@ export default function BehaviorLibrary() {
   
   const customBehaviors = Array.from(customBehaviorsMap.values());
 
-  // Combine all sources: defaults + global bank + custom
+  // Combine all sources: defaults + global bank (built-in + organization) + custom
   const allBehaviors = [
     ...effectiveDefaultBehaviors.map(b => ({ ...b, source: 'built-in' as const })),
-    ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const, studentNames: [] as string[] })),
+    ...globalBehaviorBank.map(b => ({
+      ...b,
+      source: ((b as any).isBuiltIn ? 'built-in' : 'organization') as 'built-in' | 'organization',
+      studentNames: [] as string[],
+    })),
     ...customBehaviors.map(b => ({ ...b, source: 'custom' as const })),
   ];
 
@@ -265,20 +277,37 @@ export default function BehaviorLibrary() {
     setNewName('');
     setNewDefinition('');
     setNewCategory('Other');
+    setNewLevel('organization');
     setShowAddBehavior(false);
   };
 
   const handleAddBehavior = () => {
     if (newName.trim() && newDefinition.trim()) {
-      addToBehaviorBank({
-        name: newName.trim(),
-        operationalDefinition: newDefinition.trim(),
-        category: newCategory,
-        isGlobal: true,
-      });
-      toast({ title: 'Behavior added to library' });
+      if (newLevel === 'built-in') {
+        // Add as a built-in by inserting into DEFAULT_BEHAVIORS runtime + storing in bank with isBuiltIn flag
+        addToBehaviorBank({
+          name: newName.trim(),
+          operationalDefinition: newDefinition.trim(),
+          category: newCategory,
+          isGlobal: true,
+          isBuiltIn: true,
+        } as any);
+      } else {
+        addToBehaviorBank({
+          name: newName.trim(),
+          operationalDefinition: newDefinition.trim(),
+          category: newCategory,
+          isGlobal: true,
+        });
+      }
+      toast({ title: `Behavior added as ${newLevel === 'built-in' ? 'built-in' : 'organization'} behavior` });
       resetForm();
     }
+  };
+
+  const handleAddToStudent = (behavior: BehaviorDefinition) => {
+    setBehaviorToAdd(behavior);
+    setShowAddToStudentDialog(true);
   };
 
   // Find mergeable behaviors (custom behaviors that match a bank behavior name)
@@ -385,57 +414,91 @@ export default function BehaviorLibrary() {
   }, [allBehaviors]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-20">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary-foreground" />
+    <div className={embedded ? '' : 'min-h-screen bg-background'}>
+      {/* Header - only show when not embedded */}
+      {!embedded && (
+        <header className="bg-card border-b border-border sticky top-0 z-20">
+          <div className="container py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">Behavior Library</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Operational definitions & intervention planning
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Behavior Library</h1>
-                <p className="text-sm text-muted-foreground">
-                  Operational definitions & intervention planning
-                </p>
-              </div>
+              {activeLibraryTab === 'behaviors' && (
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowAdvancedMergeDialog(true)}>
+                    <Merge className="w-4 h-4 mr-2" />
+                    Merge Behaviors
+                  </Button>
+                  <Button onClick={() => setShowAddBehavior(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Behavior
+                  </Button>
+                </div>
+              )}
             </div>
+            
+            {/* Library Tabs */}
+            <Tabs value={activeLibraryTab} onValueChange={(v) => setActiveLibraryTab(v as 'behaviors' | 'interventions')} className="mt-4">
+              <TabsList>
+                <TabsTrigger value="behaviors" className="flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  Behaviors to Track
+                </TabsTrigger>
+                <TabsTrigger value="interventions" className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4" />
+                  Behavior Interventions
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </header>
+      )}
+
+      {/* Embedded action bar */}
+      {embedded && (
+        <div className="container py-4">
+          <div className="flex items-center justify-between mb-4">
+            <Tabs value={activeLibraryTab} onValueChange={(v) => setActiveLibraryTab(v as 'behaviors' | 'interventions')}>
+              <TabsList>
+                <TabsTrigger value="behaviors" className="flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  Behaviors to Track
+                </TabsTrigger>
+                <TabsTrigger value="interventions" className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4" />
+                  Behavior Interventions
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             {activeLibraryTab === 'behaviors' && (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowAdvancedMergeDialog(true)}>
+                <Button variant="outline" size="sm" onClick={() => setShowAdvancedMergeDialog(true)}>
                   <Merge className="w-4 h-4 mr-2" />
-                  Merge Behaviors
+                  Merge
                 </Button>
-                <Button onClick={() => setShowAddBehavior(true)}>
+                <Button size="sm" onClick={() => setShowAddBehavior(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Behavior
                 </Button>
               </div>
             )}
           </div>
-          
-          {/* Library Tabs */}
-          <Tabs value={activeLibraryTab} onValueChange={(v) => setActiveLibraryTab(v as 'behaviors' | 'interventions')} className="mt-4">
-            <TabsList>
-              <TabsTrigger value="behaviors" className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                Behaviors to Track
-              </TabsTrigger>
-              <TabsTrigger value="interventions" className="flex items-center gap-2">
-                <Lightbulb className="w-4 h-4" />
-                Behavior Interventions
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
-      </header>
+      )}
 
       {/* Main Content */}
-      <main className="container py-6">
+      <main className={embedded ? '' : 'container py-6'}>
         {activeLibraryTab === 'behaviors' ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Sidebar with search and filters */}
@@ -599,6 +662,15 @@ export default function BehaviorLibrary() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
+                                      onClick={() => handleAddToStudent(behavior)}
+                                      title="Add to student"
+                                    >
+                                      <UserPlus className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
                                       onClick={() => handleCopyDefinition(behavior)}
                                       title="Copy definition"
                                     >
@@ -656,9 +728,9 @@ export default function BehaviorLibrary() {
       <Dialog open={showAddBehavior} onOpenChange={(open) => !open && resetForm()}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Organization Behavior</DialogTitle>
+            <DialogTitle>Add Behavior to Library</DialogTitle>
             <DialogDescription>
-              This behavior will be available to add to any student.
+              Add a new behavior definition to the library. Choose its level to control visibility.
             </DialogDescription>
           </DialogHeader>
 
@@ -670,6 +742,24 @@ export default function BehaviorLibrary() {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g., Physical Aggression"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Level</Label>
+              <Select value={newLevel} onValueChange={(v) => setNewLevel(v as 'organization' | 'built-in')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="built-in">Built-in (standard default)</SelectItem>
+                  <SelectItem value="organization">Organization</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {newLevel === 'built-in'
+                  ? 'Built-in behaviors appear as standard defaults for all users.'
+                  : 'Organization behaviors are available to add to any student in your org.'}
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -789,6 +879,16 @@ export default function BehaviorLibrary() {
         onClose={() => setShowAdvancedMergeDialog(false)}
         allBehaviors={behaviorsForMerge}
         onMerge={handleAdvancedMerge}
+      />
+
+      {/* Add Behavior to Student Dialog */}
+      <AddBehaviorToStudentDialog
+        behavior={behaviorToAdd}
+        isOpen={showAddToStudentDialog}
+        onClose={() => {
+          setShowAddToStudentDialog(false);
+          setBehaviorToAdd(null);
+        }}
       />
     </div>
   );
