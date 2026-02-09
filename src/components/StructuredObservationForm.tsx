@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -311,7 +311,7 @@ export function StructuredObservationForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="max-h-[400px]">
+          <div className="max-h-[400px] overflow-y-auto">
             <div className="space-y-2">
               {Object.entries(groupedBehaviors).map(([category, items]) => {
                 const stats = getCategoryStats(items);
@@ -376,7 +376,7 @@ export function StructuredObservationForm({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
 
