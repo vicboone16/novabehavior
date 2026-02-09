@@ -470,7 +470,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               </CardContent>
             </Card>
           ) : (
-            <ScrollArea className="max-h-[400px]">
+            <ScrollArea className="max-h-[600px]">
               <div className="space-y-3">
                 {student.behaviors.map((behavior) => (
                   <Collapsible
