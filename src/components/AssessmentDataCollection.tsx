@@ -50,6 +50,7 @@ interface IntervalConfig {
 export function AssessmentDataCollection({ student, onObservationChange }: AssessmentDataCollectionProps) {
   const {
     addBehaviorWithMethods,
+    removeBehavior,
     incrementFrequency,
     addHistoricalFrequency,
     addCustomAntecedent,
@@ -223,9 +224,10 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
     addBehaviorWithMethods(student.id, novelBehaviorName.trim(), methods);
 
     // Get the newly created behavior ID
+    const savedName = novelBehaviorName.trim();
     setTimeout(() => {
       const updatedStudent = useDataStore.getState().students.find(s => s.id === student.id);
-      const newBehavior = updatedStudent?.behaviors.find(b => b.name === novelBehaviorName.trim());
+      const newBehavior = updatedStudent?.behaviors.find(b => b.name === savedName);
       
       if (newBehavior && novelRecordingMode === 'frequency' && novelCount > 0) {
         // Add historical frequency with rate
@@ -238,7 +240,15 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
         });
       }
       
-      toast.success(`Behavior "${novelBehaviorName}" added and data saved`);
+      toast.success(`Behavior "${savedName}" added`, {
+        action: newBehavior ? {
+          label: 'Undo',
+          onClick: () => {
+            removeBehavior(student.id, newBehavior.id);
+            toast.info(`"${savedName}" removed from ${student.name}`);
+          },
+        } : undefined,
+      });
     }, 100);
 
     // Reset
