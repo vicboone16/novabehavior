@@ -190,7 +190,7 @@ export function ColdProbeTracker({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ScrollArea className="max-h-[400px]">
+          <div className="max-h-[600px] overflow-y-auto">
             <div className="space-y-3">
               {activeTargets.map((target) => {
                 const stats = getTargetStats(target.id);
@@ -406,7 +406,7 @@ export function ColdProbeTracker({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Session notes */}
           <div className="space-y-2 pt-2 border-t">
