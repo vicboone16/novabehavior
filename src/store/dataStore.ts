@@ -1930,8 +1930,10 @@ export const useDataStore = create<DataState>()(
       },
 
       startSession: (linkedAppointmentId?: string) => {
+        // Store as Date.now() timestamp-based Date to avoid serialization issues
+        const now = new Date();
         set({ 
-          sessionStartTime: new Date(),
+          sessionStartTime: now,
           currentSessionId: crypto.randomUUID(),
           linkedAppointmentId: linkedAppointmentId || null,
         });

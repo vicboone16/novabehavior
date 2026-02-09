@@ -350,11 +350,11 @@ export function ColdProbeTracker({
                               onClick={() => setShowNoteInput(showNoteInput === target.id ? null : target.id)}
                             >
                               <MessageSquare className="w-3 h-3" />
-                              {showNoteInput === target.id ? 'Hide note' : 'Add note for next trial'}
+                              {showNoteInput === target.id ? 'Hide note' : 'Add note for current trial'}
                             </Button>
                             {showNoteInput === target.id && (
                               <Textarea
-                                placeholder="Note for next trial..."
+                                placeholder="Note for this trial..."
                                 value={trialNotes[target.id] || ''}
                                 onChange={(e) => setTrialNotes(prev => ({ ...prev, [target.id]: e.target.value }))}
                                 className="text-xs min-h-[60px]"
