@@ -2463,6 +2463,23 @@ export const useDataStore = create<DataState>()(
 
       // Force end all sessions and clear all observation state - used for stale session cleanup
       forceEndAllSessions: () => {
+        const state = get();
+        const sessionId = state.currentSessionId;
+        
+        // Keep only entries from OTHER sessions or historical data
+        const otherFrequency = sessionId 
+          ? state.frequencyEntries.filter(e => e.sessionId !== sessionId || e.isHistorical)
+          : state.frequencyEntries.filter(e => e.isHistorical);
+        const otherDuration = sessionId
+          ? state.durationEntries.filter(e => e.sessionId !== sessionId)
+          : [];
+        const otherInterval = sessionId
+          ? state.intervalEntries.filter(e => e.sessionId !== sessionId)
+          : [];
+        const otherABC = sessionId
+          ? state.abcEntries.filter(e => e.sessionId !== sessionId)
+          : [];
+
         set({
           sessionStartTime: null,
           currentSessionId: null,
@@ -2474,6 +2491,10 @@ export const useDataStore = create<DataState>()(
           sessionFocus: DEFAULT_SESSION_FOCUS,
           syncedIntervalsRunning: false,
           lastSavedDataHash: null,
+          frequencyEntries: otherFrequency,
+          durationEntries: otherDuration,
+          intervalEntries: otherInterval,
+          abcEntries: otherABC,
         });
       },
 
