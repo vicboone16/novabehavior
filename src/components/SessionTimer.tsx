@@ -13,6 +13,7 @@ export function SessionTimer() {
     startSession,
     resetSession,
     resetSessionData,
+    forceEndAllSessions,
     currentSessionId,
     selectedStudentIds,
     students,
@@ -91,8 +92,8 @@ export function SessionTimer() {
     setPausedTime(0);
     setPausedAt(null);
     setElapsed(0);
-    // Clear session without auto-starting - user must click Start
-    resetSession();
+    // Use forceEndAllSessions to clear both session metadata AND data entries
+    forceEndAllSessions();
   };
 
   const handleEndSession = () => {
