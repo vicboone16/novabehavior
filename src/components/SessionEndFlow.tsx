@@ -96,6 +96,7 @@ export function SessionEndFlow({
       setStep('confirm');
       setCurrentStudentIndex(0);
       setBuildingNote(null);
+      setDbEnded(false);
     }
   }, [open, targetStudents.length]);
 
@@ -115,70 +116,78 @@ export function SessionEndFlow({
     ? targetStudents[0]
     : studentsNeedingDecision[0] || studentsNeedingNotes[0];
 
+  // Track whether DB writes succeeded so we know to clean up on dialog close
+  const [dbEnded, setDbEnded] = useState(false);
+
   const handleEndSession = async () => {
     setSubmitting(true);
 
+    // Collect errors but don't abort — always mark session as ended locally
+    const errors: string[] = [];
+
     try {
       const now = new Date();
-      const sessionStart = sessionStartTime || now;
+      const sessionStart = sessionStartTime instanceof Date ? sessionStartTime : (sessionStartTime ? new Date(sessionStartTime) : now);
       const sessionMinutes = Math.max(0, (now.getTime() - sessionStart.getTime()) / 60000);
       
-      // End sessions for all target students
+      // End sessions for all target students (local state — always succeeds)
       for (const student of targetStudents) {
         endStudentSession(student.id);
+      }
 
-        // Create student_session_status record in database
+      // DB writes — do best-effort, don't let one failure block the rest
+      for (const student of targetStudents) {
         if (currentSessionId) {
           const sessionStatus = getStudentSessionStatus(student.id);
           const effectiveMinutes = sessionStatus?.effectiveSessionMinutes || 
             (now.getTime() - sessionStart.getTime()) / 60000;
 
-          await supabase.from('student_session_status').upsert({
-            session_id: currentSessionId,
-            student_id: student.id,
-            status: 'ended',
-            started_at: sessionStart.toISOString(),
-            ended_at: now.toISOString(),
-            total_active_duration_seconds: Math.round(effectiveMinutes * 60),
-          }, {
-            onConflict: 'session_id,student_id',
-          });
-
-          // Check if there's a linked appointment in the store first, then fall back to DB lookup
-          const storedLinkedAppointmentId = useDataStore.getState().linkedAppointmentId;
-          
-          let appointmentToUpdate: string | null = null;
-          
-          if (storedLinkedAppointmentId) {
-            // We have a stored linked appointment - use it directly
-            appointmentToUpdate = storedLinkedAppointmentId;
-          } else {
-            // Fall back to checking by linked_session_id
-            const { data: existingAppointment } = await supabase
-              .from('appointments')
-              .select('id')
-              .eq('student_id', student.id)
-              .eq('linked_session_id', currentSessionId)
-              .maybeSingle();
-            
-            if (existingAppointment) {
-              appointmentToUpdate = existingAppointment.id;
-            }
+          try {
+            await supabase.from('student_session_status').upsert({
+              session_id: currentSessionId,
+              student_id: student.id,
+              status: 'ended',
+              started_at: sessionStart.toISOString(),
+              ended_at: now.toISOString(),
+              total_active_duration_seconds: Math.round(effectiveMinutes * 60),
+            }, {
+              onConflict: 'session_id,student_id',
+            });
+          } catch (e) {
+            console.error('[SessionEnd] student_session_status upsert failed:', e);
+            errors.push(`Status for ${student.name}`);
           }
 
-          if (appointmentToUpdate) {
-            // Update existing appointment status and end time
-            await supabase.from('appointments')
-              .update({ 
-                status: 'completed',
-                end_time: now.toISOString(),
-                duration_minutes: Math.round(effectiveMinutes),
-                linked_session_id: currentSessionId, // Ensure linkage
-              })
-              .eq('id', appointmentToUpdate);
-          } else {
-            // Create retroactive appointment to show the session on the calendar
-            if (user?.id) {
+          // Handle appointment linking
+          try {
+            const storedLinkedAppointmentId = useDataStore.getState().linkedAppointmentId;
+            let appointmentToUpdate: string | null = null;
+            
+            if (storedLinkedAppointmentId) {
+              appointmentToUpdate = storedLinkedAppointmentId;
+            } else {
+              const { data: existingAppointment } = await supabase
+                .from('appointments')
+                .select('id')
+                .eq('student_id', student.id)
+                .eq('linked_session_id', currentSessionId)
+                .maybeSingle();
+              
+              if (existingAppointment) {
+                appointmentToUpdate = existingAppointment.id;
+              }
+            }
+
+            if (appointmentToUpdate) {
+              await supabase.from('appointments')
+                .update({ 
+                  status: 'completed',
+                  end_time: now.toISOString(),
+                  duration_minutes: Math.round(effectiveMinutes),
+                  linked_session_id: currentSessionId,
+                })
+                .eq('id', appointmentToUpdate);
+            } else if (user?.id) {
               await supabase.from('appointments').insert({
                 student_id: student.id,
                 created_by: user.id,
@@ -191,38 +200,60 @@ export function SessionEndFlow({
                 notes: 'Auto-created from completed session',
               });
             }
+          } catch (e) {
+            console.error('[SessionEnd] appointment handling failed:', e);
+            errors.push(`Appointment for ${student.name}`);
           }
         }
       }
 
-      // Mark the parent session as completed so it doesn't remain "active" across devices
+      // Mark the parent session as completed
       if (currentSessionId && user?.id) {
-        await supabase
-          .from('sessions')
-          .upsert(
-            {
-              id: currentSessionId,
-              user_id: user.id,
-              name: `Session - ${mode === 'all' ? `${targetStudents.length} students` : (targetStudents[0]?.name || 'Student')}`,
-              start_time: sessionStart.toISOString(),
-              end_time: now.toISOString(),
-              session_length_minutes: Math.round(sessionMinutes),
-              student_ids: targetStudentIds,
-              status: 'completed',
-            } as any,
-            { onConflict: 'id' }
-          );
+        try {
+          await supabase
+            .from('sessions')
+            .upsert(
+              {
+                id: currentSessionId,
+                user_id: user.id,
+                name: `Session - ${mode === 'all' ? `${targetStudents.length} students` : (targetStudents[0]?.name || 'Student')}`,
+                start_time: sessionStart.toISOString(),
+                end_time: now.toISOString(),
+                session_length_minutes: Math.round(sessionMinutes),
+                student_ids: targetStudentIds,
+                status: 'completed',
+              } as any,
+              { onConflict: 'id' }
+            );
+        } catch (e) {
+          console.error('[SessionEnd] session upsert failed:', e);
+          errors.push('Session record');
+        }
+      }
+
+      // Always mark as ended locally, even if some DB writes failed
+      setDbEnded(true);
+
+      if (errors.length > 0) {
+        toast({
+          title: 'Session ended with warnings',
+          description: `Some data may not have saved: ${errors.join(', ')}. Your session data is still preserved locally.`,
+          variant: 'destructive',
+        });
       }
 
       // Move to note decision step
       setStep('note_decision');
     } catch (error) {
       console.error('Error ending session:', error);
+      // Even on catastrophic failure, end the session locally to prevent stuck state
+      setDbEnded(true);
       toast({
         title: 'Error',
-        description: 'Failed to end session. Please try again.',
+        description: 'Failed to save session data to cloud, but session has been ended locally.',
         variant: 'destructive',
       });
+      setStep('note_decision');
     } finally {
       setSubmitting(false);
     }
@@ -574,8 +605,20 @@ export function SessionEndFlow({
     );
   };
 
+  // If the dialog is closed after DB writes succeeded, always clean up
+  const handleDialogClose = (isOpen: boolean) => {
+    if (!isOpen && dbEnded) {
+      // User closed dialog after session was ended in DB — must clean up local state
+      if (mode === 'all') {
+        resetAllStudentSessionStatuses();
+      }
+      onComplete();
+    }
+    onOpenChange(isOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
