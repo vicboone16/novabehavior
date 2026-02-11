@@ -85,7 +85,47 @@ export function FBAModeTools({ student }: FBAModeToolsProps) {
       });
     });
 
-    // Count functions
+    // Infer function from antecedent/consequence patterns when not explicitly tagged
+    const inferFunctions = (antecedents: string[], consequences: string[]): BehaviorFunction[] => {
+      const inferred = new Set<BehaviorFunction>();
+      const allText = [...antecedents, ...consequences].map(t => t.toLowerCase());
+      
+      // Attention indicators
+      const attentionAntecedents = ['no attention', 'attention removed', 'ignored', 'alone', 'not attending', 'low attention', 'diverted attention'];
+      const attentionConsequences = ['attention given', 'attention', 'verbal reprimand', 'eye contact', 'physical contact', 'social interaction'];
+      if (antecedents.some(a => attentionAntecedents.some(k => a.toLowerCase().includes(k))) ||
+          consequences.some(c => attentionConsequences.some(k => c.toLowerCase().includes(k)))) {
+        inferred.add('attention');
+      }
+      
+      // Escape indicators
+      const escapeAntecedents = ['demand', 'task', 'instruction', 'transition', 'difficult', 'non-preferred', 'work'];
+      const escapeConsequences = ['demand removed', 'task removed', 'escape', 'avoidance', 'break', 'left alone'];
+      if (antecedents.some(a => escapeAntecedents.some(k => a.toLowerCase().includes(k))) ||
+          consequences.some(c => escapeConsequences.some(k => c.toLowerCase().includes(k)))) {
+        inferred.add('escape');
+      }
+      
+      // Tangible indicators
+      const tangibleAntecedents = ['denied', 'removed', 'item taken', 'desired item', 'desired activity', 'absence of desired', 'told no', 'access denied'];
+      const tangibleConsequences = ['access given', 'item given', 'item provided', 'tangible', 'desired item', 'activity provided', 'desired item/activity not provided'];
+      if (antecedents.some(a => tangibleAntecedents.some(k => a.toLowerCase().includes(k))) ||
+          consequences.some(c => tangibleConsequences.some(k => c.toLowerCase().includes(k)))) {
+        inferred.add('tangible');
+      }
+      
+      // Sensory/Automatic indicators
+      const sensoryAntecedents = ['sensory', 'alone', 'unstructured', 'idle', 'bored', 'no stimulation'];
+      const sensoryConsequences = ['sensory', 'automatic', 'self-stimulation', 'no social consequence', 'ignored'];
+      if (antecedents.some(a => sensoryAntecedents.some(k => a.toLowerCase().includes(k))) ||
+          consequences.some(c => sensoryConsequences.some(k => c.toLowerCase().includes(k)))) {
+        inferred.add('sensory');
+      }
+      
+      return inferred.size > 0 ? Array.from(inferred) : [];
+    };
+
+    // Count functions (use explicit tags when available, infer when missing)
     const functionData = new Map<BehaviorFunction, {
       count: number;
       antecedents: Map<string, number>;
@@ -93,10 +133,18 @@ export function FBAModeTools({ student }: FBAModeToolsProps) {
     }>();
 
     studentABCData.forEach(entry => {
-      if (!entry.functions || entry.functions.length === 0) return;
-      const functions = entry.functions;
-      const antecedents = entry.antecedents || [entry.antecedent];
-      const consequences = entry.consequences || [entry.consequence];
+      const antecedents = entry.antecedents || (entry.antecedent ? [entry.antecedent] : []);
+      const consequences = entry.consequences || (entry.consequence ? [entry.consequence] : []);
+      
+      // Use explicit functions if available, otherwise infer from A-C patterns
+      let functions: BehaviorFunction[] = [];
+      if (entry.functions && entry.functions.length > 0) {
+        functions = entry.functions.filter(f => f !== 'unknown');
+      }
+      if (functions.length === 0) {
+        functions = inferFunctions(antecedents, consequences);
+      }
+      if (functions.length === 0) return; // Skip only if we truly can't determine
 
       functions.forEach(fn => {
         const current = functionData.get(fn) || {
