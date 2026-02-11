@@ -144,11 +144,15 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
         if (!s.studentIds?.includes(studentId)) return false;
         if (new Date(s.date) < start) return false;
         
-        // Filter out empty/false sessions - must have actual behavioral data (not just notes)
+        // Filter out empty/false sessions - must have actual behavioral data
+        // Check both global store entries AND inline session entries
         const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
-        const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
-        const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
-        const hasIntData = intervalEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
+          || (s.frequencyEntries?.some(e => e.studentId === studentId) ?? false);
+        const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
+          || (s.durationEntries?.some(e => e.studentId === studentId) ?? false);
+        const hasIntData = intervalEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
+          || (s.intervalEntries?.some(e => e.studentId === studentId) ?? false);
         
         return hasAbcData || hasFreqData || hasDurData || hasIntData;
       })
