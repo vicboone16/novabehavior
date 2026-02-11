@@ -147,6 +147,55 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, studentId, dateFilter]);
 
+  // Detect data entries that belong to sessions not currently displayed
+  const unmatchedDataSummary = useMemo(() => {
+    const displayedSessionIds = new Set(filteredSessions.map(s => s.id));
+    
+    const unmatchedAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId && !displayedSessionIds.has(e.sessionId));
+    const unmatchedFreq = frequencyEntries.filter(e => e.studentId === studentId && e.sessionId && !displayedSessionIds.has(e.sessionId));
+    const unmatchedDur = durationEntries.filter(e => e.studentId === studentId && e.sessionId && !displayedSessionIds.has(e.sessionId));
+    const unmatchedInt = intervalEntries.filter(e => e.studentId === studentId && e.sessionId && !displayedSessionIds.has(e.sessionId));
+    
+    const totalFreq = unmatchedFreq.reduce((sum, e) => sum + e.count, 0);
+    const totalDur = unmatchedDur.reduce((sum, e) => sum + (e.duration || 0), 0);
+    
+    const hasUnmatched = unmatchedAbcs.length > 0 || totalFreq > 0 || totalDur > 0 || unmatchedInt.length > 0;
+    
+    // Group by session ID to create virtual session entries
+    const sessionGroups = new Map<string, { abcCount: number; frequencyCount: number; durationSeconds: number; intervalCount: number; intervalsOccurred: number; earliestTimestamp: Date }>();
+    
+    [...unmatchedAbcs, ...unmatchedFreq, ...unmatchedDur, ...unmatchedInt].forEach(e => {
+      const sid = e.sessionId || 'unknown';
+      if (!sessionGroups.has(sid)) {
+        sessionGroups.set(sid, { abcCount: 0, frequencyCount: 0, durationSeconds: 0, intervalCount: 0, intervalsOccurred: 0, earliestTimestamp: new Date() });
+      }
+    });
+    
+    unmatchedAbcs.forEach(e => {
+      const g = sessionGroups.get(e.sessionId || 'unknown')!;
+      g.abcCount++;
+      if (new Date(e.timestamp) < g.earliestTimestamp) g.earliestTimestamp = new Date(e.timestamp);
+    });
+    unmatchedFreq.forEach(e => {
+      const g = sessionGroups.get(e.sessionId || 'unknown')!;
+      g.frequencyCount += e.count;
+      if (new Date(e.timestamp) < g.earliestTimestamp) g.earliestTimestamp = new Date(e.timestamp);
+    });
+    unmatchedDur.forEach(e => {
+      const g = sessionGroups.get(e.sessionId || 'unknown')!;
+      g.durationSeconds += e.duration || 0;
+      if (new Date(e.startTime) < g.earliestTimestamp) g.earliestTimestamp = new Date(e.startTime);
+    });
+    unmatchedInt.forEach(e => {
+      const g = sessionGroups.get(e.sessionId || 'unknown')!;
+      g.intervalCount++;
+      if (e.occurred) g.intervalsOccurred++;
+      if (new Date(e.timestamp) < g.earliestTimestamp) g.earliestTimestamp = new Date(e.timestamp);
+    });
+    
+    return { hasUnmatched, sessionGroups };
+  }, [abcEntries, frequencyEntries, durationEntries, intervalEntries, studentId, filteredSessions]);
+
   // Get session data summary
   const getSessionDataSummary = (sessionId: string) => {
     const sessionAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
@@ -883,6 +932,68 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                     </Collapsible>
                   );
                 })}
+
+                {/* Show unmatched/orphaned data from other sessions */}
+                {unmatchedDataSummary.hasUnmatched && (
+                  <>
+                    <div className="border-t pt-3 mt-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        Data from other sessions (not shown above)
+                      </p>
+                    </div>
+                    {Array.from(unmatchedDataSummary.sessionGroups.entries())
+                      .sort(([, a], [, b]) => b.earliestTimestamp.getTime() - a.earliestTimestamp.getTime())
+                      .map(([sessionId, data]) => {
+                        const hasEntryData = data.abcCount > 0 || data.frequencyCount > 0 || data.durationSeconds > 0 || data.intervalCount > 0;
+                        if (!hasEntryData) return null;
+                        return (
+                          <Card key={sessionId} className="overflow-hidden border-dashed">
+                            <CardHeader className="py-3 px-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                                  <div>
+                                    <p className="font-medium text-sm">
+                                      {format(data.earliestTimestamp, 'MMM d, yyyy')}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(data.earliestTimestamp, 'h:mm a')} (recovered data)
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">Data recovered</Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pt-0 pb-4">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                                <div className="p-2 bg-muted/50 rounded text-center">
+                                  <p className="text-lg font-bold">{data.abcCount}</p>
+                                  <p className="text-xs text-muted-foreground">ABC Records</p>
+                                </div>
+                                <div className="p-2 bg-muted/50 rounded text-center">
+                                  <p className="text-lg font-bold">{data.frequencyCount}</p>
+                                  <p className="text-xs text-muted-foreground">Frequency</p>
+                                </div>
+                                <div className="p-2 bg-muted/50 rounded text-center">
+                                  <p className="text-lg font-bold">{Math.floor(data.durationSeconds / 60)}m</p>
+                                  <p className="text-xs text-muted-foreground">Duration</p>
+                                </div>
+                                <div className="p-2 bg-muted/50 rounded text-center">
+                                  <p className="text-lg font-bold">
+                                    {data.intervalCount > 0 ? Math.round((data.intervalsOccurred / data.intervalCount) * 100) : 0}%
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Intervals ({data.intervalsOccurred}/{data.intervalCount})
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                  </>
+                )}
               </div>
             )}
           </ScrollArea>
