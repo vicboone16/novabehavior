@@ -1,82 +1,29 @@
 
+# Fix Appointment Verification Error and Missing Note Prompt
 
-# Navigation Consolidation Plan
+## Problem 1: Database Constraint Error
+When clicking "Yes, Occurred," the system tries to insert a session with `status: 'completed'`, but the database has a check constraint (`sessions_status_check`) that only allows `'active'`, `'paused'`, or `'ended'`. This causes the error:
+> "new row for relation 'sessions' violates check constraint 'sessions_status_check'"
 
-## Goal
-Reduce the number of buttons in the main header by merging related features and relocating others, so everything fits on one screen.
+**Fix**: Change the inserted status from `'completed'` to `'ended'` (which is the valid equivalent for a completed session in this schema).
 
-## Changes Overview
+## Problem 2: No Clinical Note Prompt After Verification
+After successfully verifying a session, the dialog should prompt you to create a clinical note (Therapist, Assessment, Clinical, etc.) linked to the session. Currently, none of the three places that use the VerificationDialog pass the `onCreateNote` callback -- so the "Add Note" button in the prompt step does nothing useful.
 
-```text
-BEFORE (header buttons):                 AFTER (header buttons):
-+------------------+                     +------------------+
-| Supervision      |                     | Supervision      |
-| Referrals        |                     | Referrals        |
-| Billing          | ─┐                  | Billing & Analytics (combined) |
-| Analytics        | ─┘                  | Clinical Library (IEP + Behavior) |
-| IEP Library      | ─┐                  | Teacher Mode     |
-| Recruiting       |  │                  +------------------+
-| LMS              |  │
-| Teacher Mode     |  │                  MOVED:
-+------------------+  │                  - LMS → UserMenu dropdown
-                      │                  - Recruiting → Admin page tab
-                      └─ merged          - Behavior Library → merged into Clinical Library
-```
-
-## Detailed Changes
-
-### 1. Merge Billing and Analytics into one page
-- Create a new combined "Billing & Analytics" page that uses internal tabs/headers to switch between the existing Billing content and the existing Analytics content.
-- The header button label will change to "Billing" with a single DollarSign icon; the Analytics content will appear as an internal tab within that page.
-- Remove the separate Analytics header button from `MainLayout.tsx`.
-- The `/analytics` route will remain functional but redirect to `/billing` with the analytics tab active (or be kept as a secondary route).
-
-### 2. Merge IEP Library and Behavior Bank into a "Clinical Library"
-- Create a new combined page (e.g., `/clinical-library`) with internal tabs: "IEP Supports" and "Behavior Bank".
-- The IEP Library tab will render the existing `IEPLibrary` page content.
-- The Behavior Bank tab will render the existing `BehaviorLibrary` page content.
-- Replace the separate "IEP Library" header button with a single "Clinical Library" button.
-- Remove the "Behavior Library" entry from the UserMenu dropdown (since it is now accessible from the Clinical Library page).
-
-### 3. Move Recruiting into the Admin page
-- Remove the "Recruiting" button from the header in `MainLayout.tsx`.
-- Add a "Recruiting" tab inside the existing Admin page, rendering the current Recruiting page content as a tab panel.
-- Only admins/super_admins can access the Admin page, so this naturally enforces the admin-only restriction.
-
-### 4. Move LMS into the UserMenu dropdown
-- Remove the "LMS" button from the header in `MainLayout.tsx`.
-- Add an "LMS / Training" menu item in `UserMenu.tsx` (alongside Profile, Behavior Library, etc.), which navigates to `/lms`.
-
----
+**Fix**: Wire up the `onCreateNote` prop in all three locations (Schedule page, VerificationQueue, NeedsVerificationQueue) so that clicking "Add Note" opens the session note creation flow with the correct session and appointment IDs pre-linked.
 
 ## Technical Details
 
-### Files to create:
-- **`src/pages/ClinicalLibrary.tsx`** -- New combined page with two tabs ("IEP Supports" rendering IEPLibrary content, "Behavior Bank" rendering BehaviorLibrary content). Uses Tabs component with internal state management.
+### File Changes
 
-### Files to modify:
+1. **`src/components/schedule/VerificationDialog.tsx`**
+   - Line 102: Change `status: 'completed'` to `status: 'ended'`
 
-**`src/components/MainLayout.tsx`**
-- Remove individual buttons for: Analytics, IEP Library, Recruiting, LMS
-- Update Billing button label (keep as "Billing" or change to "Billing & Analytics")
-- Add a new "Clinical Library" button navigating to `/clinical-library`
+2. **`src/pages/Schedule.tsx`**
+   - Add `onCreateNote` handler to the VerificationDialog that navigates to or opens the session note editor with the linked session ID and appointment ID
 
-**`src/pages/Billing.tsx`**
-- Add an "Analytics" tab at the end of the existing tab list
-- Import and render the `AnalyticsDashboard` component (and filters) within that tab's content panel
-- Update page title to "Billing & Analytics"
+3. **`src/components/schedule/VerificationQueue.tsx`**
+   - Pass `onCreateNote` prop to VerificationDialog
 
-**`src/pages/Admin.tsx`**
-- Add a "Recruiting" tab that renders the existing Recruiting page content inline
-
-**`src/components/UserMenu.tsx`**
-- Remove the "Behavior Library" menu item (now accessible via Clinical Library)
-- Add an "LMS / Training" menu item that navigates to `/lms`
-
-**`src/App.tsx`**
-- Add route for `/clinical-library`
-- Keep existing `/billing`, `/analytics`, `/lms`, `/recruiting`, `/behaviors`, `/iep-library` routes functional for backward compatibility (direct URL access)
-
-### No database changes required
-This is purely a UI/navigation restructuring. All existing pages, components, and data remain intact.
-
+4. **`src/components/schedule/NeedsVerificationQueue.tsx`**
+   - Pass `onCreateNote` prop to VerificationDialog
