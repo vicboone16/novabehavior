@@ -146,7 +146,8 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
         
         // Filter out empty/false sessions - must have actual behavioral data
         // Check both global store entries AND inline session entries
-        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
+          || (s.abcEntries?.some(e => e.studentId === studentId) ?? false);
         const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
           || (s.frequencyEntries?.some(e => e.studentId === studentId) ?? false);
         const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === s.id)
@@ -210,16 +211,39 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
 
   // Get session data summary
   const getSessionDataSummary = (sessionId: string) => {
-    const sessionAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
-    const sessionFrequency = frequencyEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
-    const sessionDuration = durationEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
-    const sessionIntervals = intervalEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
+    const session = sessions.find(s => s.id === sessionId);
+    const globalAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineAbcs = session?.abcEntries?.filter(e => e.studentId === studentId) || [];
+    const seenIds = new Set<string>();
+    const sessionAbcs = [...globalAbcs, ...inlineAbcs].filter(e => {
+      if (seenIds.has(e.id)) return false;
+      seenIds.add(e.id);
+      return true;
+    });
+    const globalFreq = frequencyEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineFreq = session?.frequencyEntries?.filter(e => e.studentId === studentId) || [];
+    const seenFreqIds = new Set<string>();
+    const sessionFrequency = [...globalFreq, ...inlineFreq].filter(e => {
+      if (seenFreqIds.has(e.id)) return false;
+      seenFreqIds.add(e.id);
+      return true;
+    });
+    const globalDur = durationEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineDur = session?.durationEntries?.filter(e => e.studentId === studentId) || [];
+    const seenDurIds = new Set<string>();
+    const sessionDuration = [...globalDur, ...inlineDur].filter(e => {
+      if (seenDurIds.has(e.id)) return false;
+      seenDurIds.add(e.id);
+      return true;
+    });
+    const globalInt = intervalEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineInt = session?.intervalEntries?.filter(e => e.studentId === studentId) || [];
+    const seenIntIds = new Set<string>();
+    const sessionIntervals = [...globalInt, ...inlineInt].filter(e => {
+      if (seenIntIds.has(e.id)) return false;
+      seenIntIds.add(e.id);
+      return true;
+    });
     
     const totalFrequency = sessionFrequency.reduce((sum, e) => sum + e.count, 0);
     const totalDuration = sessionDuration.reduce((sum, e) => sum + (e.duration || 0), 0);
@@ -238,16 +262,39 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
 
   // Get detailed session data for export
   const getDetailedSessionData = (sessionId: string) => {
-    const sessionAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
-    const sessionFrequency = frequencyEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
-    const sessionDuration = durationEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
-    const sessionIntervals = intervalEntries.filter(e => 
-      e.studentId === studentId && e.sessionId === sessionId
-    );
+    const session = sessions.find(s => s.id === sessionId);
+    const globalAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineAbcs = session?.abcEntries?.filter(e => e.studentId === studentId) || [];
+    const seenAbcIds = new Set<string>();
+    const sessionAbcs = [...globalAbcs, ...inlineAbcs].filter(e => {
+      if (seenAbcIds.has(e.id)) return false;
+      seenAbcIds.add(e.id);
+      return true;
+    });
+    const globalFreq = frequencyEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineFreq = session?.frequencyEntries?.filter(e => e.studentId === studentId) || [];
+    const seenFreqIds = new Set<string>();
+    const sessionFrequency = [...globalFreq, ...inlineFreq].filter(e => {
+      if (seenFreqIds.has(e.id)) return false;
+      seenFreqIds.add(e.id);
+      return true;
+    });
+    const globalDur = durationEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineDur = session?.durationEntries?.filter(e => e.studentId === studentId) || [];
+    const seenDurIds = new Set<string>();
+    const sessionDuration = [...globalDur, ...inlineDur].filter(e => {
+      if (seenDurIds.has(e.id)) return false;
+      seenDurIds.add(e.id);
+      return true;
+    });
+    const globalInt = intervalEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const inlineInt = session?.intervalEntries?.filter(e => e.studentId === studentId) || [];
+    const seenIntIds = new Set<string>();
+    const sessionIntervals = [...globalInt, ...inlineInt].filter(e => {
+      if (seenIntIds.has(e.id)) return false;
+      seenIntIds.add(e.id);
+      return true;
+    });
     
     return { sessionAbcs, sessionFrequency, sessionDuration, sessionIntervals };
   };
