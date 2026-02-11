@@ -27,6 +27,7 @@ import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary'
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
+import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
 // FBA Workflow Steps
@@ -792,10 +793,15 @@ export default function AssessmentDashboard() {
           {/* Results Tab - View observation results and export structured observations */}
           <TabsContent value="results" className="space-y-4">
             {selectedStudent && (
-              <ObservationResultsViewer 
-                studentId={selectedStudent.id}
-                student={selectedStudent}
-              />
+              <>
+                <div className="flex justify-end">
+                  <ComprehensiveAssessmentExport student={selectedStudent} />
+                </div>
+                <ObservationResultsViewer 
+                  studentId={selectedStudent.id}
+                  student={selectedStudent}
+                />
+              </>
             )}
           </TabsContent>
 
