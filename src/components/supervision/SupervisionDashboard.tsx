@@ -1,15 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Users, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Users, CheckCircle, Clock, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ComplianceData } from '@/types/supervision';
 import { ComplianceGauge } from './ComplianceGauge';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface CaseloadClient {
+  id: string;
+  student_id: string;
+  name: string;
+  role: string;
+  start_date: string;
+}
 
 export function SupervisionDashboard() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [complianceData, setComplianceData] = useState<ComplianceData[]>([]);
+  const [caseloadClients, setCaseloadClients] = useState<CaseloadClient[]>([]);
   const [stats, setStats] = useState({
     totalSupervisees: 0,
     compliantCount: 0,
@@ -18,8 +28,10 @@ export function SupervisionDashboard() {
   });
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (user?.id) {
+      fetchDashboardData();
+    }
+  }, [user?.id]);
 
   const fetchDashboardData = async () => {
     try {
@@ -42,9 +54,74 @@ export function SupervisionDashboard() {
       const pendingCount = logs?.filter(l => l.status === 'pending').length || 0;
       const totalHours = logs?.reduce((sum, l) => sum + (l.duration_minutes / 60), 0) || 0;
 
+      // Fetch caseload from both staff_caseloads and client_team_assignments
+      const [caseloadRes, teamRes] = await Promise.all([
+        supabase
+          .from('staff_caseloads')
+          .select('id, student_id')
+          .eq('clinician_user_id', user!.id)
+          .eq('status', 'active'),
+        supabase
+          .from('client_team_assignments')
+          .select('id, client_id, role, start_date')
+          .eq('staff_user_id', user!.id)
+          .eq('is_active', true),
+      ]);
+
+      // Gather unique client IDs
+      const seenIds = new Set<string>();
+      const clientIds: string[] = [];
+      (caseloadRes.data || []).forEach((d: any) => {
+        if (!seenIds.has(d.student_id)) { seenIds.add(d.student_id); clientIds.push(d.student_id); }
+      });
+      (teamRes.data || []).forEach((t: any) => {
+        if (!seenIds.has(t.client_id)) { seenIds.add(t.client_id); clientIds.push(t.client_id); }
+      });
+
+      // Fetch client names
+      let clientNameMap = new Map<string, string>();
+      if (clientIds.length > 0) {
+        const { data: students } = await supabase
+          .from('students')
+          .select('id, name')
+          .in('id', clientIds);
+        clientNameMap = new Map((students || []).map(s => [s.id, s.name]));
+      }
+
+      // Build caseload list
+      const clients: CaseloadClient[] = [];
+      const addedIds = new Set<string>();
+      
+      (caseloadRes.data || []).forEach((d: any) => {
+        if (!addedIds.has(d.student_id)) {
+          addedIds.add(d.student_id);
+          clients.push({
+            id: d.id,
+            student_id: d.student_id,
+            name: clientNameMap.get(d.student_id) || 'Unknown',
+            role: 'clinician',
+            start_date: '',
+          });
+        }
+      });
+      (teamRes.data || []).forEach((t: any) => {
+        if (!addedIds.has(t.client_id)) {
+          addedIds.add(t.client_id);
+          clients.push({
+            id: t.id,
+            student_id: t.client_id,
+            name: clientNameMap.get(t.client_id) || 'Unknown',
+            role: t.role || 'team member',
+            start_date: t.start_date || '',
+          });
+        }
+      });
+
+      setCaseloadClients(clients);
+
       setStats({
         totalSupervisees: requirements?.length || 0,
-        compliantCount: 0, // Would calculate based on actual data
+        compliantCount: 0,
         pendingApproval: pendingCount,
         hoursThisPeriod: totalHours,
       });
@@ -69,23 +146,23 @@ export function SupervisionDashboard() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">My Clients</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{caseloadClients.length}</div>
+            <p className="text-xs text-muted-foreground">Active client assignments</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Supervisees</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSupervisees}</div>
             <p className="text-xs text-muted-foreground">Active supervision assignments</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Compliant</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.compliantCount}</div>
-            <p className="text-xs text-muted-foreground">Meeting supervision requirements</p>
           </CardContent>
         </Card>
 
@@ -111,6 +188,35 @@ export function SupervisionDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* My Caseload */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />
+            My Caseload
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {caseloadClients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No clients assigned to your caseload.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {caseloadClients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{client.name}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{client.role}</p>
+                  </div>
+                  <Badge variant="default">Active</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Compliance Table */}
       <Card>

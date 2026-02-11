@@ -26,7 +26,7 @@ export interface PushNotificationStatus {
 }
 
 export async function checkPushSupport(): Promise<PushNotificationStatus> {
-  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window as boolean;
   const vapidConfigured = !!VAPID_PUBLIC_KEY;
   
   if (!supported) {
@@ -44,7 +44,7 @@ export async function checkPushSupport(): Promise<PushNotificationStatus> {
   try {
     const registration = await navigator.serviceWorker.getRegistration('/sw-push.js');
     if (registration) {
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager?.getSubscription();
       subscribed = !!subscription;
     }
   } catch (error) {
@@ -106,12 +106,13 @@ export async function subscribeToPush(userId: string): Promise<PushSubscription 
     await navigator.serviceWorker.ready;
 
     // Check for existing subscription
-    let subscription = await registration.pushManager.getSubscription();
+    const pushManager = (registration as any).pushManager;
+    let subscription = await pushManager?.getSubscription();
 
     if (!subscription) {
       // Create new subscription
       const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-      subscription = await registration.pushManager.subscribe({
+      subscription = await pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer
       });
@@ -157,7 +158,7 @@ export async function unsubscribeFromPush(userId: string): Promise<boolean> {
     const registration = await navigator.serviceWorker.getRegistration('/sw-push.js');
     
     if (registration) {
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager?.getSubscription();
       
       if (subscription) {
         await subscription.unsubscribe();

@@ -70,7 +70,8 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     title: 'Clinician',
     supervisor_id: '',
     role: 'staff',
-    emailOption: 'none' as 'none' | 'now' | 'later', // none = don't send, now = send immediately, later = save for later
+    emailOption: 'none' as 'none' | 'now' | 'later',
+    assignedClientIds: [] as string[],
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -273,6 +274,18 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // Assign clients if any were selected
+      if (newStaffForm.assignedClientIds.length > 0 && data.user_id) {
+        const assignments = newStaffForm.assignedClientIds.map(clientId => ({
+          client_id: clientId,
+          staff_user_id: data.user_id,
+          role: newStaffForm.credential || 'clinician',
+          start_date: new Date().toISOString().split('T')[0],
+          is_active: true,
+        }));
+        await supabase.from('client_team_assignments').insert(assignments);
+      }
+
       // Email option: 'none' means no email is sent (credentials shared manually)
       // 'now' and 'later' are placeholders for future email integration
       const description = newStaffForm.emailOption === 'none'
@@ -300,6 +313,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         supervisor_id: '',
         role: 'staff',
         emailOption: 'none',
+        assignedClientIds: [],
       });
       
       // Reload staff list
@@ -697,6 +711,38 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Client Assignments */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="text-sm font-medium">Assign Clients (Optional)</Label>
+              <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
+                {students.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No clients available</p>
+                ) : (
+                  students.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={newStaffForm.assignedClientIds.includes(s.id)}
+                        onChange={(e) => {
+                          setNewStaffForm(f => ({
+                            ...f,
+                            assignedClientIds: e.target.checked
+                              ? [...f.assignedClientIds, s.id]
+                              : f.assignedClientIds.filter(id => id !== s.id),
+                          }));
+                        }}
+                        className="rounded border-border"
+                      />
+                      {s.name}
+                    </label>
+                  ))
+                )}
+              </div>
+              {newStaffForm.assignedClientIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">{newStaffForm.assignedClientIds.length} client(s) selected</p>
+              )}
             </div>
 
             <div className="space-y-3 pt-2 border-t">
