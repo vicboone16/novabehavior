@@ -2461,24 +2461,27 @@ export const useDataStore = create<DataState>()(
         });
       },
 
-      // Force end all sessions and clear all observation state - used for stale session cleanup
+      // Force end all sessions and clear session UI state - used for stale session cleanup
+      // CRITICAL: This must NOT wipe data entries from saved/completed sessions.
+      // It only clears the CURRENT session's unsaved live data and resets session metadata.
       forceEndAllSessions: () => {
         const state = get();
         const sessionId = state.currentSessionId;
         
-        // Keep only entries from OTHER sessions or historical data
-        const otherFrequency = sessionId 
+        // Only remove entries from the CURRENT active session (if any).
+        // All other entries (from completed sessions, cloud-loaded data) must be preserved.
+        const cleanFrequency = sessionId 
           ? state.frequencyEntries.filter(e => e.sessionId !== sessionId || e.isHistorical)
-          : state.frequencyEntries.filter(e => e.isHistorical);
-        const otherDuration = sessionId
+          : state.frequencyEntries; // No active session = nothing to clean
+        const cleanDuration = sessionId
           ? state.durationEntries.filter(e => e.sessionId !== sessionId)
-          : [];
-        const otherInterval = sessionId
+          : state.durationEntries;
+        const cleanInterval = sessionId
           ? state.intervalEntries.filter(e => e.sessionId !== sessionId)
-          : [];
-        const otherABC = sessionId
+          : state.intervalEntries;
+        const cleanABC = sessionId
           ? state.abcEntries.filter(e => e.sessionId !== sessionId)
-          : [];
+          : state.abcEntries;
 
         set({
           sessionStartTime: null,
@@ -2491,10 +2494,10 @@ export const useDataStore = create<DataState>()(
           sessionFocus: DEFAULT_SESSION_FOCUS,
           syncedIntervalsRunning: false,
           lastSavedDataHash: null,
-          frequencyEntries: otherFrequency,
-          durationEntries: otherDuration,
-          intervalEntries: otherInterval,
-          abcEntries: otherABC,
+          frequencyEntries: cleanFrequency,
+          durationEntries: cleanDuration,
+          intervalEntries: cleanInterval,
+          abcEntries: cleanABC,
         });
       },
 
