@@ -120,7 +120,7 @@
    student: Student
  ): Promise<void> {
    const items = getItemsForType(assessment.type);
-   const children: Paragraph[] = [];
+    const children: (Paragraph | Table)[] = [];
  
    // Title
    children.push(
@@ -253,16 +253,12 @@
      );
    });
  
-   children.push(
-     new Paragraph({
-       children: [
-         new Table({
-           rows: tableRows,
-           width: { size: 100, type: WidthType.PERCENTAGE },
-         }),
-       ],
-     })
-   );
+    children.push(
+      new Table({
+        rows: tableRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+      })
+    );
  
    children.push(new Paragraph({ text: '' }));
    children.push(
