@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, startOfDay, endOfDay, isPast, differenceInMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +35,7 @@ type ScheduleTab = 'calendar' | 'planning';
 
 export default function Schedule() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   
@@ -693,6 +695,12 @@ ${filteredAppointments.length > 0 ? appointmentList : 'No appointments scheduled
         onVerified={() => {
           loadAppointments();
           setShowVerificationDialog(null);
+        }}
+        onCreateNote={(sessionId, appointmentId) => {
+          const studentId = showVerificationDialog?.student_id;
+          if (studentId) {
+            navigate(`/students/${studentId}?tab=notes&sessionId=${sessionId}&appointmentId=${appointmentId}`);
+          }
         }}
       />
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, startOfDay, subDays } from 'date-fns';
 import { 
   AlertTriangle, 
@@ -65,6 +66,7 @@ export function VerificationQueue({
   onRefresh,
 }: VerificationQueueProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<QueueTab>('unverified');
   const [appointments, setAppointments] = useState<ExtendedAppointment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -181,7 +183,7 @@ export function VerificationQueue({
             end_time: apt.end_time,
             session_length_minutes: apt.duration_minutes,
             student_ids: [apt.student_id],
-            status: 'completed',
+            status: 'ended',
             appointment_id: apt.id,
             service_type: apt.appointment_type || 'direct_therapy',
             service_setting: apt.service_setting || 'school',
@@ -513,6 +515,12 @@ export function VerificationQueue({
         studentName={getStudentName(selectedAppointment?.student_id)}
         staffName={selectedAppointment ? getStaffName(selectedAppointment) : undefined}
         onVerified={handleVerified}
+        onCreateNote={(sessionId, appointmentId) => {
+          const studentId = selectedAppointment?.student_id;
+          if (studentId) {
+            navigate(`/students/${studentId}?tab=notes&sessionId=${sessionId}&appointmentId=${appointmentId}`);
+          }
+        }}
       />
     </Card>
   );
