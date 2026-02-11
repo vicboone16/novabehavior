@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Clock, Eye, ChevronDown, ChevronUp, FileText, Trash2, Pencil, Merge, Check, X } from 'lucide-react';
+import { Clock, Eye, ChevronDown, ChevronUp, FileText, Trash2, Pencil, Merge, Check, X, SquarePen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { useDataStore } from '@/store/dataStore';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { Session } from '@/types/behavior';
 import { toast } from '@/hooks/use-toast';
+import { ObservationEditor } from '@/components/ObservationEditor';
 
 interface ObservationHistoryProps {
   studentId: string;
@@ -39,6 +40,7 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
   const [deleteEntryConfirm, setDeleteEntryConfirm] = useState<{ id: string; type: 'frequency' | 'duration' | 'abc' | 'interval'; label: string } | null>(null);
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<string[]>([]);
+  const [editorSession, setEditorSession] = useState<Session | null>(null);
 
   const student = students.find(s => s.id === studentId);
 
@@ -240,7 +242,10 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
                           {!isEditing ? (
                             <>
                               <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => handleStartEdit(session)}>
-                                <Pencil className="w-3 h-3" /> Edit
+                                <Pencil className="w-3 h-3" /> Quick Edit
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={() => setEditorSession(session)}>
+                                <SquarePen className="w-3 h-3" /> Full Edit
                               </Button>
                               <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => setDeleteConfirmId(session.id)}>
                                 <Trash2 className="w-3 h-3" /> Delete
@@ -435,6 +440,16 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
           toast({ title: 'Entry deleted' });
         }}
       />
+
+      {/* Full Observation Editor */}
+      {editorSession && (
+        <ObservationEditor
+          open={!!editorSession}
+          onOpenChange={(open) => !open && setEditorSession(null)}
+          session={editorSession}
+          studentId={studentId}
+        />
+      )}
     </>
   );
 }
