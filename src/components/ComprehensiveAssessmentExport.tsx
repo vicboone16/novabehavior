@@ -78,9 +78,12 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
       .filter(s => s.studentIds?.includes(student.id))
       .forEach(s => {
         const abc = abcEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length;
-        const freq = frequencyEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).reduce((sum, e) => sum + e.count, 0);
-        const dur = durationEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length;
-        const interval = intervalEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length;
+        const freq = frequencyEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).reduce((sum, e) => sum + e.count, 0)
+          + (s.frequencyEntries?.filter(e => e.studentId === student.id).reduce((sum, e) => sum + e.count, 0) ?? 0);
+        const dur = durationEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length
+          + (s.durationEntries?.filter(e => e.studentId === student.id).length ?? 0);
+        const interval = intervalEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length
+          + (s.intervalEntries?.filter(e => e.studentId === student.id).length ?? 0);
         const hasData = abc > 0 || freq > 0 || dur > 0 || interval > 0;
         if (hasData) {
           result.push({
