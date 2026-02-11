@@ -48,7 +48,8 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
         if (!session.studentIds?.includes(studentId)) return false;
         // Filter out empty/false sessions - must have actual behavioral data
         // Check both global store entries AND inline session entries
-        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === session.id);
+        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === session.id)
+          || (session.abcEntries?.some(e => e.studentId === studentId) ?? false);
         const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === session.id)
           || (session.frequencyEntries?.some(e => e.studentId === studentId) ?? false);
         const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === session.id)
@@ -62,10 +63,14 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
 
   const getSessionData = (session: Session) => {
     const sessionFrequency = session.frequencyEntries?.filter(e => e.studentId === studentId) || [];
-    const sessionABC = abcEntries.filter(e => 
-      e.studentId === studentId && 
-      e.sessionId === session.id
-    );
+    const globalAbc = abcEntries.filter(e => e.studentId === studentId && e.sessionId === session.id);
+    const inlineAbc = session.abcEntries?.filter(e => e.studentId === studentId) || [];
+    const seenAbcIds = new Set<string>();
+    const sessionABC = [...globalAbc, ...inlineAbc].filter(e => {
+      if (seenAbcIds.has(e.id)) return false;
+      seenAbcIds.add(e.id);
+      return true;
+    });
     const sessionIntervals = session.intervalEntries?.filter(e => e.studentId === studentId) || [];
     const sessionDuration = session.durationEntries?.filter(e => e.studentId === studentId) || [];
 
