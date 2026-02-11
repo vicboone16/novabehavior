@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { v4 as uuid } from 'uuid';
 import {
   Plus, Pencil, Trash2, X, Check, Save, Clock,
-  AlertTriangle, ChevronDown, ChevronUp,
+  AlertTriangle, ChevronDown, ChevronUp, Link2, Unlink,
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,6 +40,16 @@ import {
 } from '@/types/behavior';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ObservationEditorProps {
   open: boolean;
@@ -92,6 +102,12 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
 
   // Current tab
   const [activeTab, setActiveTab] = useState('abc');
+
+  // Linking choice for new entries
+  const [linkChoice, setLinkChoice] = useState<{
+    type: 'abc' | 'frequency' | 'duration';
+    pending: boolean;
+  } | null>(null);
 
   // ABC editing
   const [editingAbcId, setEditingAbcId] = useState<string | null>(null);
@@ -202,8 +218,44 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
     }
   };
 
-  // Add new ABC entry to this observation
-  const handleAddAbc = () => {
+  // Create a new separate session for unlinked entries
+  const createSeparateSession = useCallback(() => {
+    const newSessionId = uuid();
+    const newSession: Session = {
+      id: newSessionId,
+      studentIds: [studentId],
+      date: new Date(editDate),
+      sessionLengthMinutes: 0,
+      notes: 'Created from retroactive entry',
+      abcEntries: [],
+      frequencyEntries: [],
+      durationEntries: [],
+      intervalEntries: [],
+    };
+    useDataStore.setState(state => ({
+      sessions: [...state.sessions, newSession],
+    }));
+    return newSessionId;
+  }, [studentId, editDate]);
+
+  // Prompt linking choice before adding
+  const promptLinkChoice = (type: 'abc' | 'frequency' | 'duration') => {
+    setLinkChoice({ type, pending: true });
+  };
+
+  const handleLinkChoiceConfirm = (linkToExisting: boolean) => {
+    if (!linkChoice) return;
+    const targetSessionId = linkToExisting ? session.id : createSeparateSession();
+    
+    if (linkChoice.type === 'abc') commitAddAbc(targetSessionId);
+    else if (linkChoice.type === 'frequency') commitAddFreq(targetSessionId);
+    else if (linkChoice.type === 'duration') commitAddDur(targetSessionId);
+    
+    setLinkChoice(null);
+  };
+
+  // Add new ABC entry to a target session
+  const commitAddAbc = (targetSessionId: string) => {
     if (!newAbcBehaviorId) {
       toast({ title: 'Select a behavior', variant: 'destructive' });
       return;
@@ -224,7 +276,7 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
       frequencyCount: newAbcFreqCount,
       hasDuration: newAbcHasDuration,
       durationMinutes: newAbcHasDuration ? newAbcDurationMin : undefined,
-      sessionId: session.id,
+      sessionId: targetSessionId,
     });
 
     // Reset form
@@ -238,41 +290,50 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
     setNewAbcHasDuration(false);
     setNewAbcDurationMin(0);
     setShowNewAbc(false);
-    toast({ title: 'ABC entry added to observation' });
+    toast({ title: targetSessionId === session.id ? 'ABC entry added to this observation' : 'ABC entry saved as separate observation' });
   };
 
-  // Add new frequency entry
-  const handleAddFreq = () => {
-    if (!newFreqBehaviorId) {
+  // Legacy handler that prompts the choice
+  const handleAddAbc = () => {
+    if (!newAbcBehaviorId) {
       toast({ title: 'Select a behavior', variant: 'destructive' });
       return;
     }
-    const { addFrequencyFromABC } = useDataStore.getState();
-    // Use the store's internal method with a manual entry approach
+    promptLinkChoice('abc');
+  };
+
+  // Add new frequency entry to a target session
+  const commitAddFreq = (targetSessionId: string) => {
+    if (!newFreqBehaviorId) return;
     const entry: FrequencyEntry = {
       id: uuid(),
       studentId,
       behaviorId: newFreqBehaviorId,
       count: newFreqCount,
       timestamp: new Date(editDate),
-      sessionId: session.id,
+      sessionId: targetSessionId,
     };
-    // Push directly to the store
     useDataStore.setState(state => ({
       frequencyEntries: [...state.frequencyEntries, entry],
     }));
     setNewFreqBehaviorId('');
     setNewFreqCount(1);
     setShowNewFreq(false);
-    toast({ title: 'Frequency entry added to observation' });
+    toast({ title: targetSessionId === session.id ? 'Frequency entry added to this observation' : 'Frequency entry saved as separate observation' });
   };
 
-  // Add new duration entry
-  const handleAddDur = () => {
-    if (!newDurBehaviorId) {
+  // Legacy handler that prompts the choice
+  const handleAddFreq = () => {
+    if (!newFreqBehaviorId) {
       toast({ title: 'Select a behavior', variant: 'destructive' });
       return;
     }
+    promptLinkChoice('frequency');
+  };
+
+  // Add new duration entry to a target session
+  const commitAddDur = (targetSessionId: string) => {
+    if (!newDurBehaviorId) return;
     const totalSeconds = (newDurMinutes * 60) + newDurSeconds;
     const entry: DurationEntry = {
       id: uuid(),
@@ -280,7 +341,7 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
       behaviorId: newDurBehaviorId,
       duration: totalSeconds,
       startTime: new Date(editDate),
-      sessionId: session.id,
+      sessionId: targetSessionId,
     };
     useDataStore.setState(state => ({
       durationEntries: [...state.durationEntries, entry],
@@ -289,7 +350,16 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
     setNewDurMinutes(0);
     setNewDurSeconds(0);
     setShowNewDur(false);
-    toast({ title: 'Duration entry added to observation' });
+    toast({ title: targetSessionId === session.id ? 'Duration entry added to this observation' : 'Duration entry saved as separate observation' });
+  };
+
+  // Legacy handler that prompts the choice
+  const handleAddDur = () => {
+    if (!newDurBehaviorId) {
+      toast({ title: 'Select a behavior', variant: 'destructive' });
+      return;
+    }
+    promptLinkChoice('duration');
   };
 
   const handleDeleteEntry = () => {
@@ -794,6 +864,36 @@ export function ObservationEditor({ open, onOpenChange, session, studentId }: Ob
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Link Choice Dialog */}
+      <AlertDialog open={!!linkChoice} onOpenChange={(open) => !open && setLinkChoice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Link2 className="w-4 h-4" />
+              Link to this observation?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Would you like to add this {linkChoice?.type === 'abc' ? 'ABC' : linkChoice?.type} entry to the current observation ({format(new Date(session.date), 'MMM d, yyyy')}), or save it as a separate observation?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setLinkChoice(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleLinkChoiceConfirm(false)}
+              className="gap-1"
+            >
+              <Unlink className="w-3 h-3" /> Separate Observation
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => handleLinkChoiceConfirm(true)}
+              className="gap-1"
+            >
+              <Link2 className="w-3 h-3" /> Link to This One
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ConfirmDialog
         open={!!deleteConfirm}
