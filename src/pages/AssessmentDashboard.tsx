@@ -177,10 +177,21 @@ export default function AssessmentDashboard() {
   const studentStats = useMemo(() => {
     if (!selectedStudent) return null;
 
-    const studentABC = abcEntries.filter(e => e.studentId === selectedStudentId);
+    const globalStudentABC = abcEntries.filter(e => e.studentId === selectedStudentId);
     const studentSessions = sessions.filter(s => 
       s.studentIds?.includes(selectedStudentId)
     );
+    
+    // Also collect inline ABC entries from sessions, deduplicating by ID
+    const inlineABCEntries = studentSessions.flatMap(s => 
+      s.abcEntries?.filter(e => e.studentId === selectedStudentId) || []
+    );
+    const seenAbcIds = new Set<string>();
+    const studentABC = [...globalStudentABC, ...inlineABCEntries].filter(e => {
+      if (seenAbcIds.has(e.id)) return false;
+      seenAbcIds.add(e.id);
+      return true;
+    });
 
     // Calculate function distribution - only count entries that have functions tagged
     const functionCounts = new Map<BehaviorFunction, number>();
