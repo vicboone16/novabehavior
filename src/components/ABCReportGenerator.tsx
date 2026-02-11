@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { useDataStore } from '@/store/dataStore';
-import { ABCEntry } from '@/types/behavior';
+import { ABCEntry, FUNCTION_OPTIONS } from '@/types/behavior';
 
 export function ABCReportGenerator() {
   const { sessions, students, abcEntries } = useDataStore();
@@ -474,7 +474,7 @@ export function ABCReportGenerator() {
                           .sort((a, b) => b[1] - a[1])
                           .map(([func, count]) => (
                             <Badge key={func} variant="outline" className="gap-1">
-                              {func}: {count}
+                              {FUNCTION_OPTIONS.find(fo => fo.value === func)?.label || func}: {count}
                             </Badge>
                           ));
                       })()}

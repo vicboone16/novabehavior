@@ -167,7 +167,8 @@ export function ParentFriendlyFBASummary({ student: propStudent }: ParentFriendl
     // Count functions
     const functionCounts = new Map<BehaviorFunction, number>();
     studentABC.forEach(entry => {
-      const functions = entry.functions || ['unknown' as BehaviorFunction];
+      if (!entry.functions || entry.functions.length === 0) return;
+      const functions = entry.functions;
       functions.forEach(fn => {
         functionCounts.set(fn, (functionCounts.get(fn) || 0) + 1);
       });
