@@ -29,7 +29,7 @@ interface ObservationHistoryProps {
 }
 
 export function ObservationHistory({ studentId }: ObservationHistoryProps) {
-  const { sessions, students, abcEntries, deleteSession, updateSession, mergeSessions, deleteFrequencyEntry, deleteDurationEntry, deleteABCEntry } = useDataStore();
+  const { sessions, students, abcEntries, frequencyEntries, durationEntries, intervalEntries, deleteSession, updateSession, mergeSessions, deleteFrequencyEntry, deleteDurationEntry, deleteABCEntry } = useDataStore();
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -44,9 +44,17 @@ export function ObservationHistory({ studentId }: ObservationHistoryProps) {
 
   const observationSessions = useMemo(() => {
     return sessions
-      .filter(session => session.studentIds?.includes(studentId))
+      .filter(session => {
+        if (!session.studentIds?.includes(studentId)) return false;
+        // Filter out empty/false sessions - must have actual behavioral data
+        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === session.id);
+        const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === session.id);
+        const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === session.id);
+        const hasIntData = intervalEntries.some(e => e.studentId === studentId && e.sessionId === session.id);
+        return hasAbcData || hasFreqData || hasDurData || hasIntData;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, studentId]);
+  }, [sessions, studentId, abcEntries, frequencyEntries, durationEntries, intervalEntries]);
 
   const getSessionData = (session: Session) => {
     const sessionFrequency = session.frequencyEntries?.filter(e => e.studentId === studentId) || [];
