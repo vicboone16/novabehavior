@@ -2794,6 +2794,17 @@ export const useDataStore = create<DataState>()(
     }),
     {
       name: 'behavior-data-storage',
+      onRehydrateStorage: () => (state) => {
+        // Auto-cleanup stale sessions on app load (older than 4 hours)
+        if (state?.sessionStartTime) {
+          const sessionAge = Date.now() - new Date(state.sessionStartTime).getTime();
+          const STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
+          if (sessionAge > STALE_THRESHOLD_MS) {
+            console.log('[DataStore] Clearing stale session on startup, age:', Math.round(sessionAge / 60000), 'minutes');
+            state.forceEndAllSessions();
+          }
+        }
+      },
     }
   )
 );

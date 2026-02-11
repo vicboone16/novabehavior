@@ -93,7 +93,8 @@ export function FBAModeTools({ student }: FBAModeToolsProps) {
     }>();
 
     studentABCData.forEach(entry => {
-      const functions = entry.functions || ['unknown' as BehaviorFunction];
+      if (!entry.functions || entry.functions.length === 0) return;
+      const functions = entry.functions;
       const antecedents = entry.antecedents || [entry.antecedent];
       const consequences = entry.consequences || [entry.consequence];
 
