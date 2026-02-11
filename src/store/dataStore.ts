@@ -2090,12 +2090,22 @@ export const useDataStore = create<DataState>()(
           }
         }
 
+        // Collect ABC entries from both inline session arrays AND the global store
+        const inlineAbcEntries = toMerge.flatMap(s => s.abcEntries || []);
+        const globalAbcForMerge = state.abcEntries.filter(e => sessionIds.includes(e.sessionId || ''));
+        const seenAbcIds = new Set<string>();
+        const mergedAbcEntries = [...inlineAbcEntries, ...globalAbcForMerge].filter(e => {
+          if (seenAbcIds.has(e.id)) return false;
+          seenAbcIds.add(e.id);
+          return true;
+        });
+
         const mergedSession: Session = {
           ...primary,
           notes: toMerge.map(s => s.notes).filter(Boolean).join('\n---\n'),
           studentIds: [...new Set(toMerge.flatMap(s => s.studentIds))],
           sessionLengthMinutes: Math.max(...toMerge.map(s => s.sessionLengthMinutes)),
-          abcEntries: toMerge.flatMap(s => s.abcEntries || []),
+          abcEntries: mergedAbcEntries,
           frequencyEntries: Array.from(freqByKey.values()),
           durationEntries: Array.from(durByKey.values()),
           intervalEntries: toMerge.flatMap(s => s.intervalEntries || []),
@@ -2106,6 +2116,12 @@ export const useDataStore = create<DataState>()(
             ...state.sessions.filter((s) => !sessionIds.includes(s.id)),
             mergedSession,
           ],
+          // Re-point global ABC entries from merged sessions to the new primary session
+          abcEntries: state.abcEntries.map(e =>
+            sessionIds.includes(e.sessionId || '') && e.sessionId !== primary.id
+              ? { ...e, sessionId: primary.id }
+              : e
+          ),
         }));
       },
 
