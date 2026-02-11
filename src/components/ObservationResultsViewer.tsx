@@ -144,14 +144,13 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
         if (!s.studentIds?.includes(studentId)) return false;
         if (new Date(s.date) < start) return false;
         
-        // Filter out empty/false sessions that have no actual data for this student
+        // Filter out empty/false sessions - must have actual behavioral data (not just notes)
         const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
         const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
         const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
         const hasIntData = intervalEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
-        const hasNotes = !!s.notes;
         
-        return hasAbcData || hasFreqData || hasDurData || hasIntData || hasNotes;
+        return hasAbcData || hasFreqData || hasDurData || hasIntData;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sessions, studentId, dateFilter, abcEntries, frequencyEntries, durationEntries, intervalEntries]);
@@ -654,6 +653,79 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
         sessionAbcs.forEach((abc, index) => {
           children.push(...buildAbcParagraphs(abc, index));
         });
+      }
+
+      // Frequency breakdown by behavior
+      const { sessionFrequency, sessionDuration, sessionIntervals } = getDetailedSessionData(session.id);
+      if (sessionFrequency.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'Frequency Breakdown:', bold: true })],
+        }));
+        const freqByBehavior = sessionFrequency.reduce((acc, entry) => {
+          const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+          const name = behavior?.name || 'Unknown';
+          if (!acc[name]) acc[name] = 0;
+          acc[name] += entry.count;
+          return acc;
+        }, {} as Record<string, number>);
+        Object.entries(freqByBehavior).forEach(([name, count]) => {
+          const rate = session.sessionLengthMinutes > 0 ? (count / (session.sessionLengthMinutes / 60)).toFixed(1) : '—';
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: `  • ${name}: `, bold: true }),
+              new TextRun(`${count} occurrences (${rate}/hr)`),
+            ],
+          }));
+        });
+        children.push(new Paragraph({ text: '' }));
+      }
+
+      // Duration breakdown by behavior
+      if (sessionDuration.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'Duration Breakdown:', bold: true })],
+        }));
+        const durByBehavior = sessionDuration.reduce((acc, entry) => {
+          const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+          const name = behavior?.name || 'Unknown';
+          if (!acc[name]) acc[name] = 0;
+          acc[name] += entry.duration || 0;
+          return acc;
+        }, {} as Record<string, number>);
+        Object.entries(durByBehavior).forEach(([name, seconds]) => {
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: `  • ${name}: `, bold: true }),
+              new TextRun(formatDuration(seconds)),
+            ],
+          }));
+        });
+        children.push(new Paragraph({ text: '' }));
+      }
+
+      // Interval breakdown by behavior
+      if (sessionIntervals.length > 0) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: 'Interval Breakdown:', bold: true })],
+        }));
+        const intByBehavior = sessionIntervals.reduce((acc, entry) => {
+          const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+          const name = behavior?.name || 'Unknown';
+          if (!acc[name]) acc[name] = { occurred: 0, total: 0 };
+          acc[name].total++;
+          if (entry.occurred) acc[name].occurred++;
+          return acc;
+        }, {} as Record<string, { occurred: number; total: number }>);
+        Object.entries(intByBehavior).forEach(([name, data]) => {
+          const pct = Math.round((data.occurred / data.total) * 100);
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: `  • ${name}: `, bold: true }),
+              new TextRun(`${pct}% (${data.occurred}/${data.total} intervals)`),
+            ],
+          }));
+        });
+        children.push(new Paragraph({ text: '' }));
       }
 
       if (session.notes) {

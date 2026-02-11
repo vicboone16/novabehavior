@@ -81,7 +81,7 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
         const freq = frequencyEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).reduce((sum, e) => sum + e.count, 0);
         const dur = durationEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length;
         const interval = intervalEntries.filter(e => e.studentId === student.id && e.sessionId === s.id).length;
-        const hasData = abc > 0 || freq > 0 || dur > 0 || interval > 0 || !!s.notes;
+        const hasData = abc > 0 || freq > 0 || dur > 0 || interval > 0;
         if (hasData) {
           result.push({
             id: s.id,
@@ -651,7 +651,10 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
               <Checkbox id="indirect" checked={includeIndirect} onCheckedChange={(c) => setIncludeIndirect(!!c)} />
               <Label htmlFor="indirect" className="text-sm cursor-pointer">
                 Indirect Assessments (FAST/MAS/QABF)
-                {savedAssessments.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{savedAssessments.length}</Badge>}
+                {savedAssessments.length > 0 
+                  ? <Badge variant="secondary" className="ml-2 text-xs">{savedAssessments.length}</Badge>
+                  : <span className="ml-2 text-xs text-muted-foreground italic">No data saved</span>
+                }
               </Label>
             </div>
             <div className="flex items-center gap-2">
@@ -673,7 +676,10 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
               <Checkbox id="skills" checked={includeSkillAcquisition} onCheckedChange={(c) => setIncludeSkillAcquisition(!!c)} />
               <Label htmlFor="skills" className="text-sm cursor-pointer">
                 Skill Acquisition (DTT/NET/Probes)
-                {skillTargets.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{skillTargets.length} targets</Badge>}
+                {skillTargets.length > 0 
+                  ? <Badge variant="secondary" className="ml-2 text-xs">{skillTargets.length} targets</Badge>
+                  : <span className="ml-2 text-xs text-muted-foreground italic">No targets</span>
+                }
               </Label>
             </div>
           </div>
