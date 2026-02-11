@@ -140,12 +140,21 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
     }
     
     return sessions
-      .filter(s => 
-        s.studentIds?.includes(studentId) &&
-        new Date(s.date) >= start
-      )
+      .filter(s => {
+        if (!s.studentIds?.includes(studentId)) return false;
+        if (new Date(s.date) < start) return false;
+        
+        // Filter out empty/false sessions that have no actual data for this student
+        const hasAbcData = abcEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasFreqData = frequencyEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasDurData = durationEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasIntData = intervalEntries.some(e => e.studentId === studentId && e.sessionId === s.id);
+        const hasNotes = !!s.notes;
+        
+        return hasAbcData || hasFreqData || hasDurData || hasIntData || hasNotes;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, studentId, dateFilter]);
+  }, [sessions, studentId, dateFilter, abcEntries, frequencyEntries, durationEntries, intervalEntries]);
 
   // Detect data entries that belong to sessions not currently displayed
   const unmatchedDataSummary = useMemo(() => {
@@ -617,6 +626,97 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
     });
   };
 
+  // Export recovered/orphaned session data to Word document
+  const exportRecoveredDataToDocx = async (sessionId: string, data: { abcCount: number; frequencyCount: number; durationSeconds: number; intervalCount: number; intervalsOccurred: number; earliestTimestamp: Date }) => {
+    const sessionAbcs = abcEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const sessionFrequency = frequencyEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const sessionDuration = durationEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+    const sessionIntervals = intervalEntries.filter(e => e.studentId === studentId && e.sessionId === sessionId);
+
+    const children: Paragraph[] = [];
+
+    children.push(new Paragraph({ text: 'RECOVERED OBSERVATION DATA REPORT', heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }));
+    children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({ children: [new TextRun({ text: 'Student: ', bold: true }), new TextRun(student.displayName || student.name)] }));
+    children.push(new Paragraph({ children: [new TextRun({ text: 'Earliest Data Point: ', bold: true }), new TextRun(format(data.earliestTimestamp, 'MMMM d, yyyy h:mm a'))] }));
+    children.push(new Paragraph({ text: '' }));
+
+    children.push(new Paragraph({ text: 'DATA SUMMARY', heading: HeadingLevel.HEADING_2 }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '• ABC Records: ', bold: true }), new TextRun(`${data.abcCount}`)] }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '• Frequency Count: ', bold: true }), new TextRun(`${data.frequencyCount}`)] }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '• Duration Total: ', bold: true }), new TextRun(formatDuration(data.durationSeconds))] }));
+    children.push(new Paragraph({ children: [new TextRun({ text: '• Interval Percentage: ', bold: true }), new TextRun(`${data.intervalCount > 0 ? Math.round((data.intervalsOccurred / data.intervalCount) * 100) : 0}% (${data.intervalsOccurred}/${data.intervalCount})`)] }));
+    children.push(new Paragraph({ text: '' }));
+
+    if (sessionAbcs.length > 0) {
+      children.push(new Paragraph({ text: 'ABC DATA LOG', heading: HeadingLevel.HEADING_2 }));
+      children.push(new Paragraph({ text: '' }));
+      sessionAbcs.forEach((abc, index) => {
+        children.push(new Paragraph({ children: [new TextRun({ text: `Entry ${index + 1} - `, bold: true }), new TextRun(format(new Date(abc.timestamp), 'h:mm a'))] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Antecedent: ', bold: true }), new TextRun(abc.antecedent || abc.antecedents?.join(', ') || 'N/A')] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Behavior: ', bold: true }), new TextRun(abc.behavior || 'N/A')] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Consequence: ', bold: true }), new TextRun(abc.consequence || abc.consequences?.join(', ') || 'N/A')] }));
+        if (abc.functions && abc.functions.length > 0) {
+          children.push(new Paragraph({ children: [new TextRun({ text: 'Function(s): ', bold: true }), new TextRun(abc.functions.join(', '))] }));
+        }
+        children.push(new Paragraph({ text: '' }));
+      });
+    }
+
+    if (sessionFrequency.length > 0) {
+      children.push(new Paragraph({ text: 'FREQUENCY DATA', heading: HeadingLevel.HEADING_2 }));
+      const freqByBehavior = sessionFrequency.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = 0;
+        acc[name] += entry.count;
+        return acc;
+      }, {} as Record<string, number>);
+      Object.entries(freqByBehavior).forEach(([name, count]) => {
+        children.push(new Paragraph({ children: [new TextRun({ text: `• ${name}: `, bold: true }), new TextRun(`${count} occurrences`)] }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    if (sessionDuration.length > 0) {
+      children.push(new Paragraph({ text: 'DURATION DATA', heading: HeadingLevel.HEADING_2 }));
+      const durByBehavior = sessionDuration.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = 0;
+        acc[name] += entry.duration || 0;
+        return acc;
+      }, {} as Record<string, number>);
+      Object.entries(durByBehavior).forEach(([name, seconds]) => {
+        children.push(new Paragraph({ children: [new TextRun({ text: `• ${name}: `, bold: true }), new TextRun(formatDuration(seconds))] }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    if (sessionIntervals.length > 0) {
+      children.push(new Paragraph({ text: 'INTERVAL DATA', heading: HeadingLevel.HEADING_2 }));
+      const intByBehavior = sessionIntervals.reduce((acc, entry) => {
+        const behavior = student.behaviors.find(b => b.id === entry.behaviorId);
+        const name = behavior?.name || 'Unknown';
+        if (!acc[name]) acc[name] = { occurred: 0, total: 0 };
+        acc[name].total++;
+        if (entry.occurred) acc[name].occurred++;
+        return acc;
+      }, {} as Record<string, { occurred: number; total: number }>);
+      Object.entries(intByBehavior).forEach(([name, d]) => {
+        const pct = Math.round((d.occurred / d.total) * 100);
+        children.push(new Paragraph({ children: [new TextRun({ text: `• ${name}: `, bold: true }), new TextRun(`${pct}% (${d.occurred}/${d.total} intervals)`)] }));
+      });
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    const doc = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(doc);
+    const filename = `recovered-data-${student.name.replace(/\s+/g, '-')}-${format(data.earliestTimestamp, 'yyyy-MM-dd')}.docx`;
+    saveAs(blob, filename);
+    toast({ title: 'Exported', description: 'Recovered data exported to Word document.' });
+  };
+
   // Export structured observation to PDF/DOCX
   const exportStructuredObservation = async (obs: StructuredObservationData) => {
     const children: Paragraph[] = [];
@@ -987,6 +1087,18 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                                     Intervals ({data.intervalsOccurred}/{data.intervalCount})
                                   </p>
                                 </div>
+                              </div>
+                              {/* Export button for recovered data */}
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1"
+                                  onClick={() => exportRecoveredDataToDocx(sessionId, data)}
+                                >
+                                  <Download className="w-3 h-3" />
+                                  Export to Word
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>
