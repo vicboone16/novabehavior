@@ -1,61 +1,70 @@
 
 
-# Fix Assessment & Observation System: False Sessions, Export, and Edit Issues
+## Plan: Fix Assessment Export, Auto-Session Start, Caseload Display, and Staff Management
 
-## Issues Identified
+This plan addresses four distinct issues you've reported.
 
-### Issue 1: "False" Sessions Still Appear in Export
-The exported Word document (from "Export All" in Results tab) shows 9 sessions -- all with zero ABC, frequency, duration, and interval data. These sessions pass the filter because they have auto-generated `notes` like "Active Session" or "Session," which causes `hasNotes = !!s.notes` to return true even though no actual behavioral data exists.
+---
 
-**Root Cause**: The `filteredSessions` filter in `ObservationResultsViewer.tsx` (line 148-154) uses `hasNotes` as a standalone qualifying condition. Sessions with only trivial auto-generated notes (no behavioral data) are included.
+### Issue 1: Assessment Export Not Showing Session Data for Jayden
 
-**Fix**: Strengthen the filter: a session must have actual behavioral data (ABC, frequency, duration, or intervals) to be included. Session notes alone should NOT qualify a session for display/export. Only show sessions with notes when they also have at least one data entry, OR when the notes contain meaningful clinical content (more than just "Session" or "Active Session").
+**Root Cause:** The `getSessionEntries()` function in `ComprehensiveAssessmentExport.tsx` (line 172-177) only pulls data from the global store arrays (`abcEntries`, `frequencyEntries`, etc.). It does NOT check the inline session arrays (`session.frequencyEntries`, `session.durationEntries`, etc.) -- even though the session detection logic was already fixed to check both sources. This means sessions are correctly listed in the export dialog, but the actual exported document contains zero data for sessions that store entries inline.
 
-### Issue 2: "Export All" in ObservationResultsViewer Misses Frequency/Duration/Interval Detail
-The `exportAllSessionsToDocx` function (line 571-685) only exports ABC records and session notes. It does NOT include frequency breakdown, duration breakdown, or interval data -- unlike the single-session export and the comprehensive export which do include them.
+**Fix:** Update `getSessionEntries()` to merge data from both the global store AND the inline session properties, deduplicating by entry ID.
 
-**Fix**: Add frequency, duration, and interval data sections to the `exportAllSessionsToDocx` function, matching the detail level of `exportSessionToDocx`.
+Also update the Function Analysis section (line 416) and Hypothesis section (line 490) to similarly pull ABC data from inline session arrays, not just the global store.
 
-### Issue 3: Comprehensive Export ("Export All Data") May Export Empty Document
-The `ComprehensiveAssessmentExport` component correctly filters sessions with data in the session list, but the document itself could appear empty if:
-- No indirect assessments are saved on the student profile
-- All behavioral data is in sessions that are deselected or filtered out
-- Skill targets/DTT sessions are empty
+---
 
-This is working as designed but could confuse users when they don't realize they have no saved indirect assessment data.
+### Issue 2: Session Auto-Starts on Login
 
-**Fix**: Add a warning/info message in the export dialog when specific sections have no data, so users know upfront.
+**Root Cause:** In `AssessmentDataCollection.tsx` (line 307-311), the `handleStartObservation()` function calls `startSession()` automatically when there is no active session. Additionally, `SessionTimer.tsx` (line 69-71) does the same. The Zustand store persists `sessionStartTime` to localStorage, so if a session was active when the user last closed the app and is under 4 hours old, it rehydrates as active on the next login.
 
-### Issue 4: ObservationHistory Shows All Sessions (No False-Session Filter)
-The `ObservationHistory` component (line 45-49) shows all sessions linked to the student without filtering out empty ones. Users see these "false" sessions and may try to edit/export them.
+**Fix:**
+- The store's `onRehydrateStorage` already clears sessions older than 4 hours. We need to add a setting or simply always clear the session state on fresh login/page load so stale sessions don't persist.
+- Ensure `startSession()` is only called by explicit user action (clicking "Start Observation"), not implicitly on component mount. The current code already gates it behind `handleStartObservation`, so the real issue is likely the persisted session state rehydrating. We will clear session state on auth login.
 
-**Fix**: Apply the same data-presence filter to `ObservationHistory`.
+---
 
-## Technical Changes
+### Issue 3: Clinician/Supervision Page Not Showing Clients
 
-### File 1: `src/components/ObservationResultsViewer.tsx`
+**Root Cause:** The Supervision Dashboard (`SupervisionDashboard.tsx`) fetches data from `supervision_requirements` and `supervision_logs` tables -- it does NOT query `staff_caseloads` or `client_team_assignments` to show the clinician's actual client list. The "Total Supervisees" stat comes from `supervision_requirements`, not caseload data.
 
-1. **Filter fix (lines 142-157)**: Remove `hasNotes` as a standalone qualifier. Only include sessions that have at least one ABC, frequency, duration, or interval entry for the student. Notes can still be displayed but should not be the sole reason to show a session.
+**Fix:** Add a "My Caseload" section to the Supervision Dashboard that queries `staff_caseloads` and `client_team_assignments` for the logged-in user, similar to how `StaffAssignmentsTab` already does it. Display the count and list of assigned clients.
 
-2. **Export All enhancement (lines 623-671)**: After the summary line, add the same frequency/duration/interval detail sections that exist in `exportSessionToDocx`:
-   - Frequency breakdown by behavior with rate calculation
-   - Duration breakdown by behavior
-   - Interval breakdown by behavior with percentage
+---
 
-### File 2: `src/components/ObservationHistory.tsx`
+### Issue 4: Add/Remove Clients, Agencies, and Sites to Staff Profiles
 
-3. **Filter fix (lines 45-49)**: Filter `observationSessions` to exclude sessions with no actual student data (no ABC, frequency, duration, or interval entries).
+**Root Cause:** The current "Add New Staff" dialog (`StaffManagement.tsx` lines 560-760) only collects basic info (name, email, credential, supervisor, role). There are no fields for assigning clients, agencies, or sites. The `StaffAssignmentsTab` shows existing assignments but has no UI to add or remove client assignments.
 
-### File 3: `src/components/ComprehensiveAssessmentExport.tsx`
+**Fix:**
+- **Add Staff Dialog:** Add optional multi-select sections for client assignments, agency assignments, and site assignments during staff creation.
+- **Staff Profile Assignments Tab:** Add "Assign Client", "Assign Agency", and "Assign Site" buttons with dialogs to add new assignments, plus remove/deactivate buttons on existing rows.
 
-4. **Empty section warnings (near line 647-678)**: Show a small informational note next to each section toggle when that section has zero data (e.g., "No indirect assessments saved" next to the toggle), so users know before exporting.
+---
 
-## Summary of Changes
+### Technical Details
 
-| File | Change | Purpose |
-|------|--------|---------|
-| ObservationResultsViewer.tsx | Remove `hasNotes` as sole qualifier in session filter | Stop showing empty/false sessions |
-| ObservationResultsViewer.tsx | Add freq/dur/interval detail to exportAllSessionsToDocx | Complete data in "Export All" |
-| ObservationHistory.tsx | Filter empty sessions from history list | Clean up observation history |
-| ComprehensiveAssessmentExport.tsx | Add "no data" indicators per section | Inform users about empty sections |
+**Files to modify:**
+
+1. **`src/components/ComprehensiveAssessmentExport.tsx`**
+   - Update `getSessionEntries()` (lines 172-177) to also pull from `session.abcEntries`, `session.frequencyEntries`, `session.durationEntries`, `session.intervalEntries` -- deduplicating by entry ID
+   - Update Function Analysis section (line 416) and Hypothesis section (line 490) to also include inline ABC data from sessions
+
+2. **`src/store/dataStore.ts`**
+   - In `onRehydrateStorage` callback, always clear session state on app startup (reset `sessionStartTime`, `currentSessionId`, etc.) instead of only clearing after 4 hours
+
+3. **`src/components/supervision/SupervisionDashboard.tsx`**
+   - Add caseload query using current user's ID from `useAuth()`
+   - Display a "My Clients" card showing assigned client count and list
+
+4. **`src/components/staff-profile/tabs/StaffAssignmentsTab.tsx`**
+   - Add "Assign Client" button and dialog to create `client_team_assignments` records
+   - Add "Remove" button on each caseload row to deactivate assignments
+   - Add "Assign Agency" and "Assign Site" sections (querying `agencies` and `agency_sites` tables)
+
+5. **`src/components/admin/StaffManagement.tsx`**
+   - Add optional client, agency, and site assignment fields to the "Add New Staff" dialog
+   - Insert the corresponding records after staff creation succeeds
 
