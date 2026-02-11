@@ -249,6 +249,98 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
     return { sessionAbcs, sessionFrequency, sessionDuration, sessionIntervals };
   };
 
+  // Helper: Build comprehensive ABC paragraphs for Word export
+  const buildAbcParagraphs = (abc: ABCEntry, index: number): Paragraph[] => {
+    const paragraphs: Paragraph[] = [];
+    
+    // Entry header with timestamp
+    paragraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: `Entry ${index + 1} — `, bold: true }),
+        new TextRun(format(new Date(abc.timestamp), 'h:mm a')),
+      ],
+    }));
+
+    // All antecedents
+    const allAntecedents = abc.antecedents?.length 
+      ? abc.antecedents.join('; ') 
+      : abc.antecedent || 'N/A';
+    paragraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: 'Antecedent(s): ', bold: true }),
+        new TextRun(allAntecedents),
+      ],
+    }));
+
+    // Behavior + frequency count
+    const behaviorText = abc.behavior || 'N/A';
+    const freqText = abc.frequencyCount > 1 ? ` (×${abc.frequencyCount})` : '';
+    paragraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: 'Behavior: ', bold: true }),
+        new TextRun(behaviorText + freqText),
+      ],
+    }));
+
+    // Multiple concurrent behaviors if present
+    if (abc.behaviors && abc.behaviors.length > 0) {
+      abc.behaviors.forEach(b => {
+        const bFreq = b.frequencyCount && b.frequencyCount > 1 ? ` (×${b.frequencyCount})` : '';
+        const bDur = b.durationMinutes ? ` — ${b.durationMinutes} min` : '';
+        paragraphs.push(new Paragraph({
+          children: [
+            new TextRun({ text: '  • ', bold: false }),
+            new TextRun(b.behaviorName + bFreq + bDur),
+          ],
+        }));
+      });
+    }
+
+    // Duration if present
+    if (abc.hasDuration && abc.durationMinutes != null) {
+      paragraphs.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'Duration: ', bold: true }),
+          new TextRun(`${abc.durationMinutes} minutes`),
+        ],
+      }));
+    }
+
+    // All consequences
+    const allConsequences = abc.consequences?.length 
+      ? abc.consequences.join('; ') 
+      : abc.consequence || 'N/A';
+    paragraphs.push(new Paragraph({
+      children: [
+        new TextRun({ text: 'Consequence(s): ', bold: true }),
+        new TextRun(allConsequences),
+      ],
+    }));
+
+    // Functions
+    if (abc.functions && abc.functions.length > 0) {
+      paragraphs.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'Hypothesized Function(s): ', bold: true }),
+          new TextRun(abc.functions.join(', ')),
+        ],
+      }));
+    }
+
+    // Concurrent flag
+    if (abc.isConcurrent) {
+      paragraphs.push(new Paragraph({
+        children: [
+          new TextRun({ text: 'Note: ', bold: true, italics: true }),
+          new TextRun({ text: 'Concurrent behavior episode', italics: true }),
+        ],
+      }));
+    }
+
+    paragraphs.push(new Paragraph({ text: '' }));
+    return paragraphs;
+  };
+
   // Format duration helper
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -354,39 +446,7 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       children.push(new Paragraph({ text: '' }));
 
       sessionAbcs.forEach((abc, index) => {
-        children.push(new Paragraph({
-          children: [
-            new TextRun({ text: `Entry ${index + 1} - `, bold: true }),
-            new TextRun(format(new Date(abc.timestamp), 'h:mm a')),
-          ],
-        }));
-        children.push(new Paragraph({
-          children: [
-            new TextRun({ text: 'Antecedent: ', bold: true }),
-            new TextRun(abc.antecedent || abc.antecedents?.join(', ') || 'N/A'),
-          ],
-        }));
-        children.push(new Paragraph({
-          children: [
-            new TextRun({ text: 'Behavior: ', bold: true }),
-            new TextRun(abc.behavior || 'N/A'),
-          ],
-        }));
-        children.push(new Paragraph({
-          children: [
-            new TextRun({ text: 'Consequence: ', bold: true }),
-            new TextRun(abc.consequence || abc.consequences?.join(', ') || 'N/A'),
-          ],
-        }));
-        if (abc.functions && abc.functions.length > 0) {
-          children.push(new Paragraph({
-            children: [
-              new TextRun({ text: 'Function(s): ', bold: true }),
-              new TextRun(abc.functions.join(', ')),
-            ],
-          }));
-        }
-        children.push(new Paragraph({ text: '' }));
+        children.push(...buildAbcParagraphs(abc, index));
       });
     }
 
@@ -585,17 +645,15 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       }));
       children.push(new Paragraph({ text: '' }));
 
-      // ABC entries
+      // ABC entries - comprehensive
       if (sessionAbcs.length > 0) {
         children.push(new Paragraph({
           children: [new TextRun({ text: 'ABC Records:', bold: true })],
         }));
-        sessionAbcs.forEach(abc => {
-          children.push(new Paragraph({
-            text: `  • ${abc.antecedent || abc.antecedents?.[0] || 'N/A'} → ${abc.behavior} → ${abc.consequence || abc.consequences?.[0] || 'N/A'}`,
-          }));
-        });
         children.push(new Paragraph({ text: '' }));
+        sessionAbcs.forEach((abc, index) => {
+          children.push(...buildAbcParagraphs(abc, index));
+        });
       }
 
       if (session.notes) {
@@ -652,14 +710,7 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       children.push(new Paragraph({ text: 'ABC DATA LOG', heading: HeadingLevel.HEADING_2 }));
       children.push(new Paragraph({ text: '' }));
       sessionAbcs.forEach((abc, index) => {
-        children.push(new Paragraph({ children: [new TextRun({ text: `Entry ${index + 1} - `, bold: true }), new TextRun(format(new Date(abc.timestamp), 'h:mm a'))] }));
-        children.push(new Paragraph({ children: [new TextRun({ text: 'Antecedent: ', bold: true }), new TextRun(abc.antecedent || abc.antecedents?.join(', ') || 'N/A')] }));
-        children.push(new Paragraph({ children: [new TextRun({ text: 'Behavior: ', bold: true }), new TextRun(abc.behavior || 'N/A')] }));
-        children.push(new Paragraph({ children: [new TextRun({ text: 'Consequence: ', bold: true }), new TextRun(abc.consequence || abc.consequences?.join(', ') || 'N/A')] }));
-        if (abc.functions && abc.functions.length > 0) {
-          children.push(new Paragraph({ children: [new TextRun({ text: 'Function(s): ', bold: true }), new TextRun(abc.functions.join(', '))] }));
-        }
-        children.push(new Paragraph({ text: '' }));
+        children.push(...buildAbcParagraphs(abc, index));
       });
     }
 

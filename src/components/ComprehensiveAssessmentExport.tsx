@@ -272,13 +272,23 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
           if (entries.abc.length > 0) {
             children.push(new Paragraph({ text: '' }));
             const abcRows = entries.abc.map(e => {
-              const antecedents = e.antecedents?.join(', ') || e.antecedent || '';
-              const consequences = e.consequences?.join(', ') || e.consequence || '';
+              const antecedents = e.antecedents?.length ? e.antecedents.join('; ') : e.antecedent || '';
+              const consequences = e.consequences?.length ? e.consequences.join('; ') : e.consequence || '';
               const functions = e.functions?.map(f => FUNCTION_OPTIONS.find(fo => fo.value === f)?.label || f).join(', ') || '';
+              const freqText = e.frequencyCount > 1 ? `×${e.frequencyCount}` : '';
+              const durText = e.hasDuration && e.durationMinutes != null ? `${e.durationMinutes}m` : '';
+              const details = [freqText, durText].filter(Boolean).join(', ');
+              const behaviorCol = e.behavior + (details ? ` (${details})` : '');
+              
+              // Include concurrent behaviors if present
+              const concurrentNote = e.behaviors?.length 
+                ? '\n' + e.behaviors.map(b => `  + ${b.behaviorName}${b.frequencyCount > 1 ? ` ×${b.frequencyCount}` : ''}${b.durationMinutes ? ` ${b.durationMinutes}m` : ''}`).join('\n')
+                : '';
+              
               return new TableRow({
                 children: [
                   new TableCell({ children: [new Paragraph({ text: format(new Date(e.timestamp), 'h:mm a'), spacing: { before: 40, after: 40 } })], borders: createBorders() }),
-                  new TableCell({ children: [new Paragraph({ text: e.behavior || '' })], borders: createBorders() }),
+                  new TableCell({ children: [new Paragraph({ text: behaviorCol + concurrentNote })], borders: createBorders() }),
                   new TableCell({ children: [new Paragraph({ text: antecedents })], borders: createBorders() }),
                   new TableCell({ children: [new Paragraph({ text: consequences })], borders: createBorders() }),
                   new TableCell({ children: [new Paragraph({ text: functions })], borders: createBorders() }),
@@ -290,7 +300,7 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
               new Table({
                 rows: [
                   new TableRow({
-                    children: ['Time', 'Behavior', 'Antecedent', 'Consequence', 'Function'].map(h =>
+                    children: ['Time', 'Behavior', 'Antecedent(s)', 'Consequence(s)', 'Function'].map(h =>
                       new TableCell({
                         children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
                         borders: createBorders(),
