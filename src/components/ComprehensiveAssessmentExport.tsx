@@ -169,12 +169,38 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
     }
   };
 
-  const getSessionEntries = (sessionId: string) => ({
-    abc: abcEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId),
-    freq: frequencyEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId),
-    dur: durationEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId),
-    intervals: intervalEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId),
-  });
+  const getSessionEntries = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    
+    // Helper to deduplicate by ID
+    const dedup = <T extends { id: string }>(arr: T[]): T[] => {
+      const seen = new Set<string>();
+      return arr.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    };
+
+    const globalAbc = abcEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId);
+    const inlineAbc = (session?.abcEntries?.filter(e => e.studentId === student.id) || []) as typeof globalAbc;
+    
+    const globalFreq = frequencyEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId);
+    const inlineFreq = (session?.frequencyEntries?.filter(e => e.studentId === student.id) || []) as typeof globalFreq;
+    
+    const globalDur = durationEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId);
+    const inlineDur = (session?.durationEntries?.filter(e => e.studentId === student.id) || []) as typeof globalDur;
+    
+    const globalInt = intervalEntries.filter(e => e.studentId === student.id && e.sessionId === sessionId);
+    const inlineInt = (session?.intervalEntries?.filter(e => e.studentId === student.id) || []) as typeof globalInt;
+
+    return {
+      abc: dedup([...globalAbc, ...inlineAbc]),
+      freq: dedup([...globalFreq, ...inlineFreq]),
+      dur: dedup([...globalDur, ...inlineDur]),
+      intervals: dedup([...globalInt, ...inlineInt]),
+    };
+  };
 
   const handleExport = async () => {
     try {
@@ -413,7 +439,17 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
         children.push(new Paragraph({ text: 'FUNCTION ANALYSIS', heading: HeadingLevel.HEADING_1 }));
         children.push(new Paragraph({ text: '' }));
 
-        const studentAbcData = abcEntries.filter(e => e.studentId === student.id);
+        // Merge global + inline ABC data from all sessions
+        const inlineAbcFromSessions = sessions
+          .filter(s => s.studentIds?.includes(student.id))
+          .flatMap(s => (s.abcEntries?.filter(e => e.studentId === student.id) || []) as typeof abcEntries);
+        const allAbcEntries = [...abcEntries.filter(e => e.studentId === student.id), ...inlineAbcFromSessions];
+        const seenAbcIds = new Set<string>();
+        const studentAbcData = allAbcEntries.filter(e => {
+          if (seenAbcIds.has(e.id)) return false;
+          seenAbcIds.add(e.id);
+          return true;
+        });
         if (studentAbcData.length === 0) {
           children.push(new Paragraph({ text: 'No ABC data available for function analysis.' }));
         } else {
@@ -487,7 +523,17 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
         children.push(new Paragraph({ text: 'HYPOTHESIS STATEMENT', heading: HeadingLevel.HEADING_1 }));
         children.push(new Paragraph({ text: '' }));
 
-        const studentAbcData = abcEntries.filter(e => e.studentId === student.id);
+        // Merge global + inline ABC data for hypothesis
+        const inlineAbcHypo = sessions
+          .filter(s => s.studentIds?.includes(student.id))
+          .flatMap(s => (s.abcEntries?.filter(e => e.studentId === student.id) || []) as typeof abcEntries);
+        const allAbcHypo = [...abcEntries.filter(e => e.studentId === student.id), ...inlineAbcHypo];
+        const seenHypoIds = new Set<string>();
+        const studentAbcData = allAbcHypo.filter(e => {
+          if (seenHypoIds.has(e.id)) return false;
+          seenHypoIds.add(e.id);
+          return true;
+        });
         const functionCounts = new Map<string, number>();
         const antecedentCounts = new Map<string, number>();
         const consequenceCounts = new Map<string, number>();
