@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { 
   AlertTriangle, Clock, User, Filter, RefreshCw,
@@ -42,6 +43,7 @@ export function NeedsVerificationQueue({
   staff,
   onRefresh,
 }: NeedsVerificationQueueProps) {
+  const navigate = useNavigate();
   const [unverified, setUnverified] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -258,6 +260,12 @@ export function NeedsVerificationQueue({
         studentName={getStudentName(selectedAppointment?.student_id)}
         staffName={selectedAppointment ? getStaffName(selectedAppointment) : undefined}
         onVerified={handleVerified}
+        onCreateNote={(sessionId, appointmentId) => {
+          const studentId = selectedAppointment?.student_id;
+          if (studentId) {
+            navigate(`/students/${studentId}?tab=notes&sessionId=${sessionId}&appointmentId=${appointmentId}`);
+          }
+        }}
       />
     </Card>
   );

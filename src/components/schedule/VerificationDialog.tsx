@@ -99,7 +99,7 @@ export function VerificationDialog({
           end_time: appointment.end_time,
           session_length_minutes: appointment.duration_minutes,
           student_ids: [appointment.student_id],
-          status: 'completed',
+          status: 'ended',
           appointment_id: appointment.id,
           service_type: appointment.appointment_type || 'direct_therapy',
           service_setting: 'school',
