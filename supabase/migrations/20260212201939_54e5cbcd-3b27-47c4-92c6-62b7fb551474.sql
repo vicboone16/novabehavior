@@ -1,0 +1,25 @@
+
+INSERT INTO public.payer_report_templates (name, payer_ids, payer_names, report_type, is_default, sections)
+VALUES (
+  'School FBA Report',
+  ARRAY[]::text[],
+  ARRAY['School District']::text[],
+  'initial_assessment',
+  false,
+  $json$[
+    {"key":"student_information","title":"Student Information","enabled":true,"fields":[{"key":"student_name","label":"Student Name","type":"text","required":true,"auto_populate":"student.name"},{"key":"ssid","label":"SSID","type":"text","required":false},{"key":"dob","label":"Date of Birth","type":"date","required":true,"auto_populate":"student.dob"},{"key":"age","label":"Age","type":"text","required":false},{"key":"school_name","label":"School Name","type":"text","required":true},{"key":"grade","label":"Grade","type":"text","required":false},{"key":"case_manager","label":"Case Manager","type":"text","required":false},{"key":"date_of_report","label":"Date of Report","type":"date","required":true},{"key":"fba_completed_by","label":"FBA Completed By","type":"text","required":true}]},
+    {"key":"reason_for_referral","title":"Reason for Referral and Target Problem Behaviors","enabled":true,"fields":[{"key":"referral_narrative","label":"Reason for Referral","type":"textarea","required":true},{"key":"target_behaviors_list","label":"Primary Behavioral Concerns","type":"textarea","required":false}]},
+    {"key":"sources_of_information","title":"Sources of Information","enabled":true,"fields":[{"key":"sources_narrative","label":"Sources Used","type":"textarea","required":false}]},
+    {"key":"background_information","title":"Relevant Background Information","enabled":true,"fields":[{"key":"background_narrative","label":"Background Information","type":"textarea","required":false,"auto_populate":"student.background"}]},
+    {"key":"data_collection_tools","title":"Data Collection Tools","enabled":true,"fields":[{"key":"tools_used","label":"Tools Used","type":"textarea","required":false}]},
+    {"key":"student_interview","title":"Assessment of Behavior - Student Interview","enabled":false,"fields":[{"key":"student_interview_narrative","label":"Student Interview Results","type":"textarea","required":false}]},
+    {"key":"indirect_assessment","title":"Indirect Assessment - Teacher Interview","enabled":true,"fields":[{"key":"teacher_interview_narrative","label":"Teacher Interview Summary","type":"textarea","required":false}]},
+    {"key":"direct_observation","title":"Direct Assessment - Observation","enabled":true,"fields":[{"key":"observation_setting","label":"Observation Setting","type":"text","required":false,"prefill":"School"},{"key":"people_involved","label":"People Involved","type":"text","required":false},{"key":"observation_details","label":"Observation Details","type":"textarea","required":false},{"key":"observation_summary","label":"Summary of Direct Observation Data","type":"textarea","required":false}]},
+    {"key":"target_behaviors","title":"Target Problem Behaviors","enabled":true,"fields":[{"key":"behaviors_table","label":"Target Behaviors - Name, Rate, Duration, Intensity","type":"textarea","required":false},{"key":"behavior_definitions","label":"Operational Definitions, Antecedents, Consequences, Functions","type":"textarea","required":false}]},
+    {"key":"summary_of_findings","title":"Summary of Findings","enabled":true,"fields":[{"key":"findings_narrative","label":"Summary of Findings","type":"textarea","required":false}]},
+    {"key":"hypothesized_function","title":"Hypothesized Function","enabled":true,"fields":[{"key":"function_attention","label":"Attention","type":"text","required":false},{"key":"function_escape","label":"Escape","type":"text","required":false},{"key":"function_tangible","label":"Access to Tangibles","type":"text","required":false},{"key":"function_automatic","label":"Automatic Reinforcement","type":"text","required":false},{"key":"function_narrative","label":"Function Analysis Narrative","type":"textarea","required":false}]},
+    {"key":"recommended_strategies","title":"Recommended Strategies","enabled":true,"fields":[{"key":"strategies_narrative","label":"Recommended Strategies","type":"textarea","required":false}]},
+    {"key":"recommendations","title":"Recommendations","enabled":true,"fields":[{"key":"no_intervention_needed","label":"No Further Intervention Needed","type":"text","required":false},{"key":"environmental_mods","label":"Environmental Modifications Needed","type":"text","required":false},{"key":"bip_needed","label":"Behavior Intervention Plan Necessary","type":"text","required":false},{"key":"additional_data_needed","label":"Additional Data Required","type":"text","required":false},{"key":"recommendations_narrative","label":"Additional Recommendations","type":"textarea","required":false}]},
+    {"key":"signature","title":"Signature","enabled":true,"fields":[{"key":"analyst_name","label":"Behavior Analyst Name","type":"text","required":true},{"key":"signature_date","label":"Date","type":"date","required":true}]}
+  ]$json$::jsonb
+);
