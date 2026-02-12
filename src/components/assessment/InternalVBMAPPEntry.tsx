@@ -285,18 +285,58 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
     );
   }
 
-  // If viewing a specific assessment
+  // If viewing a specific assessment, route to the correct grid
   if (selectedAssessment) {
+    const systemName = selectedAssessment.curriculum_system?.name || '';
+    const backHandler = () => {
+      setSelectedAssessment(null);
+      loadData();
+    };
+
+    if (systemName.includes('Barriers')) {
+      return (
+        <VBMAPPBarriersGrid
+          studentId={studentId}
+          studentName={studentName}
+          assessment={toStudentAssessment(selectedAssessment)}
+          onBack={backHandler}
+          onSave={handleSaveAssessment}
+        />
+      );
+    }
+
+    if (systemName.includes('Transition')) {
+      return (
+        <VBMAPPTransitionGrid
+          studentId={studentId}
+          studentName={studentName}
+          assessment={toStudentAssessment(selectedAssessment)}
+          onBack={backHandler}
+          onSave={handleSaveAssessment}
+        />
+      );
+    }
+
+    if (systemName.includes('EESA')) {
+      return (
+        <VBMAPPEESAGrid
+          studentId={studentId}
+          studentName={studentName}
+          assessment={toStudentAssessment(selectedAssessment)}
+          onBack={backHandler}
+          onSave={handleSaveAssessment}
+        />
+      );
+    }
+
+    // Default: Milestones
     return (
       <VBMAPPGrid
         studentId={studentId}
         studentName={studentName}
         assessment={toStudentAssessment(selectedAssessment)}
         allAssessments={getRelatedAssessments(selectedAssessment)}
-        onBack={() => {
-          setSelectedAssessment(null);
-          loadData();
-        }}
+        onBack={backHandler}
         onSave={handleSaveAssessment}
       />
     );
