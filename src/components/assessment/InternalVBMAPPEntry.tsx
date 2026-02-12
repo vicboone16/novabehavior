@@ -29,6 +29,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { VBMAPPGrid } from '@/components/skills/VBMAPPGrid';
+import { VBMAPPBarriersGrid } from '@/components/skills/VBMAPPBarriersGrid';
+import { VBMAPPTransitionGrid } from '@/components/skills/VBMAPPTransitionGrid';
+import { VBMAPPEESAGrid } from '@/components/skills/VBMAPPEESAGrid';
 import type { StudentAssessment, MilestoneScore } from '@/types/curriculum';
 
 interface InternalVBMAPPEntryProps {
