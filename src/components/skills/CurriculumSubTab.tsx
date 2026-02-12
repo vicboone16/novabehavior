@@ -31,6 +31,7 @@ import {
   useCurriculumItems,
 } from '@/hooks/useCurriculum';
 import { VBMAPPGrid } from './VBMAPPGrid';
+import { GenericAssessmentGrid } from './GenericAssessmentGrid';
 import { AssessmentComparisonView } from './AssessmentComparisonView';
 import type { StudentCurriculumPlan, StudentAssessment } from '@/types/curriculum';
 
@@ -115,6 +116,22 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
   };
 
   const isVBMAPP = (systemName?: string) => systemName?.toLowerCase().includes('vb-mapp');
+  const isAFLS = (systemName?: string) => {
+    const n = systemName?.toLowerCase() || '';
+    return n.includes('afls') && !n.includes('social skills');
+  };
+  const isABLLS = (systemName?: string) => systemName?.toLowerCase().includes('ablls');
+  const isAFLSSocialElem = (systemName?: string) => systemName?.toLowerCase().includes('afls') && systemName?.toLowerCase().includes('elementary');
+  const isAFLSSocialHS = (systemName?: string) => systemName?.toLowerCase().includes('afls') && systemName?.toLowerCase().includes('high school');
+  const hasGrid = (systemName?: string) => isVBMAPP(systemName) || isAFLS(systemName) || isABLLS(systemName) || isAFLSSocialElem(systemName) || isAFLSSocialHS(systemName);
+
+  const getAssessmentType = (systemName?: string) => {
+    if (isAFLSSocialElem(systemName)) return 'afls-ss-elem' as const;
+    if (isAFLSSocialHS(systemName)) return 'afls-ss-hs' as const;
+    if (isAFLS(systemName)) return 'afls' as const;
+    if (isABLLS(systemName)) return 'ablls-r' as const;
+    return 'afls' as const;
+  };
 
   // Show comparison view
   if (showComparison && comparisonSystemId) {
@@ -131,13 +148,40 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
     );
   }
 
+  const activeSystemName = activePlan?.curriculum_system?.name;
+
   // Show VB-MAPP grid if active
-  if (activePlan && activeAssessment && isVBMAPP(activePlan.curriculum_system?.name)) {
+  if (activePlan && activeAssessment && isVBMAPP(activeSystemName)) {
     return (
       <VBMAPPGrid
         studentId={studentId}
         studentName={studentName}
         assessment={activeAssessment}
+        onBack={() => {
+          setActivePlan(null);
+          setActiveAssessment(null);
+          refetchAssessments();
+        }}
+        onSave={async (results, domainScores, status) => {
+          await updateAssessment(activeAssessment.id, {
+            results_json: results,
+            domain_scores: domainScores,
+            status,
+          });
+        }}
+      />
+    );
+  }
+
+  // Show AFLS / ABLLS-R / AFLS Social Skills grid
+  if (activePlan && activeAssessment && hasGrid(activeSystemName) && !isVBMAPP(activeSystemName)) {
+    return (
+      <GenericAssessmentGrid
+        studentId={studentId}
+        studentName={studentName}
+        assessment={activeAssessment}
+        assessmentType={getAssessmentType(activeSystemName)}
+        systemName={activeSystemName || 'Assessment'}
         onBack={() => {
           setActivePlan(null);
           setActiveAssessment(null);
@@ -285,7 +329,7 @@ export function CurriculumSubTab({ studentId, studentName }: CurriculumSubTabPro
                         </DropdownMenuContent>
                       </DropdownMenu>
                       
-                      {isVBMAPP(system?.name) && (
+                      {hasGrid(system?.name) && (
                         <Button 
                           variant="outline"
                           onClick={() => handleOpenAssessment(plan)}
