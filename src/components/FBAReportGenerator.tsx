@@ -1,14 +1,15 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { 
   FileText, Download, Printer, FileCheck, FileDown, 
   Brain, Target, AlertTriangle, CheckCircle2, Users,
   Calendar, Clock, ClipboardList, Lightbulb, BookOpen, 
-  Shield, Sparkles, ChevronDown, ChevronUp, Eye, Save, Plus, Trash2
+  Shield, Sparkles, ChevronDown, ChevronUp, Eye, Save, Plus, Trash2,
+  Building2, School, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -32,6 +33,10 @@ import {
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { generateInsuranceReport } from '@/lib/insuranceReportExport';
+import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
+import type { PayerReportTemplate, TemplateSection } from '@/types/reportTemplates';
 
 interface FBAReportGeneratorProps {
   student?: Student;
@@ -242,6 +247,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const { students, abcEntries, frequencyEntries, sessions, behaviorGoals, updateStudentProfile } = useDataStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string>(propStudent?.id || '');
   const [reportType, setReportType] = useState<'comprehensive' | 'simplified'>('comprehensive');
+  const [reportFormat, setReportFormat] = useState<'school' | 'insurance' | null>(null);
   const [ageRange, setAgeRange] = useState<string>('elementary');
   const [assessorName, setAssessorName] = useState('');
   const [assessorTitle, setAssessorTitle] = useState('');
@@ -249,6 +255,37 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [allowPartialExport, setAllowPartialExport] = useState(true);
   const [showDraftIndicators, setShowDraftIndicators] = useState(true);
+
+  // School FBA editable fields
+  const [schoolFields, setSchoolFields] = useState({
+    reasonForReferral: '',
+    sourcesOfInformation: '',
+    dataCollectionTools: '',
+    indirectAssessment: '',
+    directObservationNarrative: '',
+    attentionNarrative: '',
+    escapeNarrative: '',
+    tangibleNarrative: '',
+    automaticNarrative: '',
+    recommendedStrategies: '',
+    recommendationsText: '',
+    school: '',
+    teacher: '',
+    caseManager: '',
+    ssid: '',
+  });
+
+  // Insurance template state
+  const [insuranceTemplates, setInsuranceTemplates] = useState<PayerReportTemplate[]>([]);
+  const [selectedInsuranceTemplateId, setSelectedInsuranceTemplateId] = useState('');
+  const [insuranceReportType, setInsuranceReportType] = useState<'initial_assessment' | 'progress_report'>('initial_assessment');
+  const [insuranceDateFrom, setInsuranceDateFrom] = useState(format(subDays(new Date(), 90), 'yyyy-MM-dd'));
+  const [insuranceDateTo, setInsuranceDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [insuranceEnabledSections, setInsuranceEnabledSections] = useState<string[]>([]);
+  const [insuranceFieldValues, setInsuranceFieldValues] = useState<Record<string, string>>({});
+  const [insuranceLoading, setInsuranceLoading] = useState(false);
+  const [insuranceGenerating, setInsuranceGenerating] = useState(false);
+
   const [includeSections, setIncludeSections] = useState({
     background: true,
     procedures: true,
@@ -630,6 +667,173 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
 
     return () => clearTimeout(timeout);
   }, [selectedStudentId, analysisData, recommendations, ageRange, completionPercentage]);
+
+  // Auto-populate school FBA fields from student data
+  useEffect(() => {
+    if (!selectedStudent || !analysisData) return;
+    setSchoolFields(prev => ({
+      ...prev,
+      reasonForReferral: prev.reasonForReferral || selectedStudent.backgroundInfo?.referralReason || '',
+      school: prev.school || (selectedStudent as any).school || '',
+      sourcesOfInformation: prev.sourcesOfInformation || 'Teacher interview, direct observation, ABC data collection, record review',
+      dataCollectionTools: prev.dataCollectionTools || 'ABC (Antecedent-Behavior-Consequence) recording, frequency count, duration recording',
+      indirectAssessment: prev.indirectAssessment || (selectedStudent.indirectAssessments?.length
+        ? `Indirect assessments completed: ${selectedStudent.indirectAssessments.map(a => `${a.type} (${a.targetBehavior})`).join(', ')}`
+        : ''),
+      attentionNarrative: prev.attentionNarrative || (analysisData.functionStrengths.some(f => f.function === 'attention')
+        ? `Attention-maintained behavior was identified at ${analysisData.functionStrengths.find(f => f.function === 'attention')?.percentage || 0}% of observed occurrences.`
+        : ''),
+      escapeNarrative: prev.escapeNarrative || (analysisData.functionStrengths.some(f => f.function === 'escape')
+        ? `Escape-maintained behavior was identified at ${analysisData.functionStrengths.find(f => f.function === 'escape')?.percentage || 0}% of observed occurrences.`
+        : ''),
+      tangibleNarrative: prev.tangibleNarrative || (analysisData.functionStrengths.some(f => f.function === 'tangible')
+        ? `Tangible-maintained behavior was identified at ${analysisData.functionStrengths.find(f => f.function === 'tangible')?.percentage || 0}% of observed occurrences.`
+        : ''),
+      automaticNarrative: prev.automaticNarrative || (analysisData.functionStrengths.some(f => f.function === 'automatic' || f.function === 'sensory')
+        ? `Automatically reinforced behavior was identified at ${(analysisData.functionStrengths.find(f => f.function === 'automatic' || f.function === 'sensory')?.percentage || 0)}% of observed occurrences.`
+        : ''),
+      recommendedStrategies: prev.recommendedStrategies || recommendations.join('\n'),
+    }));
+  }, [selectedStudent, analysisData, recommendations]);
+
+  // Load insurance templates when format is insurance
+  useEffect(() => {
+    if (reportFormat !== 'insurance') return;
+    (async () => {
+      setInsuranceLoading(true);
+      const { data, error } = await supabase
+        .from('payer_report_templates')
+        .select('*')
+        .order('is_default', { ascending: false });
+      if (!error && data) {
+        const parsed = data.map(d => ({
+          ...d,
+          sections: (d.sections as unknown as TemplateSection[]) || [],
+        })) as PayerReportTemplate[];
+        setInsuranceTemplates(parsed);
+      }
+      setInsuranceLoading(false);
+    })();
+  }, [reportFormat]);
+
+  const filteredInsuranceTemplates = useMemo(
+    () => insuranceTemplates.filter(t => t.report_type === insuranceReportType),
+    [insuranceTemplates, insuranceReportType]
+  );
+
+  useEffect(() => {
+    const defaultTpl = filteredInsuranceTemplates.find(t => t.is_default) || filteredInsuranceTemplates[0];
+    if (defaultTpl) {
+      setSelectedInsuranceTemplateId(defaultTpl.id);
+      setInsuranceEnabledSections(defaultTpl.sections.filter(s => s.enabled).map(s => s.key));
+    }
+  }, [filteredInsuranceTemplates]);
+
+  const selectedInsuranceTemplate = useMemo(
+    () => filteredInsuranceTemplates.find(t => t.id === selectedInsuranceTemplateId),
+    [filteredInsuranceTemplates, selectedInsuranceTemplateId]
+  );
+
+  // School FBA export
+  const generateSchoolFBA = async () => {
+    if (!selectedStudent || !analysisData) return;
+
+    const studentABC = abcEntries.filter(e => e.studentId === selectedStudentId);
+    const abcSummary: SchoolFBAData['abcSummary'] = [];
+    const abcCombos = new Map<string, { antecedent: string; behavior: string; consequence: string; count: number }>();
+    studentABC.forEach(e => {
+      const key = `${e.antecedent || 'Unknown'}|${e.behavior || 'Unknown'}|${e.consequence || 'Unknown'}`;
+      const existing = abcCombos.get(key);
+      if (existing) existing.count++;
+      else abcCombos.set(key, { antecedent: e.antecedent || 'Unknown', behavior: e.behavior || 'Unknown', consequence: e.consequence || 'Unknown', count: 1 });
+    });
+    abcCombos.forEach(v => abcSummary.push(v));
+    abcSummary.sort((a, b) => b.count - a.count);
+
+    const freqByBehavior = new Map<string, { count: number; totalMinutes: number }>();
+    frequencyEntries.filter(e => e.studentId === selectedStudentId).forEach(e => {
+      const beh = selectedStudent.behaviors.find(b => b.id === e.behaviorId);
+      const name = beh?.name || 'Unknown';
+      const existing = freqByBehavior.get(name) || { count: 0, totalMinutes: 0 };
+      existing.count += e.count;
+      existing.totalMinutes += (e as any).observationDurationMinutes || 0;
+      freqByBehavior.set(name, existing);
+    });
+    const frequencyData: SchoolFBAData['frequencyData'] = [];
+    freqByBehavior.forEach((data, behavior) => {
+      frequencyData.push({ behavior, count: data.count, ratePerHour: data.totalMinutes > 0 ? data.count / (data.totalMinutes / 60) : undefined });
+    });
+
+    const schoolData: SchoolFBAData = {
+      studentName: selectedStudent.name,
+      dateOfBirth: (selectedStudent as any).dateOfBirth,
+      ssid: schoolFields.ssid,
+      grade: selectedStudent.grade,
+      school: schoolFields.school,
+      teacher: schoolFields.teacher,
+      caseManager: schoolFields.caseManager,
+      reasonForReferral: schoolFields.reasonForReferral,
+      targetBehaviors: selectedStudent.behaviors.map(b => ({ name: b.name, operationalDefinition: b.operationalDefinition || '' })),
+      sourcesOfInformation: schoolFields.sourcesOfInformation,
+      dataCollectionTools: schoolFields.dataCollectionTools,
+      indirectAssessment: schoolFields.indirectAssessment,
+      directObservation: {
+        setting: 'School',
+        dates: assessmentDates,
+        totalSessions: analysisData.sessionCount,
+        totalObservationMinutes: analysisData.totalObservationMinutes,
+        narrative: schoolFields.directObservationNarrative,
+      },
+      abcSummary,
+      frequencyData,
+      functionAnalysis: {
+        primaryFunction: analysisData.primaryFunction?.function || 'unknown',
+        primaryPercentage: analysisData.primaryFunction?.percentage || 0,
+        secondaryFunctions: analysisData.functionStrengths.slice(1).map(fs => ({ function: fs.function, percentage: fs.percentage })),
+        topAntecedents: analysisData.topAntecedents,
+        topConsequences: analysisData.topConsequences,
+      },
+      hypothesisStatement: analysisData.hypothesisStatement || '',
+      attentionNarrative: schoolFields.attentionNarrative,
+      escapeNarrative: schoolFields.escapeNarrative,
+      tangibleNarrative: schoolFields.tangibleNarrative,
+      automaticNarrative: schoolFields.automaticNarrative,
+      recommendedStrategies: schoolFields.recommendedStrategies,
+      recommendations: schoolFields.recommendationsText,
+      analystName: assessorName,
+      analystCredentials: assessorTitle,
+      reportDate: format(new Date(), 'MMMM dd, yyyy'),
+    };
+
+    try {
+      await generateSchoolFBAReport(schoolData);
+      toast.success('School FBA report downloaded');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate school FBA report');
+    }
+  };
+
+  const handleInsuranceGenerate = async () => {
+    if (!selectedInsuranceTemplate || !selectedStudent) return;
+    setInsuranceGenerating(true);
+    try {
+      await generateInsuranceReport({
+        template: selectedInsuranceTemplate,
+        data: {
+          studentName: selectedStudent.name,
+          dateRangeStart: insuranceDateFrom,
+          dateRangeEnd: insuranceDateTo,
+          fieldValues: insuranceFieldValues,
+          enabledSections: insuranceEnabledSections,
+        },
+      });
+      toast.success('Insurance report downloaded');
+    } catch (err) {
+      toast.error('Failed to generate insurance report');
+    }
+    setInsuranceGenerating(false);
+  };
 
   const getFunctionColor = (fn: BehaviorFunction) => {
     const colors: Record<BehaviorFunction, string> = {
@@ -1038,6 +1242,207 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="flex-1 overflow-auto space-y-4 py-4">
+            {/* Report Format Selector */}
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Report Format</CardTitle>
+                <CardDescription className="text-xs">Choose the output format for your FBA report</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setReportFormat('school')}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                      reportFormat === 'school' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <School className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm">School FBA</p>
+                      <p className="text-xs text-muted-foreground">District-formatted report with tables</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setReportFormat('insurance')}
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                      reportFormat === 'insurance' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <Building2 className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-sm">Insurance Report</p>
+                      <p className="text-xs text-muted-foreground">Payer-specific template</p>
+                    </div>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Insurance-specific settings */}
+            {reportFormat === 'insurance' && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Insurance Template Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Report Type</Label>
+                      <Select value={insuranceReportType} onValueChange={(v: any) => setInsuranceReportType(v)}>
+                        <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="initial_assessment">Initial Assessment</SelectItem>
+                          <SelectItem value="progress_report">Progress Report</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Template</Label>
+                      {insuranceLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-xs h-8">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                        </div>
+                      ) : (
+                        <Select value={selectedInsuranceTemplateId} onValueChange={setSelectedInsuranceTemplateId}>
+                          <SelectTrigger className="h-8"><SelectValue placeholder="Select template" /></SelectTrigger>
+                          <SelectContent>
+                            {filteredInsuranceTemplates.map(t => (
+                              <SelectItem key={t.id} value={t.id}>
+                                {t.name} {t.is_default && '(Default)'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">From</Label>
+                      <Input type="date" className="h-8" value={insuranceDateFrom} onChange={e => setInsuranceDateFrom(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">To</Label>
+                      <Input type="date" className="h-8" value={insuranceDateTo} onChange={e => setInsuranceDateTo(e.target.value)} />
+                    </div>
+                  </div>
+                  {selectedInsuranceTemplate && (
+                    <div className="space-y-2 border-t pt-3">
+                      <Label className="text-xs font-medium">Sections</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedInsuranceTemplate.sections.map(section => (
+                          <div key={section.key} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`ins-${section.key}`}
+                              checked={insuranceEnabledSections.includes(section.key)}
+                              onCheckedChange={() => {
+                                setInsuranceEnabledSections(prev =>
+                                  prev.includes(section.key) ? prev.filter(k => k !== section.key) : [...prev, section.key]
+                                );
+                              }}
+                            />
+                            <Label htmlFor={`ins-${section.key}`} className="text-xs cursor-pointer">{section.title}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedInsuranceTemplate && (
+                    <div className="flex flex-wrap gap-1 pt-2">
+                      {selectedInsuranceTemplate.payer_names.map((name, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">{name}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* School FBA specific fields */}
+            {reportFormat === 'school' && selectedStudent && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <School className="w-4 h-4" />
+                    School FBA Details
+                  </CardTitle>
+                  <CardDescription className="text-xs">All fields are pre-filled from collected data and editable</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">School</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.school} onChange={e => setSchoolFields(p => ({ ...p, school: e.target.value }))} placeholder="School name" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Student ID (SSID)</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.ssid} onChange={e => setSchoolFields(p => ({ ...p, ssid: e.target.value }))} placeholder="SSID" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Teacher</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.teacher} onChange={e => setSchoolFields(p => ({ ...p, teacher: e.target.value }))} placeholder="Teacher name" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Case Manager</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.caseManager} onChange={e => setSchoolFields(p => ({ ...p, caseManager: e.target.value }))} placeholder="Case manager name" />
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-1">
+                    <Label className="text-xs">Reason for Referral</Label>
+                    <Textarea className="text-sm" rows={2} value={schoolFields.reasonForReferral} onChange={e => setSchoolFields(p => ({ ...p, reasonForReferral: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Sources of Information</Label>
+                    <Textarea className="text-sm" rows={2} value={schoolFields.sourcesOfInformation} onChange={e => setSchoolFields(p => ({ ...p, sourcesOfInformation: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Data Collection Tools</Label>
+                    <Textarea className="text-sm" rows={2} value={schoolFields.dataCollectionTools} onChange={e => setSchoolFields(p => ({ ...p, dataCollectionTools: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Indirect Assessment (Teacher Interview)</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.indirectAssessment} onChange={e => setSchoolFields(p => ({ ...p, indirectAssessment: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Direct Observation Narrative</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.directObservationNarrative} onChange={e => setSchoolFields(p => ({ ...p, directObservationNarrative: e.target.value }))} placeholder="Describe observation context and findings..." />
+                  </div>
+                  <Separator />
+                  <Label className="text-xs font-medium">Function Narratives</Label>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Attention</Label>
+                      <Textarea className="text-sm" rows={2} value={schoolFields.attentionNarrative} onChange={e => setSchoolFields(p => ({ ...p, attentionNarrative: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Escape/Avoidance</Label>
+                      <Textarea className="text-sm" rows={2} value={schoolFields.escapeNarrative} onChange={e => setSchoolFields(p => ({ ...p, escapeNarrative: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Tangible/Access</Label>
+                      <Textarea className="text-sm" rows={2} value={schoolFields.tangibleNarrative} onChange={e => setSchoolFields(p => ({ ...p, tangibleNarrative: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Automatic Reinforcement</Label>
+                      <Textarea className="text-sm" rows={2} value={schoolFields.automaticNarrative} onChange={e => setSchoolFields(p => ({ ...p, automaticNarrative: e.target.value }))} />
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-1">
+                    <Label className="text-xs">Recommended Strategies</Label>
+                    <Textarea className="text-sm" rows={4} value={schoolFields.recommendedStrategies} onChange={e => setSchoolFields(p => ({ ...p, recommendedStrategies: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Additional Recommendations</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.recommendationsText} onChange={e => setSchoolFields(p => ({ ...p, recommendationsText: e.target.value }))} />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <div className="grid md:grid-cols-2 gap-4">
               {/* Student Selection */}
               <div className="space-y-2">
@@ -1887,6 +2292,58 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               </Card>
             )}
 
+            {/* Format-specific export */}
+            {reportFormat === 'school' && (
+              <Card className="cursor-pointer hover:border-primary/50 transition-colors mb-4" onClick={generateSchoolFBA}>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <School className="w-4 h-4" />
+                    Download School FBA (.docx)
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    District-formatted FBA with tables, function narratives, and ABC data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" disabled={!selectedStudent}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download School FBA Report
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {reportFormat === 'insurance' && (
+              <Card className="cursor-pointer hover:border-primary/50 transition-colors mb-4" onClick={handleInsuranceGenerate}>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Download Insurance Report (.docx)
+                    {selectedInsuranceTemplate && (
+                      <Badge variant="secondary" className="text-xs">{selectedInsuranceTemplate.name}</Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Payer-specific formatted report
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" disabled={!selectedStudent || !selectedInsuranceTemplate || insuranceGenerating}>
+                    {insuranceGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                    Download Insurance Report
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {!reportFormat && (
+              <Card className="mb-4 border-dashed">
+                <CardContent className="py-6 text-center text-muted-foreground">
+                  <p className="text-sm">Select a report format (School FBA or Insurance) in the Settings tab to enable format-specific exports.</p>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid md:grid-cols-3 gap-4">
               {/* Save to Profile */}
               <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={saveFBAFindings}>
@@ -1914,18 +2371,15 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Printer className="w-4 h-4" />
                     Print / PDF
-                    {completionPercentage < 100 && showDraftIndicators && (
-                      <Badge variant="outline" className="text-xs">Draft</Badge>
-                    )}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Print directly or save as PDF using print dialog
+                    Print preview or save as PDF
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button variant="outline" className="w-full" disabled={!selectedStudent}>
                     <Printer className="w-4 h-4 mr-2" />
-                    {completionPercentage < 100 ? 'Print Draft Report' : 'Print Report'}
+                    Print Report
                   </Button>
                 </CardContent>
               </Card>
@@ -1934,19 +2388,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
                     <FileDown className="w-4 h-4" />
-                    Word Document
-                    {completionPercentage < 100 && showDraftIndicators && (
-                      <Badge variant="outline" className="text-xs">Draft</Badge>
-                    )}
+                    Generic .docx
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Download as editable .docx file
+                    Standard format (no template)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button variant="outline" className="w-full" disabled={!selectedStudent}>
                     <Download className="w-4 h-4 mr-2" />
-                    {completionPercentage < 100 ? 'Download Draft .docx' : 'Download .docx'}
+                    Download .docx
                   </Button>
                 </CardContent>
               </Card>
