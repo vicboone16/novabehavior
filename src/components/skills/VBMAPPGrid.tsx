@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, 
-  Upload, Printer, AlertTriangle, Calendar, RotateCcw, X, BarChart3, ExternalLink
+  Upload, Printer, AlertTriangle, Calendar, RotateCcw, X, BarChart3, ExternalLink, FileDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ import { EmbeddedBarriersGrid } from './VBMAPPBarriersGrid';
 import { EmbeddedTransitionGrid } from './VBMAPPTransitionGrid';
 import { EmbeddedEESAGrid } from './VBMAPPEESAGrid';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
+import { AssessmentReportExport } from '@/components/assessment/AssessmentReportExport';
 
 // Known curriculum system IDs for subtests
 const BARRIERS_SYSTEM_ID = 'a0b1c2d3-e4f5-4a6b-8c9d-100000000001';
@@ -91,6 +92,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
   const [activeView, setActiveView] = useState<'milestones' | 'report'>('milestones');
   const [activeSubtest, setActiveSubtest] = useState<'milestones' | 'barriers' | 'transition' | 'eesa'>('milestones');
   const [clearDomainConfirm, setClearDomainConfirm] = useState<{ domain: string; level: string } | null>(null);
+  const [showReportExport, setShowReportExport] = useState(false);
 
   // Build historical scores from other assessments
   const historicalScores = useMemo(() => {
@@ -326,7 +328,11 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
               Report
             </Button>
           </div>
-          
+
+          <Button variant="outline" onClick={() => setShowReportExport(true)}>
+            <FileDown className="w-4 h-4 mr-2" />
+            Generate Report
+          </Button>
           <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
             <Printer className="w-4 h-4 mr-2" />
             Print
@@ -734,6 +740,34 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Assessment Report Export Modal */}
+      <AssessmentReportExport
+        open={showReportExport}
+        onOpenChange={setShowReportExport}
+        assessmentType="vbmapp"
+        studentName={studentName}
+        dateAdministered={assessment.date_administered}
+        domainScores={Object.entries(domainScores).map(([domain, { total, possible }]) => ({
+          domain,
+          raw: total,
+          max: possible,
+          percent: possible > 0 ? Math.round((total / possible) * 100) : 0,
+        }))}
+        overallMastery={
+          (() => {
+            const totalPossible = Object.values(domainScores).reduce((s, d) => s + d.possible, 0);
+            const totalScored = Object.values(domainScores).reduce((s, d) => s + d.total, 0);
+            return totalPossible > 0 ? Math.round((totalScored / totalPossible) * 100) : 0;
+          })()
+        }
+        strengths={Object.entries(domainScores)
+          .filter(([, { total, possible }]) => possible > 0 && (total / possible) >= 0.7)
+          .map(([d]) => d)}
+        priorities={Object.entries(domainScores)
+          .filter(([, { total, possible }]) => possible > 0 && (total / possible) < 0.5)
+          .map(([d]) => d)}
+      />
     </div>
   );
 }
