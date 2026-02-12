@@ -1,171 +1,182 @@
 
 
-# VB-MAPP Complete Overhaul: Milestones, Barriers, Transition, and EESA
+# Insurance & School Report Templates + Export Fix Overhaul
 
 ## Overview
-This plan adds the three missing VB-MAPP subtests (Barriers, Transition, EESA) and corrects/completes the Milestones Assessment from the current 112 items to the full 170. All item descriptions will be updated to match the official manual text from the uploaded PDFs.
+This plan addresses two intertwined problems: (1) broken export buttons across the platform that show a toast but never produce a downloadable file, and (2) a new payer-specific report template system that generates professional Word (.docx) documents matching the uploaded insurance formats.
 
 ---
 
-## Part 1: Database Corrections -- Milestones (170 items)
+## Part 1: Fix All Broken Exports
 
-The current database has 112 items and is missing entire domains and levels. Here is what needs to be added or corrected:
+### Problem
+Four export features show "Report Generated" toasts but never produce a downloadable file:
 
-**Missing domains (create new):**
-- Spontaneous Vocal Behavior (Level 1 only, items 1-5)
-- Linguistic Structure (Level 2: items 6-10, Level 3: items 11-15)
+1. **EnhancedExportOptions** -- `handleGenerateReport()` only calls `toast()` (line 175)
+2. **IEP Meeting Prep Wizard** -- saves to database but has no download button
+3. **WhiteLabelReportGenerator** -- saves a `generated_reports` record but no file download
+4. **SessionReportGenerator** -- only uses `window.print()`
 
-**Missing levels in existing domains:**
-- Listener Responding: Level 3 (items 11-15) -- 5 items
-- VP/MTS: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
-- Independent Play: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
-- Social Behavior & Social Play: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
-- Motor Imitation: Level 2 (items 6-10) -- 5 items
-- Echoic: Level 2 (items 6-10) -- 5 items
-- LRFFC: Missing items 6, 7 (adding a Level 2 item 6 for animal sounds), and Level 3 items 11-15 completion
-- Intraverbal: Missing Level 2 item 6 and Level 3 items to fill gaps
-- Classroom Routines: Missing Level 2 items 6-10 and Level 3 items 11-15 completion
+### Fix Approach
+Each will be wired up to use the `docx` library (already installed) + `file-saver` (already installed), matching the pattern already working in `FBAReportGenerator.tsx`.
 
-**Description corrections:** All 112 existing items will have their descriptions updated to match the exact official manual text from the uploaded Milestones PDF.
+**EnhancedExportOptions**: Replace the toast-only handler with a function that builds a Word document using `Document`, `Packer`, and `saveAs`. The document will contain the selected report type content (weekly summary, monthly, IEP progress, etc.) populated from the student's data store.
 
-**Net result:** 170 total milestone items across 16 domains and 3 levels.
+**IEP Meeting Prep Wizard**: Add a "Download Report" button in the final step that generates a Word document containing all 6 wizard steps' data (Meeting Details, Data Review, Goal Progress, Recommendations, Documents, Attendees).
+
+**WhiteLabelReportGenerator**: After saving to `generated_reports`, immediately generate and download the branded Word document using the selected branding (logo, colors, footer).
+
+**SessionReportGenerator**: Add a "Download .docx" button alongside the existing print option.
 
 ---
 
-## Part 2: Barriers Assessment (24 items)
+## Part 2: Payer Report Template System
 
-A new curriculum system entry `VB-MAPP Barriers` will be created with 24 barrier categories, each scored 0-4:
+### Database Schema
 
-1. Negative Behaviors
-2. Instructional Control
-3. Absent/Weak Mand Repertoire
-4. Absent/Weak Tact Repertoire
-5. Absent/Weak Motor Imitation
-6. Absent/Weak Echoic Repertoire
-7. Absent/Weak VP/MTS
-8. Absent/Weak Listener Repertoires
-9. Absent/Weak Intraverbal Repertoire
-10. Absent/Weak Social Skills
-11. Prompt Dependent
-12. Scrolling Responses
-13. Impaired Scanning Skills
-14. Failure to Make Conditional Discriminations
-15. Failure to Generalize
-16. Weak/Atypical Motivating Operations
-17. Response Requirement Weakens the MO
-18. Reinforcement Dependent
-19. Self-Stimulation
-20. Articulation Problems
-21. Obsessive-Compulsive Behavior
-22. Hyperactive Behavior
-23. Failure to Make Eye Contact
-24. Sensory Defensiveness
+**New table: `payer_report_templates`**
 
-Each item stores the 5 scoring levels (0-4) in its description for reference.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid (PK) | |
+| name | text | Display name (e.g., "L.A. Care FBA/Progress Report") |
+| payer_ids | text[] | Array of payer IDs this template applies to (from payer directory) |
+| payer_names | text[] | Human-readable payer names for display |
+| report_type | text | "initial_assessment" or "progress_report" |
+| is_default | boolean | Whether this is the fallback template |
+| sections | jsonb | Ordered array of section definitions (see below) |
+| agency_id | uuid | Org ownership |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
 
-**Grid display:** A vertical list of barriers, each with a 0-4 radio/button selector. No level tabs needed -- all 24 items displayed in a single scrollable view.
-
----
-
-## Part 3: Transition Assessment (18 areas)
-
-A new curriculum system entry `VB-MAPP Transition` with 18 areas, each scored 1-5:
-
-1. VB-MAPP Milestones Score
-2. VB-MAPP Barriers Score
-3. Negative Behaviors and Instructional Control
-4. Classroom Routines and Group Skills
-5. Social Skills and Social Play
-6. Independent Academic Work
-7. Generalization
-8. Range of Reinforcers
-9. Rate of Skill Acquisition
-10. Retention of New Skills
-11. Natural Environment Learning
-12. Transfer Without Training
-13. Adaptability to Change
-14. Spontaneous Behaviors
-15. Self-Directed Leisure Time
-16. General Self-Help
-17. Toileting Skills
-18. Eating Skills
-
-**Grid display:** 3 rows of 6 areas each (matching the official VB-MAPP layout), each area as a vertical bar chart where the clinician clicks a score 1-5. Up to 4 testing dates shown side-by-side.
-
----
-
-## Part 4: EESA Subtest (100 items)
-
-A new curriculum system entry `VB-MAPP EESA` with 100 echoic items scored 0 or 1, organized in 10 groups of 10:
-
-- Group 1: Animal sounds & song fill-ins
-- Group 2: Name, fill-ins, associations
-- Group 3: Simple "What" questions
-- Group 4: Simple "Who, Where" & age
-- Group 5: Categories, function, features
-- Group 6: Adjectives, prepositions, adverbs
-- Group 7: Multiple-part questions (set 1)
-- Group 8: Multiple-part questions (set 2)
-- Group 9: Complex questions (set 1)
-- Group 10: Complex questions (set 2)
-
-Each group has a max of 10 points. Total possible = 100.
-
-**Grid display:** Tabbed by group, with a simple pass/fail toggle for each item and running totals per group and overall.
-
----
-
-## Part 5: UI Integration
-
-### VB-MAPP Grid Updates
-- The existing `VBMAPPGrid.tsx` component continues to handle Milestones with the 0/0.5/1 scoring
-- Add a subtest selector (Milestones | Barriers | Transition | EESA) as tabs within the grid view
-
-### New Grid Components
-- `VBMAPPBarriersGrid.tsx` -- 24-item list with 0-4 scale buttons
-- `VBMAPPTransitionGrid.tsx` -- 18-area visual bar chart grid (3x6 layout)
-- `VBMAPPEESAGrid.tsx` -- 100-item pass/fail grid organized by 10 groups
-
-### Entry Point Changes
-- `InternalVBMAPPEntry.tsx` updated to show VB-MAPP subtests as a unified assessment package
-- When creating a new VB-MAPP assessment, all 4 subtests share the same `student_assessment` record but store results in separate keys within `results_json`
-
----
-
-## Technical Details
-
-### Database Migrations
-1. Insert 2 new domains (Spontaneous Vocal Behavior, Linguistic Structure) into `domains` table
-2. Insert ~58 new `curriculum_items` for missing milestones
-3. Update descriptions on ~112 existing items to match official manual text
-4. Create 3 new curriculum systems: `VB-MAPP Barriers`, `VB-MAPP Transition`, `VB-MAPP EESA`
-5. Create domains and items for each new system
-
-### Results JSON Structure
+The `sections` JSONB stores the template structure:
 ```text
-results_json: {
-  // Milestones (existing): item_id -> { score: 0|0.5|1, date_scored }
-  // Barriers: "barrier_1" -> { score: 0-4, date_scored }
-  // Transition: "transition_1" -> { score: 1-5, date_scored }
-  // EESA: "eesa_g1_1" -> { score: 0|1, date_scored }
-}
+[
+  {
+    "key": "identifying_info",
+    "title": "I. IDENTIFYING INFORMATION",
+    "enabled": true,
+    "fields": [
+      { "key": "patient_name", "label": "Patient's Last/First Name", "type": "text", "required": true },
+      { "key": "dob", "label": "Date of Birth", "type": "date", "required": true },
+      { "key": "health_plan", "label": "Health Plan Name", "type": "text", "prefill": "L.A. Care Health Plan" },
+      ...
+    ]
+  },
+  {
+    "key": "reason_for_referral",
+    "title": "II. REASON FOR REFERRAL",
+    "enabled": true,
+    "fields": [...]
+  },
+  ...
+]
 ```
 
-### Files to Create
-- `src/components/skills/VBMAPPBarriersGrid.tsx`
-- `src/components/skills/VBMAPPTransitionGrid.tsx`
-- `src/components/skills/VBMAPPEESAGrid.tsx`
+### Template Definitions (Pre-seeded)
 
-### Files to Modify
-- `src/components/skills/VBMAPPGrid.tsx` -- Add subtest tab navigation
-- `src/components/assessment/InternalVBMAPPEntry.tsx` -- Show unified VB-MAPP package with all subtests
+**1. HC General Template (DEFAULT)**
+- report_type: both (one row for initial, one for progress)
+- Sections: Background/Methodology, Developmental History, Family Constellation, Birth/Medical History, Review of Records, Preference Assessment, Developmental Assessment (Vineland), VB-MAPP Results, Behavior Reduction Goals, Skill Acquisition Goals, Recommendations, Signatures
+- Mapped to: Default fallback
 
-### Execution Order
-1. Run database migration (add domains, items, systems)
-2. Update existing item descriptions
-3. Create Barriers grid component
-4. Create Transition grid component
-5. Create EESA grid component
-6. Update VBMAPPGrid with subtest navigation
-7. Update InternalVBMAPPEntry for unified display
+**2. L.A. Care Template**
+- report_type: both
+- Sections: Identifying Information (with L.A. Care-specific fields like Medical ID, PCP, 10-day timeline), Reason for Referral (checkbox grid), Background Information (Family Structure, Availability, Health History, School History, Care Coordination), Clinical Interview, Direct Assessment Procedures, Preference Assessment, Outcome Measurements, Measurable Goals by Domain (Communication, Learning Skills, Daily Living, Social/Community/Play), Problem Behaviors, Treatment Recommendations, Signatures
+- Mapped to: L.A. Care Health Plan payer records
 
+**3. CalOptima Template**
+- report_type: both
+- Sections: Identification (with CIN#, Tax ID, NPI), Session Information (CPT code utilization table), School Information, Medical Information, Coordination of Care, Barriers to Progress, Adaptive Testing (Vineland-3), DSM-V, Target Behavior Goals (with graph placeholders), Skill Acquisition Goals by Intervention Area, Parent/Caregiver Goals, Report Summary, Treatment Recommendations
+- Mapped to: CalOptima + regional center payers
+
+**4. Cigna/Commercial Template**
+- report_type: both
+- Sections: Reason for Referral, Background/Methodology, Developmental History, Birth/Medical, ABA Treatment History, Other Services, Review of Records, Preference Assessment, Developmental Assessment (Vineland + PDD-BI + SRS-2), VB-MAPP Milestones Grid, Behavior Reduction Goals (with definitions, baselines, functions, interventions), Skill Acquisition Goals, Recommendations
+- Mapped to: Cigna + other commercial plans
+
+### Section Toggle System
+Each template's sections can be toggled on/off at export time. The UI will show all available sections as checkboxes, pre-checked based on the template default, but the clinician can customize which sections to include for any individual report.
+
+---
+
+## Part 3: Report Generation UI
+
+### New Component: `InsuranceReportGenerator`
+Located at: `src/components/reports/InsuranceReportGenerator.tsx`
+
+This replaces the current "Export Reports" button on the Reports page and is also accessible from individual student profiles.
+
+**Workflow:**
+1. Select student
+2. System auto-detects the student's primary payer and selects the matching template
+3. Clinician can override the template selection via a dropdown
+4. Choose report type: Initial Assessment or Progress Report
+5. Select date range
+6. Toggle sections on/off
+7. Fill in any template-specific fields not auto-populated from data
+8. Preview the report structure
+9. Click "Generate .docx" to download
+
+### Auto-Population Logic
+The generator pulls data from existing stores:
+- Student demographics from student profile
+- Behavior data from `frequencyEntries`, `abcEntries`
+- Assessment results from `student_assessments` (VB-MAPP, Vineland scores)
+- Goals from `behaviorGoals` and skill programs
+- Session data from `sessions`
+- Branding from `report_branding` (logo, agency name, contact info)
+- Payer info from `payer_directory` / student's insurance records
+
+Fields that cannot be auto-populated will show as editable text inputs in the generation form.
+
+---
+
+## Part 4: Word Document Generation Engine
+
+### New Utility: `src/lib/insuranceReportExport.ts`
+
+A centralized .docx generation engine that:
+- Takes a template definition + populated data + branding
+- Produces a professional Word document matching the uploaded format
+- Handles tables, headers, checkboxes, numbered sections, page headers/footers
+- Applies branding (logo in header, agency info, footer text)
+- Embeds graph images as base64 (behavior trend charts, VB-MAPP grids)
+
+Each template format gets a dedicated builder function:
+- `buildLACareReport(data, branding)`
+- `buildCalOptimaReport(data, branding)`
+- `buildCignaReport(data, branding)`
+- `buildHCGeneralReport(data, branding)`
+
+---
+
+## Part 5: School FBA Template (Placeholder)
+
+A placeholder entry will be created for the school version template. The user mentioned they will send school FBA samples separately. When those are uploaded, a school-specific template will be added with reduced sections (no insurance/billing fields, simplified clinical language).
+
+---
+
+## Files to Create
+- `src/components/reports/InsuranceReportGenerator.tsx` -- Main UI component
+- `src/lib/insuranceReportExport.ts` -- Word document generation engine
+- `src/types/reportTemplates.ts` -- TypeScript types for template system
+
+## Files to Modify
+- `src/components/EnhancedExportOptions.tsx` -- Wire up actual .docx generation
+- `src/components/iep/IEPMeetingPrepWizard.tsx` -- Add download button
+- `src/components/reports/WhiteLabelReportGenerator.tsx` -- Add file download after save
+- `src/components/SessionReportGenerator.tsx` -- Add .docx download option
+- `src/pages/Reports.tsx` -- Add Insurance Report Generator entry card
+
+## Database Migration
+- Create `payer_report_templates` table with RLS policies
+- Seed the 4 template definitions (HC General, LA Care, CalOptima, Cigna)
+
+## Execution Order
+1. Database migration (create table + seed templates)
+2. Create TypeScript types
+3. Build the .docx generation engine
+4. Fix the 4 broken export components
+5. Build the InsuranceReportGenerator UI
+6. Wire up to Reports page and student profiles
