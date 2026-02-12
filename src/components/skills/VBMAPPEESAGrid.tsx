@@ -21,16 +21,17 @@ interface VBMAPPEESAGridProps {
   ) => Promise<void>;
 }
 
-export function VBMAPPEESAGrid({ studentId, studentName, assessment, onBack, onSave }: VBMAPPEESAGridProps) {
-  const { items, loading } = useCurriculumItems(assessment.curriculum_system_id);
-  const { domains } = useDomains();
-  const [scores, setScores] = useState<Record<string, MilestoneScore>>(
-    (assessment.results_json || {}) as Record<string, MilestoneScore>
-  );
-  const [saving, setSaving] = useState(false);
+export interface EmbeddedEESAGridProps {
+  curriculumSystemId: string;
+  scores: Record<string, MilestoneScore>;
+  onScoreChange: (itemId: string, score: number) => void;
+}
+
+/** Embedded EESA grid - no header, parent manages state */
+export function EmbeddedEESAGrid({ curriculumSystemId, scores, onScoreChange }: EmbeddedEESAGridProps) {
+  const { items, loading } = useCurriculumItems(curriculumSystemId);
   const [activeGroup, setActiveGroup] = useState('1');
 
-  // Group items by domain (EESA Group 1-10)
   const groupedItems = useMemo(() => {
     const groups: Record<string, CurriculumItem[]> = {};
     items.forEach(item => {
@@ -44,7 +45,7 @@ export function VBMAPPEESAGrid({ studentId, studentName, assessment, onBack, onS
     return groups;
   }, [items]);
 
-  const groupNumbers = useMemo(() => 
+  const groupNumbers = useMemo(() =>
     Object.keys(groupedItems).sort((a, b) => parseInt(a) - parseInt(b)),
     [groupedItems]
   );
@@ -55,70 +56,22 @@ export function VBMAPPEESAGrid({ studentId, studentName, assessment, onBack, onS
   };
 
   const totalScore = useMemo(() => {
-    return Object.values(scores).reduce((sum, s) => sum + (s.score || 0), 0);
-  }, [scores]);
+    return items.reduce((sum, item) => sum + (scores[item.id]?.score || 0), 0);
+  }, [scores, items]);
 
   const handleToggle = (itemId: string) => {
     const current = scores[itemId]?.score || 0;
-    setScores(prev => ({
-      ...prev,
-      [itemId]: { score: current === 1 ? 0 : 1, date_scored: new Date().toISOString() },
-    }));
+    onScoreChange(itemId, current === 1 ? 0 : 1);
   };
 
-  const handleSave = async (finalize: boolean) => {
-    setSaving(true);
-    try {
-      const domainScoresRecord: Record<string, number> = {};
-      groupNumbers.forEach(g => {
-        domainScoresRecord[`Group ${g}`] = getGroupScore(g);
-      });
-      domainScoresRecord['Total'] = totalScore;
-      await onSave(scores, domainScoresRecord, finalize ? 'final' : 'draft');
-      toast.success(finalize ? 'EESA finalized' : 'EESA saved');
-      if (finalize) onBack();
-    } catch {
-      toast.error('Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading EESA...</div>;
-  }
+  if (loading) return <div className="text-center py-8 text-muted-foreground">Loading EESA...</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h3 className="font-semibold text-lg">VB-MAPP EESA</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{studentName}</span>
-              <span>•</span>
-              <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
-                {assessment.status === 'final' ? 'Finalized' : 'Draft'}
-              </Badge>
-              <span>•</span>
-              <span className="font-medium">Total: {totalScore} / 100</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />Save
-          </Button>
-          <Button onClick={() => handleSave(true)} disabled={saving}>
-            <CheckCircle2 className="w-4 h-4 mr-2" />Finalize
-          </Button>
-        </div>
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <span>EESA Total: {totalScore} / 100</span>
       </div>
 
-      {/* Group score summary */}
       <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
         {groupNumbers.map(g => (
           <Card key={g} className={`p-2 cursor-pointer transition-colors ${activeGroup === g ? 'border-primary bg-primary/5' : ''}`}
@@ -178,6 +131,78 @@ export function VBMAPPEESAGrid({ studentId, studentName, assessment, onBack, onS
           </TabsContent>
         ))}
       </Tabs>
+    </div>
+  );
+}
+
+/** Standalone EESA grid */
+export function VBMAPPEESAGrid({ studentId, studentName, assessment, onBack, onSave }: VBMAPPEESAGridProps) {
+  const { items } = useCurriculumItems(assessment.curriculum_system_id);
+  const [scores, setScores] = useState<Record<string, MilestoneScore>>(
+    (assessment.results_json || {}) as Record<string, MilestoneScore>
+  );
+  const [saving, setSaving] = useState(false);
+
+  const totalScore = useMemo(() => {
+    return items.reduce((sum, item) => sum + (scores[item.id]?.score || 0), 0);
+  }, [scores, items]);
+
+  const handleScoreChange = (itemId: string, score: number) => {
+    setScores(prev => ({
+      ...prev,
+      [itemId]: { score, date_scored: new Date().toISOString() },
+    }));
+  };
+
+  const handleSave = async (finalize: boolean) => {
+    setSaving(true);
+    try {
+      const domainScoresRecord: Record<string, number> = {};
+      domainScoresRecord['Total'] = totalScore;
+      await onSave(scores, domainScoresRecord, finalize ? 'final' : 'draft');
+      toast.success(finalize ? 'EESA finalized' : 'EESA saved');
+      if (finalize) onBack();
+    } catch {
+      toast.error('Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h3 className="font-semibold text-lg">VB-MAPP EESA</h3>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>{studentName}</span>
+              <span>•</span>
+              <Badge variant={assessment.status === 'final' ? 'default' : 'secondary'}>
+                {assessment.status === 'final' ? 'Finalized' : 'Draft'}
+              </Badge>
+              <span>•</span>
+              <span className="font-medium">Total: {totalScore} / 100</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+            <Save className="w-4 h-4 mr-2" />Save
+          </Button>
+          <Button onClick={() => handleSave(true)} disabled={saving}>
+            <CheckCircle2 className="w-4 h-4 mr-2" />Finalize
+          </Button>
+        </div>
+      </div>
+      <EmbeddedEESAGrid
+        curriculumSystemId={assessment.curriculum_system_id}
+        scores={scores}
+        onScoreChange={handleScoreChange}
+      />
     </div>
   );
 }
