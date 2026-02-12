@@ -1,70 +1,171 @@
 
 
-## Plan: Fix Assessment Export, Auto-Session Start, Caseload Display, and Staff Management
+# VB-MAPP Complete Overhaul: Milestones, Barriers, Transition, and EESA
 
-This plan addresses four distinct issues you've reported.
-
----
-
-### Issue 1: Assessment Export Not Showing Session Data for Jayden
-
-**Root Cause:** The `getSessionEntries()` function in `ComprehensiveAssessmentExport.tsx` (line 172-177) only pulls data from the global store arrays (`abcEntries`, `frequencyEntries`, etc.). It does NOT check the inline session arrays (`session.frequencyEntries`, `session.durationEntries`, etc.) -- even though the session detection logic was already fixed to check both sources. This means sessions are correctly listed in the export dialog, but the actual exported document contains zero data for sessions that store entries inline.
-
-**Fix:** Update `getSessionEntries()` to merge data from both the global store AND the inline session properties, deduplicating by entry ID.
-
-Also update the Function Analysis section (line 416) and Hypothesis section (line 490) to similarly pull ABC data from inline session arrays, not just the global store.
+## Overview
+This plan adds the three missing VB-MAPP subtests (Barriers, Transition, EESA) and corrects/completes the Milestones Assessment from the current 112 items to the full 170. All item descriptions will be updated to match the official manual text from the uploaded PDFs.
 
 ---
 
-### Issue 2: Session Auto-Starts on Login
+## Part 1: Database Corrections -- Milestones (170 items)
 
-**Root Cause:** In `AssessmentDataCollection.tsx` (line 307-311), the `handleStartObservation()` function calls `startSession()` automatically when there is no active session. Additionally, `SessionTimer.tsx` (line 69-71) does the same. The Zustand store persists `sessionStartTime` to localStorage, so if a session was active when the user last closed the app and is under 4 hours old, it rehydrates as active on the next login.
+The current database has 112 items and is missing entire domains and levels. Here is what needs to be added or corrected:
 
-**Fix:**
-- The store's `onRehydrateStorage` already clears sessions older than 4 hours. We need to add a setting or simply always clear the session state on fresh login/page load so stale sessions don't persist.
-- Ensure `startSession()` is only called by explicit user action (clicking "Start Observation"), not implicitly on component mount. The current code already gates it behind `handleStartObservation`, so the real issue is likely the persisted session state rehydrating. We will clear session state on auth login.
+**Missing domains (create new):**
+- Spontaneous Vocal Behavior (Level 1 only, items 1-5)
+- Linguistic Structure (Level 2: items 6-10, Level 3: items 11-15)
 
----
+**Missing levels in existing domains:**
+- Listener Responding: Level 3 (items 11-15) -- 5 items
+- VP/MTS: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
+- Independent Play: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
+- Social Behavior & Social Play: Level 2 (items 6-10) and Level 3 (items 11-15) -- 10 items
+- Motor Imitation: Level 2 (items 6-10) -- 5 items
+- Echoic: Level 2 (items 6-10) -- 5 items
+- LRFFC: Missing items 6, 7 (adding a Level 2 item 6 for animal sounds), and Level 3 items 11-15 completion
+- Intraverbal: Missing Level 2 item 6 and Level 3 items to fill gaps
+- Classroom Routines: Missing Level 2 items 6-10 and Level 3 items 11-15 completion
 
-### Issue 3: Clinician/Supervision Page Not Showing Clients
+**Description corrections:** All 112 existing items will have their descriptions updated to match the exact official manual text from the uploaded Milestones PDF.
 
-**Root Cause:** The Supervision Dashboard (`SupervisionDashboard.tsx`) fetches data from `supervision_requirements` and `supervision_logs` tables -- it does NOT query `staff_caseloads` or `client_team_assignments` to show the clinician's actual client list. The "Total Supervisees" stat comes from `supervision_requirements`, not caseload data.
-
-**Fix:** Add a "My Caseload" section to the Supervision Dashboard that queries `staff_caseloads` and `client_team_assignments` for the logged-in user, similar to how `StaffAssignmentsTab` already does it. Display the count and list of assigned clients.
-
----
-
-### Issue 4: Add/Remove Clients, Agencies, and Sites to Staff Profiles
-
-**Root Cause:** The current "Add New Staff" dialog (`StaffManagement.tsx` lines 560-760) only collects basic info (name, email, credential, supervisor, role). There are no fields for assigning clients, agencies, or sites. The `StaffAssignmentsTab` shows existing assignments but has no UI to add or remove client assignments.
-
-**Fix:**
-- **Add Staff Dialog:** Add optional multi-select sections for client assignments, agency assignments, and site assignments during staff creation.
-- **Staff Profile Assignments Tab:** Add "Assign Client", "Assign Agency", and "Assign Site" buttons with dialogs to add new assignments, plus remove/deactivate buttons on existing rows.
+**Net result:** 170 total milestone items across 16 domains and 3 levels.
 
 ---
 
-### Technical Details
+## Part 2: Barriers Assessment (24 items)
 
-**Files to modify:**
+A new curriculum system entry `VB-MAPP Barriers` will be created with 24 barrier categories, each scored 0-4:
 
-1. **`src/components/ComprehensiveAssessmentExport.tsx`**
-   - Update `getSessionEntries()` (lines 172-177) to also pull from `session.abcEntries`, `session.frequencyEntries`, `session.durationEntries`, `session.intervalEntries` -- deduplicating by entry ID
-   - Update Function Analysis section (line 416) and Hypothesis section (line 490) to also include inline ABC data from sessions
+1. Negative Behaviors
+2. Instructional Control
+3. Absent/Weak Mand Repertoire
+4. Absent/Weak Tact Repertoire
+5. Absent/Weak Motor Imitation
+6. Absent/Weak Echoic Repertoire
+7. Absent/Weak VP/MTS
+8. Absent/Weak Listener Repertoires
+9. Absent/Weak Intraverbal Repertoire
+10. Absent/Weak Social Skills
+11. Prompt Dependent
+12. Scrolling Responses
+13. Impaired Scanning Skills
+14. Failure to Make Conditional Discriminations
+15. Failure to Generalize
+16. Weak/Atypical Motivating Operations
+17. Response Requirement Weakens the MO
+18. Reinforcement Dependent
+19. Self-Stimulation
+20. Articulation Problems
+21. Obsessive-Compulsive Behavior
+22. Hyperactive Behavior
+23. Failure to Make Eye Contact
+24. Sensory Defensiveness
 
-2. **`src/store/dataStore.ts`**
-   - In `onRehydrateStorage` callback, always clear session state on app startup (reset `sessionStartTime`, `currentSessionId`, etc.) instead of only clearing after 4 hours
+Each item stores the 5 scoring levels (0-4) in its description for reference.
 
-3. **`src/components/supervision/SupervisionDashboard.tsx`**
-   - Add caseload query using current user's ID from `useAuth()`
-   - Display a "My Clients" card showing assigned client count and list
+**Grid display:** A vertical list of barriers, each with a 0-4 radio/button selector. No level tabs needed -- all 24 items displayed in a single scrollable view.
 
-4. **`src/components/staff-profile/tabs/StaffAssignmentsTab.tsx`**
-   - Add "Assign Client" button and dialog to create `client_team_assignments` records
-   - Add "Remove" button on each caseload row to deactivate assignments
-   - Add "Assign Agency" and "Assign Site" sections (querying `agencies` and `agency_sites` tables)
+---
 
-5. **`src/components/admin/StaffManagement.tsx`**
-   - Add optional client, agency, and site assignment fields to the "Add New Staff" dialog
-   - Insert the corresponding records after staff creation succeeds
+## Part 3: Transition Assessment (18 areas)
+
+A new curriculum system entry `VB-MAPP Transition` with 18 areas, each scored 1-5:
+
+1. VB-MAPP Milestones Score
+2. VB-MAPP Barriers Score
+3. Negative Behaviors and Instructional Control
+4. Classroom Routines and Group Skills
+5. Social Skills and Social Play
+6. Independent Academic Work
+7. Generalization
+8. Range of Reinforcers
+9. Rate of Skill Acquisition
+10. Retention of New Skills
+11. Natural Environment Learning
+12. Transfer Without Training
+13. Adaptability to Change
+14. Spontaneous Behaviors
+15. Self-Directed Leisure Time
+16. General Self-Help
+17. Toileting Skills
+18. Eating Skills
+
+**Grid display:** 3 rows of 6 areas each (matching the official VB-MAPP layout), each area as a vertical bar chart where the clinician clicks a score 1-5. Up to 4 testing dates shown side-by-side.
+
+---
+
+## Part 4: EESA Subtest (100 items)
+
+A new curriculum system entry `VB-MAPP EESA` with 100 echoic items scored 0 or 1, organized in 10 groups of 10:
+
+- Group 1: Animal sounds & song fill-ins
+- Group 2: Name, fill-ins, associations
+- Group 3: Simple "What" questions
+- Group 4: Simple "Who, Where" & age
+- Group 5: Categories, function, features
+- Group 6: Adjectives, prepositions, adverbs
+- Group 7: Multiple-part questions (set 1)
+- Group 8: Multiple-part questions (set 2)
+- Group 9: Complex questions (set 1)
+- Group 10: Complex questions (set 2)
+
+Each group has a max of 10 points. Total possible = 100.
+
+**Grid display:** Tabbed by group, with a simple pass/fail toggle for each item and running totals per group and overall.
+
+---
+
+## Part 5: UI Integration
+
+### VB-MAPP Grid Updates
+- The existing `VBMAPPGrid.tsx` component continues to handle Milestones with the 0/0.5/1 scoring
+- Add a subtest selector (Milestones | Barriers | Transition | EESA) as tabs within the grid view
+
+### New Grid Components
+- `VBMAPPBarriersGrid.tsx` -- 24-item list with 0-4 scale buttons
+- `VBMAPPTransitionGrid.tsx` -- 18-area visual bar chart grid (3x6 layout)
+- `VBMAPPEESAGrid.tsx` -- 100-item pass/fail grid organized by 10 groups
+
+### Entry Point Changes
+- `InternalVBMAPPEntry.tsx` updated to show VB-MAPP subtests as a unified assessment package
+- When creating a new VB-MAPP assessment, all 4 subtests share the same `student_assessment` record but store results in separate keys within `results_json`
+
+---
+
+## Technical Details
+
+### Database Migrations
+1. Insert 2 new domains (Spontaneous Vocal Behavior, Linguistic Structure) into `domains` table
+2. Insert ~58 new `curriculum_items` for missing milestones
+3. Update descriptions on ~112 existing items to match official manual text
+4. Create 3 new curriculum systems: `VB-MAPP Barriers`, `VB-MAPP Transition`, `VB-MAPP EESA`
+5. Create domains and items for each new system
+
+### Results JSON Structure
+```text
+results_json: {
+  // Milestones (existing): item_id -> { score: 0|0.5|1, date_scored }
+  // Barriers: "barrier_1" -> { score: 0-4, date_scored }
+  // Transition: "transition_1" -> { score: 1-5, date_scored }
+  // EESA: "eesa_g1_1" -> { score: 0|1, date_scored }
+}
+```
+
+### Files to Create
+- `src/components/skills/VBMAPPBarriersGrid.tsx`
+- `src/components/skills/VBMAPPTransitionGrid.tsx`
+- `src/components/skills/VBMAPPEESAGrid.tsx`
+
+### Files to Modify
+- `src/components/skills/VBMAPPGrid.tsx` -- Add subtest tab navigation
+- `src/components/assessment/InternalVBMAPPEntry.tsx` -- Show unified VB-MAPP package with all subtests
+
+### Execution Order
+1. Run database migration (add domains, items, systems)
+2. Update existing item descriptions
+3. Create Barriers grid component
+4. Create Transition grid component
+5. Create EESA grid component
+6. Update VBMAPPGrid with subtest navigation
+7. Update InternalVBMAPPEntry for unified display
 
