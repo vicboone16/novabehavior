@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
 import { Session, IntervalEntry, DataCollectionMethod, METHOD_LABELS } from '@/types/behavior';
+import { generateGenericDocxReport } from '@/lib/insuranceReportExport';
+import { toast } from 'sonner';
 
 const SAMPLING_TYPE_LABELS: Record<string, string> = {
   partial: 'Partial Interval Recording',
@@ -444,13 +446,54 @@ export function SessionReportGenerator() {
           )}
 
           <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={async () => {
+                if (!selectedSession || !filteredData) return;
+                try {
+                  const sections: Array<{ heading: string; content: string }> = [];
+                  sections.push({
+                    heading: 'Session Information',
+                    content: `Date: ${format(new Date(selectedSession.date), 'MMMM d, yyyy')}\nLength: ${selectedSession.sessionLengthMinutes || 60} minutes`,
+                  });
+                  if (filteredData.frequencyEntries.length > 0) {
+                    sections.push({
+                      heading: 'Frequency Data',
+                      content: filteredData.frequencyEntries.map(e => `${getBehaviorName(e.studentId, e.behaviorId)} (${getStudentName(e.studentId)}): ${e.count}`).join('\n'),
+                    });
+                  }
+                  if (filteredData.durationEntries.length > 0) {
+                    sections.push({
+                      heading: 'Duration Data',
+                      content: filteredData.durationEntries.map(e => `${getBehaviorName(e.studentId, e.behaviorId)} (${getStudentName(e.studentId)}): ${formatDuration(e.duration)}`).join('\n'),
+                    });
+                  }
+                  if (filteredData.abcEntries.length > 0) {
+                    sections.push({
+                      heading: 'ABC Data',
+                      content: filteredData.abcEntries.map(e => `Behavior: ${getBehaviorName(e.studentId, e.behaviorId)}\nAntecedent: ${(e.antecedents || [e.antecedent]).join(', ')}\nConsequence: ${(e.consequences || [e.consequence]).join(', ')}`).join('\n\n'),
+                    });
+                  }
+                  await generateGenericDocxReport({
+                    title: 'Session Report',
+                    subtitle: format(new Date(selectedSession.date), 'MMMM d, yyyy'),
+                    sections,
+                    fileName: `Session_Report_${format(new Date(selectedSession.date), 'yyyy-MM-dd')}.docx`,
+                  });
+                  toast.success('Session report downloaded');
+                } catch {
+                  toast.error('Failed to download report');
+                }
+              }}
+            >
+              <Download className="w-4 h-4" />
+              Download .docx
+            </Button>
             <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
               <Printer className="w-4 h-4" />
               Print
-            </Button>
-            <Button size="sm" onClick={handleDownloadPDF} className="gap-2">
-              <Download className="w-4 h-4" />
-              Save as PDF
             </Button>
           </div>
         </div>
