@@ -23,6 +23,8 @@ import { useReportBranding, useGeneratedReports } from '@/hooks/useReportBrandin
 import { REPORT_TYPE_LABELS, ReportType, ReportContent } from '@/types/reportBranding';
 import { Student } from '@/types/behavior';
 import { Loader2, FileText, Palette, Download } from 'lucide-react';
+import { generateGenericDocxReport } from '@/lib/insuranceReportExport';
+import { toast } from 'sonner';
 
 interface WhiteLabelReportGeneratorProps {
   open: boolean;
@@ -111,6 +113,36 @@ export function WhiteLabelReportGenerator({
       date_range_end: dateRangeEnd,
       content,
     });
+
+    // Generate and download the .docx file
+    try {
+      const sections: Array<{ heading: string; content: string }> = [];
+      sections.push({
+        heading: 'Student Information',
+        content: `Name: ${student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${dateRangeStart} – ${dateRangeEnd}`,
+      });
+      if (formData.include_narrative) {
+        sections.push({
+          heading: 'Narrative Summary',
+          content: `${student.name} was monitored during the period ${dateRangeStart} to ${dateRangeEnd}. ${student.behaviors.length} target behaviors were tracked across sessions.`,
+        });
+      }
+      if (formData.include_recommendations) {
+        sections.push({ heading: 'Recommendations', content: 'Continue current treatment plan and review goals at next meeting.' });
+      }
+
+      await generateGenericDocxReport({
+        title: REPORT_TYPE_LABELS[formData.report_type].label,
+        subtitle: student.name,
+        sections,
+        fileName: `${formData.report_type}_${student.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.docx`,
+        brandingName: selectedBranding?.organization_name,
+        footerText: selectedBranding?.footer_text || undefined,
+      });
+      toast.success('Report downloaded');
+    } catch {
+      toast.error('Download failed');
+    }
 
     setIsGenerating(false);
     onOpenChange(false);

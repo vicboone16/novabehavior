@@ -6162,6 +6162,53 @@ export type Database = {
           },
         ]
       }
+      payer_report_templates: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          payer_ids: string[] | null
+          payer_names: string[] | null
+          report_type: string
+          sections: Json
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          payer_ids?: string[] | null
+          payer_names?: string[] | null
+          report_type: string
+          sections?: Json
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          payer_ids?: string[] | null
+          payer_names?: string[] | null
+          report_type?: string
+          sections?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payer_report_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payer_services: {
         Row: {
           agency_id: string | null

@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useDataStore } from '@/store/dataStore';
 import { format, subDays, subWeeks, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { generateGenericDocxReport } from '@/lib/insuranceReportExport';
 
 type ReportType = 'weekly' | 'monthly' | 'triennial' | 'iep-progress' | 'bip-fidelity' | 'parent-summary';
 type TimeWindow = 'last5sessions' | 'last30days' | 'quarter' | 'semester' | 'sinceBaseline' | 'custom';
@@ -161,7 +162,7 @@ export function EnhancedExportOptions({ studentId }: EnhancedExportOptionsProps)
     };
   }, [selectedStudentId, students, behaviorGoals, sessions, dateRange]);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!selectedStudentId) {
       toast({
         title: 'Select a student',
@@ -171,11 +172,68 @@ export function EnhancedExportOptions({ studentId }: EnhancedExportOptionsProps)
       return;
     }
 
-    // In a real implementation, this would generate the actual report
-    toast({
-      title: 'Report Generated',
-      description: `${reportTypeLabels[reportType].label} for ${previewStats?.studentName} has been generated.`,
+    const student = students.find(s => s.id === selectedStudentId);
+    if (!student) return;
+
+    const studentGoals = behaviorGoals.filter(g => g.studentId === selectedStudentId);
+    const relevantSessions = sessions.filter(s =>
+      s.studentIds?.includes(selectedStudentId) &&
+      new Date(s.date) >= dateRange.from &&
+      new Date(s.date) <= dateRange.to
+    );
+
+    const sections: Array<{ heading: string; content: string }> = [];
+
+    sections.push({
+      heading: 'Student Information',
+      content: `Name: ${student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${format(dateRange.from, 'MMM d, yyyy')} – ${format(dateRange.to, 'MMM d, yyyy')}`,
     });
+
+    sections.push({
+      heading: 'Session Summary',
+      content: `Total Sessions: ${relevantSessions.length}\nGoals: ${studentGoals.length}`,
+    });
+
+    if (options.includeBaselineComparison && studentGoals.length > 0) {
+      sections.push({
+        heading: 'Goal Progress',
+        content: studentGoals.map(g => `• ${g.behaviorId || 'Goal'}: Target ${g.targetValue ?? 'N/A'} ${g.direction || ''}`).join('\n') || 'No goals defined.',
+      });
+    }
+
+    if (options.includeNarrative) {
+      sections.push({
+        heading: 'Narrative Summary',
+        content: `During the reporting period, ${student.name} participated in ${relevantSessions.length} sessions. ${student.behaviors.length} behaviors were monitored.`,
+      });
+    }
+
+    if (options.includeRecommendations) {
+      sections.push({ heading: 'Recommendations', content: 'Continue current intervention plan and monitor progress.' });
+    }
+
+    if (options.includeNextSteps) {
+      sections.push({ heading: 'Next Steps', content: 'Review data at next team meeting and adjust goals as needed.' });
+    }
+
+    if (additionalNotes) {
+      sections.push({ heading: 'Additional Notes', content: additionalNotes });
+    }
+
+    try {
+      await generateGenericDocxReport({
+        title: reportTypeLabels[reportType].label,
+        subtitle: student.name,
+        sections,
+        fileName: `${reportType}_${student.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.docx`,
+      });
+      toast({
+        title: 'Report Downloaded',
+        description: `${reportTypeLabels[reportType].label} for ${student.name} has been downloaded.`,
+      });
+    } catch {
+      toast({ title: 'Export Failed', description: 'Could not generate the report.', variant: 'destructive' });
+    }
     setIsOpen(false);
   };
 

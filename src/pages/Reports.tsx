@@ -12,7 +12,8 @@ import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { SkillProgressReports } from '@/components/skills/SkillProgressReports';
 import { ReportBrandingEditor } from '@/components/reports';
-import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart } from 'lucide-react';
+import { InsuranceReportGenerator } from '@/components/reports/InsuranceReportGenerator';
+import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -167,6 +168,17 @@ export default function Reports() {
           <p className="text-sm text-muted-foreground">
             Generate branded reports for schools and districts. Open a student profile and use the White-Label Report Generator from there.
           </p>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Insurance Reports</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Generate payer-specific reports (L.A. Care, CalOptima, Cigna, and more)
+          </p>
+          <InsuranceReportGenerator />
         </div>
       </div>
 

@@ -44,8 +44,11 @@ import {
   Plus,
   Trash2,
   Loader2,
-  Sparkles
+  Sparkles,
+  Download
 } from 'lucide-react';
+import { generateGenericDocxReport } from '@/lib/insuranceReportExport';
+import { toast } from 'sonner';
 
 interface IEPMeetingPrepWizardProps {
   open: boolean;
@@ -490,10 +493,38 @@ export function IEPMeetingPrepWizard({
           </Button>
 
           {currentStep === WIZARD_STEPS.length - 1 ? (
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save & Finish
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const sections = [
+                      { heading: 'Meeting Details', content: `Date: ${format(new Date(meetingDate), 'MMMM d, yyyy')}\nType: ${MEETING_TYPES[meetingType]?.label || meetingType}\nStudent: ${student.name}` },
+                      { heading: 'Behaviors Tracked', content: student.behaviors.map(b => `• ${b.name}`).join('\n') || 'None' },
+                      { heading: 'Recommendations', content: recommendations.length > 0 ? recommendations.map(r => `[${r.type.toUpperCase()}] ${r.text}`).join('\n') : 'None added' },
+                      { heading: 'Documents Checklist', content: documents.filter(d => d.included).map(d => `✓ ${d.document}`).join('\n') || 'None selected' },
+                      { heading: 'Attendees', content: attendees.filter(a => a.name).map(a => `${a.name} (${a.role})${a.confirmed ? ' - Confirmed' : ''}`).join('\n') || 'None added' },
+                    ];
+                    await generateGenericDocxReport({
+                      title: 'IEP Meeting Preparation',
+                      subtitle: `${student.name} — ${format(new Date(meetingDate), 'MMMM d, yyyy')}`,
+                      sections,
+                      fileName: `IEP_Prep_${student.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.docx`,
+                    });
+                    toast.success('IEP prep report downloaded');
+                  } catch {
+                    toast.error('Failed to download report');
+                  }
+                }}
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Download .docx
+              </Button>
+              <Button onClick={handleSave} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save & Finish
+              </Button>
+            </div>
           ) : (
             <Button onClick={handleNext} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
