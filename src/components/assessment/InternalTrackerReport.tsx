@@ -3,6 +3,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, Target, Copy, FileDown,
   HelpCircle, Plus, Lightbulb, Edit2
 } from 'lucide-react';
+import { AssessmentReportExport } from './AssessmentReportExport';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -54,6 +55,7 @@ export function InternalTrackerReport({
   const [editingNarrative, setEditingNarrative] = useState(false);
   const [narrative, setNarrative] = useState('');
   const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
+  const [showReportExport, setShowReportExport] = useState(false);
 
   // Build domain stats using SUM(scores) / SUM(max_possible)
   const stats = useMemo(() => {
@@ -236,8 +238,8 @@ ${recommendations.map(g => `• [${g.type.toUpperCase()}] ${g.title}\n  Mastery:
           <Button variant="outline" onClick={handleCopy}>
             <Copy className="w-4 h-4 mr-2" />Copy Report
           </Button>
-          <Button variant="outline">
-            <FileDown className="w-4 h-4 mr-2" />Export PDF
+          <Button variant="outline" onClick={() => setShowReportExport(true)}>
+            <FileDown className="w-4 h-4 mr-2" />Generate Report
           </Button>
         </div>
       </div>
@@ -432,6 +434,26 @@ ${recommendations.map(g => `• [${g.type.toUpperCase()}] ${g.title}\n  Mastery:
           )}
         </CardContent>
       </Card>
+      {/* Report Export Modal */}
+      <AssessmentReportExport
+        open={showReportExport}
+        onOpenChange={setShowReportExport}
+        assessmentType={trackerType === 'afls' ? 'afls' : 'ablls-r'}
+        aflsModule={trackerType === 'afls' ? (() => {
+          // Determine which AFLS module based on scored items
+          const firstScoredKey = Object.keys(scores)[0] || '';
+          const mod = AFLS_MODULES.find(m => firstScoredKey.includes(`afls_${m.id}_`));
+          return mod?.name;
+        })() : undefined}
+        studentName={studentName}
+        dateAdministered={dateAdministered}
+        domainScores={Object.values(stats.byDomain)
+          .filter(d => d.status !== 'not_scored')
+          .map(d => ({ domain: d.domain, raw: d.rawTotal, max: d.maxPossible, percent: d.masteryPercent }))}
+        overallMastery={stats.overallMastery}
+        strengths={analysis.strengths.map(s => s.domain)}
+        priorities={analysis.priorities.map(p => p.domain)}
+      />
     </div>
   );
 }
