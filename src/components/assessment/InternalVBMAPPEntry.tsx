@@ -9,13 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,9 +22,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { VBMAPPGrid } from '@/components/skills/VBMAPPGrid';
-import { VBMAPPBarriersGrid } from '@/components/skills/VBMAPPBarriersGrid';
-import { VBMAPPTransitionGrid } from '@/components/skills/VBMAPPTransitionGrid';
-import { VBMAPPEESAGrid } from '@/components/skills/VBMAPPEESAGrid';
 import type { StudentAssessment, MilestoneScore } from '@/types/curriculum';
 
 interface InternalVBMAPPEntryProps {
@@ -80,11 +70,11 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load VB-MAPP curriculum systems
+      // Load only the main VB-MAPP Milestones system (subtests are embedded in the grid)
       const { data: systems } = await supabase
         .from('curriculum_systems')
         .select('id, name')
-        .ilike('name', '%VB-MAPP%')
+        .eq('name', 'VB-MAPP')
         .eq('active', true);
 
       if (systems) {
@@ -285,58 +275,18 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
     );
   }
 
-  // If viewing a specific assessment, route to the correct grid
+  // If viewing a specific assessment - all subtests are inside VBMAPPGrid
   if (selectedAssessment) {
-    const systemName = selectedAssessment.curriculum_system?.name || '';
-    const backHandler = () => {
-      setSelectedAssessment(null);
-      loadData();
-    };
-
-    if (systemName.includes('Barriers')) {
-      return (
-        <VBMAPPBarriersGrid
-          studentId={studentId}
-          studentName={studentName}
-          assessment={toStudentAssessment(selectedAssessment)}
-          onBack={backHandler}
-          onSave={handleSaveAssessment}
-        />
-      );
-    }
-
-    if (systemName.includes('Transition')) {
-      return (
-        <VBMAPPTransitionGrid
-          studentId={studentId}
-          studentName={studentName}
-          assessment={toStudentAssessment(selectedAssessment)}
-          onBack={backHandler}
-          onSave={handleSaveAssessment}
-        />
-      );
-    }
-
-    if (systemName.includes('EESA')) {
-      return (
-        <VBMAPPEESAGrid
-          studentId={studentId}
-          studentName={studentName}
-          assessment={toStudentAssessment(selectedAssessment)}
-          onBack={backHandler}
-          onSave={handleSaveAssessment}
-        />
-      );
-    }
-
-    // Default: Milestones
     return (
       <VBMAPPGrid
         studentId={studentId}
         studentName={studentName}
         assessment={toStudentAssessment(selectedAssessment)}
         allAssessments={getRelatedAssessments(selectedAssessment)}
-        onBack={backHandler}
+        onBack={() => {
+          setSelectedAssessment(null);
+          loadData();
+        }}
         onSave={handleSaveAssessment}
       />
     );
@@ -415,18 +365,14 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
         </div>
         
         {curriculumSystems.length > 0 && (
-          <Select onValueChange={handleCreateAssessmentRequest} disabled={creating}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder={creating ? "Creating..." : "Start New Assessment"} />
-            </SelectTrigger>
-            <SelectContent>
-              {curriculumSystems.map(sys => (
-                <SelectItem key={sys.id} value={sys.id}>
-                  {sys.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button 
+            onClick={() => handleCreateAssessmentRequest(curriculumSystems[0].id)} 
+            disabled={creating}
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {creating ? 'Creating...' : 'Start New VB-MAPP'}
+          </Button>
         )}
       </div>
 
@@ -440,8 +386,8 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
                 VB-MAPP is entered directly by clinicians
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                These assessments are NOT sent out as questionnaires. Score milestones directly, 
-                save as drafts, and finalize when complete. Scores sync with skill acquisition targets.
+                Each assessment includes all 4 subtests: Milestones, Barriers, Transition, and EESA — accessible via tabs within the grid.
+                Score milestones directly, save as drafts, and finalize when complete.
                 <strong className="block mt-1">Tip: Continue an existing assessment to add scores from a new date—they'll appear color-coded by date!</strong>
               </p>
             </div>

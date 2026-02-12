@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Save, FileText, CheckCircle2, HelpCircle, 
-  Upload, Printer, AlertTriangle, Calendar, RotateCcw, X, BarChart3
+  Upload, Printer, AlertTriangle, Calendar, RotateCcw, X, BarChart3, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,15 @@ import { useCurriculumItems, useDomains, useTargetActions } from '@/hooks/useCur
 import { AssessmentUploadMapper } from './AssessmentUploadMapper';
 import { PrintableAssessmentGrid } from './PrintableAssessmentGrid';
 import { VBMAPPReport } from './VBMAPPReport';
+import { EmbeddedBarriersGrid } from './VBMAPPBarriersGrid';
+import { EmbeddedTransitionGrid } from './VBMAPPTransitionGrid';
+import { EmbeddedEESAGrid } from './VBMAPPEESAGrid';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
+
+// Known curriculum system IDs for subtests
+const BARRIERS_SYSTEM_ID = 'a0b1c2d3-e4f5-4a6b-8c9d-100000000001';
+const TRANSITION_SYSTEM_ID = 'a0b1c2d3-e4f5-4a6b-8c9d-200000000001';
+const EESA_SYSTEM_ID = 'a0b1c2d3-e4f5-4a6b-8c9d-300000000001';
 
 interface VBMAPPGridProps {
   studentId: string;
@@ -81,6 +89,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
   const [activeLevel, setActiveLevel] = useState('Level 1');
   const [showHistoricalOverlay, setShowHistoricalOverlay] = useState(true);
   const [activeView, setActiveView] = useState<'milestones' | 'report'>('milestones');
+  const [activeSubtest, setActiveSubtest] = useState<'milestones' | 'barriers' | 'transition' | 'eesa'>('milestones');
   const [clearDomainConfirm, setClearDomainConfirm] = useState<{ domain: string; level: string } | null>(null);
 
   // Build historical scores from other assessments
@@ -277,7 +286,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h3 className="font-semibold text-lg">VB-MAPP Milestones Assessment</h3>
+            <h3 className="font-semibold text-lg">VB-MAPP Assessment</h3>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{studentName}</span>
               <span>•</span>
@@ -337,8 +346,53 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </div>
       </div>
 
-      {/* Report View */}
-      {activeView === 'report' && (
+      {/* Subtest Tabs */}
+      <div className="flex border rounded-lg overflow-hidden w-fit">
+        {(['milestones', 'barriers', 'transition', 'eesa'] as const).map(subtest => (
+          <Button
+            key={subtest}
+            variant={activeSubtest === subtest ? 'default' : 'ghost'}
+            size="sm"
+            className="rounded-none capitalize"
+            onClick={() => {
+              setActiveSubtest(subtest);
+              if (subtest !== 'milestones') setActiveView('milestones');
+            }}
+          >
+            {subtest === 'eesa' ? 'EESA' : subtest.charAt(0).toUpperCase() + subtest.slice(1)}
+          </Button>
+        ))}
+      </div>
+
+      {/* Barriers Subtest */}
+      {activeSubtest === 'barriers' && (
+        <EmbeddedBarriersGrid
+          curriculumSystemId={BARRIERS_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* Transition Subtest */}
+      {activeSubtest === 'transition' && (
+        <EmbeddedTransitionGrid
+          curriculumSystemId={TRANSITION_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* EESA Subtest */}
+      {activeSubtest === 'eesa' && (
+        <EmbeddedEESAGrid
+          curriculumSystemId={EESA_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* Report View (only for milestones subtest) */}
+      {activeSubtest === 'milestones' && activeView === 'report' && (
         <VBMAPPReport
           assessment={assessment}
           items={allItems}
@@ -358,7 +412,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
       )}
 
       {/* Milestones View */}
-      {activeView === 'milestones' && (
+      {activeSubtest === 'milestones' && activeView === 'milestones' && (
         <>
           {/* Historical Overlay Toggle */}
           {historicalScores.length > 0 && (
@@ -445,7 +499,23 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
                       <Card key={domainName}>
                         <CardHeader className="py-3">
                           <CardTitle className="text-base flex items-center justify-between">
-                            <span>{domainName}</span>
+                            <div className="flex items-center gap-2">
+                              <span>{domainName}</span>
+                              {domainName.toLowerCase().includes('echoic') && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-xs text-primary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveSubtest('eesa');
+                                  }}
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  See EESA subtest
+                                </Button>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">
                                 {masteredCount} / {items.length} mastered
