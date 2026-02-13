@@ -273,6 +273,62 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     teacher: '',
     caseManager: '',
     ssid: '',
+    fbaCompletedBy: '',
+    backgroundInfo: '',
+    studentInterview: '',
+    teacherInterview: '',
+    parentInterview: '',
+    summaryOfFindings: '',
+    hypothesisNarrative: '',
+    observationPeopleInvolved: '',
+    observationTimeOfDay: '',
+    sourcesChecklist: {
+      parentInterview: false,
+      teacherInterview: true,
+      studentInterview: false,
+      medicalRecords: false,
+      schoolRecords: false,
+      psychologicalEvaluation: false,
+      slpOtAssessment: false,
+      educationalTesting: false,
+      iepIfsp: false,
+      incidentReports: false,
+      directObservation: true,
+      anecdotalReports: false,
+      otherSource: false,
+      otherSourceText: '',
+    },
+    dataToolsChecklist: {
+      abcRecording: true,
+      intervalData: false,
+      structuredInterviews: false,
+      scatterplot: false,
+      recordReview: false,
+      otherTool: false,
+      otherToolText: '',
+    },
+    observationSetting: {
+      home: false,
+      school: true,
+      community: false,
+      noObservation: false,
+      other: false,
+      otherText: '',
+    },
+    hypothesizedFunctions: {
+      attention: false,
+      escape: false,
+      tangible: false,
+      automatic: false,
+    },
+    recommendationChecklist: {
+      noIntervention: false,
+      environmentalMods: false,
+      bipNecessary: false,
+      insufficientData: false,
+    },
+    observationDetails: [] as Array<{ date: string; activitiesObserved: string; dataCollectionMethods: string }>,
+    behaviorDetails: [] as Array<{ antecedents: string; consequences: string; hypothesizedFunction: string }>,
   });
 
   // Insurance template state
@@ -675,6 +731,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       ...prev,
       reasonForReferral: prev.reasonForReferral || selectedStudent.backgroundInfo?.referralReason || '',
       school: prev.school || (selectedStudent as any).school || '',
+      backgroundInfo: prev.backgroundInfo || selectedStudent.backgroundInfo?.educationalHistory || '',
       sourcesOfInformation: prev.sourcesOfInformation || 'Teacher interview, direct observation, ABC data collection, record review',
       dataCollectionTools: prev.dataCollectionTools || 'ABC (Antecedent-Behavior-Consequence) recording, frequency count, duration recording',
       indirectAssessment: prev.indirectAssessment || (selectedStudent.indirectAssessments?.length
@@ -693,6 +750,13 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
         ? `Automatically reinforced behavior was identified at ${(analysisData.functionStrengths.find(f => f.function === 'automatic' || f.function === 'sensory')?.percentage || 0)}% of observed occurrences.`
         : ''),
       recommendedStrategies: prev.recommendedStrategies || recommendations.join('\n'),
+      // Auto-set hypothesized function checkboxes from analysis
+      hypothesizedFunctions: {
+        attention: prev.hypothesizedFunctions.attention || analysisData.functionStrengths.some(f => f.function === 'attention'),
+        escape: prev.hypothesizedFunctions.escape || analysisData.functionStrengths.some(f => f.function === 'escape'),
+        tangible: prev.hypothesizedFunctions.tangible || analysisData.functionStrengths.some(f => f.function === 'tangible'),
+        automatic: prev.hypothesizedFunctions.automatic || analysisData.functionStrengths.some(f => f.function === 'automatic' || f.function === 'sensory'),
+      },
     }));
   }, [selectedStudent, analysisData, recommendations]);
 
@@ -764,16 +828,57 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       frequencyData.push({ behavior, count: data.count, ratePerHour: data.totalMinutes > 0 ? data.count / (data.totalMinutes / 60) : undefined });
     });
 
+    // Calculate age from DOB
+    let ageStr = '';
+    if ((selectedStudent as any).dateOfBirth) {
+      try {
+        const dob = new Date((selectedStudent as any).dateOfBirth);
+        const now = new Date();
+        const years = now.getFullYear() - dob.getFullYear();
+        const months = now.getMonth() - dob.getMonth();
+        const adjMonths = months < 0 ? months + 12 : months;
+        const adjYears = months < 0 ? years - 1 : years;
+        ageStr = `${adjYears} years ${adjMonths} months`;
+      } catch { /* ignore */ }
+    }
+
     const schoolData: SchoolFBAData = {
       studentName: selectedStudent.name,
       dateOfBirth: (selectedStudent as any).dateOfBirth,
+      age: ageStr,
       ssid: schoolFields.ssid,
       grade: selectedStudent.grade,
       school: schoolFields.school,
       teacher: schoolFields.teacher,
       caseManager: schoolFields.caseManager,
+      fbaCompletedBy: schoolFields.fbaCompletedBy || assessorName,
       reasonForReferral: schoolFields.reasonForReferral,
-      targetBehaviors: selectedStudent.behaviors.map(b => ({ name: b.name, operationalDefinition: b.operationalDefinition || '' })),
+      targetBehaviors: selectedStudent.behaviors.map((b, i) => ({
+        name: b.name,
+        operationalDefinition: b.operationalDefinition || '',
+        antecedents: schoolFields.behaviorDetails[i]?.antecedents || '',
+        consequences: schoolFields.behaviorDetails[i]?.consequences || '',
+        hypothesizedFunction: schoolFields.behaviorDetails[i]?.hypothesizedFunction || '',
+      })),
+      sourcesChecklist: schoolFields.sourcesChecklist,
+      backgroundInfo: schoolFields.backgroundInfo,
+      dataToolsChecklist: schoolFields.dataToolsChecklist,
+      studentInterview: schoolFields.studentInterview,
+      teacherInterview: schoolFields.teacherInterview,
+      parentInterview: schoolFields.parentInterview,
+      observationSetting: schoolFields.observationSetting,
+      observationPeopleInvolved: schoolFields.observationPeopleInvolved,
+      observationTimeOfDay: schoolFields.observationTimeOfDay,
+      observationDetails: schoolFields.observationDetails,
+      directObservationNarrative: schoolFields.directObservationNarrative,
+      abcSummary,
+      frequencyData,
+      summaryOfFindings: schoolFields.summaryOfFindings,
+      hypothesizedFunctions: schoolFields.hypothesizedFunctions,
+      hypothesisNarrative: schoolFields.hypothesisNarrative,
+      recommendedStrategies: schoolFields.recommendedStrategies,
+      recommendationChecklist: schoolFields.recommendationChecklist,
+      // Legacy fields
       sourcesOfInformation: schoolFields.sourcesOfInformation,
       dataCollectionTools: schoolFields.dataCollectionTools,
       indirectAssessment: schoolFields.indirectAssessment,
@@ -784,8 +889,6 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
         totalObservationMinutes: analysisData.totalObservationMinutes,
         narrative: schoolFields.directObservationNarrative,
       },
-      abcSummary,
-      frequencyData,
       functionAnalysis: {
         primaryFunction: analysisData.primaryFunction?.function || 'unknown',
         primaryPercentage: analysisData.primaryFunction?.percentage || 0,
@@ -798,7 +901,6 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       escapeNarrative: schoolFields.escapeNarrative,
       tangibleNarrative: schoolFields.tangibleNarrative,
       automaticNarrative: schoolFields.automaticNarrative,
-      recommendedStrategies: schoolFields.recommendedStrategies,
       recommendations: schoolFields.recommendationsText,
       analystName: assessorName,
       analystCredentials: assessorTitle,
@@ -1371,7 +1473,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                   </CardTitle>
                   <CardDescription className="text-xs">All fields are pre-filled from collected data and editable</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
+                  {/* Student Info Row */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">School</Label>
@@ -1389,56 +1492,335 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                       <Label className="text-xs">Case Manager</Label>
                       <Input className="h-8 text-sm" value={schoolFields.caseManager} onChange={e => setSchoolFields(p => ({ ...p, caseManager: e.target.value }))} placeholder="Case manager name" />
                     </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">FBA Completed By</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.fbaCompletedBy} onChange={e => setSchoolFields(p => ({ ...p, fbaCompletedBy: e.target.value }))} placeholder="Name, credentials" />
+                    </div>
                   </div>
+
                   <Separator />
+
+                  {/* 1. Reason for Referral */}
                   <div className="space-y-1">
-                    <Label className="text-xs">Reason for Referral</Label>
-                    <Textarea className="text-sm" rows={2} value={schoolFields.reasonForReferral} onChange={e => setSchoolFields(p => ({ ...p, reasonForReferral: e.target.value }))} />
+                    <Label className="text-xs font-medium">1. Reason for Referral</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.reasonForReferral} onChange={e => setSchoolFields(p => ({ ...p, reasonForReferral: e.target.value }))} />
                   </div>
+
+                  {/* 2. Sources of Information - Checkbox Grid */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">2. Sources of Information</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {([
+                        ['parentInterview', 'Parent Interview'],
+                        ['teacherInterview', 'Teacher Interview'],
+                        ['studentInterview', 'Student Interview'],
+                        ['medicalRecords', 'Medical Records'],
+                        ['schoolRecords', 'School Records'],
+                        ['psychologicalEvaluation', 'Psychological Evaluation'],
+                        ['slpOtAssessment', 'SLP/OT Assessment'],
+                        ['educationalTesting', 'Educational Testing'],
+                        ['iepIfsp', 'IEP/IFSP'],
+                        ['incidentReports', 'Incident Reports'],
+                        ['directObservation', 'Direct Observation'],
+                        ['anecdotalReports', 'Anecdotal Reports'],
+                      ] as const).map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`src-${key}`}
+                            checked={schoolFields.sourcesChecklist[key]}
+                            onCheckedChange={(checked) => setSchoolFields(p => ({
+                              ...p,
+                              sourcesChecklist: { ...p.sourcesChecklist, [key]: !!checked },
+                            }))}
+                          />
+                          <Label htmlFor={`src-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2 col-span-2 md:col-span-3">
+                        <Checkbox
+                          id="src-other"
+                          checked={schoolFields.sourcesChecklist.otherSource}
+                          onCheckedChange={(checked) => setSchoolFields(p => ({
+                            ...p,
+                            sourcesChecklist: { ...p.sourcesChecklist, otherSource: !!checked },
+                          }))}
+                        />
+                        <Label htmlFor="src-other" className="text-xs cursor-pointer">Other:</Label>
+                        <Input className="h-6 text-xs flex-1" value={schoolFields.sourcesChecklist.otherSourceText} onChange={e => setSchoolFields(p => ({ ...p, sourcesChecklist: { ...p.sourcesChecklist, otherSourceText: e.target.value } }))} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Background Information */}
                   <div className="space-y-1">
-                    <Label className="text-xs">Sources of Information</Label>
-                    <Textarea className="text-sm" rows={2} value={schoolFields.sourcesOfInformation} onChange={e => setSchoolFields(p => ({ ...p, sourcesOfInformation: e.target.value }))} />
+                    <Label className="text-xs font-medium">3. Relevant Background Information</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.backgroundInfo} onChange={e => setSchoolFields(p => ({ ...p, backgroundInfo: e.target.value }))} />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Data Collection Tools</Label>
-                    <Textarea className="text-sm" rows={2} value={schoolFields.dataCollectionTools} onChange={e => setSchoolFields(p => ({ ...p, dataCollectionTools: e.target.value }))} />
+
+                  {/* 4. Data Collection Tools - Checkbox Grid */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">4. Data Collection Tools</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {([
+                        ['abcRecording', 'ABC Recording'],
+                        ['intervalData', 'Interval Data Recording'],
+                        ['structuredInterviews', 'Structured Interviews'],
+                        ['scatterplot', 'Scatterplot'],
+                        ['recordReview', 'Record Review'],
+                      ] as const).map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`tool-${key}`}
+                            checked={schoolFields.dataToolsChecklist[key]}
+                            onCheckedChange={(checked) => setSchoolFields(p => ({
+                              ...p,
+                              dataToolsChecklist: { ...p.dataToolsChecklist, [key]: !!checked },
+                            }))}
+                          />
+                          <Label htmlFor={`tool-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2 col-span-2 md:col-span-3">
+                        <Checkbox
+                          id="tool-other"
+                          checked={schoolFields.dataToolsChecklist.otherTool}
+                          onCheckedChange={(checked) => setSchoolFields(p => ({
+                            ...p,
+                            dataToolsChecklist: { ...p.dataToolsChecklist, otherTool: !!checked },
+                          }))}
+                        />
+                        <Label htmlFor="tool-other" className="text-xs cursor-pointer">Other:</Label>
+                        <Input className="h-6 text-xs flex-1" value={schoolFields.dataToolsChecklist.otherToolText} onChange={e => setSchoolFields(p => ({ ...p, dataToolsChecklist: { ...p.dataToolsChecklist, otherToolText: e.target.value } }))} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Indirect Assessment (Teacher Interview)</Label>
-                    <Textarea className="text-sm" rows={3} value={schoolFields.indirectAssessment} onChange={e => setSchoolFields(p => ({ ...p, indirectAssessment: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Direct Observation Narrative</Label>
-                    <Textarea className="text-sm" rows={3} value={schoolFields.directObservationNarrative} onChange={e => setSchoolFields(p => ({ ...p, directObservationNarrative: e.target.value }))} placeholder="Describe observation context and findings..." />
-                  </div>
+
                   <Separator />
-                  <Label className="text-xs font-medium">Function Narratives</Label>
+
+                  {/* 5. Indirect Assessment - Split Interviews */}
+                  <Label className="text-xs font-medium">5. Indirect Assessment</Label>
                   <div className="space-y-2">
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Attention</Label>
-                      <Textarea className="text-sm" rows={2} value={schoolFields.attentionNarrative} onChange={e => setSchoolFields(p => ({ ...p, attentionNarrative: e.target.value }))} />
+                      <Label className="text-xs text-muted-foreground">Student Interview</Label>
+                      <Textarea className="text-sm" rows={3} value={schoolFields.studentInterview} onChange={e => setSchoolFields(p => ({ ...p, studentInterview: e.target.value }))} placeholder="Assessment of behavior from student perspective..." />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Escape/Avoidance</Label>
-                      <Textarea className="text-sm" rows={2} value={schoolFields.escapeNarrative} onChange={e => setSchoolFields(p => ({ ...p, escapeNarrative: e.target.value }))} />
+                      <Label className="text-xs text-muted-foreground">Teacher Interview</Label>
+                      <Textarea className="text-sm" rows={3} value={schoolFields.teacherInterview} onChange={e => setSchoolFields(p => ({ ...p, teacherInterview: e.target.value }))} placeholder="Teacher observations and insights..." />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Tangible/Access</Label>
-                      <Textarea className="text-sm" rows={2} value={schoolFields.tangibleNarrative} onChange={e => setSchoolFields(p => ({ ...p, tangibleNarrative: e.target.value }))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Automatic Reinforcement</Label>
-                      <Textarea className="text-sm" rows={2} value={schoolFields.automaticNarrative} onChange={e => setSchoolFields(p => ({ ...p, automaticNarrative: e.target.value }))} />
+                      <Label className="text-xs text-muted-foreground">Parent/Caregiver Interview</Label>
+                      <Textarea className="text-sm" rows={3} value={schoolFields.parentInterview} onChange={e => setSchoolFields(p => ({ ...p, parentInterview: e.target.value }))} placeholder="Parent/caregiver input..." />
                     </div>
                   </div>
+
                   <Separator />
-                  <div className="space-y-1">
-                    <Label className="text-xs">Recommended Strategies</Label>
-                    <Textarea className="text-sm" rows={4} value={schoolFields.recommendedStrategies} onChange={e => setSchoolFields(p => ({ ...p, recommendedStrategies: e.target.value }))} />
+
+                  {/* 6. Direct Assessment - Observation Setting */}
+                  <Label className="text-xs font-medium">6. Direct Assessment - Observation Setting</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['home', 'Home'],
+                      ['school', 'School'],
+                      ['community', 'Community'],
+                      ['noObservation', 'No Observation'],
+                    ] as const).map(([key, label]) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`obs-${key}`}
+                          checked={schoolFields.observationSetting[key]}
+                          onCheckedChange={(checked) => setSchoolFields(p => ({
+                            ...p,
+                            observationSetting: { ...p.observationSetting, [key]: !!checked },
+                          }))}
+                        />
+                        <Label htmlFor={`obs-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 col-span-2">
+                      <Checkbox
+                        id="obs-other"
+                        checked={schoolFields.observationSetting.other}
+                        onCheckedChange={(checked) => setSchoolFields(p => ({
+                          ...p,
+                          observationSetting: { ...p.observationSetting, other: !!checked },
+                        }))}
+                      />
+                      <Label htmlFor="obs-other" className="text-xs cursor-pointer">Other:</Label>
+                      <Input className="h-6 text-xs flex-1" value={schoolFields.observationSetting.otherText} onChange={e => setSchoolFields(p => ({ ...p, observationSetting: { ...p.observationSetting, otherText: e.target.value } }))} />
+                    </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">People Involved</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.observationPeopleInvolved} onChange={e => setSchoolFields(p => ({ ...p, observationPeopleInvolved: e.target.value }))} placeholder="BCBA, Teacher, Aide..." />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Time of Day</Label>
+                      <Input className="h-8 text-sm" value={schoolFields.observationTimeOfDay} onChange={e => setSchoolFields(p => ({ ...p, observationTimeOfDay: e.target.value }))} placeholder="Morning, Throughout school day..." />
+                    </div>
+                  </div>
+
+                  {/* Observation Details Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Observation Details</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() => setSchoolFields(p => ({
+                          ...p,
+                          observationDetails: [...p.observationDetails, { date: '', activitiesObserved: '', dataCollectionMethods: '' }],
+                        }))}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Row
+                      </Button>
+                    </div>
+                    {schoolFields.observationDetails.map((od, idx) => (
+                      <div key={idx} className="grid grid-cols-[100px_1fr_1fr_30px] gap-2 items-start">
+                        <Input className="h-7 text-xs" value={od.date} onChange={e => {
+                          const updated = [...schoolFields.observationDetails];
+                          updated[idx] = { ...updated[idx], date: e.target.value };
+                          setSchoolFields(p => ({ ...p, observationDetails: updated }));
+                        }} placeholder="Date" />
+                        <Input className="h-7 text-xs" value={od.activitiesObserved} onChange={e => {
+                          const updated = [...schoolFields.observationDetails];
+                          updated[idx] = { ...updated[idx], activitiesObserved: e.target.value };
+                          setSchoolFields(p => ({ ...p, observationDetails: updated }));
+                        }} placeholder="Activities observed" />
+                        <Input className="h-7 text-xs" value={od.dataCollectionMethods} onChange={e => {
+                          const updated = [...schoolFields.observationDetails];
+                          updated[idx] = { ...updated[idx], dataCollectionMethods: e.target.value };
+                          setSchoolFields(p => ({ ...p, observationDetails: updated }));
+                        }} placeholder="Data collection methods" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                          setSchoolFields(p => ({ ...p, observationDetails: p.observationDetails.filter((_, i) => i !== idx) }));
+                        }}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="space-y-1">
-                    <Label className="text-xs">Additional Recommendations</Label>
-                    <Textarea className="text-sm" rows={3} value={schoolFields.recommendationsText} onChange={e => setSchoolFields(p => ({ ...p, recommendationsText: e.target.value }))} />
+                    <Label className="text-xs">Summary of Direct Observation</Label>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.directObservationNarrative} onChange={e => setSchoolFields(p => ({ ...p, directObservationNarrative: e.target.value }))} placeholder="Describe observation context and findings..." />
+                  </div>
+
+                  <Separator />
+
+                  {/* Per-behavior details */}
+                  {selectedStudent.behaviors.length > 0 && (
+                    <div className="space-y-3">
+                      <Label className="text-xs font-medium">Target Behavior Details</Label>
+                      {selectedStudent.behaviors.map((beh, idx) => (
+                        <Collapsible key={beh.id}>
+                          <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium w-full text-left p-2 rounded border hover:bg-muted/50">
+                            <Target className="w-3 h-3" />
+                            {beh.name}
+                            <ChevronDown className="w-3 h-3 ml-auto" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="space-y-2 pt-2 pl-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Possible Antecedents</Label>
+                              <Textarea className="text-sm" rows={2} value={schoolFields.behaviorDetails[idx]?.antecedents || ''} onChange={e => {
+                                const updated = [...schoolFields.behaviorDetails];
+                                while (updated.length <= idx) updated.push({ antecedents: '', consequences: '', hypothesizedFunction: '' });
+                                updated[idx] = { ...updated[idx], antecedents: e.target.value };
+                                setSchoolFields(p => ({ ...p, behaviorDetails: updated }));
+                              }} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Possible Consequences</Label>
+                              <Textarea className="text-sm" rows={2} value={schoolFields.behaviorDetails[idx]?.consequences || ''} onChange={e => {
+                                const updated = [...schoolFields.behaviorDetails];
+                                while (updated.length <= idx) updated.push({ antecedents: '', consequences: '', hypothesizedFunction: '' });
+                                updated[idx] = { ...updated[idx], consequences: e.target.value };
+                                setSchoolFields(p => ({ ...p, behaviorDetails: updated }));
+                              }} />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Hypothesized Function</Label>
+                              <Input className="h-7 text-xs" value={schoolFields.behaviorDetails[idx]?.hypothesizedFunction || ''} onChange={e => {
+                                const updated = [...schoolFields.behaviorDetails];
+                                while (updated.length <= idx) updated.push({ antecedents: '', consequences: '', hypothesizedFunction: '' });
+                                updated[idx] = { ...updated[idx], hypothesizedFunction: e.target.value };
+                                setSchoolFields(p => ({ ...p, behaviorDetails: updated }));
+                              }} />
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* Summary of Findings */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Summary of Findings</Label>
+                    <Textarea className="text-sm" rows={4} value={schoolFields.summaryOfFindings} onChange={e => setSchoolFields(p => ({ ...p, summaryOfFindings: e.target.value }))} placeholder="Overall summary of assessment findings..." />
+                  </div>
+
+                  {/* Hypothesized Function Checkboxes */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Hypothesized Function</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        ['attention', 'Attention'],
+                        ['escape', 'Escape'],
+                        ['tangible', 'Access to Tangibles'],
+                        ['automatic', 'Automatic Reinforcement'],
+                      ] as const).map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`fn-${key}`}
+                            checked={schoolFields.hypothesizedFunctions[key]}
+                            onCheckedChange={(checked) => setSchoolFields(p => ({
+                              ...p,
+                              hypothesizedFunctions: { ...p.hypothesizedFunctions, [key]: !!checked },
+                            }))}
+                          />
+                          <Label htmlFor={`fn-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                        </div>
+                      ))}
+                    </div>
+                    <Textarea className="text-sm" rows={3} value={schoolFields.hypothesisNarrative} onChange={e => setSchoolFields(p => ({ ...p, hypothesisNarrative: e.target.value }))} placeholder="Narrative explaining the hypothesized functions..." />
+                  </div>
+
+                  <Separator />
+
+                  {/* Recommended Strategies */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium">Recommended Strategies</Label>
+                    <Textarea className="text-sm" rows={4} value={schoolFields.recommendedStrategies} onChange={e => setSchoolFields(p => ({ ...p, recommendedStrategies: e.target.value }))} placeholder="Enter numbered strategies, one per line..." />
+                  </div>
+
+                  {/* Recommendation Checkboxes */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Recommendations</Label>
+                    <div className="space-y-2">
+                      {([
+                        ['noIntervention', "The student's behaviors do not require further intervention."],
+                        ['environmentalMods', "The student's behaviors suggest the need for environmental modifications/accommodations only."],
+                        ['bipNecessary', "The student's behaviors suggest a Behavior Intervention Plan is necessary."],
+                        ['insufficientData', 'Existing data is insufficient for a complete functional behavior assessment.'],
+                      ] as const).map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`rec-${key}`}
+                            checked={schoolFields.recommendationChecklist[key]}
+                            onCheckedChange={(checked) => setSchoolFields(p => ({
+                              ...p,
+                              recommendationChecklist: { ...p.recommendationChecklist, [key]: !!checked },
+                            }))}
+                          />
+                          <Label htmlFor={`rec-${key}`} className="text-xs cursor-pointer">{label}</Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
