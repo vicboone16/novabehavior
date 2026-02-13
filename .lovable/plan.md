@@ -1,139 +1,103 @@
 
 
-# Assessment Report Generator with AI-Powered Narratives and Recommendations
+# Overhaul School FBA Export to Match District Templates
 
-## Overview
+## Problem
 
-This plan adds a professional assessment report export system for VB-MAPP, ABLLS-R, and all 6 AFLS modules. Each report follows the exact formatting from your uploaded templates (cover page with client/provider info, instrument description, domain-by-domain score narratives, graphs, summary, and recommendations). AI (via Lovable AI) generates clinical narratives explaining what each score means for that student and produces individualized recommendations.
+The current School FBA export produces a document that does not match the formatting of the actual school district templates you use. Comparing the Jayden export (system output) with your MatCal, LuSa, and JM templates reveals significant structural and formatting gaps.
 
----
+## Key Differences Found
 
-## What the Templates Show (Common Structure)
+| Area | Current Output | Template Format |
+|------|---------------|-----------------|
+| Title/Header | "FUNCTIONAL BEHAVIOR ASSESSMENT" centered, "School-Based Report" subtitle | "CONFIDENTIAL Functional Behavior Assessment" at top |
+| Student Info | Label-value table with rows | Compact block: Name, SSID, DOB, Age, School, Grade, Case Manager, Date, FBA Completed By |
+| Sources of Information | Plain text paragraph | Checkbox grid table (Parent Interview, Teacher Interview, Student Interview, Medical Records, etc.) |
+| Data Collection Tools | Plain text paragraph | Checkbox grid table (ABC Recording, Interval Data, Structured Interviews, Scatterplot, etc.) |
+| Observation Setting | Label-value rows | Checkbox format (Home, School, Community, Other) with People Involved and Time of Day |
+| FBA Observation Details | Not present | Table with Date, Activities Observed, Data Collection Methods per session |
+| Target Behaviors | Simple name/definition/baseline table | Each behavior gets its own block with Operational Definition, Possible Antecedents, Possible Consequences, Hypothesized Function |
+| Indirect Assessment | Single text area | Separate subsections: Teacher Interview, Student Interview, Parent/Caregiver Interview |
+| Summary of Findings | Not present | Dedicated narrative section before Hypothesized Function |
+| Hypothesized Function | Italic block quote with function narratives table | Checkbox list (Attention, Escape, Tangible, Automatic) plus narrative paragraph |
+| Recommendations | Plain text | Checkbox options (no intervention, environmental mods, BIP necessary, insufficient data) plus numbered strategy list |
+| Signature | Simple line with name/date | "Respectfully Submitted" + signature line + name/title + date |
 
-All 8 uploaded templates share an identical structure:
+## Plan
 
-1. **Cover page**: Client Information table + Provider Information table (name, DOB, address, diagnosis, evaluator, NPI, Tax ID, etc.)
-2. **Standard sections**: Reason for Referral, Background, Parent/Caregiver Interview, Client Interview, Teacher Interview, Behavioral Observations
-3. **Instrument description paragraph** (boilerplate text specific to VB-MAPP, ABLLS-R, or AFLS module)
-4. **Graph placeholder** ("Add graph here for [module]")
-5. **Domain-by-domain score narratives** (one heading per domain/skill area with narrative text below)
-6. **Summary**
-7. **Recommendations**
-8. **Signature block** (BCBA name, NPI, certification number, signature line, date)
+### 1. Rewrite `src/lib/schoolFBAExport.ts`
 
----
+Restructure the entire document builder to match the template format:
 
-## Architecture
+- **Header**: "CONFIDENTIAL Functional Behavior Assessment" left-aligned, bold
+- **Student Information block**: Compact table matching template layout (add Age calculated from DOB, add "FBA Completed By" field)
+- **Section 1 - Reason for Referral**: Numbered heading, narrative paragraph
+- **Section 2 - Sources of Information**: Checkbox grid table (3-column layout with check/uncheck symbols)
+- **Section 3 - Relevant Background Information**: Narrative paragraph
+- **Section 4 - Data Collection Tools**: Checkbox grid table
+- **Section 5 - Indirect Assessment**: Split into subsections (Teacher Interview, Student Interview, Parent/Caregiver Interview) each with their own editable narrative
+- **Section 6 - Direct Assessment**: Observation setting checkboxes, People Involved, Time of Day, then FBA Observation Details table (Date | Activities | Methods), then Summary of Direct Observation narrative
+- **Target Behaviors section**: Each behavior gets its own heading block with Operational Definition, Possible Antecedents, Possible Consequences, Hypothesized Function -- matching the JM template format
+- **Summary of Findings**: New narrative section
+- **Hypothesized Function**: Checkbox list plus narrative paragraph explaining what functions mean for this student
+- **Recommended Strategies**: Numbered list of strategies
+- **Recommendations**: Checkbox options (no further intervention, environmental mods only, BIP necessary, insufficient data) plus any additional text
+- **Signature block**: "Respectfully Submitted" + line + name, credentials + date
 
-### 1. New Edge Function: `generate-assessment-report`
+### 2. Update `SchoolFBAData` Interface
 
-This edge function receives the student's scored assessment data and uses Lovable AI to produce:
-- **Score explanations**: For each domain, a 2-3 sentence clinical narrative explaining what the raw score and mastery percentage mean functionally for that student
-- **Summary**: An overall clinical summary paragraph
-- **Recommendations**: 3-8 specific, actionable recommendations based on strengths and priority areas
+Add new fields:
 
-**Input payload:**
-```text
-{
-  assessmentType: "vbmapp" | "ablls-r" | "afls",
-  aflsModule?: "bls" | "hs" | "ss" | "cp" | "ils" | "vs",
-  studentName: string,
-  studentAge: string,
-  domainScores: [{ domain, raw, max, percent, status }],
-  overallMastery: number,
-  strengths: string[],
-  priorities: string[]
-}
-```
+- `age` (string, calculated from DOB)
+- `fbaCompletedBy` (string)
+- `sourcesChecklist` (object with boolean flags for each source type)
+- `dataToolsChecklist` (object with boolean flags for each tool)
+- `observationSetting` (object with checkboxes: home, school, community, other)
+- `observationPeopleInvolved` (string)
+- `observationTimeOfDay` (string)
+- `observationDetails` (array of date/activities/methods per session)
+- `teacherInterview` (string)
+- `studentInterview` (string)
+- `parentInterview` (string)
+- `backgroundInfo` (string)
+- `summaryOfFindings` (string)
+- `hypothesizedFunctions` (object with boolean flags: attention, escape, tangible, automatic)
+- `recommendationChecklist` (object with boolean flags for each recommendation type)
+- Per-behavior antecedents, consequences, and hypothesized functions
 
-**Output:**
-```text
-{
-  domainNarratives: { [domain]: string },
-  summary: string,
-  recommendations: string[]
-}
-```
+### 3. Update `FBAReportGenerator.tsx` School Fields
 
-The prompt instructs the model to write in third-person clinical language, reference specific score percentages, and tie recommendations to the identified priority areas. The model used will be `google/gemini-3-flash-preview` for speed and cost efficiency.
+Add corresponding editable UI fields in the School FBA section:
 
-### 2. New Export Utility: `src/lib/assessmentReportExport.ts`
+- Checkbox toggles for Sources of Information and Data Collection Tools
+- Separate text areas for Teacher Interview, Student Interview, Parent Interview
+- Background Information text area
+- Observation setting checkboxes and details table
+- Per-behavior antecedent/consequence/function fields
+- Summary of Findings text area
+- Hypothesized Function checkboxes
+- Recommendation checkboxes
+- "FBA Completed By" field
 
-A `.docx` generation engine that produces reports matching the uploaded template formatting:
+All fields will be pre-populated with available data from the system (editable as suggestions), matching the current "All editable with suggestions" pattern.
 
-- **Cover page**: Client Information and Provider Information in a structured table layout
-- **Narrative sections**: Reason for Referral, Background, interviews, and behavioral observations as editable text fields
-- **Instrument description**: Static boilerplate paragraph matching each assessment type
-- **Graph placeholder**: Space reserved for chart images (base64 if available from the tracker grid)
-- **Domain sections**: Each domain as a Heading 1 with the AI-generated narrative below
-- **Summary and Recommendations**: AI-generated content, editable before export
-- **Signature block**: BCBA name, NPI, certification number, signature line, date
+### 4. Section Toggles
 
-Separate builder functions:
-- `buildVBMAPPReport()` -- includes Milestones domains, Barriers section, Transitions section
-- `buildABLLSRReport()` -- 25 domain headings (A through Z)
-- `buildAFLSReport(module)` -- Module-specific skill areas per template
+Each section remains toggleable on/off (existing pattern), so clinicians can include or exclude sections as needed for different districts.
 
-### 3. New UI Component: `src/components/assessment/AssessmentReportExport.tsx`
+## Technical Details
 
-Added as a button/tab within the existing `InternalTrackerReport` and `VBMAPPGrid` components. Workflow:
-
-1. Click "Generate Report" (the existing "Export PDF" button becomes this)
-2. Modal opens showing:
-   - **Client Info fields** (pre-filled from student profile, all editable)
-   - **Provider Info fields** (pre-filled from agency/user profile, all editable)
-   - **Narrative sections** (Reason for Referral, Background, etc.) as editable text areas
-   - **"Generate AI Narratives" button** -- calls the edge function, populates domain narratives + summary + recommendations
-   - **All AI-generated text is editable** before final export
-   - **Section toggles** to include/exclude any section
-3. Click "Download .docx" to generate the final document
-
-### 4. Data the System Already Has (Auto-Population)
-
-From the existing `InternalTrackerReport` component and assessment records:
-- Student name, DOB from student profile
-- All domain scores (raw, max, mastery %) from `results_json` in `student_assessments`
-- Strengths and priority areas (already computed in `InternalTrackerReport`)
-- Date administered, evaluator name, assessment status
-- Agency/provider info from user profile and `report_branding`
-
-### 5. What Needs Manual Input
-
-These fields appear in the templates but are not currently stored:
-- Provider Tax ID, NPI (added as editable fields, saved to user profile if desired)
-- Parent/guardian names, phone, address
-- Diagnosis code
-- Reason for Referral narrative
-- Background narrative
-- Parent/Caregiver Interview narrative
-- Client Interview narrative
-- Teacher Interview narrative
-- Behavioral Observations narrative
-
-All of these will be editable text areas in the generation modal, and the system will remember previously entered values per student for convenience.
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/generate-assessment-report/index.ts` | Edge function calling Lovable AI for narratives and recommendations |
-| `src/lib/assessmentReportExport.ts` | Word document generation matching uploaded template formatting |
-| `src/components/assessment/AssessmentReportExport.tsx` | UI modal for editing fields and triggering export |
-
-## Files to Modify
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/assessment/InternalTrackerReport.tsx` | Replace "Export PDF" button with AssessmentReportExport trigger |
-| `src/components/skills/VBMAPPGrid.tsx` | Add report export button for VB-MAPP assessments |
-| `supabase/config.toml` | Register the new edge function |
+| `src/lib/schoolFBAExport.ts` | Complete rewrite of document structure to match template formatting |
+| `src/components/FBAReportGenerator.tsx` | Add new school fields for checklist items, per-behavior details, split interview sections, observation details table, summary of findings, recommendation checkboxes |
 
-## Execution Order
+### Execution Order
 
-1. Create the edge function for AI narrative generation
-2. Create the `.docx` export utility with template-matched formatting
-3. Create the report export UI component
-4. Wire into existing tracker report views (AFLS, ABLLS-R, VB-MAPP)
+1. Update the `SchoolFBAData` interface with all new fields
+2. Rewrite the document builder in `schoolFBAExport.ts` to match the template structure
+3. Update the UI in `FBAReportGenerator.tsx` to expose the new editable fields
+4. Wire the data flow from the UI to the export engine
 
