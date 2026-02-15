@@ -1,6 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   Table, TableRow, TableCell, WidthType, BorderStyle, Footer,
+  ImageRun,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
@@ -78,7 +79,7 @@ function checkboxGrid(items: Array<{ label: string; checked: boolean }>, cols: n
     }
     rows.push(new TableRow({ children: cells }));
   }
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
+  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows, alignment: AlignmentType.CENTER });
 }
 
 // ─── Data Interface ───────────────────────────────────────────────────
@@ -226,6 +227,21 @@ export interface SchoolFBAData {
     topConsequences: Array<{ value: string; percentage: number }>;
   };
 
+  // Chart images (PNG Uint8Array buffers)
+  chartImages?: Array<{
+    buffer: Uint8Array;
+    width: number;
+    height: number;
+    title: string;
+  }>;
+
+  // Indirect assessment data for charts
+  indirectAssessmentResults?: Array<{
+    type: string;
+    targetBehavior: string;
+    scores: { attention: number; escape: number; tangible: number; sensory: number };
+  }>;
+
   // Signature
   analystName: string;
   analystCredentials: string;
@@ -253,6 +269,7 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
   // ═══ STUDENT INFORMATION BLOCK ═══
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    alignment: AlignmentType.CENTER,
     rows: [
       infoRow('Student Name:', data.studentName),
       infoRow('SSID:', data.ssid || ''),
@@ -343,6 +360,7 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
   ];
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    alignment: AlignmentType.CENTER,
     rows: [
       new TableRow({
         children: [
@@ -397,6 +415,7 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
     children.push(new Paragraph({ children: [new TextRun({ text: 'FBA Observation Details', bold: true, size: 20 })], spacing: { before: 200, after: 100 } }));
     children.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      alignment: AlignmentType.CENTER,
       rows: [
         new TableRow({
           children: [
@@ -425,6 +444,7 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
     children.push(new Paragraph({ children: [new TextRun({ text: 'Frequency Data Summary', bold: true, size: 20 })], spacing: { before: 200, after: 100 } }));
     children.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      alignment: AlignmentType.CENTER,
       rows: [
         new TableRow({
           children: [
@@ -449,6 +469,7 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
     children.push(new Paragraph({ children: [new TextRun({ text: 'ABC Data Summary', bold: true, size: 20 })], spacing: { before: 200, after: 100 } }));
     children.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
+      alignment: AlignmentType.CENTER,
       rows: [
         new TableRow({
           children: [
@@ -470,7 +491,30 @@ export async function generateSchoolFBAReport(data: SchoolFBAData): Promise<void
     }));
   }
 
-  // ═══ TARGET BEHAVIORS (per-behavior blocks) ═══
+  // ═══ VISUAL ANALYSIS CHARTS ═══
+  if (data.chartImages && data.chartImages.length > 0) {
+    children.push(heading('Visual Analysis'));
+    for (const chart of data.chartImages) {
+      if (chart.buffer.length === 0) continue;
+      children.push(new Paragraph({
+        children: [new TextRun({ text: chart.title, bold: true, size: 20 })],
+        spacing: { before: 200, after: 80 },
+        alignment: AlignmentType.CENTER,
+      }));
+      children.push(new Paragraph({
+        children: [
+          new ImageRun({
+            data: chart.buffer,
+            transformation: { width: chart.width, height: chart.height },
+            type: 'png',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      }));
+    }
+  }
+
   if (data.targetBehaviors.length > 0) {
     data.targetBehaviors.forEach((beh, idx) => {
       children.push(heading(`Target Behavior ${idx + 1}: ${beh.name}`));
