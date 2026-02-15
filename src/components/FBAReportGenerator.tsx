@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { generateInsuranceReport } from '@/lib/insuranceReportExport';
 import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
+import { renderFunctionBarChart, renderFrequencyBarChart, renderIndirectAssessmentChart } from '@/lib/fbaChartRenderer';
 import type { PayerReportTemplate, TemplateSection } from '@/types/reportTemplates';
 
 interface FBAReportGeneratorProps {
@@ -842,6 +843,59 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       } catch { /* ignore */ }
     }
 
+    // Generate chart images
+    const chartImages: SchoolFBAData['chartImages'] = [];
+
+    // Function analysis chart
+    if (analysisData.functionStrengths.length > 0) {
+      try {
+        const fnChart = await renderFunctionBarChart(
+          analysisData.functionStrengths.map(fs => ({
+            label: fs.label,
+            value: fs.count,
+            percentage: fs.percentage,
+          })),
+          'Hypothesized Function Analysis'
+        );
+        chartImages.push({ ...fnChart, title: 'Function Analysis' });
+      } catch { /* skip chart on error */ }
+    }
+
+    // Antecedent frequency chart
+    if (analysisData.topAntecedents.length > 0) {
+      try {
+        const antChart = await renderFrequencyBarChart(
+          analysisData.topAntecedents.map(a => ({ label: a.value, count: a.count, percentage: a.percentage })),
+          'Top Antecedents'
+        );
+        chartImages.push({ ...antChart, title: 'Antecedent Frequency' });
+      } catch { /* skip */ }
+    }
+
+    // Consequence frequency chart
+    if (analysisData.topConsequences.length > 0) {
+      try {
+        const conChart = await renderFrequencyBarChart(
+          analysisData.topConsequences.map(c => ({ label: c.value, count: c.count, percentage: c.percentage })),
+          'Top Consequences'
+        );
+        chartImages.push({ ...conChart, title: 'Consequence Frequency' });
+      } catch { /* skip */ }
+    }
+
+    // Indirect assessment charts (FAST, MAS, QABF)
+    const savedAssessments = selectedStudent.indirectAssessments || [];
+    for (const assessment of savedAssessments) {
+      try {
+        const iaChart = await renderIndirectAssessmentChart(
+          assessment.scores,
+          assessment.type,
+          assessment.targetBehavior
+        );
+        chartImages.push({ ...iaChart, title: `${assessment.type} – ${assessment.targetBehavior}` });
+      } catch { /* skip */ }
+    }
+
     const schoolData: SchoolFBAData = {
       studentName: selectedStudent.name,
       dateOfBirth: (selectedStudent as any).dateOfBirth,
@@ -873,6 +927,12 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
       directObservationNarrative: schoolFields.directObservationNarrative,
       abcSummary,
       frequencyData,
+      chartImages,
+      indirectAssessmentResults: savedAssessments.map(a => ({
+        type: a.type,
+        targetBehavior: a.targetBehavior,
+        scores: a.scores,
+      })),
       summaryOfFindings: schoolFields.summaryOfFindings,
       hypothesizedFunctions: schoolFields.hypothesizedFunctions,
       hypothesisNarrative: schoolFields.hypothesisNarrative,
