@@ -9983,6 +9983,135 @@ export type Database = {
           },
         ]
       }
+      vb_mapp_assessment_results: {
+        Row: {
+          assessment_id: string
+          fill_state: Database["public"]["Enums"]["vb_mapp_fill_state"]
+          item_id: string
+          notes_item: string | null
+          result_id: string
+          tested_circle: boolean
+          updated_at: string
+          updated_in_assessment_id: string | null
+        }
+        Insert: {
+          assessment_id: string
+          fill_state?: Database["public"]["Enums"]["vb_mapp_fill_state"]
+          item_id: string
+          notes_item?: string | null
+          result_id?: string
+          tested_circle?: boolean
+          updated_at?: string
+          updated_in_assessment_id?: string | null
+        }
+        Update: {
+          assessment_id?: string
+          fill_state?: Database["public"]["Enums"]["vb_mapp_fill_state"]
+          item_id?: string
+          notes_item?: string | null
+          result_id?: string
+          tested_circle?: boolean
+          updated_at?: string
+          updated_in_assessment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vb_mapp_assessment_results_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vb_mapp_assessments"
+            referencedColumns: ["assessment_id"]
+          },
+          {
+            foreignKeyName: "vb_mapp_assessment_results_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "vb_mapp_milestones_items"
+            referencedColumns: ["item_id"]
+          },
+          {
+            foreignKeyName: "vb_mapp_assessment_results_updated_in_assessment_id_fkey"
+            columns: ["updated_in_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vb_mapp_assessments"
+            referencedColumns: ["assessment_id"]
+          },
+        ]
+      }
+      vb_mapp_assessments: {
+        Row: {
+          assessment_date: string
+          assessment_id: string
+          created_at: string
+          created_by: string | null
+          examiner: string | null
+          learner_id: string
+          notes_global: string | null
+          updated_at: string
+        }
+        Insert: {
+          assessment_date?: string
+          assessment_id?: string
+          created_at?: string
+          created_by?: string | null
+          examiner?: string | null
+          learner_id: string
+          notes_global?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assessment_date?: string
+          assessment_id?: string
+          created_at?: string
+          created_by?: string | null
+          examiner?: string | null
+          learner_id?: string
+          notes_global?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vb_mapp_assessments_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vb_mapp_milestones_items: {
+        Row: {
+          code: string
+          created_at: string
+          domain: string
+          item_id: string
+          label_full: string | null
+          label_short: string
+          level: number
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          domain: string
+          item_id?: string
+          label_full?: string | null
+          label_short: string
+          level: number
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          domain?: string
+          item_id?: string
+          label_full?: string | null
+          label_short?: string
+          level?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       vbmapp_assessments: {
         Row: {
           administered_by: string | null
@@ -10423,6 +10552,7 @@ export type Database = {
         | "sensory_room"
         | "outside"
         | "other"
+      vb_mapp_fill_state: "EMPTY" | "HALF" | "FULL"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10586,6 +10716,7 @@ export const Constants = {
         "outside",
         "other",
       ],
+      vb_mapp_fill_state: ["EMPTY", "HALF", "FULL"],
     },
   },
 } as const
