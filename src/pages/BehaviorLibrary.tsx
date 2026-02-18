@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb, UserPlus } from 'lucide-react';
+import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb, UserPlus, Archive, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,8 @@ import {
   removeCustomBehaviorFromDB,
   syncOverrideToDB,
   removeOverrideFromDB,
+  archiveBehaviorToDB,
+  unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
 
 interface BehaviorLibraryProps {
@@ -162,11 +164,14 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   const mergeBehaviors = useDataStore((state) => state.mergeBehaviors);
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
   const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
+  const archivedBuiltInBehaviors = useDataStore((state) => state.archivedBuiltInBehaviors);
   const addToBehaviorBank = useDataStore((state) => state.addToBehaviorBank);
   const removeBankBehavior = useDataStore((state) => state.removeBankBehavior);
   const updateBankBehaviorDefinition = useDataStore((state) => state.updateBankBehaviorDefinition);
   const resetBehaviorDefinition = useDataStore((state) => state.resetBehaviorDefinition);
   const advancedMergeBehaviors = useDataStore((state) => state.advancedMergeBehaviors);
+  const archiveBuiltInBehaviorStore = useDataStore((state) => state.archiveBuiltInBehavior);
+  const unarchiveBuiltInBehaviorStore = useDataStore((state) => state.unarchiveBuiltInBehavior);
   
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
@@ -198,19 +203,21 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   const [behaviorToAdd, setBehaviorToAdd] = useState<BehaviorDefinition | null>(null);
   const [showAddToStudentDialog, setShowAddToStudentDialog] = useState(false);
   const effectiveDefaultBehaviors = useMemo(() => {
-    return DEFAULT_BEHAVIORS.map(behavior => {
-      const override = behaviorDefinitionOverrides[behavior.id];
-      if (override) {
-        return {
-          ...behavior,
-          operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
-          category: override.category || behavior.category,
-          isEdited: true,
-        };
-      }
-      return { ...behavior, isEdited: false };
-    });
-  }, [behaviorDefinitionOverrides]);
+    return DEFAULT_BEHAVIORS
+      .filter(behavior => !archivedBuiltInBehaviors.includes(behavior.id))
+      .map(behavior => {
+        const override = behaviorDefinitionOverrides[behavior.id];
+        if (override) {
+          return {
+            ...behavior,
+            operationalDefinition: override.operationalDefinition || behavior.operationalDefinition,
+            category: override.category || behavior.category,
+            isEdited: true,
+          };
+        }
+        return { ...behavior, isEdited: false };
+      });
+  }, [behaviorDefinitionOverrides, archivedBuiltInBehaviors]);
 
   // Get original definition for a built-in behavior
   const getOriginalDefinition = (behaviorId: string) => {
@@ -362,13 +369,34 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
 
   const handleSaveEdit = (behaviorId: string, definition: string, category?: string) => {
     updateBankBehaviorDefinition(behaviorId, definition, category);
-    // Check if it's a custom behavior or a built-in override
-    const isCustom = useDataStore.getState().globalBehaviorBank.some(b => b.id === behaviorId);
-    if (isCustom) {
+    // Determine behavior source: global bank (org/promoted), built-in override, or custom (student-only)
+    const isGlobalBank = useDataStore.getState().globalBehaviorBank.some(b => b.id === behaviorId);
+    const isBuiltIn = DEFAULT_BEHAVIORS.some(b => b.id === behaviorId);
+    if (isGlobalBank) {
+      // Organization/promoted custom behavior — sync updated record
       const updated = useDataStore.getState().globalBehaviorBank.find(b => b.id === behaviorId);
       if (updated && user?.id) syncCustomBehaviorToDB(updated, user.id);
-    } else {
+    } else if (isBuiltIn) {
+      // Built-in behavior — store as override
       if (user?.id) syncOverrideToDB(behaviorId, definition, category, user.id);
+    } else {
+      // Custom (student-only) behavior — promote it to global bank so it persists,
+      // then sync to DB so the edit is saved.
+      const editingB = editingBehavior;
+      if (editingB) {
+        const updatedBehavior = { ...editingB, operationalDefinition: definition, ...(category && { category }) };
+        addToBehaviorBank({
+          name: updatedBehavior.name,
+          operationalDefinition: definition,
+          category: category || updatedBehavior.category,
+          isGlobal: true,
+        });
+        setTimeout(() => {
+          const latest = useDataStore.getState().globalBehaviorBank;
+          const added = latest.find(b => b.name === updatedBehavior.name);
+          if (added && user?.id) syncCustomBehaviorToDB(added, user.id);
+        }, 50);
+      }
     }
     toast({ title: 'Definition updated' });
     setShowEditDialog(false);
@@ -379,6 +407,21 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
     resetBehaviorDefinition(behaviorId);
     removeOverrideFromDB(behaviorId);
     toast({ title: 'Definition reset to default' });
+  };
+
+  const handleArchiveBehavior = (behavior: typeof allBehaviors[0]) => {
+    if (behavior.source === 'built-in') {
+      archiveBuiltInBehaviorStore(behavior.id);
+      if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
+      toast({ title: 'Behavior archived', description: `"${behavior.name}" is hidden from the library. You can restore it later.` });
+    } else if (behavior.source === 'organization') {
+      removeBankBehavior(behavior.id);
+      removeCustomBehaviorFromDB(behavior.id);
+      toast({ title: 'Behavior removed', description: `"${behavior.name}" has been removed from the organization library.` });
+    } else {
+      // custom (student-only) — no action needed since they live on student profiles
+      toast({ title: 'Custom behaviors are managed per-student' });
+    }
   };
 
   const handlePromoteBehavior = (behavior: BehaviorDefinition & { studentNames?: string[] }) => {
@@ -717,17 +760,28 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                     >
                                       <Edit2 className="w-4 h-4" />
                                     </Button>
-                                    {behavior.source === 'custom' && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-primary hover:text-primary"
-                                        onClick={() => handlePromoteBehavior(behavior as BehaviorDefinition & { studentNames?: string[] })}
-                                        title="Make standard"
-                                      >
-                                        <Building2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
+                                     {behavior.source === 'custom' && (
+                                       <Button
+                                         variant="ghost"
+                                         size="icon"
+                                         className="h-8 w-8 text-primary hover:text-primary"
+                                         onClick={() => handlePromoteBehavior(behavior as BehaviorDefinition & { studentNames?: string[] })}
+                                         title="Make standard"
+                                       >
+                                         <Building2 className="w-4 h-4" />
+                                       </Button>
+                                     )}
+                                     {(behavior.source === 'built-in' || behavior.source === 'organization') && (
+                                       <Button
+                                         variant="ghost"
+                                         size="icon"
+                                         className="h-8 w-8 text-destructive hover:text-destructive"
+                                         onClick={() => handleArchiveBehavior(behavior)}
+                                         title={behavior.source === 'built-in' ? 'Archive (hide from library)' : 'Remove from organization library'}
+                                       >
+                                         {behavior.source === 'built-in' ? <Archive className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                                       </Button>
+                                     )}
                                   </div>
                                 </div>
                               </CardContent>
