@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useAssignedStudents } from '@/hooks/useAssignedStudents';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isValid, parseISO } from 'date-fns';
 import { 
   Users, Calendar, Save, X, Check, Minus, 
@@ -244,6 +245,7 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     globalBehaviorBank,
     behaviorDefinitionOverrides,
   } = useDataStore();
+  const { assignedStudents } = useAssignedStudents();
   
   // Selection state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -284,11 +286,8 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
     date: Date;
   } | null>(null);
 
-  // Get active (non-archived) students
-  const activeStudents = useMemo(() => 
-    students.filter(s => !s.isArchived),
-    [students]
-  );
+  // Get active (non-archived) students scoped to this user's caseload, sorted alphabetically
+  const activeStudents = assignedStudents;
 
   // Get effective default behaviors with overrides applied
   const effectiveDefaultBehaviors = useMemo(() => {
@@ -361,21 +360,23 @@ export function BulkHistoricalDataEntry({ open, onOpenChange }: BulkHistoricalDa
       }
     });
     
-    // Finally, add organization behaviors that aren't already in the map
-    globalBehaviorBank.forEach(behavior => {
-      const key = behavior.name.toLowerCase().trim();
-      if (!behaviorMap.has(key)) {
-        behaviorMap.set(key, {
-          id: `bank-${behavior.id}`,
-          name: behavior.name,
-          operationalDefinition: behavior.operationalDefinition,
-          category: behavior.category,
-          studentIds: [], // No students have this yet
-          source: 'organization',
-          baseBehaviorId: behavior.id,
-        });
-      }
-    });
+    // Finally, add organization behaviors that aren't already in the map (skip archived)
+    globalBehaviorBank
+      .filter(behavior => !(behavior as any).isArchived)
+      .forEach(behavior => {
+        const key = behavior.name.toLowerCase().trim();
+        if (!behaviorMap.has(key)) {
+          behaviorMap.set(key, {
+            id: `bank-${behavior.id}`,
+            name: behavior.name,
+            operationalDefinition: behavior.operationalDefinition,
+            category: behavior.category,
+            studentIds: [], // No students have this yet
+            source: 'organization',
+            baseBehaviorId: behavior.id,
+          });
+        }
+      });
     
     return Array.from(behaviorMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedStudentIds, activeStudents, effectiveDefaultBehaviors, globalBehaviorBank]);
