@@ -127,8 +127,9 @@ export default function Admin() {
   const [newTagName, setNewTagName] = useState('');
   const [newTagType, setNewTagType] = useState<'school' | 'site' | 'team' | 'custom'>('school');
   const [newTagColor, setNewTagColor] = useState('#3B82F6');
-  const [selectedRole, setSelectedRole] = useState<AppRole>('staff');
+  const [selectedRole, setSelectedRole] = useState<string>('staff');
   const [userStudentAccess, setUserStudentAccess] = useState<StudentAccess[]>([]);
+  const [customRoles, setCustomRoles] = useState<{ id: string; name: string }[]>([]);
   
   // Edit user form
   const [editFirstName, setEditFirstName] = useState('');
@@ -168,51 +169,38 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      // Load users with their profiles and roles
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, email, display_name, first_name, last_name, phone, is_approved, created_at');
+      // Load users with their profiles and roles + custom roles in parallel
+      const [profilesRes, rolesRes, customRolesRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, email, display_name, first_name, last_name, phone, is_approved, created_at'),
+        supabase.from('user_roles').select('user_id, role'),
+        (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+      ]);
+
+      setCustomRoles((customRolesRes.data as { id: string; name: string }[]) || []);
       
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-      
-      if (profiles) {
-        const usersWithRoles: UserWithRole[] = profiles.map(profile => ({
+      if (profilesRes.data) {
+        const usersWithRoles: UserWithRole[] = profilesRes.data.map(profile => ({
           id: profile.user_id,
           email: profile.email,
           display_name: profile.display_name,
           first_name: profile.first_name,
           last_name: profile.last_name,
           phone: profile.phone,
-          has_pin: false, // We no longer expose pin_hash - admin can reset but not view
+          has_pin: false,
           is_approved: profile.is_approved ?? false,
-          roles: roles?.filter(r => r.user_id === profile.user_id).map(r => r.role as AppRole) || [],
+          roles: rolesRes.data?.filter(r => r.user_id === profile.user_id).map(r => r.role as AppRole) || [],
           created_at: profile.created_at,
         }));
         setUsers(usersWithRoles);
       }
 
       // Load tags
-      const { data: tagsData } = await supabase
-        .from('tags')
-        .select('*')
-        .order('tag_type', { ascending: true });
-      
-      if (tagsData) {
-        setTags(tagsData as TagType[]);
-      }
+      const { data: tagsData } = await supabase.from('tags').select('*').order('tag_type', { ascending: true });
+      if (tagsData) setTags(tagsData as TagType[]);
 
       // Load all students
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('id, name')
-        .eq('is_archived', false)
-        .order('name');
-      
-      if (studentsData) {
-        setStudents(studentsData);
-      }
+      const { data: studentsData } = await supabase.from('students').select('id, name').eq('is_archived', false).order('name');
+      if (studentsData) setStudents(studentsData);
     } catch (error) {
       console.error('Error loading admin data:', error);
     }
@@ -243,15 +231,21 @@ export default function Admin() {
     if (!showAssignRole || !selectedRole) return;
 
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .upsert({
-          user_id: showAssignRole.id,
-          role: selectedRole,
-          granted_by: user?.id,
-        }, { onConflict: 'user_id,role' });
-
-      if (error) throw error;
+      const isCustom = selectedRole.startsWith('custom:');
+      if (isCustom) {
+        const customRoleId = selectedRole.replace('custom:', '');
+        const { error } = await (supabase as any).from('user_custom_roles').upsert(
+          { user_id: showAssignRole.id, custom_role_id: customRoleId },
+          { onConflict: 'user_id,custom_role_id' }
+        );
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('user_roles').upsert(
+          { user_id: showAssignRole.id, role: selectedRole as AppRole, granted_by: user?.id },
+          { onConflict: 'user_id,role' }
+        );
+        if (error) throw error;
+      }
 
       toast({ title: 'Role assigned successfully' });
       setShowAssignRole(null);
@@ -1047,7 +1041,7 @@ export default function Admin() {
             <p className="text-sm text-muted-foreground">
               Assign a role to <strong>{showAssignRole?.display_name || showAssignRole?.email}</strong>
             </p>
-            <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AppRole)}>
+            <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -1056,6 +1050,14 @@ export default function Admin() {
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="staff">Staff</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
+                {customRoles.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
+                    {customRoles.map(r => (
+                      <SelectItem key={r.id} value={`custom:${r.id}`}>{r.name}</SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
