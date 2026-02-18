@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Plus, ChevronDown, Loader2, Info, Calendar, BarChart2 } from 'lucide-react';
+import { Plus, ChevronDown, Loader2, Info, Calendar, BarChart2, BookOpen, Trash2, Printer, Save, X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -189,17 +194,23 @@ function MilestoneItemCell({
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs z-50">
-          <div className="space-y-1 text-xs">
-            <div className="font-bold">{item.code} — {item.label_short}</div>
-            {item.label_full && <div className="text-muted-foreground">{item.label_full}</div>}
+        <TooltipContent side="top" className="max-w-sm z-50">
+          <div className="space-y-1.5 text-xs">
+            <div className="font-bold text-sm">{item.code} — {item.label_short}</div>
+            {item.label_full && (
+              <div className="bg-muted/60 rounded p-1.5 text-foreground text-xs leading-snug">
+                <span className="font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Criteria / Prompt: </span>
+                {item.label_full}
+              </div>
+            )}
             <div className="border-t pt-1 space-y-0.5 text-muted-foreground">
-              <div>Box: <strong>{fill}</strong> (click to cycle)</div>
-              <div>Circle: <strong>{circle ? 'Tested – not met' : 'Off'}</strong> (click to toggle)</div>
+              <div><span className="font-medium">Domain:</span> {item.domain} · Level {item.level}</div>
+              <div><span className="font-medium">Box status:</span> {fill === 'FULL' ? 'Mastered ●' : fill === 'HALF' ? 'Emerging ◑' : 'Empty'} <span className="opacity-60">(click to cycle)</span></div>
+              <div><span className="font-medium">Circle:</span> {circle ? 'Tested – not met ○' : 'Off'} <span className="opacity-60">(click to toggle)</span></div>
               {updatedInCurrent && <div className="text-primary font-medium">Updated in current session</div>}
             </div>
             <button
-              className="text-primary underline text-xs mt-1"
+              className="text-primary underline text-xs mt-0.5"
               onClick={(e) => { e.stopPropagation(); onOpenDetail(item, result); }}
             >
               Add notes / details →
@@ -414,6 +425,12 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
   // Pending saves (debounced upsert queue)
   const [pendingSaves, setPendingSaves] = useState<Set<string>>(new Set());
 
+  // Delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+
   // ── Load template items (static, load once) ────────────────────────────────
   useEffect(() => {
     supabase
@@ -596,6 +613,84 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
     setPendingSaves(prev => new Set(prev).add(itemId));
   };
 
+  // ── Delete assessment ─────────────────────────────────────────────────────
+  const handleDeleteAssessment = async () => {
+    if (!assessmentToDelete) return;
+    setDeleting(true);
+    try {
+      // Delete all results first
+      await supabase
+        .from('vb_mapp_assessment_results')
+        .delete()
+        .eq('assessment_id', assessmentToDelete.assessment_id);
+
+      const { error } = await supabase
+        .from('vb_mapp_assessments')
+        .delete()
+        .eq('assessment_id', assessmentToDelete.assessment_id);
+
+      if (error) throw error;
+
+      setAssessments(prev => prev.filter(a => a.assessment_id !== assessmentToDelete.assessment_id));
+      if (selectedAssessmentId === assessmentToDelete.assessment_id) {
+        setSelectedAssessmentId(null);
+        setResults({});
+      }
+      toast.success('Assessment deleted');
+    } catch (err) {
+      console.error('Error deleting assessment:', err);
+      toast.error('Failed to delete assessment');
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setAssessmentToDelete(null);
+    }
+  };
+
+  // ── Print / Export ────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const selectedA = assessments.find(a => a.assessment_id === selectedAssessmentId);
+    const dateStr = selectedA ? format(new Date(selectedA.assessment_date), 'MMMM d, yyyy') : '';
+
+    // Build HTML table of all milestones
+    const domainRows = domainGroups.map(({ domain, items }) => {
+      const cells = items.map(item => {
+        const r = results[item.item_id];
+        const fill = r?.fill_state ?? 'EMPTY';
+        const circle = r?.tested_circle ?? false;
+        const fillLabel = fill === 'FULL' ? '●' : fill === 'HALF' ? '◑' : circle ? '○' : '—';
+        const status = fill === 'FULL' ? 'Mastered' : fill === 'HALF' ? 'Emerging' : circle ? 'Not Met' : '';
+        return `<tr>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;font-weight:500">${item.code}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee">${item.label_short}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;font-size:18px">${fillLabel}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#666;font-size:12px">${status}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#555;font-size:11px">${item.label_full || ''}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#666;font-size:11px">${r?.notes_item || ''}</td>
+        </tr>`;
+      }).join('');
+      return `<tr style="background:#f0f4f8"><td colspan="6" style="padding:6px 8px;font-weight:700;font-size:13px">${domain}</td></tr>${cells}`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><title>VB-MAPP Milestones — ${studentName}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:13px;color:#222;margin:20px}
+    h1{font-size:18px;margin-bottom:4px}p{color:#555;margin:0 0 12px}
+    table{width:100%;border-collapse:collapse}th{background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px}
+    @media print{body{margin:10px}}</style></head>
+    <body><h1>VB-MAPP Milestones Grid</h1>
+    <p>Student: <strong>${studentName}</strong> &nbsp;|&nbsp; Assessment date: <strong>${dateStr}</strong></p>
+    <table><thead><tr><th>Code</th><th>Milestone</th><th style="text-align:center">Score</th><th>Status</th><th>Criteria / Prompt</th><th>Notes</th></tr></thead>
+    <tbody>${domainRows}</tbody></table></body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 300);
+  };
+
   // ── Group template items by domain ───────────────────────────────────────
   const domainGroups = useMemo(() => {
     const map = new Map<string, MilestoneItem[]>();
@@ -643,6 +738,101 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
   return (
     <div className="space-y-4">
 
+      {/* ── Delete confirmation ── */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              Delete VB-MAPP Assessment
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the assessment from{' '}
+              <strong>
+                {assessmentToDelete?.assessment_date
+                  ? format(new Date(assessmentToDelete.assessment_date), 'MMM d, yyyy')
+                  : ''}
+              </strong>{' '}
+              and all scored milestones. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAssessment}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete Assessment'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Internal Tracker Banner (matching AFLS / ABLLS-R) ── */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">VB-MAPP Milestones</h3>
+          <Badge variant="outline" className="text-xs">Internal Tracker</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedAssessmentId && (
+            <>
+              {saving && <span className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handlePrint}
+                title="Export / Print milestones grid"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1" />
+                Export Grid
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => { setSelectedAssessmentId(null); setResults({}); }}
+                title="Close / cancel current assessment view"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Close
+              </Button>
+              {selectedAssessment && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => { setAssessmentToDelete(selectedAssessment); setDeleteConfirmOpen(true); }}
+                  title="Delete this assessment"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                  Delete
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Info card ── */}
+      <Card className="bg-accent/50 border-accent">
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-3">
+            <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">VB-MAPP Milestones is entered directly by clinicians</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                170 items across 15 domains (Levels 1–3). Click any square to cycle EMPTY → HALF → FULL.
+                The circle below each square marks "tested – not met." Hover over a square to see the full criteria prompt.
+                Changes auto-save. <strong className="text-foreground">These assessments are NOT sent out as questionnaires.</strong>
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ── Assessment selector bar ── */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -670,11 +860,6 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
         </div>
 
         <div className="flex items-center gap-2">
-          {saving && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 className="w-3 h-3 animate-spin" /> Saving...
-            </span>
-          )}
           <Button
             size="sm"
             variant="outline"
@@ -682,7 +867,7 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
             disabled={creatingAssessment}
           >
             <Plus className="w-3 h-3 mr-1" />
-            New Assessment
+            {creatingAssessment ? 'Creating…' : 'New Assessment'}
           </Button>
         </div>
       </div>
