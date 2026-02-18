@@ -76,9 +76,10 @@ interface UserWithRole {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
-  has_pin: boolean; // Changed from pin_hash to boolean - don't expose actual hash
+  has_pin: boolean;
   is_approved: boolean;
   roles: AppRole[];
+  customRoleIds: string[]; // IDs of assigned custom roles
   created_at: string;
 }
 
@@ -169,11 +170,12 @@ export default function Admin() {
 
   const loadData = async () => {
     try {
-      // Load users with their profiles and roles + custom roles in parallel
-      const [profilesRes, rolesRes, customRolesRes] = await Promise.all([
+      // Load users with their profiles, roles, custom roles, and user custom role assignments in parallel
+      const [profilesRes, rolesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
         supabase.from('profiles').select('user_id, email, display_name, first_name, last_name, phone, is_approved, created_at'),
         supabase.from('user_roles').select('user_id, role'),
         supabase.from('custom_roles').select('id, name').order('name'),
+        supabase.from('user_custom_roles').select('user_id, custom_role_id'),
       ]);
 
       setCustomRoles((customRolesRes.data as { id: string; name: string }[]) || []);
@@ -189,6 +191,9 @@ export default function Admin() {
           has_pin: false,
           is_approved: profile.is_approved ?? false,
           roles: rolesRes.data?.filter(r => r.user_id === profile.user_id).map(r => r.role as AppRole) || [],
+          customRoleIds: (userCustomRolesRes.data || [])
+            .filter(r => r.user_id === profile.user_id)
+            .map(r => r.custom_role_id),
           created_at: profile.created_at,
         }));
         setUsers(usersWithRoles);
@@ -269,6 +274,23 @@ export default function Admin() {
       await loadData();
     } catch (error: any) {
       toast({ title: 'Failed to remove role', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleRemoveCustomRole = async (userId: string, customRoleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_custom_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('custom_role_id', customRoleId);
+
+      if (error) throw error;
+
+      toast({ title: 'Custom role removed' });
+      await loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to remove custom role', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -681,7 +703,7 @@ export default function Admin() {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {u.roles.length === 0 && (
+                              {u.roles.length === 0 && u.customRoleIds.length === 0 && (
                                 <Badge variant="outline" className="text-xs">No roles</Badge>
                               )}
                               {u.roles.map((role) => (
@@ -701,6 +723,23 @@ export default function Admin() {
                                   )}
                                 </Badge>
                               ))}
+                              {u.customRoleIds.map((crId) => {
+                                const cr = customRoles.find(r => r.id === crId);
+                                if (!cr) return null;
+                                return (
+                                  <Badge key={crId} variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                                    {cr.name}
+                                    {(isSuperAdmin || isAdmin) && (
+                                      <button
+                                        className="ml-1 hover:text-destructive"
+                                        onClick={() => handleRemoveCustomRole(u.id, crId)}
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </Badge>
+                                );
+                              })}
                             </div>
                           </TableCell>
                           <TableCell>
