@@ -112,18 +112,32 @@ export function useSessionParticipants(sessionId: string | null) {
     }
   }, [user, sessionId, fetchParticipants]);
 
-  /** Mark the current user as having left */
+  /** Mark the current user as having left and record the interval */
   const leaveSession = useCallback(async () => {
     if (!user || !sessionId) return;
+    const now = new Date().toISOString();
+
+    // Build the new interval entry
+    const currentParticipant = participants.find(p => p.user_id === user.id);
+    const existingIntervals: Array<{ joined_at: string; left_at: string }> =
+      (currentParticipant as any)?.collection_intervals || [];
+    const newIntervals = [
+      ...existingIntervals,
+      { joined_at: currentParticipant?.joined_at || now, left_at: now },
+    ];
+
     const { error } = await supabase
       .from('session_participants')
-      .update({ left_at: new Date().toISOString() })
+      .update({
+        left_at: now,
+        collection_intervals: newIntervals,
+      })
       .eq('session_id', sessionId)
       .eq('user_id', user.id);
 
     if (error) console.error('[SessionParticipants] leave error', error);
     else await fetchParticipants();
-  }, [user, sessionId, fetchParticipants]);
+  }, [user, sessionId, participants, fetchParticipants]);
 
   /** Assign a specific user as the note delegate */
   const assignNoteDelegate = useCallback(async (
