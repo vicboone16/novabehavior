@@ -2814,12 +2814,11 @@ export const useDataStore = create<DataState>()(
     }),
     {
       name: 'behavior-data-storage',
-      onRehydrateStorage: () => (state) => {
-        // Always clear session state on app load to prevent auto-start
-        if (state?.sessionStartTime) {
-          console.log('[DataStore] Clearing persisted session state on startup to prevent auto-start');
-          state.forceEndAllSessions();
-        }
+      // Never persist live session timing fields — they must always start fresh on page load.
+      // Data entries (frequencyEntries, etc.) ARE persisted so in-progress data isn't lost.
+      partialize: (state) => {
+        const { sessionStartTime, currentSessionId, syncedIntervalsRunning, studentSessionStatus, studentIntervalStatus, ...rest } = state;
+        return rest;
       },
     }
   )
