@@ -64,7 +64,7 @@ export function ApproveUserDialog({
   const [customRoles, setCustomRoles] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name')
+    supabase.from('custom_roles').select('id, name').order('name')
       .then(({ data }: { data: { id: string; name: string }[] | null }) => {
         if (data) setCustomRoles(data);
       });
