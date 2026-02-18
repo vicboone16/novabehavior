@@ -553,6 +553,29 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
+
+        // Staleness check: auto-close sessions older than 4 hours to prevent
+        // ghost sessions from persisting across logins indefinitely.
+        const sessionAge = Date.now() - new Date(activeSessionData.start_time).getTime();
+        const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+        if (sessionAge > FOUR_HOURS_MS) {
+          console.log('[Sync] Active session is stale (>4h), auto-closing:', activeSessionData.id);
+          await supabase
+            .from('sessions')
+            .update({ status: 'ended', end_time: new Date().toISOString() } as any)
+            .eq('id', activeSessionData.id);
+          // Clear any local state for this stale session
+          const staleState = useDataStore.getState();
+          if (staleState.currentSessionId === activeSessionData.id || staleState.sessionStartTime) {
+            useDataStore.getState().forceEndAllSessions();
+          }
+          // Skip resuming — fall through to the "no active session" branch
+          setLastSyncTime(new Date());
+          setSyncStatus('success');
+          hasFetched.current = true;
+          setIsLoading(false);
+          return;
+        }
         
         // Decide whether we should resume the cloud session onto this device.
         // NOTE: Even if there are *zero* session_data rows yet, we still need to resume
