@@ -7774,6 +7774,60 @@ export type Database = {
         }
         Relationships: []
       }
+      session_staff_notes: {
+        Row: {
+          approved_at: string | null
+          author_name: string | null
+          author_user_id: string
+          created_at: string
+          id: string
+          note_format: string
+          note_text: string | null
+          session_id: string
+          soap_assessment: string | null
+          soap_objective: string | null
+          soap_plan: string | null
+          soap_subjective: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          author_name?: string | null
+          author_user_id: string
+          created_at?: string
+          id?: string
+          note_format?: string
+          note_text?: string | null
+          session_id: string
+          soap_assessment?: string | null
+          soap_objective?: string | null
+          soap_plan?: string | null
+          soap_subjective?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          author_name?: string | null
+          author_user_id?: string
+          created_at?: string
+          id?: string
+          note_format?: string
+          note_text?: string | null
+          session_id?: string
+          soap_assessment?: string | null
+          soap_objective?: string | null
+          soap_plan?: string | null
+          soap_subjective?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           appointment_id: string | null

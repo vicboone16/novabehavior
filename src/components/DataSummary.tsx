@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { BarChart3, FileText, Trash2, Download, Save, StickyNote, Clock, Eye, EyeOff, Minimize2, Maximize2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { BarChart3, FileText, Trash2, Download, Save, Clock, Eye, EyeOff, Minimize2, Maximize2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useDataStore } from '@/store/dataStore';
 import { SessionHistory } from './SessionHistory';
 import { SessionLengthManager } from './SessionLengthManager';
@@ -16,6 +14,7 @@ import { ABCReportGenerator } from './ABCReportGenerator';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { StudentSessionNotes } from './session/StudentSessionNotes';
 
 export function DataSummary() {
   const { 
@@ -25,18 +24,15 @@ export function DataSummary() {
     frequencyEntries, 
     durationEntries, 
     intervalEntries,
-    sessionNotes,
     sessionLengthMinutes,
     showTimestamps,
     setShowTimestamps,
-    setSessionNotes,
     saveSession,
     hasUnsavedChanges,
     resetSessionData,
     getEffectiveSessionLength 
   } = useDataStore();
 
-  const [showNotes, setShowNotes] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showNoChangesWarning, setShowNoChangesWarning] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -167,7 +163,7 @@ export function DataSummary() {
   const exportToJSON = () => {
     const data = {
       exportDate: new Date().toISOString(),
-      notes: sessionNotes,
+      notes: '',
       sessionLengthMinutes,
       students: selectedStudents.map(s => ({
         name: s.name,
@@ -469,24 +465,21 @@ export function DataSummary() {
         </div>
       </div>
 
-      {/* Session Notes */}
-      <Collapsible open={showNotes} onOpenChange={setShowNotes} className="mb-4">
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2 w-full justify-start">
-            <StickyNote className="w-4 h-4" />
-            Session Notes
-            {sessionNotes && <Badge variant="secondary" className="ml-2">Has notes</Badge>}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2">
-          <Textarea
-            placeholder="Add notes about this session..."
-            value={sessionNotes}
-            onChange={(e) => setSessionNotes(e.target.value)}
-            className="min-h-[80px]"
-          />
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Per-student Session Notes */}
+      {currentSessionId && selectedStudents.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {selectedStudents.map(student => (
+            <StudentSessionNotes
+              key={student.id}
+              sessionId={currentSessionId}
+              studentId={student.id}
+              studentName={student.name}
+              compact={selectedStudents.length > 1}
+            />
+          ))}
+        </div>
+      )}
+
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
