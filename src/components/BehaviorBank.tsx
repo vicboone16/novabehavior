@@ -1,5 +1,13 @@
 import { useState, useMemo } from 'react';
 import { BookOpen, Plus, Search, Trash2, Copy, Building2, Edit2, Archive, ArchiveRestore } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  useBehaviorBankSync,
+  syncCustomBehaviorToDB,
+  removeCustomBehaviorFromDB,
+  archiveBehaviorToDB,
+  unarchiveBehaviorFromDB,
+} from '@/hooks/useBehaviorBankSync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -146,6 +154,7 @@ export function BehaviorBank({
   onAddCustomBehavior,
   onDeleteCustomBehavior,
 }: BehaviorBankProps) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAddBehavior, setShowAddBehavior] = useState(false);
@@ -154,12 +163,17 @@ export function BehaviorBank({
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
 
+  // Sync behavior bank with DB on mount
+  useBehaviorBankSync();
+
   // Get global behavior bank and overrides from store
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
+  const addToBehaviorBank = useDataStore((state) => state.addToBehaviorBank);
+  const removeBankBehavior = useDataStore((state) => state.removeBankBehavior);
   const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
   const archivedBuiltInBehaviors = useDataStore((state) => state.archivedBuiltInBehaviors);
-  const archiveBuiltInBehavior = useDataStore((state) => state.archiveBuiltInBehavior);
-  const unarchiveBuiltInBehavior = useDataStore((state) => state.unarchiveBuiltInBehavior);
+  const archiveBuiltInBehaviorStore = useDataStore((state) => state.archiveBuiltInBehavior);
+  const unarchiveBuiltInBehaviorStore = useDataStore((state) => state.unarchiveBuiltInBehavior);
 
   // Apply overrides to default behaviors
   const effectiveDefaultBehaviors = useMemo(() => {
@@ -336,11 +350,15 @@ export function BehaviorBank({
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                 title={behavior.isArchived ? 'Restore behavior' : 'Archive behavior'}
-                                onClick={() =>
-                                  behavior.isArchived
-                                    ? unarchiveBuiltInBehavior(behavior.id)
-                                    : archiveBuiltInBehavior(behavior.id)
-                                }
+                                onClick={() => {
+                                  if (behavior.isArchived) {
+                                    unarchiveBuiltInBehaviorStore(behavior.id);
+                                    unarchiveBehaviorFromDB(behavior.id);
+                                  } else {
+                                    archiveBuiltInBehaviorStore(behavior.id);
+                                    if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
+                                  }
+                                }}
                               >
                                 {behavior.isArchived ? (
                                   <ArchiveRestore className="w-3 h-3" />

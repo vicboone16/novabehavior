@@ -32,6 +32,14 @@ import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteTo
 import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
 import { BxInterventionLibrary } from '@/components/behavior-interventions';
 import { AddBehaviorToStudentDialog } from '@/components/behavior-library/AddBehaviorToStudentDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  useBehaviorBankSync,
+  syncCustomBehaviorToDB,
+  removeCustomBehaviorFromDB,
+  syncOverrideToDB,
+  removeOverrideFromDB,
+} from '@/hooks/useBehaviorBankSync';
 
 interface BehaviorLibraryProps {
   embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
@@ -149,14 +157,19 @@ const DEFAULT_BEHAVIORS: BehaviorDefinition[] = [
 export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const students = useDataStore((state) => state.students);
   const mergeBehaviors = useDataStore((state) => state.mergeBehaviors);
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
   const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
   const addToBehaviorBank = useDataStore((state) => state.addToBehaviorBank);
+  const removeBankBehavior = useDataStore((state) => state.removeBankBehavior);
   const updateBankBehaviorDefinition = useDataStore((state) => state.updateBankBehaviorDefinition);
   const resetBehaviorDefinition = useDataStore((state) => state.resetBehaviorDefinition);
   const advancedMergeBehaviors = useDataStore((state) => state.advancedMergeBehaviors);
+  
+  // Sync behavior bank with DB on mount
+  useBehaviorBankSync();
   
   const [activeLibraryTab, setActiveLibraryTab] = useState<'behaviors' | 'interventions'>('behaviors');
   const [searchQuery, setSearchQuery] = useState('');
@@ -283,23 +296,26 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
 
   const handleAddBehavior = () => {
     if (newName.trim() && newDefinition.trim()) {
+      const tempId = crypto.randomUUID();
+      const newBehavior = {
+        id: tempId,
+        name: newName.trim(),
+        operationalDefinition: newDefinition.trim(),
+        category: newCategory,
+        isGlobal: true,
+        promotedAt: new Date(),
+      };
       if (newLevel === 'built-in') {
-        // Add as a built-in by inserting into DEFAULT_BEHAVIORS runtime + storing in bank with isBuiltIn flag
-        addToBehaviorBank({
-          name: newName.trim(),
-          operationalDefinition: newDefinition.trim(),
-          category: newCategory,
-          isGlobal: true,
-          isBuiltIn: true,
-        } as any);
+        addToBehaviorBank({ ...newBehavior, isBuiltIn: true } as any);
       } else {
-        addToBehaviorBank({
-          name: newName.trim(),
-          operationalDefinition: newDefinition.trim(),
-          category: newCategory,
-          isGlobal: true,
-        });
+        addToBehaviorBank(newBehavior);
       }
+      // Sync to DB after store updates (store generates actual id via uuid, so we sync after)
+      setTimeout(() => {
+        const latest = useDataStore.getState().globalBehaviorBank;
+        const added = latest.find(b => b.name === newBehavior.name && b.operationalDefinition === newBehavior.operationalDefinition);
+        if (added && user?.id) syncCustomBehaviorToDB(added, user.id);
+      }, 50);
       toast({ title: `Behavior added as ${newLevel === 'built-in' ? 'built-in' : 'organization'} behavior` });
       resetForm();
     }
@@ -346,6 +362,14 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
 
   const handleSaveEdit = (behaviorId: string, definition: string, category?: string) => {
     updateBankBehaviorDefinition(behaviorId, definition, category);
+    // Check if it's a custom behavior or a built-in override
+    const isCustom = useDataStore.getState().globalBehaviorBank.some(b => b.id === behaviorId);
+    if (isCustom) {
+      const updated = useDataStore.getState().globalBehaviorBank.find(b => b.id === behaviorId);
+      if (updated && user?.id) syncCustomBehaviorToDB(updated, user.id);
+    } else {
+      if (user?.id) syncOverrideToDB(behaviorId, definition, category, user.id);
+    }
     toast({ title: 'Definition updated' });
     setShowEditDialog(false);
     setEditingBehavior(null);
@@ -353,6 +377,7 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
 
   const handleResetDefinition = (behaviorId: string) => {
     resetBehaviorDefinition(behaviorId);
+    removeOverrideFromDB(behaviorId);
     toast({ title: 'Definition reset to default' });
   };
 
@@ -368,6 +393,11 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
       category: behavior.category,
       isGlobal: true,
     });
+    setTimeout(() => {
+      const latest = useDataStore.getState().globalBehaviorBank;
+      const added = latest.find(b => b.name === behavior.name);
+      if (added && user?.id) syncCustomBehaviorToDB(added, user.id);
+    }, 50);
     toast({ 
       title: 'Behavior promoted', 
       description: `"${behavior.name}" is now a standard organization behavior.` 
@@ -377,6 +407,8 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   };
 
   const handleAdvancedMerge = (sourceId: string, targetId: string, useSourceName: boolean) => {
+    // Remove the source from DB since it's being merged
+    removeCustomBehaviorFromDB(sourceId);
     advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
     toast({ 
       title: 'Behaviors merged', 
