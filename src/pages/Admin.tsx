@@ -6,7 +6,7 @@ import {
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
-  FileText, UserCog, Award, Briefcase
+  FileText, UserCog, Award, Briefcase, KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ import { ApproveUserDialog } from '@/components/admin/ApproveUserDialog';
 import { StaffManagement } from '@/components/admin/StaffManagement';
 import { CredentialTracker } from '@/components/admin/CredentialTracker';
 import { UserPermissionsManager } from '@/components/admin/UserPermissionsManager';
+import { CustomRolesManager } from '@/components/admin/CustomRolesManager';
 import RecruitingPage from '@/pages/Recruiting';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
@@ -515,7 +516,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-6xl grid-cols-9">
+          <TabsList className="grid w-full max-w-6xl grid-cols-10">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Pending</span>
@@ -548,6 +549,10 @@ export default function Admin() {
             <TabsTrigger value="students" className="gap-2">
               <UserCog className="w-4 h-4" />
               <span className="hidden sm:inline">Students</span>
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-2">
+              <KeyRound className="w-4 h-4" />
+              <span className="hidden sm:inline">Roles</span>
             </TabsTrigger>
             <TabsTrigger value="recruiting" className="gap-2">
               <UserPlus className="w-4 h-4" />
@@ -848,6 +853,24 @@ export default function Admin() {
               availableTags={tags} 
               onTagsChange={loadData}
             />
+          </TabsContent>
+
+          {/* Roles & Permissions Tab */}
+          <TabsContent value="roles">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="w-5 h-5" />
+                  Custom Roles & Permissions
+                </CardTitle>
+                <CardDescription>
+                  Create custom roles, configure their feature permissions, and assign them to staff members. Custom roles supplement the built-in system roles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomRolesManager />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Recruiting Tab */}

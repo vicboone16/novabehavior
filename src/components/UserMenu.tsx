@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SetupPinDialog } from '@/components/PinLogin';
 
 export function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { isSyncing, isLoading, lastSyncTime, syncNow, reloadFromCloud, syncStatus } = useSync();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,7 +45,8 @@ export function UserMenu() {
 
   if (!user) return null;
 
-  const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
+  // Use profile.display_name from the database as the source of truth
+  const displayName = profile?.display_name || user.email?.split('@')[0] || 'User';
   const initials = displayName
     .split(' ')
     .map((n: string) => n[0])
