@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.generate-assessment-report]
 verify_jwt = false
+
+[functions.send-observation-email]
+verify_jwt = false
+
+[functions.send-telehealth-link]
+verify_jwt = false
