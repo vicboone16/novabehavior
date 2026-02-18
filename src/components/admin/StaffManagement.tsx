@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Dialog,
   DialogContent,
@@ -92,7 +93,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     npi: '',
     title: 'Staff',
     supervisor_id: '',
-    role: 'staff',
+    roles: ['staff'] as string[],
     agency_id: '',
     emailOption: 'none' as 'none' | 'now' | 'later',
     studentPermissions: [] as StudentWithPermissions[],
@@ -303,7 +304,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
           npi: newStaffForm.npi,
           supervisor_id: newStaffForm.supervisor_id || undefined,
           title: newStaffForm.title,
-          role: newStaffForm.role,
+          role: newStaffForm.roles[0] || 'staff', // primary role for create-staff edge function
           agency_id: newStaffForm.agency_id || undefined,
           student_permissions: newStaffForm.studentPermissions
             .filter(sp => sp.enabled)
@@ -341,7 +342,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         npi: '',
         title: 'Staff',
         supervisor_id: '',
-        role: 'staff',
+        roles: ['staff'],
         agency_id: '',
         emailOption: 'none',
         studentPermissions: [],
@@ -702,25 +703,32 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Role & Credentials</p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>System Role</Label>
-                  <Select value={newStaffForm.role} onValueChange={(v) => setNewStaffForm(f => ({ ...f, role: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                      {customRoles.length > 0 && (
-                        <>
-                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
-                          {customRoles.map(r => (
-                            <SelectItem key={r.id} value={`custom:${r.id}`}>{r.name}</SelectItem>
-                          ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-1.5 col-span-2">
+                  <Label>System Roles</Label>
+                  <p className="text-xs text-muted-foreground">Select one or more roles.</p>
+                  <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/20">
+                    {[
+                      { value: 'staff', label: 'Staff' },
+                      { value: 'admin', label: 'Admin' },
+                      { value: 'super_admin', label: 'Super Admin' },
+                      { value: 'viewer', label: 'Viewer' },
+                      ...customRoles.map(r => ({ value: `custom:${r.id}`, label: r.name })),
+                    ].map(r => (
+                      <div key={r.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`new-role-${r.value}`}
+                          checked={newStaffForm.roles.includes(r.value)}
+                          onCheckedChange={(checked) => setNewStaffForm(f => ({
+                            ...f,
+                            roles: checked
+                              ? [...f.roles, r.value]
+                              : f.roles.filter(x => x !== r.value),
+                          }))}
+                        />
+                        <label htmlFor={`new-role-${r.value}`} className="text-sm cursor-pointer">{r.label}</label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Credential</Label>
