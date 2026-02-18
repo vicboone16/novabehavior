@@ -1,103 +1,95 @@
 
+# Diagnosis & Fix Plan: Jayden Jurado's Missing Data and Structured Form Dates
 
-# Overhaul School FBA Export to Match District Templates
+## What the Investigation Found
 
-## Problem
+After a thorough database audit, here is the definitive picture:
 
-The current School FBA export produces a document that does not match the formatting of the actual school district templates you use. Comparing the Jayden export (system output) with your MatCal, LuSa, and JM templates reveals significant structural and formatting gaps.
+### The Good News — Data Is NOT Lost
+All of Jayden's behavioral data exists in the database:
+- **12 session_data rows** with frequency, duration, and ABC entries all intact
+- **Sessions table** contains 14 associated sessions 
+- **Historical data** (4 entries) stored in the student record's `historical_data` column
 
-## Key Differences Found
+### Root Cause #1: Observation/Session History Not Visible
+The session data IS in the database, but the sync system is failing to load it into the UI. The network logs show the `POST /sessions` presence-sync calls failing with "Load failed" errors — these network failures during the initial load mean the `SyncContext` never fetches session_data and populates the local store correctly.
 
-| Area | Current Output | Template Format |
-|------|---------------|-----------------|
-| Title/Header | "FUNCTIONAL BEHAVIOR ASSESSMENT" centered, "School-Based Report" subtitle | "CONFIDENTIAL Functional Behavior Assessment" at top |
-| Student Info | Label-value table with rows | Compact block: Name, SSID, DOB, Age, School, Grade, Case Manager, Date, FBA Completed By |
-| Sources of Information | Plain text paragraph | Checkbox grid table (Parent Interview, Teacher Interview, Student Interview, Medical Records, etc.) |
-| Data Collection Tools | Plain text paragraph | Checkbox grid table (ABC Recording, Interval Data, Structured Interviews, Scatterplot, etc.) |
-| Observation Setting | Label-value rows | Checkbox format (Home, School, Community, Other) with People Involved and Time of Day |
-| FBA Observation Details | Not present | Table with Date, Activities Observed, Data Collection Methods per session |
-| Target Behaviors | Simple name/definition/baseline table | Each behavior gets its own block with Operational Definition, Possible Antecedents, Possible Consequences, Hypothesized Function |
-| Indirect Assessment | Single text area | Separate subsections: Teacher Interview, Student Interview, Parent/Caregiver Interview |
-| Summary of Findings | Not present | Dedicated narrative section before Hypothesized Function |
-| Hypothesized Function | Italic block quote with function narratives table | Checkbox list (Attention, Escape, Tangible, Automatic) plus narrative paragraph |
-| Recommendations | Plain text | Checkbox options (no intervention, environmental mods, BIP necessary, insufficient data) plus numbered strategy list |
-| Signature | Simple line with name/date | "Respectfully Submitted" + signature line + name/title + date |
+The critical chain:
+1. `SyncContext` fetches sessions from `sessions` table ✓
+2. Then fetches `session_data` filtered against those session IDs ✓
+3. But the sessions query returns data linked to `20a7d34a...` and `b17a22a7...` session IDs
+4. The **sessions table RLS** only allows `user_id = auth.uid()` — no expanded access path for agency members or admins accessing students they didn't personally create the session for
+5. When the SyncContext queries `sessions` and `session_data`, there appear to be stale/broken session entries from the network failure period (duplicate sessions created during the "Load failed" era that conflict)
 
-## Plan
+### Root Cause #2: FAST/Indirect Assessment Data Missing
+The `indirect_assessments` column on Jayden's student record in the database is an **empty array `[]`**. This means:
+- `addIndirectAssessment()` in `dataStore.ts` only updates local Zustand state
+- The SyncContext **does** write `indirect_assessments` back to the database during a full sync
+- However, if the sync was disrupted (which the network logs confirm it was), the FAST results were never written to the database
+- They lived only in localStorage, and localStorage was cleared/reset (possibly by the security hardening work that excluded session state from persistence)
 
-### 1. Rewrite `src/lib/schoolFBAExport.ts`
+### Root Cause #3: Cannot Modify Date on Historical Structured Forms
+When viewing a historical indirect assessment result (FAST, MAS, QABF), the `completedAt` date is set at save time (`new Date()`) and there is no UI affordance in `IndirectAssessmentTools.tsx` to edit the date after the fact. The assessment object is stored with a fixed timestamp and there is no edit flow exposed in the saved assessments list.
 
-Restructure the entire document builder to match the template format:
+---
 
-- **Header**: "CONFIDENTIAL Functional Behavior Assessment" left-aligned, bold
-- **Student Information block**: Compact table matching template layout (add Age calculated from DOB, add "FBA Completed By" field)
-- **Section 1 - Reason for Referral**: Numbered heading, narrative paragraph
-- **Section 2 - Sources of Information**: Checkbox grid table (3-column layout with check/uncheck symbols)
-- **Section 3 - Relevant Background Information**: Narrative paragraph
-- **Section 4 - Data Collection Tools**: Checkbox grid table
-- **Section 5 - Indirect Assessment**: Split into subsections (Teacher Interview, Student Interview, Parent/Caregiver Interview) each with their own editable narrative
-- **Section 6 - Direct Assessment**: Observation setting checkboxes, People Involved, Time of Day, then FBA Observation Details table (Date | Activities | Methods), then Summary of Direct Observation narrative
-- **Target Behaviors section**: Each behavior gets its own heading block with Operational Definition, Possible Antecedents, Possible Consequences, Hypothesized Function -- matching the JM template format
-- **Summary of Findings**: New narrative section
-- **Hypothesized Function**: Checkbox list plus narrative paragraph explaining what functions mean for this student
-- **Recommended Strategies**: Numbered list of strategies
-- **Recommendations**: Checkbox options (no further intervention, environmental mods only, BIP necessary, insufficient data) plus any additional text
-- **Signature block**: "Respectfully Submitted" + line + name, credentials + date
+## Fix Plan
 
-### 2. Update `SchoolFBAData` Interface
+### Fix 1: Restore Visibility of Session Data (Observation History)
 
-Add new fields:
+**Problem**: The network failure created duplicate/ghost sessions (visible in the network log: sessions `b142cbd2`, `71445e51`, `69ceefd6` were POST-failed). The valid session data belongs to session `20a7d34a` and `b17a22a7`, which DO exist and DO have `user_id = 98e3f44c`.
 
-- `age` (string, calculated from DOB)
-- `fbaCompletedBy` (string)
-- `sourcesChecklist` (object with boolean flags for each source type)
-- `dataToolsChecklist` (object with boolean flags for each tool)
-- `observationSetting` (object with checkboxes: home, school, community, other)
-- `observationPeopleInvolved` (string)
-- `observationTimeOfDay` (string)
-- `observationDetails` (array of date/activities/methods per session)
-- `teacherInterview` (string)
-- `studentInterview` (string)
-- `parentInterview` (string)
-- `backgroundInfo` (string)
-- `summaryOfFindings` (string)
-- `hypothesizedFunctions` (object with boolean flags: attention, escape, tangible, automatic)
-- `recommendationChecklist` (object with boolean flags for each recommendation type)
-- Per-behavior antecedents, consequences, and hypothesized functions
+**Fix**: Ensure the SyncContext correctly falls back and loads `session_data` independently of the sessions list — querying `session_data` by `user_id` directly (not just by filtering through sessions). Also clean up the ghost/failed sessions.
 
-### 3. Update `FBAReportGenerator.tsx` School Fields
+**In `SyncContext.tsx`**: Add a secondary fetch path that loads all `session_data` rows for `user_id = auth.uid()` directly when session entries are sparse, bypassing any session linkage gap.
 
-Add corresponding editable UI fields in the School FBA section:
+### Fix 2: Immediate Persistence of Indirect Assessment Data (FAST/MAS/QABF)
 
-- Checkbox toggles for Sources of Information and Data Collection Tools
-- Separate text areas for Teacher Interview, Student Interview, Parent Interview
-- Background Information text area
-- Observation setting checkboxes and details table
-- Per-behavior antecedent/consequence/function fields
-- Summary of Findings text area
-- Hypothesized Function checkboxes
-- Recommendation checkboxes
-- "FBA Completed By" field
+**Problem**: `addIndirectAssessment` only updates local state — the SyncContext only writes it back during a full debounced student sync. If that sync fails, the data is lost.
 
-All fields will be pre-populated with available data from the system (editable as suggestions), matching the current "All editable with suggestions" pattern.
+**Fix**: In `IndirectAssessmentTools.tsx`, after calling `addIndirectAssessment()`, immediately write the updated `indirect_assessments` array to the database (similar to how `saveHistoricalDataDirect` works for historical data):
 
-### 4. Section Toggles
+```typescript
+// After addIndirectAssessment(student.id, result):
+await supabase
+  .from('students')
+  .update({ indirect_assessments: [...existing, newAssessment] })
+  .eq('id', student.id);
+```
 
-Each section remains toggleable on/off (existing pattern), so clinicians can include or exclude sections as needed for different districts.
+This ensures FAST/MAS/QABF results are persisted immediately, not dependent on the sync cycle.
 
-## Technical Details
+### Fix 3: Allow Editing the Date on Historical Assessments (Structured Forms)
 
-### Files Modified
+**Problem**: The `IndirectAssessmentResult` type has a `completedAt: Date` field set at save time. The saved assessments list in `IndirectAssessmentTools.tsx` shows each saved result with no way to modify the date.
+
+**Fix**: Add an "Edit date" feature to each saved assessment card. This requires:
+1. Adding an inline date picker to each saved assessment card in `IndirectAssessmentTools.tsx`
+2. Adding an `updateIndirectAssessment` action to `dataStore.ts` that mutates `indirectAssessments` for a given student
+3. Immediately persisting the date change to the database
+
+### Fix 4: Clean Up Ghost Sessions
+
+The network logs show failed session-sync calls that created duplicate, empty session records (`b142cbd2`, `71445e51`, `69ceefd6`). These bloat the session list and confuse the UI. 
+
+**Fix**: Run a database cleanup to remove sessions with no associated `session_data` entries that were created during the known failure window (Feb 18).
+
+---
+
+## Files to Modify
 
 | File | Change |
-|------|--------|
-| `src/lib/schoolFBAExport.ts` | Complete rewrite of document structure to match template formatting |
-| `src/components/FBAReportGenerator.tsx` | Add new school fields for checklist items, per-behavior details, split interview sections, observation details table, summary of findings, recommendation checkboxes |
+|---|---|
+| `src/components/IndirectAssessmentTools.tsx` | Immediate DB persist on save; Add date-edit UI on saved assessments |
+| `src/store/dataStore.ts` | Add `updateIndirectAssessment` action |
+| `src/contexts/SyncContext.tsx` | Add secondary session_data load path by user_id; remove ghost sessions |
+| Database migration | Clean up ghost sessions; add `updateIndirectAssessment` RLS-safe path |
 
-### Execution Order
+---
 
-1. Update the `SchoolFBAData` interface with all new fields
-2. Rewrite the document builder in `schoolFBAExport.ts` to match the template structure
-3. Update the UI in `FBAReportGenerator.tsx` to expose the new editable fields
-4. Wire the data flow from the UI to the export engine
+## Technical Notes
 
+- The session data for Jayden (ABC entries, frequency, duration) is **confirmed intact** in the database. Once the sync path is fixed it will be visible again.
+- The FAST results cannot be recovered from the database since they were never written — they existed only in localStorage before the security hardening excluded session state from the persistence layer.
+- The structural form date edit will require a new `updateIndirectAssessment` method in the store that also immediately writes to the database.
+- Ghost sessions (empty sessions from failed syncs) will be removed via a targeted SQL cleanup during this fix.
