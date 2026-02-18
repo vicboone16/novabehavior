@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Phone, Lock, Smartphone, ArrowLeft, Loader2, Info } from 'lucide-react';
+import { User, Phone, Lock, Smartphone, ArrowLeft, Loader2, Info, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ interface ProfileData {
   last_name: string | null;
   phone: string | null;
   email: string | null;
-  has_pin: boolean; // Changed from pin_hash to boolean - don't expose actual hash
+  has_pin: boolean;
 }
 
 export default function UserProfile() {
@@ -35,6 +35,10 @@ export default function UserProfile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Display name editing
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState('');
   
   // PIN dialog
   const [showPinSetup, setShowPinSetup] = useState(false);
@@ -69,18 +73,34 @@ export default function UserProfile() {
     }
   };
 
+  const handleUpdateDisplayName = async () => {
+    if (!user || !displayNameInput.trim()) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ display_name: displayNameInput.trim() })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      toast({ title: 'Display name updated' });
+      setEditingDisplayName(false);
+      await loadProfile();
+    } catch (error: any) {
+      toast({ title: 'Error updating display name', description: error.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleUpdatePhone = async () => {
     if (!user) return;
-    
     setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .update({ phone: phone.trim() || null })
         .eq('user_id', user.id);
-
       if (error) throw error;
-
       toast({ title: 'Phone number updated' });
       await loadProfile();
     } catch (error: any) {
@@ -92,25 +112,18 @@ export default function UserProfile() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (newPassword !== confirmPassword) {
       toast({ title: 'Passwords do not match', variant: 'destructive' });
       return;
     }
-
     if (newPassword.length < 6) {
       toast({ title: 'Password must be at least 6 characters', variant: 'destructive' });
       return;
     }
-
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-
       toast({ title: 'Password updated successfully' });
       setCurrentPassword('');
       setNewPassword('');
@@ -168,23 +181,48 @@ export default function UserProfile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input 
-                value={profile?.display_name || ''} 
-                disabled 
-                className="bg-muted"
-              />
-            </div>
-            <Alert>
-              <Info className="w-4 h-4" />
-              <AlertDescription>
-                Display names can only be changed by an administrator. 
-                Contact your admin if you need to update your name.
-              </AlertDescription>
-            </Alert>
+            {editingDisplayName ? (
+              <div className="space-y-2">
+                <Label>Display Name</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={displayNameInput}
+                    onChange={e => setDisplayNameInput(e.target.value)}
+                    placeholder="e.g. Victoria B."
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') handleUpdateDisplayName(); if (e.key === 'Escape') setEditingDisplayName(false); }}
+                  />
+                  <Button size="icon" variant="default" onClick={handleUpdateDisplayName} disabled={saving || !displayNameInput.trim()}>
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => setEditingDisplayName(false)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">This is how your name appears throughout the app.</p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Current Display Name</Label>
+                  <p className="font-semibold text-lg">{profile?.display_name || 'Not set'}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDisplayNameInput(profile?.display_name || '');
+                    setEditingDisplayName(true);
+                  }}
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                  Edit
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
 
         {/* Phone Number */}
         <Card>
