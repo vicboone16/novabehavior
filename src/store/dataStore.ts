@@ -127,6 +127,8 @@ interface DataState {
   globalBehaviorBank: GlobalBankBehavior[];
   // Overrides for built-in behavior definitions
   behaviorDefinitionOverrides: Record<string, BehaviorDefinitionOverride>;
+  // Archived built-in behavior IDs (hidden from library)
+  archivedBuiltInBehaviors: string[];
   
   // Student actions
   addStudent: (name: string) => void;
@@ -176,6 +178,8 @@ interface DataState {
   resetBehaviorDefinition: (behaviorId: string) => void;
   advancedMergeBehaviors: (options: { sourceBehaviorId: string; targetBehaviorId: string; useSourceName: boolean }) => void;
   getBehaviorBankDefinition: (behaviorId: string) => BehaviorDefinition | undefined;
+  archiveBuiltInBehavior: (behaviorId: string) => void;
+  unarchiveBuiltInBehavior: (behaviorId: string) => void;
   
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
@@ -388,6 +392,7 @@ export const useDataStore = create<DataState>()(
       lastSavedDataHash: null,
       globalBehaviorBank: [],
       behaviorDefinitionOverrides: {},
+      archivedBuiltInBehaviors: [],
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -817,6 +822,20 @@ export const useDataStore = create<DataState>()(
           const { [behaviorId]: _, ...rest } = state.behaviorDefinitionOverrides;
           return { behaviorDefinitionOverrides: rest };
         });
+      },
+
+      archiveBuiltInBehavior: (behaviorId) => {
+        set((state) => ({
+          archivedBuiltInBehaviors: state.archivedBuiltInBehaviors.includes(behaviorId)
+            ? state.archivedBuiltInBehaviors
+            : [...state.archivedBuiltInBehaviors, behaviorId],
+        }));
+      },
+
+      unarchiveBuiltInBehavior: (behaviorId) => {
+        set((state) => ({
+          archivedBuiltInBehaviors: state.archivedBuiltInBehaviors.filter((id) => id !== behaviorId),
+        }));
       },
 
       advancedMergeBehaviors: ({ sourceBehaviorId, targetBehaviorId, useSourceName }) => {

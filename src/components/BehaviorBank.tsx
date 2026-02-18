@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { BookOpen, Plus, Search, Trash2, Copy, Building2, Edit2 } from 'lucide-react';
+import { BookOpen, Plus, Search, Trash2, Copy, Building2, Edit2, Archive, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,6 +149,7 @@ export function BehaviorBank({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAddBehavior, setShowAddBehavior] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDefinition, setNewDefinition] = useState('');
   const [newCategory, setNewCategory] = useState('Other');
@@ -156,6 +157,9 @@ export function BehaviorBank({
   // Get global behavior bank and overrides from store
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
   const behaviorDefinitionOverrides = useDataStore((state) => state.behaviorDefinitionOverrides);
+  const archivedBuiltInBehaviors = useDataStore((state) => state.archivedBuiltInBehaviors);
+  const archiveBuiltInBehavior = useDataStore((state) => state.archiveBuiltInBehavior);
+  const unarchiveBuiltInBehavior = useDataStore((state) => state.unarchiveBuiltInBehavior);
 
   // Apply overrides to default behaviors
   const effectiveDefaultBehaviors = useMemo(() => {
@@ -168,17 +172,18 @@ export function BehaviorBank({
           category: override.category || behavior.category,
           isEdited: true,
           source: 'built-in' as const,
+          isArchived: archivedBuiltInBehaviors.includes(behavior.id),
         };
       }
-      return { ...behavior, isEdited: false, source: 'built-in' as const };
+      return { ...behavior, isEdited: false, source: 'built-in' as const, isArchived: archivedBuiltInBehaviors.includes(behavior.id) };
     });
-  }, [behaviorDefinitionOverrides]);
+  }, [behaviorDefinitionOverrides, archivedBuiltInBehaviors]);
 
   // Combine all behavior sources
   const allBehaviors = useMemo(() => [
     ...effectiveDefaultBehaviors,
-    ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const, isEdited: false })),
-    ...customBehaviors.map(b => ({ ...b, source: 'custom' as const, isEdited: false })),
+    ...globalBehaviorBank.map(b => ({ ...b, source: 'organization' as const, isEdited: false, isArchived: false })),
+    ...customBehaviors.map(b => ({ ...b, source: 'custom' as const, isEdited: false, isArchived: false })),
   ], [effectiveDefaultBehaviors, globalBehaviorBank, customBehaviors]);
 
   const filteredBehaviors = allBehaviors.filter(behavior => {
@@ -186,7 +191,8 @@ export function BehaviorBank({
       behavior.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       behavior.operationalDefinition.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || behavior.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesArchived = showArchived ? behavior.isArchived : !behavior.isArchived;
+    return matchesSearch && matchesCategory && matchesArchived;
   });
 
   const groupedBehaviors = filteredBehaviors.reduce((acc, behavior) => {
@@ -225,12 +231,25 @@ export function BehaviorBank({
               <BookOpen className="w-5 h-5 text-primary" />
               Behavior Bank
             </CardTitle>
-            {onAddCustomBehavior && (
-              <Button size="sm" onClick={() => setShowAddBehavior(true)}>
-                <Plus className="w-4 h-4 mr-1" />
-                Add Custom
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={showArchived ? 'secondary' : 'outline'}
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                <Archive className="w-4 h-4 mr-1" />
+                {showArchived ? 'Active' : 'Archived'}
+                {!showArchived && archivedBuiltInBehaviors.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs px-1">{archivedBuiltInBehaviors.length}</Badge>
+                )}
               </Button>
-            )}
+              {onAddCustomBehavior && (
+                <Button size="sm" onClick={() => setShowAddBehavior(true)}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Custom
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -300,15 +319,36 @@ export function BehaviorBank({
                             </p>
                           </div>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8"
-                              onClick={() => onSelectBehavior(behavior)}
-                            >
-                              <Copy className="w-3 h-3 mr-1" />
-                              Use
-                            </Button>
+                            {!behavior.isArchived && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => onSelectBehavior(behavior)}
+                              >
+                                <Copy className="w-3 h-3 mr-1" />
+                                Use
+                              </Button>
+                            )}
+                            {behavior.source === 'built-in' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                title={behavior.isArchived ? 'Restore behavior' : 'Archive behavior'}
+                                onClick={() =>
+                                  behavior.isArchived
+                                    ? unarchiveBuiltInBehavior(behavior.id)
+                                    : archiveBuiltInBehavior(behavior.id)
+                                }
+                              >
+                                {behavior.isArchived ? (
+                                  <ArchiveRestore className="w-3 h-3" />
+                                ) : (
+                                  <Archive className="w-3 h-3" />
+                                )}
+                              </Button>
+                            )}
                             {behavior.source === 'custom' && onDeleteCustomBehavior && (
                               <Button
                                 variant="ghost"
