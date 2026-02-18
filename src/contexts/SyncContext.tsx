@@ -540,16 +540,34 @@ export function SyncProvider({ children }: SyncProviderProps) {
         previousSessionsRef.current = JSON.stringify(mappedSessions.map(s => s.id));
       }
 
-      // Load LIVE session data (active session from another device)
-      // Look for sessions with status = 'active' to get live data
+      // Load LIVE session data — only resume if the current user is an active participant.
+      // Supervisors or admins who are not in the session should NOT have their timer started.
       const { data: activeSessionData } = await supabase
         .from('sessions')
-        .select('id, student_ids, start_time')
-        .eq('user_id', user.id)
+        .select('id, student_ids, start_time, user_id')
+        .eq('user_id', user.id)          // session must belong to this user
         .eq('status', 'active')
         .order('start_time', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // Also check session_participants to confirm this user is an active participant
+      // (not just a supervisor viewing the session)
+      let userIsParticipant = false;
+      if (activeSessionData) {
+        // The session owner is always a participant
+        userIsParticipant = activeSessionData.user_id === user.id;
+        if (!userIsParticipant) {
+          const participantResp = await (supabase as any)
+            .from('session_participants')
+            .select('id')
+            .eq('session_id', activeSessionData.id)
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .maybeSingle();
+          userIsParticipant = !!participantResp?.data;
+        }
+      }
 
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
@@ -590,7 +608,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
           currentState.intervalEntries.some(e => e.sessionId === currentState.currentSessionId) ||
           currentState.abcEntries.some(e => e.sessionId === currentState.currentSessionId);
 
-        const shouldResumeCloudSession = !hasLocalActiveSession || isSameSession;
+        // Only resume if user is an active participant in this session.
+        // Supervisors/admins who are not participating should NOT have their timer started.
+        const shouldResumeCloudSession = userIsParticipant && (!hasLocalActiveSession || isSameSession);
 
         // Load live session data entries (may be empty for a freshly-started session)
         const { data: liveEntries, error: liveEntriesError } = await supabase
