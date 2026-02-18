@@ -77,6 +77,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
   // Agencies for selection
   const [agencies, setAgencies] = useState<Agency[]>([]);
+  const [customRoles, setCustomRoles] = useState<{ id: string; name: string }[]>([]);
   
   // New staff form
   const [newStaffForm, setNewStaffForm] = useState({
@@ -87,8 +88,9 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     pin: '',
     phone: '',
     credential: '',
+    credentialOther: '',
     npi: '',
-    title: 'Clinician',
+    title: 'Staff',
     supervisor_id: '',
     role: 'staff',
     agency_id: '',
@@ -106,13 +108,13 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load agencies
-      const { data: agenciesData } = await supabase
-        .from('agencies')
-        .select('id, name, status')
-        .eq('status', 'active')
-        .order('name');
-      setAgencies(agenciesData || []);
+      // Load agencies + custom roles in parallel
+      const [agenciesRes, customRolesRes] = await Promise.all([
+        supabase.from('agencies').select('id, name, status').eq('status', 'active').order('name'),
+        (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+      ]);
+      setAgencies(agenciesRes.data || []);
+      setCustomRoles((customRolesRes.data as { id: string; name: string }[]) || []);
 
       // Load all staff with their roles
       const { data: profiles, error: profilesError } = await supabase
@@ -200,9 +202,9 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     }
   };
 
-  // Get supervisors (admins with clinicians under them)
+  // Supervisors = all admins/super_admins in the system (can always supervise)
   const supervisors = useMemo(() => 
-    staff.filter(s => s.roles.includes('admin') || s.clinician_count! > 0),
+    staff.filter(s => s.roles.includes('admin') || s.roles.includes('super_admin')),
     [staff]
   );
 
@@ -297,7 +299,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
           first_name: newStaffForm.first_name,
           last_name: newStaffForm.last_name,
           phone: newStaffForm.phone,
-          credential: newStaffForm.credential,
+          credential: newStaffForm.credential === 'Other' ? newStaffForm.credentialOther : newStaffForm.credential,
           npi: newStaffForm.npi,
           supervisor_id: newStaffForm.supervisor_id || undefined,
           title: newStaffForm.title,
@@ -335,8 +337,9 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         pin: '',
         phone: '',
         credential: '',
+        credentialOther: '',
         npi: '',
-        title: 'Clinician',
+        title: 'Staff',
         supervisor_id: '',
         role: 'staff',
         agency_id: '',
@@ -476,7 +479,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         </div>
         <Button onClick={() => setShowAddStaff(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add New Clinician
+          Add New Staff Member
         </Button>
       </div>
     );
@@ -706,23 +709,42 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                     <SelectContent>
                       <SelectItem value="staff">Staff</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
+                      {customRoles.length > 0 && (
+                        <>
+                          <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
+                          {customRoles.map(r => (
+                            <SelectItem key={r.id} value={`custom:${r.id}`}>{r.name}</SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Credential</Label>
-                  <Select value={newStaffForm.credential} onValueChange={(v) => setNewStaffForm(f => ({ ...f, credential: v }))}>
+                  <Select value={newStaffForm.credential} onValueChange={(v) => setNewStaffForm(f => ({ ...f, credential: v, credentialOther: v !== 'Other' ? '' : f.credentialOther }))}>
                     <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="N/A">N/A</SelectItem>
                       <SelectItem value="BCBA">BCBA</SelectItem>
+                      <SelectItem value="BCBA-D">BCBA-D</SelectItem>
                       <SelectItem value="BCaBA">BCaBA</SelectItem>
                       <SelectItem value="RBT">RBT</SelectItem>
-                      <SelectItem value="BCBA-D">BCBA-D</SelectItem>
                       <SelectItem value="QBA">QBA</SelectItem>
+                      <SelectItem value="LMFT">LMFT</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {newStaffForm.credential === 'Other' && (
+                    <Input
+                      className="mt-1.5"
+                      value={newStaffForm.credentialOther}
+                      onChange={(e) => setNewStaffForm(f => ({ ...f, credentialOther: e.target.value }))}
+                      placeholder="Enter credential (e.g. LCSW, PsyD...)"
+                    />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Supervisor</Label>

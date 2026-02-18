@@ -66,7 +66,14 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
 
   const loadRoleAndAgencies = useCallback(async () => {
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', profile.user_id).maybeSingle();
-    if (roleData) setCurrentRole(roleData.role);
+
+    // Check if user has a custom role assigned
+    const customRoleResp = await (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', profile.user_id).maybeSingle();
+    if (customRoleResp?.data?.custom_role_id) {
+      setCurrentRole(`custom:${customRoleResp.data.custom_role_id}`);
+    } else if (roleData) {
+      setCurrentRole(roleData.role);
+    }
 
     const { data: memberData } = await supabase.from('agency_memberships').select('id, agency_id, role, status, agencies(name)').eq('user_id', profile.user_id).order('created_at', { ascending: true });
     if (memberData) {
@@ -93,11 +100,22 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
   const handleRoleChange = async (newRole: string) => {
     setRoleLoading(true);
     try {
-      await supabase.from('user_roles').delete().eq('user_id', profile.user_id);
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({ user_id: profile.user_id, role: newRole as 'super_admin' | 'admin' | 'staff' | 'viewer' });
-      if (error) throw error;
+      const isCustomRole = newRole.startsWith('custom:');
+      if (isCustomRole) {
+        // Store custom role assignment — keep base role as 'staff', add custom role link
+        const customRoleId = newRole.replace('custom:', '');
+        await (supabase as any).from('user_custom_roles').delete().eq('user_id', profile.user_id);
+        const { error } = await (supabase as any).from('user_custom_roles').insert({ user_id: profile.user_id, custom_role_id: customRoleId });
+        if (error) throw error;
+      } else {
+        // Base role — update user_roles, clear any custom role assignment
+        await supabase.from('user_roles').delete().eq('user_id', profile.user_id);
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: profile.user_id, role: newRole as 'super_admin' | 'admin' | 'staff' | 'viewer' });
+        if (error) throw error;
+        await (supabase as any).from('user_custom_roles').delete().eq('user_id', profile.user_id);
+      }
       setCurrentRole(newRole);
       toast.success('Role updated successfully');
     } catch (err) {
