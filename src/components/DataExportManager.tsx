@@ -31,7 +31,7 @@ const CHART_COLORS = [
   'hsl(280, 65%, 70%)',
 ];
 
-type DateFrame = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom';
+type DateFrame = 'all' | 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 const SAMPLING_TYPE_LABELS: Record<string, string> = {
   partial: 'Partial Interval Recording',
@@ -45,9 +45,11 @@ export function DataExportManager() {
   const reportRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   
-  // Date frame selection
-  const [dateFrame, setDateFrame] = useState<DateFrame>('thisWeek');
+  // Date frame selection — default to "All Time" so historical data is always visible
+  const [dateFrame, setDateFrame] = useState<DateFrame>('all');
   const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
+  // Specific session selection (empty = all sessions in date range)
+  const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   
   // Filters
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
