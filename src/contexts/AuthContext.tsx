@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useDataStore } from '@/store/dataStore';
 
 export type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
@@ -154,6 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear any active session state before signing out so the timer
+    // doesn't persist or auto-resume on the next login.
+    try {
+      useDataStore.getState().forceEndAllSessions();
+    } catch (e) {
+      console.warn('[Auth] Could not clear session state on sign out:', e);
+    }
     setProfile(null);
     setUserRole(null);
     setRoleLoading(true);
