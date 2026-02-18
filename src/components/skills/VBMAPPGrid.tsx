@@ -41,6 +41,7 @@ import { EmbeddedTransitionGrid } from './VBMAPPTransitionGrid';
 import { EmbeddedEESAGrid } from './VBMAPPEESAGrid';
 import type { StudentAssessment, MilestoneScore, CurriculumItem } from '@/types/curriculum';
 import { AssessmentReportExport } from '@/components/assessment/AssessmentReportExport';
+import { VBMAPPMasterGrid, type HistoricalEntry } from './VBMAPPMasterGrid';
 
 // Known curriculum system IDs for subtests
 const BARRIERS_SYSTEM_ID = 'a0b1c2d3-e4f5-4a6b-8c9d-100000000001';
@@ -68,11 +69,11 @@ const SCORE_OPTIONS = [
 
 // Colors for different assessment dates
 const DATE_COLORS = [
-  { bg: 'bg-blue-500', text: 'text-blue-500', ring: 'ring-blue-500', label: 'Current' },
-  { bg: 'bg-purple-500', text: 'text-purple-500', ring: 'ring-purple-500', label: 'Previous 1' },
-  { bg: 'bg-orange-500', text: 'text-orange-500', ring: 'ring-orange-500', label: 'Previous 2' },
-  { bg: 'bg-teal-500', text: 'text-teal-500', ring: 'ring-teal-500', label: 'Previous 3' },
-  { bg: 'bg-pink-500', text: 'text-pink-500', ring: 'ring-pink-500', label: 'Previous 4' },
+  { bg: 'bg-blue-500', text: 'text-blue-500', ring: 'ring-blue-500', label: 'Current', hex: '#3b82f6' },
+  { bg: 'bg-purple-500', text: 'text-purple-500', ring: 'ring-purple-500', label: 'Previous 1', hex: '#a855f7' },
+  { bg: 'bg-orange-500', text: 'text-orange-500', ring: 'ring-orange-500', label: 'Previous 2', hex: '#f97316' },
+  { bg: 'bg-teal-500', text: 'text-teal-500', ring: 'ring-teal-500', label: 'Previous 3', hex: '#14b8a6' },
+  { bg: 'bg-pink-500', text: 'text-pink-500', ring: 'ring-pink-500', label: 'Previous 4', hex: '#ec4899' },
 ];
 
 export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments = [], onBack, onSave }: VBMAPPGridProps) {
@@ -89,7 +90,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
   const [showHistoricalOverlay, setShowHistoricalOverlay] = useState(true);
-  const [activeView, setActiveView] = useState<'milestones' | 'report'>('milestones');
+  const [activeView, setActiveView] = useState<'milestones' | 'grid' | 'report'>('grid');
   const [activeSubtest, setActiveSubtest] = useState<'milestones' | 'barriers' | 'transition' | 'eesa'>('milestones');
   const [clearDomainConfirm, setClearDomainConfirm] = useState<{ domain: string; level: string } | null>(null);
   const [showReportExport, setShowReportExport] = useState(false);
@@ -106,6 +107,15 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
       color: DATE_COLORS[Math.min(index + 1, DATE_COLORS.length - 1)],
     }));
   }, [allAssessments, assessment.id]);
+
+  // Historical entries formatted for the master grid (with hex colors)
+  const masterGridHistoricalEntries: HistoricalEntry[] = useMemo(() => {
+    return historicalScores.map((h) => ({
+      assessment: h.assessment,
+      scores: h.scores,
+      hexColor: h.color.hex,
+    }));
+  }, [historicalScores]);
 
   // Group items by domain and level
   const itemsByDomainAndLevel = useMemo(() => {
@@ -188,6 +198,19 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
       return next;
     });
     toast.success('Score cleared');
+  };
+
+  // Cycle score in master grid: undefined → 0.5 → 1 → undefined
+  const handleCellCycleScore = (itemId: string, currentScore: number | undefined) => {
+    if (currentScore === undefined || currentScore === null) {
+      handleScoreChange(itemId, 0.5);
+    } else if (currentScore === 0.5) {
+      handleScoreChange(itemId, 1);
+    } else if (currentScore === 1) {
+      handleScoreChange(itemId, 0);
+    } else {
+      handleClearScore(itemId);
+    }
   };
 
   const handleClearDomainRow = (domain: string, level: string) => {
@@ -311,12 +334,21 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
           {/* View Toggle */}
           <div className="flex border rounded-lg overflow-hidden">
             <Button 
+              variant={activeView === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setActiveView('grid')}
+            >
+              <BarChart3 className="w-4 h-4 mr-1" />
+              Grid
+            </Button>
+            <Button 
               variant={activeView === 'milestones' ? 'default' : 'ghost'}
               size="sm"
               className="rounded-none"
               onClick={() => setActiveView('milestones')}
             >
-              Milestones
+              List
             </Button>
             <Button 
               variant={activeView === 'report' ? 'default' : 'ghost'}
@@ -324,7 +356,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
               className="rounded-none"
               onClick={() => setActiveView('report')}
             >
-              <BarChart3 className="w-4 h-4 mr-1" />
               Report
             </Button>
           </div>
@@ -394,6 +425,17 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
           curriculumSystemId={EESA_SYSTEM_ID}
           scores={scores}
           onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* Master Grid View (official VB-MAPP scoring form visual) */}
+      {activeSubtest === 'milestones' && activeView === 'grid' && (
+        <VBMAPPMasterGrid
+          items={allItems}
+          scores={scores}
+          historicalEntries={masterGridHistoricalEntries}
+          showHistorical={showHistoricalOverlay}
+          onCellClick={handleCellCycleScore}
         />
       )}
 
