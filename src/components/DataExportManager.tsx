@@ -67,6 +67,8 @@ export function DataExportManager() {
   const dateRange = useMemo(() => {
     const now = new Date();
     switch (dateFrame) {
+      case 'all':
+        return { from: new Date('2000-01-01'), to: new Date('2100-01-01') };
       case 'today':
         return { from: startOfDay(now), to: endOfDay(now) };
       case 'yesterday':
@@ -88,7 +90,7 @@ export function DataExportManager() {
           to: customDateRange.to ? endOfDay(customDateRange.to) : endOfDay(now) 
         };
       default:
-        return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfWeek(now, { weekStartsOn: 1 }) };
+        return { from: new Date('2000-01-01'), to: new Date('2100-01-01') };
     }
   }, [dateFrame, customDateRange]);
 
@@ -133,22 +135,24 @@ export function DataExportManager() {
     };
   }, [filteredSessions, selectedStudentIds, selectedBehaviorIds, selectedMethods]);
 
-  // Get unique students from sessions
+  // Get unique students from ALL sessions (not just filtered) so dropdowns are always populated
+  // regardless of the current date range selection. This prevents "catch-22" where empty
+  // date range → empty dropdowns → can't select students to look at their data.
   const sessionStudentIds = useMemo(() => {
     const ids = new Set<string>();
-    filteredSessions.forEach(s => {
+    sessions.forEach(s => {
       s.frequencyEntries.forEach(e => ids.add(e.studentId));
       s.durationEntries.forEach(e => ids.add(e.studentId));
       s.intervalEntries.forEach(e => ids.add(e.studentId));
       s.abcEntries.forEach(e => ids.add(e.studentId));
     });
     return Array.from(ids);
-  }, [filteredSessions]);
+  }, [sessions]);
 
-  // Get unique behaviors
+  // Get unique behaviors from ALL sessions (decoupled from date filter)
   const sessionBehaviors = useMemo(() => {
     const behaviors = new Map<string, string>();
-    filteredSessions.forEach(session => {
+    sessions.forEach(session => {
       session.frequencyEntries.forEach(e => {
         const student = students.find(s => s.id === e.studentId);
         const behavior = student?.behaviors.find(b => b.id === e.behaviorId);
@@ -166,17 +170,17 @@ export function DataExportManager() {
       });
     });
     return Array.from(behaviors.entries());
-  }, [filteredSessions, students]);
+  }, [sessions, students]);
 
-  // Available methods
+  // Available methods from ALL sessions (decoupled from date filter)
   const availableMethods = useMemo(() => {
     const methods: DataCollectionMethod[] = [];
-    if (filteredSessions.some(s => s.frequencyEntries.length > 0)) methods.push('frequency');
-    if (filteredSessions.some(s => s.durationEntries.length > 0)) methods.push('duration');
-    if (filteredSessions.some(s => s.intervalEntries.length > 0)) methods.push('interval');
-    if (filteredSessions.some(s => s.abcEntries.length > 0)) methods.push('abc');
+    if (sessions.some(s => s.frequencyEntries.length > 0)) methods.push('frequency');
+    if (sessions.some(s => s.durationEntries.length > 0)) methods.push('duration');
+    if (sessions.some(s => s.intervalEntries.length > 0)) methods.push('interval');
+    if (sessions.some(s => s.abcEntries.length > 0)) methods.push('abc');
     return methods;
-  }, [filteredSessions]);
+  }, [sessions]);
 
   // Chart data for trend visualization
   const trendChartData = useMemo(() => {
@@ -780,6 +784,7 @@ export function DataExportManager() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="today">Today</SelectItem>
               <SelectItem value="yesterday">Yesterday</SelectItem>
               <SelectItem value="thisWeek">This Week</SelectItem>
@@ -810,7 +815,7 @@ export function DataExportManager() {
           )}
 
           <Badge variant="outline" className="ml-2">
-            {format(dateRange.from, 'MMM d')} - {format(dateRange.to, 'MMM d, yyyy')}
+            {dateFrame === 'all' ? 'All Time' : `${format(dateRange.from, 'MMM d')} – ${format(dateRange.to, 'MMM d, yyyy')}`}
           </Badge>
 
           <Badge variant="secondary">
