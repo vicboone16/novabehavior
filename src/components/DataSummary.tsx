@@ -46,12 +46,28 @@ export function DataSummary() {
 
   const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
 
-  const totalABC = abcEntries.length;
-  const totalFrequency = frequencyEntries.reduce((sum, e) => sum + e.count, 0);
-  const totalDuration = durationEntries
+  // Pull currentSessionId so summary ONLY reflects the active session's data
+  const { currentSessionId } = useDataStore();
+
+  const activeABCEntries = currentSessionId
+    ? abcEntries.filter(e => e.sessionId === currentSessionId)
+    : [];
+  const activeFrequencyEntries = currentSessionId
+    ? frequencyEntries.filter(e => e.sessionId === currentSessionId && !e.isHistorical)
+    : [];
+  const activeDurationEntries = currentSessionId
+    ? durationEntries.filter(e => e.sessionId === currentSessionId)
+    : [];
+  const activeIntervalEntries = currentSessionId
+    ? intervalEntries.filter(e => e.sessionId === currentSessionId)
+    : [];
+
+  const totalABC = activeABCEntries.length;
+  const totalFrequency = activeFrequencyEntries.reduce((sum, e) => sum + e.count, 0);
+  const totalDuration = activeDurationEntries
     .filter(e => e.endTime)
     .reduce((sum, e) => sum + e.duration, 0);
-  const totalIntervals = intervalEntries.length;
+  const totalIntervals = activeIntervalEntries.length;
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -248,10 +264,10 @@ export function DataSummary() {
 
               <div className="space-y-6">
                 {selectedStudents.map(student => {
-                  const studentABC = abcEntries.filter(e => e.studentId === student.id);
-                  const studentFreq = frequencyEntries.filter(e => e.studentId === student.id);
-                  const studentDur = durationEntries.filter(e => e.studentId === student.id && e.endTime);
-                  const studentInt = intervalEntries.filter(e => e.studentId === student.id);
+                  const studentABC = activeABCEntries.filter(e => e.studentId === student.id);
+                  const studentFreq = activeFrequencyEntries.filter(e => e.studentId === student.id);
+                  const studentDur = activeDurationEntries.filter(e => e.studentId === student.id && e.endTime);
+                  const studentInt = activeIntervalEntries.filter(e => e.studentId === student.id);
 
                   return (
                     <div key={student.id} className="border border-border rounded-lg p-4">
