@@ -52,14 +52,17 @@ Deno.serve(async (req) => {
       { _email: normalizedEmail || "unknown", _ip_address: clientIP }
     );
 
-    if (rateLimitError) {
-      console.error("Rate limit check error:", rateLimitError);
-    }
-
-    if (isAllowed === false) {
+    // Fail closed: if the rate limit check errors OR returns anything other than true,
+    // deny the request. This prevents brute force during system degradation.
+    if (rateLimitError || isAllowed !== true) {
+      if (rateLimitError) {
+        console.error("Rate limit check error (failing closed):", rateLimitError);
+      }
       return new Response(
         JSON.stringify({ 
-          error: "Too many failed attempts. Please try again later.",
+          error: isAllowed === false
+            ? "Too many failed attempts. Please try again later."
+            : "Authentication temporarily unavailable. Please try again.",
           rateLimited: true 
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
