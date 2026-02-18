@@ -168,6 +168,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  // Clear session timer state whenever the authenticated user changes (login/logout/switch)
+  useEffect(() => {
+    if (user) {
+      // A new user just logged in - always start with a clean timer slate
+      // so one user's active session never bleeds into another's view
+      try {
+        const store = useDataStore.getState();
+        if (store.sessionStartTime) {
+          console.log('[Auth] New user login - clearing lingering session timer state');
+          store.forceEndAllSessions();
+        }
+      } catch (e) {
+        console.warn('[Auth] Could not clear session state on login:', e);
+      }
+    }
+  }, [user?.id]); // only fires when the actual user ID changes
+
   return (
     <AuthContext.Provider value={{ user, session, profile, userRole, roleLoading, loading, signUp, signIn, signOut, refreshRole }}>
       {children}

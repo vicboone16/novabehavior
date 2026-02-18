@@ -6,8 +6,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useDataStore } from '@/store/dataStore';
 import { SessionEndFlow } from './SessionEndFlow';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSessionParticipants } from '@/hooks/useSessionParticipants';
+import { NoteDelegationPanel } from './session/NoteDelegationPanel';
+
 
 export function SessionTimer() {
+  const { user, userRole } = useAuth();
   const { 
     sessionStartTime, 
     startSession,
@@ -19,6 +24,11 @@ export function SessionTimer() {
     students,
     getStudentSessionStatus
   } = useDataStore();
+
+  const { participants } = useSessionParticipants(currentSessionId);
+  const isMultiStaff = participants.length > 1;
+  const isBcba = userRole === 'admin' || userRole === 'super_admin';
+
   
   const [isMinimized, setIsMinimized] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -65,13 +75,32 @@ export function SessionTimer() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
-  const handleToggle = () => {
+  // (joinSession for the JoinActiveSessionBanner; here we register via inline supabase call after start)
+
+  const handleToggle = async () => {
     if (!sessionStartTime) {
       // Start a new session
       startSession();
       setIsPaused(false);
       setPausedTime(0);
       setPausedAt(null);
+      // Register the session starter as the first participant (lead + default note delegate)
+      // We use a short delay so currentSessionId is set in the store before we read it
+      setTimeout(async () => {
+        const newSessionId = useDataStore.getState().currentSessionId;
+        if (newSessionId && user) {
+          const { supabase } = await import('@/integrations/supabase/client');
+          await supabase.from('session_participants').upsert({
+            session_id: newSessionId,
+            user_id: user.id,
+            student_ids: useDataStore.getState().selectedStudentIds,
+            role: 'lead',
+            note_delegate: true,
+            note_delegate_assigned_by: user.id,
+            note_delegate_assigned_at: new Date().toISOString(),
+          }, { onConflict: 'session_id,user_id' });
+        }
+      }, 50);
     } else if (isPaused) {
       // Resume from pause
       if (pausedAt) {
@@ -232,6 +261,14 @@ export function SessionTimer() {
           </div>
         </div>
       </div>
+
+      {/* Multi-staff note delegation panel - shown when >1 participant */}
+      {currentSessionId && isMultiStaff && (
+        <NoteDelegationPanel
+          sessionId={currentSessionId}
+          canAssign={isBcba}
+        />
+      )}
 
       <SessionEndFlow
         open={showEndFlow}

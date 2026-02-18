@@ -421,6 +421,7 @@ export type Database = {
           recurrence_rule: Json | null
           service_setting: string | null
           service_type: string | null
+          shared_session_id: string | null
           staff_user_id: string | null
           staff_user_ids: string[] | null
           start_time: string
@@ -451,6 +452,7 @@ export type Database = {
           recurrence_rule?: Json | null
           service_setting?: string | null
           service_type?: string | null
+          shared_session_id?: string | null
           staff_user_id?: string | null
           staff_user_ids?: string[] | null
           start_time: string
@@ -481,6 +483,7 @@ export type Database = {
           recurrence_rule?: Json | null
           service_setting?: string | null
           service_type?: string | null
+          shared_session_id?: string | null
           staff_user_id?: string | null
           staff_user_ids?: string[] | null
           start_time?: string
@@ -7641,6 +7644,51 @@ export type Database = {
           },
         ]
       }
+      session_participants: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          left_at: string | null
+          note_delegate: boolean
+          note_delegate_assigned_at: string | null
+          note_delegate_assigned_by: string | null
+          role: string
+          session_id: string
+          student_ids: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          note_delegate?: boolean
+          note_delegate_assigned_at?: string | null
+          note_delegate_assigned_by?: string | null
+          role?: string
+          session_id: string
+          student_ids?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          note_delegate?: boolean
+          note_delegate_assigned_at?: string | null
+          note_delegate_assigned_by?: string | null
+          role?: string
+          session_id?: string
+          student_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           appointment_id: string | null
@@ -7663,6 +7711,8 @@ export type Database = {
           interval_length_seconds: number
           location_detail: string | null
           name: string
+          note_delegate_method: string | null
+          note_delegate_user_id: string | null
           provider_id: string | null
           service_setting: string | null
           service_type: string | null
@@ -7694,6 +7744,8 @@ export type Database = {
           interval_length_seconds?: number
           location_detail?: string | null
           name: string
+          note_delegate_method?: string | null
+          note_delegate_user_id?: string | null
           provider_id?: string | null
           service_setting?: string | null
           service_type?: string | null
@@ -7725,6 +7777,8 @@ export type Database = {
           interval_length_seconds?: number
           location_detail?: string | null
           name?: string
+          note_delegate_method?: string | null
+          note_delegate_user_id?: string | null
           provider_id?: string | null
           service_setting?: string | null
           service_type?: string | null
