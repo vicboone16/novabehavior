@@ -129,22 +129,24 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         .from('user_roles')
         .select('user_id, role');
 
-      // Get patient counts for each clinician
-      const { data: caseloads } = await supabase
-        .from('staff_caseloads')
-        .select('clinician_user_id, student_id')
-        .eq('status', 'active');
-
-      // Fetch staff credentials for NPI and certification info
-      const { data: credentials } = await supabase
-        .from('staff_credentials')
-        .select('user_id, credential_type, credential_number, is_verified')
-        .in('credential_type', ['NPI', 'BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA', 'State License']);
+      // Get client counts for each clinician — from BOTH assignment tables
+      const [caseloadsRes, teamAssignmentsRes, credentialsRes] = await Promise.all([
+        supabase.from('staff_caseloads').select('clinician_user_id, student_id').eq('status', 'active'),
+        supabase.from('client_team_assignments').select('staff_user_id, client_id').eq('is_active', true),
+        supabase.from('staff_credentials').select('user_id, credential_type, credential_number, is_verified').in('credential_type', ['NPI', 'BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA', 'State License']),
+      ]);
+      const caseloads = caseloadsRes.data;
+      const teamAssignments = teamAssignmentsRes.data;
+      const credentials = credentialsRes.data;
 
       // Build staff list with counts
       const staffWithCounts: StaffMember[] = (profiles || []).map(p => {
         const userRoles = roles?.filter(r => r.user_id === p.user_id).map(r => r.role) || [];
-        const patientCount = caseloads?.filter(c => c.clinician_user_id === p.user_id).length || 0;
+        // Count from staff_caseloads (unique student IDs) + client_team_assignments, deduplicated
+        const caseloadStudentIds = new Set((caseloads || []).filter(c => c.clinician_user_id === p.user_id).map(c => c.student_id));
+        const teamStudentIds = new Set((teamAssignments || []).filter(c => c.staff_user_id === p.user_id).map(c => c.client_id));
+        const allClientIds = new Set([...caseloadStudentIds, ...teamStudentIds]);
+        const patientCount = allClientIds.size;
         const clinicianCount = profiles?.filter(pr => pr.supervisor_id === p.user_id).length || 0;
         const supervisor = profiles?.find(pr => pr.user_id === p.supervisor_id);
 
@@ -210,7 +212,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     return staff.filter(s => s.supervisor_id === selectedSupervisor.user_id);
   }, [staff, selectedSupervisor]);
 
-  // Get patients/students assigned to selected clinician
+  // Get clients assigned to selected clinician
   const patientsUnderClinician = useMemo(() => {
     // This would need caseload data to show actual patients
     return students.slice(0, selectedClinician?.patient_count || 0);
@@ -428,7 +430,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
             </h2>
             <p className="text-sm text-muted-foreground">
               {selectedClinician.credential || selectedClinician.title} • 
-              Patients: <span className="text-primary font-medium">{selectedClinician.patient_count}</span>
+              Clients: <span className="text-primary font-medium">{selectedClinician.patient_count}</span>
             </p>
           </div>
         </div>
@@ -457,7 +459,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                 Clinicians: {selectedSupervisor.clinician_count}
               </span>
               <span className="mx-2">|</span>
-              Patients: {selectedSupervisor.patient_count}
+              Clients: {selectedSupervisor.patient_count}
             </p>
           </div>
         </div>
@@ -487,12 +489,12 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       return (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            All patients assigned to {selectedClinician.first_name} {selectedClinician.last_name}
+            All clients assigned to {selectedClinician.first_name} {selectedClinician.last_name}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {patientsUnderClinician.length === 0 ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">
-                No patients assigned to this clinician
+                No clients assigned to this clinician
               </div>
             ) : (
               patientsUnderClinician.map(patient => (
@@ -508,7 +510,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                     </Avatar>
                     <div>
                       <p className="font-medium">{patient.name}</p>
-                      <p className="text-xs text-muted-foreground">Patient</p>
+                      <p className="text-xs text-muted-foreground">Client</p>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full mt-3" size="sm">
@@ -966,7 +968,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                 <div className="flex gap-4 pt-4 border-t">
                   <div className="flex-1 text-center p-3 rounded-lg bg-primary/5">
                     <p className="text-2xl font-bold text-primary">{showStaffDetails.patient_count}</p>
-                    <p className="text-xs text-muted-foreground">Active Patients</p>
+                    <p className="text-xs text-muted-foreground">Active Clients</p>
                   </div>
                   {showStaffDetails.clinician_count! > 0 && (
                     <div className="flex-1 text-center p-3 rounded-lg bg-secondary">

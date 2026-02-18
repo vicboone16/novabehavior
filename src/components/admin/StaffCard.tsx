@@ -119,7 +119,7 @@ export function StaffCard({
               {showPatientCount && (
                 <span className="text-primary font-medium flex items-center gap-1">
                   <User className="w-3.5 h-3.5" />
-                  {showClinicianCount ? 'Patients' : 'Clients'}: <span className="font-bold">{staff.patient_count}</span>
+                  Clients: <span className="font-bold">{staff.patient_count}</span>
                 </span>
               )}
             </div>
@@ -168,7 +168,7 @@ export function StaffCard({
                 {onViewPatients && (
                   <DropdownMenuItem onClick={() => onViewPatients(staff)}>
                     <Users className="w-4 h-4 mr-2" />
-                    View Patients
+                    View Clients
                   </DropdownMenuItem>
                 )}
                 {onViewSchedule && (
