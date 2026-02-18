@@ -7646,7 +7646,9 @@ export type Database = {
       }
       session_participants: {
         Row: {
+          collection_intervals: Json | null
           created_at: string
+          data_entry_count: number | null
           id: string
           joined_at: string
           left_at: string | null
@@ -7660,7 +7662,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          collection_intervals?: Json | null
           created_at?: string
+          data_entry_count?: number | null
           id?: string
           joined_at?: string
           left_at?: string | null
@@ -7674,7 +7678,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          collection_intervals?: Json | null
           created_at?: string
+          data_entry_count?: number | null
           id?: string
           joined_at?: string
           left_at?: string | null
@@ -7812,6 +7818,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shared_session_data: {
+        Row: {
+          behavior_id: string | null
+          collected_at: string
+          collected_by_display_name: string | null
+          collected_by_user_id: string
+          created_at: string
+          entry_id: string
+          entry_type: string
+          id: string
+          is_deleted: boolean | null
+          payload: Json
+          session_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          behavior_id?: string | null
+          collected_at?: string
+          collected_by_display_name?: string | null
+          collected_by_user_id: string
+          created_at?: string
+          entry_id: string
+          entry_type: string
+          id?: string
+          is_deleted?: boolean | null
+          payload?: Json
+          session_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          behavior_id?: string | null
+          collected_at?: string
+          collected_by_display_name?: string | null
+          collected_by_user_id?: string
+          created_at?: string
+          entry_id?: string
+          entry_type?: string
+          id?: string
+          is_deleted?: boolean | null
+          payload?: Json
+          session_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       signature_audit_log: {
         Row: {

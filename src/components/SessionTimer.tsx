@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSessionParticipants } from '@/hooks/useSessionParticipants';
 import { NoteDelegationPanel } from './session/NoteDelegationPanel';
+import { LeaveOrEndSessionDialog } from './session/LeaveOrEndSessionDialog';
 
 
 export function SessionTimer() {
@@ -25,17 +26,21 @@ export function SessionTimer() {
     getStudentSessionStatus
   } = useDataStore();
 
-  const { participants } = useSessionParticipants(currentSessionId);
-  const isMultiStaff = participants.length > 1;
+  const { participants, leaveSession } = useSessionParticipants(currentSessionId);
+  // Other active participants (not the current user, and haven't left)
+  const otherActiveParticipants = participants.filter(
+    p => p.user_id !== user?.id && !p.left_at
+  );
+  const isMultiStaff = participants.filter(p => !p.left_at).length > 1;
   const isBcba = userRole === 'admin' || userRole === 'super_admin';
 
-  
   const [isMinimized, setIsMinimized] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [pausedTime, setPausedTime] = useState(0);
   const [pausedAt, setPausedAt] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [showEndFlow, setShowEndFlow] = useState(false);
+  const [showLeaveOrEnd, setShowLeaveOrEnd] = useState(false);
   
   const isRunning = !!sessionStartTime && !isPaused;
 
@@ -74,8 +79,6 @@ export function SessionTimer() {
     }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, []);
-
-  // (joinSession for the JoinActiveSessionBanner; here we register via inline supabase call after start)
 
   const handleToggle = async () => {
     if (!sessionStartTime) {
@@ -126,7 +129,6 @@ export function SessionTimer() {
   };
 
   const handleEndSession = () => {
-    // If no students selected at all, show a helpful message
     if (selectedStudentIds.length === 0) {
       toast({
         title: 'No students selected',
@@ -135,7 +137,29 @@ export function SessionTimer() {
       });
       return;
     }
-    setShowEndFlow(true);
+
+    // If other staff are still actively in the session, show the Leave/End dialog
+    if (otherActiveParticipants.length > 0) {
+      setShowLeaveOrEnd(true);
+    } else {
+      setShowEndFlow(true);
+    }
+  };
+
+  /** Current user leaves the session without ending it for others */
+  const handleLeaveSession = async () => {
+    // Stamp the leave interval on their participant record
+    await leaveSession();
+    // Clear local session state for this user only
+    setIsPaused(false);
+    setPausedAt(null);
+    setPausedTime(0);
+    setElapsed(0);
+    resetSessionData();
+    toast({
+      title: 'You left the session',
+      description: 'Your data collection interval has been recorded. The session continues for other staff.',
+    });
   };
 
   const handleEndFlowComplete = () => {
@@ -207,6 +231,31 @@ export function SessionTimer() {
                     </TooltipContent>
                   </Tooltip>
                 )}
+                {/* Multi-staff indicator */}
+                {isMultiStaff && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 gap-1 cursor-default border-primary/40 text-primary">
+                        <Users className="w-3 h-3" />
+                        {participants.filter(p => !p.left_at).length} staff
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-sm">
+                        <p className="font-medium mb-1">Active Collectors:</p>
+                        {participants
+                          .filter(p => !p.left_at)
+                          .map(p => (
+                            <div key={p.id} className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                              {p.display_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Staff'}
+                              {p.user_id === user?.id ? ' (you)' : ''}
+                            </div>
+                          ))}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
               <p className="timer-display text-foreground">{formattedTime}</p>
             </div>
@@ -235,7 +284,6 @@ export function SessionTimer() {
                 </>
               )}
             </Button>
-            {/* Always show End Session button when a session is active */}
             {sessionStartTime && (
               <Button 
                 variant="destructive" 
@@ -244,7 +292,7 @@ export function SessionTimer() {
                 className="gap-1"
               >
                 <Square className="w-4 h-4" />
-                End Session
+                {otherActiveParticipants.length > 0 ? 'Leave / End' : 'End Session'}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleReset}>
@@ -269,6 +317,18 @@ export function SessionTimer() {
           canAssign={isBcba}
         />
       )}
+
+      {/* Leave vs End dialog for multi-staff sessions */}
+      <LeaveOrEndSessionDialog
+        open={showLeaveOrEnd}
+        onOpenChange={setShowLeaveOrEnd}
+        otherParticipants={otherActiveParticipants}
+        onLeave={handleLeaveSession}
+        onEndForEveryone={() => {
+          setShowLeaveOrEnd(false);
+          setShowEndFlow(true);
+        }}
+      />
 
       <SessionEndFlow
         open={showEndFlow}
