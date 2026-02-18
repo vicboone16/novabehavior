@@ -112,7 +112,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       // Load agencies + custom roles in parallel
       const [agenciesRes, customRolesRes] = await Promise.all([
         supabase.from('agencies').select('id, name, status').eq('status', 'active').order('name'),
-        (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+        supabase.from('custom_roles').select('id, name').order('name'),
       ]);
       setAgencies(agenciesRes.data || []);
       setCustomRoles((customRolesRes.data as { id: string; name: string }[]) || []);

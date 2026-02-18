@@ -173,7 +173,7 @@ export default function Admin() {
       const [profilesRes, rolesRes, customRolesRes] = await Promise.all([
         supabase.from('profiles').select('user_id, email, display_name, first_name, last_name, phone, is_approved, created_at'),
         supabase.from('user_roles').select('user_id, role'),
-        (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+        supabase.from('custom_roles').select('id, name').order('name'),
       ]);
 
       setCustomRoles((customRolesRes.data as { id: string; name: string }[]) || []);

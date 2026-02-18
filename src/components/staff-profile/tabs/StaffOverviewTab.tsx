@@ -72,7 +72,7 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
       (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', profile.user_id),
       supabase.from('agency_memberships').select('id, agency_id, role, status, agencies(name)').eq('user_id', profile.user_id).order('created_at', { ascending: true }),
       supabase.from('agencies').select('id, name').order('name'),
-      (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+      supabase.from('custom_roles').select('id, name').order('name'),
     ]);
 
     const baseRoles = (roleRes.data || []).map((r: any) => r.role);
