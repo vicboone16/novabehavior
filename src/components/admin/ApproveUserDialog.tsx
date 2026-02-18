@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,9 +58,17 @@ export function ApproveUserDialog({
   isSuperAdmin
 }: ApproveUserDialogProps) {
   const { toast } = useToast();
-  const [selectedRole, setSelectedRole] = useState<AppRole>('staff');
+  const [selectedRole, setSelectedRole] = useState<string>('staff');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isApproving, setIsApproving] = useState(false);
+  const [customRoles, setCustomRoles] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name')
+      .then(({ data }: { data: { id: string; name: string }[] | null }) => {
+        if (data) setCustomRoles(data);
+      });
+  }, []);
 
   const toggleTag = (tagId: string) => {
     setSelectedTags(prev => 
@@ -82,15 +90,16 @@ export function ApproveUserDialog({
 
       if (approveError) throw approveError;
 
-      // 2. Assign the selected role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: user.id,
-          role: selectedRole,
-        });
-
-      if (roleError) throw roleError;
+      // 2. Assign the selected role (base or custom)
+      const isCustom = selectedRole.startsWith('custom:');
+      if (isCustom) {
+        const customRoleId = selectedRole.replace('custom:', '');
+        const { error: roleError } = await (supabase as any).from('user_custom_roles').insert({ user_id: user.id, custom_role_id: customRoleId });
+        if (roleError) throw roleError;
+      } else {
+        const { error: roleError } = await supabase.from('user_roles').insert({ user_id: user.id, role: selectedRole as AppRole });
+        if (roleError) throw roleError;
+      }
 
       // 3. Assign selected tags
       if (selectedTags.length > 0) {
@@ -162,7 +171,7 @@ export function ApproveUserDialog({
           {/* Role Selection */}
           <div className="space-y-2">
             <Label>Assign Role</Label>
-            <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AppRole)}>
+            <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -171,6 +180,14 @@ export function ApproveUserDialog({
                 {isSuperAdmin && <SelectItem value="admin">Admin</SelectItem>}
                 <SelectItem value="staff">Staff</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
+                {customRoles.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
+                    {customRoles.map(r => (
+                      <SelectItem key={r.id} value={`custom:${r.id}`}>{r.name}</SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
