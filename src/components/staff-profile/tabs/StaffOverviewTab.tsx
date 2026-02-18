@@ -62,21 +62,13 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
   const [selectedAgencyId, setSelectedAgencyId] = useState('');
   const [agencyRole, setAgencyRole] = useState('staff');
   const [agencyLoading, setAgencyLoading] = useState(false);
+  const [customRoles, setCustomRoles] = useState<{ value: string; label: string }[]>([]);
 
   const loadRoleAndAgencies = useCallback(async () => {
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', profile.user_id)
-      .maybeSingle();
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', profile.user_id).maybeSingle();
     if (roleData) setCurrentRole(roleData.role);
 
-    const { data: memberData } = await supabase
-      .from('agency_memberships')
-      .select('id, agency_id, role, status, agencies(name)')
-      .eq('user_id', profile.user_id)
-      .order('created_at', { ascending: true });
-
+    const { data: memberData } = await supabase.from('agency_memberships').select('id, agency_id, role, status, agencies(name)').eq('user_id', profile.user_id).order('created_at', { ascending: true });
     if (memberData) {
       setAgencies(memberData.map((m: any) => ({
         id: m.id,
@@ -87,11 +79,13 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
       })));
     }
 
-    const { data: allAgencies } = await supabase
-      .from('agencies')
-      .select('id, name')
-      .order('name');
+    const { data: allAgencies } = await supabase.from('agencies').select('id, name').order('name');
     if (allAgencies) setAvailableAgencies(allAgencies);
+
+    const customRolesResp = await (supabase.from('custom_roles') as any).select('id, name').eq('is_active', true).order('name');
+    if (customRolesResp.data) {
+      setCustomRoles((customRolesResp.data as any[]).map((r: any) => ({ value: `custom:${r.id}`, label: r.name })));
+    }
   }, [profile.user_id]);
 
   useEffect(() => { loadRoleAndAgencies(); }, [loadRoleAndAgencies]);
@@ -282,6 +276,12 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  {customRoles.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
+                      {customRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-2">
