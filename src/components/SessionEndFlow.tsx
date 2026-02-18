@@ -20,6 +20,7 @@ import { useMultiStudentNoteRequirements } from '@/hooks/useNoteRequirement';
 import { SessionNoteBuilder } from './SessionNoteBuilder';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { StudentSessionNotes } from './session/StudentSessionNotes';
 import { Student } from '@/types/behavior';
 
 interface SessionEndFlowProps {
@@ -446,9 +447,20 @@ export function SessionEndFlow({
               </div>
             )}
 
-            <p className="text-sm text-muted-foreground mb-4">
-              Session data has been saved. Would you like to add a note?
+            <p className="text-sm text-muted-foreground mb-3">
+              Session data has been saved. Review your inline note below, then choose how to proceed.
             </p>
+
+            {/* Inline note editor with approve prompt */}
+            <div className="mb-4 border rounded-lg p-2">
+              <StudentSessionNotes
+                sessionId={currentSessionId}
+                studentId={currentStudent.id}
+                studentName={currentStudent.name}
+                showApprovePrompt={true}
+                compact={false}
+              />
+            </div>
 
             <div className="flex flex-col gap-2">
               <Button 
@@ -461,7 +473,7 @@ export function SessionEndFlow({
                 <div className="text-left">
                   <div className="font-medium">Submit Data Only</div>
                   <div className="text-xs text-muted-foreground">
-                    Save session data without a note
+                    Save session data without a formal clinical note
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 ml-auto" />
@@ -473,9 +485,9 @@ export function SessionEndFlow({
               >
                 <FileText className="w-4 h-4 mr-2" />
                 <div className="text-left">
-                  <div className="font-medium">Submit Data + Note</div>
+                  <div className="font-medium">Submit Data + Full Clinical Note</div>
                   <div className="text-xs opacity-80">
-                    Add a session note with your data
+                    Create a formal billable note with all clinical details
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 ml-auto" />
