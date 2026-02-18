@@ -274,7 +274,7 @@ interface DataState {
   deleteSession: (sessionId: string) => void;
   updateSession: (sessionId: string, updates: Partial<Session>) => void;
   mergeSessions: (sessionIds: string[]) => void;
-  startSession: (linkedAppointmentId?: string) => void;
+  startSession: (linkedAppointmentId?: string, existingSessionId?: string) => void;
   setLinkedAppointmentId: (id: string | null) => void;
   getLinkedAppointmentId: () => string | null;
   resetSession: () => void;
@@ -1952,12 +1952,13 @@ export const useDataStore = create<DataState>()(
         return { saved: true, isNew: true, hasChanges: true };
       },
 
-      startSession: (linkedAppointmentId?: string) => {
+      startSession: (linkedAppointmentId?: string, existingSessionId?: string) => {
         // Store as Date.now() timestamp-based Date to avoid serialization issues
         const now = new Date();
         set({ 
           sessionStartTime: now,
-          currentSessionId: crypto.randomUUID(),
+          // If joining an existing shared session, use that session's ID
+          currentSessionId: existingSessionId || crypto.randomUUID(),
           linkedAppointmentId: linkedAppointmentId || null,
         });
       },
