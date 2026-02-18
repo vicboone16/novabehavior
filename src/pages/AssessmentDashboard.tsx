@@ -26,6 +26,7 @@ import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
+import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
@@ -855,10 +856,10 @@ export default function AssessmentDashboard() {
           <TabsContent value="questionnaires" className="space-y-6">
             {selectedStudent && (
               <>
-                {/* VB-MAPP Internal Entry - Not sent out */}
-                <InternalVBMAPPEntry 
-                  studentId={selectedStudent.id} 
-                  studentName={selectedStudent.name} 
+                {/* VB-MAPP Milestones Grid */}
+                <VBMAPPMilestonesGrid
+                  studentId={selectedStudent.id}
+                  studentName={selectedStudent.name}
                 />
 
                 {/* AFLS Internal Tracker */}
