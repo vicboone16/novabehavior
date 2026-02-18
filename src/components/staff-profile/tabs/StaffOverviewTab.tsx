@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Edit2, Save, X, User, Mail, Phone, Calendar, Shield, Building2, Plus, Trash2 } from 'lucide-react';
 import type { SupervisorLink } from '@/types/staffProfile';
 import { format } from 'date-fns';
@@ -29,12 +30,6 @@ const EMPLOYMENT_STATUSES = [
   { value: 'terminated', label: 'Terminated' },
 ];
 
-const ROLES = [
-  { value: 'super_admin', label: 'Super Admin' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'staff', label: 'Staff' },
-  { value: 'viewer', label: 'Viewer' },
-];
 
 export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, superviseeLinks }: StaffOverviewTabProps) {
   const { userRole } = useAuth();
@@ -53,8 +48,8 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     npi_number: profile.npi_number || '',
   });
 
-  // Role & Agency state
-  const [currentRole, setCurrentRole] = useState<string>('staff');
+  // Role & Agency state — supports multiple roles
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleLoading, setRoleLoading] = useState(false);
   const [agencies, setAgencies] = useState<{ id: string; agency_id: string; agency_name: string; role: string; status: string }[]>([]);
   const [availableAgencies, setAvailableAgencies] = useState<{ id: string; name: string }[]>([]);
@@ -64,20 +59,28 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
   const [agencyLoading, setAgencyLoading] = useState(false);
   const [customRoles, setCustomRoles] = useState<{ value: string; label: string }[]>([]);
 
+  const BASE_ROLES = [
+    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'staff', label: 'Staff' },
+    { value: 'viewer', label: 'Viewer' },
+  ];
+
   const loadRoleAndAgencies = useCallback(async () => {
-    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', profile.user_id).maybeSingle();
+    const [roleRes, customRoleRes, memberRes, allAgenciesRes, customRolesRes] = await Promise.all([
+      supabase.from('user_roles').select('role').eq('user_id', profile.user_id),
+      (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', profile.user_id),
+      supabase.from('agency_memberships').select('id, agency_id, role, status, agencies(name)').eq('user_id', profile.user_id).order('created_at', { ascending: true }),
+      supabase.from('agencies').select('id, name').order('name'),
+      (supabase as any).from('custom_roles').select('id, name').eq('is_active', true).order('name'),
+    ]);
 
-    // Check if user has a custom role assigned
-    const customRoleResp = await (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', profile.user_id).maybeSingle();
-    if (customRoleResp?.data?.custom_role_id) {
-      setCurrentRole(`custom:${customRoleResp.data.custom_role_id}`);
-    } else if (roleData) {
-      setCurrentRole(roleData.role);
-    }
+    const baseRoles = (roleRes.data || []).map((r: any) => r.role);
+    const customRoleIds = (customRoleRes.data || []).map((r: any) => `custom:${r.custom_role_id}`);
+    setSelectedRoles([...baseRoles, ...customRoleIds]);
 
-    const { data: memberData } = await supabase.from('agency_memberships').select('id, agency_id, role, status, agencies(name)').eq('user_id', profile.user_id).order('created_at', { ascending: true });
-    if (memberData) {
-      setAgencies(memberData.map((m: any) => ({
+    if (memberRes.data) {
+      setAgencies(memberRes.data.map((m: any) => ({
         id: m.id,
         agency_id: m.agency_id,
         agency_name: m.agencies?.name || 'Unknown',
@@ -85,42 +88,39 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
         status: m.status,
       })));
     }
-
-    const { data: allAgencies } = await supabase.from('agencies').select('id, name').order('name');
-    if (allAgencies) setAvailableAgencies(allAgencies);
-
-    const customRolesResp = await (supabase.from('custom_roles') as any).select('id, name').eq('is_active', true).order('name');
-    if (customRolesResp.data) {
-      setCustomRoles((customRolesResp.data as any[]).map((r: any) => ({ value: `custom:${r.id}`, label: r.name })));
+    if (allAgenciesRes.data) setAvailableAgencies(allAgenciesRes.data);
+    if (customRolesRes.data) {
+      setCustomRoles((customRolesRes.data as any[]).map((r: any) => ({ value: `custom:${r.id}`, label: r.name })));
     }
   }, [profile.user_id]);
 
   useEffect(() => { loadRoleAndAgencies(); }, [loadRoleAndAgencies]);
 
-  const handleRoleChange = async (newRole: string) => {
+  const handleRoleToggle = async (roleValue: string, checked: boolean) => {
     setRoleLoading(true);
     try {
-      const isCustomRole = newRole.startsWith('custom:');
-      if (isCustomRole) {
-        // Store custom role assignment — keep base role as 'staff', add custom role link
-        const customRoleId = newRole.replace('custom:', '');
-        await (supabase as any).from('user_custom_roles').delete().eq('user_id', profile.user_id);
-        const { error } = await (supabase as any).from('user_custom_roles').insert({ user_id: profile.user_id, custom_role_id: customRoleId });
-        if (error) throw error;
+      const isCustom = roleValue.startsWith('custom:');
+      if (isCustom) {
+        const customRoleId = roleValue.replace('custom:', '');
+        if (checked) {
+          const { error } = await (supabase as any).from('user_custom_roles').insert({ user_id: profile.user_id, custom_role_id: customRoleId });
+          if (error) throw error;
+        } else {
+          await (supabase as any).from('user_custom_roles').delete().eq('user_id', profile.user_id).eq('custom_role_id', customRoleId);
+        }
       } else {
-        // Base role — update user_roles, clear any custom role assignment
-        await supabase.from('user_roles').delete().eq('user_id', profile.user_id);
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: profile.user_id, role: newRole as 'super_admin' | 'admin' | 'staff' | 'viewer' });
-        if (error) throw error;
-        await (supabase as any).from('user_custom_roles').delete().eq('user_id', profile.user_id);
+        if (checked) {
+          const { error } = await supabase.from('user_roles').insert({ user_id: profile.user_id, role: roleValue as 'super_admin' | 'admin' | 'staff' | 'viewer' });
+          if (error) throw error;
+        } else {
+          await (supabase.from('user_roles') as any).delete().eq('user_id', profile.user_id).eq('role', roleValue);
+        }
       }
-      setCurrentRole(newRole);
-      toast.success('Role updated successfully');
-    } catch (err) {
+      setSelectedRoles(prev => checked ? [...prev, roleValue] : prev.filter(r => r !== roleValue));
+      toast.success('Role updated');
+    } catch (err: any) {
       console.error(err);
-      toast.error('Failed to update role');
+      toast.error(err.message || 'Failed to update role');
     } finally {
       setRoleLoading(false);
     }
@@ -285,26 +285,50 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                System Role
+                System Roles
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Label className="text-xs text-muted-foreground mb-1 block">Current Role</Label>
-              <Select value={currentRole} onValueChange={handleRoleChange} disabled={roleLoading}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  {customRoles.length > 0 && (
-                    <>
-                      <div className="px-2 py-1 text-xs text-muted-foreground font-medium border-t mt-1 pt-2">Custom Roles</div>
-                      {customRoles.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-2">
-                Controls what this user can access across the platform.
-              </p>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">Select one or more roles for this staff member.</p>
+              <div className="space-y-2">
+                {BASE_ROLES.map(r => (
+                  <div key={r.value} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`role-${r.value}`}
+                      checked={selectedRoles.includes(r.value)}
+                      onCheckedChange={(checked) => handleRoleToggle(r.value, !!checked)}
+                      disabled={roleLoading}
+                    />
+                    <label htmlFor={`role-${r.value}`} className="text-sm cursor-pointer">{r.label}</label>
+                  </div>
+                ))}
+                {customRoles.length > 0 && (
+                  <>
+                    <p className="text-xs text-muted-foreground font-medium pt-1 border-t">Custom Roles</p>
+                    {customRoles.map(r => (
+                      <div key={r.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`role-${r.value}`}
+                          checked={selectedRoles.includes(r.value)}
+                          onCheckedChange={(checked) => handleRoleToggle(r.value, !!checked)}
+                          disabled={roleLoading}
+                        />
+                        <label htmlFor={`role-${r.value}`} className="text-sm cursor-pointer">{r.label}</label>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+              {selectedRoles.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {selectedRoles.map(r => {
+                    const label = BASE_ROLES.find(br => br.value === r)?.label
+                      || customRoles.find(cr => cr.value === r)?.label
+                      || r;
+                    return <Badge key={r} variant="secondary" className="text-xs">{label}</Badge>;
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
