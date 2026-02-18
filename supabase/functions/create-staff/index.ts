@@ -5,8 +5,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface StudentPermission {
+  student_id: string;
+  can_view_notes: boolean;
+  can_view_documents: boolean;
+  can_collect_data: boolean;
+  can_edit_profile: boolean;
+  can_generate_reports: boolean;
+  permission_level: string;
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -24,9 +33,24 @@ Deno.serve(async (req) => {
       supervisor_id,
       title,
       role,
+      agency_id,
+      student_permissions,
+    }: {
+      email: string;
+      password: string;
+      pin?: string;
+      first_name: string;
+      last_name: string;
+      phone?: string;
+      credential?: string;
+      npi?: string;
+      supervisor_id?: string;
+      title?: string;
+      role?: string;
+      agency_id?: string;
+      student_permissions?: StudentPermission[];
     } = await req.json();
 
-    // Validate required fields
     if (!email || !password || !first_name || !last_name) {
       return new Response(
         JSON.stringify({ error: "Email, password, first name, and last name are required" }),
@@ -34,7 +58,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate password length
     if (password.length < 6) {
       return new Response(
         JSON.stringify({ error: "Password must be at least 6 characters" }),
@@ -42,7 +65,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate PIN format if provided
     if (pin && !/^\d{6}$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: "PIN must be exactly 6 digits" }),
@@ -50,14 +72,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create admin client
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Verify the caller is an admin
+    // Verify caller is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -76,7 +97,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if caller is admin
     const { data: isAdmin } = await supabaseAdmin.rpc("is_admin", { _user_id: callerUser.id });
     if (!isAdmin) {
       return new Response(
@@ -85,14 +105,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate display name in standard format
     const displayName = `${first_name.trim()} ${last_name.trim().charAt(0)}.`;
 
-    // Create the user with Supabase Admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase().trim(),
       password,
-      email_confirm: true, // Auto-confirm since admin is creating
+      email_confirm: true,
       user_metadata: {
         first_name: first_name.trim(),
         last_name: last_name.trim(),
@@ -101,7 +119,6 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      console.error("User creation error:", createError);
       return new Response(
         JSON.stringify({ error: createError.message || "Failed to create user" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -113,29 +130,15 @@ Deno.serve(async (req) => {
     // Hash PIN if provided
     let pinHash: string | null = null;
     if (pin) {
-      // Check PIN uniqueness
-      const { data: existingPin } = await supabaseAdmin
-        .from("profiles")
-        .select("user_id")
-        .not("pin_hash", "is", null);
+      const pinHashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin));
+      pinHash = Array.from(new Uint8Array(pinHashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-      // Hash the PIN
-      const pinHashBuf = await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(pin)
-      );
-      pinHash = Array.from(new Uint8Array(pinHashBuf))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-
-      // Check if PIN hash already exists
       const { data: duplicatePin } = await supabaseAdmin
         .from("profiles")
         .select("user_id")
         .eq("pin_hash", pinHash);
 
       if (duplicatePin && duplicatePin.length > 0) {
-        // Delete the user we just created since PIN is duplicate
         await supabaseAdmin.auth.admin.deleteUser(userId);
         return new Response(
           JSON.stringify({ error: "PIN is already in use by another user" }),
@@ -144,8 +147,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update the profile with additional info
-    const { error: profileError } = await supabaseAdmin
+    // Update profile
+    await supabaseAdmin
       .from("profiles")
       .update({
         first_name: first_name.trim(),
@@ -163,19 +166,57 @@ Deno.serve(async (req) => {
       })
       .eq("user_id", userId);
 
-    if (profileError) {
-      console.error("Profile update error:", profileError);
-      // Don't fail the whole operation, profile might be created by trigger
+    // Assign role
+    if (role) {
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
     }
 
-    // Assign role if provided
-    if (role) {
-      await supabaseAdmin
-        .from("user_roles")
+    // Assign to agency (membership)
+    if (agency_id) {
+      const { error: membershipError } = await supabaseAdmin
+        .from("agency_memberships")
         .insert({
           user_id: userId,
-          role: role,
+          agency_id,
+          role: role === "admin" ? "admin" : "member",
+          status: "active",
+          is_primary: true,
+          joined_at: new Date().toISOString(),
+          invited_by: callerUser.id,
         });
+
+      if (membershipError) {
+        console.error("Agency membership error:", membershipError);
+      }
+
+      // Set user agency context
+      await supabaseAdmin
+        .from("user_agency_context")
+        .upsert({ user_id: userId, current_agency_id: agency_id, last_switched_at: new Date().toISOString() }, { onConflict: "user_id" });
+    }
+
+    // Insert per-student access permissions
+    if (student_permissions && student_permissions.length > 0) {
+      const accessRecords = student_permissions.map((sp) => ({
+        user_id: userId,
+        student_id: sp.student_id,
+        permission_level: sp.permission_level || "view",
+        can_view_notes: sp.can_view_notes ?? false,
+        can_view_documents: sp.can_view_documents ?? false,
+        can_collect_data: sp.can_collect_data ?? false,
+        can_edit_profile: sp.can_edit_profile ?? false,
+        can_generate_reports: sp.can_generate_reports ?? false,
+        granted_by: callerUser.id,
+        granted_at: new Date().toISOString(),
+      }));
+
+      const { error: accessError } = await supabaseAdmin
+        .from("user_student_access")
+        .upsert(accessRecords, { onConflict: "user_id,student_id" });
+
+      if (accessError) {
+        console.error("Student access error:", accessError);
+      }
     }
 
     return new Response(

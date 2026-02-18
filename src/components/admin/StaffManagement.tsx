@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import { 
   Dialog,
   DialogContent,
@@ -26,10 +28,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Search, Plus, Filter, Grid3X3, List, ChevronLeft, Users, User,
-  Calendar, Loader2, ArrowLeft
+  Calendar, Loader2, ArrowLeft, Building2, Shield, Eye, FileText, 
+  Database, Edit3, BarChart2, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { StaffCard, StaffMember } from './StaffCard';
 import { cn } from '@/lib/utils';
+
+interface Agency { id: string; name: string; status: string; }
+
+interface StudentWithPermissions {
+  id: string;
+  name: string;
+  agency_id: string | null;
+  enabled: boolean;
+  can_view_notes: boolean;
+  can_view_documents: boolean;
+  can_collect_data: boolean;
+  can_edit_profile: boolean;
+  can_generate_reports: boolean;
+  permission_level: string;
+}
 
 type ViewMode = 'grid' | 'list' | 'calendar';
 type StaffFilter = 'all' | 'bcba' | 'rbt' | 'admin';
@@ -44,7 +62,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
+  const [students, setStudents] = useState<{ id: string; name: string; agency_id?: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filter, setFilter] = useState<StaffFilter>('all');
@@ -56,6 +74,9 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   // Dialog states
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [showStaffDetails, setShowStaffDetails] = useState<StaffMember | null>(null);
+
+  // Agencies for selection
+  const [agencies, setAgencies] = useState<Agency[]>([]);
   
   // New staff form
   const [newStaffForm, setNewStaffForm] = useState({
@@ -70,10 +91,13 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     title: 'Clinician',
     supervisor_id: '',
     role: 'staff',
+    agency_id: '',
     emailOption: 'none' as 'none' | 'now' | 'later',
-    assignedClientIds: [] as string[],
+    studentPermissions: [] as StudentWithPermissions[],
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -82,6 +106,14 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   const loadData = async () => {
     setLoading(true);
     try {
+      // Load agencies
+      const { data: agenciesData } = await supabase
+        .from('agencies')
+        .select('id, name, status')
+        .eq('status', 'active')
+        .order('name');
+      setAgencies(agenciesData || []);
+
       // Load all staff with their roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -151,14 +183,14 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
       setStaff(staffWithCounts);
 
-      // Load students
+      // Load students with agency_id for filtering
       const { data: studentsData } = await supabase
         .from('students')
-        .select('id, name')
+        .select('id, name, agency_id')
         .eq('is_archived', false)
         .order('name');
       
-      setStudents(studentsData || []);
+      setStudents((studentsData || []) as { id: string; name: string; agency_id?: string }[]);
     } catch (error: any) {
       toast({ title: 'Failed to load staff', description: error.message, variant: 'destructive' });
     } finally {
@@ -265,38 +297,31 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
           phone: newStaffForm.phone,
           credential: newStaffForm.credential,
           npi: newStaffForm.npi,
-          supervisor_id: newStaffForm.supervisor_id,
+          supervisor_id: newStaffForm.supervisor_id || undefined,
           title: newStaffForm.title,
           role: newStaffForm.role,
+          agency_id: newStaffForm.agency_id || undefined,
+          student_permissions: newStaffForm.studentPermissions
+            .filter(sp => sp.enabled)
+            .map(sp => ({
+              student_id: sp.id,
+              can_view_notes: sp.can_view_notes,
+              can_view_documents: sp.can_view_documents,
+              can_collect_data: sp.can_collect_data,
+              can_edit_profile: sp.can_edit_profile,
+              can_generate_reports: sp.can_generate_reports,
+              permission_level: sp.permission_level || 'view',
+            })),
         },
       });
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      // Assign clients if any were selected
-      if (newStaffForm.assignedClientIds.length > 0 && data.user_id) {
-        const assignments = newStaffForm.assignedClientIds.map(clientId => ({
-          client_id: clientId,
-          staff_user_id: data.user_id,
-          role: newStaffForm.credential || 'clinician',
-          start_date: new Date().toISOString().split('T')[0],
-          is_active: true,
-        }));
-        await supabase.from('client_team_assignments').insert(assignments);
-      }
-
-      // Email option: 'none' means no email is sent (credentials shared manually)
-      // 'now' and 'later' are placeholders for future email integration
-      const description = newStaffForm.emailOption === 'none'
-        ? `${data.display_name} created. No email sent. Share login manually: ${newStaffForm.email} / [password you set]`
-        : newStaffForm.emailOption === 'now'
-        ? `${data.display_name} created. Email sending is not yet implemented - please share credentials manually.`
-        : `${data.display_name} created. Scheduled email not yet implemented - please share credentials manually.`;
-
+      const enabledCount = newStaffForm.studentPermissions.filter(sp => sp.enabled).length;
       toast({ 
         title: 'Staff member created successfully', 
-        description,
+        description: `${data.display_name} created${newStaffForm.agency_id ? ' and assigned to agency' : ''}${enabledCount > 0 ? ` with access to ${enabledCount} client(s)` : ''}.`,
       });
 
       setShowAddStaff(false);
@@ -312,11 +337,13 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         title: 'Clinician',
         supervisor_id: '',
         role: 'staff',
+        agency_id: '',
         emailOption: 'none',
-        assignedClientIds: [],
+        studentPermissions: [],
       });
+      setStudentSearchQuery('');
+      setExpandedStudents(new Set());
       
-      // Reload staff list
       loadData();
     } catch (error: any) {
       toast({ title: 'Failed to create staff', description: error.message, variant: 'destructive' });
@@ -324,6 +351,54 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       setIsCreating(false);
     }
   };
+
+  // When agency changes, rebuild the student permission list filtered to that agency
+  const handleAgencyChange = (agencyId: string) => {
+    const agencyStudents = students
+      .filter(s => (s as any).agency_id === agencyId || agencyId === '')
+      .map(s => ({
+        id: s.id,
+        name: s.name,
+        agency_id: (s as any).agency_id || null,
+        enabled: false,
+        can_view_notes: true,
+        can_view_documents: false,
+        can_collect_data: true,
+        can_edit_profile: false,
+        can_generate_reports: false,
+        permission_level: 'view',
+      }));
+    setNewStaffForm(f => ({ ...f, agency_id: agencyId, studentPermissions: agencyStudents }));
+    setExpandedStudents(new Set());
+  };
+
+  const toggleStudentEnabled = (studentId: string, enabled: boolean) => {
+    setNewStaffForm(f => ({
+      ...f,
+      studentPermissions: f.studentPermissions.map(sp =>
+        sp.id === studentId ? { ...sp, enabled } : sp
+      ),
+    }));
+  };
+
+  const updateStudentPermission = (studentId: string, field: keyof StudentWithPermissions, value: boolean | string) => {
+    setNewStaffForm(f => ({
+      ...f,
+      studentPermissions: f.studentPermissions.map(sp =>
+        sp.id === studentId ? { ...sp, [field]: value } : sp
+      ),
+    }));
+  };
+
+  const toggleStudentExpanded = (studentId: string) => {
+    setExpandedStudents(prev => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
 
   if (loading) {
     return (
@@ -573,238 +648,270 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
       {/* Add Staff Dialog */}
       <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Staff Member</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Add New Staff Member
+            </DialogTitle>
             <DialogDescription>
-              Create a new staff account with login credentials.
+              Create an account, assign to an organization, and configure client access.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  value={newStaffForm.first_name}
-                  onChange={(e) => setNewStaffForm(f => ({ ...f, first_name: e.target.value }))}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name *</Label>
-                <Input
-                  value={newStaffForm.last_name}
-                  onChange={(e) => setNewStaffForm(f => ({ ...f, last_name: e.target.value }))}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Email Address *</Label>
-              <Input
-                type="email"
-                value={newStaffForm.email}
-                onChange={(e) => setNewStaffForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="email@example.com"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Password *</Label>
-                <Input
-                  type="password"
-                  value={newStaffForm.password}
-                  onChange={(e) => setNewStaffForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="Min 6 characters"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>PIN (6 digits)</Label>
-                <Input
-                  type="text"
-                  maxLength={6}
-                  value={newStaffForm.pin}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setNewStaffForm(f => ({ ...f, pin: val }));
-                  }}
-                  placeholder="Optional PIN"
-                />
+          <div className="space-y-5">
+            {/* Basic Info */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Basic Information</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>First Name *</Label>
+                  <Input value={newStaffForm.first_name} onChange={(e) => setNewStaffForm(f => ({ ...f, first_name: e.target.value }))} placeholder="First name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Last Name *</Label>
+                  <Input value={newStaffForm.last_name} onChange={(e) => setNewStaffForm(f => ({ ...f, last_name: e.target.value }))} placeholder="Last name" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email Address *</Label>
+                  <Input type="email" value={newStaffForm.email} onChange={(e) => setNewStaffForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone Number</Label>
+                  <Input value={newStaffForm.phone} onChange={(e) => setNewStaffForm(f => ({ ...f, phone: e.target.value }))} placeholder="(555) 555-5555" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Password *</Label>
+                  <Input type="password" value={newStaffForm.password} onChange={(e) => setNewStaffForm(f => ({ ...f, password: e.target.value }))} placeholder="Min 6 characters" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>PIN (6 digits, optional)</Label>
+                  <Input type="text" maxLength={6} value={newStaffForm.pin} onChange={(e) => { const v = e.target.value.replace(/\D/g,'').slice(0,6); setNewStaffForm(f => ({ ...f, pin: v })); }} placeholder="Quick-login PIN" />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Phone Number</Label>
-              <Input
-                value={newStaffForm.phone}
-                onChange={(e) => setNewStaffForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="(555) 555-5555"
-              />
+            <Separator />
+
+            {/* Professional Info */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Role & Credentials</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>System Role</Label>
+                  <Select value={newStaffForm.role} onValueChange={(v) => setNewStaffForm(f => ({ ...f, role: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Credential</Label>
+                  <Select value={newStaffForm.credential} onValueChange={(v) => setNewStaffForm(f => ({ ...f, credential: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BCBA">BCBA</SelectItem>
+                      <SelectItem value="BCaBA">BCaBA</SelectItem>
+                      <SelectItem value="RBT">RBT</SelectItem>
+                      <SelectItem value="BCBA-D">BCBA-D</SelectItem>
+                      <SelectItem value="QBA">QBA</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Supervisor</Label>
+                  <Select value={newStaffForm.supervisor_id || '_none'} onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v === '_none' ? '' : v }))}>
+                    <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">None</SelectItem>
+                      {supervisors.map(s => (
+                        <SelectItem key={s.id} value={s.user_id}>{s.first_name} {s.last_name} ({s.credential || s.title})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>NPI (Optional)</Label>
+                  <Input value={newStaffForm.npi} onChange={(e) => setNewStaffForm(f => ({ ...f, npi: e.target.value }))} placeholder="NPI number" />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Credential</Label>
-                <Select 
-                  value={newStaffForm.credential}
-                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, credential: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
+            <Separator />
+
+            {/* Agency Assignment */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="w-4 h-4 text-primary" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Organization Assignment</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assign to Organization *</Label>
+                <Select value={newStaffForm.agency_id || '_none'} onValueChange={(v) => handleAgencyChange(v === '_none' ? '' : v)}>
+                  <SelectTrigger className={cn("w-full", !newStaffForm.agency_id && "border-primary/50")}>
+                    <SelectValue placeholder="Select organization..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BCBA">BCBA</SelectItem>
-                    <SelectItem value="BCaBA">BCaBA</SelectItem>
-                    <SelectItem value="RBT">RBT</SelectItem>
-                    <SelectItem value="BCBA-D">BCBA-D</SelectItem>
-                    <SelectItem value="QBA">QBA</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>NPI (Optional)</Label>
-                <Input
-                  value={newStaffForm.npi}
-                  onChange={(e) => setNewStaffForm(f => ({ ...f, npi: e.target.value }))}
-                  placeholder="NPI number"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select 
-                  value={newStaffForm.role}
-                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, role: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Supervisor</Label>
-                <Select 
-                  value={newStaffForm.supervisor_id || '_none'}
-                  onValueChange={(v) => setNewStaffForm(f => ({ ...f, supervisor_id: v === '_none' ? '' : v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">None</SelectItem>
-                    {supervisors.map(s => (
-                      <SelectItem key={s.id} value={s.user_id}>
-                        {s.first_name} {s.last_name} ({s.credential || s.title})
-                      </SelectItem>
+                    <SelectItem value="_none">No organization (super admin only)</SelectItem>
+                    {agencies.map(a => (
+                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-
-            {/* Client Assignments */}
-            <div className="space-y-2 pt-2 border-t">
-              <Label className="text-sm font-medium">Assign Clients (Optional)</Label>
-              <div className="max-h-32 overflow-y-auto space-y-1 border rounded-md p-2">
-                {students.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No clients available</p>
-                ) : (
-                  students.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={newStaffForm.assignedClientIds.includes(s.id)}
-                        onChange={(e) => {
-                          setNewStaffForm(f => ({
-                            ...f,
-                            assignedClientIds: e.target.checked
-                              ? [...f.assignedClientIds, s.id]
-                              : f.assignedClientIds.filter(id => id !== s.id),
-                          }));
-                        }}
-                        className="rounded border-border"
-                      />
-                      {s.name}
-                    </label>
-                  ))
+                {!newStaffForm.agency_id && (
+                  <p className="text-xs text-amber-600">⚠ Without an organization, this staff member will not see any agency-specific clients.</p>
+                )}
+                {newStaffForm.agency_id && (
+                  <p className="text-xs text-muted-foreground">Staff will only see clients and data belonging to the selected organization.</p>
                 )}
               </div>
-              {newStaffForm.assignedClientIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">{newStaffForm.assignedClientIds.length} client(s) selected</p>
-              )}
             </div>
 
-            <div className="space-y-3 pt-2 border-t">
-              <Label className="text-sm font-medium">Login Email Notification</Label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="emailOption"
-                    value="none"
-                    checked={newStaffForm.emailOption === 'none'}
-                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'none' }))}
-                    className="rounded-full border-border"
-                  />
-                  <span className="text-sm">Don't send email (I'll share credentials manually)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="emailOption"
-                    value="now"
-                    checked={newStaffForm.emailOption === 'now'}
-                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'now' }))}
-                    className="rounded-full border-border"
-                  />
-                  <span className="text-sm">Send login email now</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="emailOption"
-                    value="later"
-                    checked={newStaffForm.emailOption === 'later'}
-                    onChange={() => setNewStaffForm(f => ({ ...f, emailOption: 'later' }))}
-                    className="rounded-full border-border"
-                  />
-                  <span className="text-sm">Schedule for later (I'll complete profile first)</span>
-                </label>
+            <Separator />
+
+            {/* Client Access */}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-4 h-4 text-primary" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Client Access &amp; Permissions</p>
               </div>
-              {newStaffForm.emailOption === 'none' && (
-                <p className="text-xs text-muted-foreground">
-                  Credentials: Email <span className="font-mono bg-muted px-1 rounded">{newStaffForm.email || '...'}</span> / 
-                  Password <span className="font-mono bg-muted px-1 rounded">{newStaffForm.password ? '••••••' : '...'}</span>
-                  {newStaffForm.pin && <> / PIN <span className="font-mono bg-muted px-1 rounded">••••••</span></>}
-                </p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Toggle which clients this staff member can see. Expand each client to set granular permissions.
+              </p>
+
+              {!newStaffForm.agency_id ? (
+                <div className="text-center py-6 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+                  Select an organization above to configure client access.
+                </div>
+              ) : newStaffForm.studentPermissions.length === 0 ? (
+                <div className="text-center py-6 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+                  No clients found in this organization.
+                </div>
+              ) : (
+                <>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      className="pl-8 h-8 text-sm"
+                      placeholder="Search clients..."
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      type="button" variant="outline" size="sm" className="text-xs h-7"
+                      onClick={() => setNewStaffForm(f => ({ ...f, studentPermissions: f.studentPermissions.map(sp => ({ ...sp, enabled: true })) }))}
+                    >
+                      Enable All
+                    </Button>
+                    <Button
+                      type="button" variant="outline" size="sm" className="text-xs h-7"
+                      onClick={() => setNewStaffForm(f => ({ ...f, studentPermissions: f.studentPermissions.map(sp => ({ ...sp, enabled: false })) }))}
+                    >
+                      Disable All
+                    </Button>
+                    <span className="ml-auto text-xs text-muted-foreground self-center">
+                      {newStaffForm.studentPermissions.filter(sp => sp.enabled).length} / {newStaffForm.studentPermissions.length} enabled
+                    </span>
+                  </div>
+                  <ScrollArea className="h-64 border rounded-lg">
+                    <div className="p-2 space-y-1">
+                      {newStaffForm.studentPermissions
+                        .filter(sp => !studentSearchQuery || sp.name.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+                        .map(sp => (
+                          <div key={sp.id} className={cn("rounded-md border transition-colors", sp.enabled ? "border-primary/30 bg-primary/5" : "border-border bg-background")}>
+                            {/* Row header */}
+                            <div className="flex items-center gap-2 p-2">
+                              <Switch
+                                checked={sp.enabled}
+                                onCheckedChange={(v) => toggleStudentEnabled(sp.id, v)}
+                                className="scale-75"
+                              />
+                              <span className={cn("text-sm flex-1 font-medium", !sp.enabled && "text-muted-foreground")}>{sp.name}</span>
+                              {sp.enabled && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => toggleStudentExpanded(sp.id)}
+                                >
+                                  {expandedStudents.has(sp.id)
+                                    ? <ChevronUp className="w-3.5 h-3.5" />
+                                    : <ChevronDown className="w-3.5 h-3.5" />}
+                                </Button>
+                              )}
+                            </div>
+                            {/* Expanded permissions */}
+                            {sp.enabled && expandedStudents.has(sp.id) && (
+                              <div className="px-3 pb-3 pt-1 border-t border-primary/10 space-y-2">
+                                <div className="mb-2">
+                                  <Label className="text-xs">Permission Preset</Label>
+                                  <Select
+                                    value={sp.permission_level}
+                                    onValueChange={(v) => {
+                                      const presets: Record<string, Partial<StudentWithPermissions>> = {
+                                        view: { can_view_notes: false, can_view_documents: false, can_collect_data: false, can_edit_profile: false, can_generate_reports: false },
+                                        collect: { can_view_notes: false, can_view_documents: false, can_collect_data: true, can_edit_profile: false, can_generate_reports: false },
+                                        standard: { can_view_notes: true, can_view_documents: true, can_collect_data: true, can_edit_profile: false, can_generate_reports: false },
+                                        full: { can_view_notes: true, can_view_documents: true, can_collect_data: true, can_edit_profile: true, can_generate_reports: true },
+                                      };
+                                      setNewStaffForm(f => ({
+                                        ...f,
+                                        studentPermissions: f.studentPermissions.map(s =>
+                                          s.id === sp.id ? { ...s, permission_level: v, ...(presets[v] || {}) } : s
+                                        ),
+                                      }));
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="view">View Only (profile + schedule)</SelectItem>
+                                      <SelectItem value="collect">Data Collection Only</SelectItem>
+                                      <SelectItem value="standard">Standard (notes + docs + data)</SelectItem>
+                                      <SelectItem value="full">Full Access</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                                  {([
+                                    { field: 'can_collect_data', icon: Database, label: 'Collect Data' },
+                                    { field: 'can_view_notes', icon: FileText, label: 'View Notes' },
+                                    { field: 'can_view_documents', icon: Eye, label: 'View Docs' },
+                                    { field: 'can_edit_profile', icon: Edit3, label: 'Edit Profile' },
+                                    { field: 'can_generate_reports', icon: BarChart2, label: 'Reports' },
+                                  ] as const).map(({ field, icon: Icon, label }) => (
+                                    <label key={field} className="flex items-center gap-1.5 cursor-pointer">
+                                      <Switch
+                                        checked={Boolean(sp[field])}
+                                        onCheckedChange={(v) => updateStudentPermission(sp.id, field, v)}
+                                        className="scale-75"
+                                      />
+                                      <Icon className="w-3 h-3 text-muted-foreground" />
+                                      <span className="text-xs">{label}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </ScrollArea>
+                </>
               )}
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddStaff(false)} disabled={isCreating}>
-              Cancel
-            </Button>
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => setShowAddStaff(false)} disabled={isCreating}>Cancel</Button>
             <Button onClick={handleAddStaff} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Staff Member'
-              )}
+              {isCreating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : 'Create Staff Member'}
             </Button>
           </DialogFooter>
         </DialogContent>
