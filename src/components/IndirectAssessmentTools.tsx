@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { 
   ClipboardList, Save, RotateCcw, ChevronDown, ChevronUp, 
-  CheckCircle2, AlertCircle, Brain, TrendingUp, Users, Trash2, FileText,
-  Download, Printer, MoreHorizontal
+  CheckCircle2, Brain, Users, Trash2, FileText,
+  Download, Printer, MoreHorizontal, Pencil, X, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,11 +21,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { toast } from 'sonner';
 import { useDataStore } from '@/store/dataStore';
 import { Student, BehaviorFunction, IndirectAssessmentResult } from '@/types/behavior';
 import { format } from 'date-fns';
-import { BriefTeacherInput, BriefTeacherInputData } from '@/components/assessment/BriefTeacherInput';
+import { supabase } from '@/integrations/supabase/client';
 import { BriefTeacherInputManager } from '@/components/assessment/BriefTeacherInputManager';
 import { BriefRecordReviewManager } from '@/components/assessment/BriefRecordReviewManager';
 import { 
@@ -33,6 +35,7 @@ import {
   generateRatingScalePrintHtml, 
   printAssessmentContent 
 } from '@/lib/assessmentExport';
+
 
 interface IndirectAssessmentToolsProps {
   student: Student;
@@ -137,7 +140,7 @@ const RATING_OPTIONS = [
 ];
 
 export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectAssessmentToolsProps) {
-  const { addIndirectAssessment, deleteIndirectAssessment, updateStudentProfile } = useDataStore();
+  const { addIndirectAssessment, deleteIndirectAssessment, updateIndirectAssessment } = useDataStore();
   const [activeAssessment, setActiveAssessment] = useState<'FAST' | 'MAS' | 'QABF' | 'BRIEF' | 'RECORD_REVIEW'>('FAST');
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [targetBehavior, setTargetBehavior] = useState('');
@@ -146,6 +149,10 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
   const [showResults, setShowResults] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [showSavedAssessments, setShowSavedAssessments] = useState(false);
+  // Date editing state: maps assessmentId -> open/closed for the popover
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
 
   // Distinguish rating-scale assessments from interview/review forms
   const isRatingScale = ['FAST', 'MAS', 'QABF'].includes(activeAssessment);
@@ -214,7 +221,7 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
     setNotes('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!targetBehavior.trim()) {
       toast.error('Please enter a target behavior');
       return;
@@ -227,7 +234,9 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
     // Only save rating scale assessments (not BRIEF)
     if (activeAssessment === 'BRIEF') return;
 
-    const result: Omit<IndirectAssessmentResult, 'id'> = {
+    const id = crypto.randomUUID();
+    const result: IndirectAssessmentResult = {
+      id,
       type: activeAssessment as 'FAST' | 'MAS' | 'QABF',
       studentId: student.id,
       completedBy: completedBy || 'Unknown',
@@ -239,19 +248,94 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
       notes,
     };
 
-    // Save to student profile
+    // Update local state immediately
     addIndirectAssessment(student.id, result);
-    
+
+    // Immediately persist to DB (bypass sync debounce)
+    setIsSaving(true);
+    try {
+      const currentAssessments = (student.indirectAssessments || []).map((a: any) => ({
+        ...a,
+        completedAt: a.completedAt instanceof Date ? a.completedAt.toISOString() : a.completedAt,
+      }));
+      const newEntry = {
+        ...result,
+        completedAt: result.completedAt.toISOString(),
+      };
+      const { error } = await supabase
+        .from('students')
+        .update({ indirect_assessments: [...currentAssessments, newEntry] as any })
+        .eq('id', student.id);
+
+      if (error) {
+        console.error('[IndirectAssessment] Failed to persist to DB:', error);
+        toast.error('Saved locally but failed to sync to cloud. Will retry on next sync.');
+      } else {
+        console.log('[IndirectAssessment] Persisted immediately to DB for student:', student.id);
+      }
+    } catch (e) {
+      console.error('[IndirectAssessment] Error persisting:', e);
+    } finally {
+      setIsSaving(false);
+    }
+
     // Also call the optional callback
-    onSaveAssessment?.({ ...result, id: '' } as IndirectAssessmentResult);
+    onSaveAssessment?.(result);
     toast.success(`${activeAssessment} assessment saved to profile`);
     setShowResults(true);
   };
 
-  const handleDeleteAssessment = (assessmentId: string) => {
+  const handleDeleteAssessment = async (assessmentId: string) => {
     deleteIndirectAssessment(student.id, assessmentId);
+
+    // Immediately persist deletion to DB
+    try {
+      const updatedAssessments = (student.indirectAssessments || [])
+        .filter((a) => a.id !== assessmentId)
+        .map((a: any) => ({
+          ...a,
+          completedAt: a.completedAt instanceof Date ? a.completedAt.toISOString() : a.completedAt,
+        }));
+      await supabase
+        .from('students')
+        .update({ indirect_assessments: updatedAssessments as any })
+        .eq('id', student.id);
+    } catch (e) {
+      console.error('[IndirectAssessment] Failed to persist deletion:', e);
+    }
     toast.success('Assessment deleted');
   };
+
+  const handleUpdateDate = async (assessmentId: string, newDate: Date) => {
+    updateIndirectAssessment(student.id, assessmentId, { completedAt: newDate });
+    setEditingDateId(null);
+
+    // Immediately persist date change to DB
+    try {
+      const updatedAssessments = (student.indirectAssessments || []).map((a: any) => ({
+        ...a,
+        completedAt: a.id === assessmentId
+          ? newDate.toISOString()
+          : (a.completedAt instanceof Date ? a.completedAt.toISOString() : a.completedAt),
+      }));
+      const { error } = await supabase
+        .from('students')
+        .update({ indirect_assessments: updatedAssessments as any })
+        .eq('id', student.id);
+
+      if (error) {
+        console.error('[IndirectAssessment] Failed to persist date change:', error);
+        toast.error('Date updated locally but failed to sync to cloud.');
+      } else {
+        toast.success('Assessment date updated');
+      }
+    } catch (e) {
+      console.error('[IndirectAssessment] Error persisting date change:', e);
+      toast.error('Failed to update date');
+    }
+  };
+
+
 
   const getFunctionColor = (fn: string) => {
     const colors: Record<string, string> = {
@@ -347,9 +431,37 @@ export function IndirectAssessmentTools({ student, onSaveAssessment }: IndirectA
                     <Badge variant="secondary">{assessment.type}</Badge>
                     <div>
                       <p className="text-sm font-medium">{assessment.targetBehavior}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(assessment.completedAt), 'MMM dd, yyyy')} by {assessment.completedBy}
-                      </p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(assessment.completedAt), 'MMM dd, yyyy')} by {assessment.completedBy}
+                        </p>
+                        <Popover
+                          open={editingDateId === assessment.id}
+                          onOpenChange={(open) => setEditingDateId(open ? assessment.id : null)}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 text-muted-foreground hover:text-foreground"
+                              title="Edit date"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarComponent
+                              mode="single"
+                              selected={new Date(assessment.completedAt)}
+                              onSelect={(date) => {
+                                if (date) handleUpdateDate(assessment.id, date);
+                              }}
+                              disabled={(date) => date > new Date()}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

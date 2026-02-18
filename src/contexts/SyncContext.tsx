@@ -354,16 +354,41 @@ export function SyncProvider({ children }: SyncProviderProps) {
           .range(from, to)
       );
 
-      if (sessionsData && sessionsData.length > 0) {
-        const sessionDataEntries = await fetchAllRows<any>((from, to) =>
+      // PRIMARY + FALLBACK: Load session_data via two paths:
+      // 1. Primary: fetch all session_data (RLS filtered by user's sessions)
+      // 2. Fallback: also query session_data directly by user_id to catch any entries
+      //    whose session link was broken during network failure periods
+      const [sessionDataPrimary, sessionDataFallback] = await Promise.all([
+        fetchAllRows<any>((from, to) =>
           supabase
             .from('session_data')
             .select('*')
             .order('timestamp', { ascending: true })
             .range(from, to)
-        );
+        ),
+        fetchAllRows<any>((from, to) =>
+          supabase
+            .from('session_data')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('timestamp', { ascending: true })
+            .range(from, to)
+        ).catch(() => [] as any[]),
+      ]);
 
-        console.log('[Sync] Loaded', sessionDataEntries?.length || 0, 'session_data entries from cloud');
+      // Merge primary and fallback, deduplicating by id
+      const seenIds = new Set<string>();
+      const allFetchedEntries: any[] = [];
+      for (const entry of [...(sessionDataPrimary || []), ...(sessionDataFallback || [])]) {
+        if (!seenIds.has(entry.id)) {
+          seenIds.add(entry.id);
+          allFetchedEntries.push(entry);
+        }
+      }
+      console.log('[Sync] Loaded', allFetchedEntries.length, 'session_data entries (primary+fallback)');
+
+      if (sessionsData && sessionsData.length > 0) {
+        const sessionDataEntries = allFetchedEntries;
 
         const mappedSessions: Session[] = sessionsData.map((session) => {
           const entries = sessionDataEntries?.filter(e => e.session_id === session.id) || [];
@@ -538,6 +563,85 @@ export function SyncProvider({ children }: SyncProviderProps) {
         }
 
         previousSessionsRef.current = JSON.stringify(mappedSessions.map(s => s.id));
+      } else if (allFetchedEntries.length > 0) {
+        // No sessions returned but we have session_data entries via the fallback path.
+        // Build minimal sessions from the orphaned data so they appear in the UI.
+        console.log('[Sync] No sessions found but', allFetchedEntries.length, 'session_data entries found via fallback — hydrating directly');
+
+        const allFrequencyEntries = allFetchedEntries
+          .filter((e: any) => e.event_type === 'frequency')
+          .map((e: any) => ({
+            id: e.id,
+            studentId: e.student_id,
+            behaviorId: e.behavior_id,
+            count: (e.abc_data as any)?.count || 1,
+            timestamp: new Date(e.timestamp),
+            timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
+            sessionId: e.session_id,
+          }));
+
+        const allDurationEntries = allFetchedEntries
+          .filter((e: any) => e.event_type === 'duration')
+          .map((e: any) => ({
+            id: e.id,
+            studentId: e.student_id,
+            behaviorId: e.behavior_id,
+            duration: e.duration_seconds || 0,
+            startTime: new Date(e.timestamp),
+            endTime: (e.abc_data as any)?.endTime ? new Date((e.abc_data as any).endTime) : undefined,
+            sessionId: e.session_id,
+          }));
+
+        const allIntervalEntries = allFetchedEntries
+          .filter((e: any) => e.event_type === 'interval')
+          .map((e: any) => ({
+            id: e.id,
+            studentId: e.student_id,
+            behaviorId: e.behavior_id,
+            intervalNumber: e.interval_index || 0,
+            occurred: (e.abc_data as any)?.occurred || false,
+            timestamp: new Date(e.timestamp),
+            voided: (e.abc_data as any)?.voided,
+            voidReason: (e.abc_data as any)?.voidReason,
+            sessionId: e.session_id,
+          }));
+
+        const allAbcEntries = allFetchedEntries
+          .filter((e: any) => e.event_type === 'abc')
+          .map((e: any) => ({
+            id: e.id,
+            studentId: e.student_id,
+            behaviorId: e.behavior_id,
+            antecedent: (e.abc_data as any)?.antecedent || '',
+            antecedents: (e.abc_data as any)?.antecedents,
+            behavior: (e.abc_data as any)?.behavior || '',
+            behaviors: (e.abc_data as any)?.behaviors,
+            consequence: (e.abc_data as any)?.consequence || '',
+            consequences: (e.abc_data as any)?.consequences,
+            functions: (e.abc_data as any)?.functions,
+            frequencyCount: (e.abc_data as any)?.frequencyCount || 1,
+            hasDuration: (e.abc_data as any)?.hasDuration,
+            durationMinutes: (e.abc_data as any)?.durationMinutes,
+            timestamp: new Date(e.timestamp),
+            sessionId: e.session_id,
+          }));
+
+        const currentState = useDataStore.getState();
+        const historicalFrequency = currentState.frequencyEntries.filter((e: any) => e.isHistorical);
+        const historicalDuration = currentState.durationEntries.filter((e: any) => !e.sessionId);
+
+        useDataStore.setState({
+          frequencyEntries: [
+            ...historicalFrequency,
+            ...allFrequencyEntries.filter((c: any) => !historicalFrequency.some((h: any) => h.id === c.id)),
+          ],
+          durationEntries: [
+            ...historicalDuration,
+            ...allDurationEntries.filter((c: any) => !historicalDuration.some((h: any) => h.id === c.id)),
+          ],
+          intervalEntries: allIntervalEntries,
+          abcEntries: allAbcEntries,
+        });
       }
 
       // Load LIVE session data — only resume if the current user is an active participant.
