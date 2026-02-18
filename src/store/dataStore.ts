@@ -154,6 +154,8 @@ interface DataState {
   // Indirect assessments
   addIndirectAssessment: (studentId: string, assessment: Omit<import('@/types/behavior').IndirectAssessmentResult, 'id'>) => void;
   deleteIndirectAssessment: (studentId: string, assessmentId: string) => void;
+  updateIndirectAssessment: (studentId: string, assessmentId: string, updates: Partial<import('@/types/behavior').IndirectAssessmentResult>) => void;
+  
   
   // Latency actions
   addLatencyEntry: (entry: Omit<LatencyEntry, 'id'>) => void;
@@ -448,6 +450,22 @@ export const useDataStore = create<DataState>()(
           ),
         }));
       },
+
+      updateIndirectAssessment: (studentId, assessmentId, updates) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  indirectAssessments: (s.indirectAssessments || []).map((a) =>
+                    a.id === assessmentId ? { ...a, ...updates } : a
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
 
       updateStudentProfile: (id, updates) => {
         set((state) => ({
