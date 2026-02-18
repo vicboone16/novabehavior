@@ -405,11 +405,22 @@ export function SyncProvider({ children }: SyncProviderProps) {
             ? new Date(earliestEntryTimestamp) 
             : new Date(session.start_time);
           
+          // Back-fill studentIds in-memory if the DB array is empty but entries exist.
+          // This fixes sessions where student_ids = [] due to a failed presence-sync.
+          let studentIds: string[] = session.student_ids || [];
+          if (studentIds.length === 0 && entries.length > 0) {
+            const fromEntries = Array.from(new Set(entries.map((e: any) => e.student_id).filter(Boolean)));
+            if (fromEntries.length > 0) {
+              studentIds = fromEntries as string[];
+              console.log(`[Sync] Back-filled studentIds for session ${session.id} from session_data:`, studentIds);
+            }
+          }
+
           return {
             id: session.id,
             date: sessionDate,
             notes: session.name || '',
-            studentIds: session.student_ids || [],
+            studentIds,
             sessionLengthMinutes: session.session_length_minutes,
             abcEntries: entries
               .filter(e => e.event_type === 'abc')
