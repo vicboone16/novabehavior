@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDataStore } from '@/store/dataStore';
+import { useAssignedStudents } from '@/hooks/useAssignedStudents';
 import { format, subDays, isAfter, differenceInDays } from 'date-fns';
 import {
   LineChart,
@@ -47,6 +48,7 @@ type ViewType = 'overview' | 'behaviors' | 'abc' | 'goals';
 
 export function StudentComparison() {
   const { students, frequencyEntries, abcEntries, durationEntries, intervalEntries, behaviorGoals } = useDataStore();
+  const { assignedStudents } = useAssignedStudents();
   const [open, setOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<'7' | '14' | '30' | 'all'>('7');
@@ -54,7 +56,8 @@ export function StudentComparison() {
   const [viewType, setViewType] = useState<ViewType>('overview');
   const [selectedBehavior, setSelectedBehavior] = useState<string>('all');
 
-  const activeStudents = students.filter(s => !s.isArchived);
+  // Only show students assigned to this user (sorted alphabetically)
+  const activeStudents = assignedStudents;
 
   const toggleStudent = (id: string) => {
     setSelectedStudentIds(prev =>

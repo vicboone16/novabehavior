@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useAssignedStudents } from '@/hooks/useAssignedStudents';
 import { Users, Plus, Target, BookOpen, AlertTriangle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,6 +215,7 @@ interface StudentGoalConfig {
 
 export function BulkAddBehavior() {
   const { students, bulkAddBehavior, addBehaviorGoal, globalBehaviorBank, behaviorDefinitionOverrides, behaviorGoals } = useDataStore();
+  const { assignedStudents } = useAssignedStudents();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'behavior' | 'goal'>('behavior');
   
@@ -259,10 +261,10 @@ export function BulkAddBehavior() {
     });
   }, [behaviorDefinitionOverrides]);
 
-  // Combine all behavior sources
+  // Combine all behavior sources, filtering out archived bank behaviors
   const allBankBehaviors = useMemo(() => [
     ...effectiveDefaultBehaviors,
-    ...globalBehaviorBank,
+    ...globalBehaviorBank.filter(b => !(b as any).isArchived),
   ], [effectiveDefaultBehaviors, globalBehaviorBank]);
 
   // Filtered behaviors for behavior tab
@@ -287,7 +289,8 @@ export function BulkAddBehavior() {
     );
   }, [allBankBehaviors, goalBankSearchQuery]);
 
-  const activeStudents = students.filter(s => !s.isArchived);
+  // Use only assigned students, sorted alphabetically
+  const activeStudents = assignedStudents;
 
   // Check for duplicate/similar behaviors
   const checkForDuplicates = useCallback((name: string, studentIds: string[]): DuplicateWarning[] => {

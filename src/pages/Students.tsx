@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy, Mail, Phone, School, CalendarDays, GraduationCap, ClipboardList } from 'lucide-react';
+import { User, Plus, ChevronRight, Archive, ArchiveRestore, Users, Copy, Mail, Phone, School, CalendarDays, GraduationCap, ClipboardList, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,21 +31,59 @@ import { CaseType, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } 
 
 type FilterType = 'active' | 'archived' | 'all';
 
+interface NewStudentForm {
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  dateOfBirth: string;
+  dataCollectionStartDate: string;
+}
+
+const emptyForm = (): NewStudentForm => ({
+  firstName: '',
+  lastName: '',
+  displayName: '',
+  dateOfBirth: '',
+  dataCollectionStartDate: format(new Date(), 'yyyy-MM-dd'),
+});
+
 export default function Students() {
   const navigate = useNavigate();
   const { students, addStudent, unarchiveStudent, duplicateBehaviorConfig } = useDataStore();
-  const [newStudentName, setNewStudentName] = useState('');
   const [filter, setFilter] = useState<FilterType>('active');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newStudentForm, setNewStudentForm] = useState<NewStudentForm>(emptyForm());
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [showBulkDataEntry, setShowBulkDataEntry] = useState(false);
   const [sourceStudentId, setSourceStudentId] = useState('');
   const [targetStudentId, setTargetStudentId] = useState('');
 
   const handleAddStudent = () => {
-    if (newStudentName.trim()) {
-      addStudent(newStudentName.trim());
-      setNewStudentName('');
+    const { firstName, lastName, displayName, dateOfBirth, dataCollectionStartDate } = newStudentForm;
+    if (!firstName.trim() || !lastName.trim()) return;
+
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+    // addStudent only takes a name; afterwards patch via updateStudentProfile using the matching new student
+    addStudent(fullName);
+
+    // updateStudentProfile on the newly added student (last in list with this name)
+    const store = useDataStore.getState();
+    const newStudent = [...store.students]
+      .reverse()
+      .find(s => s.name === fullName);
+
+    if (newStudent) {
+      store.updateStudentProfile(newStudent.id, {
+        displayName: displayName.trim() || fullName,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        dataCollectionStartDate: dataCollectionStartDate ? new Date(dataCollectionStartDate) : undefined,
+      });
     }
+
+    setNewStudentForm(emptyForm());
+    setShowAddDialog(false);
   };
 
   const handleDuplicate = () => {
@@ -57,16 +95,26 @@ export default function Students() {
     }
   };
 
-  const filteredStudents = students.filter(s => {
-    if (filter === 'active') return !s.isArchived;
-    if (filter === 'archived') return s.isArchived;
-    return true;
+  // Sort alphabetically by display name
+  const sortedStudents = [...students].sort((a, b) =>
+    (a.displayName || a.name).localeCompare(b.displayName || b.name)
+  );
+
+  const filteredStudents = sortedStudents.filter(s => {
+    const matchesFilter =
+      filter === 'active' ? !s.isArchived :
+      filter === 'archived' ? s.isArchived : true;
+    const matchesSearch = searchQuery.trim() === '' ||
+      (s.displayName || s.name).toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
 
   const activeStudents = students.filter(s => !s.isArchived);
   const studentsWithBehaviors = activeStudents.filter(s => s.behaviors.length > 0);
   const activeCount = activeStudents.length;
   const archivedCount = students.filter(s => s.isArchived).length;
+
+  const canSubmit = newStudentForm.firstName.trim() && newStudentForm.lastName.trim();
 
   return (
     <div className="space-y-6">
@@ -79,21 +127,25 @@ export default function Students() {
         </div>
       </div>
 
-      {/* Add Student */}
-      <div className="flex flex-wrap gap-2">
-        <Input
-          placeholder="Enter student name..."
-          value={newStudentName}
-          onChange={(e) => setNewStudentName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
-          className="max-w-xs"
-        />
-        <Button onClick={handleAddStudent} disabled={!newStudentName.trim()}>
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {/* Search bar */}
+        <div className="relative max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search students..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Student
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowDuplicateDialog(true)}
           disabled={studentsWithBehaviors.length === 0}
         >
@@ -102,8 +154,8 @@ export default function Students() {
         </Button>
         <BulkAddBehavior />
         <StudentComparison />
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowBulkDataEntry(true)}
         >
           <ClipboardList className="w-4 h-4 mr-2" />
@@ -138,19 +190,19 @@ export default function Students() {
             {filter === 'archived' ? (
               <>
                 <Archive className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-foreground mb-2">
-                  No Archived Students
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Students you archive will appear here.
-                </p>
+                <h3 className="text-base font-semibold text-foreground mb-2">No Archived Students</h3>
+                <p className="text-sm text-muted-foreground">Students you archive will appear here.</p>
+              </>
+            ) : searchQuery ? (
+              <>
+                <Search className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-foreground mb-2">No Results</h3>
+                <p className="text-sm text-muted-foreground">No students match "{searchQuery}".</p>
               </>
             ) : (
               <>
                 <User className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-foreground mb-2">
-                  No Students Yet
-                </h3>
+                <h3 className="text-base font-semibold text-foreground mb-2">No Students Yet</h3>
                 <p className="text-sm text-muted-foreground">
                   Add a student above to get started with behavior tracking.
                 </p>
@@ -176,14 +228,12 @@ export default function Students() {
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-                      student.isArchived ? 'opacity-50' : ''
-                    }`}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${student.isArchived ? 'opacity-50' : ''}`}
                     style={{ backgroundColor: `${student.color}20` }}
                   >
                     <User className="w-6 h-6" style={{ color: student.color }} />
                   </div>
-                    <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground truncate">
                         {student.displayName || student.name}
@@ -209,7 +259,7 @@ export default function Students() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     {/* Profile Info Row */}
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                       {student.dateOfBirth && (() => {
@@ -234,7 +284,7 @@ export default function Students() {
                         </span>
                       )}
                     </div>
-                    
+
                     {/* Case Types */}
                     {student.caseTypes && student.caseTypes.length > 0 && (
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
@@ -245,7 +295,7 @@ export default function Students() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Contact Info */}
                     {(student.contactEmail || student.contactPhone) && (
                       <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
@@ -263,7 +313,7 @@ export default function Students() {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Tags */}
                     <div className="mt-1.5">
                       <StudentTagsDisplay studentId={student.id} />
@@ -291,6 +341,77 @@ export default function Students() {
         )}
       </div>
 
+      {/* Add Student Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={(o) => { setShowAddDialog(o); if (!o) setNewStudentForm(emptyForm()); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Add New Student
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>First Name <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="First name"
+                  value={newStudentForm.firstName}
+                  onChange={(e) => setNewStudentForm(f => ({ ...f, firstName: e.target.value }))}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Last Name <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="Last name"
+                  value={newStudentForm.lastName}
+                  onChange={(e) => setNewStudentForm(f => ({ ...f, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Display Name</Label>
+              <Input
+                placeholder={
+                  newStudentForm.firstName || newStudentForm.lastName
+                    ? `${newStudentForm.firstName} ${newStudentForm.lastName}`.trim()
+                    : 'e.g. nickname or initials'
+                }
+                value={newStudentForm.displayName}
+                onChange={(e) => setNewStudentForm(f => ({ ...f, displayName: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">Shown in the app instead of full name if set.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Date of Birth</Label>
+                <Input
+                  type="date"
+                  value={newStudentForm.dateOfBirth}
+                  onChange={(e) => setNewStudentForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Data Collection Start Date</Label>
+                <Input
+                  type="date"
+                  value={newStudentForm.dataCollectionStartDate}
+                  onChange={(e) => setNewStudentForm(f => ({ ...f, dataCollectionStartDate: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddStudent} disabled={!canSubmit}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Student
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Duplicate Config Dialog */}
       <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
         <DialogContent>
@@ -311,17 +432,12 @@ export default function Students() {
                   <SelectValue placeholder="Select source student..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {studentsWithBehaviors.map((s) => (
+                  {studentsWithBehaviors.sort((a,b)=>(a.displayName||a.name).localeCompare(b.displayName||b.name)).map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        {s.name}
-                        <span className="text-muted-foreground text-xs">
-                          ({s.behaviors.length} behaviors)
-                        </span>
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+                        {s.displayName || s.name}
+                        <span className="text-muted-foreground text-xs">({s.behaviors.length} behaviors)</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -337,18 +453,14 @@ export default function Students() {
                 <SelectContent>
                   {activeStudents
                     .filter((s) => s.id !== sourceStudentId)
+                    .sort((a,b)=>(a.displayName||a.name).localeCompare(b.displayName||b.name))
                     .map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: s.color }}
-                          />
-                          {s.name}
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+                          {s.displayName || s.name}
                           {s.behaviors.length > 0 && (
-                            <span className="text-muted-foreground text-xs">
-                              ({s.behaviors.length} existing)
-                            </span>
+                            <span className="text-muted-foreground text-xs">({s.behaviors.length} existing)</span>
                           )}
                         </div>
                       </SelectItem>
@@ -358,9 +470,7 @@ export default function Students() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDuplicateDialog(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowDuplicateDialog(false)}>Cancel</Button>
             <Button
               onClick={handleDuplicate}
               disabled={!sourceStudentId || !targetStudentId || sourceStudentId === targetStudentId}
@@ -373,10 +483,7 @@ export default function Students() {
       </Dialog>
 
       {/* Bulk Historical Data Entry Dialog */}
-      <BulkHistoricalDataEntry 
-        open={showBulkDataEntry} 
-        onOpenChange={setShowBulkDataEntry} 
-      />
+      <BulkHistoricalDataEntry open={showBulkDataEntry} onOpenChange={setShowBulkDataEntry} />
     </div>
   );
 }
