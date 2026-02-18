@@ -794,6 +794,69 @@ export type Database = {
           },
         ]
       }
+      behavior_bank_entries: {
+        Row: {
+          agency_id: string | null
+          behavior_id: string
+          category: string | null
+          created_at: string
+          created_by: string
+          entry_type: string
+          id: string
+          is_global: boolean
+          name: string | null
+          operational_definition: string | null
+          promoted_at: string | null
+          promoted_from_student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          behavior_id: string
+          category?: string | null
+          created_at?: string
+          created_by: string
+          entry_type: string
+          id?: string
+          is_global?: boolean
+          name?: string | null
+          operational_definition?: string | null
+          promoted_at?: string | null
+          promoted_from_student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          behavior_id?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          entry_type?: string
+          id?: string
+          is_global?: boolean
+          name?: string | null
+          operational_definition?: string | null
+          promoted_at?: string | null
+          promoted_from_student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_bank_entries_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_bank_entries_promoted_from_student_id_fkey"
+            columns: ["promoted_from_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_claims: {
         Row: {
           adjustment_amount: number | null
