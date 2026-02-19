@@ -865,7 +865,7 @@ export function HistoricalObservationEntry({
               </TabsContent>
 
               {/* Cold Probe / Skill Acquisition Tab */}
-              <TabsContent value="cold_probe" className="space-y-3">
+              <TabsContent value="cold_probe" className="space-y-2">
                 <div className="flex gap-2">
                   <Select onValueChange={addColdProbeEntry}>
                     <SelectTrigger className="w-[200px]">
@@ -886,119 +886,118 @@ export function HistoricalObservationEntry({
                 </div>
 
                 {coldProbeEntries.length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Target className="w-7 h-7 mx-auto mb-1.5 opacity-50" />
                     <p className="text-sm">No skill targets added</p>
                     <p className="text-xs">Select a skill target above to record cold probe data</p>
                   </div>
                 )}
 
-                {coldProbeEntries.map((entry, idx) => {
-                  const correctCount = entry.trials.filter(t => t.isCorrect).length;
-                  const totalCount = entry.trials.length;
-                  const percentCorrect = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
-                  
-                  return (
-                    <Card key={idx}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-primary" />
-                            <span>{entry.skillTargetName}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {totalCount > 0 && (
-                              <Badge variant="secondary">
-                                {correctCount}/{totalCount} ({percentCorrect}%)
-                              </Badge>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => setColdProbeEntries(prev => prev.filter((_, i) => i !== idx))}
-                            >
-                              <Trash2 className="w-3 h-3 text-destructive" />
-                            </Button>
-                          </div>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {/* Quick entry buttons */}
-                        <div className="flex gap-2">
-                          <Button
-                            className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white"
-                            onClick={() => addTrialToColdProbe(entry.skillTargetId, true, 'independent')}
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Correct (+)
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="flex-1 h-10"
-                            onClick={() => addTrialToColdProbe(entry.skillTargetId, false, 'independent')}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Incorrect (−)
-                          </Button>
-                        </div>
-
-                        {/* Prompted responses */}
-                        <div className="border rounded-lg p-2 bg-muted/30 space-y-2">
-                          <Label className="text-xs">Prompted Responses</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {PROMPT_LEVEL_ORDER.filter(p => p !== 'independent').map(level => (
-                              <Button
-                                key={level}
-                                variant="outline"
-                                size="sm"
-                                className="text-xs"
-                                onClick={() => addTrialToColdProbe(entry.skillTargetId, true, level)}
-                              >
-                                {PROMPT_LEVEL_LABELS[level]} +
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Trial display */}
-                        {entry.trials.length > 0 && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-xs">Trials</Label>
+                {/* Scrollable list of cold probe entries — max height keeps notes visible */}
+                <div className="max-h-[260px] overflow-y-auto space-y-2 pr-1">
+                  {coldProbeEntries.map((entry, idx) => {
+                    const correctCount = entry.trials.filter(t => t.isCorrect).length;
+                    const totalCount = entry.trials.length;
+                    const percentCorrect = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+                    
+                    return (
+                      <Card key={idx} className="border">
+                        <CardContent className="pt-3 pb-3 space-y-2">
+                          {/* Header row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span className="text-sm font-medium truncate">{entry.skillTargetName}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {totalCount > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {correctCount}/{totalCount} ({percentCorrect}%)
+                                </Badge>
+                              )}
                               <Button
                                 variant="ghost"
-                                size="sm"
-                                className="h-5 text-xs"
-                                onClick={() => removeLastTrial(entry.skillTargetId)}
+                                size="icon"
+                                className="h-5 w-5"
+                                onClick={() => setColdProbeEntries(prev => prev.filter((_, i) => i !== idx))}
                               >
-                                Undo Last
+                                <Trash2 className="w-3 h-3 text-destructive" />
                               </Button>
                             </div>
-                            <div className="flex flex-wrap gap-1">
+                          </div>
+
+                          {/* Quick entry buttons — compact */}
+                          <div className="flex gap-1.5">
+                            <Button
+                              size="sm"
+                              className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                              onClick={() => addTrialToColdProbe(entry.skillTargetId, true, 'independent')}
+                            >
+                              <Check className="w-3 h-3 mr-1" />
+                              Correct (+)
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1 h-8 text-xs"
+                              onClick={() => addTrialToColdProbe(entry.skillTargetId, false, 'independent')}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Incorrect (−)
+                            </Button>
+                          </div>
+
+                          {/* Prompted responses — compact collapsible grid */}
+                          <div className="border rounded p-1.5 bg-muted/30">
+                            <p className="text-[10px] text-muted-foreground mb-1">Prompted responses</p>
+                            <div className="grid grid-cols-3 gap-1">
+                              {PROMPT_LEVEL_ORDER.filter(p => p !== 'independent').map(level => (
+                                <Button
+                                  key={level}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 text-[10px] px-1"
+                                  onClick={() => addTrialToColdProbe(entry.skillTargetId, true, level)}
+                                >
+                                  {PROMPT_LEVEL_LABELS[level]} +
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Trial display — inline, compact */}
+                          {entry.trials.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
                               {entry.trials.map((trial, trialIdx) => (
                                 <div
                                   key={trialIdx}
                                   className={`
-                                    w-6 h-6 rounded text-xs flex items-center justify-center font-medium
+                                    w-5 h-5 rounded text-[10px] flex items-center justify-center font-medium
                                     ${trial.isCorrect 
                                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' 
                                       : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}
-                                    ${trial.promptLevel !== 'independent' ? 'ring-2 ring-amber-500' : ''}
+                                    ${trial.promptLevel !== 'independent' ? 'ring-1 ring-amber-500' : ''}
                                   `}
                                   title={trial.promptLevel !== 'independent' ? PROMPT_LEVEL_LABELS[trial.promptLevel] : 'Independent'}
                                 >
                                   {trial.isCorrect ? '+' : '−'}
                                 </div>
                               ))}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-[10px] px-1 ml-auto"
+                                onClick={() => removeLastTrial(entry.skillTargetId)}
+                              >
+                                Undo
+                              </Button>
                             </div>
-                            <p className="text-[10px] text-muted-foreground">Ring = prompted response</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </TabsContent>
             </Tabs>
 
