@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { format, subDays } from 'date-fns';
 import { 
   ClipboardList, Download, Eye, FileText, ChevronDown, ChevronUp,
-  Filter, Calendar, BarChart3, FileDown
+  Filter, Calendar, BarChart3, FileDown, Pencil, Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -76,11 +77,39 @@ interface StructuredObservationData {
 
 export function ObservationResultsViewer({ studentId, student }: ObservationResultsViewerProps) {
   const { toast } = useToast();
-  const { sessions, abcEntries, frequencyEntries, durationEntries, intervalEntries } = useDataStore();
+  const { sessions, abcEntries, frequencyEntries, durationEntries, intervalEntries, updateStudentProfile } = useDataStore();
   
   const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
   const [selectedObservation, setSelectedObservation] = useState<StructuredObservationData | null>(null);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [editingDateValue, setEditingDateValue] = useState<string>('');
+
+  // Update observationDate on a narrative note (structured observation)
+  const handleUpdateObservationDate = (obsId: string) => {
+    if (!editingDateValue) return;
+    const newDate = new Date(editingDateValue);
+    if (isNaN(newDate.getTime())) return;
+
+    const updatedNotes = (student.narrativeNotes || []).map(note => {
+      if (note.id !== obsId) return note;
+      let content: any = note.content;
+      try {
+        content = typeof note.content === 'string' ? JSON.parse(note.content) : note.content;
+      } catch { /* keep as-is */ }
+      const updated = { ...content, observationDate: newDate.toISOString() };
+      return { ...note, content: JSON.stringify(updated) };
+    });
+
+    updateStudentProfile(studentId, { narrativeNotes: updatedNotes });
+    // Also update selectedObservation if it's open
+    if (selectedObservation?.id === obsId) {
+      setSelectedObservation({ ...selectedObservation, observationDate: newDate });
+    }
+    setEditingDateId(null);
+    setEditingDateValue('');
+    toast({ title: 'Date updated', description: `Observation date set to ${format(newDate, 'MMMM d, yyyy')}` });
+  };
 
   // Parse structured observations from narrative notes
   const structuredObservations = useMemo(() => {
@@ -98,6 +127,24 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                 id: note.id,
                 observationDate: new Date(parsed.observationDate || note.timestamp),
               });
+            }
+            // Also parse observation-notes type
+            if (parsed.type === 'observation-notes') {
+              observations.push({
+                id: note.id,
+                studentId: note.studentId,
+                observationDate: new Date(parsed.observationDate || note.timestamp),
+                observer: '',
+                teacherClass: '',
+                teacherPosition: '',
+                teacherTechniques: '',
+                additionalObservations: parsed.narrativeNotes || '',
+                behaviorChecklist: [],
+                notes: parsed.narrativeNotes || '',
+                _isObservationNotes: true,
+                _behaviorNotes: parsed.behaviorNotes || [],
+                _skillNotes: parsed.skillNotes || [],
+              } as any);
             }
           } catch {
             // Not JSON structured observation, skip
@@ -1354,6 +1401,7 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                 {structuredObservations.map(obs => {
                   const frequentBehaviors = obs.behaviorChecklist?.filter(b => b.rating === 'frequently') || [];
                   const sometimesBehaviors = obs.behaviorChecklist?.filter(b => b.rating === 'sometimes') || [];
+                  const isEditingDate = editingDateId === obs.id;
 
                   return (
                     <Card key={obs.id} className="overflow-hidden">
@@ -1362,9 +1410,51 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium text-sm">
-                                {format(new Date(obs.observationDate), 'MMM d, yyyy')}
-                              </p>
+                              {isEditingDate ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="date"
+                                    value={editingDateValue}
+                                    onChange={(e) => setEditingDateValue(e.target.value)}
+                                    className="h-7 text-xs w-36"
+                                    max={format(new Date(), 'yyyy-MM-dd')}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleUpdateObservationDate(obs.id)}
+                                  >
+                                    <Check className="w-3 h-3 text-primary" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => { setEditingDateId(null); setEditingDateValue(''); }}
+                                  >
+                                    <X className="w-3 h-3 text-destructive" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <p className="font-medium text-sm">
+                                    {format(new Date(obs.observationDate), 'MMM d, yyyy')}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 opacity-60 hover:opacity-100"
+                                    onClick={() => {
+                                      setEditingDateId(obs.id);
+                                      setEditingDateValue(format(new Date(obs.observationDate), 'yyyy-MM-dd'));
+                                    }}
+                                    title="Edit observation date"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
                               <p className="text-xs text-muted-foreground">
                                 Observer: {obs.observer || 'Unknown'}
                               </p>
