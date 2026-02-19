@@ -592,6 +592,43 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
       children.push(new Paragraph({ text: '' }));
     }
 
+    // Skill / Cold Probe Data Section — DTT sessions that fall on this observation date
+    const sessionDate = format(new Date(session.date), 'yyyy-MM-dd');
+    const skillTargets = student.skillTargets || [];
+    const dttSessions = (student.dttSessions || []).filter(d => {
+      const dDate = format(new Date(d.date), 'yyyy-MM-dd');
+      return dDate === sessionDate;
+    });
+    if (dttSessions.length > 0) {
+      children.push(new Paragraph({ text: 'SKILL ACQUISITION / COLD PROBE DATA', heading: HeadingLevel.HEADING_2 }));
+      children.push(new Paragraph({ text: '' }));
+      for (const dttSession of dttSessions) {
+        const target = skillTargets.find(t => t.id === dttSession.skillTargetId);
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: target?.name || 'Unknown Target', bold: true }),
+            new TextRun(` — ${target?.method?.toUpperCase() || 'PROBE'}`),
+          ],
+        }));
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: 'Correct: ', bold: true }),
+            new TextRun(`${dttSession.percentCorrect}%`),
+            new TextRun({ text: '  |  Independent: ', bold: true }),
+            new TextRun(`${dttSession.percentIndependent}%`),
+            new TextRun({ text: '  |  Trials: ', bold: true }),
+            new TextRun(`${dttSession.trials.length}`),
+          ],
+        }));
+        if (dttSession.notes) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: 'Notes: ', bold: true }), new TextRun(dttSession.notes)],
+          }));
+        }
+        children.push(new Paragraph({ text: '' }));
+      }
+    }
+
     // Session Notes
     if (session.notes) {
       children.push(
@@ -773,6 +810,24 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
             children: [
               new TextRun({ text: `  • ${name}: `, bold: true }),
               new TextRun(`${pct}% (${data.occurred}/${data.total} intervals)`),
+            ],
+          }));
+        });
+        children.push(new Paragraph({ text: '' }));
+      }
+
+      // Skill / Cold Probe Data for this session date
+      const sDate = format(new Date(session.date), 'yyyy-MM-dd');
+      const sessionSkillTargets = student.skillTargets || [];
+      const sessionDttSessions = (student.dttSessions || []).filter(d => format(new Date(d.date), 'yyyy-MM-dd') === sDate);
+      if (sessionDttSessions.length > 0) {
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Skill / Cold Probe Data:', bold: true })] }));
+        sessionDttSessions.forEach(dttSess => {
+          const tgt = sessionSkillTargets.find(t => t.id === dttSess.skillTargetId);
+          children.push(new Paragraph({
+            children: [
+              new TextRun({ text: `  • ${tgt?.name || 'Unknown'}: `, bold: true }),
+              new TextRun(`${dttSess.percentCorrect}% correct, ${dttSess.percentIndependent}% independent (${dttSess.trials.length} trials)`),
             ],
           }));
         });

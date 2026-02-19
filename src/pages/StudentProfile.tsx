@@ -103,6 +103,8 @@ export default function StudentProfile() {
     addBehaviorWithMethods, 
     removeBehavior,
     updateBehaviorMethods,
+    updateBehaviorName,
+    updateBehaviorDefinition,
     addCustomAntecedent,
     addCustomConsequence,
     behaviorGoals,
@@ -161,6 +163,29 @@ export default function StudentProfile() {
   const [editSession, setEditSession] = useState<Session | null>(null);
   const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<string | null>(null);
   const { deleteSession } = useDataStore();
+  
+  // Inline behavior editing state
+  const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(null);
+  const [editBehaviorName, setEditBehaviorName] = useState('');
+  const [editBehaviorDefinition, setEditBehaviorDefinition] = useState('');
+
+  const startEditBehavior = (behaviorId: string, name: string, definition: string) => {
+    setEditingBehaviorId(behaviorId);
+    setEditBehaviorName(name);
+    setEditBehaviorDefinition(definition || '');
+  };
+
+  const saveEditBehavior = () => {
+    if (!editingBehaviorId || !editBehaviorName.trim()) return;
+    updateBehaviorName(student!.id, editingBehaviorId, editBehaviorName.trim());
+    updateBehaviorDefinition(student!.id, editingBehaviorId, editBehaviorDefinition);
+    setEditingBehaviorId(null);
+    toast.success('Behavior updated — existing data is unchanged');
+  };
+
+  const cancelEditBehavior = () => {
+    setEditingBehaviorId(null);
+  };
   
   // Skill target state
   const [selectedSkillTarget, setSelectedSkillTarget] = useState<SkillTarget | null>(null);
@@ -826,25 +851,70 @@ export default function StudentProfile() {
                       </div>
                     ) : (
                       student.behaviors.map((behavior) => (
-                        <div key={behavior.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                          <div>
-                            <span className="font-medium text-sm">{behavior.name}</span>
-                            <div className="flex gap-1 mt-0.5">
-                              {(behavior.methods || [behavior.type]).map((method) => (
-                                <Badge key={method} variant="secondary" className="text-xs py-0">
-                                  {METHOD_LABELS[method]}
-                                </Badge>
-                              ))}
+                        <div key={behavior.id} className="p-2 rounded-md bg-muted/50">
+                          {editingBehaviorId === behavior.id ? (
+                            <div className="space-y-2">
+                              <Input
+                                value={editBehaviorName}
+                                onChange={e => setEditBehaviorName(e.target.value)}
+                                placeholder="Behavior name"
+                                className="h-8 text-sm"
+                                autoFocus
+                              />
+                              <Textarea
+                                value={editBehaviorDefinition}
+                                onChange={e => setEditBehaviorDefinition(e.target.value)}
+                                placeholder="Operational definition (optional)"
+                                className="text-sm min-h-[60px]"
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                Renaming only updates the display label — all previously collected data is preserved.
+                              </p>
+                              <div className="flex gap-2">
+                                <Button size="sm" className="h-7 text-xs" onClick={saveEditBehavior} disabled={!editBehaviorName.trim()}>
+                                  <Check className="w-3 h-3 mr-1" /> Save
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={cancelEditBehavior}>
+                                  Cancel
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteConfirm({ type: 'behavior', id: behavior.id })}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-medium text-sm">{behavior.name}</span>
+                                {behavior.operationalDefinition && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{behavior.operationalDefinition}</p>
+                                )}
+                                <div className="flex gap-1 mt-0.5">
+                                  {(behavior.methods || [behavior.type]).map((method) => (
+                                    <Badge key={method} variant="secondary" className="text-xs py-0">
+                                      {METHOD_LABELS[method]}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 ml-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  title="Edit name & definition"
+                                  onClick={() => startEditBehavior(behavior.id, behavior.name, behavior.operationalDefinition || '')}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteConfirm({ type: 'behavior', id: behavior.id })}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}
