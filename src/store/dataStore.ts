@@ -166,6 +166,7 @@ interface DataState {
   addBehaviorWithMethods: (studentId: string, name: string, methods: DataCollectionMethod[], options?: { operationalDefinition?: string; category?: string; baseBehaviorId?: string }) => void;
   updateBehaviorMethods: (studentId: string, behaviorId: string, methods: DataCollectionMethod[]) => void;
   updateBehaviorDefinition: (studentId: string, behaviorId: string, operationalDefinition: string) => void;
+  updateBehaviorName: (studentId: string, behaviorId: string, name: string) => void;
   removeBehavior: (studentId: string, behaviorId: string) => void;
   toggleBehaviorForStudent: (studentId: string, behaviorId: string) => void;
   setBehaviorMastered: (studentId: string, behaviorId: string, isMastered: boolean) => void;
@@ -459,6 +460,23 @@ export const useDataStore = create<DataState>()(
                   ...s,
                   indirectAssessments: (s.indirectAssessments || []).map((a) =>
                     a.id === assessmentId ? { ...a, ...updates } : a
+                  ),
+                }
+              : s
+          ),
+        }));
+      },
+
+      updateBehaviorName: (studentId, behaviorId, name) => {
+        set((state) => ({
+          students: state.students.map((s) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.map((b) =>
+                    b.id === behaviorId
+                      ? { ...b, name }
+                      : b
                   ),
                 }
               : s
