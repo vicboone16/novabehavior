@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MessageSquare, Plus, Save, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { MessageSquare, Plus, Save, Trash2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import {
   Accordion,
   AccordionContent,
@@ -57,6 +61,12 @@ export function ObservationNotesPanel({
   initialNotes,
 }: ObservationNotesPanelProps) {
   const { toast } = useToast();
+  
+  // Date picker for observation date — defaults to today but must be set by user
+  const [observationDate, setObservationDate] = useState<Date>(
+    initialNotes?.observationDate ? new Date(initialNotes.observationDate) : new Date()
+  );
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const [behaviorNotes, setBehaviorNotes] = useState<BehaviorNote[]>(
     initialNotes?.behaviorNotes || []
@@ -132,7 +142,7 @@ export function ObservationNotesPanel({
     const notes: ObservationNotes = {
       id: initialNotes?.id || crypto.randomUUID(),
       studentId,
-      observationDate: new Date(),
+      observationDate,
       behaviorNotes,
       skillNotes,
       narrativeNotes,
@@ -155,6 +165,43 @@ export function ObservationNotesPanel({
 
   return (
     <div className="space-y-4">
+      {/* Observation Date Picker */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3">
+            <Label className="flex items-center gap-1 text-sm font-medium shrink-0">
+              <CalendarIcon className="w-3.5 h-3.5" />
+              Observation Date
+            </Label>
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "justify-start text-left font-normal h-8 text-sm",
+                    !observationDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  {observationDate ? format(observationDate, 'MMMM d, yyyy') : 'Pick observation date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={observationDate}
+                  onSelect={(d) => { if (d) { setObservationDate(d); setDatePickerOpen(false); } }}
+                  disabled={(d) => d > new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-xs text-muted-foreground">Set the actual date of this observation</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Behavior Notes */}
       <Card>
         <CardHeader className="pb-2">
