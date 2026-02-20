@@ -3447,18 +3447,25 @@ export type Database = {
           active: boolean
           age_band_max: number | null
           age_band_min: number | null
+          agency_id: string | null
           code: string | null
           created_at: string
           curriculum_system_id: string
           description: string | null
           display_order: number | null
           domain_id: string | null
+          edit_history: Json | null
+          forked_from_id: string | null
           id: string
           keywords: string[] | null
           level: string | null
           mastery_criteria: string | null
+          modified_at: string | null
+          modified_by: string | null
           prerequisites: string[] | null
           source_reference: string | null
+          source_tier: string
+          status: string
           teaching_notes: string | null
           title: string
           updated_at: string
@@ -3467,18 +3474,25 @@ export type Database = {
           active?: boolean
           age_band_max?: number | null
           age_band_min?: number | null
+          agency_id?: string | null
           code?: string | null
           created_at?: string
           curriculum_system_id: string
           description?: string | null
           display_order?: number | null
           domain_id?: string | null
+          edit_history?: Json | null
+          forked_from_id?: string | null
           id?: string
           keywords?: string[] | null
           level?: string | null
           mastery_criteria?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           prerequisites?: string[] | null
           source_reference?: string | null
+          source_tier?: string
+          status?: string
           teaching_notes?: string | null
           title: string
           updated_at?: string
@@ -3487,23 +3501,37 @@ export type Database = {
           active?: boolean
           age_band_max?: number | null
           age_band_min?: number | null
+          agency_id?: string | null
           code?: string | null
           created_at?: string
           curriculum_system_id?: string
           description?: string | null
           display_order?: number | null
           domain_id?: string | null
+          edit_history?: Json | null
+          forked_from_id?: string | null
           id?: string
           keywords?: string[] | null
           level?: string | null
           mastery_criteria?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           prerequisites?: string[] | null
           source_reference?: string | null
+          source_tier?: string
+          status?: string
           teaching_notes?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "curriculum_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "curriculum_items_curriculum_system_id_fkey"
             columns: ["curriculum_system_id"]
@@ -3518,6 +3546,13 @@ export type Database = {
             referencedRelation: "domains"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "curriculum_items_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_items"
+            referencedColumns: ["id"]
+          },
         ]
       }
       curriculum_systems: {
@@ -3525,11 +3560,22 @@ export type Database = {
           active: boolean
           age_range_max_months: number | null
           age_range_min_months: number | null
+          agency_id: string | null
+          archived_at: string | null
+          archived_by: string | null
           created_at: string
+          created_by: string | null
           description: string | null
+          forked_from_id: string | null
           id: string
+          import_format: string | null
+          item_count: number | null
+          modified_at: string | null
+          modified_by: string | null
           name: string
           publisher: string | null
+          source_tier: string
+          status: string
           tags: string[] | null
           type: string
           updated_at: string
@@ -3539,11 +3585,22 @@ export type Database = {
           active?: boolean
           age_range_max_months?: number | null
           age_range_min_months?: number | null
+          agency_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          forked_from_id?: string | null
           id?: string
+          import_format?: string | null
+          item_count?: number | null
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
           publisher?: string | null
+          source_tier?: string
+          status?: string
           tags?: string[] | null
           type?: string
           updated_at?: string
@@ -3553,17 +3610,43 @@ export type Database = {
           active?: boolean
           age_range_max_months?: number | null
           age_range_min_months?: number | null
+          agency_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
+          forked_from_id?: string | null
           id?: string
+          import_format?: string | null
+          item_count?: number | null
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
           publisher?: string | null
+          source_tier?: string
+          status?: string
           tags?: string[] | null
           type?: string
           updated_at?: string
           version?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_systems_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_systems_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_systems"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_form_submissions: {
         Row: {
@@ -4014,33 +4097,59 @@ export type Database = {
       }
       domains: {
         Row: {
+          agency_id: string | null
           category: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           display_order: number | null
           id: string
+          modified_at: string | null
+          modified_by: string | null
           name: string
+          source_tier: string
+          status: string
           updated_at: string
         }
         Insert: {
+          agency_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           display_order?: number | null
           id?: string
+          modified_at?: string | null
+          modified_by?: string | null
           name: string
+          source_tier?: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          agency_id?: string | null
           category?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           display_order?: number | null
           id?: string
+          modified_at?: string | null
+          modified_by?: string | null
           name?: string
+          source_tier?: string
+          status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "domains_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       eligibility_checks: {
         Row: {
@@ -6085,55 +6194,90 @@ export type Database = {
       org_goal_templates: {
         Row: {
           active: boolean
+          agency_id: string | null
           created_at: string
           created_by: string | null
           data_collection_type: string | null
           description: string | null
           domain_id: string | null
+          edit_history: Json | null
+          forked_from_id: string | null
           generalization_notes: string | null
           id: string
           mastery_criteria: string | null
+          modified_at: string | null
+          modified_by: string | null
           prompting_notes: string | null
+          source_tier: string
+          status: string
           tags: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          agency_id?: string | null
           created_at?: string
           created_by?: string | null
           data_collection_type?: string | null
           description?: string | null
           domain_id?: string | null
+          edit_history?: Json | null
+          forked_from_id?: string | null
           generalization_notes?: string | null
           id?: string
           mastery_criteria?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           prompting_notes?: string | null
+          source_tier?: string
+          status?: string
           tags?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          agency_id?: string | null
           created_at?: string
           created_by?: string | null
           data_collection_type?: string | null
           description?: string | null
           domain_id?: string | null
+          edit_history?: Json | null
+          forked_from_id?: string | null
           generalization_notes?: string | null
           id?: string
           mastery_criteria?: string | null
+          modified_at?: string | null
+          modified_by?: string | null
           prompting_notes?: string | null
+          source_tier?: string
+          status?: string
           tags?: string[] | null
           title?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "org_goal_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "org_goal_templates_domain_id_fkey"
             columns: ["domain_id"]
             isOneToOne: false
             referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_goal_templates_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "org_goal_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -8962,6 +9106,7 @@ export type Database = {
           custom_description: string | null
           custom_title: string | null
           domains_override: string[] | null
+          edit_history: Json | null
           id: string
           is_primary_support: boolean | null
           item_type: string
@@ -8969,6 +9114,8 @@ export type Database = {
           last_reviewed_by: string | null
           library_item_id: string | null
           linked_goal_ids: string[] | null
+          modified_at: string | null
+          modified_by: string | null
           notes: string | null
           review_date: string | null
           setting_tags_override: string[] | null
@@ -8984,6 +9131,7 @@ export type Database = {
           custom_description?: string | null
           custom_title?: string | null
           domains_override?: string[] | null
+          edit_history?: Json | null
           id?: string
           is_primary_support?: boolean | null
           item_type: string
@@ -8991,6 +9139,8 @@ export type Database = {
           last_reviewed_by?: string | null
           library_item_id?: string | null
           linked_goal_ids?: string[] | null
+          modified_at?: string | null
+          modified_by?: string | null
           notes?: string | null
           review_date?: string | null
           setting_tags_override?: string[] | null
@@ -9006,6 +9156,7 @@ export type Database = {
           custom_description?: string | null
           custom_title?: string | null
           domains_override?: string[] | null
+          edit_history?: Json | null
           id?: string
           is_primary_support?: boolean | null
           item_type?: string
@@ -9013,6 +9164,8 @@ export type Database = {
           last_reviewed_by?: string | null
           library_item_id?: string | null
           linked_goal_ids?: string[] | null
+          modified_at?: string | null
+          modified_by?: string | null
           notes?: string | null
           review_date?: string | null
           setting_tags_override?: string[] | null
@@ -10624,6 +10777,14 @@ export type Database = {
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
         Returns: number
+      }
+      fork_curriculum_item: {
+        Args: { _agency_id: string; _item_id: string }
+        Returns: string
+      }
+      fork_curriculum_system: {
+        Args: { _agency_id: string; _system_id: string }
+        Returns: string
       }
       generate_agency_slug: { Args: { _name: string }; Returns: string }
       generate_claim_number: { Args: never; Returns: string }

@@ -6,6 +6,12 @@ export interface Domain {
   category: string | null;
   description: string | null;
   display_order: number;
+  agency_id?: string | null;
+  source_tier: 'global' | 'agency' | 'custom';
+  status: 'active' | 'archived';
+  created_by?: string | null;
+  modified_by?: string | null;
+  modified_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +27,15 @@ export interface CurriculumSystem {
   age_range_max_months: number | null;
   tags: string[];
   active: boolean;
+  agency_id?: string | null;
+  source_tier: 'global' | 'agency' | 'custom';
+  status: 'active' | 'archived';
+  forked_from_id?: string | null;
+  created_by?: string | null;
+  modified_by?: string | null;
+  modified_at?: string | null;
+  item_count?: number;
+  import_format?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +57,13 @@ export interface CurriculumItem {
   source_reference: string | null;
   display_order: number;
   active: boolean;
+  agency_id?: string | null;
+  source_tier: 'global' | 'agency' | 'custom';
+  status: 'active' | 'archived';
+  forked_from_id?: string | null;
+  modified_by?: string | null;
+  modified_at?: string | null;
+  edit_history?: Array<{ editedBy: string; editedAt: string; changes: string }>;
   created_at: string;
   updated_at: string;
   // Joined fields
@@ -60,7 +82,14 @@ export interface OrgGoalTemplate {
   generalization_notes: string | null;
   tags: string[];
   active: boolean;
+  agency_id?: string | null;
+  source_tier: 'global' | 'agency' | 'custom';
+  status: 'active' | 'archived';
+  forked_from_id?: string | null;
   created_by: string | null;
+  modified_by?: string | null;
+  modified_at?: string | null;
+  edit_history?: Array<{ editedBy: string; editedAt: string; changes: string }>;
   created_at: string;
   updated_at: string;
   // Joined
