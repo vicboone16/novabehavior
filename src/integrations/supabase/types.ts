@@ -4593,6 +4593,8 @@ export type Database = {
           staff_profile: boolean | null
           staff_qualifications: boolean | null
           staff_supervisor: boolean | null
+          teacher_mode_access: boolean | null
+          teacher_mode_only: boolean | null
           updated_at: string
           user_id: string
         }
@@ -4701,6 +4703,8 @@ export type Database = {
           staff_profile?: boolean | null
           staff_qualifications?: boolean | null
           staff_supervisor?: boolean | null
+          teacher_mode_access?: boolean | null
+          teacher_mode_only?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -4809,6 +4813,8 @@ export type Database = {
           staff_profile?: boolean | null
           staff_qualifications?: boolean | null
           staff_supervisor?: boolean | null
+          teacher_mode_access?: boolean | null
+          teacher_mode_only?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -10746,6 +10752,8 @@ export type Database = {
           staff_profile: boolean | null
           staff_qualifications: boolean | null
           staff_supervisor: boolean | null
+          teacher_mode_access: boolean | null
+          teacher_mode_only: boolean | null
           updated_at: string
           user_id: string
         }

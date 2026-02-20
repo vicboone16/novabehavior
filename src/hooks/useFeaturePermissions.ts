@@ -127,6 +127,10 @@ export interface FeaturePermissions {
   dashboard_weekly_hours: boolean;
   dashboard_miles_driven: boolean;
   
+  // Teacher Mode
+  teacher_mode_access: boolean;
+  teacher_mode_only: boolean;
+  
   loading: boolean;
 }
 
@@ -235,6 +239,8 @@ const DEFAULT_PERMISSIONS: Record<string, Partial<FeaturePermissions>> = {
     dashboard_cancelled_summary: true,
     dashboard_weekly_hours: true,
     dashboard_miles_driven: true,
+    teacher_mode_access: true,
+    teacher_mode_only: false,
   },
   admin: {
     menu_staff: true,
@@ -339,6 +345,8 @@ const DEFAULT_PERMISSIONS: Record<string, Partial<FeaturePermissions>> = {
     dashboard_cancelled_summary: true,
     dashboard_weekly_hours: true,
     dashboard_miles_driven: true,
+    teacher_mode_access: true,
+    teacher_mode_only: false,
   },
   staff: {
     menu_staff: false,
@@ -443,6 +451,8 @@ const DEFAULT_PERMISSIONS: Record<string, Partial<FeaturePermissions>> = {
     dashboard_cancelled_summary: false,
     dashboard_weekly_hours: true,
     dashboard_miles_driven: true,
+    teacher_mode_access: true,
+    teacher_mode_only: false,
   },
   viewer: {
     menu_staff: false,
@@ -547,6 +557,8 @@ const DEFAULT_PERMISSIONS: Record<string, Partial<FeaturePermissions>> = {
     dashboard_cancelled_summary: false,
     dashboard_weekly_hours: true,
     dashboard_miles_driven: true,
+    teacher_mode_access: false,
+    teacher_mode_only: false,
   },
 };
 
@@ -653,6 +665,8 @@ const defaultPermissions: FeaturePermissions = {
   dashboard_cancelled_summary: false,
   dashboard_weekly_hours: true,
   dashboard_miles_driven: true,
+  teacher_mode_access: true,
+  teacher_mode_only: false,
   loading: true,
 };
 

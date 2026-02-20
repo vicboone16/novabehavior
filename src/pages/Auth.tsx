@@ -45,6 +45,7 @@ export default function Auth() {
       .single();
 
     const { error } = await signIn(loginEmail, loginPassword);
+    const { data: { user: loggedInUser } } = await supabase.auth.getUser();
     setIsLoading(false);
 
     if (error) {
@@ -54,9 +55,41 @@ export default function Auth() {
       // Check if approved after login
       if (profile && !profile.is_approved) {
         navigate('/pending-approval');
+      } else if (isTeacherMode) {
+        // Check teacher mode permission
+        if (loggedInUser?.id) {
+          const { data: perms } = await supabase
+            .from('feature_permissions')
+            .select('teacher_mode_access, teacher_mode_only')
+            .eq('user_id', loggedInUser.id)
+            .maybeSingle();
+          
+          if (perms?.teacher_mode_only) {
+            navigate('/teacher-dashboard');
+          } else if (perms?.teacher_mode_access === false) {
+            toast({ title: 'Teacher Mode not enabled', description: 'Contact an administrator to enable Teacher Mode access.', variant: 'destructive' });
+            navigate('/');
+          } else {
+            navigate('/teacher-dashboard');
+          }
+        } else {
+          navigate('/teacher-dashboard');
+        }
       } else {
-        // Route based on mode
-        navigate(isTeacherMode ? '/teacher-dashboard' : '/');
+        // Check if user is teacher_mode_only
+        if (loggedInUser?.id) {
+          const { data: perms } = await supabase
+            .from('feature_permissions')
+            .select('teacher_mode_only')
+            .eq('user_id', loggedInUser.id)
+            .maybeSingle();
+          
+          if (perms?.teacher_mode_only) {
+            navigate('/teacher-dashboard');
+            return;
+          }
+        }
+        navigate('/');
       }
     }
   };

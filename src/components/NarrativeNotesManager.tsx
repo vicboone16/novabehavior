@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Plus, Trash2, Edit2, Save, X, Tag } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit2, Save, X, Tag, Clock, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { NarrativeNote, Behavior } from '@/types/behavior';
+import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
 interface NarrativeNotesManagerProps {
@@ -30,7 +42,7 @@ interface NarrativeNotesManagerProps {
   onAddNote: (note: Omit<NarrativeNote, 'id'>) => void;
   onUpdateNote: (id: string, updates: Partial<NarrativeNote>) => void;
   onDeleteNote: (id: string) => void;
-  canViewNotes?: boolean; // Permission to view notes - if false, shows restricted message
+  canViewNotes?: boolean;
 }
 
 export function NarrativeNotesManager({
@@ -42,12 +54,15 @@ export function NarrativeNotesManager({
   onDeleteNote,
   canViewNotes = true,
 }: NarrativeNotesManagerProps) {
+  const { user, profile } = useAuth();
   const [showAddNote, setShowAddNote] = useState(false);
   const [editingNote, setEditingNote] = useState<NarrativeNote | null>(null);
   const [content, setContent] = useState('');
   const [selectedBehaviorId, setSelectedBehaviorId] = useState<string>('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+
+  const userName = profile?.display_name || profile?.first_name || user?.email || 'Unknown';
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -64,10 +79,22 @@ export function NarrativeNotesManager({
     if (!content.trim()) return;
 
     if (editingNote) {
+      // Track edit history
+      const editEntry = {
+        editedBy: user?.id || '',
+        editedByName: userName,
+        editedAt: new Date().toISOString(),
+        previousContent: editingNote.content,
+      };
+
       onUpdateNote(editingNote.id, {
         content: content.trim(),
         behaviorId: selectedBehaviorId && selectedBehaviorId !== 'none' ? selectedBehaviorId : undefined,
         tags: tags.length > 0 ? tags : undefined,
+        modifiedBy: user?.id,
+        modifiedByName: userName,
+        modifiedAt: new Date().toISOString(),
+        editHistory: [...(editingNote.editHistory || []), editEntry],
       });
     } else {
       onAddNote({
@@ -76,6 +103,8 @@ export function NarrativeNotesManager({
         timestamp: new Date(),
         behaviorId: selectedBehaviorId && selectedBehaviorId !== 'none' ? selectedBehaviorId : undefined,
         tags: tags.length > 0 ? tags : undefined,
+        createdBy: user?.id,
+        createdByName: userName,
       });
     }
 
@@ -103,7 +132,6 @@ export function NarrativeNotesManager({
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  // If user doesn't have permission to view notes, show restricted message
   if (!canViewNotes) {
     return (
       <Card>
@@ -184,6 +212,12 @@ export function NarrativeNotesManager({
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(note.timestamp), 'MMM d, yyyy h:mm a')}
                       </span>
+                      {note.createdByName && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <UserIcon className="w-3 h-3" />
+                          {note.createdByName}
+                        </span>
+                      )}
                       {behavior && (
                         <Badge variant="outline" className="text-xs">
                           {behavior.name}
@@ -196,6 +230,38 @@ export function NarrativeNotesManager({
                         </Badge>
                       ))}
                     </div>
+                    {/* Edit tracking info */}
+                    {note.modifiedByName && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground/70 cursor-help">
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                Modified by {note.modifiedByName} on{' '}
+                                {note.modifiedAt ? format(new Date(note.modifiedAt), 'MMM d, yyyy h:mm a') : 'unknown'}
+                              </span>
+                              {note.editHistory && note.editHistory.length > 0 && (
+                                <Badge variant="outline" className="text-[10px] ml-1 px-1 py-0">
+                                  {note.editHistory.length} edit{note.editHistory.length > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-sm">
+                            <div className="space-y-1">
+                              <p className="font-medium text-xs">Edit History</p>
+                              {note.editHistory?.map((edit, idx) => (
+                                <div key={idx} className="text-xs border-t pt-1">
+                                  <p className="font-medium">{edit.editedByName} — {format(new Date(edit.editedAt), 'MMM d, h:mm a')}</p>
+                                  <p className="text-muted-foreground truncate max-w-[280px]">Previous: "{edit.previousContent.slice(0, 100)}{edit.previousContent.length > 100 ? '...' : ''}"</p>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </div>
                 );
               })}
@@ -273,6 +339,13 @@ export function NarrativeNotesManager({
                 </div>
               )}
             </div>
+
+            {/* Show who's editing */}
+            {editingNote && editingNote.createdByName && (
+              <p className="text-xs text-muted-foreground">
+                Originally created by {editingNote.createdByName}. Your edit will be tracked.
+              </p>
+            )}
           </div>
 
           <DialogFooter>
