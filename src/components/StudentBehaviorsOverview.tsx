@@ -1,9 +1,10 @@
 import { useMemo, useState, useCallback } from 'react';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
+import { useDataStore } from '@/store/dataStore';
 import { 
   TrendingUp, TrendingDown, Minus, Activity, Calendar, 
   BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon,
-  Layers
+  Layers, AlertTriangle, UserPlus
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -42,7 +43,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Behavior, FrequencyEntry, DurationEntry, ABCEntry, IntervalEntry, Session, METHOD_LABELS, BehaviorGoal, PhaseChange } from '@/types/behavior';
+import { Behavior, FrequencyEntry, DurationEntry, ABCEntry, IntervalEntry, Session, METHOD_LABELS, BehaviorGoal, PhaseChange, DataCollectionMethod } from '@/types/behavior';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
 
 interface StudentBehaviorsOverviewProps {
@@ -325,6 +328,85 @@ export function StudentBehaviorsOverview({
       };
     });
   }, [behaviors, frequencyEntries, durationEntries, abcEntries, intervalEntries, historicalData, studentId, filterByDateRange]);
+
+  // Detect orphaned behavior IDs — data entries referencing behaviors not in student.behaviors
+  const orphanedBehaviors = useMemo(() => {
+    const knownIds = new Set(behaviors.map(b => b.id));
+    const orphanMap = new Map<string, { id: string; inferredName: string; freqCount: number; durationSec: number; abcCount: number }>();
+
+    const processEntry = (behaviorId: string, entryBehaviorName?: string) => {
+      if (!behaviorId || knownIds.has(behaviorId)) return;
+      if (!orphanMap.has(behaviorId)) {
+        orphanMap.set(behaviorId, {
+          id: behaviorId,
+          inferredName: entryBehaviorName || `Unlinked (${behaviorId.slice(0, 6)})`,
+          freqCount: 0, durationSec: 0, abcCount: 0,
+        });
+      }
+      return orphanMap.get(behaviorId)!;
+    };
+
+    frequencyEntries.filter(e => e.studentId === studentId).forEach(e => {
+      const o = processEntry(e.behaviorId, (e as any).behaviorName);
+      if (o) o.freqCount += e.count;
+    });
+    durationEntries.filter(e => e.studentId === studentId).forEach(e => {
+      const o = processEntry(e.behaviorId, (e as any).behaviorName);
+      if (o) o.durationSec += e.duration;
+    });
+    abcEntries.filter(e => e.studentId === studentId).forEach(e => {
+      const o = processEntry(e.behaviorId, (e as any).behaviorName || (e as any).behavior);
+      if (o) { o.abcCount += 1; o.freqCount += ((e as any).frequencyCount || 1); }
+      // Also use the entry's behavior name if we only had a placeholder
+      if (o && ((e as any).behaviorName || (e as any).behavior) && o.inferredName.startsWith('Unlinked')) {
+        o.inferredName = (e as any).behaviorName || (e as any).behavior;
+      }
+    });
+    intervalEntries.filter(e => e.studentId === studentId).forEach(e => {
+      processEntry(e.behaviorId, (e as any).behaviorName);
+    });
+    historicalData.forEach((e: any) => {
+      const o = processEntry(e.behaviorId, e.behaviorName);
+      if (o) o.freqCount += (e.count || 0);
+    });
+
+    return Array.from(orphanMap.values());
+  }, [behaviors, frequencyEntries, durationEntries, abcEntries, intervalEntries, historicalData, studentId]);
+
+  const [adoptDialogOpen, setAdoptDialogOpen] = useState(false);
+  const [adoptTarget, setAdoptTarget] = useState<{ id: string; inferredName: string } | null>(null);
+  const [adoptName, setAdoptName] = useState('');
+  const { addBehavior } = useDataStore();
+
+  const handleAdoptBehavior = () => {
+    if (!adoptTarget || !adoptName.trim()) return;
+    // Add the behavior to the student using the SAME id so data links up
+    addBehavior(studentId, {
+      name: adoptName.trim(),
+      type: 'frequency' as DataCollectionMethod,
+      methods: ['frequency'] as DataCollectionMethod[],
+    });
+    // The above generates a new ID. We need to use the existing orphaned ID instead.
+    // So we directly update the store to replace the newly-added behavior's ID with the orphaned one.
+    const store = useDataStore.getState();
+    const student = store.students.find(s => s.id === studentId);
+    if (student) {
+      const newestBehavior = student.behaviors[student.behaviors.length - 1];
+      if (newestBehavior && newestBehavior.name === adoptName.trim()) {
+        // Replace the new ID with the orphaned one
+        useDataStore.setState({
+          students: store.students.map(s => s.id === studentId ? {
+            ...s,
+            behaviors: s.behaviors.map(b => b.id === newestBehavior.id ? { ...b, id: adoptTarget.id } : b),
+          } : s),
+        });
+      }
+    }
+    toast.success(`Linked "${adoptName}" to existing data`);
+    setAdoptDialogOpen(false);
+    setAdoptTarget(null);
+    setAdoptName('');
+  };
 
   // Filter behaviors
   const filteredBehaviors = useMemo(() => {
@@ -1148,6 +1230,76 @@ export function StudentBehaviorsOverview({
           })}
         </CardContent>
       </Card>
+
+      {/* Orphaned / Unlinked Behavior Data */}
+      {orphanedBehaviors.length > 0 && (
+        <Card className="border-warning/50 bg-warning/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+              Unlinked Behavior Data ({orphanedBehaviors.length})
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Data collected during assessments or observations that isn't linked to a defined behavior. Click "Link" to name and adopt it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {orphanedBehaviors.map(orphan => (
+              <div key={orphan.id} className="flex items-center justify-between p-3 border rounded-lg bg-background">
+                <div>
+                  <div className="font-medium text-sm">{orphan.inferredName}</div>
+                  <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                    {orphan.freqCount > 0 && <span>{orphan.freqCount} frequency</span>}
+                    {orphan.durationSec > 0 && <span>{formatDuration(orphan.durationSec)} duration</span>}
+                    {orphan.abcCount > 0 && <span>{orphan.abcCount} ABC entries</span>}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => {
+                    setAdoptTarget({ id: orphan.id, inferredName: orphan.inferredName });
+                    setAdoptName(orphan.inferredName.startsWith('Unlinked') ? '' : orphan.inferredName);
+                    setAdoptDialogOpen(true);
+                  }}
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Link
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Adopt Behavior Dialog */}
+      <Dialog open={adoptDialogOpen} onOpenChange={setAdoptDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Link Behavior to Student</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Behavior Name</Label>
+              <Input
+                value={adoptName}
+                onChange={(e) => setAdoptName(e.target.value)}
+                placeholder="Enter behavior name..."
+              />
+              <p className="text-xs text-muted-foreground">
+                This will add the behavior to the student's profile and link all existing data to it.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setAdoptDialogOpen(false)}>Cancel</Button>
+              <Button className="flex-1" onClick={handleAdoptBehavior} disabled={!adoptName.trim()}>
+                Link Behavior
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

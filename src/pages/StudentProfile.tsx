@@ -241,7 +241,7 @@ export default function StudentProfile() {
 
   // Helper to get behavior name by ID
   const getBehaviorName = (behaviorId: string) => {
-    return student.behaviors.find(b => b.id === behaviorId)?.name || 'Unknown';
+    return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
   };
 
   const handleAddBehavior = () => {

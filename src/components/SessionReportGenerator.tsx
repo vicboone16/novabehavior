@@ -50,6 +50,14 @@ export function SessionReportGenerator() {
     const student = students.find(s => s.id === studentId);
     const name = student?.behaviors.find(b => b.id === behaviorId)?.name;
     if (name) return name;
+    // Fallback: check session data entries for embedded behavior name
+    const session = selectedSession;
+    if (session) {
+      const freqEntry = session.frequencyEntries?.find((e: any) => e.behaviorId === behaviorId && e.behaviorName);
+      if (freqEntry) return (freqEntry as any).behaviorName;
+      const abcEntry = session.abcEntries?.find((e: any) => e.behaviorId === behaviorId && (e.behaviorName || e.behavior));
+      if (abcEntry) return (abcEntry as any).behaviorName || (abcEntry as any).behavior;
+    }
     return `Unnamed Behavior (${behaviorId.slice(0, 6)})`;
   };
 
