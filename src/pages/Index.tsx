@@ -36,18 +36,19 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-20">
-        <div className="container py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+        <div className="container py-2 md:py-3 px-3 md:px-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
                 <ClipboardList className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-foreground">Behavior Data Collector</h1>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-foreground leading-tight">Behavior Data Collector</h1>
                 <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
               </div>
+              <h1 className="sm:hidden text-sm font-bold text-foreground">BDC</h1>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1 md:gap-2 items-center overflow-x-auto scrollbar-hide">
               <TrashRecovery />
               <BehaviorGoalsManager />
               <ScatterplotAnalysis />
