@@ -99,69 +99,67 @@ export default function MainLayout() {
 
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-20">
-        <div className="container py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+        <div className="container py-2 md:py-3 px-3 md:px-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
                   <ClipboardList className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <div>
-                  <h1 className="text-lg font-bold text-foreground">Behavior Data Collector</h1>
+                <div className="hidden sm:block">
+                  <h1 className="text-lg font-bold text-foreground leading-tight">Behavior Data Collector</h1>
                   <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
                 </div>
+                <h1 className="sm:hidden text-sm font-bold text-foreground leading-tight">BDC</h1>
               </div>
               <AgencySwitcher />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <GlobalSearch />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/supervision')}
-                className="gap-1"
-              >
-                <UserCheck className="w-4 h-4" />
-                <span className="hidden sm:inline">Supervision</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/referrals')}
-                className="gap-1"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Referrals</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/billing')}
-                className="gap-1"
-              >
-                <DollarSign className="w-4 h-4" />
-                <span className="hidden sm:inline">Billing</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/clinical-library')}
-                className="gap-1"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Clinical Library</span>
-              </Button>
-              {featurePerms.teacher_mode_access && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/teacher-dashboard')}
-                  className="gap-2"
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="hidden sm:inline">Teacher Mode</span>
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/supervision')} className="gap-1">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Supervision</span>
                 </Button>
-              )}
+                <Button variant="outline" size="sm" onClick={() => navigate('/referrals')} className="gap-1">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Referrals</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/billing')} className="gap-1">
+                  <DollarSign className="w-4 h-4" />
+                  <span>Billing</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/clinical-library')} className="gap-1">
+                  <BookOpen className="w-4 h-4" />
+                  <span>Clinical Library</span>
+                </Button>
+                {featurePerms.teacher_mode_access && (
+                  <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Teacher Mode</span>
+                  </Button>
+                )}
+              </div>
+              {/* Mobile-only icon buttons for nav */}
+              <div className="flex lg:hidden items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/supervision')}>
+                  <UserCheck className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/referrals')}>
+                  <UserPlus className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/billing')}>
+                  <DollarSign className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/clinical-library')}>
+                  <BookOpen className="w-4 h-4" />
+                </Button>
+                {featurePerms.teacher_mode_access && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/teacher-dashboard')}>
+                    <GraduationCap className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
               <BehaviorManager />
               <NotificationBell />
               <UserMenu />
@@ -170,59 +168,59 @@ export default function MainLayout() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-border bg-card/50">
-        <div className="container">
+      {/* Tab Navigation - horizontally scrollable on mobile */}
+      <div className="border-b border-border bg-card/50 overflow-x-auto scrollbar-hide">
+        <div className="container px-3 md:px-4">
           <Tabs value={getActiveTab()} onValueChange={handleTabChange}>
-            <TabsList className="h-12 bg-transparent border-none">
+            <TabsList className="h-10 md:h-12 bg-transparent border-none w-max min-w-full flex">
               <TabsTrigger 
                 value="dashboard" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <LayoutDashboard className="w-4 h-4" />
+                <LayoutDashboard className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Dashboard
               </TabsTrigger>
               <TabsTrigger 
                 value="students" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Students
               </TabsTrigger>
               <TabsTrigger 
                 value="assessment" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <ClipboardCheck className="w-4 h-4" />
+                <ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Assessment
               </TabsTrigger>
               <TabsTrigger 
                 value="skills" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <Target className="w-4 h-4" />
+                <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Skills
               </TabsTrigger>
               <TabsTrigger 
                 value="reports" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <FileBarChart className="w-4 h-4" />
+                <FileBarChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Reports
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Schedule
               </TabsTrigger>
               {canViewNotesReview && (
                 <TabsTrigger 
                   value="notes-review" 
-                  className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
                 >
-                  <FileCheck className="w-4 h-4" />
+                  <FileCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   Notes Review
                 </TabsTrigger>
               )}
@@ -232,7 +230,7 @@ export default function MainLayout() {
       </div>
 
       {/* Main Content */}
-      <main className="container py-4">
+      <main className="container py-3 md:py-4 px-3 md:px-4">
         <Outlet />
       </main>
 

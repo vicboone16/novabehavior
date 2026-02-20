@@ -114,26 +114,26 @@ export default function TeacherDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-20">
-        <div className="container py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+        <div className="container py-2 md:py-3 px-3 md:px-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+              <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
                 <ClipboardList className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">Teacher Mode</h1>
-                <p className="text-xs text-muted-foreground">Quick Data Collection</p>
+                <h1 className="text-sm md:text-lg font-bold text-foreground leading-tight">Teacher Mode</h1>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Quick Data Collection</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <GlobalSearch />
-              <Button variant="outline" size="sm" onClick={handleExitToMain}>
-                <ArrowRight className="w-4 h-4 mr-1" />
-                Exit
+              <Button variant="outline" size="sm" className="h-8 text-xs md:text-sm" onClick={handleExitToMain}>
+                <ArrowRight className="w-3.5 h-3.5 mr-1" />
+                <span className="hidden sm:inline">Exit</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-1" />
-                Logout
+              <Button variant="ghost" size="sm" className="h-8 text-xs md:text-sm" onClick={handleLogout}>
+                <LogOut className="w-3.5 h-3.5 mr-1" />
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>
@@ -141,11 +141,11 @@ export default function TeacherDashboard() {
       </header>
 
       {/* Date Display & Selector */}
-      <div className="bg-muted/50 border-b border-border">
-        <div className="container py-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>Recording data for:</span>
+      <div className="bg-muted/50 border-b border-border overflow-x-auto scrollbar-hide">
+        <div className="container py-2 px-3 md:px-4">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground whitespace-nowrap w-max min-w-full">
+            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+            <span>Recording for:</span>
             <Input
               type="date"
               value={format(selectedDate, 'yyyy-MM-dd')}
@@ -153,15 +153,15 @@ export default function TeacherDashboard() {
                 const d = new Date(e.target.value + 'T12:00:00');
                 if (!isNaN(d.getTime())) setSelectedDate(d);
               }}
-              className="w-auto h-7 text-sm px-2 bg-background"
+              className="w-auto h-7 text-xs md:text-sm px-2 bg-background"
             />
             {format(selectedDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
-              <Badge variant="outline" className="text-xs text-amber-600 border-amber-400">
-                Historical Entry
+              <Badge variant="outline" className="text-[10px] md:text-xs text-warning border-warning/40">
+                Historical
               </Badge>
             )}
-            <span className="mx-2">•</span>
-            <Clock className="w-4 h-4" />
+            <span className="mx-1">•</span>
+            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
             <span>{format(new Date(), 'h:mm a')}</span>
           </div>
         </div>
