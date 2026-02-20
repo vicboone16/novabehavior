@@ -1,10 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Activity } from 'lucide-react';
+import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import IEPLibrary from './IEPLibrary';
 import BehaviorLibrary from './BehaviorLibrary';
+import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
+import { DomainManager } from '@/components/clinical-library/DomainManager';
+import { GoalTemplateManager } from '@/components/clinical-library/GoalTemplateManager';
+import { CurriculumItemManager } from '@/components/clinical-library/CurriculumItemManager';
+
+const TABS = [
+  { value: 'iep', label: 'IEP Supports', icon: BookOpen },
+  { value: 'behavior', label: 'Behavior Bank', icon: Activity },
+  { value: 'curricula', label: 'Curricula', icon: Settings2 },
+  { value: 'domains', label: 'Domains', icon: Layers },
+  { value: 'items', label: 'Skill Items', icon: FileText },
+  { value: 'templates', label: 'Goal Templates', icon: Target },
+];
 
 export default function ClinicalLibrary() {
   const navigate = useNavigate();
@@ -14,7 +27,6 @@ export default function ClinicalLibrary() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container py-3">
           <div className="flex items-center justify-between">
@@ -24,43 +36,40 @@ export default function ClinicalLibrary() {
               </Button>
               <div>
                 <h1 className="text-lg font-bold text-foreground">Clinical Library</h1>
-                <p className="text-xs text-muted-foreground">IEP supports and behavior intervention resources</p>
+                <p className="text-xs text-muted-foreground">IEP supports, behavior interventions, curricula & skill building</p>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Tab Navigation */}
       <div className="border-b border-border bg-card/50">
         <div className="container">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="h-12 bg-transparent border-none">
-              <TabsTrigger value="iep" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <BookOpen className="w-4 h-4" />
-                IEP Supports
-              </TabsTrigger>
-              <TabsTrigger value="behavior" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                <Activity className="w-4 h-4" />
-                Behavior Bank
-              </TabsTrigger>
+            <TabsList className="h-12 bg-transparent border-none flex-wrap">
+              {TABS.map(tab => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
         </div>
       </div>
 
-      {/* Content */}
-      {activeTab === 'iep' ? <IEPLibraryContent /> : <BehaviorLibraryContent />}
+      <div className="container py-6">
+        {activeTab === 'iep' && <IEPLibrary />}
+        {activeTab === 'behavior' && <BehaviorLibrary embedded />}
+        {activeTab === 'curricula' && <CurriculumSystemManager />}
+        {activeTab === 'domains' && <DomainManager />}
+        {activeTab === 'items' && <CurriculumItemManager />}
+        {activeTab === 'templates' && <GoalTemplateManager />}
+      </div>
     </div>
   );
-}
-
-// Wrapper that renders IEPLibrary content without its own header/nav
-function IEPLibraryContent() {
-  return <IEPLibrary />;
-}
-
-// Wrapper that renders BehaviorLibrary content without its own header/nav
-function BehaviorLibraryContent() {
-  return <BehaviorLibrary embedded />;
 }

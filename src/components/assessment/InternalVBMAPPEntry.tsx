@@ -247,7 +247,7 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
     curriculum_system: row.curriculum_system ? {
       id: row.curriculum_system.id,
       name: row.curriculum_system.name,
-      type: 'assessment',
+      type: 'assessment' as const,
       description: null,
       publisher: null,
       version: null,
@@ -255,6 +255,8 @@ export function InternalVBMAPPEntry({ studentId, studentName }: InternalVBMAPPEn
       age_range_max_months: null,
       tags: [],
       active: true,
+      source_tier: 'global' as const,
+      status: 'active' as const,
       created_at: '',
       updated_at: '',
     } : undefined,

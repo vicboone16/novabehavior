@@ -27,7 +27,7 @@ export function useDomains() {
       if (error) {
         console.error('Error fetching domains:', error);
       } else {
-        setDomains(data || []);
+        setDomains((data || []) as Domain[]);
       }
       setLoading(false);
     };
