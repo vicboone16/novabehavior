@@ -407,7 +407,7 @@ export function HistoricalObservationEntry({
   };
 
   const getBehaviorName = (behaviorId: string) => {
-    return student.behaviors.find(b => b.id === behaviorId)?.name || 'Unknown';
+    return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
   };
 
   const hasAnyEntries = 
