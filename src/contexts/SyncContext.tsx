@@ -1418,9 +1418,24 @@ export function SyncProvider({ children }: SyncProviderProps) {
           try {
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               const s = payload.new as any;
+              
+              // Get existing local student to merge with (prevents losing fields not in realtime payload)
+              const existingLocalStudent = useDataStore.getState().students.find(st => st.id === s.id);
+              
               const mappedStudent: Student = {
+                // Start with existing local data to preserve fields not in realtime payload
+                ...(existingLocalStudent || {} as Student),
+                // Then apply all fields from the realtime update
                 id: s.id,
                 name: s.name,
+                firstName: s.first_name || undefined,
+                lastName: s.last_name || undefined,
+                displayName: s.display_name || undefined,
+                // Legal name fields (Profile 2.0)
+                legalFirstName: s.legal_first_name || undefined,
+                legalLastName: s.legal_last_name || undefined,
+                preferredName: s.preferred_name || undefined,
+                pronouns: s.pronouns || undefined,
                 color: s.color,
                 behaviors: (s.behaviors as unknown as Behavior[]) || [],
                 customAntecedents: (s.custom_antecedents as unknown as string[]) || [],
@@ -1428,11 +1443,31 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 isArchived: s.is_archived,
                 archivedAt: s.archived_at ? new Date(s.archived_at) : undefined,
                 // Extended profile fields
-                dateOfBirth: parseDateOnlyLocal(s.date_of_birth),
+                dateOfBirth: parseDateOnlyLocal(s.date_of_birth) || parseDateOnlyLocal(s.dob),
+                dataCollectionStartDate: parseDateOnlyLocal(s.data_collection_start_date),
                 grade: s.grade || undefined,
                 school: s.school || undefined,
+                schoolName: s.school_name || undefined,
+                districtName: s.district_name || undefined,
                 caseTypes: (s.case_types as unknown as import('@/types/behavior').CaseType[]) || [],
                 assessmentModeEnabled: s.assessment_mode_enabled || false,
+                // Clinical milestones (IEP, FBA dates from Profile 2.0)
+                iepDate: parseDateOnlyLocal(s.iep_date),
+                iepEndDate: parseDateOnlyLocal(s.iep_end_date),
+                nextIepReviewDate: parseDateOnlyLocal(s.next_iep_review_date),
+                fbaDate: parseDateOnlyLocal(s.fba_date),
+                bipDate: parseDateOnlyLocal(s.bip_date),
+                diagnoses: Array.isArray(s.diagnoses) ? s.diagnoses : undefined,
+                primarySetting: s.primary_setting || undefined,
+                primarySupervisorStaffId: s.primary_supervisor_staff_id || undefined,
+                caseOpenedDate: parseDateOnlyLocal(s.case_opened_date),
+                caseClosedDate: parseDateOnlyLocal(s.case_closed_date),
+                dischargeReason: s.discharge_reason || undefined,
+                activationStatus: s.activation_status || undefined,
+                profileCompletenessStatus: s.profile_completeness_status || undefined,
+                // Contact info
+                contactEmail: s.contact_email || undefined,
+                contactPhone: s.contact_phone || undefined,
                 // FBA/Assessment data
                 fbaWorkflowProgress: s.fba_workflow_progress ? {
                   ...s.fba_workflow_progress,
@@ -1458,7 +1493,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 // Notes and assessments
                 // CRITICAL: If this student has pending narrative note changes, preserve local data
                 narrativeNotes: hasPendingNarrativeNotes(s.id)
-                  ? (useDataStore.getState().students.find(st => st.id === s.id)?.narrativeNotes || [])
+                  ? (existingLocalStudent?.narrativeNotes || [])
                   : ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
                     ...n,
                     timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
@@ -1474,7 +1509,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 // Historical data for frequency/duration entries
                 // CRITICAL: If this student has pending local historical changes, preserve local data
                 historicalData: hasUnsavedHistoricalData(s.id) 
-                  ? (useDataStore.getState().students.find(st => st.id === s.id)?.historicalData || { frequencyEntries: [], durationEntries: [] })
+                  ? (existingLocalStudent?.historicalData || { frequencyEntries: [], durationEntries: [] })
                   : (s.historical_data ? {
                     frequencyEntries: ((s.historical_data as any).frequencyEntries || []).map((e: any) => ({
                       ...e,
@@ -1485,6 +1520,14 @@ export function SyncProvider({ children }: SyncProviderProps) {
                       timestamp: e.timestamp ? new Date(e.timestamp) : new Date(),
                     })),
                   } : { frequencyEntries: [], durationEntries: [] }),
+                // Brief Record Review and Teacher Inputs
+                briefRecordReview: s.brief_record_review || (existingLocalStudent?.briefRecordReview ?? null),
+                briefTeacherInputs: Array.isArray(s.brief_teacher_inputs) 
+                  ? s.brief_teacher_inputs.map((input: any) => ({
+                      ...input,
+                      date: input.date ? new Date(input.date) : new Date(),
+                    }))
+                  : (existingLocalStudent?.briefTeacherInputs || []),
               };
               
               const studentGoals = ((s.goals as unknown as BehaviorGoal[]) || []).map(g => ({ ...g, studentId: s.id }));

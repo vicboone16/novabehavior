@@ -59,7 +59,10 @@ export function SessionHistory() {
 
   const getBehaviorName = (studentId: string, behaviorId: string) => {
     const student = students.find(s => s.id === studentId);
-    return student?.behaviors.find(b => b.id === behaviorId)?.name || 'Unknown';
+    const name = student?.behaviors.find(b => b.id === behaviorId)?.name;
+    if (name) return name;
+    // Fallback: show truncated ID so user can distinguish behaviors
+    return `Unnamed Behavior (${behaviorId.slice(0, 6)})`;
   };
 
   const renderSessionDetails = (session: Session) => {
