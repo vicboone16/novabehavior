@@ -486,6 +486,10 @@ export const useDataStore = create<DataState>()(
 
 
       updateStudentProfile: (id, updates) => {
+        // Mark narrative notes as pending to protect from realtime overwrites
+        if (updates.narrativeNotes) {
+          import('@/lib/pendingNarrativeGuard').then(m => m.markNarrativeNotesPending(id)).catch(() => {});
+        }
         set((state) => ({
           students: state.students.map((s) =>
             s.id === id ? { ...s, ...updates } : s

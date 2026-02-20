@@ -91,7 +91,9 @@ export function ObservationResultsViewer({ studentId, student }: ObservationResu
     const newDate = new Date(editingDateValue);
     if (isNaN(newDate.getTime())) return;
 
-    const updatedNotes = (student.narrativeNotes || []).map(note => {
+    // Read fresh state to avoid stale prop race condition
+    const currentStudent = useDataStore.getState().students.find(s => s.id === studentId);
+    const updatedNotes = (currentStudent?.narrativeNotes || student.narrativeNotes || []).map(note => {
       if (note.id !== obsId) return note;
       let content: any = note.content;
       try {
