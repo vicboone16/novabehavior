@@ -182,7 +182,11 @@ export default function TeacherDashboard() {
             </Button>
 
             {/* Selected Student View */}
-            <TeacherFriendlyView student={selectedStudent} />
+            <TeacherFriendlyView 
+              student={selectedStudent} 
+              isTeacherMode={true}
+              onClose={() => setSelectedStudent(null)}
+            />
           </div>
         ) : (
           <div className="space-y-6">

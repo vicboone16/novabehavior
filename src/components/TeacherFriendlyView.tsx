@@ -39,9 +39,12 @@ import { Student, ANTECEDENT_OPTIONS, CONSEQUENCE_OPTIONS } from '@/types/behavi
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { TeacherSaveCloseDialog } from '@/components/teacher/TeacherSaveCloseDialog';
 
 interface TeacherFriendlyViewProps {
   student: Student;
+  isTeacherMode?: boolean;
+  onClose?: () => void;
 }
 
 type DayRating = 'good' | 'ok' | 'hard' | null;
@@ -66,7 +69,7 @@ interface ActiveTimer {
   startTime: Date;
 }
 
-export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
+export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }: TeacherFriendlyViewProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const { 
@@ -144,6 +147,9 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
   // Behavior bank selection
   const [showBehaviorBankDialog, setShowBehaviorBankDialog] = useState(false);
   const [selectedBankBehavior, setSelectedBankBehavior] = useState<string>('');
+
+  // Save & Close dialog for teacher mode
+  const [showSaveCloseDialog, setShowSaveCloseDialog] = useState(false);
 
   const allAntecedents = [...ANTECEDENT_OPTIONS, ...(student.customAntecedents || [])];
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
@@ -1439,7 +1445,7 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
       )}
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid ${isTeacherMode ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
         <Button 
           variant="outline"
           className="h-14 text-base" 
@@ -1457,7 +1463,29 @@ export function TeacherFriendlyView({ student }: TeacherFriendlyViewProps) {
           <Check className="w-5 h-5 mr-2" />
           Save Day
         </Button>
+        {isTeacherMode && (
+          <Button 
+            variant="default"
+            className="h-14 text-base bg-primary"
+            onClick={() => setShowSaveCloseDialog(true)}
+          >
+            <Save className="w-5 h-5 mr-2" />
+            Save & Close
+          </Button>
+        )}
       </div>
+
+      {/* Teacher Mode Save & Close Dialog */}
+      {isTeacherMode && (
+        <TeacherSaveCloseDialog
+          open={showSaveCloseDialog}
+          onOpenChange={setShowSaveCloseDialog}
+          studentId={student.id}
+          studentName={student.name}
+          dataCount={totals.totalEntries}
+          onComplete={() => onClose?.()}
+        />
+      )}
 
       {/* Daily Summary Dialog */}
       <Dialog open={showDailySummary} onOpenChange={setShowDailySummary}>
