@@ -48,7 +48,9 @@ export function SessionReportGenerator() {
 
   const getBehaviorName = (studentId: string, behaviorId: string) => {
     const student = students.find(s => s.id === studentId);
-    return student?.behaviors.find(b => b.id === behaviorId)?.name || 'Unknown';
+    const name = student?.behaviors.find(b => b.id === behaviorId)?.name;
+    if (name) return name;
+    return `Unnamed Behavior (${behaviorId.slice(0, 6)})`;
   };
 
   const formatDuration = (seconds: number) => {
