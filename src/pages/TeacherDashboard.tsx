@@ -6,6 +6,8 @@ import {
   ArrowRight, Loader2, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +28,7 @@ export default function TeacherDashboard() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithAccess | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [accessibleStudents, setAccessibleStudents] = useState<StudentWithAccess[]>([]);
 
   // Load accessible students directly from Supabase
@@ -137,12 +140,26 @@ export default function TeacherDashboard() {
         </div>
       </header>
 
-      {/* Date Display */}
+      {/* Date Display & Selector */}
       <div className="bg-muted/50 border-b border-border">
         <div className="container py-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
-            <span>{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
+            <span>Recording data for:</span>
+            <Input
+              type="date"
+              value={format(selectedDate, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const d = new Date(e.target.value + 'T12:00:00');
+                if (!isNaN(d.getTime())) setSelectedDate(d);
+              }}
+              className="w-auto h-7 text-sm px-2 bg-background"
+            />
+            {format(selectedDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+              <Badge variant="outline" className="text-xs text-amber-600 border-amber-400">
+                Historical Entry
+              </Badge>
+            )}
             <span className="mx-2">•</span>
             <Clock className="w-4 h-4" />
             <span>{format(new Date(), 'h:mm a')}</span>

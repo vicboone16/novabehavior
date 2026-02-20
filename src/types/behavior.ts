@@ -160,6 +160,18 @@ export interface NarrativeNote {
   timestamp: Date;
   behaviorId?: string; // Optional - can be tied to a behavior
   tags?: string[];
+  // Edit tracking
+  createdBy?: string;
+  createdByName?: string;
+  modifiedBy?: string;
+  modifiedByName?: string;
+  modifiedAt?: Date | string;
+  editHistory?: Array<{
+    editedBy: string;
+    editedByName: string;
+    editedAt: string;
+    previousContent: string;
+  }>;
 }
 
 export interface LatencyEntry {

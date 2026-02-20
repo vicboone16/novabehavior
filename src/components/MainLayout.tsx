@@ -28,6 +28,7 @@ import { PendingApprovalsNotification } from '@/components/PendingApprovalsNotif
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsDeviceMobile } from '@/hooks/use-mobile';
 import { useMobilePreference } from '@/hooks/useMobilePreference';
+import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -36,6 +37,7 @@ export default function MainLayout() {
   const { userRole } = useAuth();
   const isDeviceMobile = useIsDeviceMobile();
   const { preference, setMobilePreference } = useMobilePreference();
+  const featurePerms = useFeaturePermissions();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
@@ -149,15 +151,17 @@ export default function MainLayout() {
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">Clinical Library</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/teacher-dashboard')}
-                className="gap-2"
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span className="hidden sm:inline">Teacher Mode</span>
-              </Button>
+              {featurePerms.teacher_mode_access && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/teacher-dashboard')}
+                  className="gap-2"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hidden sm:inline">Teacher Mode</span>
+                </Button>
+              )}
               <BehaviorManager />
               <NotificationBell />
               <UserMenu />
