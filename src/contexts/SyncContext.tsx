@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAllRows } from '@/lib/supabasePagination';
 import { hasUnsavedHistoricalData, flushPendingHistoricalData, initHistoricalDataSync } from '@/lib/historicalDataSync';
+import { hasPendingNarrativeNotes, clearAllPendingNarrativeNotes } from '@/lib/pendingNarrativeGuard';
 
 interface SyncContextType {
   isSyncing: boolean;
@@ -1358,6 +1359,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
       
       setLastSyncTime(new Date());
       setSyncStatus('success');
+      // Clear all pending narrative note guards after successful sync
+      clearAllPendingNarrativeNotes();
       toast.success('Data synced to cloud');
     } catch (error) {
       console.error('Error syncing to cloud:', error);
@@ -1453,10 +1456,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
                   updatedAt: s.background_info.updatedAt ? new Date(s.background_info.updatedAt) : undefined,
                 } : undefined,
                 // Notes and assessments
-                narrativeNotes: ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
-                  ...n,
-                  timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
-                })),
+                // CRITICAL: If this student has pending narrative note changes, preserve local data
+                narrativeNotes: hasPendingNarrativeNotes(s.id)
+                  ? (useDataStore.getState().students.find(st => st.id === s.id)?.narrativeNotes || [])
+                  : ((s.narrative_notes as unknown as import('@/types/behavior').NarrativeNote[]) || []).map((n: any) => ({
+                    ...n,
+                    timestamp: n.timestamp ? new Date(n.timestamp) : new Date(),
+                  })),
                 indirectAssessments: ((s.indirect_assessments as unknown as import('@/types/behavior').IndirectAssessmentResult[]) || []).map((a: any) => ({
                   ...a,
                   completedAt: a.completedAt ? new Date(a.completedAt) : new Date(),

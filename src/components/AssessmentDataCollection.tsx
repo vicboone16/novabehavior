@@ -1444,7 +1444,9 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 timestamp: new Date(),
                 tags: ['structured-observation', 'fba'],
               };
-              const existingNotes = student.narrativeNotes || [];
+              // Read fresh state to avoid stale closure overwrites
+              const currentStudent = useDataStore.getState().students.find(s => s.id === student.id);
+              const existingNotes = currentStudent?.narrativeNotes || [];
               updateStudentProfile(student.id, {
                 narrativeNotes: [...existingNotes, observationNote],
               });
@@ -1475,9 +1477,16 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 timestamp: new Date(),
                 tags: ['observation-notes'],
               };
-              const existingNotes = student.narrativeNotes || [];
+              // Read fresh state to avoid stale closure overwrites
+              const currentStudent = useDataStore.getState().students.find(s => s.id === student.id);
+              const existingNotes = currentStudent?.narrativeNotes || [];
+              // Upsert: update in-place if same ID exists, otherwise append
+              const existingIndex = existingNotes.findIndex(n => n.id === notes.id);
+              const updatedNotes = existingIndex >= 0
+                ? existingNotes.map((n, i) => i === existingIndex ? observationNote : n)
+                : [...existingNotes, observationNote];
               updateStudentProfile(student.id, {
-                narrativeNotes: [...existingNotes, observationNote],
+                narrativeNotes: updatedNotes,
               });
             }}
           />
