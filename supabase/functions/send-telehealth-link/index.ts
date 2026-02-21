@@ -65,6 +65,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const providerLabel = body.provider === "zoom" ? "Zoom" : "Whereby";
     const tz = body.timezone || "America/New_York";
+    // Format the timezone abbreviation (e.g., "EST", "PST")
+    const tzAbbrev = body.scheduledTime
+      ? new Date(body.scheduledTime).toLocaleString("en-US", { timeZone: tz, timeZoneName: "short" }).split(" ").pop()
+      : "";
     const scheduledInfo = body.scheduledTime
       ? `<p style="font-size: 14px; color: #4b5563;">
            <strong>Scheduled:</strong> ${new Date(body.scheduledTime).toLocaleString("en-US", {
@@ -75,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
              hour: "numeric",
              minute: "2-digit",
              timeZone: tz,
-           })}
+           })} ${tzAbbrev}
          </p>`
       : "";
 

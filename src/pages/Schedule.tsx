@@ -285,6 +285,14 @@ export default function Schedule() {
 
         if (error) throw error;
         toast({ title: 'Appointment updated' });
+
+        // If this is a telehealth appointment and the time changed, prompt to resend link
+        const timeChanged = data.start_time !== editingAppointment.start_time || data.end_time !== editingAppointment.end_time;
+        const isTelehealth = (data as any).is_telehealth ?? (editingAppointment as any).is_telehealth;
+        if (isTelehealth && timeChanged) {
+          const updatedAppt = { ...editingAppointment, ...data } as Appointment;
+          promptResendTelehealthLink(updatedAppt);
+        }
       } else {
         const insertData = { ...data, created_by: user?.id } as any;
         const { error } = await supabase
@@ -300,6 +308,22 @@ export default function Schedule() {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
+  };
+
+  const promptResendTelehealthLink = (appointment: Appointment) => {
+    toast({
+      title: 'Resend telehealth link?',
+      description: 'The appointment time has changed. Would you like to send an updated link to the participant?',
+      action: (
+        <Button
+          size="sm"
+          onClick={() => handleSendTelehealthLink(appointment)}
+        >
+          Send Link
+        </Button>
+      ),
+      duration: 10000,
+    });
   };
 
   const handleDeleteAppointment = async (id: string) => {
@@ -326,6 +350,14 @@ export default function Schedule() {
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Check if dragged appointment is telehealth → prompt resend
+      const draggedAppt = appointments.find(a => a.id === id);
+      if (draggedAppt && (draggedAppt as any).is_telehealth) {
+        const updatedAppt = { ...draggedAppt, start_time: newStart.toISOString(), end_time: newEnd.toISOString() };
+        promptResendTelehealthLink(updatedAppt);
+      }
+      
       loadAppointments();
     } catch (error: any) {
       toast({ title: 'Failed to move appointment', description: error.message, variant: 'destructive' });
