@@ -25,6 +25,7 @@ interface SendTelehealthLinkDialogProps {
   staffName?: string;
   scheduledTime?: string;
   defaultProvider?: VideoProvider;
+  timezone?: string;
 }
 
 export function SendTelehealthLinkDialog({
@@ -34,6 +35,7 @@ export function SendTelehealthLinkDialog({
   staffName,
   scheduledTime,
   defaultProvider = 'whereby',
+  timezone,
 }: SendTelehealthLinkDialogProps) {
   const [provider, setProvider] = useState<VideoProvider>(defaultProvider);
   const [recipientEmail, setRecipientEmail] = useState('');
@@ -63,6 +65,7 @@ export function SendTelehealthLinkDialog({
           scheduledTime,
           staffName,
           notes: notes.trim() || undefined,
+          timezone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
       });
 

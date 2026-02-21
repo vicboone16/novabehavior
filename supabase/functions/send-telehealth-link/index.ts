@@ -18,6 +18,7 @@ interface SendTelehealthLinkRequest {
   scheduledTime?: string;
   staffName?: string;
   notes?: string;
+  timezone?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -63,6 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const providerLabel = body.provider === "zoom" ? "Zoom" : "Whereby";
+    const tz = body.timezone || "America/New_York";
     const scheduledInfo = body.scheduledTime
       ? `<p style="font-size: 14px; color: #4b5563;">
            <strong>Scheduled:</strong> ${new Date(body.scheduledTime).toLocaleString("en-US", {
@@ -72,6 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
              day: "numeric",
              hour: "numeric",
              minute: "2-digit",
+             timeZone: tz,
            })}
          </p>`
       : "";

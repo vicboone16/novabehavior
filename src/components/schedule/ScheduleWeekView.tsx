@@ -23,6 +23,17 @@ interface ScheduleWeekViewProps {
 const HOUR_HEIGHT = 48;
 const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => i);
 
+// Determine if a hex color is dark (needs white text)
+const isColorDark = (hex: string): boolean => {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  // Relative luminance formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.55;
+};
+
 // Status-based colors for calendar display
 const getStatusColors = (status: string) => {
   switch (status) {
@@ -144,7 +155,7 @@ export function ScheduleWeekView({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-x-auto">
       {/* Header */}
       <div className="flex border-b bg-muted/30">
         <div className="w-14 flex-shrink-0" />
@@ -168,7 +179,7 @@ export function ScheduleWeekView({
       </div>
 
       {/* Grid */}
-      <div ref={containerRef} className="relative h-[500px] overflow-y-auto flex">
+      <div ref={containerRef} className="relative h-[600px] md:h-[700px] overflow-y-auto overflow-x-auto flex min-w-[600px]">
         {/* Time column */}
         <div className="w-14 flex-shrink-0 border-r bg-muted/20">
           {TIME_SLOTS.map(hour => (
@@ -219,9 +230,11 @@ export function ScheduleWeekView({
                 const overlapStyle = getOverlapStyle(appointment.id, dayOverlapPositions, 2);
 
                 // Use status colors if available, otherwise student color
-                const bgColor = statusColors?.bg || `${studentColor}25`;
+                // For student colors: use a stronger background and white text if color is dark
+                const isDark = isColorDark(studentColor);
+                const bgColor = statusColors?.bg || (isDark ? `${studentColor}CC` : `${studentColor}25`);
                 const borderColor = statusColors?.border || studentColor;
-                const textColor = statusColors?.text || studentColor;
+                const textColor = statusColors?.text || (isDark ? '#ffffff' : studentColor);
 
                 return (
                   <Tooltip key={appointment.id}>
@@ -251,12 +264,12 @@ export function ScheduleWeekView({
                         {displayTitle}
                       </p>
                       {height > 24 && staffNames && (
-                        <p className="text-muted-foreground truncate">
+                        <p className="truncate" style={{ color: isDark && !statusColors ? 'rgba(255,255,255,0.8)' : undefined, opacity: statusColors ? 0.7 : undefined }}>
                           {staffNames}
                         </p>
                       )}
                       {height > 36 && (
-                        <p className="text-muted-foreground truncate">
+                        <p className="truncate" style={{ color: isDark && !statusColors ? 'rgba(255,255,255,0.7)' : undefined, opacity: statusColors ? 0.7 : undefined }}>
                           {format(new Date(appointment.start_time), 'h:mma')}
                         </p>
                       )}
