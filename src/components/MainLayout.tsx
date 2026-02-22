@@ -1,6 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  ClipboardList, 
   LayoutDashboard, 
   Users, 
   FileBarChart, 
@@ -16,6 +15,7 @@ import {
   BookOpen,
   Smartphone
 } from 'lucide-react';
+import novatrackIcon from '@/assets/novatrack-icon.jpeg';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
@@ -103,14 +103,12 @@ export default function MainLayout() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
-                  <ClipboardList className="w-4 h-4 text-primary-foreground" />
-                </div>
+                <img src={novatrackIcon} alt="NovaTrack" className="w-8 h-8 md:w-9 md:h-9 rounded-xl object-cover shrink-0" />
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-foreground leading-tight">Behavior Data Collector</h1>
-                  <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
+                  <h1 className="text-lg font-bold text-foreground leading-tight">NovaTrack</h1>
+                  <p className="text-xs text-muted-foreground">Data Collection & Clinical Intelligence</p>
                 </div>
-                <h1 className="sm:hidden text-sm font-bold text-foreground leading-tight">BDC</h1>
+                <h1 className="sm:hidden text-sm font-bold text-foreground leading-tight">NovaTrack</h1>
               </div>
               <AgencySwitcher />
             </div>
