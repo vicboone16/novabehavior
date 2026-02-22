@@ -13,11 +13,18 @@ import {
   UserPlus,
   DollarSign,
   BookOpen,
-  Smartphone
+  Smartphone,
+  Menu
 } from 'lucide-react';
 import novatrackIcon from '@/assets/novatrack-icon.jpeg';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -108,7 +115,6 @@ export default function MainLayout() {
                   <h1 className="text-lg font-bold text-foreground leading-tight">NovaTrack</h1>
                   <p className="text-xs text-muted-foreground">Data Collection & Clinical Intelligence</p>
                 </div>
-                <h1 className="sm:hidden text-sm font-bold text-foreground leading-tight">NovaTrack</h1>
               </div>
               <AgencySwitcher />
             </div>
@@ -138,25 +144,39 @@ export default function MainLayout() {
                   </Button>
                 )}
               </div>
-              {/* Mobile-only icon buttons for nav */}
-              <div className="flex lg:hidden items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/supervision')}>
-                  <UserCheck className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/referrals')}>
-                  <UserPlus className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/billing')}>
-                  <DollarSign className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/clinical-library')}>
-                  <BookOpen className="w-4 h-4" />
-                </Button>
-                {featurePerms.teacher_mode_access && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/teacher-dashboard')}>
-                    <GraduationCap className="w-4 h-4" />
-                  </Button>
-                )}
+              {/* Mobile dropdown menu for nav items */}
+              <div className="flex lg:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Menu className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate('/supervision')}>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Supervision
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/referrals')}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Referrals
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/billing')}>
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Billing
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/clinical-library')}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Clinical Library
+                    </DropdownMenuItem>
+                    {featurePerms.teacher_mode_access && (
+                      <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        Teacher Mode
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <BehaviorManager />
               <NotificationBell />
