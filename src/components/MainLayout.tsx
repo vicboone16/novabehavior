@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -46,6 +47,7 @@ export default function MainLayout() {
   const isDeviceMobile = useIsDeviceMobile();
   const { preference, setMobilePreference } = useMobilePreference();
   const featurePerms = useFeaturePermissions();
+  const [behaviorManagerOpen, setBehaviorManagerOpen] = useState(false);
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
@@ -149,6 +151,10 @@ export default function MainLayout() {
                         Teacher Mode
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem onClick={() => setBehaviorManagerOpen(true)}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Behaviors
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -179,7 +185,10 @@ export default function MainLayout() {
                   </Button>
                 )}
               </div>
-              <BehaviorManager />
+              <div className="hidden lg:block">
+                <BehaviorManager />
+              </div>
+              <BehaviorManager open={behaviorManagerOpen} onOpenChange={setBehaviorManagerOpen} />
               <NotificationBell />
               <UserMenu />
             </div>

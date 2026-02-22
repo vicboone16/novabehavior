@@ -34,7 +34,10 @@ const BEHAVIOR_BANK: BehaviorDefinition[] = [
   { id: 'on-task', name: 'On-Task Behavior', operationalDefinition: 'Engagement in assigned activities', category: 'Academic', isGlobal: true },
 ];
 
-export function BehaviorManager() {
+export function BehaviorManager({ open: controlledOpen, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
   const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior, setBehaviorMastered, unarchiveBehavior } = useDataStore();
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [newBehaviorDefinition, setNewBehaviorDefinition] = useState('');
@@ -150,13 +153,15 @@ export function BehaviorManager() {
     editingBehavior?.studentId === studentId && editingBehavior?.behaviorId === behaviorId;
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Settings className="w-4 h-4" />
-          Manage Behaviors
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <Settings className="w-4 h-4" />
+            Manage Behaviors
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
