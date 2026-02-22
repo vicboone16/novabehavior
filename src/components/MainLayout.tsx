@@ -14,7 +14,8 @@ import {
   DollarSign,
   BookOpen,
   Smartphone,
-  Menu
+  Menu,
+  Settings
 } from 'lucide-react';
 import novatrackIcon from '@/assets/novatrack-icon.jpeg';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -108,42 +109,15 @@ export default function MainLayout() {
       <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container py-2 md:py-3 px-3 md:px-4">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="flex items-center gap-1 md:gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
                 <img src={novatrackIcon} alt="NovaTrack" className="w-8 h-8 md:w-9 md:h-9 rounded-xl object-cover shrink-0" />
                 <div className="hidden sm:block">
                   <h1 className="text-lg font-bold text-foreground leading-tight">NovaTrack</h1>
                   <p className="text-xs text-muted-foreground">Data Collection & Clinical Intelligence</p>
                 </div>
               </div>
-              <AgencySwitcher />
-            </div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <GlobalSearch />
-              <div className="hidden lg:flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate('/supervision')} className="gap-1">
-                  <UserCheck className="w-4 h-4" />
-                  <span>Supervision</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate('/referrals')} className="gap-1">
-                  <UserPlus className="w-4 h-4" />
-                  <span>Referrals</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate('/billing')} className="gap-1">
-                  <DollarSign className="w-4 h-4" />
-                  <span>Billing</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate('/clinical-library')} className="gap-1">
-                  <BookOpen className="w-4 h-4" />
-                  <span>Clinical Library</span>
-                </Button>
-                {featurePerms.teacher_mode_access && (
-                  <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
-                    <GraduationCap className="w-4 h-4" />
-                    <span>Teacher Mode</span>
-                  </Button>
-                )}
-              </div>
               {/* Mobile dropdown menu for nav items */}
               <div className="flex lg:hidden">
                 <DropdownMenu>
@@ -152,7 +126,7 @@ export default function MainLayout() {
                       <Menu className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="start" className="w-48">
                     <DropdownMenuItem onClick={() => navigate('/supervision')}>
                       <UserCheck className="w-4 h-4 mr-2" />
                       Supervision
@@ -177,6 +151,33 @@ export default function MainLayout() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              </div>
+              <AgencySwitcher />
+            </div>
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/supervision')} className="gap-1">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Supervision</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/referrals')} className="gap-1">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Referrals</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/billing')} className="gap-1">
+                  <DollarSign className="w-4 h-4" />
+                  <span>Billing</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/clinical-library')} className="gap-1">
+                  <BookOpen className="w-4 h-4" />
+                  <span>Clinical Library</span>
+                </Button>
+                {featurePerms.teacher_mode_access && (
+                  <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Teacher Mode</span>
+                  </Button>
+                )}
               </div>
               <BehaviorManager />
               <NotificationBell />
