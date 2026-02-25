@@ -995,8 +995,8 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
           )}
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            {student.behaviors.slice(0, 6).map((behavior) => {
+          <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
+            {student.behaviors.map((behavior) => {
               const count = getFrequencyCount(student.id, behavior.id);
               const supportsDuration = behavior.methods?.includes('duration');
               const isSelected = selectedMultiBehaviors.includes(behavior.id);
