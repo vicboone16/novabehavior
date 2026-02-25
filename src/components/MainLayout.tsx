@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  ClipboardList, 
+   
   LayoutDashboard, 
   Users, 
   FileBarChart, 
@@ -14,9 +14,16 @@ import {
   UserPlus,
   DollarSign,
   BookOpen,
-  Smartphone
+  Smartphone,
+  Menu
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { BehaviorManager } from '@/components/BehaviorManager';
 import { UserMenu } from '@/components/UserMenu';
@@ -102,16 +109,7 @@ export default function MainLayout() {
         <div className="container py-2 md:py-3 px-3 md:px-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
-                  <ClipboardList className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold text-foreground leading-tight">Behavior Data Collector</h1>
-                  <p className="text-xs text-muted-foreground">ABC, Frequency, Duration & Interval</p>
-                </div>
-                <h1 className="sm:hidden text-sm font-bold text-foreground leading-tight">BDC</h1>
-              </div>
+              <AgencySwitcher />
               <AgencySwitcher />
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
@@ -140,25 +138,39 @@ export default function MainLayout() {
                   </Button>
                 )}
               </div>
-              {/* Mobile-only icon buttons for nav */}
-              <div className="flex lg:hidden items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/supervision')}>
-                  <UserCheck className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/referrals')}>
-                  <UserPlus className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/billing')}>
-                  <DollarSign className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/clinical-library')}>
-                  <BookOpen className="w-4 h-4" />
-                </Button>
-                {featurePerms.teacher_mode_access && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/teacher-dashboard')}>
-                    <GraduationCap className="w-4 h-4" />
-                  </Button>
-                )}
+              {/* Mobile-only dropdown menu for nav */}
+              <div className="flex lg:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Menu className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => navigate('/supervision')}>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Supervision
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/referrals')}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Referrals
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/billing')}>
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Billing
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/clinical-library')}>
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Clinical Library
+                    </DropdownMenuItem>
+                    {featurePerms.teacher_mode_access && (
+                      <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        Teacher Mode
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <BehaviorManager />
               <NotificationBell />
