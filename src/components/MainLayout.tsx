@@ -110,7 +110,6 @@ export default function MainLayout() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <AgencySwitcher />
-              <AgencySwitcher />
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <GlobalSearch />
@@ -172,7 +171,6 @@ export default function MainLayout() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <BehaviorManager />
               <NotificationBell />
               <UserMenu />
             </div>
@@ -227,6 +225,7 @@ export default function MainLayout() {
                 <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Schedule
               </TabsTrigger>
+              <BehaviorManager />
               {canViewNotesReview && (
                 <TabsTrigger 
                   value="notes-review" 
