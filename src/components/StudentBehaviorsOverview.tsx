@@ -1320,6 +1320,9 @@ export function StudentBehaviorsOverview({
                   onClick={() => {
                     setAdoptTarget({ id: orphan.id, inferredName: orphan.inferredName });
                     setAdoptName(orphan.inferredName.startsWith('Unlinked') ? '' : orphan.inferredName);
+                    setAdoptDefinition('');
+                    setAdoptMode(behaviors.length > 0 ? 'existing' : 'bank');
+                    setAdoptExistingId('');
                     setAdoptDialogOpen(true);
                   }}
                 >
@@ -1362,16 +1365,31 @@ export function StudentBehaviorsOverview({
             {adoptMode === 'existing' && (
               <div className="space-y-2">
                 <Label className="text-sm">Select Behavior</Label>
-                <Select value={adoptExistingId} onValueChange={setAdoptExistingId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a behavior..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {behaviors.map(b => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {behaviors.length > 0 ? (
+                  <Select value={adoptExistingId} onValueChange={setAdoptExistingId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a behavior..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {behaviors.map(b => (
+                        <SelectItem key={b.id} value={b.id}>
+                          <div className="flex flex-col">
+                            <span>{b.name}</span>
+                            {b.operationalDefinition && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[250px]">
+                                {b.operationalDefinition}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground border rounded p-3 bg-muted/30">
+                    No behaviors on this student yet. Use "Pull from behavior bank" or "Create custom behavior" instead.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   All orphaned data will be reassigned to this behavior.
                 </p>
