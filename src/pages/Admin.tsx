@@ -6,7 +6,7 @@ import {
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
-  FileText, UserCog, Award, Briefcase, KeyRound
+  FileText, UserCog, Award, Briefcase, KeyRound, Mail, Key, MoreHorizontal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { SupervisorReviewDashboard } from '@/components/admin/SupervisorReviewDashboard';
 import { UserTagManager } from '@/components/admin/UserTagManager';
@@ -122,6 +129,7 @@ export default function Admin() {
   const [showEditUser, setShowEditUser] = useState<UserWithRole | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showRevokeConfirm, setShowRevokeConfirm] = useState<UserWithRole | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<UserWithRole | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState<UserWithRole | null>(null);
   
   // Form state
@@ -229,6 +237,48 @@ export default function Admin() {
       await loadData();
     } catch (error: any) {
       toast({ title: 'Failed to revoke access', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!showDeleteConfirm) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete_user', user_id: showDeleteConfirm.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'User permanently deleted' });
+      setShowDeleteConfirm(null);
+      await loadData();
+    } catch (error: any) {
+      toast({ title: 'Failed to delete user', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSendPasswordReset = async (targetUser: UserWithRole) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'send_password_reset', user_id: targetUser.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Password reset sent', description: `Reset email sent to ${data.email || targetUser.email}` });
+    } catch (error: any) {
+      toast({ title: 'Failed to send reset', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSendMagicLink = async (targetUser: UserWithRole) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'generate_magic_link', user_id: targetUser.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Login link sent', description: `Magic link sent to ${data.email || targetUser.email}` });
+    } catch (error: any) {
+      toast({ title: 'Failed to send login link', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -641,6 +691,31 @@ export default function Admin() {
                                 >
                                   Edit
                                 </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <MoreHorizontal className="w-3 h-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleSendPasswordReset(u)}>
+                                      <Key className="w-4 h-4 mr-2" />
+                                      Send Password Reset
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleSendMagicLink(u)}>
+                                      <Mail className="w-4 h-4 mr-2" />
+                                      Send Login Link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => setShowDeleteConfirm(u)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Permanently
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -767,28 +842,49 @@ export default function Admin() {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => setShowAssignRole(u)}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Role
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
                                 onClick={() => handleManageAccess(u)}
                               >
                                 <UserCheck className="w-3 h-3 mr-1" />
                                 Access
                               </Button>
                               {u.id !== user?.id && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setShowRevokeConfirm(u)}
-                                >
-                                  <Ban className="w-3 h-3" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <MoreHorizontal className="w-3 h-3" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setShowAssignRole(u)}>
+                                      <Plus className="w-4 h-4 mr-2" />
+                                      Assign Role
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleSendPasswordReset(u)}>
+                                      <Key className="w-4 h-4 mr-2" />
+                                      Send Password Reset
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleSendMagicLink(u)}>
+                                      <Mail className="w-4 h-4 mr-2" />
+                                      Send Login Link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => setShowRevokeConfirm(u)}
+                                      className="text-amber-600 focus:text-amber-600"
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      Revoke Access
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => setShowDeleteConfirm(u)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Permanently
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </div>
                           </TableCell>
@@ -1121,6 +1217,25 @@ export default function Admin() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleRevokeAccess} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Revoke Access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete User Confirm Dialog */}
+      <AlertDialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will <strong>permanently delete</strong> {showDeleteConfirm?.display_name || showDeleteConfirm?.email} and all their associated data. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
