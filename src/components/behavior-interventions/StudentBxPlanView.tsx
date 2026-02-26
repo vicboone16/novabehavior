@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,10 @@ import {
   MoreVertical,
   Plus,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { useStudentBxPlan } from '@/hooks/useBehaviorInterventions';
 import type { StudentBxPlanLink, LinkStatus } from '@/types/behaviorIntervention';
@@ -44,12 +48,21 @@ interface StudentBxPlanViewProps {
 
 function InterventionCard({ 
   link, 
-  onUpdateStatus 
+  onUpdateStatus,
+  onUpdateField,
 }: { 
   link: StudentBxPlanLink;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
+  onUpdateField: (id: string, field: string, value: string) => void;
 }) {
   const config = STATUS_CONFIG[link.link_status];
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [editLabel, setEditLabel] = useState(link.target_behavior_label || '');
+
+  const handleSaveLabel = () => {
+    onUpdateField(link.id, 'target_behavior_label', editLabel.trim());
+    setEditingLabel(false);
+  };
 
   return (
     <Card>
@@ -88,6 +101,10 @@ function InterventionCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditLabel(link.target_behavior_label || ''); setEditingLabel(true); }}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit Label
+              </DropdownMenuItem>
               {link.link_status !== 'existing' && (
               <DropdownMenuItem onClick={() => onUpdateStatus(link.id, 'existing')}>
                   <CheckCircle className="w-4 h-4 mr-2 text-primary" />
@@ -117,12 +134,29 @@ function InterventionCard({
         </div>
       </CardHeader>
       <CardContent className="p-3 pt-0">
-        {link.target_behavior_label && (
-          <p className="text-xs">
+        {editingLabel ? (
+          <div className="flex items-center gap-1 mb-2">
+            <Input
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              placeholder="Custom label..."
+              className="h-7 text-xs"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveLabel(); if (e.key === 'Escape') setEditingLabel(false); }}
+            />
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSaveLabel}>
+              <Check className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingLabel(false)}>
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : link.target_behavior_label ? (
+          <p className="text-xs mb-1">
             <span className="font-medium">Target:</span>{' '}
             <span className="text-muted-foreground">{link.target_behavior_label}</span>
           </p>
-        )}
+        ) : null}
         {link.function_hypothesis && link.function_hypothesis.length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {link.function_hypothesis.map(f => (
@@ -165,11 +199,13 @@ function InterventionCard({
 function InterventionList({ 
   links, 
   emptyMessage,
-  onUpdateStatus 
+  onUpdateStatus,
+  onUpdateField,
 }: { 
   links: StudentBxPlanLink[];
   emptyMessage: string;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
+  onUpdateField: (id: string, field: string, value: string) => void;
 }) {
   if (links.length === 0) {
     return (
@@ -186,6 +222,7 @@ function InterventionList({
           key={link.id} 
           link={link} 
           onUpdateStatus={onUpdateStatus}
+          onUpdateField={onUpdateField}
         />
       ))}
     </div>
@@ -205,7 +242,8 @@ export function StudentBxPlanView({
     rejected, 
     archived,
     loading,
-    updateLinkStatus 
+    updateLinkStatus,
+    updateLinkField,
   } = useStudentBxPlan(studentId);
 
   const [activeTab, setActiveTab] = useState<LinkStatus>('existing');
@@ -286,6 +324,7 @@ export function StudentBxPlanView({
                   links={existing}
                   emptyMessage="No existing interventions. Add interventions from the library."
                   onUpdateStatus={updateLinkStatus}
+                  onUpdateField={updateLinkField}
                 />
               </TabsContent>
 
@@ -294,6 +333,7 @@ export function StudentBxPlanView({
                   links={considering}
                   emptyMessage="No interventions under consideration."
                   onUpdateStatus={updateLinkStatus}
+                  onUpdateField={updateLinkField}
                 />
               </TabsContent>
 
@@ -302,6 +342,7 @@ export function StudentBxPlanView({
                   links={recommended}
                   emptyMessage="No AI recommendations yet. Click 'Generate Recommendations' to get suggestions."
                   onUpdateStatus={updateLinkStatus}
+                  onUpdateField={updateLinkField}
                 />
               </TabsContent>
 
@@ -310,6 +351,7 @@ export function StudentBxPlanView({
                   links={rejected}
                   emptyMessage="No rejected interventions."
                   onUpdateStatus={updateLinkStatus}
+                  onUpdateField={updateLinkField}
                 />
               </TabsContent>
             </>

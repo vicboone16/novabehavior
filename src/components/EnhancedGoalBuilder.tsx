@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { 
   Target, Link, Unlink, Calendar, CheckCircle2, TrendingUp, 
-  Activity, FileText, ChevronDown, ChevronUp, Plus, Trash2, Clock
+  Activity, FileText, ChevronDown, ChevronUp, Plus, Trash2, Clock,
+  Flag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ import { useDataStore } from '@/store/dataStore';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { 
   BehaviorGoal, 
+  BenchmarkGoal,
   GoalDirection, 
   GoalMetric, 
   Student, 
@@ -66,6 +68,12 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
   const [linkedABCData, setLinkedABCData] = useState<string[]>(goal?.linkedABCData || []);
   const [linkedReplacementSkill, setLinkedReplacementSkill] = useState(goal?.linkedReplacementSkill || '');
   const [linkedInterventionFidelity, setLinkedInterventionFidelity] = useState<string[]>(goal?.linkedInterventionFidelity || []);
+  
+  // Benchmark goals state
+  const [benchmarks, setBenchmarks] = useState<BenchmarkGoal[]>(goal?.benchmarks || []);
+  const [newBenchmarkLabel, setNewBenchmarkLabel] = useState('');
+  const [newBenchmarkTarget, setNewBenchmarkTarget] = useState('');
+  const [newBenchmarkDate, setNewBenchmarkDate] = useState('');
   
   // Linking mode state
   const [showLinkPanel, setShowLinkPanel] = useState(false);
@@ -199,6 +207,7 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
       linkedABCData,
       linkedReplacementSkill: linkedReplacementSkill && linkedReplacementSkill !== 'none' ? linkedReplacementSkill : undefined,
       linkedInterventionFidelity,
+      benchmarks: benchmarks.length > 0 ? benchmarks : undefined,
     };
 
     onSave(goalData);
@@ -208,11 +217,37 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
 
   const getBehaviorName = (id: string) => student.behaviors.find(b => b.id === id)?.name || 'Unknown';
 
+  const addBenchmark = () => {
+    if (!newBenchmarkLabel.trim()) return;
+    const bm: BenchmarkGoal = {
+      id: crypto.randomUUID(),
+      label: newBenchmarkLabel.trim(),
+      targetValue: newBenchmarkTarget ? parseFloat(newBenchmarkTarget) : undefined,
+      targetDate: newBenchmarkDate ? new Date(newBenchmarkDate) : undefined,
+      isAchieved: false,
+    };
+    setBenchmarks(prev => [...prev, bm]);
+    setNewBenchmarkLabel('');
+    setNewBenchmarkTarget('');
+    setNewBenchmarkDate('');
+  };
+
+  const toggleBenchmarkAchieved = (bmId: string) => {
+    setBenchmarks(prev => prev.map(bm => 
+      bm.id === bmId ? { ...bm, isAchieved: !bm.isAchieved, achievedDate: !bm.isAchieved ? new Date() : undefined } : bm
+    ));
+  };
+
+  const removeBenchmark = (bmId: string) => {
+    setBenchmarks(prev => prev.filter(bm => bm.id !== bmId));
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="basic">Goal Details</TabsTrigger>
+          <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
           <TabsTrigger value="criteria">Criteria & Dates</TabsTrigger>
           <TabsTrigger value="linking">Smart Linking</TabsTrigger>
         </TabsList>
@@ -314,6 +349,100 @@ export function EnhancedGoalBuilder({ student, goal, onSave, onClose }: Enhanced
             </Select>
             <p className="text-xs text-muted-foreground">Link a positive behavior to track as a replacement</p>
           </div>
+        </TabsContent>
+
+        <TabsContent value="benchmarks" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Flag className="w-4 h-4" />
+                Benchmark Goals
+              </CardTitle>
+              <CardDescription>
+                Add intermediate milestones to track progress toward the final goal
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Add new benchmark */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Benchmark Label *</Label>
+                  <Input
+                    placeholder="e.g., Reduce to 5 per session"
+                    value={newBenchmarkLabel}
+                    onChange={(e) => setNewBenchmarkLabel(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Target Value</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 5"
+                    value={newBenchmarkTarget}
+                    onChange={(e) => setNewBenchmarkTarget(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Target Date</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      type="date"
+                      value={newBenchmarkDate}
+                      onChange={(e) => setNewBenchmarkDate(e.target.value)}
+                    />
+                    <Button size="sm" onClick={addBenchmark} disabled={!newBenchmarkLabel.trim()}>
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benchmark list */}
+              {benchmarks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No benchmarks yet. Add intermediate milestones above.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {benchmarks.map((bm, idx) => (
+                    <div
+                      key={bm.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border ${
+                        bm.isAchieved ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
+                      }`}
+                    >
+                      <button
+                        onClick={() => toggleBenchmarkAchieved(bm.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          bm.isAchieved ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground'
+                        }`}
+                      >
+                        {bm.isAchieved && <CheckCircle2 className="w-3 h-3" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${bm.isAchieved ? 'line-through text-muted-foreground' : ''}`}>
+                          {idx + 1}. {bm.label}
+                        </p>
+                        <div className="flex gap-2 text-xs text-muted-foreground">
+                          {bm.targetValue !== undefined && <span>Target: {bm.targetValue}</span>}
+                          {bm.targetDate && <span>By: {format(new Date(bm.targetDate), 'MMM d, yyyy')}</span>}
+                          {bm.achievedDate && <span className="text-primary">✓ {format(new Date(bm.achievedDate), 'MMM d')}</span>}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeBenchmark(bm.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="criteria" className="space-y-4 mt-4">

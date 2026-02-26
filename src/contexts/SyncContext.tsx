@@ -447,6 +447,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 id: e.id,
                 studentId: e.student_id,
                 behaviorId: e.behavior_id,
+                behaviorName: (e as any).behavior_name || undefined,
                 count: (e.abc_data as any)?.count || 1,
                 timestamp: new Date(e.timestamp),
                 timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
@@ -488,6 +489,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
               id: e.id,
               studentId: e.student_id,
               behaviorId: e.behavior_id,
+              behaviorName: (e as any).behavior_name || undefined,
               count: (e.abc_data as any)?.count || 1,
               timestamp: new Date(e.timestamp),
               timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
@@ -586,6 +588,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             id: e.id,
             studentId: e.student_id,
             behaviorId: e.behavior_id,
+            behaviorName: e.behavior_name || undefined,
             count: (e.abc_data as any)?.count || 1,
             timestamp: new Date(e.timestamp),
             timestamps: (e.abc_data as any)?.timestamps?.map((t: string) => new Date(t)) || [],
@@ -1165,69 +1168,89 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         // Sync session data entries
         const allEntries = [
-          ...session.abcEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: session.id,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'abc',
-            timestamp: new Date(e.timestamp).toISOString(),
-            abc_data: {
-              antecedent: e.antecedent,
-              antecedents: e.antecedents,
-              behavior: e.behavior,
-              behaviors: e.behaviors as unknown as Json,
-              consequence: e.consequence,
-              consequences: e.consequences,
-              functions: e.functions,
-              frequencyCount: e.frequencyCount,
-              hasDuration: e.hasDuration,
-              durationMinutes: e.durationMinutes,
-            } as Json,
-          })),
-          ...session.frequencyEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: session.id,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'frequency',
-            timestamp: new Date(e.timestamp).toISOString(),
-            abc_data: {
-              count: e.count,
-              timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
-            } as Json,
-          })),
-          ...session.durationEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: session.id,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'duration',
-            timestamp: new Date(e.startTime).toISOString(),
-            duration_seconds: e.duration,
-            abc_data: {
-              endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
-            } as Json,
-          })),
-          ...session.intervalEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: session.id,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'interval',
-            timestamp: new Date(e.timestamp).toISOString(),
-            interval_index: e.intervalNumber,
-            abc_data: {
-              occurred: e.occurred,
-              voided: e.voided,
-              voidReason: e.voidReason,
-              markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
-            } as Json,
-          })),
+          ...session.abcEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || e.behavior || null,
+              event_type: 'abc',
+              timestamp: new Date(e.timestamp).toISOString(),
+              abc_data: {
+                antecedent: e.antecedent,
+                antecedents: e.antecedents,
+                behavior: e.behavior,
+                behaviors: e.behaviors as unknown as Json,
+                consequence: e.consequence,
+                consequences: e.consequences,
+                functions: e.functions,
+                frequencyCount: e.frequencyCount,
+                hasDuration: e.hasDuration,
+                durationMinutes: e.durationMinutes,
+              } as Json,
+            };
+          }),
+          ...session.frequencyEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'frequency',
+              timestamp: new Date(e.timestamp).toISOString(),
+              abc_data: {
+                count: e.count,
+                timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
+              } as Json,
+            };
+          }),
+          ...session.durationEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'duration',
+              timestamp: new Date(e.startTime).toISOString(),
+              duration_seconds: e.duration,
+              abc_data: {
+                endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
+              } as Json,
+            };
+          }),
+          ...session.intervalEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'interval',
+              timestamp: new Date(e.timestamp).toISOString(),
+              interval_index: e.intervalNumber,
+              abc_data: {
+                occurred: e.occurred,
+                voided: e.voided,
+                voidReason: e.voidReason,
+                markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
+              } as Json,
+            };
+          }),
         ];
 
         // Insert in batches
@@ -1275,69 +1298,89 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         // Build live session data entries (using filtered lists that exclude historical data)
         const liveEntries = [
-          ...liveAbcEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: liveSessionId,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'abc',
-            timestamp: new Date(e.timestamp).toISOString(),
-            abc_data: {
-              antecedent: e.antecedent,
-              antecedents: e.antecedents,
-              behavior: e.behavior,
-              behaviors: e.behaviors as unknown as Json,
-              consequence: e.consequence,
-              consequences: e.consequences,
-              functions: e.functions,
-              frequencyCount: e.frequencyCount,
-              hasDuration: e.hasDuration,
-              durationMinutes: e.durationMinutes,
-            } as Json,
-          })),
-          ...liveFrequencyEntries.filter(e => e.count > 0).map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: liveSessionId,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'frequency',
-            timestamp: new Date(e.timestamp).toISOString(),
-            abc_data: {
-              count: e.count,
-              timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
-            } as Json,
-          })),
-          ...liveDurationEntries.filter(e => e.duration > 0 || e.endTime).map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: liveSessionId,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'duration',
-            timestamp: new Date(e.startTime).toISOString(),
-            duration_seconds: e.duration,
-            abc_data: {
-              endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
-            } as Json,
-          })),
-          ...liveIntervalEntries.map(e => ({
-            id: e.id,
-            user_id: user.id,
-            session_id: liveSessionId,
-            student_id: e.studentId,
-            behavior_id: e.behaviorId,
-            event_type: 'interval',
-            timestamp: new Date(e.timestamp).toISOString(),
-            interval_index: e.intervalNumber,
-            abc_data: {
-              occurred: e.occurred,
-              voided: e.voided,
-              voidReason: e.voidReason,
-              markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
-            } as Json,
-          })),
+          ...liveAbcEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: liveSessionId,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || e.behavior || null,
+              event_type: 'abc',
+              timestamp: new Date(e.timestamp).toISOString(),
+              abc_data: {
+                antecedent: e.antecedent,
+                antecedents: e.antecedents,
+                behavior: e.behavior,
+                behaviors: e.behaviors as unknown as Json,
+                consequence: e.consequence,
+                consequences: e.consequences,
+                functions: e.functions,
+                frequencyCount: e.frequencyCount,
+                hasDuration: e.hasDuration,
+                durationMinutes: e.durationMinutes,
+              } as Json,
+            };
+          }),
+          ...liveFrequencyEntries.filter(e => e.count > 0).map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: liveSessionId,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'frequency',
+              timestamp: new Date(e.timestamp).toISOString(),
+              abc_data: {
+                count: e.count,
+                timestamps: e.timestamps?.map(t => new Date(t).toISOString()),
+              } as Json,
+            };
+          }),
+          ...liveDurationEntries.filter(e => e.duration > 0 || e.endTime).map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: liveSessionId,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'duration',
+              timestamp: new Date(e.startTime).toISOString(),
+              duration_seconds: e.duration,
+              abc_data: {
+                endTime: e.endTime ? new Date(e.endTime).toISOString() : undefined,
+              } as Json,
+            };
+          }),
+          ...liveIntervalEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: liveSessionId,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'interval',
+              timestamp: new Date(e.timestamp).toISOString(),
+              interval_index: e.intervalNumber,
+              abc_data: {
+                occurred: e.occurred,
+                voided: e.voided,
+                voidReason: e.voidReason,
+                markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
+              } as Json,
+            };
+          }),
         ];
 
         // Insert live entries with error handling

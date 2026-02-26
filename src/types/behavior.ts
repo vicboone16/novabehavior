@@ -104,6 +104,16 @@ export interface PhaseChange {
   phaseType: 'baseline' | 'intervention' | 'generalization' | 'maintenance' | 'modification' | 'custom';
 }
 
+export interface BenchmarkGoal {
+  id: string;
+  label: string;
+  targetValue?: number;
+  targetDate?: Date;
+  isAchieved: boolean;
+  achievedDate?: Date;
+  notes?: string;
+}
+
 export interface BehaviorGoal {
   id: string;
   studentId: string;
@@ -129,6 +139,8 @@ export interface BehaviorGoal {
   reviewDate?: Date;
   // Phase changes for graph visualization
   phaseChanges?: PhaseChange[];
+  // Benchmark sub-goals
+  benchmarks?: BenchmarkGoal[];
 }
 
 export interface BehaviorDefinition {
