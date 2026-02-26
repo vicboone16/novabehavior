@@ -90,14 +90,20 @@ export function ApproveUserDialog({
 
       if (approveError) throw approveError;
 
-      // 2. Assign the selected role (base or custom)
+      // 2. Assign the selected role (base or custom) — use upsert to handle re-approval
       const isCustom = selectedRole.startsWith('custom:');
       if (isCustom) {
         const customRoleId = selectedRole.replace('custom:', '');
-        const { error: roleError } = await (supabase as any).from('user_custom_roles').insert({ user_id: user.id, custom_role_id: customRoleId });
+        const { error: roleError } = await (supabase as any).from('user_custom_roles').upsert(
+          { user_id: user.id, custom_role_id: customRoleId },
+          { onConflict: 'user_id,custom_role_id' }
+        );
         if (roleError) throw roleError;
       } else {
-        const { error: roleError } = await supabase.from('user_roles').insert({ user_id: user.id, role: selectedRole as AppRole });
+        const { error: roleError } = await supabase.from('user_roles').upsert(
+          { user_id: user.id, role: selectedRole as AppRole },
+          { onConflict: 'user_id,role' }
+        );
         if (roleError) throw roleError;
       }
 
