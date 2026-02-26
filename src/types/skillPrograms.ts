@@ -37,6 +37,7 @@ export interface SkillTarget {
   prompt_counts_as_correct: boolean | null; // null = inherit from program
   status: TargetStatus;
   status_effective_date: string;
+  phase: string; // baseline | acquisition | probe | generalization | maintenance | closed
   display_order: number;
   active: boolean;
   notes: string | null;
@@ -83,6 +84,10 @@ export interface TaskAnalysisStep {
   target_id: string;
   step_number: number;
   step_label: string;
+  step_notes: string | null;
+  default_prompt_level: string | null;
+  step_status: string; // baseline | acquisition | probe | generalization | maintenance | closed
+  mastered_at: string | null;
 }
 
 export interface TaskAnalysisStepData {

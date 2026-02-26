@@ -53,6 +53,7 @@ import {
   resolvePromptCountsAsCorrect,
   getPromptCorrectnessSource,
 } from '@/types/skillPrograms';
+import { PHASE_LABELS, PHASE_COLORS, type TargetPhase } from '@/types/criteriaEngine';
 import type { Domain } from '@/types/curriculum';
 
 interface ProgramHierarchyViewProps {
@@ -159,6 +160,11 @@ export function ProgramHierarchyView({
           <Badge variant="outline" className="text-[10px] shrink-0">
             {TARGET_STATUS_LABELS[target.status] || target.status}
           </Badge>
+          {(target as any).phase && (
+            <Badge className={`${PHASE_COLORS[(target as any).phase as TargetPhase] || 'bg-slate-500'} text-white text-[10px] shrink-0`}>
+              {PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}
+            </Badge>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
