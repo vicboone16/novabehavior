@@ -168,17 +168,26 @@ export default function StudentProfile() {
   const [editingBehaviorId, setEditingBehaviorId] = useState<string | null>(null);
   const [editBehaviorName, setEditBehaviorName] = useState('');
   const [editBehaviorDefinition, setEditBehaviorDefinition] = useState('');
+  const [editBehaviorMethods, setEditBehaviorMethods] = useState<DataCollectionMethod[]>([]);
 
-  const startEditBehavior = (behaviorId: string, name: string, definition: string) => {
+  const startEditBehavior = (behaviorId: string, name: string, definition: string, methods: DataCollectionMethod[]) => {
     setEditingBehaviorId(behaviorId);
     setEditBehaviorName(name);
     setEditBehaviorDefinition(definition || '');
+    setEditBehaviorMethods(methods.length > 0 ? methods : ['frequency']);
+  };
+
+  const toggleEditMethod = (method: DataCollectionMethod) => {
+    setEditBehaviorMethods(prev =>
+      prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]
+    );
   };
 
   const saveEditBehavior = () => {
-    if (!editingBehaviorId || !editBehaviorName.trim()) return;
+    if (!editingBehaviorId || !editBehaviorName.trim() || editBehaviorMethods.length === 0) return;
     updateBehaviorName(student!.id, editingBehaviorId, editBehaviorName.trim());
     updateBehaviorDefinition(student!.id, editingBehaviorId, editBehaviorDefinition);
+    updateBehaviorMethods(student!.id, editingBehaviorId, editBehaviorMethods);
     setEditingBehaviorId(null);
     toast.success('Behavior updated — existing data is unchanged');
   };
@@ -867,11 +876,26 @@ export default function StudentProfile() {
                                 placeholder="Operational definition (optional)"
                                 className="text-sm min-h-[60px]"
                               />
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground mb-1">Data Collection Methods</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {(Object.entries(METHOD_LABELS) as [DataCollectionMethod, string][]).map(([method, label]) => (
+                                    <label key={method} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                                      <Checkbox
+                                        checked={editBehaviorMethods.includes(method)}
+                                        onCheckedChange={() => toggleEditMethod(method)}
+                                        className="h-3.5 w-3.5"
+                                      />
+                                      {label}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
                               <p className="text-xs text-muted-foreground">
-                                Renaming only updates the display label — all previously collected data is preserved.
+                                Changes only update display — all previously collected data is preserved.
                               </p>
                               <div className="flex gap-2">
-                                <Button size="sm" className="h-7 text-xs" onClick={saveEditBehavior} disabled={!editBehaviorName.trim()}>
+                                <Button size="sm" className="h-7 text-xs" onClick={saveEditBehavior} disabled={!editBehaviorName.trim() || editBehaviorMethods.length === 0}>
                                   <Check className="w-3 h-3 mr-1" /> Save
                                 </Button>
                                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={cancelEditBehavior}>
@@ -900,7 +924,7 @@ export default function StudentProfile() {
                                   size="icon"
                                   className="h-7 w-7"
                                   title="Edit name & definition"
-                                  onClick={() => startEditBehavior(behavior.id, behavior.name, behavior.operationalDefinition || '')}
+                                  onClick={() => startEditBehavior(behavior.id, behavior.name, behavior.operationalDefinition || '', behavior.methods || [behavior.type])}
                                 >
                                   <Pencil className="w-3 h-3" />
                                 </Button>
