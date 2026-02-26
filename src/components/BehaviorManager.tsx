@@ -152,10 +152,10 @@ export function BehaviorManager() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Settings className="w-4 h-4" />
+        <button className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-xs md:text-sm font-medium ring-offset-background transition-all hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 gap-1.5 md:gap-2">
+          <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
           Manage Behaviors
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>

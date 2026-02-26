@@ -938,6 +938,36 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
                 </>
               )}
             </div>
+
+            <Separator />
+
+            {/* Login Email Option */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Login Credentials Email</p>
+              <p className="text-xs text-muted-foreground mb-2">Choose when to send the staff member their login credentials.</p>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'none', label: "Don't Send", desc: 'No email sent' },
+                  { value: 'now', label: 'Send Now', desc: 'Email immediately' },
+                  { value: 'later', label: 'Send Later', desc: 'Send manually later' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setNewStaffForm(f => ({ ...f, emailOption: opt.value }))}
+                    className={cn(
+                      "p-3 rounded-lg border text-left transition-colors",
+                      newStaffForm.emailOption === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/30"
+                    )}
+                  >
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="mt-2">
