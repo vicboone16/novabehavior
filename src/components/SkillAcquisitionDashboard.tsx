@@ -26,6 +26,7 @@ import { SkillTarget, DTTSession, Student } from '@/types/behavior';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { SkillProgressCharts } from './SkillProgressCharts';
 import { SkillAcquisitionExport } from './SkillAcquisitionExport';
+import { useUnifiedSkillDataMulti } from '@/hooks/useUnifiedSkillData';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   baseline: { label: 'Baseline', color: 'bg-slate-500' },
@@ -68,8 +69,8 @@ export function SkillAcquisitionDashboard() {
     return students.filter(s => s.id === selectedStudentId && !s.isArchived);
   }, [students, selectedStudentId, selectedStudentIds]);
 
-  // Get all skill targets from relevant students
-  const allTargets = useMemo(() => {
+  // Get all skill targets from relevant students (legacy store)
+  const legacyTargets = useMemo(() => {
     return relevantStudents.flatMap(student => 
       (student.skillTargets || []).map(target => ({
         ...target,
@@ -79,6 +80,18 @@ export function SkillAcquisitionDashboard() {
       }))
     );
   }, [relevantStudents]);
+
+  // Get DB-backed program trial data
+  const studentsForDB = useMemo(() => 
+    relevantStudents.map(s => ({ id: s.id, name: s.name, color: s.color })),
+    [relevantStudents]
+  );
+  const { allTargets: dbTargets } = useUnifiedSkillDataMulti(studentsForDB);
+
+  // Merge both sources
+  const allTargets = useMemo(() => {
+    return [...legacyTargets, ...dbTargets];
+  }, [legacyTargets, dbTargets]);
 
   // Filter targets by status
   const filteredTargets = useMemo(() => {

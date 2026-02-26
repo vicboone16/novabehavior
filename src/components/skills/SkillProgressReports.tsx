@@ -31,9 +31,10 @@ import {
   Cell,
 } from 'recharts';
 import { format, subDays, parseISO, differenceInDays } from 'date-fns';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 import { useStudentTargets, useStudentAssessments, useDomains } from '@/hooks/useCurriculum';
+import { useUnifiedSkillData } from '@/hooks/useUnifiedSkillData';
 import type { StudentTarget } from '@/types/curriculum';
 
 interface SkillProgressReportsProps {
@@ -56,32 +57,55 @@ const DOMAIN_COLORS = [
 export function SkillProgressReports({ studentId, studentName }: SkillProgressReportsProps) {
   const { targets, loading: targetsLoading } = useStudentTargets(studentId);
   const { assessments, loading: assessmentsLoading } = useStudentAssessments(studentId);
+  const { dbTargets, loading: dbLoading } = useUnifiedSkillData(studentId, studentName);
   const { domains } = useDomains();
 
   const [dateRange, setDateRange] = useState('30');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Calculate key metrics
+  // Merge legacy targets with DB program targets for unified metrics
+  const allTargetsMerged = useMemo(() => {
+    // Convert DB targets to a compatible shape for counting
+    const dbAsTargets = dbTargets.map(dt => ({
+      id: dt.id,
+      status: dt.status === 'mastered' ? 'mastered' as const : 
+              dt.status === 'maintenance' || dt.status === 'generalization' ? 'active' as const :
+              dt.status === 'baseline' ? 'active' as const : 'active' as const,
+      domain_id: null as string | null,
+      domain: dt.domain ? { id: '', name: dt.domain } : undefined,
+      date_added: dt.createdAt.toISOString(),
+      date_mastered: dt.masteredDate?.toISOString() || null,
+      title: dt.name,
+      priority: 'medium' as const,
+      source_type: 'custom' as const,
+      // Session count from trials
+      _sessionCount: dt.sessions.length,
+      _avgCorrect: dt.sessions.length > 0 
+        ? Math.round(dt.sessions.reduce((s, sess) => s + sess.percentCorrect, 0) / dt.sessions.length)
+        : 0,
+    }));
+    return [...targets, ...dbAsTargets];
+  }, [targets, dbTargets]);
+
+  // Calculate key metrics  
   const metrics = useMemo(() => {
     const now = new Date();
     const rangeStart = subDays(now, parseInt(dateRange));
 
-    const activeTargets = targets.filter(t => t.status === 'active');
-    const masteredTargets = targets.filter(t => t.status === 'mastered');
+    const activeTargets = allTargetsMerged.filter(t => t.status === 'active');
+    const masteredTargets = allTargetsMerged.filter(t => t.status === 'mastered');
     const recentlyMastered = masteredTargets.filter(t => 
       t.date_mastered && new Date(t.date_mastered) >= rangeStart
     );
 
-    // Calculate mastery rate
-    const totalTargetsInRange = targets.filter(t => 
+    const totalTargetsInRange = allTargetsMerged.filter(t => 
       new Date(t.date_added) <= now
     ).length;
     const masteryRate = totalTargetsInRange > 0 
       ? Math.round((masteredTargets.length / totalTargetsInRange) * 100) 
       : 0;
 
-    // Calculate average time to mastery
     const masteryTimes = masteredTargets
       .filter(t => t.date_mastered)
       .map(t => differenceInDays(new Date(t.date_mastered!), new Date(t.date_added)));
@@ -89,89 +113,132 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
       ? Math.round(masteryTimes.reduce((a, b) => a + b, 0) / masteryTimes.length)
       : 0;
 
-    // Domain distribution
-    const domainDistribution = domains.map((domain, idx) => ({
-      name: domain.name,
-      active: targets.filter(t => t.domain_id === domain.id && t.status === 'active').length,
-      mastered: targets.filter(t => t.domain_id === domain.id && t.status === 'mastered').length,
-      total: targets.filter(t => t.domain_id === domain.id).length,
-      color: DOMAIN_COLORS[idx % DOMAIN_COLORS.length],
-    })).filter(d => d.total > 0);
+    // Domain distribution (merge both sources)
+    const domainMap = new Map<string, { name: string; active: number; mastered: number; total: number }>();
+    allTargetsMerged.forEach((t: any) => {
+      const domainName = t.domain?.name || 'Other';
+      if (!domainMap.has(domainName)) domainMap.set(domainName, { name: domainName, active: 0, mastered: 0, total: 0 });
+      const d = domainMap.get(domainName)!;
+      d.total++;
+      if (t.status === 'active') d.active++;
+      if (t.status === 'mastered') d.mastered++;
+    });
+    const domainDistribution = Array.from(domainMap.values())
+      .filter(d => d.total > 0)
+      .map((d, idx) => ({ ...d, color: DOMAIN_COLORS[idx % DOMAIN_COLORS.length] }));
+
+    // DB program trial metrics
+    const totalTrialSessions = dbTargets.reduce((sum, dt) => sum + dt.sessions.length, 0);
+    const avgTrialCorrect = dbTargets.length > 0 && totalTrialSessions > 0
+      ? Math.round(dbTargets.reduce((sum, dt) => {
+          if (dt.sessions.length === 0) return sum;
+          return sum + dt.sessions.reduce((s, sess) => s + sess.percentCorrect, 0) / dt.sessions.length;
+        }, 0) / dbTargets.filter(dt => dt.sessions.length > 0).length)
+      : 0;
 
     return {
       activeTargets: activeTargets.length,
       masteredTargets: masteredTargets.length,
       recentlyMastered: recentlyMastered.length,
-      totalTargets: targets.length,
+      totalTargets: allTargetsMerged.length,
       masteryRate,
       avgMasteryDays,
       domainDistribution,
       assessmentCount: assessments.length,
+      totalTrialSessions,
+      avgTrialCorrect,
     };
-  }, [targets, assessments, domains, dateRange]);
+  }, [allTargetsMerged, dbTargets, assessments, dateRange]);
 
-  // Progress over time data
+  // Progress over time data (merged)
   const progressData = useMemo(() => {
     const days = parseInt(dateRange);
-    const data: { date: string; mastered: number; active: number; total: number }[] = [];
+    const data: { date: string; mastered: number; active: number; total: number; trialSessions: number }[] = [];
 
     for (let i = days; i >= 0; i -= Math.max(1, Math.floor(days / 10))) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'MMM d');
 
-      const masteredByDate = targets.filter(t => 
+      const masteredByDate = allTargetsMerged.filter(t => 
         t.date_mastered && new Date(t.date_mastered) <= date
       ).length;
 
-      const activeByDate = targets.filter(t => {
+      const activeByDate = allTargetsMerged.filter(t => {
         const added = new Date(t.date_added);
         if (added > date) return false;
         if (t.date_mastered && new Date(t.date_mastered) <= date) return false;
-        return t.status === 'active' || t.status === 'paused';
+        return t.status === 'active' || (t as any).status === 'paused';
       }).length;
+
+      // Count DB trial sessions on this date
+      const dayStart = new Date(date); dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(date); dayEnd.setHours(23,59,59,999);
+      const trialSessions = dbTargets.reduce((sum, dt) => 
+        sum + dt.sessions.filter(s => {
+          const d = new Date(s.date);
+          return d >= dayStart && d <= dayEnd;
+        }).length, 0);
 
       data.push({
         date: dateStr,
         mastered: masteredByDate,
         active: activeByDate,
         total: masteredByDate + activeByDate,
+        trialSessions,
       });
     }
 
     return data;
-  }, [targets, dateRange]);
+  }, [allTargetsMerged, dbTargets, dateRange]);
 
-  // Status distribution for pie chart
+  // Status distribution for pie chart (merged)
   const statusData = useMemo(() => {
     return [
-      { name: 'Active', value: targets.filter(t => t.status === 'active').length, color: STATUS_COLORS.active },
-      { name: 'Paused', value: targets.filter(t => t.status === 'paused').length, color: STATUS_COLORS.paused },
-      { name: 'Mastered', value: targets.filter(t => t.status === 'mastered').length, color: STATUS_COLORS.mastered },
-      { name: 'Discontinued', value: targets.filter(t => t.status === 'discontinued').length, color: STATUS_COLORS.discontinued },
+      { name: 'Active', value: allTargetsMerged.filter(t => t.status === 'active').length, color: STATUS_COLORS.active },
+      { name: 'Paused', value: allTargetsMerged.filter(t => (t as any).status === 'paused').length, color: STATUS_COLORS.paused },
+      { name: 'Mastered', value: allTargetsMerged.filter(t => t.status === 'mastered').length, color: STATUS_COLORS.mastered },
+      { name: 'Discontinued', value: allTargetsMerged.filter(t => (t as any).status === 'discontinued').length, color: STATUS_COLORS.discontinued },
     ].filter(d => d.value > 0);
-  }, [targets]);
+  }, [allTargetsMerged]);
 
-  // Target trend analysis
+  // Target trend analysis (merged)
   const trendAnalysis = useMemo(() => {
-    const trending: { up: StudentTarget[]; flat: StudentTarget[]; down: StudentTarget[] } = {
+    const trending: { up: any[]; flat: any[]; down: any[] } = {
       up: [],
       flat: [],
       down: [],
     };
 
+    // Legacy targets
     targets.forEach(target => {
-      // For now, simple heuristic based on status
-      if (target.status === 'mastered') {
-        trending.up.push(target);
-      } else if (target.status === 'paused' || target.status === 'discontinued') {
-        trending.down.push(target);
+      if (target.status === 'mastered') trending.up.push(target);
+      else if (target.status === 'paused' || target.status === 'discontinued') trending.down.push(target);
+      else trending.flat.push(target);
+    });
+
+    // DB targets (use trial data for actual trend detection)
+    dbTargets.forEach(dt => {
+      if (dt.status === 'mastered') {
+        trending.up.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
+      } else if (dt.sessions.length >= 2) {
+        const recent = dt.sessions.slice(-3);
+        const older = dt.sessions.slice(-6, -3);
+        const avgRecent = recent.reduce((s, sess) => s + sess.percentCorrect, 0) / recent.length;
+        const avgOlder = older.length > 0 ? older.reduce((s, sess) => s + sess.percentCorrect, 0) / older.length : avgRecent;
+        if (avgRecent > avgOlder + 5) {
+          trending.up.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
+        } else if (avgRecent < avgOlder - 5) {
+          trending.down.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
+        } else {
+          trending.flat.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
+        }
       } else {
-        trending.flat.push(target);
+        trending.flat.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
       }
     });
 
     return trending;
-  }, [targets]);
+  }, [targets, dbTargets]);
 
   // Export to Word document
   const exportToWord = async () => {
@@ -254,7 +321,7 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
           ),
           new Paragraph({ text: '' }),
 
-          // Active Targets
+          // Active Targets (legacy)
           new Paragraph({
             text: 'ACTIVE TARGETS',
             heading: HeadingLevel.HEADING_2,
@@ -269,6 +336,32 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               ],
             })
           ),
+
+          // DB Program Targets
+          ...(dbTargets.length > 0 ? [
+            new Paragraph({ text: '' }),
+            new Paragraph({
+              text: 'SKILL PROGRAMS (Trial Data)',
+              heading: HeadingLevel.HEADING_2,
+            }),
+            ...dbTargets.map(dt => {
+              const avgCorrect = dt.sessions.length > 0
+                ? Math.round(dt.sessions.reduce((s, sess) => s + sess.percentCorrect, 0) / dt.sessions.length)
+                : 0;
+              const avgIndependent = dt.sessions.length > 0
+                ? Math.round(dt.sessions.reduce((s, sess) => s + sess.percentIndependent, 0) / dt.sessions.length)
+                : 0;
+              return new Paragraph({
+                children: [
+                  new TextRun({ text: `• ${dt.name}`, bold: true }),
+                  new TextRun(dt.domain ? ` (${dt.domain})` : ''),
+                  new TextRun(dt.program ? ` — ${dt.program}` : ''),
+                  new TextRun({ text: ` | ${dt.sessions.length} sessions, ${avgCorrect}% correct, ${avgIndependent}% independent`, italics: true }),
+                ],
+              });
+            }),
+          ] : []),
+
           new Paragraph({ text: '' }),
 
           // Recently Mastered
@@ -293,7 +386,7 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
     saveAs(blob, `skill-progress-${studentName.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.docx`);
   };
 
-  if (targetsLoading || assessmentsLoading) {
+  if (targetsLoading || assessmentsLoading || dbLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading progress data...</div>;
   }
 
