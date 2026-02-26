@@ -7811,6 +7811,7 @@ export type Database = {
         Row: {
           abc_data: Json | null
           behavior_id: string
+          behavior_name: string | null
           created_at: string
           duration_seconds: number | null
           event_type: string
@@ -7824,6 +7825,7 @@ export type Database = {
         Insert: {
           abc_data?: Json | null
           behavior_id: string
+          behavior_name?: string | null
           created_at?: string
           duration_seconds?: number | null
           event_type: string
@@ -7837,6 +7839,7 @@ export type Database = {
         Update: {
           abc_data?: Json | null
           behavior_id?: string
+          behavior_name?: string | null
           created_at?: string
           duration_seconds?: number | null
           event_type?: string

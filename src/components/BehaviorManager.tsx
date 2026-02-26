@@ -35,7 +35,23 @@ const BEHAVIOR_BANK: BehaviorDefinition[] = [
 ];
 
 export function BehaviorManager() {
-  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior, setBehaviorMastered, unarchiveBehavior } = useDataStore();
+  const { students, selectedStudentIds, addBehaviorWithMethods, updateBehaviorMethods, updateBehaviorDefinition, removeBehavior, setBehaviorMastered, unarchiveBehavior, behaviorDefinitionOverrides, globalBehaviorBank } = useDataStore();
+  
+  // Apply overrides to bank definitions so users get the full updated definition
+  const effectiveBehaviorBank = useMemo(() => {
+    return BEHAVIOR_BANK.map(b => {
+      const override = behaviorDefinitionOverrides[b.id];
+      if (override) {
+        return {
+          ...b,
+          operationalDefinition: override.operationalDefinition || b.operationalDefinition,
+          category: override.category || b.category,
+        };
+      }
+      return b;
+    });
+  }, [behaviorDefinitionOverrides]);
+  
   const [newBehaviorName, setNewBehaviorName] = useState('');
   const [newBehaviorDefinition, setNewBehaviorDefinition] = useState('');
   const [newBehaviorCategory, setNewBehaviorCategory] = useState('');
@@ -204,7 +220,7 @@ export function BehaviorManager() {
                   </div>
                   <ScrollArea className="h-64">
                     <div className="p-2 space-y-1">
-                      {BEHAVIOR_BANK.map((b) => (
+                      {effectiveBehaviorBank.map((b) => (
                         <button
                           key={b.id}
                           className="w-full text-left px-2 py-1.5 rounded hover:bg-secondary text-sm"

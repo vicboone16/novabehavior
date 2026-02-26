@@ -344,6 +344,22 @@ export function useStudentBxPlan(studentId: string) {
     }
   };
 
+  const updateLinkField = async (linkId: string, field: string, value: string) => {
+    try {
+      const { error } = await supabase
+        .from('student_bx_plan_links')
+        .update({ [field]: value })
+        .eq('id', linkId);
+
+      if (error) throw error;
+      toast({ title: 'Updated successfully' });
+      fetchLinks();
+    } catch (error) {
+      console.error('Error updating field:', error);
+      toast({ title: 'Error updating', variant: 'destructive' });
+    }
+  };
+
   const removeLink = async (linkId: string) => {
     try {
       const { error } = await supabase
@@ -378,6 +394,7 @@ export function useStudentBxPlan(studentId: string) {
     refetch: fetchLinks,
     addLink,
     updateLinkStatus,
+    updateLinkField,
     removeLink,
   };
 }
