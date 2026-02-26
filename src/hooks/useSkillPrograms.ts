@@ -95,6 +95,7 @@ export function useSkillProgramActions(studentId: string, onSuccess?: () => void
     status_effective_date?: string;
     default_mastery_criteria?: string;
     notes?: string;
+    prompt_counts_as_correct?: boolean | null;
     targets?: { name: string; operational_definition?: string; mastery_criteria?: string }[];
   }) => {
     const { data, error } = await supabase
@@ -109,6 +110,7 @@ export function useSkillProgramActions(studentId: string, onSuccess?: () => void
         status_effective_date: program.status_effective_date || new Date().toISOString().split('T')[0],
         default_mastery_criteria: program.default_mastery_criteria || null,
         notes: program.notes || null,
+        prompt_counts_as_correct: program.prompt_counts_as_correct ?? null,
         created_by: user?.id,
       })
       .select()

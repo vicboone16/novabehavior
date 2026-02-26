@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -62,6 +64,7 @@ export function AddProgramDialog({
   const [description, setDescription] = useState('');
   const [masteryCriteria, setMasteryCriteria] = useState('');
   const [notes, setNotes] = useState('');
+  const [promptCountsAsCorrect, setPromptCountsAsCorrect] = useState<boolean | null>(null);
   const [targets, setTargets] = useState<TargetDraft[]>([{ name: '', operational_definition: '', mastery_criteria: '' }]);
   const [taSteps, setTaSteps] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -79,6 +82,7 @@ export function AddProgramDialog({
       setDescription(editingProgram.description || '');
       setMasteryCriteria(editingProgram.default_mastery_criteria || '');
       setNotes(editingProgram.notes || '');
+      setPromptCountsAsCorrect(editingProgram.prompt_counts_as_correct ?? null);
       setTargets([{ name: '', operational_definition: '', mastery_criteria: '' }]);
     } else {
       resetForm();
@@ -95,6 +99,7 @@ export function AddProgramDialog({
     setDescription('');
     setMasteryCriteria('');
     setNotes('');
+    setPromptCountsAsCorrect(null);
     setTargets([{ name: '', operational_definition: '', mastery_criteria: '' }]);
     setTaSteps([]);
   };
@@ -130,6 +135,7 @@ export function AddProgramDialog({
           description: description || null,
           default_mastery_criteria: masteryCriteria || null,
           notes: notes || null,
+          prompt_counts_as_correct: promptCountsAsCorrect,
         } as any);
       } else {
         const validTargets = targets.filter(t => t.name.trim());
@@ -142,6 +148,7 @@ export function AddProgramDialog({
           description: description || undefined,
           default_mastery_criteria: masteryCriteria || undefined,
           notes: notes || undefined,
+          prompt_counts_as_correct: promptCountsAsCorrect,
           targets: validTargets.length > 0 ? validTargets : undefined,
         });
       }
@@ -286,6 +293,40 @@ export function AddProgramDialog({
                 placeholder="Program description..."
                 rows={2}
               />
+            </div>
+
+            {/* Prompt Correctness Setting */}
+            <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/20">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">Prompted = Correct?</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[280px]">
+                    <p className="text-xs">When enabled, prompted responses are counted as correct in reports and mastery calculations. When disabled, only independent responses count as correct. This can be overridden per target.</p>
+                  </TooltipContent>
+                </Tooltip>
+                <span className="text-xs text-muted-foreground">
+                  {promptCountsAsCorrect === null ? '(Inherits from student)' : ''}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {promptCountsAsCorrect !== null && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-muted-foreground"
+                    onClick={() => setPromptCountsAsCorrect(null)}
+                  >
+                    Reset
+                  </Button>
+                )}
+                <Switch
+                  checked={promptCountsAsCorrect ?? false}
+                  onCheckedChange={(checked) => setPromptCountsAsCorrect(checked)}
+                />
+              </div>
             </div>
           </div>
 

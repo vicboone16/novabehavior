@@ -8349,6 +8349,7 @@ export type Database = {
           method: string
           name: string
           notes: string | null
+          prompt_counts_as_correct: boolean | null
           status: string
           status_effective_date: string
           student_id: string
@@ -8369,6 +8370,7 @@ export type Database = {
           method?: string
           name: string
           notes?: string | null
+          prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
           student_id: string
@@ -8389,6 +8391,7 @@ export type Database = {
           method?: string
           name?: string
           notes?: string | null
+          prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
           student_id?: string
@@ -8424,6 +8427,7 @@ export type Database = {
           notes: string | null
           operational_definition: string | null
           program_id: string
+          prompt_counts_as_correct: boolean | null
           status: string
           status_effective_date: string
           updated_at: string
@@ -8440,6 +8444,7 @@ export type Database = {
           notes?: string | null
           operational_definition?: string | null
           program_id: string
+          prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
           updated_at?: string
@@ -8456,6 +8461,7 @@ export type Database = {
           notes?: string | null
           operational_definition?: string | null
           program_id?: string
+          prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
           updated_at?: string
@@ -9764,6 +9770,7 @@ export type Database = {
           primary_setting: string | null
           primary_supervisor_staff_id: string | null
           profile_completeness_status: string | null
+          prompt_counts_as_correct: boolean | null
           pronouns: string | null
           school: string | null
           school_name: string | null
@@ -9825,6 +9832,7 @@ export type Database = {
           primary_setting?: string | null
           primary_supervisor_staff_id?: string | null
           profile_completeness_status?: string | null
+          prompt_counts_as_correct?: boolean | null
           pronouns?: string | null
           school?: string | null
           school_name?: string | null
@@ -9886,6 +9894,7 @@ export type Database = {
           primary_setting?: string | null
           primary_supervisor_staff_id?: string | null
           profile_completeness_status?: string | null
+          prompt_counts_as_correct?: boolean | null
           pronouns?: string | null
           school?: string | null
           school_name?: string | null
