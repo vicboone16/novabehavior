@@ -794,6 +794,45 @@ export type Database = {
           },
         ]
       }
+      automation_settings: {
+        Row: {
+          advance_mode: string
+          auto_advance_enabled: boolean
+          auto_open_next_target: boolean
+          created_at: string
+          id: string
+          next_target_rule: Json | null
+          require_confirmation: boolean
+          scope: string
+          scope_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          advance_mode?: string
+          auto_advance_enabled?: boolean
+          auto_open_next_target?: boolean
+          created_at?: string
+          id?: string
+          next_target_rule?: Json | null
+          require_confirmation?: boolean
+          scope: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advance_mode?: string
+          auto_advance_enabled?: boolean
+          auto_open_next_target?: boolean
+          created_at?: string
+          id?: string
+          next_target_rule?: Json | null
+          require_confirmation?: boolean
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behavior_bank_entries: {
         Row: {
           agency_id: string | null
@@ -3441,6 +3480,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      criteria_evaluations: {
+        Row: {
+          criteria_type: string
+          evaluated_at: string
+          evidence: Json | null
+          filters_applied: Json | null
+          id: string
+          met_at: string | null
+          met_status: boolean
+          metric_value: number | null
+          recommended_action: string | null
+          target_id: string
+          window_used: Json | null
+        }
+        Insert: {
+          criteria_type: string
+          evaluated_at?: string
+          evidence?: Json | null
+          filters_applied?: Json | null
+          id?: string
+          met_at?: string | null
+          met_status?: boolean
+          metric_value?: number | null
+          recommended_action?: string | null
+          target_id: string
+          window_used?: Json | null
+        }
+        Update: {
+          criteria_type?: string
+          evaluated_at?: string
+          evidence?: Json | null
+          filters_applied?: Json | null
+          id?: string
+          met_at?: string | null
+          met_status?: boolean
+          metric_value?: number | null
+          recommended_action?: string | null
+          target_id?: string
+          window_used?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "criteria_evaluations_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      criteria_templates: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          criteria_type: string
+          id: string
+          is_default: boolean
+          name: string
+          rule_json: Json
+          scope: string
+          scope_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          criteria_type: string
+          id?: string
+          is_default?: boolean
+          name: string
+          rule_json?: Json
+          scope: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          criteria_type?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          rule_json?: Json
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       curriculum_items: {
         Row: {
@@ -7137,28 +7268,37 @@ export type Database = {
         Row: {
           abbreviation: string
           agency_id: string | null
+          counts_as_prompted: boolean
           created_at: string
           id: string
+          is_active: boolean
           is_default: boolean
           name: string
+          prompt_set_id: string | null
           rank: number
         }
         Insert: {
           abbreviation: string
           agency_id?: string | null
+          counts_as_prompted?: boolean
           created_at?: string
           id?: string
+          is_active?: boolean
           is_default?: boolean
           name: string
+          prompt_set_id?: string | null
           rank?: number
         }
         Update: {
           abbreviation?: string
           agency_id?: string | null
+          counts_as_prompted?: boolean
           created_at?: string
           id?: string
+          is_active?: boolean
           is_default?: boolean
           name?: string
+          prompt_set_id?: string | null
           rank?: number
         }
         Relationships: [
@@ -7169,7 +7309,50 @@ export type Database = {
             referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "prompt_levels_prompt_set_id_fkey"
+            columns: ["prompt_set_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_sets"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      prompt_sets: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean
+          name: string
+          scope: string
+          scope_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          scope: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       protocol_assignments: {
         Row: {
@@ -7636,6 +7819,76 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_queue: {
+        Row: {
+          created_at: string
+          criteria_type: string
+          current_phase: string
+          evidence: Json | null
+          id: string
+          program_id: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_id: string
+          suggested_phase: string | null
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          criteria_type: string
+          current_phase: string
+          evidence?: Json | null
+          id?: string
+          program_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id: string
+          suggested_phase?: string | null
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          criteria_type?: string
+          current_phase?: string
+          evidence?: Json | null
+          id?: string
+          program_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id?: string
+          suggested_phase?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_queue_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_queue_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_queue_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
             referencedColumns: ["id"]
           },
         ]
@@ -8349,6 +8602,7 @@ export type Database = {
           method: string
           name: string
           notes: string | null
+          phase: string
           prompt_counts_as_correct: boolean | null
           status: string
           status_effective_date: string
@@ -8370,6 +8624,7 @@ export type Database = {
           method?: string
           name: string
           notes?: string | null
+          phase?: string
           prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
@@ -8391,6 +8646,7 @@ export type Database = {
           method?: string
           name?: string
           notes?: string | null
+          phase?: string
           prompt_counts_as_correct?: boolean | null
           status?: string
           status_effective_date?: string
@@ -8426,6 +8682,7 @@ export type Database = {
           name: string
           notes: string | null
           operational_definition: string | null
+          phase: string
           program_id: string
           prompt_counts_as_correct: boolean | null
           status: string
@@ -8443,6 +8700,7 @@ export type Database = {
           name: string
           notes?: string | null
           operational_definition?: string | null
+          phase?: string
           program_id: string
           prompt_counts_as_correct?: boolean | null
           status?: string
@@ -8460,6 +8718,7 @@ export type Database = {
           name?: string
           notes?: string | null
           operational_definition?: string | null
+          phase?: string
           program_id?: string
           prompt_counts_as_correct?: boolean | null
           status?: string
@@ -10253,6 +10512,7 @@ export type Database = {
           recorded_at: string
           recorded_by: string | null
           session_id: string | null
+          session_type: string
           target_id: string
           trial_index: number
         }
@@ -10266,6 +10526,7 @@ export type Database = {
           recorded_at?: string
           recorded_by?: string | null
           session_id?: string | null
+          session_type?: string
           target_id: string
           trial_index?: number
         }
@@ -10279,6 +10540,7 @@ export type Database = {
           recorded_at?: string
           recorded_by?: string | null
           session_id?: string | null
+          session_type?: string
           target_id?: string
           trial_index?: number
         }
@@ -10316,6 +10578,7 @@ export type Database = {
           recorded_at: string
           recorded_by: string | null
           session_id: string | null
+          session_type: string
           step_id: string
         }
         Insert: {
@@ -10327,6 +10590,7 @@ export type Database = {
           recorded_at?: string
           recorded_by?: string | null
           session_id?: string | null
+          session_type?: string
           step_id: string
         }
         Update: {
@@ -10338,6 +10602,7 @@ export type Database = {
           recorded_at?: string
           recorded_by?: string | null
           session_id?: string | null
+          session_type?: string
           step_id?: string
         }
         Relationships: [
@@ -10367,26 +10632,45 @@ export type Database = {
       task_analysis_steps: {
         Row: {
           created_at: string
+          default_prompt_level: string | null
           id: string
+          mastered_at: string | null
           step_label: string
+          step_notes: string | null
           step_number: number
+          step_status: string
           target_id: string
         }
         Insert: {
           created_at?: string
+          default_prompt_level?: string | null
           id?: string
+          mastered_at?: string | null
           step_label: string
+          step_notes?: string | null
           step_number: number
+          step_status?: string
           target_id: string
         }
         Update: {
           created_at?: string
+          default_prompt_level?: string | null
           id?: string
+          mastered_at?: string | null
           step_label?: string
+          step_notes?: string | null
           step_number?: number
+          step_status?: string
           target_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "task_analysis_steps_default_prompt_level_fkey"
+            columns: ["default_prompt_level"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_analysis_steps_target_id_fkey"
             columns: ["target_id"]
@@ -11489,6 +11773,10 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      resolve_criteria: {
+        Args: { _criteria_type: string; _target_id: string }
+        Returns: string
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       set_user_pin: {
