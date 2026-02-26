@@ -376,36 +376,95 @@ export function StudentBehaviorsOverview({
   const [adoptDialogOpen, setAdoptDialogOpen] = useState(false);
   const [adoptTarget, setAdoptTarget] = useState<{ id: string; inferredName: string } | null>(null);
   const [adoptName, setAdoptName] = useState('');
-  const { addBehavior } = useDataStore();
+  const [adoptDefinition, setAdoptDefinition] = useState('');
+  const [adoptMode, setAdoptMode] = useState<'existing' | 'bank' | 'custom'>('existing');
+  const [adoptExistingId, setAdoptExistingId] = useState('');
+  const { addBehavior, globalBehaviorBank, behaviorDefinitionOverrides } = useDataStore();
+
+  // Get effective behavior bank with overrides
+  const effectiveBankForAdopt = useMemo(() => {
+    const BEHAVIOR_BANK = [
+      { id: 'aggression-physical', name: 'Physical Aggression', operationalDefinition: 'Forceful physical contact towards others', category: 'Aggression' },
+      { id: 'aggression-verbal', name: 'Verbal Aggression', operationalDefinition: 'Vocalized threats or hostile statements', category: 'Aggression' },
+      { id: 'sib', name: 'Self-Injurious Behavior', operationalDefinition: 'Actions causing injury to self', category: 'Self-Injury' },
+      { id: 'elopement', name: 'Elopement', operationalDefinition: 'Leaving designated area without permission', category: 'Safety' },
+      { id: 'property-destruction', name: 'Property Destruction', operationalDefinition: 'Intentional damage to objects or property', category: 'Disruption' },
+      { id: 'non-compliance', name: 'Non-Compliance', operationalDefinition: 'Failure to follow instructions within specified time', category: 'Non-Compliance' },
+      { id: 'tantrum', name: 'Tantrum', operationalDefinition: 'Crying, screaming, or falling to the floor', category: 'Disruption' },
+      { id: 'stereotypy', name: 'Stereotypy', operationalDefinition: 'Repetitive motor movements or vocalizations', category: 'Repetitive' },
+      { id: 'mouthing', name: 'Mouthing/Pica', operationalDefinition: 'Placing inedible objects in the mouth', category: 'Safety' },
+      { id: 'social-withdrawal', name: 'Social Withdrawal', operationalDefinition: 'Avoiding social interaction or isolating from peers', category: 'Social' },
+    ];
+    const all = [...BEHAVIOR_BANK.map(b => {
+      const override = behaviorDefinitionOverrides[b.id];
+      return override ? { ...b, operationalDefinition: override.operationalDefinition || b.operationalDefinition } : b;
+    }), ...globalBehaviorBank.map(b => ({ id: b.id, name: b.name, operationalDefinition: b.operationalDefinition, category: b.category || 'Custom' }))];
+    return all;
+  }, [globalBehaviorBank, behaviorDefinitionOverrides]);
 
   const handleAdoptBehavior = () => {
-    if (!adoptTarget || !adoptName.trim()) return;
-    // Add the behavior to the student using the SAME id so data links up
-    addBehavior(studentId, {
-      name: adoptName.trim(),
-      type: 'frequency' as DataCollectionMethod,
-      methods: ['frequency'] as DataCollectionMethod[],
-    });
-    // The above generates a new ID. We need to use the existing orphaned ID instead.
-    // So we directly update the store to replace the newly-added behavior's ID with the orphaned one.
-    const store = useDataStore.getState();
-    const student = store.students.find(s => s.id === studentId);
-    if (student) {
-      const newestBehavior = student.behaviors[student.behaviors.length - 1];
-      if (newestBehavior && newestBehavior.name === adoptName.trim()) {
-        // Replace the new ID with the orphaned one
-        useDataStore.setState({
-          students: store.students.map(s => s.id === studentId ? {
-            ...s,
-            behaviors: s.behaviors.map(b => b.id === newestBehavior.id ? { ...b, id: adoptTarget.id } : b),
-          } : s),
-        });
+    if (!adoptTarget) return;
+
+    if (adoptMode === 'existing' && adoptExistingId) {
+      // Link orphaned data to an existing behavior by swapping all data entries' behaviorId
+      // Since the data is keyed by behaviorId in the store, we merge by updating the orphan ID
+      // to match the existing behavior ID. We do this by re-assigning the orphan data.
+      const store = useDataStore.getState();
+      const student = store.students.find(s => s.id === studentId);
+      if (student) {
+        const existingBehavior = student.behaviors.find(b => b.id === adoptExistingId);
+        if (existingBehavior) {
+          // Re-key all data from orphan ID to existing behavior ID
+          const rekey = (entries: any[]) => entries.map(e => 
+            e.studentId === studentId && e.behaviorId === adoptTarget.id 
+              ? { ...e, behaviorId: adoptExistingId } 
+              : e
+          );
+          useDataStore.setState(state => ({
+            frequencyEntries: rekey(state.frequencyEntries),
+            durationEntries: rekey(state.durationEntries),
+            abcEntries: rekey(state.abcEntries),
+            intervalEntries: rekey(state.intervalEntries),
+          }));
+          toast.success(`Linked data to "${existingBehavior.name}"`);
+        }
       }
+    } else {
+      // Create new behavior (from bank or custom) with the orphan's ID
+      const name = adoptName.trim();
+      if (!name) return;
+      
+      addBehavior(studentId, {
+        name,
+        type: 'frequency' as DataCollectionMethod,
+        methods: ['frequency'] as DataCollectionMethod[],
+        operationalDefinition: adoptDefinition || undefined,
+      });
+      // Replace generated ID with orphan ID
+      const store = useDataStore.getState();
+      const student = store.students.find(s => s.id === studentId);
+      if (student) {
+        const newestBehavior = student.behaviors[student.behaviors.length - 1];
+        if (newestBehavior && newestBehavior.name === name) {
+          useDataStore.setState({
+            students: store.students.map(s => s.id === studentId ? {
+              ...s,
+              behaviors: s.behaviors.map(b => b.id === newestBehavior.id 
+                ? { ...b, id: adoptTarget.id, operationalDefinition: adoptDefinition || b.operationalDefinition } 
+                : b),
+            } : s),
+          });
+        }
+      }
+      toast.success(`Linked "${name}" to existing data`);
     }
-    toast.success(`Linked "${adoptName}" to existing data`);
+    
     setAdoptDialogOpen(false);
     setAdoptTarget(null);
     setAdoptName('');
+    setAdoptDefinition('');
+    setAdoptMode('existing');
+    setAdoptExistingId('');
   };
 
   // Filter behaviors
@@ -1275,25 +1334,104 @@ export function StudentBehaviorsOverview({
 
       {/* Adopt Behavior Dialog */}
       <Dialog open={adoptDialogOpen} onOpenChange={setAdoptDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Link Behavior to Student</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Data ID: {adoptTarget?.inferredName} — Choose how to link this data.
+            </p>
+
+            {/* Mode selector */}
             <div className="space-y-2">
-              <Label className="text-sm">Behavior Name</Label>
-              <Input
-                value={adoptName}
-                onChange={(e) => setAdoptName(e.target.value)}
-                placeholder="Enter behavior name..."
-              />
-              <p className="text-xs text-muted-foreground">
-                This will add the behavior to the student's profile and link all existing data to it.
-              </p>
+              <Label className="text-sm font-medium">Link Method</Label>
+              <Select value={adoptMode} onValueChange={(v: any) => { setAdoptMode(v); setAdoptExistingId(''); setAdoptName(''); setAdoptDefinition(''); }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="existing">Link to existing student behavior</SelectItem>
+                  <SelectItem value="bank">Pull from behavior bank</SelectItem>
+                  <SelectItem value="custom">Create custom behavior</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {/* Existing behavior picker */}
+            {adoptMode === 'existing' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Select Behavior</Label>
+                <Select value={adoptExistingId} onValueChange={setAdoptExistingId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a behavior..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {behaviors.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  All orphaned data will be reassigned to this behavior.
+                </p>
+              </div>
+            )}
+
+            {/* Behavior bank picker */}
+            {adoptMode === 'bank' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Select from Bank</Label>
+                <Select value={adoptName} onValueChange={(v) => {
+                  const found = effectiveBankForAdopt.find(b => b.name === v);
+                  setAdoptName(v);
+                  setAdoptDefinition(found?.operationalDefinition || '');
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose from bank..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {effectiveBankForAdopt.map(b => (
+                      <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {adoptDefinition && (
+                  <p className="text-xs text-muted-foreground border rounded p-2 bg-muted/30">
+                    {adoptDefinition}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Custom */}
+            {adoptMode === 'custom' && (
+              <div className="space-y-2">
+                <Label className="text-sm">Behavior Name</Label>
+                <Input
+                  value={adoptName}
+                  onChange={(e) => setAdoptName(e.target.value)}
+                  placeholder="Enter behavior name..."
+                />
+                <Label className="text-sm">Definition (optional)</Label>
+                <Input
+                  value={adoptDefinition}
+                  onChange={(e) => setAdoptDefinition(e.target.value)}
+                  placeholder="Operational definition..."
+                />
+              </div>
+            )}
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setAdoptDialogOpen(false)}>Cancel</Button>
-              <Button className="flex-1" onClick={handleAdoptBehavior} disabled={!adoptName.trim()}>
+              <Button 
+                className="flex-1" 
+                onClick={handleAdoptBehavior} 
+                disabled={
+                  (adoptMode === 'existing' && !adoptExistingId) ||
+                  (adoptMode !== 'existing' && !adoptName.trim())
+                }
+              >
                 Link Behavior
               </Button>
             </div>

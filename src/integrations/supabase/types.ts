@@ -7092,6 +7092,85 @@ export type Database = {
           },
         ]
       }
+      program_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          effective_date: string
+          id: string
+          note: string | null
+          program_id: string
+          status_from: string | null
+          status_to: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          effective_date?: string
+          id?: string
+          note?: string | null
+          program_id: string
+          status_from?: string | null
+          status_to: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          effective_date?: string
+          id?: string
+          note?: string | null
+          program_id?: string
+          status_from?: string | null
+          status_to?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_status_history_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_levels: {
+        Row: {
+          abbreviation: string
+          agency_id: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          rank: number
+        }
+        Insert: {
+          abbreviation: string
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          rank?: number
+        }
+        Update: {
+          abbreviation?: string
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_levels_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       protocol_assignments: {
         Row: {
           assigned_by: string | null
@@ -8254,6 +8333,143 @@ export type Database = {
           },
         ]
       }
+      skill_programs: {
+        Row: {
+          active: boolean
+          benchmark_definition: Json | null
+          benchmark_enabled: boolean
+          created_at: string
+          created_by: string | null
+          default_mastery_consecutive_sessions: number | null
+          default_mastery_criteria: string | null
+          default_mastery_percent: number | null
+          description: string | null
+          domain_id: string | null
+          id: string
+          method: string
+          name: string
+          notes: string | null
+          status: string
+          status_effective_date: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          benchmark_definition?: Json | null
+          benchmark_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          default_mastery_consecutive_sessions?: number | null
+          default_mastery_criteria?: string | null
+          default_mastery_percent?: number | null
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          method?: string
+          name: string
+          notes?: string | null
+          status?: string
+          status_effective_date?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          benchmark_definition?: Json | null
+          benchmark_enabled?: boolean
+          created_at?: string
+          created_by?: string | null
+          default_mastery_consecutive_sessions?: number | null
+          default_mastery_criteria?: string | null
+          default_mastery_percent?: number | null
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          method?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          status_effective_date?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_programs_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_targets: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          id: string
+          mastery_consecutive_sessions: number | null
+          mastery_criteria: string | null
+          mastery_percent: number | null
+          name: string
+          notes: string | null
+          operational_definition: string | null
+          program_id: string
+          status: string
+          status_effective_date: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          mastery_consecutive_sessions?: number | null
+          mastery_criteria?: string | null
+          mastery_percent?: number | null
+          name: string
+          notes?: string | null
+          operational_definition?: string | null
+          program_id: string
+          status?: string
+          status_effective_date?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          mastery_consecutive_sessions?: number | null
+          mastery_criteria?: string | null
+          mastery_percent?: number | null
+          name?: string
+          notes?: string | null
+          operational_definition?: string | null
+          program_id?: string
+          status?: string
+          status_effective_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_targets_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       socially_savvy_assessments: {
         Row: {
           administered_by: string | null
@@ -9267,6 +9483,51 @@ export type Database = {
           },
         ]
       }
+      student_prompt_levels: {
+        Row: {
+          created_at: string
+          custom_label: string | null
+          display_order: number
+          enabled: boolean
+          id: string
+          prompt_level_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_label?: string | null
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          prompt_level_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_label?: string | null
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          prompt_level_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_prompt_levels_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_prompt_levels_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_session_status: {
         Row: {
           created_at: string
@@ -9930,6 +10191,201 @@ export type Database = {
           tag_type?: string
         }
         Relationships: []
+      }
+      target_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          effective_date: string
+          id: string
+          note: string | null
+          status_from: string | null
+          status_to: string
+          target_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          effective_date?: string
+          id?: string
+          note?: string | null
+          status_from?: string | null
+          status_to: string
+          target_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          effective_date?: string
+          id?: string
+          note?: string | null
+          status_from?: string | null
+          status_to?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_status_history_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      target_trials: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          outcome: string
+          prompt_level_id: string | null
+          prompt_success: boolean | null
+          recorded_at: string
+          recorded_by: string | null
+          session_id: string | null
+          target_id: string
+          trial_index: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string
+          prompt_level_id?: string | null
+          prompt_success?: boolean | null
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id?: string | null
+          target_id: string
+          trial_index?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string
+          prompt_level_id?: string | null
+          prompt_success?: boolean | null
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id?: string | null
+          target_id?: string
+          trial_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_trials_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "target_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_analysis_step_data: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          outcome: string
+          prompt_level_id: string | null
+          recorded_at: string
+          recorded_by: string | null
+          session_id: string | null
+          step_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string
+          prompt_level_id?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id?: string | null
+          step_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          outcome?: string
+          prompt_level_id?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id?: string | null
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_analysis_step_data_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "task_analysis_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_analysis_steps: {
+        Row: {
+          created_at: string
+          id: string
+          step_label: string
+          step_number: number
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          step_label: string
+          step_number: number
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          step_label?: string
+          step_number?: number
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_analysis_steps_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       timesheet_entries: {
         Row: {
@@ -11029,6 +11485,14 @@ export type Database = {
       set_user_pin: {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
+      }
+      skill_program_student_id: {
+        Args: { p_program_id: string }
+        Returns: string
+      }
+      skill_target_student_id: {
+        Args: { p_target_id: string }
+        Returns: string
       }
       switch_agency: {
         Args: { _agency_id: string; _user_id: string }

@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
 import { 
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2, 
-  MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle 
+  MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
+  ListChecks, FolderTree,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -21,18 +23,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { useStudentTargets, useDomains, useTargetActions } from '@/hooks/useCurriculum';
+import { useSkillPrograms } from '@/hooks/useSkillPrograms';
 import { AddTargetDialog } from './AddTargetDialog';
+import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
+import { ProgramHierarchyView } from './ProgramHierarchyView';
 import type { StudentTarget } from '@/types/curriculum';
+import type { SkillProgram } from '@/types/skillPrograms';
 
 interface TargetsSubTabProps {
   studentId: string;
@@ -59,31 +58,31 @@ const SOURCE_CONFIG = {
 };
 
 export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
-  const { targets, loading, refetch } = useStudentTargets(studentId);
+  const { targets, loading: targetsLoading, refetch: refetchTargets } = useStudentTargets(studentId);
+  const { programs, loading: programsLoading, refetch: refetchPrograms } = useSkillPrograms(studentId);
   const { domains } = useDomains();
-  const { updateTarget, deleteTarget } = useTargetActions(studentId, refetch);
+  const { updateTarget, deleteTarget } = useTargetActions(studentId, refetchTargets);
 
+  const [view, setView] = useState<'programs' | 'legacy'>('programs');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [domainFilter, setDomainFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [sourceFilter, setSourceFilter] = useState<string>('all');
 
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showProgramDialog, setShowProgramDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   const [editingTarget, setEditingTarget] = useState<StudentTarget | null>(null);
+  const [editingProgram, setEditingProgram] = useState<SkillProgram | null>(null);
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => {
       if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (statusFilter !== 'all' && t.status !== statusFilter) return false;
       if (domainFilter !== 'all' && t.domain_id !== domainFilter) return false;
-      if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
-      if (sourceFilter !== 'all' && t.source_type !== sourceFilter) return false;
       return true;
     });
-  }, [targets, searchQuery, statusFilter, domainFilter, priorityFilter, sourceFilter]);
+  }, [targets, searchQuery, statusFilter, domainFilter]);
 
   const handleStatusChange = async (targetId: string, newStatus: string) => {
     await updateTarget(targetId, { 
@@ -92,36 +91,52 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
     });
   };
 
+  const loading = targetsLoading || programsLoading;
+
   return (
     <div className="space-y-4">
-      {/* Header Actions */}
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-sm">
-            {targets.length} total targets
+          <Tabs value={view} onValueChange={v => setView(v as any)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="programs" className="text-xs h-7 px-3">
+                <FolderTree className="w-3 h-3 mr-1" /> Programs
+              </TabsTrigger>
+              <TabsTrigger value="legacy" className="text-xs h-7 px-3">
+                <ListChecks className="w-3 h-3 mr-1" /> Flat Targets
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Badge variant="outline" className="text-xs">
+            {programs.length} programs
           </Badge>
-          <Badge variant="secondary" className="text-sm">
-            {targets.filter(t => t.status === 'active').length} active
+          <Badge variant="secondary" className="text-xs">
+            {targets.length} legacy targets
           </Badge>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Target
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Add
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
-                <Pencil className="w-4 h-4 mr-2" />
-                Create Custom Target
+              <DropdownMenuItem onClick={() => setShowProgramDialog(true)}>
+                <FolderTree className="w-4 h-4 mr-2" />
+                New Program + Targets
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Create Legacy Target
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
                 <BookOpen className="w-4 h-4 mr-2" />
-                Import from Curriculum Library
+                Import from Curriculum
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowBulkImportDialog(true)}>
                 <Download className="w-4 h-4 mr-2" />
@@ -132,218 +147,183 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-3">
-            <Input
-              placeholder="Search targets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-xs"
-            />
+      {/* Programs View */}
+      {view === 'programs' && (
+        loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading programs...</div>
+        ) : (
+          <ProgramHierarchyView
+            programs={programs}
+            domains={domains}
+            studentId={studentId}
+            onRefetch={refetchPrograms}
+            onEditProgram={(p) => {
+              setEditingProgram(p);
+              setShowProgramDialog(true);
+            }}
+          />
+        )
+      )}
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Legacy Flat Targets View */}
+      {view === 'legacy' && (
+        <>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex flex-wrap gap-3">
+                <Input
+                  placeholder="Search targets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="max-w-xs"
+                />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={domainFilter} onValueChange={setDomainFilter}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {domains.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Select value={domainFilter} onValueChange={setDomainFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Domains</SelectItem>
-                {domains.map(d => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {targetsLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading targets...</div>
+          ) : filteredTargets.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                <h3 className="font-medium text-lg mb-2">No targets found</h3>
+                <p className="text-sm text-muted-foreground">
+                  {targets.length === 0
+                    ? 'Add skill acquisition targets from the curriculum library or create custom targets.'
+                    : 'No targets match the current filters.'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {filteredTargets.map(target => {
+                const statusConfig = STATUS_CONFIG[target.status];
+                const priorityConfig = PRIORITY_CONFIG[target.priority];
+                const sourceConfig = SOURCE_CONFIG[target.source_type];
+                const StatusIcon = statusConfig.icon;
+                const SourceIcon = sourceConfig.icon;
 
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                {Object.entries(PRIORITY_CONFIG).map(([key, { label }]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                {Object.entries(SOURCE_CONFIG).map(([key, { label }]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Targets List */}
-      {loading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading targets...</div>
-      ) : filteredTargets.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="font-medium text-lg mb-2">No targets found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {targets.length === 0 
-                ? 'Add skill acquisition targets from the curriculum library or create custom targets.'
-                : 'No targets match the current filters.'}
-            </p>
-            {targets.length === 0 && (
-              <Button onClick={() => setShowImportDialog(true)}>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Import from Curriculum
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {filteredTargets.map(target => {
-            const statusConfig = STATUS_CONFIG[target.status];
-            const priorityConfig = PRIORITY_CONFIG[target.priority];
-            const sourceConfig = SOURCE_CONFIG[target.source_type];
-            const StatusIcon = statusConfig.icon;
-            const SourceIcon = sourceConfig.icon;
-
-            return (
-              <Card key={target.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h4 className="font-medium text-sm">{target.title}</h4>
-                        
-                        {/* Status Badge */}
-                        <Badge className={`${statusConfig.color} text-white text-xs`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
-
-                        {/* Source Badge */}
-                        <Badge variant="outline" className={`text-xs ${sourceConfig.color}`}>
-                          <SourceIcon className="w-3 h-3 mr-1" />
-                          {sourceConfig.label}
-                        </Badge>
-
-                        {/* Customized indicator */}
-                        {target.customized && (
-                          <Badge variant="outline" className="text-xs">
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Customized
-                          </Badge>
-                        )}
-
-                        {/* Prerequisites indicator */}
-                        {target.linked_prerequisite_ids.length > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            <Link2 className="w-3 h-3 mr-1" />
-                            {target.linked_prerequisite_ids.length} prereqs
-                          </Badge>
-                        )}
+                return (
+                  <Card key={target.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <h4 className="font-medium text-sm">{target.title}</h4>
+                            <Badge className={`${statusConfig.color} text-white text-xs`}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {statusConfig.label}
+                            </Badge>
+                            <Badge variant="outline" className={`text-xs ${sourceConfig.color}`}>
+                              <SourceIcon className="w-3 h-3 mr-1" />
+                              {sourceConfig.label}
+                            </Badge>
+                            {target.customized && (
+                              <Badge variant="outline" className="text-xs">
+                                <Pencil className="w-3 h-3 mr-1" /> Customized
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {target.domain && <span className="font-medium">{target.domain.name}</span>}
+                            <Badge variant="outline" className={`text-xs ${priorityConfig.color}`}>
+                              {priorityConfig.label}
+                            </Badge>
+                            <span>{target.data_collection_type.replace('_', ' ')}</span>
+                          </div>
+                          {target.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{target.description}</p>
+                          )}
+                          {target.mastery_criteria && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              <span className="font-medium">Mastery:</span> {target.mastery_criteria}
+                            </p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingTarget(target)}>
+                              <Pencil className="w-4 h-4 mr-2" /> Edit Target
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {target.status !== 'active' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'active')}>
+                                <Play className="w-4 h-4 mr-2" /> Set Active
+                              </DropdownMenuItem>
+                            )}
+                            {target.status !== 'paused' && target.status !== 'mastered' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'paused')}>
+                                <Pause className="w-4 h-4 mr-2" /> Pause
+                              </DropdownMenuItem>
+                            )}
+                            {target.status !== 'mastered' && (
+                              <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'mastered')}>
+                                <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Mastered
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        {target.domain && (
-                          <span className="font-medium">{target.domain.name}</span>
-                        )}
-                        <Badge variant="outline" className={`text-xs ${priorityConfig.color}`}>
-                          {priorityConfig.label}
-                        </Badge>
-                        <span>{target.data_collection_type.replace('_', ' ')}</span>
-                      </div>
-
-                      {target.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {target.description}
-                        </p>
-                      )}
-
-                      {target.mastery_criteria && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <span className="font-medium">Mastery:</span> {target.mastery_criteria}
-                        </p>
-                      )}
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingTarget(target)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit Target
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {target.status !== 'active' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'active')}>
-                            <Play className="w-4 h-4 mr-2" />
-                            Set Active
-                          </DropdownMenuItem>
-                        )}
-                        {target.status !== 'paused' && target.status !== 'mastered' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'paused')}>
-                            <Pause className="w-4 h-4 mr-2" />
-                            Pause
-                          </DropdownMenuItem>
-                        )}
-                        {target.status !== 'mastered' && (
-                          <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'mastered')}>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            Mark Mastered
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => deleteTarget(target.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Dialogs */}
       <AddTargetDialog
         open={showAddDialog || !!editingTarget}
         onOpenChange={(open) => {
-          if (!open) {
-            setShowAddDialog(false);
-            setEditingTarget(null);
-          }
+          if (!open) { setShowAddDialog(false); setEditingTarget(null); }
         }}
         studentId={studentId}
         editingTarget={editingTarget}
-        onSuccess={refetch}
+        onSuccess={refetchTargets}
+      />
+
+      <AddProgramDialog
+        open={showProgramDialog}
+        onOpenChange={(open) => {
+          if (!open) { setShowProgramDialog(false); setEditingProgram(null); }
+        }}
+        studentId={studentId}
+        editingProgram={editingProgram}
+        onSuccess={refetchPrograms}
       />
 
       <ImportFromCurriculumDialog
@@ -351,7 +331,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         onOpenChange={setShowImportDialog}
         studentId={studentId}
         existingTargetSourceIds={targets.filter(t => t.source_id).map(t => t.source_id!)}
-        onSuccess={refetch}
+        onSuccess={refetchTargets}
       />
 
       <BulkImportDialog
@@ -359,7 +339,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         onOpenChange={setShowBulkImportDialog}
         studentId={studentId}
         existingTargetSourceIds={targets.filter(t => t.source_id).map(t => t.source_id!)}
-        onSuccess={refetch}
+        onSuccess={refetchTargets}
       />
     </div>
   );
