@@ -14,6 +14,7 @@ export interface SkillProgram {
   default_mastery_criteria: string | null;
   default_mastery_percent: number | null;
   default_mastery_consecutive_sessions: number | null;
+  prompt_counts_as_correct: boolean | null; // null = inherit from student
   active: boolean;
   notes: string | null;
   created_by: string | null;
@@ -33,6 +34,7 @@ export interface SkillTarget {
   mastery_criteria: string | null;
   mastery_percent: number | null;
   mastery_consecutive_sessions: number | null;
+  prompt_counts_as_correct: boolean | null; // null = inherit from program
   status: TargetStatus;
   status_effective_date: string;
   display_order: number;
@@ -161,3 +163,31 @@ export const PROGRAM_STATUS_COLORS: Record<ProgramStatus, string> = {
   on_hold: 'bg-yellow-500',
   discontinued: 'bg-gray-400',
 };
+
+/**
+ * Resolves whether prompted responses count as correct.
+ * Inheritance: Target → Program → Student → System default (false).
+ */
+export function resolvePromptCountsAsCorrect(
+  targetSetting: boolean | null | undefined,
+  programSetting: boolean | null | undefined,
+  studentSetting: boolean | null | undefined,
+): boolean {
+  if (targetSetting !== null && targetSetting !== undefined) return targetSetting;
+  if (programSetting !== null && programSetting !== undefined) return programSetting;
+  if (studentSetting !== null && studentSetting !== undefined) return studentSetting;
+  return false; // system default: prompted ≠ correct
+}
+
+export type PromptCorrectnessLevel = 'system' | 'student' | 'program' | 'target';
+
+export function getPromptCorrectnessSource(
+  targetSetting: boolean | null | undefined,
+  programSetting: boolean | null | undefined,
+  studentSetting: boolean | null | undefined,
+): PromptCorrectnessLevel {
+  if (targetSetting !== null && targetSetting !== undefined) return 'target';
+  if (programSetting !== null && programSetting !== undefined) return 'program';
+  if (studentSetting !== null && studentSetting !== undefined) return 'student';
+  return 'system';
+}

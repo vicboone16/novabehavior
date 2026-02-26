@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { SkillTarget as LegacySkillTarget, DTTSession, DTTTrial, PromptLevel } from '@/types/behavior';
 import type { SkillProgram, TargetTrial, PromptLevel as DBPromptLevel } from '@/types/skillPrograms';
+import { resolvePromptCountsAsCorrect } from '@/types/skillPrograms';
 
 /**
  * Unified hook that fetches new DB-backed skill program trial data
@@ -84,6 +85,13 @@ export function useUnifiedSkillData(studentId: string, studentName: string = '',
       const program = programMap.get(target.program_id) as any;
       const targetTrials = (trials || []).filter((t: any) => t.target_id === target.id);
 
+      // Resolve prompt correctness setting for this target
+      const promptIsCorrect = resolvePromptCountsAsCorrect(
+        target.prompt_counts_as_correct,
+        program?.prompt_counts_as_correct,
+        undefined // student-level would be passed in if available
+      );
+
       // Group trials by session_id (or by date if no session_id)
       const sessionGroups = new Map<string, any[]>();
       for (const trial of targetTrials) {
@@ -96,10 +104,14 @@ export function useUnifiedSkillData(studentId: string, studentName: string = '',
         const legacyTrials: DTTTrial[] = sessionTrials.map((t: any, idx: number) => {
           const pl = t.prompt_level_id ? promptMap.get(t.prompt_level_id) : null;
           const abbreviation = pl?.abbreviation || 'I';
+          const isPrompted = abbreviation !== 'I';
+          const outcomeCorrect = t.outcome === 'correct';
+          // Apply prompt correctness rule
+          const isCorrect = outcomeCorrect && (!isPrompted || promptIsCorrect);
           return {
             id: t.id,
             timestamp: new Date(t.recorded_at),
-            isCorrect: t.outcome === 'correct',
+            isCorrect,
             promptLevel: (DB_PROMPT_MAP[abbreviation] || 'independent') as PromptLevel,
             errorType: t.outcome === 'incorrect' ? 'incorrect_response' as any : undefined,
             notes: t.notes || undefined,
@@ -257,6 +269,13 @@ export function useUnifiedSkillDataMulti(
         const student = program ? studentMap.get(program.student_id) : undefined;
         const targetTrials = (trials || []).filter((t: any) => t.target_id === target.id);
 
+        // Resolve prompt correctness
+        const promptIsCorrect = resolvePromptCountsAsCorrect(
+          target.prompt_counts_as_correct,
+          program?.prompt_counts_as_correct,
+          undefined
+        );
+
         // Group by session
         const sessionGroups = new Map<string, any[]>();
         for (const trial of targetTrials) {
@@ -269,10 +288,13 @@ export function useUnifiedSkillDataMulti(
           const legacyTrials: DTTTrial[] = sessionTrials.map((t: any) => {
             const pl = t.prompt_level_id ? promptMapLocal.get(t.prompt_level_id) : null;
             const abbreviation = pl?.abbreviation || 'I';
+            const isPrompted = abbreviation !== 'I';
+            const outcomeCorrect = t.outcome === 'correct';
+            const isCorrect = outcomeCorrect && (!isPrompted || promptIsCorrect);
             return {
               id: t.id,
               timestamp: new Date(t.recorded_at),
-              isCorrect: t.outcome === 'correct',
+              isCorrect,
               promptLevel: (DB_PROMPT_MAP[abbreviation] || 'independent') as PromptLevel,
               notes: t.notes || undefined,
             };

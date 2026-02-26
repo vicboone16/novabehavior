@@ -9,10 +9,13 @@ import {
   Target,
   ListChecks,
   Clock,
+  Info,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import {
   Collapsible,
@@ -47,6 +50,8 @@ import {
   PROGRAM_STATUS_COLORS,
   SKILL_METHOD_LABELS,
   TARGET_STATUS_LABELS,
+  resolvePromptCountsAsCorrect,
+  getPromptCorrectnessSource,
 } from '@/types/skillPrograms';
 import type { Domain } from '@/types/curriculum';
 
@@ -65,7 +70,7 @@ export function ProgramHierarchyView({
   onRefetch,
   onEditProgram,
 }: ProgramHierarchyViewProps) {
-  const { changeProgramStatus, deleteProgram, addTarget, deleteTarget } =
+  const { changeProgramStatus, deleteProgram, addTarget, updateTarget, deleteTarget } =
     useSkillProgramActions(studentId, onRefetch);
 
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
@@ -131,32 +136,74 @@ export function ProgramHierarchyView({
     setStatusNote('');
   };
 
-  const renderTarget = (target: SkillTarget) => (
-    <div
-      key={target.id}
-      className="flex items-center justify-between py-1.5 px-3 ml-8 border-l-2 border-muted hover:bg-muted/30 rounded-r text-sm"
-    >
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <Target className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="truncate">{target.name}</span>
-        <Badge variant="outline" className="text-[10px] shrink-0">
-          {TARGET_STATUS_LABELS[target.status] || target.status}
-        </Badge>
+  const renderTarget = (target: SkillTarget, program: SkillProgram) => {
+    const promptSetting = resolvePromptCountsAsCorrect(
+      target.prompt_counts_as_correct,
+      program.prompt_counts_as_correct,
+      undefined // student level would come from parent
+    );
+    const promptSource = getPromptCorrectnessSource(
+      target.prompt_counts_as_correct,
+      program.prompt_counts_as_correct,
+      undefined
+    );
+
+    return (
+      <div
+        key={target.id}
+        className="flex items-center justify-between py-1.5 px-3 ml-8 border-l-2 border-muted hover:bg-muted/30 rounded-r text-sm"
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Target className="w-3 h-3 text-muted-foreground shrink-0" />
+          <span className="truncate">{target.name}</span>
+          <Badge variant="outline" className="text-[10px] shrink-0">
+            {TARGET_STATUS_LABELS[target.status] || target.status}
+          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className={`text-[10px] shrink-0 cursor-help ${promptSetting ? 'border-amber-500 text-amber-600' : 'border-muted-foreground/30'}`}
+              >
+                {promptSetting ? 'P=✓' : 'P=✗'}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">
+                Prompted = {promptSetting ? 'Correct' : 'Incorrect'}
+                <span className="text-muted-foreground"> (from {promptSource})</span>
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6">
+              <MoreHorizontal className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => {
+              const current = target.prompt_counts_as_correct;
+              const next = current === null ? true : current === true ? false : null;
+              updateTarget(target.id, { prompt_counts_as_correct: next } as any);
+            }}>
+              <Info className="w-3 h-3 mr-2" />
+              {target.prompt_counts_as_correct === null
+                ? 'Set: Prompted = Correct'
+                : target.prompt_counts_as_correct
+                  ? 'Set: Prompted = Incorrect'
+                  : 'Reset to inherit'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
+              <Trash2 className="w-3 h-3 mr-2" /> Archive Target
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <MoreHorizontal className="w-3 h-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
-            <Trash2 className="w-3 h-3 mr-2" /> Archive Target
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
+    );
+  };
 
   const renderProgram = (program: SkillProgram) => {
     const isExpanded = expandedPrograms.has(program.id);
@@ -213,7 +260,7 @@ export function ProgramHierarchyView({
 
           <CollapsibleContent>
             <div className="space-y-0.5 pb-2">
-              {program.targets && program.targets.map(renderTarget)}
+              {program.targets && program.targets.map(t => renderTarget(t, program))}
               {targetCount === 0 && (
                 <p className="ml-12 text-xs text-muted-foreground py-1">No targets yet</p>
               )}
