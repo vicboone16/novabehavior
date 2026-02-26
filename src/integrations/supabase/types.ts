@@ -11032,6 +11032,7 @@ export type Database = {
         Returns: boolean
       }
       user_has_pin: { Args: { _user_id: string }; Returns: boolean }
+      user_session_ids: { Args: { p_user_id: string }; Returns: string[] }
       verify_pin: { Args: { _pin: string; _user_id: string }; Returns: boolean }
     }
     Enums: {

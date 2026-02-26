@@ -199,10 +199,29 @@ export function AgencySwitcher() {
 
   if (agencies.length === 1 && !isSuperAdmin) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg">
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">{currentAgency?.name || 'No Agency'}</span>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8" title={currentAgency?.name || 'Agency'}>
+            <Building2 className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-[240px]">
+          <DropdownMenuLabel>{currentAgency?.name || 'No Agency'}</DropdownMenuLabel>
+          {(isAgencyAdmin || isSuperAdmin) && currentAgency && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowManageClientsDialog(true)} className="cursor-pointer">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Clients
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowSettingsDialog(true)} className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2" />
+                Agency Settings
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
@@ -214,16 +233,12 @@ export function AgencySwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2" disabled={switching}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={switching} title={currentAgency?.name || 'Select Agency'}>
             {switching ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Building2 className="h-4 w-4" />
             )}
-            <span className="max-w-[150px] truncate">
-              {currentAgency?.name || 'Select Agency'}
-            </span>
-            <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-[240px]">
