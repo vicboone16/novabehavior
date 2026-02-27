@@ -2177,6 +2177,56 @@ export type Database = {
           },
         ]
       }
+      ci_compute_runs: {
+        Row: {
+          agency_id: string | null
+          alerts_resolved_count: number | null
+          alerts_upserted_count: number | null
+          data_source_id: string | null
+          duration_ms: number | null
+          errors_json: Json | null
+          finished_at: string | null
+          metrics_upserted_count: number | null
+          run_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          agency_id?: string | null
+          alerts_resolved_count?: number | null
+          alerts_upserted_count?: number | null
+          data_source_id?: string | null
+          duration_ms?: number | null
+          errors_json?: Json | null
+          finished_at?: string | null
+          metrics_upserted_count?: number | null
+          run_id?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          agency_id?: string | null
+          alerts_resolved_count?: number | null
+          alerts_upserted_count?: number | null
+          data_source_id?: string | null
+          duration_ms?: number | null
+          errors_json?: Json | null
+          finished_at?: string | null
+          metrics_upserted_count?: number | null
+          run_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_compute_runs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ci_intervention_recs: {
         Row: {
           agency_id: string
@@ -12754,7 +12804,7 @@ export type Database = {
       }
       ci_refresh_all: {
         Args: { _agency_id?: string; _data_source_id?: string }
-        Returns: undefined
+        Returns: string
       }
       ci_refresh_metrics: {
         Args: { p_agency_id?: string; p_data_source_id?: string }

@@ -32,8 +32,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Call the SQL function ci_refresh_all
-    const { data, error } = await supabase.rpc("ci_refresh_all", {
+    // Call the SQL function ci_refresh_all (returns run_id uuid)
+    const { data: runId, error } = await supabase.rpc("ci_refresh_all", {
       _agency_id: agencyId,
       _data_source_id: dataSourceId,
     });
@@ -46,10 +46,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("[CIE] Compute completed:", data);
+    // Fetch the run record for response
+    const { data: run } = await supabase
+      .from("ci_compute_runs")
+      .select("*")
+      .eq("run_id", runId)
+      .single();
+
+    console.log("[CIE] Compute completed, run_id:", runId);
 
     return new Response(
-      JSON.stringify({ success: true, result: data }),
+      JSON.stringify({ success: true, run_id: runId, run }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
