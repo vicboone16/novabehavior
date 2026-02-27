@@ -441,7 +441,7 @@ export function GlobalSearch() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="students">Students</SelectItem>
+                    <SelectItem value="students">Clients</SelectItem>
                     {isAdmin && <SelectItem value="users">Users</SelectItem>}
                   </SelectContent>
                 </Select>
