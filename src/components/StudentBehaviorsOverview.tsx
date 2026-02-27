@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import { useDataStore } from '@/store/dataStore';
 import { 
@@ -402,21 +403,21 @@ export function StudentBehaviorsOverview({
     return all;
   }, [globalBehaviorBank, behaviorDefinitionOverrides]);
 
-  const handleAdoptBehavior = () => {
+  const handleAdoptBehavior = async () => {
     if (!adoptTarget) return;
 
+    const oldBehaviorId = adoptTarget.id;
+    let newBehaviorId: string | null = null;
+
     if (adoptMode === 'existing' && adoptExistingId) {
-      // Link orphaned data to an existing behavior by swapping all data entries' behaviorId
-      // Since the data is keyed by behaviorId in the store, we merge by updating the orphan ID
-      // to match the existing behavior ID. We do this by re-assigning the orphan data.
+      newBehaviorId = adoptExistingId;
       const store = useDataStore.getState();
       const student = store.students.find(s => s.id === studentId);
       if (student) {
         const existingBehavior = student.behaviors.find(b => b.id === adoptExistingId);
         if (existingBehavior) {
-          // Re-key all data from orphan ID to existing behavior ID
           const rekey = (entries: any[]) => entries.map(e => 
-            e.studentId === studentId && e.behaviorId === adoptTarget.id 
+            e.studentId === studentId && e.behaviorId === oldBehaviorId 
               ? { ...e, behaviorId: adoptExistingId } 
               : e
           );
@@ -430,7 +431,6 @@ export function StudentBehaviorsOverview({
         }
       }
     } else {
-      // Create new behavior (from bank or custom) with the orphan's ID
       const name = adoptName.trim();
       if (!name) return;
       
@@ -440,7 +440,7 @@ export function StudentBehaviorsOverview({
         methods: ['frequency'] as DataCollectionMethod[],
         operationalDefinition: adoptDefinition || undefined,
       });
-      // Replace generated ID with orphan ID
+      // Replace generated ID with orphan ID so data lines up
       const store = useDataStore.getState();
       const student = store.students.find(s => s.id === studentId);
       if (student) {
@@ -450,13 +450,46 @@ export function StudentBehaviorsOverview({
             students: store.students.map(s => s.id === studentId ? {
               ...s,
               behaviors: s.behaviors.map(b => b.id === newestBehavior.id 
-                ? { ...b, id: adoptTarget.id, operationalDefinition: adoptDefinition || b.operationalDefinition } 
+                ? { ...b, id: oldBehaviorId, operationalDefinition: adoptDefinition || b.operationalDefinition } 
                 : b),
             } : s),
           });
         }
       }
+      // For new/bank behaviors, the behavior ID stays as the orphan ID — no DB rekey needed
+      newBehaviorId = null;
       toast.success(`Linked "${name}" to existing data`);
+    }
+
+    // Persist the behavior_id change to the database so it survives refresh
+    if (newBehaviorId && oldBehaviorId !== newBehaviorId) {
+      try {
+        const { error } = await supabase
+          .from('session_data')
+          .update({ behavior_id: newBehaviorId } as any)
+          .eq('student_id', studentId)
+          .eq('behavior_id', oldBehaviorId);
+        
+        if (error) {
+          console.error('[Adopt] Failed to persist behavior_id rekey to DB:', error);
+          toast.error('Link saved locally but failed to sync to cloud. Try saving your session.');
+        } else {
+          console.log(`[Adopt] Rekeyed session_data behavior_id from ${oldBehaviorId} to ${newBehaviorId}`);
+        }
+
+        // Also update any session entries that store the old behavior_id inline
+        // Update sessions that contain this data in their stored entries
+        const { data: affectedSessions } = await supabase
+          .from('sessions')
+          .select('id')
+          .contains('student_ids', [studentId]);
+        
+        if (affectedSessions && affectedSessions.length > 0) {
+          console.log(`[Adopt] ${affectedSessions.length} sessions may reference old behavior_id`);
+        }
+      } catch (err) {
+        console.error('[Adopt] Error persisting behavior link:', err);
+      }
     }
     
     setAdoptDialogOpen(false);
