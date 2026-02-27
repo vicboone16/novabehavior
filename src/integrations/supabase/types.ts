@@ -12636,6 +12636,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_client_access: {
+        Row: {
+          access_level: string | null
+          agency_id: string | null
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          client_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_student_access_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_ci_agency_comparison: {
         Row: {
           agency_id: string | null
