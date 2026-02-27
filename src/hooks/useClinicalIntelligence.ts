@@ -102,7 +102,7 @@ export interface CIAlert {
   id: string;
   agency_id: string;
   client_id: string | null;
-  severity: 'critical' | 'high' | 'medium' | 'info';
+  severity: 'critical' | 'action' | 'watch' | 'high' | 'medium' | 'info';
   category: string;
   message: string;
   explanation_json: Record<string, any>;

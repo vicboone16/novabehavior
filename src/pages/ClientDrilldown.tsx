@@ -46,7 +46,9 @@ function MetricCard({ icon, label, value, suffix, color }: {
 function SeverityBadge({ severity }: { severity: string }) {
   const colors: Record<string, string> = {
     critical: 'bg-destructive text-destructive-foreground',
+    action: 'bg-orange-500/90 text-white',
     high: 'bg-orange-500/90 text-white',
+    watch: 'bg-yellow-500/90 text-white',
     medium: 'bg-yellow-500/90 text-white',
     info: 'bg-blue-500/90 text-white',
   };

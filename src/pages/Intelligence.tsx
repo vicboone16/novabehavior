@@ -55,7 +55,9 @@ function getFreshnessLabel(score: number) {
 function SeverityBadge({ severity }: { severity: string }) {
   const colors: Record<string, string> = {
     critical: 'bg-destructive text-destructive-foreground',
+    action: 'bg-orange-500 text-white',
     high: 'bg-orange-500 text-white',
+    watch: 'bg-yellow-500 text-white',
     medium: 'bg-yellow-500 text-white',
     info: 'bg-blue-500 text-white',
   };
@@ -129,7 +131,7 @@ export default function Intelligence() {
 
   // Unresolved alerts sorted by severity
   const sortedAlerts = useMemo(() => {
-    const severityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, info: 3 };
+    const severityOrder: Record<string, number> = { critical: 0, action: 1, high: 1, watch: 2, medium: 2, info: 3 };
     return [...alerts].sort((a, b) => {
       const resolvedA = a.resolved_at ? 1 : 0;
       const resolvedB = b.resolved_at ? 1 : 0;
