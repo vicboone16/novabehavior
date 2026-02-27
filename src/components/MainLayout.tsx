@@ -37,6 +37,7 @@ import { useIsDeviceMobile } from '@/hooks/use-mobile';
 import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
+import { useEntityLabel } from '@/hooks/useEntityLabel';
 import { Brain } from 'lucide-react';
 
 export default function MainLayout() {
@@ -48,6 +49,7 @@ export default function MainLayout() {
   const { preference, setMobilePreference } = useMobilePreference();
   const featurePerms = useFeaturePermissions();
   const { hasCIDAccess } = useClinicalIntelligenceAccess();
+  const entityLabel = useEntityLabel();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
@@ -202,7 +204,7 @@ export default function MainLayout() {
                 className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Clients
+                {entityLabel.plural}
               </TabsTrigger>
               <TabsTrigger 
                 value="assessment" 

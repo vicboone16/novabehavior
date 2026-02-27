@@ -217,6 +217,7 @@ export type Database = {
           npi: string | null
           phone: string | null
           primary_color: string | null
+          primary_entity_label: string
           settings: Json | null
           slug: string | null
           state: string | null
@@ -247,6 +248,7 @@ export type Database = {
           npi?: string | null
           phone?: string | null
           primary_color?: string | null
+          primary_entity_label?: string
           settings?: Json | null
           slug?: string | null
           state?: string | null
@@ -277,6 +279,7 @@ export type Database = {
           npi?: string | null
           phone?: string | null
           primary_color?: string | null
+          primary_entity_label?: string
           settings?: Json | null
           slug?: string | null
           state?: string | null
@@ -2045,6 +2048,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ci_alert_to_lms_map: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          id: string
+          module_id: string
+          role_slug: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          id?: string
+          module_id: string
+          role_slug: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          id?: string
+          module_id?: string
+          role_slug?: string
+        }
+        Relationships: []
       }
       ci_alerts: {
         Row: {
@@ -6588,6 +6618,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agencies"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_assignments: {
+        Row: {
+          assigned_at: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          module_id: string
+          related_client_id: string | null
+          source_alert_id: string | null
+          source_trigger: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_id: string
+          related_client_id?: string | null
+          source_alert_id?: string | null
+          source_trigger?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_id?: string
+          related_client_id?: string | null
+          source_alert_id?: string | null
+          source_trigger?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_assignments_source_alert_id_fkey"
+            columns: ["source_alert_id"]
+            isOneToOne: false
+            referencedRelation: "ci_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lms_assignments_source_alert_id_fkey"
+            columns: ["source_alert_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_alert_feed"
+            referencedColumns: ["alert_id"]
           },
         ]
       }
@@ -12776,6 +12860,137 @@ export type Database = {
           id: string | null
         }
         Relationships: []
+      }
+      v_ci_agency_comparison: {
+        Row: {
+          agency_id: string | null
+          agency_name: string | null
+          alerts_per_10_clients: number | null
+          avg_risk: number | null
+          client_count: number | null
+          pct_low_fidelity: number | null
+          pct_stale: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_metrics_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ci_alert_feed: {
+        Row: {
+          agency_id: string | null
+          alert_id: string | null
+          alert_key: string | null
+          category: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string | null
+          explanation_json: Json | null
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_alerts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ci_caseload_feed: {
+        Row: {
+          agency_id: string | null
+          client_id: string | null
+          client_name: string | null
+          data_freshness: number | null
+          fidelity_score: number | null
+          goal_velocity_score: number | null
+          metrics_updated_at: string | null
+          open_alert_count: number | null
+          parent_impl_score: number | null
+          risk_score: number | null
+          trend_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_metrics_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_ci_stale_leaderboard: {
+        Row: {
+          agency_id: string | null
+          agency_name: string | null
+          client_id: string | null
+          client_name: string | null
+          data_freshness: number | null
+          metrics_updated_at: string | null
+          risk_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_metrics_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

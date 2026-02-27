@@ -9,6 +9,7 @@ export interface Agency {
   status: string;
   logo_url: string | null;
   coverage_mode: string;
+  primary_entity_label?: string;
 }
 
 export interface AgencyMembership {
@@ -54,7 +55,7 @@ export function useAgencyContext(): AgencyContext {
           role,
           is_primary,
           status,
-          agency:agencies(id, name, slug, status, logo_url, coverage_mode)
+          agency:agencies(id, name, slug, status, logo_url, coverage_mode, primary_entity_label)
         `)
         .eq('user_id', user.id)
         .eq('status', 'active');

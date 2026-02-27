@@ -67,6 +67,7 @@ function SeverityBadge({ severity }: { severity: string }) {
 }
 
 export default function Intelligence() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { currentAgency } = useAgencyContext();
   const { hasCIDAccess, loading: accessLoading } = useClinicalIntelligenceAccess();
@@ -307,7 +308,7 @@ export default function Intelligence() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="gap-1">
+                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/intelligence/clients/${row.client_id}`)}>
                             View <ChevronRight className="w-3 h-3" />
                           </Button>
                         </TableCell>

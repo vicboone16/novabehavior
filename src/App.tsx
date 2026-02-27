@@ -41,6 +41,7 @@ import IEPLibrary from "./pages/IEPLibrary";
 import ClinicalLibrary from "./pages/ClinicalLibrary";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
+import ClientDrilldown from "./pages/ClientDrilldown";
 import { StaffProfilePage } from "./components/staff-profile";
  import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
  import PayerDetailPage from "./pages/payers/PayerDetailPage";
@@ -290,6 +291,7 @@ const App = () => {
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
+              <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
