@@ -915,6 +915,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "authorized_services_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "authorized_services_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
+          },
+          {
             foreignKeyName: "authorized_services_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -1139,6 +1153,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_claims_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "billing_claims_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
           },
           {
             foreignKeyName: "billing_claims_payer_id_fkey"
@@ -3764,6 +3792,195 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
+          },
+        ]
+      }
+      clinical_schedule_events: {
+        Row: {
+          agency_id: string
+          authorization_id: string | null
+          bucket_key: string
+          client_id: string
+          created_at: string
+          id: string
+          outcome: string
+          scheduled_date: string
+          scheduled_minutes: number
+          scheduled_units: number
+          staff_user_id: string
+        }
+        Insert: {
+          agency_id: string
+          authorization_id?: string | null
+          bucket_key?: string
+          client_id: string
+          created_at?: string
+          id?: string
+          outcome?: string
+          scheduled_date: string
+          scheduled_minutes?: number
+          scheduled_units?: number
+          staff_user_id: string
+        }
+        Update: {
+          agency_id?: string
+          authorization_id?: string | null
+          bucket_key?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          outcome?: string
+          scheduled_date?: string
+          scheduled_minutes?: number
+          scheduled_units?: number
+          staff_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_schedule_events_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_schedule_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_schedule_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "clinical_schedule_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
+          },
+        ]
+      }
+      clinical_service_buckets: {
+        Row: {
+          agency_id: string
+          bucket_key: string
+          bucket_label: string
+          created_at: string
+          id: string
+          is_active: boolean
+          required_weekly_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          bucket_key: string
+          bucket_label: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          required_weekly_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          bucket_key?: string
+          bucket_label?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          required_weekly_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_service_buckets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_service_logs: {
+        Row: {
+          agency_id: string
+          authorization_id: string | null
+          bucket_key: string
+          client_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          service_date: string
+          staff_user_id: string
+          status: string
+          units_delivered: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          authorization_id?: string | null
+          bucket_key: string
+          client_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          service_date: string
+          staff_user_id: string
+          status?: string
+          units_delivered?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          authorization_id?: string | null
+          bucket_key?: string
+          client_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          service_date?: string
+          staff_user_id?: string
+          status?: string
+          units_delivered?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_service_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_service_logs_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_service_logs_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "clinical_service_logs_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
           },
         ]
       }
@@ -8337,6 +8554,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "prior_auth_requests_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "prior_auth_requests_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
+          },
+          {
             foreignKeyName: "prior_auth_requests_payer_id_fkey"
             columns: ["payer_id"]
             isOneToOne: false
@@ -9959,6 +10190,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "sessions_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
           },
           {
             foreignKeyName: "sessions_authorized_service_id_fkey"
@@ -12819,6 +13064,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "unit_deduction_ledger_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_authorization_summary"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_clinical_hours_forecast"
+            referencedColumns: ["authorization_id"]
+          },
+          {
             foreignKeyName: "unit_deduction_ledger_authorized_service_id_fkey"
             columns: ["authorized_service_id"]
             isOneToOne: false
@@ -13783,6 +14042,102 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
+          },
+        ]
+      }
+      v_clinical_authorization_summary: {
+        Row: {
+          agency_id: string | null
+          auth_number: string | null
+          authorization_id: string | null
+          client_id: string | null
+          client_name: string | null
+          computed_status: string | null
+          days_remaining: number | null
+          end_date: string | null
+          pct_time_elapsed: number | null
+          pct_used: number | null
+          service_codes: string[] | null
+          start_date: string | null
+          status: string | null
+          units_approved: number | null
+          units_remaining: number | null
+          units_used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "students_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_clinical_hours_forecast: {
+        Row: {
+          agency_id: string | null
+          auth_number: string | null
+          authorization_id: string | null
+          client_id: string | null
+          client_name: string | null
+          days_remaining: number | null
+          end_date: string | null
+          forecast_status: string | null
+          scheduled_remaining_units: number | null
+          units_approved: number | null
+          units_remaining: number | null
+          units_used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "students_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
           },
         ]
       }

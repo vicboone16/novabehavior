@@ -10,11 +10,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { 
   useClinicalIntelligenceAccess, 
-  useCICaseloadMetrics, 
-  useCIAlerts,
+  useCICaseloadFeed,
+  useCIAlertFeed,
   useCIInterventionRecs,
-  type ClientMetrics,
-  type CIAlert
+  type CaseloadFeedRow,
+  type AlertFeedRow
 } from '@/hooks/useClinicalIntelligence';
 import { useClinicalTracking } from '@/hooks/useClinicalTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
-import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 
 function getRiskColor(score: number) {
@@ -112,12 +111,11 @@ export default function Intelligence() {
     }
   });
   
-  const { metrics, loading: metricsLoading } = useCICaseloadMetrics(effectiveAgencyId);
-  const { alerts, loading: alertsLoading, resolveAlert } = useCIAlerts(effectiveAgencyId);
+  // Use view-based hooks
+  const { rows: caseloadRows, loading: metricsLoading } = useCICaseloadFeed(effectiveAgencyId);
+  const { alerts, loading: alertsLoading, resolveAlert } = useCIAlertFeed(effectiveAgencyId);
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
   const { authorizations, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
-  
-  const students = useDataStore(s => s.students);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
@@ -132,58 +130,42 @@ export default function Intelligence() {
     return currentAgency?.name || 'Agency';
   }, [selectedAgencyId, agencies, currentAgency]);
 
-  // Build enriched caseload data
-  const caseloadData = useMemo(() => {
-    return metrics.map(m => {
-      const student = students.find(s => s.id === m.client_id);
-      return {
-        ...m,
-        studentName: student?.name || 'Unknown Client',
-      };
-    });
-  }, [metrics, students]);
-
-  // Filter caseload
+  // Filter caseload (client_name comes from view)
   const filteredCaseload = useMemo(() => {
-    let data = caseloadData;
+    let data = [...caseloadRows];
     
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      data = data.filter(d => d.studentName.toLowerCase().includes(q));
+      data = data.filter(d => (d.client_name || '').toLowerCase().includes(q));
     }
     
     if (riskFilter !== 'all') {
       const [min, max] = riskFilter.split('-').map(Number);
-      data = data.filter(d => d.risk_score >= min && d.risk_score <= max);
+      data = data.filter(d => (d.risk_score ?? 0) >= min && (d.risk_score ?? 0) <= max);
     }
     
-    if (trendFilter === 'worsening') data = data.filter(d => d.trend_score > 5);
-    else if (trendFilter === 'improving') data = data.filter(d => d.trend_score < -5);
-    else if (trendFilter === 'stable') data = data.filter(d => d.trend_score >= -5 && d.trend_score <= 5);
+    if (trendFilter === 'worsening') data = data.filter(d => (d.trend_score ?? 0) > 5);
+    else if (trendFilter === 'improving') data = data.filter(d => (d.trend_score ?? 0) < -5);
+    else if (trendFilter === 'stable') data = data.filter(d => (d.trend_score ?? 0) >= -5 && (d.trend_score ?? 0) <= 5);
     
-    return data.sort((a, b) => b.risk_score - a.risk_score);
-  }, [caseloadData, searchQuery, riskFilter, trendFilter]);
+    return data.sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0));
+  }, [caseloadRows, searchQuery, riskFilter, trendFilter]);
 
-  // KPIs
+  // KPIs from view data
   const kpis = useMemo(() => {
-    const total = metrics.length;
-    const highRisk = metrics.filter(m => m.risk_score >= 75).length;
-    const staleData = metrics.filter(m => m.data_freshness <= 20).length;
-    const lowFidelity = metrics.filter(m => m.fidelity_score < 80).length;
-    const lowParent = metrics.filter(m => m.parent_impl_score < 60).length;
-    const openAlerts = alerts.filter(a => !a.resolved_at).length;
+    const total = caseloadRows.length;
+    const highRisk = caseloadRows.filter(m => (m.risk_score ?? 0) >= 75).length;
+    const staleData = caseloadRows.filter(m => (m.data_freshness ?? 100) <= 20).length;
+    const lowFidelity = caseloadRows.filter(m => (m.fidelity_score ?? 100) < 80).length;
+    const lowParent = caseloadRows.filter(m => (m.parent_impl_score ?? 100) < 60).length;
+    const openAlerts = alerts.length; // v_ci_alert_feed only returns unresolved
     return { total, highRisk, staleData, lowFidelity, lowParent, openAlerts };
-  }, [metrics, alerts]);
+  }, [caseloadRows, alerts]);
 
-  // Unresolved alerts sorted by severity
+  // Sorted alerts (all unresolved from view)
   const sortedAlerts = useMemo(() => {
     const severityOrder: Record<string, number> = { critical: 0, action: 1, high: 1, watch: 2, medium: 2, info: 3 };
-    return [...alerts].sort((a, b) => {
-      const resolvedA = a.resolved_at ? 1 : 0;
-      const resolvedB = b.resolved_at ? 1 : 0;
-      if (resolvedA !== resolvedB) return resolvedA - resolvedB;
-      return (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4);
-    });
+    return [...alerts].sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
   }, [alerts]);
 
   if (accessLoading) {
@@ -226,7 +208,6 @@ export default function Intelligence() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* Agency Selector */}
           <Select value={selectedAgencyId || currentAgency?.id || ''} onValueChange={setSelectedAgencyId}>
             <SelectTrigger className="w-[220px]">
               <Building2 className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -280,7 +261,6 @@ export default function Intelligence() {
 
         {/* Caseload Tab */}
         <TabsContent value="caseload" className="space-y-4">
-          {/* Filters */}
           <div className="flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -316,7 +296,6 @@ export default function Intelligence() {
             </Select>
           </div>
 
-          {/* Caseload Table */}
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -326,7 +305,7 @@ export default function Intelligence() {
               <CardContent className="py-12 text-center">
                 <Brain className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground">
-                  {metrics.length === 0 
+                  {caseloadRows.length === 0 
                     ? 'No client metrics computed yet. The intelligence engine will populate data automatically.'
                     : 'No clients match your filters.'}
                 </p>
@@ -344,39 +323,47 @@ export default function Intelligence() {
                     <TableHead className="text-center">Goal Velocity</TableHead>
                     <TableHead className="text-center">Parent Impl.</TableHead>
                     <TableHead className="text-center">Fidelity</TableHead>
+                    <TableHead className="text-center">Alerts</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCaseload.map(row => {
-                    const freshness = getFreshnessLabel(row.data_freshness);
+                    const freshness = getFreshnessLabel(row.data_freshness ?? 0);
                     return (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.studentName}</TableCell>
+                      <TableRow key={row.client_id}>
+                        <TableCell className="font-medium">{row.client_name || 'Unknown'}</TableCell>
                         <TableCell className="text-center">
-                          <Badge className={`${getRiskColor(row.risk_score)} text-xs font-mono`}>
-                            {Math.round(row.risk_score)}
+                          <Badge className={`${getRiskColor(row.risk_score ?? 0)} text-xs font-mono`}>
+                            {Math.round(row.risk_score ?? 0)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-1">
-                            {getTrendIcon(row.trend_score)}
-                            <span className="text-xs text-muted-foreground">{getTrendLabel(row.trend_score)}</span>
+                            {getTrendIcon(row.trend_score ?? 0)}
+                            <span className="text-xs text-muted-foreground">{getTrendLabel(row.trend_score ?? 0)}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <span className={`text-sm font-medium ${freshness.color}`}>{freshness.label}</span>
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className="text-sm font-mono">{Math.round(row.goal_velocity_score)}</span>
+                          <span className="text-sm font-mono">{Math.round(row.goal_velocity_score ?? 0)}</span>
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className="text-sm font-mono">{Math.round(row.parent_impl_score)}</span>
+                          <span className="text-sm font-mono">{Math.round(row.parent_impl_score ?? 0)}</span>
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className={`text-sm font-mono ${row.fidelity_score < 80 ? 'text-orange-500' : ''}`}>
-                            {Math.round(row.fidelity_score)}
+                          <span className={`text-sm font-mono ${(row.fidelity_score ?? 100) < 80 ? 'text-orange-500' : ''}`}>
+                            {Math.round(row.fidelity_score ?? 0)}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {(row.open_alert_count ?? 0) > 0 ? (
+                            <Badge variant="destructive" className="text-[10px]">{row.open_alert_count}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/intelligence/clients/${row.client_id}`)}>
@@ -406,45 +393,38 @@ export default function Intelligence() {
               </CardContent>
             </Card>
           ) : (
-            sortedAlerts.map(alert => {
-              const client = students.find(s => s.id === alert.client_id);
-              return (
-                <Card key={alert.id} className={alert.resolved_at ? 'opacity-60' : ''}>
-                  <CardContent className="py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <SeverityBadge severity={alert.severity} />
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">{alert.message}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                            <Badge variant="outline" className="text-[10px]">{alert.category}</Badge>
-                            {client && <span>{client.name}</span>}
-                            <span>{new Date(alert.created_at).toLocaleDateString()}</span>
-                          </div>
+            sortedAlerts.map(alert => (
+              <Card key={alert.alert_id}>
+                <CardContent className="py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <SeverityBadge severity={alert.severity} />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{alert.message}</p>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Badge variant="outline" className="text-[10px]">{alert.category}</Badge>
+                          {alert.client_name && <span>{alert.client_name}</span>}
+                          <span>{new Date(alert.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {alert.resolved_at ? (
-                          <Badge variant="outline" className="text-emerald-500 border-emerald-500">Resolved</Badge>
-                        ) : (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={async () => {
-                              if (!user) return;
-                              const ok = await resolveAlert(alert.id, user.id);
-                              if (ok) toast.success('Alert resolved');
-                            }}
-                          >
-                            Resolve
-                          </Button>
-                        )}
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={async () => {
+                          if (!user) return;
+                          const ok = await resolveAlert(alert.alert_id, user.id);
+                          if (ok) toast.success('Alert resolved');
+                        }}
+                      >
+                        Resolve
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </TabsContent>
 
@@ -456,15 +436,13 @@ export default function Intelligence() {
             </div>
           ) : (
             <>
-              {/* Clinical Tracking KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <KPICard icon={<FileWarning className="w-5 h-5" />} label="Hours At Risk" value={authKpis.hoursAtRisk} variant={authKpis.hoursAtRisk > 0 ? 'warning' : 'default'} />
                 <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring ≤30d" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
                 <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} />
-                <KPICard icon={<Shield className="w-5 h-5" />} label="Low Fidelity" value={kpis.lowFidelity} variant={kpis.lowFidelity > 0 ? 'warning' : 'default'} />
+                <KPICard icon={<Shield className="w-5 h-5" />} label="Off-Track Forecasts" value={authKpis.offTrackForecasts} variant={authKpis.offTrackForecasts > 0 ? 'destructive' : 'default'} />
               </div>
 
-              {/* Authorization Table */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -491,8 +469,8 @@ export default function Intelligence() {
                       </TableHeader>
                       <TableBody>
                         {authorizations.map(auth => (
-                          <TableRow key={auth.id}>
-                            <TableCell className="font-medium">{auth.student_name}</TableCell>
+                          <TableRow key={auth.authorization_id}>
+                            <TableCell className="font-medium">{auth.client_name}</TableCell>
                             <TableCell className="text-xs font-mono text-muted-foreground">{auth.auth_number}</TableCell>
                             <TableCell className="text-center">
                               <span className={auth.days_remaining <= 30 ? 'text-destructive font-semibold' : ''}>
@@ -509,7 +487,7 @@ export default function Intelligence() {
                               </div>
                             </TableCell>
                             <TableCell className="text-center">
-                              <AuthStatusBadge status={auth.status} />
+                              <AuthStatusBadge status={auth.computed_status} />
                             </TableCell>
                           </TableRow>
                         ))}
@@ -539,29 +517,26 @@ export default function Intelligence() {
             </Card>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
-              {recs.map(rec => {
-                const client = students.find(s => s.id === rec.client_id);
-                return (
-                  <Card key={rec.id}>
-                    <CardContent className="py-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{client?.name || 'Client'}</span>
-                        <Badge className="bg-primary/10 text-primary font-mono text-xs">
-                          Score: {Math.round(rec.score)}
-                        </Badge>
-                      </div>
-                      {rec.reasons_json && (
-                        <p className="text-xs text-muted-foreground">
-                          {(rec.reasons_json as any).basis || 'Fit + Evidence + Feasibility'}
-                        </p>
-                      )}
-                      <div className="flex gap-2">
-                        <Badge variant="outline" className="text-[10px]">{rec.status}</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {recs.map(rec => (
+                <Card key={rec.id}>
+                  <CardContent className="py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{rec.client_id}</span>
+                      <Badge className="bg-primary/10 text-primary font-mono text-xs">
+                        Score: {Math.round(rec.score)}
+                      </Badge>
+                    </div>
+                    {rec.reasons_json && (
+                      <p className="text-xs text-muted-foreground">
+                        {(rec.reasons_json as any).basis || 'Fit + Evidence + Feasibility'}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Badge variant="outline" className="text-[10px]">{rec.status}</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </TabsContent>
@@ -570,7 +545,6 @@ export default function Intelligence() {
   );
 }
 
-// KPI Card component
 function KPICard({ icon, label, value, variant = 'default' }: { 
   icon: React.ReactNode; 
   label: string; 
