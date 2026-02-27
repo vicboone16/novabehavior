@@ -1,12 +1,10 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
-   
   LayoutDashboard, 
   Users, 
   FileBarChart, 
   Loader2, 
   ClipboardCheck, 
-  Target, 
   Calendar, 
   GraduationCap, 
   FileCheck,
@@ -25,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { BehaviorManager } from '@/components/BehaviorManager';
+
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
 import { GlobalSearch } from '@/components/GlobalSearch';
@@ -62,7 +60,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/students')) return 'students';
     if (location.pathname.startsWith('/reports')) return 'reports';
     if (location.pathname.startsWith('/assessment')) return 'assessment';
-    if (location.pathname.startsWith('/skills')) return 'skills';
+    
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
@@ -83,9 +81,8 @@ export default function MainLayout() {
       case 'assessment':
         navigate('/assessment');
         break;
-      case 'skills':
-        navigate('/skills');
-        break;
+   
+
       case 'schedule':
         navigate('/schedule');
         break;
@@ -213,13 +210,8 @@ export default function MainLayout() {
                 <ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Assessment
               </TabsTrigger>
-              <TabsTrigger 
-                value="skills" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-              >
-                <Target className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Skills
-              </TabsTrigger>
+
+
               <TabsTrigger 
                 value="reports" 
                 className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
@@ -243,7 +235,7 @@ export default function MainLayout() {
                   Intelligence
                 </TabsTrigger>
               )}
-              <BehaviorManager />
+              
               {canViewNotesReview && (
                 <TabsTrigger 
                   value="notes-review" 
