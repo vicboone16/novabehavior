@@ -54,12 +54,12 @@ export function useClinicalTracking(agencyId: string | null) {
       // Fetch from SQL views in parallel
       const [authRes, forecastRes] = await Promise.all([
         (() => {
-          let q = supabase.from('v_clinical_authorization_summary').select('*');
+          let q = (supabase.from as any)('v_clinical_authorization_summary').select('*');
           if (agencyId !== 'all') q = q.eq('agency_id', agencyId);
           return q;
         })(),
         (() => {
-          let q = supabase.from('v_clinical_hours_forecast').select('*');
+          let q = (supabase.from as any)('v_clinical_hours_forecast').select('*');
           if (agencyId !== 'all') q = q.eq('agency_id', agencyId);
           return q;
         })(),
