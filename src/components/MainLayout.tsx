@@ -202,7 +202,7 @@ export default function MainLayout() {
                 className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Students
+                Clients
               </TabsTrigger>
               <TabsTrigger 
                 value="assessment" 

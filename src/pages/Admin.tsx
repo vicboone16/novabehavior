@@ -614,7 +614,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="students" className="gap-2">
               <UserCog className="w-4 h-4" />
-              <span className="hidden sm:inline">Students</span>
+              <span className="hidden sm:inline">Clients</span>
             </TabsTrigger>
             <TabsTrigger value="roles" className="gap-2">
               <KeyRound className="w-4 h-4" />

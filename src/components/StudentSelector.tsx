@@ -270,7 +270,7 @@ export function StudentSelector() {
           <Tabs defaultValue="students">
             <TabsList className="w-full mb-3">
               <TabsTrigger value="students" className="flex-1">
-                Students
+                Clients
                 {filteredStudents.length > 0 && (
                   <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 h-4">
                     {filteredStudents.length}
@@ -287,12 +287,12 @@ export function StudentSelector() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Students tab */}
+            {/* Clients tab */}
             <TabsContent value="students" className="mt-0">
               <ScrollArea className="h-56">
                 {filteredStudents.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    {searchQuery ? 'No students match your search.' : 'All accessible students are already in the session.'}
+                    {searchQuery ? 'No clients match your search.' : 'All accessible clients are already in the session.'}
                   </p>
                 ) : (
                   <div className="space-y-1">
