@@ -1993,6 +1993,7 @@ export type Database = {
       ci_alerts: {
         Row: {
           agency_id: string
+          alert_key: string | null
           category: string
           client_id: string | null
           created_at: string
@@ -2006,6 +2007,7 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          alert_key?: string | null
           category?: string
           client_id?: string | null
           created_at?: string
@@ -2019,6 +2021,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          alert_key?: string | null
           category?: string
           client_id?: string | null
           created_at?: string
@@ -11897,6 +11900,18 @@ export type Database = {
       check_pin_rate_limit: {
         Args: { _email: string; _ip_address: string }
         Returns: boolean
+      }
+      ci_refresh_alerts: {
+        Args: { _agency_id?: string; _data_source_id?: string }
+        Returns: number
+      }
+      ci_refresh_all: {
+        Args: { _agency_id?: string; _data_source_id?: string }
+        Returns: Json
+      }
+      ci_refresh_metrics: {
+        Args: { _agency_id?: string; _data_source_id?: string }
+        Returns: number
       }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
       compute_distance_miles: {
