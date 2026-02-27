@@ -12583,40 +12583,55 @@ export type Database = {
       }
       clients: {
         Row: {
+          activation_status: string | null
           active: boolean | null
-          age_years: number | null
           agency_id: string | null
+          case_closed_date: string | null
+          case_opened_date: string | null
           client_id: string | null
-          communication_level: string | null
-          diagnosis_cluster: string | null
+          created_at: string | null
+          district_name: string | null
           first_name: string | null
           full_name: string | null
+          grade: string | null
           last_name: string | null
           primary_setting: string | null
+          school_name: string | null
+          updated_at: string | null
         }
         Insert: {
+          activation_status?: string | null
           active?: never
-          age_years?: never
           agency_id?: string | null
+          case_closed_date?: string | null
+          case_opened_date?: string | null
           client_id?: string | null
-          communication_level?: never
-          diagnosis_cluster?: never
+          created_at?: string | null
+          district_name?: string | null
           first_name?: string | null
           full_name?: never
+          grade?: string | null
           last_name?: string | null
           primary_setting?: string | null
+          school_name?: string | null
+          updated_at?: string | null
         }
         Update: {
+          activation_status?: string | null
           active?: never
-          age_years?: never
           agency_id?: string | null
+          case_closed_date?: string | null
+          case_opened_date?: string | null
           client_id?: string | null
-          communication_level?: never
-          diagnosis_cluster?: never
+          created_at?: string | null
+          district_name?: string | null
           first_name?: string | null
           full_name?: never
+          grade?: string | null
           last_name?: string | null
           primary_setting?: string | null
+          school_name?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
