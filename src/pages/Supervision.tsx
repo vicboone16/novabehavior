@@ -36,8 +36,8 @@ export default function Supervision() {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-lg font-bold text-foreground">Supervision Tracking</h1>
-                <p className="text-xs text-muted-foreground">BCBA/RBT supervision logs & compliance</p>
+              <h1 className="text-lg font-bold text-foreground">Trainee Supervision</h1>
+                <p className="text-xs text-muted-foreground">BCBA fieldwork tracking, forms & attestations</p>
               </div>
             </div>
             <Button onClick={() => setShowLogDialog(true)} className="gap-2">

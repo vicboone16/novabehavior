@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useAgencyContext } from '@/hooks/useAgencyContext';
 
 export interface CIAccess {
   hasCIDAccess: boolean;
@@ -23,7 +22,6 @@ export function useClinicalIntelligenceAccess(): CIAccess {
 
     const check = async () => {
       try {
-        // Super admins always have access
         if (userRole === 'super_admin') {
           setHasCIDAccess(true);
           setHasCrossAgency(true);
@@ -31,7 +29,6 @@ export function useClinicalIntelligenceAccess(): CIAccess {
           return;
         }
 
-        // Check user-level override
         const { data: userFlags } = await supabase
           .from('user_feature_flags')
           .select('cid_enabled, cross_agency_analytics')
@@ -52,7 +49,6 @@ export function useClinicalIntelligenceAccess(): CIAccess {
           return;
         }
 
-        // Fall back to agency default
         const { data: memberships } = await supabase
           .from('agency_memberships')
           .select('agency_id')
@@ -124,17 +120,24 @@ export interface CIInterventionRec {
   created_at: string;
 }
 
+/**
+ * agencyId: string = filter to that agency
+ * agencyId: 'all' = fetch all agencies (cross-agency mode)
+ * agencyId: null = return empty (no scope selected)
+ */
 export function useCICaseloadMetrics(agencyId: string | null) {
   const [metrics, setMetrics] = useState<ClientMetrics[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
-    if (!agencyId) { setLoading(false); return; }
+  const fetchMetrics = useCallback(async () => {
+    if (!agencyId) { setMetrics([]); setLoading(false); return; }
     try {
-      const { data, error } = await supabase
-        .from('ci_client_metrics')
-        .select('*')
-        .eq('agency_id', agencyId);
+      setLoading(true);
+      let query = supabase.from('ci_client_metrics').select('*');
+      if (agencyId !== 'all') {
+        query = query.eq('agency_id', agencyId);
+      }
+      const { data, error } = await query;
       if (!error && data) setMetrics(data as unknown as ClientMetrics[]);
     } catch (err) {
       console.error('[CI] Error fetching metrics:', err);
@@ -143,23 +146,24 @@ export function useCICaseloadMetrics(agencyId: string | null) {
     }
   }, [agencyId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
-  return { metrics, loading, refresh: fetch };
+  return { metrics, loading, refresh: fetchMetrics };
 }
 
 export function useCIAlerts(agencyId: string | null) {
   const [alerts, setAlerts] = useState<CIAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
-    if (!agencyId) { setLoading(false); return; }
+  const fetchAlerts = useCallback(async () => {
+    if (!agencyId) { setAlerts([]); setLoading(false); return; }
     try {
-      const { data, error } = await supabase
-        .from('ci_alerts')
-        .select('*')
-        .eq('agency_id', agencyId)
-        .order('created_at', { ascending: false });
+      setLoading(true);
+      let query = supabase.from('ci_alerts').select('*').order('created_at', { ascending: false });
+      if (agencyId !== 'all') {
+        query = query.eq('agency_id', agencyId);
+      }
+      const { data, error } = await query;
       if (!error && data) setAlerts(data as unknown as CIAlert[]);
     } catch (err) {
       console.error('[CI] Error fetching alerts:', err);
@@ -168,7 +172,7 @@ export function useCIAlerts(agencyId: string | null) {
     }
   }, [agencyId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
   const resolveAlert = async (alertId: string, userId: string) => {
     const { error } = await supabase
@@ -181,7 +185,7 @@ export function useCIAlerts(agencyId: string | null) {
     return !error;
   };
 
-  return { alerts, loading, refresh: fetch, resolveAlert };
+  return { alerts, loading, refresh: fetchAlerts, resolveAlert };
 }
 
 export function useCIInterventionRecs(agencyId: string | null, clientId?: string) {
@@ -189,14 +193,17 @@ export function useCIInterventionRecs(agencyId: string | null, clientId?: string
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!agencyId) { setLoading(false); return; }
+    if (!agencyId) { setRecs([]); setLoading(false); return; }
     const fetchRecs = async () => {
+      setLoading(true);
       let query = supabase
         .from('ci_intervention_recs')
         .select('*')
-        .eq('agency_id', agencyId)
         .order('score', { ascending: false });
       
+      if (agencyId !== 'all') {
+        query = query.eq('agency_id', agencyId);
+      }
       if (clientId) query = query.eq('client_id', clientId);
       
       const { data, error } = await query;

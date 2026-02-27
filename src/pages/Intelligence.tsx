@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Brain, AlertTriangle, TrendingUp, TrendingDown, Minus, 
   Shield, Activity, Users, Clock, Target, Heart, 
-  ChevronRight, CheckCircle2, XCircle, Filter, Search
+  ChevronRight, CheckCircle2, XCircle, Search,
+  Building2, CalendarClock, FileWarning
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -15,6 +16,7 @@ import {
   type ClientMetrics,
   type CIAlert
 } from '@/hooks/useClinicalIntelligence';
+import { useClinicalTracking } from '@/hooks/useClinicalTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
@@ -68,16 +71,51 @@ function SeverityBadge({ severity }: { severity: string }) {
   );
 }
 
+function AuthStatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    on_track: 'bg-emerald-500 text-white',
+    at_risk: 'bg-orange-500 text-white',
+    critical: 'bg-destructive text-destructive-foreground',
+    expired: 'bg-muted text-muted-foreground',
+  };
+  const labels: Record<string, string> = {
+    on_track: 'On Track',
+    at_risk: 'At Risk',
+    critical: 'Critical',
+    expired: 'Expired',
+  };
+  return <Badge className={`${colors[status] || 'bg-muted'} text-xs`}>{labels[status] || status}</Badge>;
+}
+
 export default function Intelligence() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentAgency } = useAgencyContext();
-  const { hasCIDAccess, loading: accessLoading } = useClinicalIntelligenceAccess();
-  const agencyId = currentAgency?.id || null;
+  const { currentAgency, agencies } = useAgencyContext();
+  const { hasCIDAccess, hasCrossAgency, loading: accessLoading } = useClinicalIntelligenceAccess();
   
-  const { metrics, loading: metricsLoading } = useCICaseloadMetrics(agencyId);
-  const { alerts, loading: alertsLoading, resolveAlert } = useCIAlerts(agencyId);
-  const { recs, loading: recsLoading } = useCIInterventionRecs(agencyId);
+  // Agency scope: 'all' for cross-agency, specific ID otherwise
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>(() => {
+    return hasCrossAgency ? 'all' : (currentAgency?.id || '');
+  });
+
+  // Resolve effective agency ID for queries
+  const effectiveAgencyId = useMemo(() => {
+    if (selectedAgencyId === 'all' && hasCrossAgency) return 'all';
+    if (selectedAgencyId && selectedAgencyId !== 'all') return selectedAgencyId;
+    return currentAgency?.id || null;
+  }, [selectedAgencyId, hasCrossAgency, currentAgency?.id]);
+
+  // Update default when access info loads
+  useState(() => {
+    if (!accessLoading && hasCrossAgency && !selectedAgencyId) {
+      setSelectedAgencyId('all');
+    }
+  });
+  
+  const { metrics, loading: metricsLoading } = useCICaseloadMetrics(effectiveAgencyId);
+  const { alerts, loading: alertsLoading, resolveAlert } = useCIAlerts(effectiveAgencyId);
+  const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
+  const { authorizations, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
   
   const students = useDataStore(s => s.students);
   
@@ -85,6 +123,14 @@ export default function Intelligence() {
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [trendFilter, setTrendFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('caseload');
+
+  // Agency display name
+  const agencyDisplayName = useMemo(() => {
+    if (selectedAgencyId === 'all') return 'All Agencies';
+    const membership = agencies.find(a => a.agency_id === selectedAgencyId);
+    if (membership) return membership.agency.name;
+    return currentAgency?.name || 'Agency';
+  }, [selectedAgencyId, agencies, currentAgency]);
 
   // Build enriched caseload data
   const caseloadData = useMemo(() => {
@@ -168,31 +214,50 @@ export default function Intelligence() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with Agency Selector */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Brain className="w-7 h-7 text-primary" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Clinical Intelligence</h1>
             <p className="text-sm text-muted-foreground">
-              {currentAgency?.name || 'Agency'} — Caseload Command Center
+              {agencyDisplayName} — Caseload Command Center
             </p>
           </div>
         </div>
-        {kpis.openAlerts > 0 && (
-          <Badge variant="destructive" className="text-sm px-3 py-1">
-            {kpis.openAlerts} Open Alert{kpis.openAlerts !== 1 ? 's' : ''}
-          </Badge>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Agency Selector */}
+          <Select value={selectedAgencyId || currentAgency?.id || ''} onValueChange={setSelectedAgencyId}>
+            <SelectTrigger className="w-[220px]">
+              <Building2 className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Select Agency" />
+            </SelectTrigger>
+            <SelectContent>
+              {hasCrossAgency && (
+                <SelectItem value="all">All Agencies (Global)</SelectItem>
+              )}
+              {agencies.map(m => (
+                <SelectItem key={m.agency_id} value={m.agency_id}>
+                  {m.agency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {kpis.openAlerts > 0 && (
+            <Badge variant="destructive" className="text-sm px-3 py-1">
+              {kpis.openAlerts} Open Alert{kpis.openAlerts !== 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="My Clients" value={kpis.total} />
+        <KPICard icon={<Users className="w-5 h-5" />} label="Total Clients" value={kpis.total} />
         <KPICard icon={<AlertTriangle className="w-5 h-5" />} label="High Risk" value={kpis.highRisk} variant={kpis.highRisk > 0 ? 'destructive' : 'default'} />
         <KPICard icon={<Clock className="w-5 h-5" />} label="Stale Data" value={kpis.staleData} variant={kpis.staleData > 0 ? 'warning' : 'default'} />
-        <KPICard icon={<Shield className="w-5 h-5" />} label="Low Fidelity" value={kpis.lowFidelity} variant={kpis.lowFidelity > 0 ? 'warning' : 'default'} />
-        <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} />
+        <KPICard icon={<FileWarning className="w-5 h-5" />} label="Hours At Risk" value={authKpis.hoursAtRisk} variant={authKpis.hoursAtRisk > 0 ? 'warning' : 'default'} />
+        <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
@@ -205,6 +270,10 @@ export default function Intelligence() {
             {kpis.openAlerts > 0 && (
               <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5 py-0">{kpis.openAlerts}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="clinical-tracking">
+            <CalendarClock className="w-4 h-4 mr-1" />
+            Clinical Tracking
           </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
@@ -376,6 +445,80 @@ export default function Intelligence() {
                 </Card>
               );
             })
+          )}
+        </TabsContent>
+
+        {/* Clinical Tracking Tab */}
+        <TabsContent value="clinical-tracking" className="space-y-4">
+          {authLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              {/* Clinical Tracking KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <KPICard icon={<FileWarning className="w-5 h-5" />} label="Hours At Risk" value={authKpis.hoursAtRisk} variant={authKpis.hoursAtRisk > 0 ? 'warning' : 'default'} />
+                <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring ≤30d" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} />
+                <KPICard icon={<Shield className="w-5 h-5" />} label="Low Fidelity" value={kpis.lowFidelity} variant={kpis.lowFidelity > 0 ? 'warning' : 'default'} />
+              </div>
+
+              {/* Authorization Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CalendarClock className="w-4 h-4" />
+                    Authorization Utilization
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {authorizations.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No active authorizations found for the selected agency scope.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Client</TableHead>
+                          <TableHead>Auth #</TableHead>
+                          <TableHead className="text-center">Days Left</TableHead>
+                          <TableHead className="text-center">Units Used</TableHead>
+                          <TableHead className="text-center">Utilization</TableHead>
+                          <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {authorizations.map(auth => (
+                          <TableRow key={auth.id}>
+                            <TableCell className="font-medium">{auth.student_name}</TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">{auth.auth_number}</TableCell>
+                            <TableCell className="text-center">
+                              <span className={auth.days_remaining <= 30 ? 'text-destructive font-semibold' : ''}>
+                                {auth.days_remaining}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-mono text-sm">{auth.units_used} / {auth.units_approved}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center gap-2">
+                                <Progress value={auth.pct_used} className="h-2 w-20" />
+                                <span className="text-xs text-muted-foreground">{auth.pct_used}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <AuthStatusBadge status={auth.status} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </>
           )}
         </TabsContent>
 
