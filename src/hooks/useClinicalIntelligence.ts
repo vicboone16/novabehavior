@@ -80,7 +80,38 @@ export function useClinicalIntelligenceAccess(): CIAccess {
   return { hasCIDAccess, hasCrossAgency, loading };
 }
 
-// Metrics types
+// Caseload feed row from v_ci_caseload_feed view
+export interface CaseloadFeedRow {
+  client_id: string;
+  agency_id: string;
+  client_name: string;
+  risk_score: number;
+  trend_score: number;
+  data_freshness: number;
+  fidelity_score: number;
+  goal_velocity_score: number;
+  parent_impl_score: number;
+  metrics_updated_at: string;
+  open_alert_count: number;
+}
+
+// Alert feed row from v_ci_alert_feed view
+export interface AlertFeedRow {
+  alert_id: string;
+  agency_id: string;
+  client_id: string | null;
+  client_name: string | null;
+  category: string;
+  severity: 'critical' | 'action' | 'watch' | 'high' | 'medium' | 'info';
+  message: string;
+  explanation_json: Record<string, any>;
+  alert_key: string;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+}
+
+// Legacy types kept for backward compat
 export interface ClientMetrics {
   id: string;
   client_id: string;
@@ -121,10 +152,75 @@ export interface CIInterventionRec {
 }
 
 /**
- * agencyId: string = filter to that agency
- * agencyId: 'all' = fetch all agencies (cross-agency mode)
- * agencyId: null = return empty (no scope selected)
+ * Fetch caseload via v_ci_caseload_feed view (includes client_name + open_alert_count).
  */
+export function useCICaseloadFeed(agencyId: string | null) {
+  const [rows, setRows] = useState<CaseloadFeedRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetch = useCallback(async () => {
+    if (!agencyId) { setRows([]); setLoading(false); return; }
+    try {
+      setLoading(true);
+      let query = supabase.from('v_ci_caseload_feed').select('*');
+      if (agencyId !== 'all') {
+        query = query.eq('agency_id', agencyId);
+      }
+      const { data, error } = await query;
+      if (!error && data) setRows(data as unknown as CaseloadFeedRow[]);
+    } catch (err) {
+      console.error('[CI] Error fetching caseload feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  return { rows, loading, refresh: fetch };
+}
+
+/**
+ * Fetch alerts via v_ci_alert_feed view (includes client_name, only unresolved).
+ */
+export function useCIAlertFeed(agencyId: string | null) {
+  const [alerts, setAlerts] = useState<AlertFeedRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAlerts = useCallback(async () => {
+    if (!agencyId) { setAlerts([]); setLoading(false); return; }
+    try {
+      setLoading(true);
+      let query = supabase.from('v_ci_alert_feed').select('*').order('created_at', { ascending: false });
+      if (agencyId !== 'all') {
+        query = query.eq('agency_id', agencyId);
+      }
+      const { data, error } = await query;
+      if (!error && data) setAlerts(data as unknown as AlertFeedRow[]);
+    } catch (err) {
+      console.error('[CI] Error fetching alert feed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [agencyId]);
+
+  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+
+  const resolveAlert = async (alertId: string, userId: string) => {
+    const { error } = await supabase
+      .from('ci_alerts')
+      .update({ resolved_at: new Date().toISOString(), resolved_by: userId } as any)
+      .eq('id', alertId);
+    if (!error) {
+      setAlerts(prev => prev.filter(a => a.alert_id !== alertId));
+    }
+    return !error;
+  };
+
+  return { alerts, loading, refresh: fetchAlerts, resolveAlert };
+}
+
+// Keep legacy hooks for backward compatibility (ClientDrilldown, etc.)
 export function useCICaseloadMetrics(agencyId: string | null) {
   const [metrics, setMetrics] = useState<ClientMetrics[]>([]);
   const [loading, setLoading] = useState(true);
