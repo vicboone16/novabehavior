@@ -39,6 +39,7 @@ import LMS from "./pages/LMS";
 import NotFound from "./pages/NotFound";
 import IEPLibrary from "./pages/IEPLibrary";
 import ClinicalLibrary from "./pages/ClinicalLibrary";
+import Intelligence from "./pages/Intelligence";
 import { StaffProfilePage } from "./components/staff-profile";
  import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
  import PayerDetailPage from "./pages/payers/PayerDetailPage";
@@ -286,6 +287,7 @@ const App = () => {
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/notes-review" element={<NotesReview />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
+              <Route path="/intelligence" element={<Intelligence />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

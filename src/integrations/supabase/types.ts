@@ -282,6 +282,76 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_data_sources: {
+        Row: {
+          agency_id: string
+          config_json: Json
+          created_at: string
+          display_name: string
+          id: string
+          source_type: string
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          config_json?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          source_type?: string
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          config_json?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          source_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_data_sources_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_feature_flags: {
+        Row: {
+          agency_id: string
+          auto_narratives_default: boolean
+          cid_enabled_default: boolean
+          intervention_engine_default: boolean
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          auto_narratives_default?: boolean
+          cid_enabled_default?: boolean
+          intervention_engine_default?: boolean
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          auto_narratives_default?: boolean
+          cid_enabled_default?: boolean
+          intervention_engine_default?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_feature_flags_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_locations: {
         Row: {
           address_line1: string | null
@@ -1916,6 +1986,177 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ci_alerts: {
+        Row: {
+          agency_id: string
+          category: string
+          client_id: string | null
+          created_at: string
+          data_source_id: string | null
+          explanation_json: Json | null
+          id: string
+          message: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+        }
+        Insert: {
+          agency_id: string
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          data_source_id?: string | null
+          explanation_json?: Json | null
+          id?: string
+          message: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Update: {
+          agency_id?: string
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          data_source_id?: string | null
+          explanation_json?: Json | null
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_alerts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ci_client_metrics: {
+        Row: {
+          agency_id: string
+          client_id: string
+          data_freshness: number | null
+          data_source_id: string | null
+          fidelity_score: number | null
+          goal_velocity_score: number | null
+          id: string
+          parent_impl_score: number | null
+          risk_score: number | null
+          trend_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          data_freshness?: number | null
+          data_source_id?: string | null
+          fidelity_score?: number | null
+          goal_velocity_score?: number | null
+          id?: string
+          parent_impl_score?: number | null
+          risk_score?: number | null
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          data_freshness?: number | null
+          data_source_id?: string | null
+          fidelity_score?: number | null
+          goal_velocity_score?: number | null
+          id?: string
+          parent_impl_score?: number | null
+          risk_score?: number | null
+          trend_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_metrics_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ci_intervention_recs: {
+        Row: {
+          agency_id: string
+          behavior_id: string | null
+          client_id: string
+          created_at: string
+          data_source_id: string | null
+          hypothesis_id: string | null
+          id: string
+          intervention_id: string | null
+          reasons_json: Json | null
+          score: number | null
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          behavior_id?: string | null
+          client_id: string
+          created_at?: string
+          data_source_id?: string | null
+          hypothesis_id?: string | null
+          id?: string
+          intervention_id?: string | null
+          reasons_json?: Json | null
+          score?: number | null
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          behavior_id?: string | null
+          client_id?: string
+          created_at?: string
+          data_source_id?: string | null
+          hypothesis_id?: string | null
+          id?: string
+          intervention_id?: string | null
+          reasons_json?: Json | null
+          score?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_intervention_recs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -4727,6 +4968,74 @@ export type Database = {
           },
         ]
       }
+      external_id_map: {
+        Row: {
+          created_at: string
+          data_source_id: string
+          external_id: string
+          external_type: string
+          id: string
+          internal_uuid: string
+        }
+        Insert: {
+          created_at?: string
+          data_source_id: string
+          external_id: string
+          external_type: string
+          id?: string
+          internal_uuid: string
+        }
+        Update: {
+          created_at?: string
+          data_source_id?: string
+          external_id?: string
+          external_type?: string
+          id?: string
+          internal_uuid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_id_map_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "agency_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flag_audit: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          target_agency_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          target_agency_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          target_agency_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       feature_permissions: {
         Row: {
           activity_tracking: boolean | null
@@ -5619,6 +5928,47 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_jobs: {
+        Row: {
+          created_at: string
+          data_source_id: string
+          ended_at: string | null
+          error_json: Json | null
+          id: string
+          started_at: string | null
+          stats_json: Json | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          data_source_id: string
+          ended_at?: string | null
+          error_json?: Json | null
+          id?: string
+          started_at?: string | null
+          stats_json?: Json | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          data_source_id?: string
+          ended_at?: string | null
+          error_json?: Json | null
+          id?: string
+          started_at?: string | null
+          stats_json?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_jobs_data_source_id_fkey"
+            columns: ["data_source_id"]
+            isOneToOne: false
+            referencedRelation: "agency_data_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -11134,6 +11484,33 @@ export type Database = {
           },
         ]
       }
+      user_feature_flags: {
+        Row: {
+          auto_narratives_enabled: boolean | null
+          cid_enabled: boolean | null
+          cross_agency_analytics: boolean
+          intervention_engine_access: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_narratives_enabled?: boolean | null
+          cid_enabled?: boolean | null
+          cross_agency_analytics?: boolean
+          intervention_engine_access?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_narratives_enabled?: boolean | null
+          cid_enabled?: boolean | null
+          cross_agency_analytics?: boolean
+          intervention_engine_access?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -11525,6 +11902,11 @@ export type Database = {
       compute_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
+      }
+      effective_cid_access: { Args: { _user_id: string }; Returns: boolean }
+      effective_cross_agency_access: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
