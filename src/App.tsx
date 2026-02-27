@@ -47,6 +47,9 @@ import { StaffProfilePage } from "./components/staff-profile";
  import PayerDetailPage from "./pages/payers/PayerDetailPage";
  import ServiceDetailPage from "./pages/payers/ServiceDetailPage";
 import { toast } from "sonner";
+import { useBackendGuard } from "@/hooks/useBackendGuard";
+import { BackendGuardScreen } from "@/components/BackendGuardScreen";
+import Diagnostics from "./pages/Diagnostics";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +61,8 @@ let lastUnhandledRejectionKey = '';
 let lastUnhandledRejectionAt = 0;
 
 const App = () => {
+  const backendGuard = useBackendGuard();
+
   // Global unhandled rejection handler for defensive error handling
   useEffect(() => {
     const handleRejection = (event: PromiseRejectionEvent) => {
@@ -95,6 +100,11 @@ const App = () => {
     window.addEventListener("unhandledrejection", handleRejection);
     return () => window.removeEventListener("unhandledrejection", handleRejection);
   }, []);
+
+  // Block UI until backend handshake passes
+  if (backendGuard.status === 'checking' || backendGuard.status !== 'ok') {
+    return <BackendGuardScreen guard={backendGuard} />;
+  }
 
   return (
   <QueryClientProvider client={queryClient}>
@@ -292,6 +302,7 @@ const App = () => {
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
+              <Route path="/diagnostics" element={<Diagnostics />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

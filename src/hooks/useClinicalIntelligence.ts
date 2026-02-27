@@ -162,7 +162,7 @@ export function useCICaseloadFeed(agencyId: string | null) {
     if (!agencyId) { setRows([]); setLoading(false); return; }
     try {
       setLoading(true);
-      let query = supabase.from('v_ci_caseload_feed').select('*');
+      let query = (supabase.from as any)('v_ci_caseload_feed').select('*');
       if (agencyId !== 'all') {
         query = query.eq('agency_id', agencyId);
       }
@@ -191,7 +191,7 @@ export function useCIAlertFeed(agencyId: string | null) {
     if (!agencyId) { setAlerts([]); setLoading(false); return; }
     try {
       setLoading(true);
-      let query = supabase.from('v_ci_alert_feed').select('*').order('created_at', { ascending: false });
+      let query = (supabase.from as any)('v_ci_alert_feed').select('*').order('created_at', { ascending: false });
       if (agencyId !== 'all') {
         query = query.eq('agency_id', agencyId);
       }
