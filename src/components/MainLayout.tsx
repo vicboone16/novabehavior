@@ -36,6 +36,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsDeviceMobile } from '@/hooks/use-mobile';
 import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
+import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
+import { Brain } from 'lucide-react';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -45,6 +47,7 @@ export default function MainLayout() {
   const isDeviceMobile = useIsDeviceMobile();
   const { preference, setMobilePreference } = useMobilePreference();
   const featurePerms = useFeaturePermissions();
+  const { hasCIDAccess } = useClinicalIntelligenceAccess();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
@@ -60,6 +63,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/skills')) return 'skills';
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
+    if (location.pathname.startsWith('/intelligence')) return 'intelligence';
     return 'dashboard';
   };
 
@@ -85,6 +89,9 @@ export default function MainLayout() {
         break;
       case 'notes-review':
         navigate('/notes-review');
+        break;
+      case 'intelligence':
+        navigate('/intelligence');
         break;
     }
   };
@@ -225,6 +232,15 @@ export default function MainLayout() {
                 <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Schedule
               </TabsTrigger>
+              {hasCIDAccess && (
+                <TabsTrigger 
+                  value="intelligence" 
+                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  <Brain className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  Intelligence
+                </TabsTrigger>
+              )}
               <BehaviorManager />
               {canViewNotesReview && (
                 <TabsTrigger 
