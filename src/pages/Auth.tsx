@@ -144,7 +144,7 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-primary">Student Behavior Tracker</h1>
+          <h1 className="text-3xl font-bold text-foreground">Student Behavior Tracker</h1>
           <p className="text-muted-foreground">Track, analyze, and improve student behaviors</p>
         </div>
 
