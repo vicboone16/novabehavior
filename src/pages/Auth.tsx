@@ -202,14 +202,14 @@ export default function Auth() {
                   </CardContent>
                   <CardFooter className="flex-col gap-3">
                     <div className="flex gap-2 w-full">
-                      <Button type="submit" className="flex-1" disabled={isLoading}>
+                      <Button type="submit" className="flex-1 text-foreground" disabled={isLoading}>
                         {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                         Sign In
                       </Button>
                       <Button 
                         type="button" 
                         variant="secondary" 
-                        className="flex-1" 
+                        className="flex-1 text-foreground" 
                         disabled={isLoading}
                         onClick={(e) => handleLogin(e as unknown as React.FormEvent, true)}
                       >
