@@ -289,7 +289,7 @@ export default function Students() {
                     {student.caseTypes && student.caseTypes.length > 0 && (
                       <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                         {student.caseTypes.map((caseType) => (
-                          <Badge key={caseType} variant="secondary" className="text-xs">
+                          <Badge key={caseType} variant="outline" className="text-xs text-muted-foreground border-secondary/40 bg-secondary/10">
                             {caseTypeLabels[caseType]}
                           </Badge>
                         ))}

@@ -152,7 +152,7 @@ export interface CIInterventionRec {
 }
 
 /**
- * Fetch caseload via v_ci_caseload_feed view (includes client_name + open_alert_count).
+ * Fetch caseload from ci_client_metrics + students join (fallback since v_ci_caseload_feed view may not exist).
  */
 export function useCICaseloadFeed(agencyId: string | null) {
   const [rows, setRows] = useState<CaseloadFeedRow[]>([]);
@@ -162,12 +162,72 @@ export function useCICaseloadFeed(agencyId: string | null) {
     if (!agencyId) { setRows([]); setLoading(false); return; }
     try {
       setLoading(true);
+      
+      // Try the view first
       let query = (supabase.from as any)('v_ci_caseload_feed').select('*');
       if (agencyId !== 'all') {
         query = query.eq('agency_id', agencyId);
       }
       const { data, error } = await query;
-      if (!error && data) setRows(data as unknown as CaseloadFeedRow[]);
+      
+      if (!error && data) {
+        setRows(data as unknown as CaseloadFeedRow[]);
+      } else {
+        // Fallback: query ci_client_metrics directly and join student names
+        let metricsQuery = supabase.from('ci_client_metrics').select('*');
+        if (agencyId !== 'all') {
+          metricsQuery = metricsQuery.eq('agency_id', agencyId);
+        }
+        const { data: metricsData } = await metricsQuery;
+        
+        if (metricsData && metricsData.length > 0) {
+          // Fetch student names for each client
+          const clientIds = (metricsData as any[]).map((m: any) => m.client_id);
+          const { data: studentsData } = await supabase
+            .from('students')
+            .select('id, first_name, last_name')
+            .in('id', clientIds);
+          
+          const nameMap = new Map<string, string>();
+          if (studentsData) {
+            for (const s of studentsData as any[]) {
+              nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+            }
+          }
+
+          // Count open alerts per client
+          let alertsQuery = supabase.from('ci_alerts').select('client_id').is('resolved_at', null);
+          if (agencyId !== 'all') {
+            alertsQuery = alertsQuery.eq('agency_id', agencyId);
+          }
+          const { data: alertsData } = await alertsQuery;
+          const alertCounts = new Map<string, number>();
+          if (alertsData) {
+            for (const a of alertsData as any[]) {
+              if (a.client_id) {
+                alertCounts.set(a.client_id, (alertCounts.get(a.client_id) || 0) + 1);
+              }
+            }
+          }
+          
+          const mapped: CaseloadFeedRow[] = (metricsData as any[]).map((m: any) => ({
+            client_id: m.client_id,
+            agency_id: m.agency_id,
+            client_name: nameMap.get(m.client_id) || 'Unknown',
+            risk_score: m.risk_score ?? 0,
+            trend_score: m.trend_score ?? 0,
+            data_freshness: m.data_freshness ?? 0,
+            fidelity_score: m.fidelity_score ?? 0,
+            goal_velocity_score: m.goal_velocity_score ?? 0,
+            parent_impl_score: m.parent_impl_score ?? 0,
+            metrics_updated_at: m.updated_at,
+            open_alert_count: alertCounts.get(m.client_id) || 0,
+          }));
+          setRows(mapped);
+        } else {
+          setRows([]);
+        }
+      }
     } catch (err) {
       console.error('[CI] Error fetching caseload feed:', err);
     } finally {
@@ -181,7 +241,7 @@ export function useCICaseloadFeed(agencyId: string | null) {
 }
 
 /**
- * Fetch alerts via v_ci_alert_feed view (includes client_name, only unresolved).
+ * Fetch alerts from ci_alerts + students join (fallback since v_ci_alert_feed view may not exist).
  */
 export function useCIAlertFeed(agencyId: string | null) {
   const [alerts, setAlerts] = useState<AlertFeedRow[]>([]);
@@ -191,12 +251,56 @@ export function useCIAlertFeed(agencyId: string | null) {
     if (!agencyId) { setAlerts([]); setLoading(false); return; }
     try {
       setLoading(true);
+      
+      // Try view first
       let query = (supabase.from as any)('v_ci_alert_feed').select('*').order('created_at', { ascending: false });
       if (agencyId !== 'all') {
         query = query.eq('agency_id', agencyId);
       }
       const { data, error } = await query;
-      if (!error && data) setAlerts(data as unknown as AlertFeedRow[]);
+      
+      if (!error && data) {
+        setAlerts(data as unknown as AlertFeedRow[]);
+      } else {
+        // Fallback: query ci_alerts directly
+        let alertsQuery = supabase.from('ci_alerts').select('*').is('resolved_at', null).order('created_at', { ascending: false });
+        if (agencyId !== 'all') {
+          alertsQuery = alertsQuery.eq('agency_id', agencyId);
+        }
+        const { data: alertsData } = await alertsQuery;
+        
+        if (alertsData && alertsData.length > 0) {
+          // Get client names
+          const clientIds = (alertsData as any[]).filter((a: any) => a.client_id).map((a: any) => a.client_id);
+          const nameMap = new Map<string, string>();
+          if (clientIds.length > 0) {
+            const { data: studentsData } = await supabase.from('students').select('id, first_name, last_name').in('id', clientIds);
+            if (studentsData) {
+              for (const s of studentsData as any[]) {
+                nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+              }
+            }
+          }
+          
+          const mapped: AlertFeedRow[] = (alertsData as any[]).map((a: any) => ({
+            alert_id: a.id,
+            agency_id: a.agency_id,
+            client_id: a.client_id,
+            client_name: a.client_id ? (nameMap.get(a.client_id) || null) : null,
+            category: a.category,
+            severity: a.severity,
+            message: a.message,
+            explanation_json: a.explanation_json || {},
+            alert_key: a.alert_key || '',
+            created_at: a.created_at,
+            resolved_at: a.resolved_at,
+            resolved_by: a.resolved_by,
+          }));
+          setAlerts(mapped);
+        } else {
+          setAlerts([]);
+        }
+      }
     } catch (err) {
       console.error('[CI] Error fetching alert feed:', err);
     } finally {

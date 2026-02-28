@@ -191,21 +191,21 @@ export default function MainLayout() {
             <TabsList className="h-10 md:h-12 bg-transparent border-none w-max min-w-full flex">
               <TabsTrigger 
                 value="dashboard" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
               >
                 <LayoutDashboard className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Dashboard
               </TabsTrigger>
               <TabsTrigger 
                 value="students" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
               >
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 {entityLabel.plural}
               </TabsTrigger>
               <TabsTrigger 
                 value="assessment" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
               >
                 <ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Assessment
@@ -214,14 +214,14 @@ export default function MainLayout() {
 
               <TabsTrigger 
                 value="reports" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
               >
                 <FileBarChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Reports
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
               >
                 <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Schedule
@@ -229,7 +229,7 @@ export default function MainLayout() {
               {hasCIDAccess && (
                 <TabsTrigger 
                   value="intelligence" 
-                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
                 >
                   <Brain className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   Intelligence
@@ -239,7 +239,7 @@ export default function MainLayout() {
               {canViewNotesReview && (
                 <TabsTrigger 
                   value="notes-review" 
-                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
                 >
                   <FileCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   Notes Review
