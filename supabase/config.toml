@@ -17,3 +17,15 @@ verify_jwt = false
 
 [functions.send-telehealth-link]
 verify_jwt = false
+
+[functions.esign-boldsign-send]
+verify_jwt = false
+
+[functions.esign-boldsign-embedded-link]
+verify_jwt = false
+
+[functions.esign-boldsign-webhook]
+verify_jwt = false
+
+[functions.esign-boldsign-download]
+verify_jwt = false

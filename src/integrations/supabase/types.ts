@@ -5525,6 +5525,233 @@ export type Database = {
           },
         ]
       }
+      esign_audit_log: {
+        Row: {
+          created_at: string
+          envelope_id: string | null
+          event_created_at: string | null
+          event_type: string
+          id: string
+          provider: string
+          raw_payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          envelope_id?: string | null
+          event_created_at?: string | null
+          event_type: string
+          id?: string
+          provider?: string
+          raw_payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          envelope_id?: string | null
+          event_created_at?: string | null
+          event_type?: string
+          id?: string
+          provider?: string
+          raw_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esign_audit_log_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "esign_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      esign_document_templates: {
+        Row: {
+          boldsign_template_id: string | null
+          created_at: string
+          description: string | null
+          file_storage_path: string | null
+          id: string
+          is_active: boolean
+          name: string
+          org_id: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          boldsign_template_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_storage_path?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          org_id: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          boldsign_template_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_storage_path?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          org_id?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
+      esign_envelopes: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          message: string | null
+          org_id: string
+          provider: string
+          provider_document_id: string | null
+          provider_environment: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          org_id: string
+          provider?: string
+          provider_document_id?: string | null
+          provider_environment?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          org_id?: string
+          provider?: string
+          provider_document_id?: string | null
+          provider_environment?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esign_envelopes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "esign_document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      esign_recipients: {
+        Row: {
+          created_at: string
+          email: string
+          envelope_id: string
+          id: string
+          name: string
+          phone: string | null
+          provider_signer_id: string | null
+          role: string
+          signing_order: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          envelope_id: string
+          id?: string
+          name: string
+          phone?: string | null
+          provider_signer_id?: string | null
+          role: string
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          envelope_id?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          provider_signer_id?: string | null
+          role?: string
+          signing_order?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esign_recipients_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "esign_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      esign_signed_files: {
+        Row: {
+          created_at: string
+          envelope_id: string
+          file_sha256: string | null
+          id: string
+          storage_bucket: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          envelope_id: string
+          file_sha256?: string | null
+          id?: string
+          storage_bucket?: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          envelope_id?: string
+          file_sha256?: string | null
+          id?: string
+          storage_bucket?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "esign_signed_files_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "esign_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_id_map: {
         Row: {
           created_at: string
