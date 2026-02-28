@@ -37,6 +37,8 @@ import Analytics from "./pages/Analytics";
 import Recruiting from "./pages/Recruiting";
 import LMS from "./pages/LMS";
 import NotFound from "./pages/NotFound";
+import BehaviorLabCatalog from "./pages/BehaviorLabCatalog";
+import BehaviorLabPlayer from "./pages/BehaviorLabPlayer";
 import IEPLibrary from "./pages/IEPLibrary";
 import ClinicalLibrary from "./pages/ClinicalLibrary";
 import Intelligence from "./pages/Intelligence";
@@ -303,6 +305,8 @@ const App = () => {
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
+              <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
+              <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
