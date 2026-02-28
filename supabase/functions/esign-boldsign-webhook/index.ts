@@ -1,22 +1,27 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 
 serve(async (req) => {
-  // GET requests return 200 OK for browser testing
-  if (req.method === "GET") {
+  try {
+    // 1️⃣ Validate custom header
+    const expected = Deno.env.get("NOVATRACK_BOLDSIGN_WEBHOOK_TOKEN") ?? "";
+    const received = req.headers.get("X-NovaTrack-Webhook-Token") ?? "";
+
+    if (!expected || received !== expected) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    // 2️⃣ Only allow POST for real events
+    if (req.method !== "POST") {
+      return new Response("OK", { status: 200 });
+    }
+
+    // 3️⃣ Log raw payload for now
+    const raw = await req.text();
+    console.log("BoldSign webhook payload:", raw);
+
+    return new Response("OK", { status: 200 });
+  } catch (error) {
+    console.error("Webhook error:", error);
     return new Response("OK", { status: 200 });
   }
-
-  // Verify webhook token on POST
-  const token = req.headers.get("x-novatrack-webhook-token");
-  const expected = Deno.env.get("NOVATRACK_BOLDSIGN_WEBHOOK_TOKEN");
-
-  if (!token || token !== expected) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  // Log raw body for debugging
-  const body = await req.text();
-  console.log("[boldsign-webhook] payload:", body);
-
-  return new Response("OK", { status: 200 });
 });
