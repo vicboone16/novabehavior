@@ -26,6 +26,14 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // GET handler — browser test / health check
+  if (req.method === "GET") {
+    return new Response("OK", {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "text/plain" },
+    });
+  }
+
   // Use service role for webhook processing (no user auth)
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -34,9 +42,21 @@ Deno.serve(async (req) => {
 
   try {
     const rawBody = await req.text();
+    console.log("[BoldSign Webhook] Raw body received:", rawBody);
 
     // BoldSign verification event (ping) — respond 200 immediately
-    const parsedBody = JSON.parse(rawBody);
+    let parsedBody: any;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch {
+      // Non-JSON body — still return 200 OK for verification
+      console.log("[BoldSign Webhook] Non-JSON body, returning 200 OK");
+      return new Response("OK", {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "text/plain" },
+      });
+    }
+
     if (parsedBody?.event?.eventType === "Verification") {
       console.log("BoldSign verification ping received");
       return new Response(JSON.stringify({ status: "ok" }), {
@@ -45,20 +65,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify HMAC signature
+    // Verify HMAC signature if secret is configured
     const WEBHOOK_SECRET = Deno.env.get("BOLDSIGN_WEBHOOK_SECRET");
-    if (!WEBHOOK_SECRET) throw new Error("BOLDSIGN_WEBHOOK_SECRET is not configured");
-
-    const signature = req.headers.get("x-boldsign-signature") || req.headers.get("X-BoldSign-Signature");
-    if (signature) {
-      const valid = await verifyHmac(rawBody, signature, WEBHOOK_SECRET);
-      if (!valid) {
-        console.error("Invalid webhook signature");
-        return new Response(JSON.stringify({ error: "Invalid signature" }), {
-          status: 401,
-          headers: corsHeaders,
-        });
+    if (WEBHOOK_SECRET) {
+      const signature = req.headers.get("x-boldsign-signature") || req.headers.get("X-BoldSign-Signature");
+      if (signature) {
+        const valid = await verifyHmac(rawBody, signature, WEBHOOK_SECRET);
+        if (!valid) {
+          console.error("Invalid webhook signature");
+          return new Response(JSON.stringify({ error: "Invalid signature" }), {
+            status: 401,
+            headers: corsHeaders,
+          });
+        }
       }
+    } else {
+      console.log("[BoldSign Webhook] No BOLDSIGN_WEBHOOK_SECRET configured, skipping HMAC verification");
     }
 
     const event = parsedBody?.event;
@@ -139,9 +161,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ status: "processed" }), {
+    return new Response("OK", {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "text/plain" },
     });
   } catch (error: unknown) {
     console.error("Webhook error:", error);

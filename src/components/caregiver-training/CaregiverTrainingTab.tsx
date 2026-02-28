@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3 } from 'lucide-react';
+import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCaregiverTraining } from '@/hooks/useCaregiverTraining';
+import { useCoachEvidencePackets, CoachEvidencePacket } from '@/hooks/useCoachEvidencePackets';
 import { BST_PHASE_LABELS, BSTPhase } from '@/types/caregiverTraining';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ interface CaregiverTrainingTabProps {
 
 export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
   const { programs, sessions, competencyChecks, probes, isLoading, fetchPrograms, fetchSessions, logSession } = useCaregiverTraining();
+  const { packets: approvedPackets, fetchPackets } = useCoachEvidencePackets();
   const [showLogSession, setShowLogSession] = useState(false);
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [caregiverName, setCaregiverName] = useState('');
@@ -34,6 +36,7 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
   useEffect(() => {
     fetchPrograms();
     fetchSessions(studentId);
+    fetchPackets({ studentId, status: 'approved' });
   }, [studentId]);
 
   const studentSessions = sessions.filter(s => s.student_id === studentId);
@@ -99,6 +102,12 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
       <Tabs defaultValue="sessions">
         <TabsList>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="evidence">
+            Evidence
+            {approvedPackets.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{approvedPackets.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="programs">Programs</TabsTrigger>
           <TabsTrigger value="competency">Competency</TabsTrigger>
         </TabsList>
@@ -133,6 +142,43 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
                         <TableCell>{sess.duration_minutes} min</TableCell>
                         <TableCell>{sess.competency_rating != null ? `${sess.competency_rating}%` : '—'}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{sess.notes || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="evidence">
+          <Card>
+            <CardContent className="pt-6">
+              {approvedPackets.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <p>No approved evidence packets</p>
+                  <p className="text-sm">Coach-submitted evidence will appear here after supervisor approval</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Caregiver</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Active Time</TableHead>
+                      <TableHead>Completions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {approvedPackets.map((pkt) => (
+                      <TableRow key={pkt.id}>
+                        <TableCell>{format(new Date(pkt.submitted_at), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="font-medium">{pkt.caregiver_name}</TableCell>
+                        <TableCell>{pkt.title}</TableCell>
+                        <TableCell>{Math.round((pkt.active_seconds || 0) / 60)} min</TableCell>
+                        <TableCell>{pkt.completion_count || 0}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

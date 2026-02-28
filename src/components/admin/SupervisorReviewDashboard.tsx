@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format, subDays } from 'date-fns';
 import { 
   ClipboardCheck, 
@@ -48,6 +48,7 @@ import {
   NOTE_TYPE_LABELS,
   REVIEW_OUTCOME_CONFIG,
 } from '@/types/sessionNotes';
+import { CoachEvidenceReviewPanel } from '@/components/admin/CoachEvidenceReviewPanel';
 
 interface NoteWithReview {
   id: string;
@@ -292,6 +293,9 @@ export function SupervisorReviewDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Coach Evidence Packets for Review */}
+      <CoachEvidenceReviewPanel />
 
       {/* Filters */}
       <Card>
