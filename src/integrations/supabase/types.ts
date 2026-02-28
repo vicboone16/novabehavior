@@ -7291,36 +7291,64 @@ export type Database = {
       }
       iep_drafts: {
         Row: {
+          agency_id: string | null
           client_id: string
+          content: string | null
+          content_json: Json | null
           created_at: string
+          created_by: string | null
+          draft_type: string | null
           id: string
           sections: Json
+          shared_at: string | null
+          shared_by: string | null
           status: string
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          agency_id?: string | null
           client_id: string
+          content?: string | null
+          content_json?: Json | null
           created_at?: string
+          created_by?: string | null
+          draft_type?: string | null
           id?: string
           sections?: Json
+          shared_at?: string | null
+          shared_by?: string | null
           status?: string
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          agency_id?: string | null
           client_id?: string
+          content?: string | null
+          content_json?: Json | null
           created_at?: string
+          created_by?: string | null
+          draft_type?: string | null
           id?: string
           sections?: Json
+          shared_at?: string | null
+          shared_by?: string | null
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "iep_drafts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "iep_drafts_client_id_fkey"
             columns: ["client_id"]
@@ -12824,6 +12852,223 @@ export type Database = {
           },
         ]
       }
+      teacher_abc_events: {
+        Row: {
+          agency_id: string
+          antecedent: string | null
+          behavior: string | null
+          client_id: string
+          consequence: string | null
+          created_at: string
+          created_by: string
+          created_in_app: string
+          duration_seconds: number | null
+          event_id: string
+          intensity: number | null
+          is_problem: boolean | null
+          location: string | null
+          notes: string | null
+          occurred_at: string
+          setting: string | null
+          staff_initials: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          antecedent?: string | null
+          behavior?: string | null
+          client_id: string
+          consequence?: string | null
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          duration_seconds?: number | null
+          event_id?: string
+          intensity?: number | null
+          is_problem?: boolean | null
+          location?: string | null
+          notes?: string | null
+          occurred_at?: string
+          setting?: string | null
+          staff_initials?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          antecedent?: string | null
+          behavior?: string | null
+          client_id?: string
+          consequence?: string | null
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          duration_seconds?: number | null
+          event_id?: string
+          intensity?: number | null
+          is_problem?: boolean | null
+          location?: string | null
+          notes?: string | null
+          occurred_at?: string
+          setting?: string | null
+          staff_initials?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teacher_data_points: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string
+          interval_index: number | null
+          notes: string | null
+          occurred_at: string
+          point_id: string
+          session_id: string
+          value_bool: boolean | null
+          value_number: number | null
+          value_text: string | null
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string
+          interval_index?: number | null
+          notes?: string | null
+          occurred_at?: string
+          point_id?: string
+          session_id: string
+          value_bool?: boolean | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          interval_index?: number | null
+          notes?: string | null
+          occurred_at?: string
+          point_id?: string
+          session_id?: string
+          value_bool?: boolean | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_data_points_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_data_sessions"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
+      teacher_data_sessions: {
+        Row: {
+          agency_id: string
+          client_id: string
+          context_json: Json
+          created_at: string
+          created_by: string
+          created_in_app: string
+          ended_at: string | null
+          interval_seconds: number | null
+          mode: string
+          planned_intervals: number | null
+          session_id: string
+          started_at: string
+          summary_json: Json
+          target_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          context_json?: Json
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          ended_at?: string | null
+          interval_seconds?: number | null
+          mode: string
+          planned_intervals?: number | null
+          session_id?: string
+          started_at?: string
+          summary_json?: Json
+          target_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          context_json?: Json
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          ended_at?: string | null
+          interval_seconds?: number | null
+          mode?: string
+          planned_intervals?: number | null
+          session_id?: string
+          started_at?: string
+          summary_json?: Json
+          target_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_data_sessions_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_targets"
+            referencedColumns: ["target_id"]
+          },
+        ]
+      }
+      teacher_targets: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          created_in_app: string
+          is_archived: boolean
+          name: string
+          operational_definition: string | null
+          target_id: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          is_archived?: boolean
+          name: string
+          operational_definition?: string | null
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          created_in_app?: string
+          is_archived?: boolean
+          name?: string
+          operational_definition?: string | null
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       timesheet_entries: {
         Row: {
           appointment_id: string | null
@@ -13926,11 +14171,123 @@ export type Database = {
           },
         ]
       }
+      v_iep_drafts_recent: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string | null
+          sections: Json | null
+          shared_at: string | null
+          shared_by: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          sections?: Json | null
+          shared_at?: string | null
+          shared_by?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string | null
+          sections?: Json | null
+          shared_at?: string | null
+          shared_by?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_drafts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_teacher_abc_recent: {
+        Row: {
+          agency_id: string | null
+          antecedent: string | null
+          behavior: string | null
+          client_id: string | null
+          consequence: string | null
+          created_at: string | null
+          created_by: string | null
+          created_in_app: string | null
+          duration_seconds: number | null
+          event_id: string | null
+          intensity: number | null
+          is_problem: boolean | null
+          location: string | null
+          notes: string | null
+          occurred_at: string | null
+          setting: string | null
+          staff_initials: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          antecedent?: string | null
+          behavior?: string | null
+          client_id?: string | null
+          consequence?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_in_app?: string | null
+          duration_seconds?: number | null
+          event_id?: string | null
+          intensity?: number | null
+          is_problem?: boolean | null
+          location?: string | null
+          notes?: string | null
+          occurred_at?: string | null
+          setting?: string | null
+          staff_initials?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          antecedent?: string | null
+          behavior?: string | null
+          client_id?: string | null
+          consequence?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          created_in_app?: string | null
+          duration_seconds?: number | null
+          event_id?: string | null
+          intensity?: number | null
+          is_problem?: boolean | null
+          location?: string | null
+          notes?: string | null
+          occurred_at?: string | null
+          setting?: string | null
+          staff_initials?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
+      can_collect_data: { Args: { p_client_id: string }; Returns: boolean }
+      can_generate_reports: { Args: { p_client_id: string }; Returns: boolean }
       can_schedule_rbt: {
         Args: { _session_date: string; _staff_user_id: string }
         Returns: {
@@ -13938,6 +14295,7 @@ export type Database = {
           reason: string
         }[]
       }
+      can_view_notes: { Args: { p_client_id: string }; Returns: boolean }
       check_pin_rate_limit: {
         Args: { _email: string; _ip_address: string }
         Returns: boolean
@@ -14203,6 +14561,7 @@ export type Database = {
         Returns: boolean
       }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }
+      has_client_access: { Args: { p_client_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
