@@ -147,6 +147,59 @@ export type Database = {
         }
         Relationships: []
       }
+      abc_logs: {
+        Row: {
+          antecedent: string
+          behavior: string
+          behavior_category: string | null
+          client_id: string
+          consequence: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          intensity: number | null
+          logged_at: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          antecedent: string
+          behavior: string
+          behavior_category?: string | null
+          client_id: string
+          consequence: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          intensity?: number | null
+          logged_at?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          antecedent?: string
+          behavior?: string
+          behavior_category?: string | null
+          client_id?: string
+          consequence?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          intensity?: number | null
+          logged_at?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_permissions: {
         Row: {
           can_assign_admin: boolean | null
@@ -193,6 +246,7 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          agency_type: string | null
           billing_address_city: string | null
           billing_address_line1: string | null
           billing_address_state: string | null
@@ -224,6 +278,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          agency_type?: string | null
           billing_address_city?: string | null
           billing_address_line1?: string | null
           billing_address_state?: string | null
@@ -255,6 +310,7 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          agency_type?: string | null
           billing_address_city?: string | null
           billing_address_line1?: string | null
           billing_address_state?: string | null
@@ -6160,6 +6216,47 @@ export type Database = {
         }
         Relationships: []
       }
+      iep_drafts: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          sections: Json
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          sections?: Json
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          sections?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_drafts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       iep_goals: {
         Row: {
           baseline_summary: string | null
@@ -10940,6 +11037,7 @@ export type Database = {
           contact_phone: string | null
           coverage_mode_override: string | null
           created_at: string
+          created_in_app: string | null
           custom_antecedents: Json | null
           custom_consequences: Json | null
           data_collection_start_date: string | null
@@ -10980,6 +11078,7 @@ export type Database = {
           pronouns: string | null
           school: string | null
           school_name: string | null
+          student_origin: string | null
           updated_at: string
           user_id: string
         }
@@ -11002,6 +11101,7 @@ export type Database = {
           contact_phone?: string | null
           coverage_mode_override?: string | null
           created_at?: string
+          created_in_app?: string | null
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
           data_collection_start_date?: string | null
@@ -11042,6 +11142,7 @@ export type Database = {
           pronouns?: string | null
           school?: string | null
           school_name?: string | null
+          student_origin?: string | null
           updated_at?: string
           user_id: string
         }
@@ -11064,6 +11165,7 @@ export type Database = {
           contact_phone?: string | null
           coverage_mode_override?: string | null
           created_at?: string
+          created_in_app?: string | null
           custom_antecedents?: Json | null
           custom_consequences?: Json | null
           data_collection_start_date?: string | null
@@ -11104,6 +11206,7 @@ export type Database = {
           pronouns?: string | null
           school?: string | null
           school_name?: string | null
+          student_origin?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -12817,6 +12920,47 @@ export type Database = {
       effective_cross_agency_access: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      ensure_solo_teacher_agency: {
+        Args: { p_user_id: string }
+        Returns: {
+          address_line1: string | null
+          address_line2: string | null
+          agency_type: string | null
+          billing_address_city: string | null
+          billing_address_line1: string | null
+          billing_address_state: string | null
+          billing_address_zip: string | null
+          city: string | null
+          country: string | null
+          coverage_mode: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          legal_name: string | null
+          logo_url: string | null
+          name: string
+          npi: string | null
+          phone: string | null
+          primary_color: string | null
+          primary_entity_label: string
+          settings: Json | null
+          slug: string | null
+          state: string | null
+          status: string
+          tax_id: string | null
+          timezone: string | null
+          updated_at: string
+          website: string | null
+          zip_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "agencies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
