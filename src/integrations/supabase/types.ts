@@ -5159,6 +5159,115 @@ export type Database = {
           },
         ]
       }
+      document_links: {
+        Row: {
+          created_at: string
+          document_id: string
+          folder: string | null
+          id: string
+          is_primary: boolean
+          label: string | null
+          org_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          folder?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          org_id: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          folder?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          org_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_links_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          doc_type: string | null
+          envelope_id: string | null
+          file_sha256: string | null
+          file_size_bytes: number | null
+          id: string
+          mime_type: string
+          org_id: string
+          signed_at: string | null
+          source: string
+          storage_bucket: string
+          storage_path: string
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string | null
+          envelope_id?: string | null
+          file_sha256?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string
+          org_id: string
+          signed_at?: string | null
+          source?: string
+          storage_bucket?: string
+          storage_path: string
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string | null
+          envelope_id?: string | null
+          file_sha256?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string
+          org_id?: string
+          signed_at?: string | null
+          source?: string
+          storage_bucket?: string
+          storage_path?: string
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "esign_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domains: {
         Row: {
           agency_id: string | null
@@ -5702,6 +5811,7 @@ export type Database = {
         Row: {
           boldsign_template_id: string | null
           created_at: string
+          default_routing: Json | null
           description: string | null
           file_storage_path: string | null
           id: string
@@ -5714,6 +5824,7 @@ export type Database = {
         Insert: {
           boldsign_template_id?: string | null
           created_at?: string
+          default_routing?: Json | null
           description?: string | null
           file_storage_path?: string | null
           id?: string
@@ -5726,6 +5837,7 @@ export type Database = {
         Update: {
           boldsign_template_id?: string | null
           created_at?: string
+          default_routing?: Json | null
           description?: string | null
           file_storage_path?: string | null
           id?: string
@@ -5750,6 +5862,7 @@ export type Database = {
           provider: string
           provider_document_id: string | null
           provider_environment: string | null
+          routing: Json | null
           sent_at: string | null
           status: string
           subject: string | null
@@ -5768,6 +5881,7 @@ export type Database = {
           provider?: string
           provider_document_id?: string | null
           provider_environment?: string | null
+          routing?: Json | null
           sent_at?: string | null
           status?: string
           subject?: string | null
@@ -5786,6 +5900,7 @@ export type Database = {
           provider?: string
           provider_document_id?: string | null
           provider_environment?: string | null
+          routing?: Json | null
           sent_at?: string | null
           status?: string
           subject?: string | null
