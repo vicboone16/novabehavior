@@ -8,17 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText, Eye, Download, Trash2, Calendar, Lock, Users, School, Home } from 'lucide-react';
+import { Upload, FileText, Eye, Download, Trash2, Calendar, Lock, Users, School, Home, FileSignature } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { ClientDocument } from '@/types/clientProfile';
 import { DOCUMENT_TYPES } from '@/types/clientProfile';
+import { ESignPanel } from '@/components/esign/ESignPanel';
 
 interface DocumentsTabProps {
   clientId: string;
   documents: ClientDocument[];
   onRefetch: () => void;
+  orgId?: string;
 }
 
 const VISIBILITY_OPTIONS = [
@@ -28,7 +30,7 @@ const VISIBILITY_OPTIONS = [
   { value: 'parent_shareable', label: 'Parent Shareable', icon: Home, description: 'Parents can view' },
 ];
 
-export function DocumentsTab({ clientId, documents, onRefetch }: DocumentsTabProps) {
+export function DocumentsTab({ clientId, documents, onRefetch, orgId }: DocumentsTabProps) {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -139,6 +141,12 @@ export function DocumentsTab({ clientId, documents, onRefetch }: DocumentsTabPro
 
   return (
     <div className="space-y-6">
+      {/* eSignature Panel */}
+      {orgId && (
+        <ESignPanel clientId={clientId} orgId={orgId} />
+      )}
+
+      <div className="border-t pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Documents</h3>
@@ -372,6 +380,7 @@ export function DocumentsTab({ clientId, documents, onRefetch }: DocumentsTabPro
           ))}
         </Tabs>
       )}
+      </div>
     </div>
   );
 }
