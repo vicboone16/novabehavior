@@ -3742,6 +3742,141 @@ export type Database = {
           },
         ]
       }
+      coach_evidence_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_type: string
+          label: string | null
+          packet_id: string
+          payload: Json
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_type: string
+          label?: string | null
+          packet_id: string
+          payload?: Json
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_type?: string
+          label?: string | null
+          packet_id?: string
+          payload?: Json
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_evidence_items_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
+            referencedRelation: "coach_evidence_packets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_evidence_packets: {
+        Row: {
+          active_seconds: number | null
+          agency_id: string | null
+          caregiver_name: string
+          caregiver_relationship: string | null
+          coach_user_id: string
+          completion_count: number | null
+          created_at: string
+          description: string | null
+          evidence_summary: string | null
+          id: string
+          integrity_flags: Json | null
+          integrity_score: number | null
+          program_id: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          soap_note_draft_id: string | null
+          status: string
+          student_id: string
+          submitted_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active_seconds?: number | null
+          agency_id?: string | null
+          caregiver_name: string
+          caregiver_relationship?: string | null
+          coach_user_id: string
+          completion_count?: number | null
+          created_at?: string
+          description?: string | null
+          evidence_summary?: string | null
+          id?: string
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          soap_note_draft_id?: string | null
+          status?: string
+          student_id: string
+          submitted_at?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active_seconds?: number | null
+          agency_id?: string | null
+          caregiver_name?: string
+          caregiver_relationship?: string | null
+          coach_user_id?: string
+          completion_count?: number | null
+          created_at?: string
+          description?: string | null
+          evidence_summary?: string | null
+          id?: string
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          soap_note_draft_id?: string | null
+          status?: string
+          student_id?: string
+          submitted_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_evidence_packets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consent_form_submissions: {
         Row: {
           access_token: string
