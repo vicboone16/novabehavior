@@ -40,6 +40,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { TeacherSaveCloseDialog } from '@/components/teacher/TeacherSaveCloseDialog';
+import { TeacherStudentProfileEditor } from '@/components/teacher/TeacherStudentProfileEditor';
 
 interface TeacherFriendlyViewProps {
   student: Student;
@@ -906,6 +907,14 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
           </div>
         </CardContent>
       </Card>
+
+      {/* Teacher-only: Student Info (IEP dates, diagnoses, funding) */}
+      {isTeacherMode && (
+        <TeacherStudentProfileEditor
+          studentId={student.id}
+          studentName={student.name}
+        />
+      )}
 
       {/* Day Rating - Large Touch Targets */}
       <Card>
