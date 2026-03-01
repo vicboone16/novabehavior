@@ -15026,6 +15026,10 @@ export type Database = {
         Args: { p_target_id: string }
         Returns: string
       }
+      submit_parent_summary_packets: {
+        Args: { _client_id: string; _packets: Json }
+        Returns: Json
+      }
       switch_agency: {
         Args: { _agency_id: string; _user_id: string }
         Returns: boolean
