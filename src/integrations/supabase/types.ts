@@ -7806,6 +7806,89 @@ export type Database = {
           },
         ]
       }
+      invite_code_redemptions: {
+        Row: {
+          invite_id: string
+          ip_addr: unknown
+          redeemed_at: string
+          redeemed_by: string
+          redemption_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          invite_id: string
+          ip_addr?: unknown
+          redeemed_at?: string
+          redeemed_by: string
+          redemption_id?: string
+          user_agent?: string | null
+        }
+        Update: {
+          invite_id?: string
+          ip_addr?: unknown
+          redeemed_at?: string
+          redeemed_by?: string
+          redemption_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_code_redemptions_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invite_codes"
+            referencedColumns: ["invite_id"]
+          },
+        ]
+      }
+      invite_codes: {
+        Row: {
+          agency_id: string
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          invite_id: string
+          max_uses: number
+          permissions: Json
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          uses_count: number
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          code: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          invite_id?: string
+          max_uses?: number
+          permissions?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          uses_count?: number
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          invite_id?: string
+          max_uses?: number
+          permissions?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
       job_applicants: {
         Row: {
           agency_id: string | null
@@ -14353,6 +14436,35 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      create_invite_code: {
+        Args: {
+          p_agency_id: string
+          p_client_id: string
+          p_expires_days?: number
+          p_permissions?: Json
+        }
+        Returns: {
+          agency_id: string
+          client_id: string
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          invite_id: string
+          max_uses: number
+          permissions: Json
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          uses_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invite_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       effective_cid_access: { Args: { _user_id: string }; Returns: boolean }
       effective_cross_agency_access: {
         Args: { _user_id: string }
@@ -14413,6 +14525,7 @@ export type Database = {
       }
       generate_agency_slug: { Args: { _name: string }; Returns: string }
       generate_claim_number: { Args: never; Returns: string }
+      generate_invite_code: { Args: { prefix?: string }; Returns: string }
       get_client_coverage_mode: {
         Args: { _client_id: string }
         Returns: string
@@ -14654,6 +14767,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      redeem_invite_code: { Args: { _code: string }; Returns: Json }
       resolve_alert_threshold: {
         Args: {
           _agency_id?: string
