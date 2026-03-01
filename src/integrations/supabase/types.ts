@@ -7806,6 +7806,33 @@ export type Database = {
           },
         ]
       }
+      invite_code_attempts: {
+        Row: {
+          attempted_at: string
+          code_tried: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          code_tried?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          code_tried?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       invite_code_redemptions: {
         Row: {
           invite_id: string
@@ -8633,6 +8660,149 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      parent_summary_packet_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          decision: string
+          id: string
+          packet_id: string
+          reviewer_user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          decision: string
+          id?: string
+          packet_id: string
+          reviewer_user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          decision?: string
+          id?: string
+          packet_id?: string
+          reviewer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_summary_packet_reviews_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
+            referencedRelation: "parent_summary_packets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_summary_packets: {
+        Row: {
+          abc_count: number | null
+          agency_id: string
+          avg_intensity: number | null
+          behavior_count: number | null
+          client_id: string
+          created_at: string
+          duration_minutes_total: number | null
+          engagement: Json | null
+          frequency_total: number | null
+          id: string
+          intensity_avg: number | null
+          notes: string | null
+          parent_notes: string | null
+          review_comment: string | null
+          review_decision: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          submitted_by: string
+          summary_json: Json
+          tools_used: Json | null
+          top_functions: Json | null
+          top_triggers: Json | null
+          total_duration_minutes: number | null
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          abc_count?: number | null
+          agency_id: string
+          avg_intensity?: number | null
+          behavior_count?: number | null
+          client_id: string
+          created_at?: string
+          duration_minutes_total?: number | null
+          engagement?: Json | null
+          frequency_total?: number | null
+          id?: string
+          intensity_avg?: number | null
+          notes?: string | null
+          parent_notes?: string | null
+          review_comment?: string | null
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          submitted_by: string
+          summary_json?: Json
+          tools_used?: Json | null
+          top_functions?: Json | null
+          top_triggers?: Json | null
+          total_duration_minutes?: number | null
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          abc_count?: number | null
+          agency_id?: string
+          avg_intensity?: number | null
+          behavior_count?: number | null
+          client_id?: string
+          created_at?: string
+          duration_minutes_total?: number | null
+          engagement?: Json | null
+          frequency_total?: number | null
+          id?: string
+          intensity_avg?: number | null
+          notes?: string | null
+          parent_notes?: string | null
+          review_comment?: string | null
+          review_decision?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          submitted_by?: string
+          summary_json?: Json
+          tools_used?: Json | null
+          top_functions?: Json | null
+          top_triggers?: Json | null
+          total_duration_minutes?: number | null
+          updated_at?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_summary_packets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payer_auth_rules: {
         Row: {
@@ -14791,6 +14961,10 @@ export type Database = {
       resolve_criteria: {
         Args: { _criteria_type: string; _target_id: string }
         Returns: string
+      }
+      review_parent_summary_packet: {
+        Args: { _comment?: string; _decision: string; _packet_id: string }
+        Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       set_user_pin: {
