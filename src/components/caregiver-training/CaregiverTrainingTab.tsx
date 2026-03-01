@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCaregiverTraining } from '@/hooks/useCaregiverTraining';
-import { useCoachEvidencePackets, CoachEvidencePacket } from '@/hooks/useCoachEvidencePackets';
+import { useWeeklySnapshots, WeeklySnapshotPacket } from '@/hooks/useWeeklySnapshots';
 import { BST_PHASE_LABELS, BSTPhase } from '@/types/caregiverTraining';
 import { InviteCaregiverSection } from './InviteCaregiverSection';
 import { ParentSummaryPacketsSection } from './ParentSummaryPacketsSection';
@@ -24,7 +24,7 @@ interface CaregiverTrainingTabProps {
 
 export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
   const { programs, sessions, competencyChecks, probes, isLoading, fetchPrograms, fetchSessions, logSession } = useCaregiverTraining();
-  const { packets: approvedPackets, fetchPackets } = useCoachEvidencePackets();
+  const { packets: approvedPackets, fetchPackets } = useWeeklySnapshots();
   const [showLogSession, setShowLogSession] = useState(false);
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [caregiverName, setCaregiverName] = useState('');
@@ -165,8 +165,8 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
               {approvedPackets.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Package className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                  <p>No approved evidence packets</p>
-                  <p className="text-sm">Coach-submitted evidence will appear here after supervisor approval</p>
+                  <p>No approved weekly snapshots</p>
+                  <p className="text-sm">Submitted snapshots will appear here after supervisor approval</p>
                 </div>
               ) : (
                 <Table>
