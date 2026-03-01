@@ -16212,6 +16212,9 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      effective_staff_can_review:
+        | { Args: { _client_id: string; _user_id: string }; Returns: boolean }
+        | { Args: { p_client_id: string }; Returns: boolean }
       ensure_solo_teacher_agency: {
         Args: { p_user_id: string }
         Returns: {
@@ -16562,6 +16565,10 @@ export type Database = {
       }
       review_parent_summary_packet: {
         Args: { _comment?: string; _decision: string; _packet_id: string }
+        Returns: Json
+      }
+      review_parent_weekly_snapshot: {
+        Args: { p_comment: string; p_decision: string; p_packet_id: string }
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
