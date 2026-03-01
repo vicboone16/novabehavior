@@ -703,6 +703,51 @@ export type Database = {
           },
         ]
       }
+      access_invites: {
+        Row: {
+          agency_id: string | null
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          permissions: Json
+          redeemed_at: string | null
+          redeemed_by: string | null
+          role: string
+          student_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          code: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          permissions?: Json
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          role: string
+          student_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          permissions?: Json
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          role?: string
+          student_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       admin_permissions: {
         Row: {
           can_assign_admin: boolean | null
@@ -1097,6 +1142,45 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      allowed_locations: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          lat: number
+          lng: number
+          name: string
+          radius_meters: number
+          student_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lat: number
+          lng: number
+          name: string
+          radius_meters?: number
+          student_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lat?: number
+          lng?: number
+          name?: string
+          radius_meters?: number
+          student_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: []
       }
@@ -2081,6 +2165,45 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      billing_profiles: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          cycle_anchor_day: number | null
+          cycle_type: string
+          id: string
+          invoice_grouping: string
+          is_active: boolean
+          rounding_rule_minutes: number
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          cycle_anchor_day?: number | null
+          cycle_type?: string
+          id?: string
+          invoice_grouping?: string
+          is_active?: boolean
+          rounding_rule_minutes?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          cycle_anchor_day?: number | null
+          cycle_type?: string
+          id?: string
+          invoice_grouping?: string
+          is_active?: boolean
+          rounding_rule_minutes?: number
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
       }
       bx_behavior_checklist_items: {
         Row: {
@@ -4916,6 +5039,20 @@ export type Database = {
             columns: ["packet_id"]
             isOneToOne: false
             referencedRelation: "coach_evidence_packets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_items_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
+            referencedRelation: "v_weekly_snapshots_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_items_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_snapshots"
             referencedColumns: ["id"]
           },
         ]
@@ -9525,6 +9662,48 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_invite_codes: {
+        Row: {
+          agency_id: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          invite_id: string
+          max_uses: number
+          status: string
+          student_id: string
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          agency_id?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          invite_id?: string
+          max_uses?: number
+          status?: string
+          student_id: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          agency_id?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          invite_id?: string
+          max_uses?: number
+          status?: string
+          student_id?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Relationships: []
+      }
       parent_summary_packet_reviews: {
         Row: {
           comment: string | null
@@ -9563,13 +9742,6 @@ export type Database = {
             columns: ["packet_id"]
             isOneToOne: false
             referencedRelation: "v_staff_packets_needing_review"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parent_summary_packet_reviews_packet_id_fkey"
-            columns: ["packet_id"]
-            isOneToOne: false
-            referencedRelation: "v_weekly_snapshots_queue"
             referencedColumns: ["id"]
           },
         ]
@@ -11561,6 +11733,53 @@ export type Database = {
         }
         Relationships: []
       }
+      session_closeouts: {
+        Row: {
+          authorization_id: string | null
+          closed_by_user_id: string
+          created_at: string
+          id: string
+          note_id: string | null
+          note_type: string | null
+          session_id: string
+          timesheet_entry_id: string | null
+          timesheet_id: string | null
+          units_added: number | null
+        }
+        Insert: {
+          authorization_id?: string | null
+          closed_by_user_id: string
+          created_at?: string
+          id?: string
+          note_id?: string | null
+          note_type?: string | null
+          session_id: string
+          timesheet_entry_id?: string | null
+          timesheet_id?: string | null
+          units_added?: number | null
+        }
+        Update: {
+          authorization_id?: string | null
+          closed_by_user_id?: string
+          created_at?: string
+          id?: string
+          note_id?: string | null
+          note_type?: string | null
+          session_id?: string
+          timesheet_entry_id?: string | null
+          timesheet_id?: string | null
+          units_added?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_data: {
         Row: {
           abc_data: Json | null
@@ -11841,6 +12060,8 @@ export type Database = {
           coverage_last_verified_at: string | null
           coverage_rule_match_ids: Json | null
           created_at: string
+          end_lat: number | null
+          end_lng: number | null
           end_time: string | null
           funding_mode_snapshot: string | null
           has_data: boolean | null
@@ -11854,6 +12075,8 @@ export type Database = {
           service_setting: string | null
           service_type: string | null
           session_length_minutes: number
+          start_lat: number | null
+          start_lng: number | null
           start_time: string
           status: string | null
           student_ids: string[] | null
@@ -11874,6 +12097,8 @@ export type Database = {
           coverage_last_verified_at?: string | null
           coverage_rule_match_ids?: Json | null
           created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
           end_time?: string | null
           funding_mode_snapshot?: string | null
           has_data?: boolean | null
@@ -11887,6 +12112,8 @@ export type Database = {
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number
+          start_lat?: number | null
+          start_lng?: number | null
           start_time: string
           status?: string | null
           student_ids?: string[] | null
@@ -11907,6 +12134,8 @@ export type Database = {
           coverage_last_verified_at?: string | null
           coverage_rule_match_ids?: Json | null
           created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
           end_time?: string | null
           funding_mode_snapshot?: string | null
           has_data?: boolean | null
@@ -11920,6 +12149,8 @@ export type Database = {
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number
+          start_lat?: number | null
+          start_lng?: number | null
           start_time?: string
           status?: string | null
           student_ids?: string[] | null
@@ -14640,6 +14871,66 @@ export type Database = {
         }
         Relationships: []
       }
+      time_blocks: {
+        Row: {
+          appointment_id: string | null
+          authorization_id: string | null
+          created_at: string
+          end_lat: number | null
+          end_lng: number | null
+          end_time: string | null
+          entry_type: string
+          id: string
+          is_billable: boolean
+          location_label: string | null
+          start_lat: number | null
+          start_lng: number | null
+          start_time: string
+          student_id: string | null
+          summary: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          authorization_id?: string | null
+          created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
+          end_time?: string | null
+          entry_type?: string
+          id?: string
+          is_billable?: boolean
+          location_label?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
+          start_time: string
+          student_id?: string | null
+          summary?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          authorization_id?: string | null
+          created_at?: string
+          end_lat?: number | null
+          end_lng?: number | null
+          end_time?: string | null
+          entry_type?: string
+          id?: string
+          is_billable?: boolean
+          location_label?: string | null
+          start_lat?: number | null
+          start_lng?: number | null
+          start_time?: string
+          student_id?: string | null
+          summary?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       timesheet_entries: {
         Row: {
           appointment_id: string | null
@@ -16136,80 +16427,267 @@ export type Database = {
       }
       v_weekly_snapshots_queue: {
         Row: {
-          abc_count: number | null
+          active_seconds: number | null
           agency_id: string | null
+          caregiver_name: string | null
+          caregiver_relationship: string | null
           client_id: string | null
+          coach_user_id: string | null
+          completion_count: number | null
           created_at: string | null
-          duration_minutes_total: number | null
-          frequency_total: number | null
+          description: string | null
+          evidence_summary: string | null
           id: string | null
-          intensity_avg: number | null
-          parent_notes: string | null
+          integrity_flags: Json | null
+          integrity_score: number | null
+          program_id: string | null
+          review_comment: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          soap_note_draft_id: string | null
           status: string | null
-          submitted_by: string | null
-          top_functions: Json | null
-          top_triggers: Json | null
-          week_end: string | null
-          week_start: string | null
+          student_id: string | null
+          submitted_at: string | null
+          title: string | null
+          updated_at: string | null
         }
         Insert: {
-          abc_count?: number | null
+          active_seconds?: number | null
           agency_id?: string | null
+          caregiver_name?: string | null
+          caregiver_relationship?: string | null
           client_id?: string | null
+          coach_user_id?: string | null
+          completion_count?: number | null
           created_at?: string | null
-          duration_minutes_total?: number | null
-          frequency_total?: number | null
+          description?: string | null
+          evidence_summary?: string | null
           id?: string | null
-          intensity_avg?: number | null
-          parent_notes?: string | null
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          soap_note_draft_id?: string | null
           status?: string | null
-          submitted_by?: string | null
-          top_functions?: Json | null
-          top_triggers?: Json | null
-          week_end?: string | null
-          week_start?: string | null
+          student_id?: string | null
+          submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Update: {
-          abc_count?: number | null
+          active_seconds?: number | null
           agency_id?: string | null
+          caregiver_name?: string | null
+          caregiver_relationship?: string | null
           client_id?: string | null
+          coach_user_id?: string | null
+          completion_count?: number | null
           created_at?: string | null
-          duration_minutes_total?: number | null
-          frequency_total?: number | null
+          description?: string | null
+          evidence_summary?: string | null
           id?: string | null
-          intensity_avg?: number | null
-          parent_notes?: string | null
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          soap_note_draft_id?: string | null
           status?: string | null
-          submitted_by?: string | null
-          top_functions?: Json | null
-          top_triggers?: Json | null
-          week_end?: string | null
-          week_start?: string | null
+          student_id?: string | null
+          submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "parent_summary_packets_agency_id_fkey"
+            foreignKeyName: "coach_evidence_packets_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            foreignKeyName: "coach_evidence_packets_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster"
             referencedColumns: ["student_id"]
           },
           {
-            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      weekly_snapshots: {
+        Row: {
+          active_seconds: number | null
+          agency_id: string | null
+          caregiver_name: string | null
+          caregiver_relationship: string | null
+          client_id: string | null
+          coach_user_id: string | null
+          completion_count: number | null
+          created_at: string | null
+          description: string | null
+          evidence_summary: string | null
+          id: string | null
+          integrity_flags: Json | null
+          integrity_score: number | null
+          program_id: string | null
+          review_comment: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          soap_note_draft_id: string | null
+          status: string | null
+          student_id: string | null
+          submitted_at: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_seconds?: number | null
+          agency_id?: string | null
+          caregiver_name?: string | null
+          caregiver_relationship?: string | null
+          client_id?: string | null
+          coach_user_id?: string | null
+          completion_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          evidence_summary?: string | null
+          id?: string | null
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          soap_note_draft_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_seconds?: number | null
+          agency_id?: string | null
+          caregiver_name?: string | null
+          caregiver_relationship?: string | null
+          client_id?: string | null
+          coach_user_id?: string | null
+          completion_count?: number | null
+          created_at?: string | null
+          description?: string | null
+          evidence_summary?: string | null
+          id?: string | null
+          integrity_flags?: Json | null
+          integrity_score?: number | null
+          program_id?: string | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          soap_note_draft_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          submitted_at?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_evidence_packets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "caregiver_training_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
@@ -16405,6 +16883,10 @@ export type Database = {
       }
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
+        Returns: number
+      }
+      fn_round_minutes: {
+        Args: { p_minutes: number; p_round_to: number }
         Returns: number
       }
       fork_curriculum_item: {
@@ -16717,6 +17199,124 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      rpc_end_session_and_update_utilization:
+        | {
+            Args: {
+              p_mark_billable?: boolean
+              p_session_id: string
+              p_summary?: Json
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_mark_billable?: boolean
+              p_note_type?: string
+              p_session_id: string
+              p_summary?: Json
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      rpc_export_hours: {
+        Args: {
+          p_agency_id?: string
+          p_end_date: string
+          p_group_by?: string
+          p_staff_user_id?: string
+          p_start_date: string
+          p_workspace_id?: string
+        }
+        Returns: {
+          group_key: string
+          hours_rounded: number
+          minutes_raw: number
+          minutes_rounded: number
+        }[]
+      }
+      rpc_redeem_access_invite: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: Json
+      }
+      rpc_resolve_billing_profile: {
+        Args: { p_agency_id?: string; p_workspace_id?: string }
+        Returns: {
+          agency_id: string | null
+          created_at: string
+          cycle_anchor_day: number | null
+          cycle_type: string
+          id: string
+          invoice_grouping: string
+          is_active: boolean
+          rounding_rule_minutes: number
+          updated_at: string
+          workspace_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "billing_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_start_session: {
+        Args: {
+          p_authorization_id?: string
+          p_authorized_service_id?: string
+          p_start_time?: string
+          p_student_id: string
+          p_title?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      rpc_timeblock_finalize_as_session: {
+        Args: {
+          p_authorization_id?: string
+          p_entry_type?: string
+          p_mark_billable?: boolean
+          p_note_type?: string
+          p_student_id: string
+          p_time_block_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      rpc_timeblock_finalize_nonbillable:
+        | {
+            Args: {
+              p_entry_type?: string
+              p_summary?: Json
+              p_time_block_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_entry_type?: string
+              p_summary?: Json
+              p_time_block_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      rpc_timer_start: {
+        Args: {
+          p_appointment_id?: string
+          p_authorization_id?: string
+          p_entry_type?: string
+          p_is_billable?: boolean
+          p_start_time?: string
+          p_student_id?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      rpc_timer_stop: {
+        Args: { p_end_time?: string; p_summary?: Json; p_time_block_id: string }
+        Returns: Json
+      }
       set_agency_alias: {
         Args: { _agency_id: string; _suffix: string }
         Returns: Json

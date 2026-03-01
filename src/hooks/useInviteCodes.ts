@@ -4,23 +4,23 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export interface InviteCode {
-  id: string;
+  invite_id: string;
   code: string;
   agency_id: string;
   client_id: string;
   created_by: string;
-  permission_level: string;
-  can_collect_data: boolean;
-  can_view_notes: boolean;
-  can_view_documents: boolean;
+  status: string;
   max_uses: number;
   uses_count: number;
   expires_at: string | null;
   revoked_at: string | null;
   revoked_by: string | null;
-  status: string;
+  permissions: any;
+  role_slug: string;
+  app_context: string;
+  invite_scope: string;
+  group_id: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 // Friendly error messages for redeem results
@@ -86,12 +86,9 @@ export function useInviteCodes() {
   const generateCode = useCallback(async (params: {
     agencyId: string;
     clientId: string;
-    permissionLevel?: string;
-    canCollectData?: boolean;
-    canViewNotes?: boolean;
-    canViewDocuments?: boolean;
     maxUses?: number;
-    expiresInDays?: number;
+    expiresInDays?: number | null;
+    permissions?: Record<string, boolean>;
   }) => {
     if (!user) return null;
     try {
@@ -110,12 +107,9 @@ export function useInviteCodes() {
           agency_id: params.agencyId,
           client_id: params.clientId,
           created_by: user.id,
-          permission_level: params.permissionLevel || 'view',
-          can_collect_data: params.canCollectData || false,
-          can_view_notes: params.canViewNotes || false,
-          can_view_documents: params.canViewDocuments || false,
           max_uses: params.maxUses || 1,
           expires_at: expiresAt,
+          permissions: params.permissions || {},
         } as any)
         .select()
         .single();
@@ -128,27 +122,31 @@ export function useInviteCodes() {
     }
   }, [user]);
 
-  const revokeCode = useCallback(async (codeId: string) => {
+  const updateCodeStatus = useCallback(async (inviteId: string, newStatus: string) => {
     if (!user) return;
     try {
+      const updateData: any = { status: newStatus };
+      if (newStatus === 'disabled' || newStatus === 'revoked') {
+        updateData.revoked_at = new Date().toISOString();
+        updateData.revoked_by = user.id;
+      }
+      if (newStatus === 'active') {
+        updateData.revoked_at = null;
+        updateData.revoked_by = null;
+      }
+
       const { error } = await (supabase
         .from('invite_codes') as any)
-        .update({
-          status: 'revoked',
-          revoked_at: new Date().toISOString(),
-          revoked_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', codeId);
+        .update(updateData)
+        .eq('invite_id', inviteId);
       if (error) throw error;
-      toast.success('Invite code revoked');
+      toast.success(`Code ${newStatus === 'active' ? 're-enabled' : 'disabled'}`);
     } catch (err: any) {
-      toast.error('Failed to revoke code: ' + err.message);
+      toast.error('Failed to update code: ' + err.message);
     }
   }, [user]);
 
   const redeemCode = useCallback(async (code: string): Promise<{ success: boolean; client_id?: string; agency_id?: string; error?: string } | null> => {
-    // Client-side rate limiting
     if (!checkClientRateLimit()) {
       toast.error('Too many attempts. Please wait a few minutes before trying again.');
       return null;
@@ -157,13 +155,12 @@ export function useInviteCodes() {
     recordAttempt();
 
     try {
-      // Log attempt to backend (best effort)
       if (user) {
         supabase.from('invite_code_attempts').insert({
           user_id: user.id,
-          code_tried: code.substring(0, 3) + '***', // partial for audit, not full code
+          code_tried: code.substring(0, 3) + '***',
           success: false,
-        } as any).then(); // fire-and-forget
+        } as any).then();
       }
 
       const { data, error } = await supabase.rpc('redeem_invite_code', {
@@ -177,7 +174,6 @@ export function useInviteCodes() {
         return { success: false, error: friendlyMsg };
       }
 
-      // Update attempt as success
       if (user) {
         supabase.from('invite_code_attempts').insert({
           user_id: user.id,
@@ -194,5 +190,5 @@ export function useInviteCodes() {
     }
   }, [user]);
 
-  return { codes, loading, fetchCodes, generateCode, revokeCode, redeemCode };
+  return { codes, loading, fetchCodes, generateCode, updateCodeStatus, redeemCode };
 }
