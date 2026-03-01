@@ -19,7 +19,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { useCoachEvidencePackets, CoachEvidencePacket, CoachEvidenceItem } from '@/hooks/useCoachEvidencePackets';
+import { useWeeklySnapshots, WeeklySnapshotPacket, WeeklySnapshotItem } from '@/hooks/useWeeklySnapshots';
 
 interface CoachEvidenceReviewPanelProps {
   onCountChange?: (count: number) => void;
@@ -36,11 +36,11 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
   const {
     packets, loading,
     fetchPendingForReview, fetchItems,
-    approvePacket, rejectPacket, requestFollowUp,
-  } = useCoachEvidencePackets();
+    approveSnapshot, rejectSnapshot, requestFollowUp,
+  } = useWeeklySnapshots();
 
-  const [reviewingPacket, setReviewingPacket] = useState<CoachEvidencePacket | null>(null);
-  const [packetItems, setPacketItems] = useState<CoachEvidenceItem[]>([]);
+  const [reviewingPacket, setReviewingPacket] = useState<WeeklySnapshotPacket | null>(null);
+  const [packetItems, setPacketItems] = useState<WeeklySnapshotItem[]>([]);
   const [reviewAction, setReviewAction] = useState<'approved' | 'rejected' | 'follow_up'>('approved');
   const [reviewNotes, setReviewNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -78,7 +78,7 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
       });
   }, [packets]);
 
-  const openReview = async (packet: CoachEvidencePacket) => {
+  const openReview = async (packet: WeeklySnapshotPacket) => {
     setReviewingPacket(packet);
     setReviewAction('approved');
     setReviewNotes('');
@@ -95,9 +95,9 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
     setSaving(true);
     try {
       if (reviewAction === 'approved') {
-        await approvePacket(reviewingPacket.id, reviewNotes);
+        await approveSnapshot(reviewingPacket.id, reviewNotes);
       } else if (reviewAction === 'rejected') {
-        await rejectPacket(reviewingPacket.id, reviewNotes);
+        await rejectSnapshot(reviewingPacket.id, reviewNotes);
       } else {
         await requestFollowUp(reviewingPacket.id, reviewNotes);
       }
@@ -114,13 +114,13 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
     return (
       <div className="py-6 text-center">
         <RefreshCw className="w-5 h-5 animate-spin mx-auto text-muted-foreground" />
-        <p className="text-sm text-muted-foreground mt-2">Loading evidence packets...</p>
+        <p className="text-sm text-muted-foreground mt-2">Loading weekly snapshots...</p>
       </div>
     );
   }
 
   if (packets.length === 0) {
-    return null; // Nothing to show in the review queue
+    return null;
   }
 
   return (
@@ -130,7 +130,7 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
           <div className="px-4 py-3 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-sm">Coach Evidence Packets</span>
+              <span className="font-semibold text-sm">Weekly Snapshots</span>
               <Badge variant="secondary">{packets.length}</Badge>
             </div>
             <Button variant="ghost" size="sm" onClick={() => fetchPendingForReview()}>
@@ -194,7 +194,7 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="w-5 h-5" />
-              Review Coach Evidence Packet
+              Review Weekly Snapshot
             </DialogTitle>
             <DialogDescription>
               {reviewingPacket && (
@@ -208,7 +208,7 @@ export function CoachEvidenceReviewPanel({ onCountChange }: CoachEvidenceReviewP
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Packet summary */}
+            {/* Snapshot summary */}
             <div className="rounded-lg border p-3 space-y-2">
               <p className="font-medium text-sm">{reviewingPacket?.title}</p>
               {reviewingPacket?.description && (

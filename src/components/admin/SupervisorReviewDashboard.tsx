@@ -295,7 +295,7 @@ export function SupervisorReviewDashboard() {
         </div>
       </div>
 
-      {/* Coach Evidence Packets for Review */}
+      {/* Weekly Snapshots for Review */}
       <CoachEvidenceReviewPanel />
 
       {/* Weekly Snapshots (Caregiver Summaries) for Review */}
