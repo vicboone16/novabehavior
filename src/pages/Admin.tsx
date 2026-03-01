@@ -6,7 +6,8 @@ import {
   Shield, Users, Tag, Settings, Plus, Trash2, 
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
-  FileText, UserCog, Award, Briefcase, KeyRound, Mail, Key, MoreHorizontal, Zap
+  FileText, UserCog, Award, Briefcase, KeyRound, Mail, Key, MoreHorizontal, Zap,
+  Copy, Bug
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -579,6 +580,41 @@ export default function Admin() {
           </div>
         </div>
       </header>
+
+      {/* Auth Debug Block */}
+      <div className="container pt-4">
+        <Card className="border-dashed border-yellow-500/50 bg-yellow-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-yellow-600">
+              <Bug className="w-4 h-4" />
+              Auth Debug (Admin Only)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm font-mono">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">UID:</span>
+              <span className="text-foreground">{user?.id ?? '—'}</span>
+              {user?.id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    navigator.clipboard.writeText(user.id);
+                    toast({ title: 'Copied', description: 'User ID copied to clipboard' });
+                  }}
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Email:</span>
+              <span className="text-foreground">{user?.email ?? '—'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content */}
       <main className="container py-6">
