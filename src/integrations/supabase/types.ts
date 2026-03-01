@@ -12501,6 +12501,8 @@ export type Database = {
           note_delegate_method: string | null
           note_delegate_user_id: string | null
           provider_id: string | null
+          scheduled_item_id: string | null
+          scheduled_item_source: string | null
           service_setting: string | null
           service_type: string | null
           session_length_minutes: number
@@ -12541,6 +12543,8 @@ export type Database = {
           note_delegate_method?: string | null
           note_delegate_user_id?: string | null
           provider_id?: string | null
+          scheduled_item_id?: string | null
+          scheduled_item_source?: string | null
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number
@@ -12581,6 +12585,8 @@ export type Database = {
           note_delegate_method?: string | null
           note_delegate_user_id?: string | null
           provider_id?: string | null
+          scheduled_item_id?: string | null
+          scheduled_item_source?: string | null
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number

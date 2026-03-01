@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ClipboardList, LayoutGrid, List, Rows3, Smartphone } from 'lucide-react';
+import { NextUpWidget } from '@/components/dashboard/NextUpWidget';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -59,6 +60,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
+      {/* Today — Next Up */}
+      <NextUpWidget />
+
       {/* Session Timer & Summary */}
       <div className="grid md:grid-cols-2 gap-3">
         <SessionTimer />
