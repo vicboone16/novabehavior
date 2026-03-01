@@ -9558,6 +9558,13 @@ export type Database = {
             referencedRelation: "parent_summary_packets"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "parent_summary_packet_reviews_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
+            referencedRelation: "v_weekly_snapshots_queue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       parent_summary_packets: {
@@ -16069,6 +16076,70 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agencies"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_weekly_snapshots_queue: {
+        Row: {
+          abc_count: number | null
+          agency_id: string | null
+          avg_intensity: number | null
+          behavior_count: number | null
+          client_first_name: string | null
+          client_id: string | null
+          client_last_name: string | null
+          created_at: string | null
+          duration_minutes_total: number | null
+          engagement: Json | null
+          frequency_total: number | null
+          id: string | null
+          intensity_avg: number | null
+          notes: string | null
+          parent_notes: string | null
+          review_comment: string | null
+          review_decision: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string | null
+          status: string | null
+          submitted_by: string | null
+          summary_json: Json | null
+          tools_used: Json | null
+          top_functions: Json | null
+          top_triggers: Json | null
+          total_duration_minutes: number | null
+          updated_at: string | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_summary_packets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
           },
         ]
       }
