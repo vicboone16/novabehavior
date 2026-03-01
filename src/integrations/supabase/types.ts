@@ -7299,6 +7299,8 @@ export type Database = {
           created_by: string | null
           draft_type: string | null
           id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           sections: Json
           shared_at: string | null
           shared_by: string | null
@@ -7316,6 +7318,8 @@ export type Database = {
           created_by?: string | null
           draft_type?: string | null
           id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sections?: Json
           shared_at?: string | null
           shared_by?: string | null
@@ -7333,6 +7337,8 @@ export type Database = {
           created_by?: string | null
           draft_type?: string | null
           id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           sections?: Json
           shared_at?: string | null
           shared_by?: string | null
