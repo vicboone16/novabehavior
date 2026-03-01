@@ -9562,6 +9562,13 @@ export type Database = {
             foreignKeyName: "parent_summary_packet_reviews_packet_id_fkey"
             columns: ["packet_id"]
             isOneToOne: false
+            referencedRelation: "v_staff_packets_needing_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packet_reviews_packet_id_fkey"
+            columns: ["packet_id"]
+            isOneToOne: false
             referencedRelation: "v_weekly_snapshots_queue"
             referencedColumns: ["id"]
           },
@@ -15959,6 +15966,54 @@ export type Database = {
           },
           {
             foreignKeyName: "iep_drafts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      v_staff_packets_needing_review: {
+        Row: {
+          abc_count: number | null
+          agency_id: string | null
+          client_id: string | null
+          created_at: string | null
+          duration_minutes_total: number | null
+          frequency_total: number | null
+          id: string | null
+          intensity_avg: number | null
+          parent_notes: string | null
+          status: string | null
+          top_functions: Json | null
+          top_triggers: Json | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_summary_packets_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "parent_summary_packets_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
