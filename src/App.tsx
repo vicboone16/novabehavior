@@ -33,6 +33,7 @@ import DocumentInbox from "./pages/DocumentInbox";
 import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
+import AgencyBillingPolicy from "./pages/AgencyBillingPolicy";
 import Analytics from "./pages/Analytics";
 import Recruiting from "./pages/Recruiting";
 import LMS from "./pages/LMS";
@@ -217,6 +218,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <Billing />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/billing/policy" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <AgencyBillingPolicy />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
