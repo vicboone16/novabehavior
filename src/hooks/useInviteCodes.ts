@@ -23,6 +23,44 @@ export interface InviteCode {
   updated_at: string;
 }
 
+// Friendly error messages for redeem results
+const REDEEM_ERROR_MESSAGES: Record<string, string> = {
+  'Invalid invite code': "That code doesn't match. Check it and try again.",
+  'This invite code is no longer active': 'This code was already used. Ask for a new one.',
+  'This invite code has expired': 'This code expired. Ask your support team for a new one.',
+  'This invite code has reached its usage limit': 'This code was already used. Ask for a new one.',
+  'You already have access to this learner': 'You are already linked to this learner.',
+  'Authentication required': 'Please sign in to use an invite code.',
+};
+
+const RATE_LIMIT_KEY = 'invite_code_attempts';
+const MAX_ATTEMPTS_PER_HOUR = 10;
+
+function checkClientRateLimit(): boolean {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_KEY);
+    const attempts: number[] = raw ? JSON.parse(raw) : [];
+    const oneHourAgo = Date.now() - 3600000;
+    const recent = attempts.filter(t => t > oneHourAgo);
+    return recent.length < MAX_ATTEMPTS_PER_HOUR;
+  } catch {
+    return true;
+  }
+}
+
+function recordAttempt(): void {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_KEY);
+    const attempts: number[] = raw ? JSON.parse(raw) : [];
+    const oneHourAgo = Date.now() - 3600000;
+    const recent = attempts.filter(t => t > oneHourAgo);
+    recent.push(Date.now());
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recent));
+  } catch {
+    // silently fail
+  }
+}
+
 export function useInviteCodes() {
   const { user } = useAuth();
   const [codes, setCodes] = useState<InviteCode[]>([]);
@@ -57,7 +95,6 @@ export function useInviteCodes() {
   }) => {
     if (!user) return null;
     try {
-      // Generate code via DB function
       const { data: codeResult, error: codeError } = await supabase
         .rpc('generate_invite_code');
       if (codeError) throw codeError;
@@ -110,24 +147,52 @@ export function useInviteCodes() {
     }
   }, [user]);
 
-  const redeemCode = useCallback(async (code: string) => {
+  const redeemCode = useCallback(async (code: string): Promise<{ success: boolean; client_id?: string; agency_id?: string; error?: string } | null> => {
+    // Client-side rate limiting
+    if (!checkClientRateLimit()) {
+      toast.error('Too many attempts. Please wait a few minutes before trying again.');
+      return null;
+    }
+
+    recordAttempt();
+
     try {
+      // Log attempt to backend (best effort)
+      if (user) {
+        supabase.from('invite_code_attempts').insert({
+          user_id: user.id,
+          code_tried: code.substring(0, 3) + '***', // partial for audit, not full code
+          success: false,
+        } as any).then(); // fire-and-forget
+      }
+
       const { data, error } = await supabase.rpc('redeem_invite_code', {
         _code: code,
       });
       if (error) throw error;
       const result = data as any;
       if (!result.success) {
-        toast.error(result.error);
-        return null;
+        const friendlyMsg = REDEEM_ERROR_MESSAGES[result.error] || result.error;
+        toast.error(friendlyMsg);
+        return { success: false, error: friendlyMsg };
       }
+
+      // Update attempt as success
+      if (user) {
+        supabase.from('invite_code_attempts').insert({
+          user_id: user.id,
+          code_tried: code.substring(0, 3) + '***',
+          success: true,
+        } as any).then();
+      }
+
       toast.success('Successfully linked to learner!');
       return result;
     } catch (err: any) {
       toast.error('Failed to redeem code: ' + err.message);
       return null;
     }
-  }, []);
+  }, [user]);
 
   return { codes, loading, fetchCodes, generateCode, revokeCode, redeemCode };
 }

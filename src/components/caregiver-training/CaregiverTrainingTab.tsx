@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3, Package, UserPlus } from 'lucide-react';
+import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3, Package, UserPlus, FileBarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import { useCaregiverTraining } from '@/hooks/useCaregiverTraining';
 import { useCoachEvidencePackets, CoachEvidencePacket } from '@/hooks/useCoachEvidencePackets';
 import { BST_PHASE_LABELS, BSTPhase } from '@/types/caregiverTraining';
 import { InviteCaregiverSection } from './InviteCaregiverSection';
+import { ParentSummaryPacketsSection } from './ParentSummaryPacketsSection';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -114,6 +115,7 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
               <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">{approvedPackets.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="parent-summaries">Parent Summaries</TabsTrigger>
           <TabsTrigger value="programs">Programs</TabsTrigger>
           <TabsTrigger value="competency">Competency</TabsTrigger>
         </TabsList>
@@ -192,6 +194,10 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="parent-summaries">
+          <ParentSummaryPacketsSection studentId={studentId} />
         </TabsContent>
 
         <TabsContent value="programs">
