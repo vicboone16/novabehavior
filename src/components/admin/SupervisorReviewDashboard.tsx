@@ -49,6 +49,7 @@ import {
   REVIEW_OUTCOME_CONFIG,
 } from '@/types/sessionNotes';
 import { CoachEvidenceReviewPanel } from '@/components/admin/CoachEvidenceReviewPanel';
+import { WeeklySnapshotReviewPanel } from '@/components/admin/WeeklySnapshotReviewPanel';
 
 interface NoteWithReview {
   id: string;
@@ -296,6 +297,9 @@ export function SupervisorReviewDashboard() {
 
       {/* Coach Evidence Packets for Review */}
       <CoachEvidenceReviewPanel />
+
+      {/* Weekly Snapshots (Caregiver Summaries) for Review */}
+      <WeeklySnapshotReviewPanel />
 
       {/* Filters */}
       <Card>
