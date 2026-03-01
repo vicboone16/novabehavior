@@ -748,6 +748,33 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_types: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          default_billable: boolean
+          display_name: string
+          id: string
+        }
+        Insert: {
+          category?: string
+          code: string
+          created_at?: string
+          default_billable?: boolean
+          display_name: string
+          id?: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          default_billable?: boolean
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
       admin_permissions: {
         Row: {
           can_assign_admin: boolean | null
@@ -895,6 +922,92 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_activity_type_rules: {
+        Row: {
+          activity_type_id: string
+          agency_id: string
+          created_at: string
+          id: string
+          is_billable_override: boolean | null
+          is_enabled: boolean
+        }
+        Insert: {
+          activity_type_id: string
+          agency_id: string
+          created_at?: string
+          id?: string
+          is_billable_override?: boolean | null
+          is_enabled?: boolean
+        }
+        Update: {
+          activity_type_id?: string
+          agency_id?: string
+          created_at?: string
+          id?: string
+          is_billable_override?: boolean | null
+          is_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_activity_type_rules_activity_type_id_fkey"
+            columns: ["activity_type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_billing_profiles: {
+        Row: {
+          agency_id: string
+          allow_mobile_post_hours: boolean
+          auto_post_on_note_finalize: boolean
+          created_at: string
+          cycle_type: string
+          id: string
+          invoice_grouping: string
+          mode: string
+          payroll_cycle_type: string | null
+          require_note_final_to_post: boolean
+          rounding_rule: number
+          updated_at: string
+          utilization_policy: string
+          week_start_day: string
+        }
+        Insert: {
+          agency_id: string
+          allow_mobile_post_hours?: boolean
+          auto_post_on_note_finalize?: boolean
+          created_at?: string
+          cycle_type?: string
+          id?: string
+          invoice_grouping?: string
+          mode?: string
+          payroll_cycle_type?: string | null
+          require_note_final_to_post?: boolean
+          rounding_rule?: number
+          updated_at?: string
+          utilization_policy?: string
+          week_start_day?: string
+        }
+        Update: {
+          agency_id?: string
+          allow_mobile_post_hours?: boolean
+          auto_post_on_note_finalize?: boolean
+          created_at?: string
+          cycle_type?: string
+          id?: string
+          invoice_grouping?: string
+          mode?: string
+          payroll_cycle_type?: string | null
+          require_note_final_to_post?: boolean
+          rounding_rule?: number
+          updated_at?: string
+          utilization_policy?: string
+          week_start_day?: string
+        }
+        Relationships: []
+      }
       agency_data_sources: {
         Row: {
           agency_id: string
@@ -964,6 +1077,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agency_invite_codes: {
+        Row: {
+          agency_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          role: string
+          updated_at: string
+          uses: number
+        }
+        Insert: {
+          agency_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          role?: string
+          updated_at?: string
+          uses?: number
+        }
+        Update: {
+          agency_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          role?: string
+          updated_at?: string
+          uses?: number
+        }
+        Relationships: []
       }
       agency_locations: {
         Row: {
@@ -1630,6 +1785,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "authorized_services_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
+          },
+          {
             foreignKeyName: "authorized_services_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -2021,6 +2183,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_claims_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
           },
           {
             foreignKeyName: "billing_claims_payer_id_fkey"
@@ -4899,6 +5068,13 @@ export type Database = {
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clinical_schedule_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
+          },
         ]
       }
       clinical_service_buckets: {
@@ -5002,6 +5178,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_service_logs_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
           },
         ]
       }
@@ -9868,6 +10051,244 @@ export type Database = {
           },
         ]
       }
+      parent_training_assignments: {
+        Row: {
+          agency_id: string | null
+          assignment_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          due_at: string | null
+          module_id: string
+          module_version_id: string
+          parent_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          assignment_id?: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          module_id: string
+          module_version_id: string
+          parent_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          assignment_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          due_at?: string | null
+          module_id?: string
+          module_version_id?: string
+          parent_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_version_id_fkey"
+            columns: ["module_version_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_module_versions"
+            referencedColumns: ["module_version_id"]
+          },
+        ]
+      }
+      parent_training_library: {
+        Row: {
+          agency_id: string | null
+          body: Json
+          created_at: string
+          created_by: string | null
+          item_id: string
+          item_type: string
+          scope: string
+          status: string
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          body?: Json
+          created_at?: string
+          created_by?: string | null
+          item_id?: string
+          item_type: string
+          scope?: string
+          status?: string
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          body?: Json
+          created_at?: string
+          created_by?: string | null
+          item_id?: string
+          item_type?: string
+          scope?: string
+          status?: string
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      parent_training_module_versions: {
+        Row: {
+          change_notes: string | null
+          content: Json
+          created_at: string
+          created_by: string | null
+          module_id: string
+          module_version_id: string
+          status: string
+          version_num: number
+        }
+        Insert: {
+          change_notes?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          module_id: string
+          module_version_id?: string
+          status?: string
+          version_num: number
+        }
+        Update: {
+          change_notes?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          module_id?: string
+          module_version_id?: string
+          status?: string
+          version_num?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_module_versions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
+      parent_training_modules: {
+        Row: {
+          agency_id: string | null
+          canonical_key: string | null
+          created_at: string
+          created_by: string | null
+          est_minutes: number
+          module_id: string
+          scope: string
+          short_description: string | null
+          skill_tags: string[]
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          canonical_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          est_minutes?: number
+          module_id?: string
+          scope?: string
+          short_description?: string | null
+          skill_tags?: string[]
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          canonical_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          est_minutes?: number
+          module_id?: string
+          scope?: string
+          short_description?: string | null
+          skill_tags?: string[]
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      parent_training_progress: {
+        Row: {
+          assignment_id: string
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          parent_user_id: string
+          progress_id: string
+          quiz_score_percent: number | null
+          responses: Json
+          started_at: string | null
+          time_spent_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          parent_user_id: string
+          progress_id?: string
+          quiz_score_percent?: number | null
+          responses?: Json
+          started_at?: string | null
+          time_spent_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          parent_user_id?: string
+          progress_id?: string
+          quiz_score_percent?: number | null
+          responses?: Json
+          started_at?: string | null
+          time_spent_seconds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_progress_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_assignments"
+            referencedColumns: ["assignment_id"]
+          },
+        ]
+      }
       payer_auth_rules: {
         Row: {
           active: boolean | null
@@ -10488,6 +10909,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prior_auth_requests_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
           },
           {
             foreignKeyName: "prior_auth_requests_payer_id_fkey"
@@ -12054,6 +12482,7 @@ export type Database = {
           authorization_id: string | null
           authorization_status: string | null
           authorized_service_id: string | null
+          billed_units: number | null
           billing_status: string | null
           coverage_gate_reason_code: string | null
           coverage_gate_status: string | null
@@ -12081,6 +12510,8 @@ export type Database = {
           status: string | null
           student_ids: string[] | null
           user_id: string
+          utilization_posted_at: string | null
+          utilization_status: string
           verification_source: string | null
         }
         Insert: {
@@ -12091,6 +12522,7 @@ export type Database = {
           authorization_id?: string | null
           authorization_status?: string | null
           authorized_service_id?: string | null
+          billed_units?: number | null
           billing_status?: string | null
           coverage_gate_reason_code?: string | null
           coverage_gate_status?: string | null
@@ -12118,6 +12550,8 @@ export type Database = {
           status?: string | null
           student_ids?: string[] | null
           user_id: string
+          utilization_posted_at?: string | null
+          utilization_status?: string
           verification_source?: string | null
         }
         Update: {
@@ -12128,6 +12562,7 @@ export type Database = {
           authorization_id?: string | null
           authorization_status?: string | null
           authorized_service_id?: string | null
+          billed_units?: number | null
           billing_status?: string | null
           coverage_gate_reason_code?: string | null
           coverage_gate_status?: string | null
@@ -12155,6 +12590,8 @@ export type Database = {
           status?: string | null
           student_ids?: string[] | null
           user_id?: string
+          utilization_posted_at?: string | null
+          utilization_status?: string
           verification_source?: string | null
         }
         Relationships: [
@@ -12171,6 +12608,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
           },
           {
             foreignKeyName: "sessions_authorized_service_id_fkey"
@@ -15314,6 +15758,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "unit_deduction_ledger_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
+          },
+          {
             foreignKeyName: "unit_deduction_ledger_authorized_service_id_fkey"
             columns: ["authorized_service_id"]
             isOneToOne: false
@@ -15393,6 +15844,39 @@ export type Database = {
             referencedColumns: ["invite_id"]
           },
         ]
+      }
+      user_agency_billing_prefs: {
+        Row: {
+          agency_id: string
+          allow_mobile_post_hours_override: boolean | null
+          auto_post_on_note_finalize_override: boolean | null
+          created_at: string
+          id: string
+          require_note_final_to_post_override: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          allow_mobile_post_hours_override?: boolean | null
+          auto_post_on_note_finalize_override?: boolean | null
+          created_at?: string
+          id?: string
+          require_note_final_to_post_override?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          allow_mobile_post_hours_override?: boolean | null
+          auto_post_on_note_finalize_override?: boolean | null
+          created_at?: string
+          id?: string
+          require_note_final_to_post_override?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_agency_context: {
         Row: {
@@ -16118,6 +16602,41 @@ export type Database = {
           },
         ]
       }
+      v_authorization_utilization: {
+        Row: {
+          authorization_id: string | null
+          student_id: string | null
+          unit_type: string | null
+          units_approved: number | null
+          units_available_after_reserve: number | null
+          units_remaining: number | null
+          units_reserved: number | null
+          units_used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "authorizations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_ci_agency_comparison: {
         Row: {
           agency_id: string | null
@@ -16168,6 +16687,13 @@ export type Database = {
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clinical_schedule_events_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
+          },
         ]
       }
       v_clinical_service_logs_norm: {
@@ -16200,6 +16726,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "authorizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_service_logs_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
           },
         ]
       }
@@ -16653,13 +17186,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -16669,8 +17195,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -16682,13 +17208,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -16884,6 +17417,18 @@ export type Database = {
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
         Returns: number
+      }
+      fn_apply_rounding: {
+        Args: { p_agency_id: string; p_minutes: number }
+        Returns: number
+      }
+      fn_calculate_pay_period: {
+        Args: { p_agency_id: string; p_date: string }
+        Returns: Json
+      }
+      fn_effective_billing_policy: {
+        Args: { p_agency_id: string; p_user_id: string }
+        Returns: Json
       }
       fn_round_minutes: {
         Args: { p_minutes: number; p_round_to: number }
@@ -17199,6 +17744,23 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      rpc_create_agency_invite_code: {
+        Args: {
+          p_agency_id: string
+          p_expires_hours?: number
+          p_max_uses?: number
+          p_role?: string
+        }
+        Returns: Json
+      }
+      rpc_create_workspace_invite_code: {
+        Args: {
+          p_expires_hours?: number
+          p_role?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       rpc_end_session_and_update_utilization:
         | {
             Args: {
@@ -17235,8 +17797,40 @@ export type Database = {
           minutes_rounded: number
         }[]
       }
+      rpc_finalize_latest_session_note: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      rpc_finalize_note_and_post_session: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      rpc_get_effective_billing_policy_for_active_agency: {
+        Args: never
+        Returns: Json
+      }
+      rpc_join_agency_with_code:
+        | { Args: { p_code: string }; Returns: Json }
+        | { Args: { p_code: string; p_redeemed_from?: string }; Returns: Json }
+      rpc_post_session: { Args: { p_session_id: string }; Returns: Json }
+      rpc_post_session_and_apply_utilization: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      rpc_post_session_hours: {
+        Args: { p_session_id: string; p_source?: string }
+        Returns: Json
+      }
+      rpc_post_session_utilization: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
       rpc_redeem_access_invite: {
         Args: { p_code: string; p_user_id: string }
+        Returns: Json
+      }
+      rpc_reserve_session_hours: {
+        Args: { p_session_id: string }
         Returns: Json
       }
       rpc_resolve_billing_profile: {
@@ -17315,6 +17909,33 @@ export type Database = {
       }
       rpc_timer_stop: {
         Args: { p_end_time?: string; p_summary?: Json; p_time_block_id: string }
+        Returns: Json
+      }
+      rpc_unpost_session_and_restore_utilization: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      rpc_unpost_session_utilization: {
+        Args: { p_reason?: string; p_session_id: string }
+        Returns: Json
+      }
+      rpc_update_agency_billing_policy: {
+        Args: {
+          p_agency_id: string
+          p_allow_mobile_post_hours: boolean
+          p_auto_post_on_note_finalize: boolean
+          p_require_note_final_to_post: boolean
+          p_utilization_policy: string
+        }
+        Returns: Json
+      }
+      rpc_upsert_user_agency_billing_prefs: {
+        Args: {
+          p_agency_id: string
+          p_allow_mobile_post_hours_override: boolean
+          p_auto_post_on_note_finalize_override: boolean
+          p_require_note_final_to_post_override: boolean
+        }
         Returns: Json
       }
       set_agency_alias: {
