@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3, Package } from 'lucide-react';
+import { Users, Plus, Clock, CheckCircle2, BookOpen, BarChart3, Package, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCaregiverTraining } from '@/hooks/useCaregiverTraining';
 import { useCoachEvidencePackets, CoachEvidencePacket } from '@/hooks/useCoachEvidencePackets';
 import { BST_PHASE_LABELS, BSTPhase } from '@/types/caregiverTraining';
+import { InviteCaregiverSection } from './InviteCaregiverSection';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -95,9 +96,14 @@ export function CaregiverTrainingTab({ studentId }: CaregiverTrainingTabProps) {
         </Card>
       </div>
 
-      <Button onClick={() => setShowLogSession(true)} className="gap-2">
-        <Plus className="w-4 h-4" /> Log Training Session
-      </Button>
+      <div className="flex gap-3 flex-wrap">
+        <Button onClick={() => setShowLogSession(true)} className="gap-2">
+          <Plus className="w-4 h-4" /> Log Training Session
+        </Button>
+      </div>
+
+      {/* Invite Codes Section */}
+      <InviteCaregiverSection studentId={studentId} />
 
       <Tabs defaultValue="sessions">
         <TabsList>
