@@ -36,6 +36,7 @@ import Billing from "./pages/Billing";
 import Analytics from "./pages/Analytics";
 import Recruiting from "./pages/Recruiting";
 import LMS from "./pages/LMS";
+import ParentTrainingAdmin from "./pages/ParentTrainingAdmin";
 import NotFound from "./pages/NotFound";
 import BehaviorLabCatalog from "./pages/BehaviorLabCatalog";
 import BehaviorLabPlayer from "./pages/BehaviorLabPlayer";
@@ -270,6 +271,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <LMS />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-training" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ParentTrainingAdmin />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
