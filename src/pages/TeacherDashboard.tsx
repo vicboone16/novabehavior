@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
+import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { TeacherModeTOI } from '@/components/toi/TeacherModeTOI';
 import { Student, Behavior } from '@/types/behavior';
@@ -187,6 +188,9 @@ export default function TeacherDashboard() {
               isTeacherMode={true}
               onClose={() => setSelectedStudent(null)}
             />
+
+            {/* Shared BCBA Summaries */}
+            <TeacherSummaries clientId={selectedStudent.id} />
           </div>
         ) : (
           <div className="space-y-6">
