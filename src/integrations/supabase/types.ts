@@ -16138,34 +16138,53 @@ export type Database = {
         Row: {
           abc_count: number | null
           agency_id: string | null
-          avg_intensity: number | null
-          behavior_count: number | null
-          client_first_name: string | null
           client_id: string | null
-          client_last_name: string | null
           created_at: string | null
           duration_minutes_total: number | null
-          engagement: Json | null
           frequency_total: number | null
           id: string | null
           intensity_avg: number | null
-          notes: string | null
           parent_notes: string | null
-          review_comment: string | null
-          review_decision: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          source: string | null
           status: string | null
           submitted_by: string | null
-          summary_json: Json | null
-          tools_used: Json | null
           top_functions: Json | null
           top_triggers: Json | null
-          total_duration_minutes: number | null
-          updated_at: string | null
           week_end: string | null
           week_start: string | null
+        }
+        Insert: {
+          abc_count?: number | null
+          agency_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          duration_minutes_total?: number | null
+          frequency_total?: number | null
+          id?: string | null
+          intensity_avg?: number | null
+          parent_notes?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          top_functions?: Json | null
+          top_triggers?: Json | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          abc_count?: number | null
+          agency_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          duration_minutes_total?: number | null
+          frequency_total?: number | null
+          id?: string | null
+          intensity_avg?: number | null
+          parent_notes?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          top_functions?: Json | null
+          top_triggers?: Json | null
+          week_end?: string | null
+          week_start?: string | null
         }
         Relationships: [
           {
@@ -16339,8 +16358,8 @@ export type Database = {
         Returns: boolean
       }
       effective_staff_can_review:
+        | { Args: { _client_id: string }; Returns: boolean }
         | { Args: { _client_id: string; _user_id: string }; Returns: boolean }
-        | { Args: { p_client_id: string }; Returns: boolean }
       ensure_solo_teacher_agency: {
         Args: { p_user_id: string }
         Returns: {
