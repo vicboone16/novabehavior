@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
+import { useAgencyAliases } from '@/hooks/useAgencyAliases';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import {
   Loader2,
   Settings,
   Users,
+  AtSign,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -36,10 +38,14 @@ import { AgencySettingsDialog } from '@/components/agency/AgencySettingsDialog';
 export function AgencySwitcher() {
   const { user, userRole } = useAuth();
   const { currentAgency, agencies, loading, switchAgency, refreshAgencies, isAgencyAdmin } = useAgencyContext();
+  const { aliases, fetchMyAliases, setAlias, getAliasForAgency } = useAgencyAliases();
   const [switching, setSwitching] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showManageClientsDialog, setShowManageClientsDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showAliasDialog, setShowAliasDialog] = useState(false);
+  const [aliasSuffix, setAliasSuffix] = useState('');
+  const [settingAlias, setSettingAlias] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newAgencyName, setNewAgencyName] = useState('');
 
@@ -50,6 +56,11 @@ export function AgencySwitcher() {
   const [savingStudents, setSavingStudents] = useState(false);
 
   const isSuperAdmin = userRole === 'super_admin';
+
+  // Fetch aliases when user changes
+  useEffect(() => {
+    if (user) fetchMyAliases();
+  }, [user, fetchMyAliases]);
 
   // Load all students when manage dialog opens
   useEffect(() => {
@@ -142,6 +153,19 @@ export function AgencySwitcher() {
     }
   };
 
+  const handleSetAlias = async () => {
+    if (!currentAgency || !aliasSuffix.trim()) return;
+    setSettingAlias(true);
+    const result = await setAlias(currentAgency.id, aliasSuffix.trim());
+    setSettingAlias(false);
+    if (result) {
+      setShowAliasDialog(false);
+      setAliasSuffix('');
+    }
+  };
+
+  const currentAlias = currentAgency ? getAliasForAgency(currentAgency.id) : null;
+
   const handleCreateAgency = async () => {
     if (!newAgencyName.trim() || !user) return;
     
@@ -233,46 +257,81 @@ export function AgencySwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={switching} title={currentAgency?.name || 'Select Agency'}>
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 max-w-[200px]" disabled={switching} title={currentAlias ? `Working as ${currentAlias}` : currentAgency?.name || 'Select Agency'}>
             {switching ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             ) : (
-              <Building2 className="h-4 w-4" />
+              <Building2 className="h-4 w-4 shrink-0" />
+            )}
+            {currentAlias && (
+              <span className="truncate text-xs font-medium">{currentAlias}</span>
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[240px]">
+        <DropdownMenuContent align="start" className="w-[260px]">
+          {currentAlias && (
+            <>
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                Working as <span className="font-semibold text-foreground">{currentAlias}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuLabel>Switch Agency</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {agencies.map((membership) => (
-            <DropdownMenuItem
-              key={membership.id}
-              onClick={() => handleSwitch(membership.agency_id)}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                {membership.agency.logo_url ? (
-                  <img 
-                    src={membership.agency.logo_url} 
-                    alt="" 
-                    className="h-5 w-5 rounded object-cover"
-                  />
-                ) : (
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                )}
-                <span className="truncate max-w-[140px]">{membership.agency.name}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {membership.is_primary && (
-                  <Badge variant="outline" className="text-[10px] px-1">Primary</Badge>
-                )}
-                {membership.agency_id === currentAgency?.id && (
-                  <Check className="h-4 w-4 text-primary" />
-                )}
-              </div>
-            </DropdownMenuItem>
-          ))}
+          {agencies.map((membership) => {
+            const memberAlias = getAliasForAgency(membership.agency_id);
+            return (
+              <DropdownMenuItem
+                key={membership.id}
+                onClick={() => handleSwitch(membership.agency_id)}
+                className="flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {membership.agency.logo_url ? (
+                      <img 
+                        src={membership.agency.logo_url} 
+                        alt="" 
+                        className="h-5 w-5 rounded object-cover shrink-0"
+                      />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="truncate max-w-[140px]">{membership.agency.name}</span>
+                  </div>
+                  {memberAlias && (
+                    <span className="text-[10px] text-muted-foreground ml-6 truncate">{memberAlias}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {membership.is_primary && (
+                    <Badge variant="outline" className="text-[10px] px-1">Primary</Badge>
+                  )}
+                  {membership.agency_id === currentAgency?.id && (
+                    <Check className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+              </DropdownMenuItem>
+            );
+          })}
+
+          {currentAgency && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  setAliasSuffix(currentAlias?.split('.')?.slice(1)?.join('.') || '');
+                  setShowAliasDialog(true);
+                }}
+                className="cursor-pointer"
+              >
+                <AtSign className="h-4 w-4 mr-2" />
+                {currentAlias ? 'Change Alias' : 'Set Alias'}
+              </DropdownMenuItem>
+            </>
+          )}
 
           {isSuperAdmin && (
             <>
@@ -449,6 +508,48 @@ export function AgencySwitcher() {
         open={showSettingsDialog} 
         onOpenChange={setShowSettingsDialog} 
       />
+
+      {/* Set Alias Dialog */}
+      <Dialog open={showAliasDialog} onOpenChange={setShowAliasDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AtSign className="h-5 w-5" />
+              {currentAlias ? 'Change' : 'Set'} Agency Alias
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Choose a username for <span className="font-medium text-foreground">{currentAgency?.name}</span>.
+              {currentAgency?.agency_prefix && (
+                <> Your alias will be formatted as <span className="font-mono font-medium">{currentAgency.agency_prefix}.</span><span className="font-mono text-muted-foreground">your-name</span></>
+              )}
+            </p>
+            <div>
+              <Label htmlFor="alias-suffix">Username</Label>
+              <div className="flex items-center gap-1 mt-1">
+                {currentAgency?.agency_prefix && (
+                  <span className="text-sm font-mono font-medium text-muted-foreground">{currentAgency.agency_prefix}.</span>
+                )}
+                <Input
+                  id="alias-suffix"
+                  value={aliasSuffix}
+                  onChange={(e) => setAliasSuffix(e.target.value)}
+                  placeholder="e.g. jsmith"
+                  className="font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowAliasDialog(false)}>Cancel</Button>
+              <Button onClick={handleSetAlias} disabled={settingAlias || !aliasSuffix.trim()}>
+                {settingAlias ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Save Alias
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

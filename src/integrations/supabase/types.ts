@@ -665,6 +665,7 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          agency_prefix: string | null
           agency_type: string | null
           billing_address_city: string | null
           billing_address_line1: string | null
@@ -682,6 +683,7 @@ export type Database = {
           name: string
           npi: string | null
           phone: string | null
+          prefix_required: boolean
           primary_color: string | null
           primary_entity_label: string
           settings: Json | null
@@ -697,6 +699,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          agency_prefix?: string | null
           agency_type?: string | null
           billing_address_city?: string | null
           billing_address_line1?: string | null
@@ -714,6 +717,7 @@ export type Database = {
           name: string
           npi?: string | null
           phone?: string | null
+          prefix_required?: boolean
           primary_color?: string | null
           primary_entity_label?: string
           settings?: Json | null
@@ -729,6 +733,7 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          agency_prefix?: string | null
           agency_type?: string | null
           billing_address_city?: string | null
           billing_address_line1?: string | null
@@ -746,6 +751,7 @@ export type Database = {
           name?: string
           npi?: string | null
           phone?: string | null
+          prefix_required?: boolean
           primary_color?: string | null
           primary_entity_label?: string
           settings?: Json | null
@@ -944,6 +950,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "agency_memberships_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_user_aliases: {
+        Row: {
+          agency_id: string
+          agency_username: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          agency_username: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          agency_username?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_user_aliases_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
@@ -14645,6 +14686,7 @@ export type Database = {
         Returns: {
           address_line1: string | null
           address_line2: string | null
+          agency_prefix: string | null
           agency_type: string | null
           billing_address_city: string | null
           billing_address_line1: string | null
@@ -14662,6 +14704,7 @@ export type Database = {
           name: string
           npi: string | null
           phone: string | null
+          prefix_required: boolean
           primary_color: string | null
           primary_entity_label: string
           settings: Json | null
@@ -14967,6 +15010,10 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      set_agency_alias: {
+        Args: { _agency_id: string; _suffix: string }
+        Returns: Json
+      }
       set_user_pin: {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
