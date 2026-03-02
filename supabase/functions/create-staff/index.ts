@@ -15,6 +15,13 @@ interface StudentPermission {
   permission_level: string;
 }
 
+interface AppAccessEntry {
+  agency_id: string;
+  app_slug: string;
+  role: string;
+  student_permissions?: StudentPermission[];
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -35,6 +42,7 @@ Deno.serve(async (req) => {
       role,
       agency_id,
       student_permissions,
+      app_access,
     }: {
       email: string;
       password: string;
@@ -49,6 +57,7 @@ Deno.serve(async (req) => {
       role?: string;
       agency_id?: string;
       student_permissions?: StudentPermission[];
+      app_access?: AppAccessEntry[];
     } = await req.json();
 
     if (!email || !password || !first_name || !last_name) {
@@ -216,6 +225,54 @@ Deno.serve(async (req) => {
 
       if (accessError) {
         console.error("Student access error:", accessError);
+      }
+    }
+
+    // Insert per-app access records
+    if (app_access && app_access.length > 0) {
+      const appAccessRecords = app_access.map((aa) => ({
+        user_id: userId,
+        app_slug: aa.app_slug,
+        agency_id: aa.agency_id,
+        role: aa.role || "staff",
+        is_active: true,
+        granted_by: callerUser.id,
+        granted_at: new Date().toISOString(),
+      }));
+
+      const { error: appAccessError } = await supabaseAdmin
+        .from("user_app_access")
+        .upsert(appAccessRecords, { onConflict: "user_id,app_slug,agency_id" });
+
+      if (appAccessError) {
+        console.error("App access error:", appAccessError);
+      }
+
+      // Insert per-app student permissions
+      for (const aa of app_access) {
+        if (aa.student_permissions && aa.student_permissions.length > 0) {
+          const perAppStudentRecords = aa.student_permissions.map((sp) => ({
+            user_id: userId,
+            student_id: sp.student_id,
+            app_scope: aa.app_slug,
+            permission_level: sp.permission_level || "view",
+            can_view_notes: sp.can_view_notes ?? false,
+            can_view_documents: sp.can_view_documents ?? false,
+            can_collect_data: sp.can_collect_data ?? false,
+            can_edit_profile: sp.can_edit_profile ?? false,
+            can_generate_reports: sp.can_generate_reports ?? false,
+            granted_by: callerUser.id,
+            granted_at: new Date().toISOString(),
+          }));
+
+          const { error: perAppError } = await supabaseAdmin
+            .from("user_student_access")
+            .upsert(perAppStudentRecords, { onConflict: "user_id,student_id,app_scope" });
+
+          if (perAppError) {
+            console.error(`Per-app student access error (${aa.app_slug}):`, perAppError);
+          }
+        }
       }
     }
 

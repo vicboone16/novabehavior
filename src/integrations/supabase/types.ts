@@ -16328,6 +16328,50 @@ export type Database = {
           },
         ]
       }
+      user_app_access: {
+        Row: {
+          agency_id: string | null
+          app_slug: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          app_slug: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          app_slug?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_app_access_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_custom_roles: {
         Row: {
           agency_id: string | null
@@ -16423,6 +16467,7 @@ export type Database = {
       }
       user_student_access: {
         Row: {
+          app_scope: string
           can_collect_data: boolean | null
           can_edit_profile: boolean | null
           can_generate_reports: boolean | null
@@ -16437,6 +16482,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_scope?: string
           can_collect_data?: boolean | null
           can_edit_profile?: boolean | null
           can_generate_reports?: boolean | null
@@ -16451,6 +16497,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_scope?: string
           can_collect_data?: boolean | null
           can_edit_profile?: boolean | null
           can_generate_reports?: boolean | null
@@ -17910,6 +17957,26 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      get_user_app_access: {
+        Args: { _user_id: string }
+        Returns: {
+          agency_id: string | null
+          app_slug: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          role: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_app_access"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_user_feature_permissions: {
         Args: { _user_id: string }
         Returns: {
@@ -18043,6 +18110,10 @@ export type Database = {
       }
       has_agency_student_access: {
         Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_app_access: {
+        Args: { _agency_id?: string; _app_slug: string; _user_id: string }
         Returns: boolean
       }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }

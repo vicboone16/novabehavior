@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MultiAppAccessPanel, type AgencyAppAccess } from './MultiAppAccessPanel';
 import { 
   Dialog,
   DialogContent,
@@ -97,6 +98,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
     agency_id: '',
     emailOption: 'none' as 'none' | 'now' | 'later',
     studentPermissions: [] as StudentWithPermissions[],
+    agencyAppAccess: [] as AgencyAppAccess[],
   });
   const [isCreating, setIsCreating] = useState(false);
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
@@ -304,7 +306,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
           npi: newStaffForm.npi,
           supervisor_id: newStaffForm.supervisor_id || undefined,
           title: newStaffForm.title,
-          role: newStaffForm.roles[0] || 'staff', // primary role for create-staff edge function
+          role: newStaffForm.roles[0] || 'staff',
           agency_id: newStaffForm.agency_id || undefined,
           student_permissions: newStaffForm.studentPermissions
             .filter(sp => sp.enabled)
@@ -317,6 +319,24 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
               can_generate_reports: sp.can_generate_reports,
               permission_level: sp.permission_level || 'view',
             })),
+          app_access: newStaffForm.agencyAppAccess.flatMap(aa =>
+            aa.apps.filter(app => app.enabled).map(app => ({
+              agency_id: aa.agency_id,
+              app_slug: app.app_slug,
+              role: app.role,
+              student_permissions: app.studentPermissions
+                .filter(sp => sp.enabled)
+                .map(sp => ({
+                  student_id: sp.student_id,
+                  can_view_notes: sp.can_view_notes,
+                  can_view_documents: sp.can_view_documents,
+                  can_collect_data: sp.can_collect_data,
+                  can_edit_profile: sp.can_edit_profile,
+                  can_generate_reports: sp.can_generate_reports,
+                  permission_level: sp.permission_level || 'view',
+                })),
+            }))
+          ),
         },
       });
 
@@ -346,6 +366,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
         agency_id: '',
         emailOption: 'none',
         studentPermissions: [],
+        agencyAppAccess: [],
       });
       setStudentSearchQuery('');
       setExpandedStudents(new Set());
@@ -805,7 +826,15 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
 
             <Separator />
 
-            {/* Client Access */}
+            {/* Multi-App Access */}
+            <MultiAppAccessPanel
+              agencies={agencies}
+              students={students as any}
+              agencyAppAccess={newStaffForm.agencyAppAccess}
+              onAgencyAppAccessChange={(access) => setNewStaffForm(f => ({ ...f, agencyAppAccess: access }))}
+            />
+
+            <Separator />
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Shield className="w-4 h-4 text-primary" />
