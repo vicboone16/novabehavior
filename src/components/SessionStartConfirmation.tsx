@@ -27,6 +27,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment } from '@/types/schedule';
@@ -52,6 +53,7 @@ export function SessionStartConfirmation({
   onConfirm,
 }: SessionStartConfirmationProps) {
   const { user } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const { toast } = useToast();
   const { currentSessionId, sessionStartTime } = useDataStore();
   
@@ -271,8 +273,9 @@ export function SessionStartConfirmation({
             student_id: student.id,
             staff_user_id: user.id,
             created_by: user.id,
+            agency_id: currentAgency?.id || null,
             start_time: now.toISOString(),
-            end_time: addMinutes(now, 60).toISOString(), // Default 60 min, will update on end
+            end_time: addMinutes(now, 60).toISOString(),
             duration_minutes: 60,
             status: 'in_progress',
             appointment_type: 'session',
