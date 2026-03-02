@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ interface StaffManagementProps {
 export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -256,12 +258,7 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
   }, [staff, searchQuery, filter]);
 
   const handleViewDetails = (member: StaffMember) => {
-    if (member.clinician_count && member.clinician_count > 0) {
-      setSelectedSupervisor(member);
-      setSelectedClinician(null);
-    } else {
-      setShowStaffDetails(member);
-    }
+    navigate(`/staff/${member.user_id}`);
   };
 
   const handleViewPatients = (member: StaffMember) => {
