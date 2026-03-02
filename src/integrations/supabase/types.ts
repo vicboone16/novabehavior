@@ -13373,10 +13373,13 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           billable_hours: number | null
+          billable_minutes: number
           created_at: string
           drive_time_hours: number | null
           id: string
           non_billable_hours: number | null
+          nonbillable_hours: number
+          nonbillable_minutes: number
           notes: string | null
           pay_period_end: string
           pay_period_start: string
@@ -13385,6 +13388,7 @@ export type Database = {
           submitted_at: string | null
           total_hours: number | null
           total_mileage: number | null
+          total_minutes: number
           updated_at: string
         }
         Insert: {
@@ -13392,10 +13396,13 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           billable_hours?: number | null
+          billable_minutes?: number
           created_at?: string
           drive_time_hours?: number | null
           id?: string
           non_billable_hours?: number | null
+          nonbillable_hours?: number
+          nonbillable_minutes?: number
           notes?: string | null
           pay_period_end: string
           pay_period_start: string
@@ -13404,6 +13411,7 @@ export type Database = {
           submitted_at?: string | null
           total_hours?: number | null
           total_mileage?: number | null
+          total_minutes?: number
           updated_at?: string
         }
         Update: {
@@ -13411,10 +13419,13 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           billable_hours?: number | null
+          billable_minutes?: number
           created_at?: string
           drive_time_hours?: number | null
           id?: string
           non_billable_hours?: number | null
+          nonbillable_hours?: number
+          nonbillable_minutes?: number
           notes?: string | null
           pay_period_end?: string
           pay_period_start?: string
@@ -13423,6 +13434,7 @@ export type Database = {
           submitted_at?: string | null
           total_hours?: number | null
           total_mileage?: number | null
+          total_minutes?: number
           updated_at?: string
         }
         Relationships: [
@@ -18057,6 +18069,10 @@ export type Database = {
             }
             Returns: Json
           }
+      rpc_ensure_timesheet: {
+        Args: { p_agency_id: string; p_reference_date?: string }
+        Returns: Json
+      }
       rpc_export_hours: {
         Args: {
           p_agency_id?: string
@@ -18109,6 +18125,10 @@ export type Database = {
       }
       rpc_get_effective_billing_policy_for_active_agency: {
         Args: never
+        Returns: Json
+      }
+      rpc_get_pay_period: {
+        Args: { p_agency_id: string; p_reference_date?: string }
         Returns: Json
       }
       rpc_join_agency: { Args: { p_pin: string }; Returns: Json }
