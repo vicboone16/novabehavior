@@ -59,7 +59,7 @@ const { data } = await supabase
 | App              | Slug              | id | PIN Login | Auth Method        |
 |------------------|-------------------|----|-----------|-------------------|
 | Nova Track       | novatrack         | 1  | ✅ Yes    | Email + PIN        |
-| Student Connect  | studentconnect    | 2  | ✅ Yes    | Email + PIN        |
+| Student Connect  | student_connect   | 2  | ✅ Yes    | Email + PIN        |
 | Behavior Decoded | behaviordecoded   | 3  | ❌ No     | Email + Password   |
 | Teacher Hub      | teacherhub        | 4  | ❌ No     | Email + Password   |
 

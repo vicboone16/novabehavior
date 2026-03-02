@@ -1,7 +1,7 @@
 # Student Connect — PIN Auth & Integration Spec
 
 > **Source project slug:** `novatrack`  
-> **Target project slug:** `studentconnect`  
+> **Target project slug:** `student_connect`  
 > **Shared backend project ID:** `yboqqmkghwhlhhnsegje`
 
 ---
@@ -19,7 +19,7 @@ The `app_handshake` table now has all 4 apps:
 | id | app_slug         | environment_name |
 |----|------------------|-----------------|
 | 1  | novatrack        | PROD            |
-| 2  | studentconnect   | PROD            |
+| 2  | student_connect  | PROD            |
 | 3  | behaviordecoded  | PROD            |
 | 4  | teacherhub       | PROD            |
 
@@ -27,7 +27,7 @@ The `app_handshake` table now has all 4 apps:
 
 ```typescript
 // src/hooks/useBackendGuard.ts
-const EXPECTED_APP_SLUG = 'studentconnect';
+const EXPECTED_APP_SLUG = 'student_connect';
 
 const ALLOWED_URL_PATTERNS = [
   'yboqqmkghwhlhhnsegje.supabase.co',
@@ -55,7 +55,7 @@ const ALLOWED_URL_PATTERNS = [
 
 ### Student Visibility
 - **`student_app_visibility`** — controls which students appear in which apps
-  - Filter by `app_slug = 'studentconnect'` and `is_active = true`
+  - Filter by `app_slug = 'student_connect'` and `is_active = true`
 
 ### Edge Function
 - **`pin-auth`** — already deployed, `verify_jwt = false`
@@ -274,7 +274,7 @@ export function PinLogin({ onSuccess, onSwitchToEmail }: PinLoginProps) {
 // Check access on login
 const { data } = await supabase.rpc('has_app_access', {
   _user_id: user.id,
-  _app_slug: 'studentconnect',
+  _app_slug: 'student_connect',
 });
 
 if (!data) {
@@ -289,7 +289,7 @@ if (!data) {
 const { data: students } = await supabase
   .from('student_app_visibility')
   .select('student_id, students(*)')
-  .eq('app_slug', 'studentconnect')
+  .eq('app_slug', 'student_connect')
   .eq('is_active', true);
 ```
 
@@ -433,7 +433,7 @@ $$;
 | App              | Slug              | id | PIN Login | Auth Method        |
 |------------------|-------------------|----|-----------|-------------------|
 | Nova Track       | novatrack         | 1  | ✅ Yes    | Email + PIN        |
-| Student Connect  | studentconnect    | 2  | ✅ Yes    | Email + PIN        |
+| Student Connect  | student_connect   | 2  | ✅ Yes    | Email + PIN        |
 | Behavior Decoded | behaviordecoded   | 3  | ❌ No     | Email + Password   |
 | Teacher Hub      | teacherhub        | 4  | ❌ No     | Email + Password   |
 
@@ -456,9 +456,9 @@ Or run a no-op migration.
 - [ ] Copy `usePinLogin` hook
 - [ ] Copy `PinLogin` component (restyle to match Student Connect theme)
 - [ ] Add PIN login option to auth/login page
-- [ ] Add `AppAccessGate` wrapper checking `has_app_access(uid, 'studentconnect')`
-- [ ] Update `useBackendGuard` with `app_slug = 'studentconnect'` and `id = 2`
-- [ ] Filter students via `student_app_visibility` where `app_slug = 'studentconnect'`
+- [ ] Add `AppAccessGate` wrapper checking `has_app_access(uid, 'student_connect')`
+- [ ] Update `useBackendGuard` with `app_slug = 'student_connect'` and `id = 2`
+- [ ] Filter students via `student_app_visibility` where `app_slug = 'student_connect'`
 - [ ] Run schema cache refresh (`NOTIFY pgrst, 'reload schema'`)
 - [ ] Test: valid PIN → session created
 - [ ] Test: wrong PIN → error toast
@@ -473,15 +473,15 @@ Or run a no-op migration.
 
 > The NovaTrack core project has updated the shared backend. Here's what changed:
 >
-> 1. **App Handshake:** Your app slug is `studentconnect` (id=2 in `app_handshake`). Update `useBackendGuard.ts`:
->    - Change `EXPECTED_APP_SLUG` to `'studentconnect'`
+> 1. **App Handshake:** Your app slug is `student_connect` (id=2 in `app_handshake`). Update `useBackendGuard.ts`:
+>    - Change `EXPECTED_APP_SLUG` to `'student_connect'`
 >    - Change the query from `.eq('id', 1)` to `.eq('id', 2)`
 >    - Keep `ALLOWED_URL_PATTERNS` pointing to `yboqqmkghwhlhhnsegje.supabase.co`
 >
 > 2. **PIN Login:** The `pin-auth` edge function is already deployed. Copy the `usePinLogin` hook and `PinLogin` component from the spec. Add PIN login as an option on your auth page.
 >
-> 3. **App Access Gating:** Use `has_app_access(auth.uid(), 'studentconnect')` to gate access on login. Show an "Access Not Configured" screen if denied.
+> 3. **App Access Gating:** Use `has_app_access(auth.uid(), 'student_connect')` to gate access on login. Show an "Access Not Configured" screen if denied.
 >
-> 4. **Student Filtering:** Use `student_app_visibility` table filtered by `app_slug = 'studentconnect'` to load visible students.
+> 4. **Student Filtering:** Use `student_app_visibility` table filtered by `app_slug = 'student_connect'` to load visible students.
 >
 > 5. **Schema refresh:** Run `NOTIFY pgrst, 'reload schema';` or a no-op migration so the API layer picks up the shared tables and functions.
