@@ -1,0 +1,1 @@
+ALTER TABLE public.iep_drafts ADD COLUMN IF NOT EXISTS review_comment text;
