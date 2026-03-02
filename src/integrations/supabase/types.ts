@@ -775,6 +775,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_master_codes: {
+        Row: {
+          allowed_emails: string[] | null
+          code_hash: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          label: string | null
+          max_uses: number
+          uses: number
+        }
+        Insert: {
+          allowed_emails?: string[] | null
+          code_hash: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          max_uses?: number
+          uses?: number
+        }
+        Update: {
+          allowed_emails?: string[] | null
+          code_hash?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          max_uses?: number
+          uses?: number
+        }
+        Relationships: []
+      }
       admin_permissions: {
         Row: {
           can_assign_admin: boolean | null
@@ -17811,13 +17847,32 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: Json
       }
+      rpc_generate_master_code: {
+        Args: {
+          p_allowed_emails?: string[]
+          p_expires_days?: number
+          p_label?: string
+          p_max_uses?: number
+        }
+        Returns: Json
+      }
+      rpc_generate_master_pin: {
+        Args: {
+          p_allowed_emails?: string[]
+          p_expires_days?: number
+          p_label?: string
+          p_max_uses?: number
+        }
+        Returns: Json
+      }
       rpc_get_effective_billing_policy_for_active_agency: {
         Args: never
         Returns: Json
       }
-      rpc_join_agency_with_code:
-        | { Args: { p_code: string }; Returns: Json }
-        | { Args: { p_code: string; p_redeemed_from?: string }; Returns: Json }
+      rpc_join_agency: { Args: { p_pin: string }; Returns: Json }
+      rpc_join_agency_code: { Args: { p_pin: string }; Returns: Json }
+      rpc_join_agency_pin: { Args: { p_pin: string }; Returns: Json }
+      rpc_join_agency_with_code: { Args: { p_code: string }; Returns: Json }
       rpc_post_session: { Args: { p_session_id: string }; Returns: Json }
       rpc_post_session_and_apply_utilization: {
         Args: { p_session_id: string }
@@ -17835,6 +17890,8 @@ export type Database = {
         Args: { p_code: string; p_user_id: string }
         Returns: Json
       }
+      rpc_redeem_master_code: { Args: { p_code: string }; Returns: Json }
+      rpc_redeem_master_pin: { Args: { p_pin: string }; Returns: Json }
       rpc_reserve_session_hours: {
         Args: { p_session_id: string }
         Returns: Json
