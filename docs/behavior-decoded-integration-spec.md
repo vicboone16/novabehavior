@@ -15,7 +15,7 @@ The `app_handshake` table now has all 4 apps registered:
 | id | app_slug         | environment_name |
 |----|------------------|-----------------|
 | 1  | novatrack        | PROD            |
-| 2  | studentconnect   | PROD            |
+| 2  | student_connect  | PROD            |
 | 3  | behaviordecoded  | PROD            |
 | 4  | teacherhub       | PROD            |
 
@@ -184,7 +184,7 @@ Behavior Decoded uses **standard email/password login** (NOT PIN). The same `aut
 | App              | Slug              | id | PIN Login | Auth Method        |
 |------------------|-------------------|----|-----------|-------------------|
 | Nova Track       | novatrack         | 1  | ✅ Yes    | Email + PIN        |
-| Student Connect  | studentconnect    | 2  | ✅ Yes    | Email + PIN        |
+| Student Connect  | student_connect   | 2  | ✅ Yes    | Email + PIN        |
 | Behavior Decoded | behaviordecoded   | 3  | ❌ No     | Email + Password   |
 | Teacher Hub      | teacherhub        | 4  | ❌ No     | Email + Password   |
 
