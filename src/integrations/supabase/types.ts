@@ -12464,6 +12464,126 @@ export type Database = {
         }
         Relationships: []
       }
+      session_postings: {
+        Row: {
+          agency_id: string | null
+          appointment_id: string | null
+          authorization_id: string | null
+          cpt_code: string | null
+          created_at: string
+          id: string
+          is_billable: boolean
+          minutes: number
+          modifier: string | null
+          notes: Json | null
+          post_status: string
+          posted_at: string
+          posted_by: string
+          rounded_minutes: number
+          session_id: string
+          student_id: string | null
+          time_entry_id: string | null
+          units: number | null
+        }
+        Insert: {
+          agency_id?: string | null
+          appointment_id?: string | null
+          authorization_id?: string | null
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          minutes?: number
+          modifier?: string | null
+          notes?: Json | null
+          post_status?: string
+          posted_at?: string
+          posted_by: string
+          rounded_minutes?: number
+          session_id: string
+          student_id?: string | null
+          time_entry_id?: string | null
+          units?: number | null
+        }
+        Update: {
+          agency_id?: string | null
+          appointment_id?: string | null
+          authorization_id?: string | null
+          cpt_code?: string | null
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          minutes?: number
+          modifier?: string | null
+          notes?: Json | null
+          post_status?: string
+          posted_at?: string
+          posted_by?: string
+          rounded_minutes?: number
+          session_id?: string
+          student_id?: string | null
+          time_entry_id?: string | null
+          units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_postings_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_postings_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "authorizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_postings_authorization_id_fkey"
+            columns: ["authorization_id"]
+            isOneToOne: false
+            referencedRelation: "v_authorization_utilization"
+            referencedColumns: ["authorization_id"]
+          },
+          {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_postings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_postings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "session_postings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "session_postings_time_entry_id_fkey"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_staff_notes: {
         Row: {
           approved_at: string | null
@@ -15431,12 +15551,15 @@ export type Database = {
           activity_type: string
           agency_id: string | null
           appointment_id: string | null
+          authorization_id: string | null
+          cpt_code: string | null
           created_at: string
           duration_minutes: number | null
           ended_at: string | null
           entry_kind: string
           id: string
           is_billable: boolean
+          modifier: string | null
           note: Json | null
           session_id: string | null
           started_at: string
@@ -15449,12 +15572,15 @@ export type Database = {
           activity_type?: string
           agency_id?: string | null
           appointment_id?: string | null
+          authorization_id?: string | null
+          cpt_code?: string | null
           created_at?: string
           duration_minutes?: number | null
           ended_at?: string | null
           entry_kind?: string
           id?: string
           is_billable?: boolean
+          modifier?: string | null
           note?: Json | null
           session_id?: string | null
           started_at?: string
@@ -15467,12 +15593,15 @@ export type Database = {
           activity_type?: string
           agency_id?: string | null
           appointment_id?: string | null
+          authorization_id?: string | null
+          cpt_code?: string | null
           created_at?: string
           duration_minutes?: number | null
           ended_at?: string | null
           entry_kind?: string
           id?: string
           is_billable?: boolean
+          modifier?: string | null
           note?: Json | null
           session_id?: string | null
           started_at?: string
@@ -17943,6 +18072,14 @@ export type Database = {
           minutes_raw: number
           minutes_rounded: number
         }[]
+      }
+      rpc_finalize_and_post_session: {
+        Args: {
+          p_authorization_id?: string
+          p_force_billable?: boolean
+          p_session_id: string
+        }
+        Returns: Json
       }
       rpc_finalize_latest_session_note: {
         Args: { p_session_id: string }
