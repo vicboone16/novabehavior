@@ -33,9 +33,11 @@ import {
   Globe,
   FileText,
   Palette,
+  Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
+import { AgencyInviteCodesTab } from './AgencyInviteCodesTab';
 
 interface AgencyLocation {
   id: string;
@@ -321,10 +323,11 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-4 w-full">
               <TabsTrigger value="info">Basic Info</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="locations">Locations</TabsTrigger>
+              <TabsTrigger value="invites">Invite Codes</TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto mt-4">
@@ -693,6 +696,11 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
                     </div>
                   </DialogContent>
                 </Dialog>
+              </TabsContent>
+
+              {/* Invite Codes Tab */}
+              <TabsContent value="invites" className="m-0">
+                <AgencyInviteCodesTab agencyId={currentAgency.id} />
               </TabsContent>
             </div>
 
