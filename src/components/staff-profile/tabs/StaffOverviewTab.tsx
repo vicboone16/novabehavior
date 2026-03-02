@@ -46,6 +46,7 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     employment_status: profile.employment_status || 'active',
     hire_date: profile.hire_date || '',
     npi_number: profile.npi_number || '',
+    credential: profile.credential || '',
   });
 
   // Role & Agency state — supports multiple roles
@@ -232,6 +233,25 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
                 {editing ? (
                   <Input value={formData.npi_number} onChange={e => setFormData(p => ({ ...p, npi_number: e.target.value }))} placeholder="10-digit NPI" />
                 ) : <p className="text-sm mt-1">{profile.npi_number || '—'}</p>}
+              </div>
+              <div>
+                <Label>Credential / Job Title</Label>
+                {editing ? (
+                  <Select value={formData.credential || 'none'} onValueChange={v => setFormData(p => ({ ...p, credential: v === 'none' ? '' : v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select credential..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— None —</SelectItem>
+                      <SelectItem value="BCBA">BCBA</SelectItem>
+                      <SelectItem value="BCaBA">BCaBA</SelectItem>
+                      <SelectItem value="RBT">RBT</SelectItem>
+                      <SelectItem value="BT">BT</SelectItem>
+                      <SelectItem value="LMFT">LMFT</SelectItem>
+                      <SelectItem value="QABA">QABA</SelectItem>
+                      <SelectItem value="QBA">QBA</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : <p className="text-sm mt-1">{profile.credential || '—'}</p>}
               </div>
             </div>
             <div className="space-y-4">
