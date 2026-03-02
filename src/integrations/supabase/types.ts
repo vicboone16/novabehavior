@@ -17738,23 +17738,7 @@ export type Database = {
         Returns: undefined
       }
       redeem_agency_invite_code: { Args: { p_code: string }; Returns: Json }
-      redeem_invite_code:
-        | { Args: { _code: string }; Returns: Json }
-        | { Args: { _code: string; _redeemed_from?: string }; Returns: Json }
-        | {
-            Args: {
-              p_code: string
-              p_expected_app_context: string
-              p_redeemer_id?: string
-            }
-            Returns: {
-              agency_id: string
-              client_id: string
-              group_id: string
-              invite_scope: string
-              role_slug: string
-            }[]
-          }
+      redeem_invite_code: { Args: { _code: string }; Returns: Json }
       resolve_alert_threshold: {
         Args: {
           _agency_id?: string
