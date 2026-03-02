@@ -1085,6 +1085,9 @@ export type Database = {
       agency_feature_flags: {
         Row: {
           agency_id: string
+          allow_staff_cancel_appointments: boolean | null
+          allow_staff_create_appointments: boolean | null
+          allow_staff_edit_appointments: boolean | null
           auto_narratives_default: boolean
           cid_enabled_default: boolean
           intervention_engine_default: boolean
@@ -1092,6 +1095,9 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          allow_staff_cancel_appointments?: boolean | null
+          allow_staff_create_appointments?: boolean | null
+          allow_staff_edit_appointments?: boolean | null
           auto_narratives_default?: boolean
           cid_enabled_default?: boolean
           intervention_engine_default?: boolean
@@ -1099,6 +1105,9 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          allow_staff_cancel_appointments?: boolean | null
+          allow_staff_create_appointments?: boolean | null
+          allow_staff_edit_appointments?: boolean | null
           auto_narratives_default?: boolean
           cid_enabled_default?: boolean
           intervention_engine_default?: boolean
@@ -17772,6 +17781,7 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      rpc_can_write_schedule: { Args: never; Returns: Json }
       rpc_create_agency_invite_code: {
         Args: {
           p_agency_id: string
