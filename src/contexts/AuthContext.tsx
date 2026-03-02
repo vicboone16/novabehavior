@@ -38,6 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roleLoading, setRoleLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
+  const resolveHighestRole = (roles: string[]): AppRole => {
+    if (roles.includes('super_admin')) return 'super_admin';
+    if (roles.includes('admin')) return 'admin';
+    if (roles.includes('staff')) return 'staff';
+    return 'viewer';
+  };
+
   const fetchUserDetails = async (userId: string) => {
     setRoleLoading(true);
     try {
@@ -54,19 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(profileData as Profile);
       }
 
-      // Fetch role - always fetch fresh from database
-      const { data: roleData, error: roleError } = await supabase
+      // Fetch roles - user can have multiple rows (e.g. admin + super_admin)
+      const { data: roleRows, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .single();
+        .eq('user_id', userId);
 
       if (roleError) {
         console.error('Error fetching role:', roleError);
-        // Default to staff if no role found (shouldn't happen for approved users)
         setUserRole('staff');
-      } else if (roleData) {
-        setUserRole(roleData.role as AppRole);
+      } else {
+        const roles = (roleRows || []).map((r: any) => r.role as string);
+        setUserRole(roles.length > 0 ? resolveHighestRole(roles) : 'staff');
       }
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -80,14 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setRoleLoading(true);
     try {
-      const { data: roleData, error: roleError } = await supabase
+      const { data: roleRows, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
-      if (!roleError && roleData) {
-        setUserRole(roleData.role as AppRole);
+      if (!roleError) {
+        const roles = (roleRows || []).map((r: any) => r.role as string);
+        setUserRole(roles.length > 0 ? resolveHighestRole(roles) : 'staff');
       }
     } catch (error) {
       console.error('Error refreshing role:', error);
