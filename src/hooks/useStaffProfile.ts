@@ -88,7 +88,7 @@ export function useStaffProfile(userId: string | undefined) {
   );
 
   const isRBTorBT = profile?.credential === 'RBT' || profile?.credential === 'BT';
-  const canBeScheduled = !isRBTorBT || hasActiveSupervisor;
+  const canBeScheduled = !isRBTorBT || hasActiveSupervisor; // Non-RBT/BT (including null credential) can always be scheduled
 
   return {
     loading,

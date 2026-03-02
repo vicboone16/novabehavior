@@ -33,8 +33,8 @@ export function SupervisionChainWarning({
     
     const checkSupervisionStatus = async () => {
       try {
-        // Only check for RBTs and BTs
-        if (credential && !['RBT', 'BT'].includes(credential)) {
+        // Only check for RBTs and BTs — skip if credential is missing or not RBT/BT
+        if (!credential || !['RBT', 'BT'].includes(credential)) {
           setStatus({ hasActiveSupervisor: true });
           setLoading(false);
           return;
