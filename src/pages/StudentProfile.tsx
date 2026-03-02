@@ -64,6 +64,7 @@ import { StudentIEPPrepTab } from '@/components/iep/StudentIEPPrepTab';
 import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverTrainingTab';
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
 import { ObservationHistory } from '@/components/ObservationHistory';
+import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
@@ -814,6 +815,7 @@ export default function StudentProfile() {
             studentId={student.id}
             studentName={student.name}
           />
+          <TeacherSummaries clientId={student.id} />
         </TabsContent>
 
         {/* Files Tab */}

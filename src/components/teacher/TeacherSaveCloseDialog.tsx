@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Save, Calendar, FileText, Users, Loader2 } from 'lucide-react';
+import { Save, Calendar, FileText, Users, Loader2, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +43,8 @@ export function TeacherSaveCloseDialog({
   const [createSession, setCreateSession] = useState(false);
   const [addNote, setAddNote] = useState(false);
   const [addToCalendar, setAddToCalendar] = useState(false);
+  const [shareSummary, setShareSummary] = useState(true);
+  const [summaryNote, setSummaryNote] = useState('');
   const [sessionNote, setSessionNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -110,10 +112,56 @@ export function TeacherSaveCloseDialog({
         });
       }
 
+      // Share summary with BCBA if toggled
+      if (shareSummary) {
+        const summaryContent = summaryNote.trim() || `Teacher data collection summary: ${dataCount} entries recorded for ${studentName} on ${format(new Date(), 'MMM d, yyyy')}.`;
+        
+        const { error: draftError } = await supabase.from('iep_drafts').insert({
+          client_id: studentId,
+          user_id: user.id,
+          created_by: user.id,
+          agency_id: currentAgency?.id || null,
+          title: `Teacher Summary – ${format(new Date(), 'MMM d, yyyy')}`,
+          draft_type: 'bcba_summary',
+          status: 'shared',
+          shared_at: new Date().toISOString(),
+          shared_by: user.id,
+          sections: [{ content: summaryContent }] as any,
+        });
+
+        if (draftError) {
+          console.error('Error sharing summary:', draftError);
+        } else {
+          // Notify the student's owner (BCBA)
+          const { data: studentRow } = await supabase
+            .from('students')
+            .select('user_id')
+            .eq('id', studentId)
+            .maybeSingle();
+
+          if (studentRow?.user_id && studentRow.user_id !== user.id) {
+            await supabase.from('notifications').insert({
+              user_id: studentRow.user_id,
+              type: 'teacher_summary',
+              title: `Teacher summary shared for ${studentName}`,
+              message: summaryContent.substring(0, 200),
+              data: { student_id: studentId },
+            });
+          }
+
+          toast({
+            title: 'Summary Shared',
+            description: `Summary sent to ${studentName}'s BCBA`,
+          });
+        }
+      }
+
       // Reset state
       setCreateSession(false);
       setAddNote(false);
       setAddToCalendar(false);
+      setShareSummary(true);
+      setSummaryNote('');
       setSessionNote('');
       onOpenChange(false);
       onComplete();
@@ -194,6 +242,31 @@ export function TeacherSaveCloseDialog({
               <Switch checked={addToCalendar} onCheckedChange={setAddToCalendar} />
             </div>
           )}
+
+          {/* Share Summary with BCBA */}
+          <div className="space-y-2 rounded-lg border p-3 border-primary/30 bg-primary/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-primary" />
+                <div>
+                  <Label className="text-sm font-medium">Share Summary with BCBA</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Send a data summary to the supervising BCBA
+                  </p>
+                </div>
+              </div>
+              <Switch checked={shareSummary} onCheckedChange={setShareSummary} />
+            </div>
+            {shareSummary && (
+              <Textarea
+                placeholder="Add optional notes for the BCBA (leave blank for auto-generated summary)..."
+                value={summaryNote}
+                onChange={(e) => setSummaryNote(e.target.value)}
+                rows={2}
+                className="mt-2"
+              />
+            )}
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
