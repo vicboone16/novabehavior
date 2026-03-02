@@ -76,9 +76,9 @@ export function useStaffProfile(userId: string | undefined) {
       setProfile((prev: any) => ({ ...prev, ...updates }));
       toast.success('Profile updated');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+      toast.error(error?.message ? `Failed to update profile: ${error.message}` : 'Failed to update profile');
       return false;
     }
   };
