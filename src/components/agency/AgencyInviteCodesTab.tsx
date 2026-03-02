@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,12 +43,14 @@ interface AgencyInviteCodesTabProps {
 
 export function AgencyInviteCodesTab({ agencyId }: AgencyInviteCodesTabProps) {
   const { user } = useAuth();
+  const { agencies } = useAgencyContext();
   const [codes, setCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
 
   // New code form
+  const [selectedAgencyId, setSelectedAgencyId] = useState(agencyId);
   const [newRole, setNewRole] = useState('staff');
   const [newMaxUses, setNewMaxUses] = useState('10');
   const [newExpiresDays, setNewExpiresDays] = useState('30');
@@ -88,7 +91,7 @@ export function AgencyInviteCodesTab({ agencyId }: AgencyInviteCodesTabProps) {
         .from('agency_invite_codes')
         .insert({
           code: generatedCode,
-          agency_id: agencyId,
+          agency_id: selectedAgencyId,
           role: newRole,
           max_uses: parseInt(newMaxUses),
           expires_at: expiresAt,
@@ -204,6 +207,21 @@ export function AgencyInviteCodesTab({ agencyId }: AgencyInviteCodesTabProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
+            {agencies.length > 1 && (
+              <div>
+                <Label>Agency</Label>
+                <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {agencies.map((m) => (
+                      <SelectItem key={m.agency_id} value={m.agency_id}>
+                        {m.agency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Role</Label>
               <Select value={newRole} onValueChange={setNewRole}>
