@@ -97,8 +97,9 @@ const PERMISSION_PRESETS: Record<string, Partial<StudentAccess>> = {
 };
 
 export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabProps) {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isEditingSelf = user?.id === userId;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -159,6 +160,11 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
   // Toggle agency membership
   const toggleAgencyMembership = (agencyId: string) => {
     const existing = memberships.find(m => m.agency_id === agencyId);
+    // Prevent self-removal from owned agencies
+    if (isEditingSelf && existing?.status === 'active' && existing?.role === 'owner') {
+      toast.error('You cannot remove yourself as owner. Transfer ownership first.');
+      return;
+    }
     if (existing) {
       setMemberships(prev => prev.map(m =>
         m.agency_id === agencyId ? { ...m, status: m.status === 'active' ? 'inactive' : 'active' } : m
@@ -252,6 +258,11 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
 
   // Toggle role
   const toggleRole = (role: string) => {
+    // Prevent self-demotion from admin roles
+    if (isEditingSelf && userRoles.includes(role) && (role === 'admin' || role === 'super_admin')) {
+      toast.error('You cannot remove your own admin role. Ask another admin to do this.');
+      return;
+    }
     setUserRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
     setHasChanges(true);
   };
