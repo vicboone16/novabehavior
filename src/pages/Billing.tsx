@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send, Download, LineChart } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send, Download, LineChart, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +15,7 @@ import { ContractRateManager } from '@/components/billing/ContractRateManager';
 import { TimesheetDashboard } from '@/components/payroll/TimesheetDashboard';
 import { ERAProcessingTab } from '@/components/billing/ERAProcessingTab';
 import { ClearinghouseTab } from '@/components/billing/ClearinghouseTab';
+import { NeedsReviewList } from '@/components/billing/NeedsReviewList';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { subDays } from 'date-fns';
@@ -108,6 +109,10 @@ export default function Billing() {
             <TabsTrigger value="timesheets" className="gap-2">
               <Clock className="w-4 h-4" />
               Timesheets
+            </TabsTrigger>
+            <TabsTrigger value="needs-review" className="gap-2">
+              <ClipboardCheck className="w-4 h-4" />
+              Needs Review
             </TabsTrigger>
             <TabsTrigger value="era" className="gap-2">
               <Upload className="w-4 h-4" />
@@ -225,6 +230,10 @@ export default function Billing() {
 
           <TabsContent value="timesheets">
             <TimesheetDashboard />
+          </TabsContent>
+
+          <TabsContent value="needs-review">
+            <NeedsReviewList />
           </TabsContent>
 
           <TabsContent value="era">
