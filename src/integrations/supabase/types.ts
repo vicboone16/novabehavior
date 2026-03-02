@@ -17887,6 +17887,10 @@ export type Database = {
         Returns: Json
       }
       rpc_can_write_schedule: { Args: never; Returns: Json }
+      rpc_convert_time_entry_to_session: {
+        Args: { p_create_draft_note?: boolean; p_time_entry_id: string }
+        Returns: Json
+      }
       rpc_create_agency_invite_code: {
         Args: {
           p_agency_id: string
