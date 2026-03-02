@@ -8,7 +8,7 @@ import { useStaffProfile } from '@/hooks/useStaffProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   User, Shield, Clock, MapPin, Briefcase, Users, FileText,
-  AlertTriangle, CheckCircle
+  AlertTriangle, CheckCircle, KeyRound
 } from 'lucide-react';
 import { StaffOverviewTab } from './tabs/StaffOverviewTab';
 import { StaffCredentialsTab } from './tabs/StaffCredentialsTab';
@@ -17,6 +17,7 @@ import { StaffTravelGeoTab } from './tabs/StaffTravelGeoTab';
 import { StaffServiceCapabilitiesTab } from './tabs/StaffServiceCapabilitiesTab';
 import { StaffAssignmentsTab } from './tabs/StaffAssignmentsTab';
 import { StaffNotesTab } from './tabs/StaffNotesTab';
+import { StaffAccessPermissionsTab } from './tabs/StaffAccessPermissionsTab';
 
 export function StaffProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -157,10 +158,14 @@ export function StaffProfilePage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Overview
+          </TabsTrigger>
+          <TabsTrigger value="access" className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4" />
+            Access
           </TabsTrigger>
           <TabsTrigger value="credentials" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
@@ -195,6 +200,10 @@ export function StaffProfilePage() {
             supervisorLinks={supervisorLinks}
             superviseeLinks={superviseeLinks}
           />
+        </TabsContent>
+
+        <TabsContent value="access">
+          <StaffAccessPermissionsTab userId={targetUserId!} />
         </TabsContent>
         
         <TabsContent value="credentials">
