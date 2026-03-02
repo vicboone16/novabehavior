@@ -1,44 +1,76 @@
-# Student Connect — PIN Auth Integration Spec
+# Student Connect — PIN Auth & Integration Spec
 
 > **Source project slug:** `novatrack`  
-> **Target project slug:** `studentconnect` _(adjust as needed)_  
-> **Shared backend:** Same Lovable Cloud / Supabase instance (`yboqqmkghwhlhhnsegje`)
+> **Target project slug:** `studentconnect`  
+> **Shared backend project ID:** `yboqqmkghwhlhhnsegje`
 
 ---
 
 ## Overview
 
-Student Connect shares the same auth backend as Nova Track. The 6-digit PIN login system already exists in the database. This spec covers everything needed to wire it into the Student Connect frontend.
+Student Connect shares the same auth backend as Nova Track. The 6-digit PIN login system, app access gating, and all database objects already exist. This spec covers everything needed to wire them into the Student Connect frontend.
 
 ---
 
-## 1. Database Objects (Already Exist — No New Migrations Needed)
+## 1. App Handshake
 
-These were created for Nova Track and are shared:
+The `app_handshake` table now has all 4 apps:
 
-### Tables
+| id | app_slug         | environment_name |
+|----|------------------|-----------------|
+| 1  | novatrack        | PROD            |
+| 2  | studentconnect   | PROD            |
+| 3  | behaviordecoded  | PROD            |
+| 4  | teacherhub       | PROD            |
+
+### Backend Guard Config for Student Connect:
+
+```typescript
+// src/hooks/useBackendGuard.ts
+const EXPECTED_APP_SLUG = 'studentconnect';
+
+const ALLOWED_URL_PATTERNS = [
+  'yboqqmkghwhlhhnsegje.supabase.co',
+];
+
+// Query: .eq('id', 2)
+```
+
+---
+
+## 2. Database Objects (Already Exist — No Migrations Needed)
+
+### PIN Auth Tables & Functions
 - **`profiles`** — stores `pin_hash`, `is_approved`, `email`, `user_id`
 - **`pin_attempts`** — rate-limiting log
-
-### Functions
-- **`verify_pin(_user_id uuid, _pin text)`** → `boolean` — compares bcrypt hash
-- **`check_pin_rate_limit(_email text, _ip_address text)`** → `boolean` — returns `true` if allowed, `false` if locked out (5 failures in 5 min)
+- **`verify_pin(_user_id uuid, _pin text)`** → `boolean` — SHA-256 hash comparison
+- **`check_pin_rate_limit(_email text, _ip_address text)`** → `boolean` — 5 failures in 5 min lockout
 - **`record_pin_attempt(_user_id uuid, _email text, _ip_address text, _success boolean)`** → void
 
+### App Access Gating
+- **`user_app_access`** — controls which apps each user can access
+  - Columns: `id`, `user_id`, `app_slug`, `agency_id`, `role`, `is_active`, `granted_by`, `granted_at`, `updated_at`
+  - Unique constraint: `(user_id, app_slug)`
+- **`has_app_access(_user_id uuid, _app_slug text, _agency_id uuid DEFAULT NULL)`** → `boolean`
+
+### Student Visibility
+- **`student_app_visibility`** — controls which students appear in which apps
+  - Filter by `app_slug = 'studentconnect'` and `is_active = true`
+
 ### Edge Function
-- **`pin-auth`** — already deployed, handles the full PIN → session flow
+- **`pin-auth`** — already deployed, `verify_jwt = false`
 
 ---
 
-## 2. Edge Function Details (`supabase/functions/pin-auth/index.ts`)
+## 3. PIN Auth Edge Function API
 
 **Endpoint:** `POST /functions/v1/pin-auth`  
-**JWT:** Not required (`verify_jwt = false`)
+**JWT:** Not required
 
 ### Request Body
 ```json
 {
-  "email": "user@example.com",   // optional — if omitted, PIN-only lookup
+  "email": "user@example.com",   // optional — omit for PIN-only lookup
   "pin": "123456"                // required — exactly 6 digits
 }
 ```
@@ -59,19 +91,19 @@ These were created for Nova Track and are shared:
 |--------|------|---------|
 | 400 | `{ "error": "PIN is required" }` | Missing PIN |
 | 400 | `{ "error": "Invalid PIN format" }` | Not 6 digits |
-| 400 | `{ "error": "PIN not set for this user" }` | User has no PIN |
+| 400 | `{ "error": "PIN not set for this user" }` | User has no PIN configured |
 | 401 | `{ "error": "Invalid PIN" }` | Wrong PIN |
 | 403 | `{ "error": "Account pending approval", "pending": true }` | Not yet approved |
 | 404 | `{ "error": "User not found" }` | No matching profile |
-| 409 | `{ "error": "PIN is not unique..." }` | PIN-only lookup hit >1 user |
-| 429 | `{ "error": "Too many failed attempts...", "rateLimited": true }` | Rate limited |
+| 409 | `{ "error": "PIN is not unique..." }` | PIN-only lookup matched >1 user |
+| 429 | `{ "error": "Too many failed attempts...", "rateLimited": true }` | Rate limited (5 failures in 5 min) |
 | 500 | `{ "error": "..." }` | Server error |
 
 ---
 
-## 3. Frontend Implementation
+## 4. Frontend Implementation
 
-### 3a. PIN Login Hook
+### 4a. PIN Login Hook
 
 ```typescript
 // src/hooks/usePinLogin.ts
@@ -99,7 +131,6 @@ export function usePinLogin() {
       });
 
       if (error) {
-        // Edge function HTTP errors come through here
         const body = typeof error === 'object' ? error : { message: error };
         return {
           success: false,
@@ -116,7 +147,6 @@ export function usePinLogin() {
         };
       }
 
-      // Set the session in Supabase client
       if (data?.access_token && data?.refresh_token) {
         await supabase.auth.setSession({
           access_token: data.access_token,
@@ -137,7 +167,7 @@ export function usePinLogin() {
 }
 ```
 
-### 3b. PIN Login Component
+### 4b. PIN Login Component
 
 ```tsx
 // src/components/PinLogin.tsx
@@ -179,7 +209,11 @@ export function PinLogin({ onSuccess, onSwitchToEmail }: PinLoginProps) {
     }
 
     if (result.rateLimited) {
-      toast({ title: 'Too Many Attempts', description: 'Please wait a few minutes and try again.', variant: 'destructive' });
+      toast({
+        title: 'Too Many Attempts',
+        description: 'Please wait a few minutes and try again.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -234,9 +268,34 @@ export function PinLogin({ onSuccess, onSwitchToEmail }: PinLoginProps) {
 }
 ```
 
-### 3c. Session Handling After PIN Login
+### 4c. App Access Gating
 
-After `supabase.auth.setSession()`, the Supabase client automatically manages token refresh. Use the standard auth listener:
+```typescript
+// Check access on login
+const { data } = await supabase.rpc('has_app_access', {
+  _user_id: user.id,
+  _app_slug: 'studentconnect',
+});
+
+if (!data) {
+  // Show "Access Not Configured" screen
+}
+```
+
+### 4d. Student Filtering
+
+```typescript
+// Load only students visible in Student Connect
+const { data: students } = await supabase
+  .from('student_app_visibility')
+  .select('student_id, students(*)')
+  .eq('app_slug', 'studentconnect')
+  .eq('is_active', true);
+```
+
+### 4e. Session Handling
+
+After `supabase.auth.setSession()`, token refresh is automatic. Use the standard listener:
 
 ```typescript
 supabase.auth.onAuthStateChange((event, session) => {
@@ -251,40 +310,13 @@ supabase.auth.onAuthStateChange((event, session) => {
 
 ---
 
-## 4. Backend Guard for Student Connect
+## 5. Config.toml
 
-Update the backend guard in the Student Connect project:
-
-```typescript
-// src/hooks/useBackendGuard.ts
-const EXPECTED_APP_SLUG = 'studentconnect'; // ← change this
-
-const ALLOWED_URL_PATTERNS = [
-  'yboqqmkghwhlhhnsegje.supabase.co', // same backend
-];
-```
-
-Then add a row to `app_handshake` for Student Connect:
-
-```sql
-INSERT INTO public.app_handshake (id, app_slug, environment_name)
-VALUES (2, 'studentconnect', 'production')
-ON CONFLICT (id) DO NOTHING;
-```
-
-> **Note:** The backend guard query uses `.eq('id', 1)` — Student Connect should use `.eq('id', 2)` or query by `app_slug` instead.
-
----
-
-## 5. Config.toml (Already Set)
-
-The `pin-auth` function is already configured with `verify_jwt = false`. No changes needed — all apps share the same Supabase project and edge functions.
+The `pin-auth` function is already configured with `verify_jwt = false`. No changes needed — all apps share the same edge functions.
 
 ---
 
 ## 6. SQL Reference (Already Applied — For Documentation Only)
-
-These migrations were already run on the shared backend. Listed here for reference if you ever need to recreate:
 
 ### `verify_pin` function
 ```sql
@@ -305,9 +337,7 @@ BEGIN
     RETURN false;
   END IF;
 
-  RETURN stored_hash = encode(
-    digest(_pin, 'sha256'), 'hex'
-  );
+  RETURN stored_hash = encode(digest(_pin, 'sha256'), 'hex');
 END;
 $$;
 ```
@@ -369,21 +399,89 @@ CREATE TABLE IF NOT EXISTS public.pin_attempts (
 );
 
 ALTER TABLE public.pin_attempts ENABLE ROW LEVEL SECURITY;
-
 -- No user-facing RLS policies — only accessed via SECURITY DEFINER functions
+```
+
+### `has_app_access` function
+```sql
+CREATE OR REPLACE FUNCTION public.has_app_access(
+  _user_id uuid,
+  _app_slug text,
+  _agency_id uuid DEFAULT NULL
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_app_access
+    WHERE user_id = _user_id
+      AND app_slug = _app_slug
+      AND is_active = true
+      AND (agency_id = _agency_id OR _agency_id IS NULL)
+  );
+$$;
 ```
 
 ---
 
-## 7. Checklist for Student Connect Integration
+## 7. App Summary
+
+| App              | Slug              | id | PIN Login | Auth Method        |
+|------------------|-------------------|----|-----------|-------------------|
+| Nova Track       | novatrack         | 1  | ✅ Yes    | Email + PIN        |
+| Student Connect  | studentconnect    | 2  | ✅ Yes    | Email + PIN        |
+| Behavior Decoded | behaviordecoded   | 3  | ❌ No     | Email + Password   |
+| Teacher Hub      | teacherhub        | 4  | ❌ No     | Email + Password   |
+
+---
+
+## 8. Schema Cache Refresh
+
+After any schema changes in NovaTrack, run this in Student Connect to pick up new objects:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
+
+Or run a no-op migration.
+
+---
+
+## 9. Checklist
 
 - [ ] Copy `usePinLogin` hook
-- [ ] Copy `PinLogin` component (adjust styling to match Student Connect theme)
-- [ ] Add PIN login option to the auth/login page
+- [ ] Copy `PinLogin` component (restyle to match Student Connect theme)
+- [ ] Add PIN login option to auth/login page
+- [ ] Add `AppAccessGate` wrapper checking `has_app_access(uid, 'studentconnect')`
 - [ ] Update `useBackendGuard` with `app_slug = 'studentconnect'` and `id = 2`
-- [ ] Insert `app_handshake` row for Student Connect
+- [ ] Filter students via `student_app_visibility` where `app_slug = 'studentconnect'`
+- [ ] Run schema cache refresh (`NOTIFY pgrst, 'reload schema'`)
 - [ ] Test: valid PIN → session created
 - [ ] Test: wrong PIN → error toast
 - [ ] Test: 5+ failures → rate limit message
 - [ ] Test: unapproved account → pending message
 - [ ] Test: PIN-only login (no email) → works if PIN is unique
+- [ ] Test: user without Student Connect access → "Access Not Configured" screen
+
+---
+
+## 10. Prompt to Paste into Student Connect
+
+> The NovaTrack core project has updated the shared backend. Here's what changed:
+>
+> 1. **App Handshake:** Your app slug is `studentconnect` (id=2 in `app_handshake`). Update `useBackendGuard.ts`:
+>    - Change `EXPECTED_APP_SLUG` to `'studentconnect'`
+>    - Change the query from `.eq('id', 1)` to `.eq('id', 2)`
+>    - Keep `ALLOWED_URL_PATTERNS` pointing to `yboqqmkghwhlhhnsegje.supabase.co`
+>
+> 2. **PIN Login:** The `pin-auth` edge function is already deployed. Copy the `usePinLogin` hook and `PinLogin` component from the spec. Add PIN login as an option on your auth page.
+>
+> 3. **App Access Gating:** Use `has_app_access(auth.uid(), 'studentconnect')` to gate access on login. Show an "Access Not Configured" screen if denied.
+>
+> 4. **Student Filtering:** Use `student_app_visibility` table filtered by `app_slug = 'studentconnect'` to load visible students.
+>
+> 5. **Schema refresh:** Run `NOTIFY pgrst, 'reload schema';` or a no-op migration so the API layer picks up the shared tables and functions.
