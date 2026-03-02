@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Save, Calendar, FileText, Users, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,6 +37,7 @@ export function TeacherSaveCloseDialog({
   onComplete,
 }: TeacherSaveCloseDialogProps) {
   const { user } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const { toast } = useToast();
   
   const [createSession, setCreateSession] = useState(false);
@@ -86,6 +88,7 @@ export function TeacherSaveCloseDialog({
           await supabase.from('appointments').insert({
             created_by: user.id,
             student_id: studentId,
+            agency_id: currentAgency?.id || null,
             start_time: now.toISOString(),
             end_time: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
             appointment_type: 'retroactive',

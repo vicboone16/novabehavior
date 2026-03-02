@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useDataStore } from '@/store/dataStore';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useMultiStudentNoteRequirements } from '@/hooks/useNoteRequirement';
 import { SessionNoteBuilder } from './SessionNoteBuilder';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,7 @@ export function SessionEndFlow({
   onComplete,
 }: SessionEndFlowProps) {
   const { user } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const { 
     students, 
     selectedStudentIds, 
@@ -192,6 +194,7 @@ export function SessionEndFlow({
               await supabase.from('appointments').insert({
                 student_id: student.id,
                 created_by: user.id,
+                agency_id: currentAgency?.id || null,
                 start_time: sessionStart.toISOString(),
                 end_time: now.toISOString(),
                 duration_minutes: Math.round(effectiveMinutes),

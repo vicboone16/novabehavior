@@ -1407,6 +1407,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          agency_id: string | null
           appointment_type: string
           color: string | null
           created_at: string
@@ -1438,6 +1439,7 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          agency_id?: string | null
           appointment_type?: string
           color?: string | null
           created_at?: string
@@ -1469,6 +1471,7 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          agency_id?: string | null
           appointment_type?: string
           color?: string | null
           created_at?: string

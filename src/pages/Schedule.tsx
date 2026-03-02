@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, isSameDay, parseISO, startOfDay, endOfDay, isPast, differenceInMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ type ScheduleTab = 'calendar' | 'planning';
 
 export default function Schedule() {
   const { user } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
@@ -294,7 +296,7 @@ export default function Schedule() {
           promptResendTelehealthLink(updatedAppt);
         }
       } else {
-        const insertData = { ...data, created_by: user?.id } as any;
+        const insertData = { ...data, created_by: user?.id, agency_id: currentAgency?.id || null } as any;
         const { error } = await supabase
           .from('appointments')
           .insert(insertData);
