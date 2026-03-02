@@ -18321,7 +18321,9 @@ export type Database = {
       rpc_join_agency: { Args: { p_pin: string }; Returns: Json }
       rpc_join_agency_code: { Args: { p_pin: string }; Returns: Json }
       rpc_join_agency_pin: { Args: { p_pin: string }; Returns: Json }
-      rpc_join_agency_with_code: { Args: { p_code: string }; Returns: Json }
+      rpc_join_agency_with_code:
+        | { Args: { p_code: string }; Returns: Json }
+        | { Args: { p_code: string; p_user_id?: string }; Returns: Json }
       rpc_post_session: { Args: { p_session_id: string }; Returns: Json }
       rpc_post_session_and_apply_utilization: {
         Args: { p_session_id: string }
