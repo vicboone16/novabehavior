@@ -3703,6 +3703,66 @@ export type Database = {
           },
         ]
       }
+      claim_batch_items: {
+        Row: {
+          claim_batch_id: string
+          created_at: string
+          id: string
+          session_posting_id: string
+          status: string
+        }
+        Insert: {
+          claim_batch_id: string
+          created_at?: string
+          id?: string
+          session_posting_id: string
+          status?: string
+        }
+        Update: {
+          claim_batch_id?: string
+          created_at?: string
+          id?: string
+          session_posting_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      claim_batches: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          id: string
+          item_count: number
+          notes: string | null
+          status: string
+          submitted_at: string | null
+          total_minutes: number
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          item_count?: number
+          notes?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_minutes?: number
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_count?: number
+          notes?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_minutes?: number
+        }
+        Relationships: []
+      }
       claim_line_items: {
         Row: {
           claim_id: string
@@ -13367,6 +13427,42 @@ export type Database = {
           },
         ]
       }
+      staff_timesheet_entries: {
+        Row: {
+          agency_id: string | null
+          appointment_id: string | null
+          created_at: string
+          id: string
+          is_billable: boolean
+          minutes: number
+          student_id: string | null
+          time_entry_id: string
+          timesheet_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          minutes?: number
+          student_id?: string | null
+          time_entry_id: string
+          timesheet_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          is_billable?: boolean
+          minutes?: number
+          student_id?: string | null
+          time_entry_id?: string
+          timesheet_id?: string
+        }
+        Relationships: []
+      }
       staff_timesheets: {
         Row: {
           agency_id: string | null
@@ -18015,6 +18111,10 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      rpc_add_time_entry_to_timesheet: {
+        Args: { p_time_entry_id: string }
+        Returns: Json
+      }
       rpc_allocate_time_entry: {
         Args: {
           p_activity_type?: string
@@ -18039,6 +18139,10 @@ export type Database = {
           p_max_uses?: number
           p_role?: string
         }
+        Returns: Json
+      }
+      rpc_create_claim_batch: {
+        Args: { p_agency_id: string; p_limit?: number }
         Returns: Json
       }
       rpc_create_workspace_invite_code: {
@@ -18073,22 +18177,40 @@ export type Database = {
         Args: { p_agency_id: string; p_reference_date?: string }
         Returns: Json
       }
-      rpc_export_hours: {
-        Args: {
-          p_agency_id?: string
-          p_end_date: string
-          p_group_by?: string
-          p_staff_user_id?: string
-          p_start_date: string
-          p_workspace_id?: string
-        }
-        Returns: {
-          group_key: string
-          hours_rounded: number
-          minutes_raw: number
-          minutes_rounded: number
-        }[]
-      }
+      rpc_export_hours:
+        | {
+            Args: {
+              p_agency_id: string
+              p_end: string
+              p_grouping?: string
+              p_start: string
+            }
+            Returns: {
+              billable_hours: number
+              billable_minutes: number
+              grouping_key: string
+              nonbillable_hours: number
+              nonbillable_minutes: number
+              total_hours: number
+              total_minutes: number
+            }[]
+          }
+        | {
+            Args: {
+              p_agency_id?: string
+              p_end_date: string
+              p_group_by?: string
+              p_staff_user_id?: string
+              p_start_date: string
+              p_workspace_id?: string
+            }
+            Returns: {
+              group_key: string
+              hours_rounded: number
+              minutes_raw: number
+              minutes_rounded: number
+            }[]
+          }
       rpc_finalize_and_post_session: {
         Args: {
           p_authorization_id?: string
@@ -18146,6 +18268,10 @@ export type Database = {
       }
       rpc_post_session_utilization: {
         Args: { p_session_id: string }
+        Returns: Json
+      }
+      rpc_recalc_timesheet_totals: {
+        Args: { p_timesheet_id: string }
         Returns: Json
       }
       rpc_redeem_access_invite: {

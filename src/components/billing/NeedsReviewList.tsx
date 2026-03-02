@@ -115,19 +115,40 @@ export function NeedsReviewList() {
       if (authId.trim()) params.p_authorization_id = authId.trim();
       if (forceBillable !== null) params.p_force_billable = forceBillable;
 
+      // Step 1: Finalize & post session
       const { data, error } = await supabase.rpc('rpc_finalize_and_post_session', params);
       if (error) throw error;
       const result = data as any;
       if (!result?.ok) {
         throw new Error(result?.error || 'Unknown error from finalize RPC');
       }
-      return result;
+
+      // Step 2: Add to timesheet
+      const { data: tsResult, error: tsError } = await supabase.rpc('rpc_add_time_entry_to_timesheet', {
+        p_time_entry_id: entry.id,
+      });
+      if (tsError) console.warn('Timesheet add warning:', tsError.message);
+      const tsData = tsResult as any;
+
+      // Step 3: Recalc timesheet totals
+      if (tsData?.ok && tsData?.timesheet_id) {
+        const { error: recalcErr } = await supabase.rpc('rpc_recalc_timesheet_totals', {
+          p_timesheet_id: tsData.timesheet_id,
+        });
+        if (recalcErr) console.warn('Timesheet recalc warning:', recalcErr.message);
+      }
+
+      return { ...result, timesheet_added: tsData?.ok ?? false };
     },
     onSuccess: (result) => {
-      toast.success(`Posted: ${result.rounded_minutes} min (${result.units_hours} hrs)${result.billable ? ' — Ready for Claim' : ''}`);
+      const msg = `Posted: ${result.rounded_minutes} min (${result.units_hours} hrs)`;
+      const suffix = result.timesheet_added ? ' · Added to timesheet' : '';
+      const claimSuffix = result.billable ? ' · Ready for Claim' : '';
+      toast.success(msg + claimSuffix + suffix);
       setDetailOpen(false);
       setSelectedEntry(null);
       queryClient.invalidateQueries({ queryKey: ['needs-review-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-for-claim'] });
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to finalize & post');
