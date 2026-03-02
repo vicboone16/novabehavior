@@ -158,7 +158,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes] = await Promise.all([
+      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
         supabase.from('agencies').select('id, name, status').eq('status', 'active').order('name'),
         supabase.from('agency_memberships').select('*').eq('user_id', userId),
         supabase.from('user_app_access').select('*').eq('user_id', userId),
@@ -166,6 +166,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         supabase.from('students').select('id, name, agency_id').eq('is_archived', false).order('name'),
         supabase.from('user_roles').select('role').eq('user_id', userId),
         supabase.from('custom_roles').select('id, name').order('name'),
+        (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', userId),
       ]);
 
       setAgencies(agenciesRes.data || []);
@@ -174,9 +175,13 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
       setStudentAccess((studentAccessRes.data || []).map((sa: any) => ({
         ...sa,
         student_name: '',
+        is_active: true,
       })) as StudentAccess[]);
       setAllStudents((studentsRes.data || []) as { id: string; name: string; agency_id: string | null }[]);
-      setUserRoles((rolesRes.data || []).map((r: any) => r.role));
+
+      const baseRoles = (rolesRes.data || []).map((r: any) => r.role as string);
+      const customRoleIds = (userCustomRolesRes.data || []).map((r: any) => `custom:${r.custom_role_id}` as string);
+      setUserRoles([...baseRoles, ...customRoleIds]);
       setCustomRoles((customRolesRes.data || []) as { id: string; name: string }[]);
 
       // Auto-expand agencies that have memberships
@@ -322,47 +327,116 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     setSaving(true);
     try {
       // 1. Upsert agency memberships
-      const activeMemberships = memberships.filter(m => m.status === 'active');
       for (const m of memberships) {
         if (m.id) {
-          await supabase.from('agency_memberships').update({ status: m.status, role: m.role }).eq('id', m.id);
+          const { error } = await supabase.from('agency_memberships').update({ status: m.status, role: m.role }).eq('id', m.id);
+          if (error) throw error;
         } else if (m.status === 'active') {
-          await supabase.from('agency_memberships').insert({
+          const { error } = await supabase.from('agency_memberships').insert({
             agency_id: m.agency_id, user_id: userId, role: m.role,
             status: 'active', is_primary: m.is_primary,
           });
+          if (error) throw error;
         }
       }
 
       // 2. Upsert app access
       for (const a of appAccess) {
         if (a.id) {
-          await supabase.from('user_app_access').update({ is_active: a.is_active, role: a.role }).eq('id', a.id);
+          const { error } = await supabase.from('user_app_access').update({ is_active: a.is_active, role: a.role }).eq('id', a.id);
+          if (error) throw error;
         } else if (a.is_active) {
-          await supabase.from('user_app_access').insert({
+          const { error } = await supabase.from('user_app_access').insert({
             user_id: userId, app_slug: a.app_slug, role: a.role,
             agency_id: a.agency_id, is_active: true,
           });
+          if (error) throw error;
         }
       }
 
-      // 3. Upsert student access
+      // 2b. Ensure independent-mode app access exists for super admins
+      if (userRoles.includes('super_admin')) {
+        const { data: existingGlobalAccess, error: globalFetchError } = await supabase
+          .from('user_app_access')
+          .select('app_slug')
+          .eq('user_id', userId)
+          .is('agency_id', null);
+        if (globalFetchError) throw globalFetchError;
+
+        const existingSlugs = new Set((existingGlobalAccess || []).map((a: any) => a.app_slug as string));
+        const missingGlobalRows = APP_DEFINITIONS
+          .map(a => a.slug)
+          .filter(slug => !existingSlugs.has(slug))
+          .map(slug => ({ user_id: userId, app_slug: slug, role: 'owner', agency_id: null, is_active: true }));
+
+        if (missingGlobalRows.length > 0) {
+          const { error: globalInsertError } = await supabase.from('user_app_access').insert(missingGlobalRows as any);
+          if (globalInsertError) throw globalInsertError;
+        }
+      }
+
+      // 3. Upsert/delete student access (table does not have is_active column)
       for (const sa of studentAccess) {
-        if (sa.id) {
-          const { id, student_name, ...rest } = sa;
-          await supabase.from('user_student_access').update(rest as any).eq('id', id);
-        } else if (sa.is_active) {
-          const { id, student_name, ...rest } = sa;
-          await supabase.from('user_student_access').insert(rest as any);
+        const { id, student_name, is_active, ...payload } = sa as any;
+
+        if (id && !is_active) {
+          const { error } = await supabase.from('user_student_access').delete().eq('id', id);
+          if (error) throw error;
+          continue;
+        }
+
+        if (id && is_active) {
+          const { error } = await supabase.from('user_student_access').update(payload).eq('id', id);
+          if (error) throw error;
+          continue;
+        }
+
+        if (!id && is_active) {
+          const { error } = await supabase.from('user_student_access').insert(payload);
+          if (error) throw error;
         }
       }
 
-      // 4. Sync roles — delete existing and re-insert
-      await supabase.from('user_roles').delete().eq('user_id', userId);
-      if (userRoles.length > 0) {
-        await supabase.from('user_roles').insert(
-          userRoles.map(role => ({ user_id: userId, role: role as 'admin' | 'staff' | 'super_admin' | 'viewer' }))
-        );
+      // 4. Sync base roles safely (avoid delete-all lockout)
+      const selectedBaseRoles = userRoles.filter(r => !r.startsWith('custom:'));
+      const selectedCustomRoleIds = userRoles
+        .filter(r => r.startsWith('custom:'))
+        .map(r => r.replace('custom:', ''));
+
+      const [existingBaseRolesRes, existingCustomRolesRes] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', userId),
+        (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', userId),
+      ]);
+      if (existingBaseRolesRes.error) throw existingBaseRolesRes.error;
+      if (existingCustomRolesRes.error) throw existingCustomRolesRes.error;
+
+      const existingBaseRoles = (existingBaseRolesRes.data || []).map((r: any) => r.role as string);
+      const existingCustomRoleIds = (existingCustomRolesRes.data || []).map((r: any) => r.custom_role_id as string);
+
+      const baseRolesToAdd = selectedBaseRoles.filter(r => !existingBaseRoles.includes(r));
+      const baseRolesToRemove = existingBaseRoles.filter(r => !selectedBaseRoles.includes(r));
+
+      const customToAdd = selectedCustomRoleIds.filter(id => !existingCustomRoleIds.includes(id));
+      const customToRemove = existingCustomRoleIds.filter(id => !selectedCustomRoleIds.includes(id));
+
+      for (const role of baseRolesToAdd) {
+        const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: role as 'admin' | 'staff' | 'super_admin' | 'viewer' });
+        if (error) throw error;
+      }
+
+      for (const role of baseRolesToRemove) {
+        const { error } = await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', role as 'admin' | 'staff' | 'super_admin' | 'viewer');
+        if (error) throw error;
+      }
+
+      for (const customRoleId of customToAdd) {
+        const { error } = await (supabase as any).from('user_custom_roles').insert({ user_id: userId, custom_role_id: customRoleId });
+        if (error) throw error;
+      }
+
+      for (const customRoleId of customToRemove) {
+        const { error } = await (supabase as any).from('user_custom_roles').delete().eq('user_id', userId).eq('custom_role_id', customRoleId);
+        if (error) throw error;
       }
 
       toast.success('Access & permissions saved successfully');
