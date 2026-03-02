@@ -17917,6 +17917,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_set_active_agency: { Args: { p_agency_id: string }; Returns: Json }
       rpc_start_session: {
         Args: {
           p_authorization_id?: string

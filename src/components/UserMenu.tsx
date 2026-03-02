@@ -12,12 +12,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, Smartphone, BookOpen, User, Users } from 'lucide-react';
+import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, ShieldCheck, Smartphone, BookOpen, User, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { SetupPinDialog } from '@/components/PinLogin';
+import { AdminPinRedemption } from '@/components/AdminPinRedemption';
 
 export function UserMenu() {
   const { user, profile, signOut } = useAuth();
@@ -25,6 +26,7 @@ export function UserMenu() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPinSetup, setShowPinSetup] = useState(false);
+  const [showAdminPin, setShowAdminPin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -219,6 +221,16 @@ export function UserMenu() {
           <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
+              setShowAdminPin(true);
+            }}
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" />
+            Redeem Admin PIN
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
               handleSignOut();
             }}
             className="text-destructive focus:text-destructive"
@@ -233,6 +245,10 @@ export function UserMenu() {
         open={showPinSetup}
         onOpenChange={setShowPinSetup}
         userId={user.id}
+      />
+      <AdminPinRedemption
+        open={showAdminPin}
+        onOpenChange={setShowAdminPin}
       />
     </div>
   );
