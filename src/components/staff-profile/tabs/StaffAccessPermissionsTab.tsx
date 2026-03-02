@@ -97,12 +97,13 @@ const PERMISSION_PRESETS: Record<string, Partial<StudentAccess>> = {
 };
 
 export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabProps) {
-  const { userRole, user } = useAuth();
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const { userRole, user, roleLoading } = useAuth();
   const isEditingSelf = user?.id === userId;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [permissionCheckLoading, setPermissionCheckLoading] = useState(true);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [memberships, setMemberships] = useState<AgencyMembership[]>([]);
   const [appAccess, setAppAccess] = useState<AppAccess[]>([]);
@@ -117,6 +118,42 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
   const [expandedStudents, setExpandedStudents] = useState<Set<string>>(new Set());
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
+
+  const checkCurrentUserAdminAccess = useCallback(async () => {
+    if (!user) {
+      setHasAdminAccess(false);
+      setPermissionCheckLoading(false);
+      return;
+    }
+
+    // Fast path from auth context
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      setHasAdminAccess(true);
+      setPermissionCheckLoading(false);
+      return;
+    }
+
+    setPermissionCheckLoading(true);
+    try {
+      const [rolesRes, membershipsRes] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', user.id),
+        supabase.from('agency_memberships').select('role, status').eq('user_id', user.id).eq('status', 'active'),
+      ]);
+
+      const roles = (rolesRes.data || []).map((r: any) => r.role as string);
+      const hasGlobalAdminRole = roles.includes('admin') || roles.includes('super_admin');
+      const hasAgencyAdminRole = (membershipsRes.data || []).some(
+        (m: any) => m.role === 'owner' || m.role === 'admin'
+      );
+
+      setHasAdminAccess(hasGlobalAdminRole || hasAgencyAdminRole);
+    } catch (error) {
+      console.error('Failed to verify admin access:', error);
+      setHasAdminAccess(false);
+    } finally {
+      setPermissionCheckLoading(false);
+    }
+  }, [user, userRole]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -152,7 +189,20 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     }
   }, [userId]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    checkCurrentUserAdminAccess();
+  }, [checkCurrentUserAdminAccess]);
+
+  useEffect(() => {
+    if (roleLoading || permissionCheckLoading) return;
+
+    if (!hasAdminAccess) {
+      setLoading(false);
+      return;
+    }
+
+    loadData();
+  }, [roleLoading, permissionCheckLoading, hasAdminAccess, loadData]);
 
   // Helper: get student name
   const getStudentName = (studentId: string) => allStudents.find(s => s.id === studentId)?.name || 'Unknown';
@@ -325,7 +375,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     }
   };
 
-  if (loading) {
+  if (loading || roleLoading || permissionCheckLoading) {
     return (
       <Card>
         <CardContent className="p-6 space-y-4">
@@ -337,7 +387,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     );
   }
 
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
