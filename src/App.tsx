@@ -54,6 +54,7 @@ import { toast } from "sonner";
 import { useBackendGuard } from "@/hooks/useBackendGuard";
 import { BackendGuardScreen } from "@/components/BackendGuardScreen";
 import Diagnostics from "./pages/Diagnostics";
+import ExportHours from "./pages/ExportHours";
 
 const queryClient = new QueryClient();
 
@@ -227,6 +228,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <AgencyBillingPolicy />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/billing/export-hours" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ExportHours />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>

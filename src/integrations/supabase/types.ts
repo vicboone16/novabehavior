@@ -18181,14 +18181,16 @@ export type Database = {
         | {
             Args: {
               p_agency_id: string
-              p_end: string
+              p_end_date: string
               p_grouping?: string
-              p_start: string
+              p_start_date: string
             }
             Returns: {
               billable_hours: number
               billable_minutes: number
-              grouping_key: string
+              entry_count: number
+              group_key: string
+              group_label: string
               nonbillable_hours: number
               nonbillable_minutes: number
               total_hours: number
