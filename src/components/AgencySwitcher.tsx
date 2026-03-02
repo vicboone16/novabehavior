@@ -30,10 +30,12 @@ import {
   Settings,
   Users,
   AtSign,
+  Link2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AgencySettingsDialog } from '@/components/agency/AgencySettingsDialog';
+import { RedeemAgencyInviteCode } from '@/components/agency/RedeemAgencyInviteCode';
 
 export function AgencySwitcher() {
   const { user, userRole } = useAuth();
@@ -44,6 +46,7 @@ export function AgencySwitcher() {
   const [showManageClientsDialog, setShowManageClientsDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showAliasDialog, setShowAliasDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [aliasSuffix, setAliasSuffix] = useState('');
   const [settingAlias, setSettingAlias] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -346,6 +349,15 @@ export function AgencySwitcher() {
             </>
           )}
 
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setShowJoinDialog(true)}
+            className="cursor-pointer"
+          >
+            <Link2 className="h-4 w-4 mr-2" />
+            Join Agency with Code
+          </DropdownMenuItem>
+
           {(isAgencyAdmin || isSuperAdmin) && currentAgency && (
             <>
               <DropdownMenuSeparator />
@@ -550,6 +562,13 @@ export function AgencySwitcher() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Join Agency Dialog */}
+      <RedeemAgencyInviteCode
+        open={showJoinDialog}
+        onOpenChange={setShowJoinDialog}
+        onRedeemed={() => refreshAgencies()}
+      />
     </>
   );
 }

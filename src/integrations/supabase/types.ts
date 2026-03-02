@@ -17484,6 +17484,7 @@ export type Database = {
         Args: { _agency_id: string; _system_id: string }
         Returns: string
       }
+      generate_agency_invite_code: { Args: never; Returns: string }
       generate_agency_slug: { Args: { _name: string }; Returns: string }
       generate_claim_number: { Args: never; Returns: string }
       generate_invite_code:
@@ -17736,6 +17737,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      redeem_agency_invite_code: { Args: { p_code: string }; Returns: Json }
       redeem_invite_code:
         | { Args: { _code: string }; Returns: Json }
         | { Args: { _code: string; _redeemed_from?: string }; Returns: Json }
