@@ -45,7 +45,7 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     phone: profile.phone || '',
     employment_status: profile.employment_status || 'active',
     hire_date: profile.hire_date || '',
-    npi_number: profile.npi_number || '',
+    npi: profile.npi || '',
     credential: profile.credential || '',
   });
 
@@ -166,7 +166,15 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown';
 
   const handleSave = async () => {
-    const success = await updateProfile(formData);
+    // Convert empty strings to null for nullable DB fields
+    const cleanedData = {
+      ...formData,
+      hire_date: formData.hire_date || null,
+      npi: formData.npi || null,
+      credential: formData.credential || null,
+      phone: formData.phone || null,
+    };
+    const success = await updateProfile(cleanedData);
     if (success) setEditing(false);
   };
 
@@ -231,8 +239,8 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
               <div>
                 <Label>NPI Number</Label>
                 {editing ? (
-                  <Input value={formData.npi_number} onChange={e => setFormData(p => ({ ...p, npi_number: e.target.value }))} placeholder="10-digit NPI" />
-                ) : <p className="text-sm mt-1">{profile.npi_number || '—'}</p>}
+                  <Input value={formData.npi} onChange={e => setFormData(p => ({ ...p, npi: e.target.value }))} placeholder="10-digit NPI" />
+                ) : <p className="text-sm mt-1">{profile.npi || '—'}</p>}
               </div>
               <div>
                 <Label>Credential / Job Title</Label>
