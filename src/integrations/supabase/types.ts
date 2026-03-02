@@ -5459,6 +5459,95 @@ export type Database = {
           },
         ]
       }
+      collaborator_invite_codes: {
+        Row: {
+          agency_id: string
+          app_access: string[]
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number
+          permissions: Json | null
+          recipient_label: string | null
+          recipient_type: string
+          role: string
+          student_id: string | null
+          student_ids: string[] | null
+          updated_at: string
+          uses: number
+        }
+        Insert: {
+          agency_id: string
+          app_access?: string[]
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          permissions?: Json | null
+          recipient_label?: string | null
+          recipient_type: string
+          role?: string
+          student_id?: string | null
+          student_ids?: string[] | null
+          updated_at?: string
+          uses?: number
+        }
+        Update: {
+          agency_id?: string
+          app_access?: string[]
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          permissions?: Json | null
+          recipient_label?: string | null
+          recipient_type?: string
+          role?: string
+          student_id?: string | null
+          student_ids?: string[] | null
+          updated_at?: string
+          uses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaborator_invite_codes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collaborator_invite_codes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collaborator_invite_codes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "collaborator_invite_codes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       consent_form_submissions: {
         Row: {
           access_token: string
@@ -13622,6 +13711,52 @@ export type Database = {
           },
         ]
       }
+      student_app_visibility: {
+        Row: {
+          app_slug: string
+          id: string
+          is_active: boolean
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          app_slug: string
+          id?: string
+          is_active?: boolean
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          app_slug?: string
+          id?: string
+          is_active?: boolean
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_app_visibility_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_app_visibility_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_app_visibility_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       student_assessments: {
         Row: {
           administered_by: string | null
@@ -17936,6 +18071,7 @@ export type Database = {
       generate_agency_invite_code: { Args: never; Returns: string }
       generate_agency_slug: { Args: { _name: string }; Returns: string }
       generate_claim_number: { Args: never; Returns: string }
+      generate_collaborator_invite_code: { Args: never; Returns: string }
       generate_invite_code:
         | { Args: never; Returns: string }
         | { Args: { prefix?: string }; Returns: string }

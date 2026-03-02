@@ -7,7 +7,7 @@ import {
   UserCheck, School, Check, X, Loader2, ChevronDown,
   Clock, Eye, EyeOff, Lock, UserPlus, Ban, CheckCircle,
   FileText, UserCog, Award, Briefcase, KeyRound, Mail, Key, MoreHorizontal, Zap,
-  Copy, Bug
+  Copy, Bug, Link2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +75,7 @@ import { UserPermissionsManager } from '@/components/admin/UserPermissionsManage
 import { CustomRolesManager } from '@/components/admin/CustomRolesManager';
 import RecruitingPage from '@/pages/Recruiting';
 import { BehaviorLabAdmin } from '@/components/admin/BehaviorLabAdmin';
+import { AdminInviteCodesTab } from '@/components/admin/AdminInviteCodesTab';
 
 type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
 
@@ -619,7 +620,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-6xl grid-cols-11">
+          <TabsList className="grid w-full max-w-6xl grid-cols-12">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Pending</span>
@@ -664,6 +665,10 @@ export default function Admin() {
             <TabsTrigger value="behavior-lab" className="gap-2">
               <Zap className="w-4 h-4" />
               <span className="hidden sm:inline">Lab</span>
+            </TabsTrigger>
+            <TabsTrigger value="invite-codes" className="gap-2">
+              <Link2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Invites</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2">
               <Settings className="w-4 h-4" />
@@ -1051,6 +1056,21 @@ export default function Admin() {
           {/* Behavior Lab Tab */}
           <TabsContent value="behavior-lab">
             <BehaviorLabAdmin />
+          </TabsContent>
+
+          {/* Invite Codes Tab */}
+          <TabsContent value="invite-codes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Non-Staff Invite Codes</CardTitle>
+                <CardDescription>
+                  Manage invite codes for parents, teachers, collaborators, and supervisors
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminInviteCodesTab />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}
