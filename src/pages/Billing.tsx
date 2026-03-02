@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send, Download, LineChart, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, DollarSign, AlertCircle, BarChart3, Shield, CreditCard, Sparkles, Building2, ScrollText, Clock, Upload, Send, Download, LineChart, ClipboardCheck, FileStack } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { TimesheetDashboard } from '@/components/payroll/TimesheetDashboard';
 import { ERAProcessingTab } from '@/components/billing/ERAProcessingTab';
 import { ClearinghouseTab } from '@/components/billing/ClearinghouseTab';
 import { NeedsReviewList } from '@/components/billing/NeedsReviewList';
+import { ReadyForClaimQueue } from '@/components/billing/ReadyForClaimQueue';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { subDays } from 'date-fns';
@@ -113,6 +114,10 @@ export default function Billing() {
             <TabsTrigger value="needs-review" className="gap-2">
               <ClipboardCheck className="w-4 h-4" />
               Needs Review
+            </TabsTrigger>
+            <TabsTrigger value="ready-for-claim" className="gap-2">
+              <FileStack className="w-4 h-4" />
+              Ready for Claim
             </TabsTrigger>
             <TabsTrigger value="era" className="gap-2">
               <Upload className="w-4 h-4" />
@@ -234,6 +239,10 @@ export default function Billing() {
 
           <TabsContent value="needs-review">
             <NeedsReviewList />
+          </TabsContent>
+
+          <TabsContent value="ready-for-claim">
+            <ReadyForClaimQueue />
           </TabsContent>
 
           <TabsContent value="era">
