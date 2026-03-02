@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, X, FileText, MessageSquare } from 'lucide-react';
+import { Bell, Check, X, FileText, MessageSquare, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -99,6 +99,8 @@ export function NotificationBell() {
     switch (type) {
       case 'questionnaire_response':
         return <FileText className="w-4 h-4 text-primary" />;
+      case 'teacher_summary':
+        return <Send className="w-4 h-4 text-green-500" />;
       case 'comment':
         return <MessageSquare className="w-4 h-4 text-blue-500" />;
       default:

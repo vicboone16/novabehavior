@@ -16986,6 +16986,35 @@ export type Database = {
           },
         ]
       }
+      v_active_agency: {
+        Row: {
+          current_agency_id: string | null
+          last_switched_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          current_agency_id?: string | null
+          last_switched_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          current_agency_id?: string | null
+          last_switched_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_agency_context_current_agency_id_fkey"
+            columns: ["current_agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_authorization_utilization: {
         Row: {
           authorization_id: string | null
