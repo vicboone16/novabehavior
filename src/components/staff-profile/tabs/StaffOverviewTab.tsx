@@ -32,8 +32,9 @@ const EMPLOYMENT_STATUSES = [
 
 
 export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, superviseeLinks }: StaffOverviewTabProps) {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isEditingSelf = user?.id === profile.user_id;
 
   const [editing, setEditing] = useState(false);
   const [showAssignSupervisorDialog, setShowAssignSupervisorDialog] = useState(false);
@@ -98,6 +99,11 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
   useEffect(() => { loadRoleAndAgencies(); }, [loadRoleAndAgencies]);
 
   const handleRoleToggle = async (roleValue: string, checked: boolean) => {
+    // Prevent removing your own admin/super_admin role
+    if (isEditingSelf && !checked && (roleValue === 'admin' || roleValue === 'super_admin')) {
+      toast.error('You cannot remove your own admin role. Ask another admin to do this.');
+      return;
+    }
     setRoleLoading(true);
     try {
       const isCustom = roleValue.startsWith('custom:');
@@ -153,6 +159,14 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
   };
 
   const handleRemoveAgency = async (membershipId: string) => {
+    // Prevent removing own agency if you're the owner
+    if (isEditingSelf) {
+      const membership = agencies.find(a => a.id === membershipId);
+      if (membership?.role === 'owner') {
+        toast.error('You cannot remove yourself as owner. Transfer ownership to another user first.');
+        return;
+      }
+    }
     try {
       await supabase.from('agency_memberships').update({ status: 'inactive' }).eq('id', membershipId);
       toast.success('Agency removed');
