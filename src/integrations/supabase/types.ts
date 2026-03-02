@@ -15426,6 +15426,99 @@ export type Database = {
         }
         Relationships: []
       }
+      time_entries: {
+        Row: {
+          activity_type: string
+          agency_id: string | null
+          appointment_id: string | null
+          created_at: string
+          duration_minutes: number | null
+          ended_at: string | null
+          entry_kind: string
+          id: string
+          is_billable: boolean
+          note: Json | null
+          session_id: string | null
+          started_at: string
+          status: string
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string
+          agency_id?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          entry_kind?: string
+          id?: string
+          is_billable?: boolean
+          note?: Json | null
+          session_id?: string | null
+          started_at?: string
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          agency_id?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          entry_kind?: string
+          id?: string
+          is_billable?: boolean
+          note?: Json | null
+          session_id?: string | null
+          started_at?: string
+          status?: string
+          student_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "time_entries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       timesheet_entries: {
         Row: {
           appointment_id: string | null
@@ -17781,6 +17874,18 @@ export type Database = {
         Returns: Json
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
+      rpc_allocate_time_entry: {
+        Args: {
+          p_activity_type?: string
+          p_agency_id?: string
+          p_appointment_id?: string
+          p_is_billable?: boolean
+          p_status?: string
+          p_student_id?: string
+          p_time_entry_id: string
+        }
+        Returns: Json
+      }
       rpc_can_write_schedule: { Args: never; Returns: Json }
       rpc_create_agency_invite_code: {
         Args: {
@@ -17924,6 +18029,20 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      rpc_start_timer: {
+        Args: {
+          p_activity_type?: string
+          p_agency_id?: string
+          p_appointment_id?: string
+          p_is_billable?: boolean
+          p_student_id?: string
+        }
+        Returns: Json
+      }
+      rpc_stop_timer: {
+        Args: { p_note?: Json; p_time_entry_id: string }
+        Returns: Json
       }
       rpc_timeblock_finalize_as_session: {
         Args: {
