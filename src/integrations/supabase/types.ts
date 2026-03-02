@@ -15513,6 +15513,7 @@ export type Database = {
           summary_json: Json
           target_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           agency_id: string
@@ -15530,6 +15531,7 @@ export type Database = {
           summary_json?: Json
           target_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           agency_id?: string
@@ -15547,6 +15549,7 @@ export type Database = {
           summary_json?: Json
           target_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -15561,6 +15564,7 @@ export type Database = {
       teacher_targets: {
         Row: {
           agency_id: string
+          client_id: string | null
           created_at: string
           created_by: string
           created_in_app: string
@@ -15573,6 +15577,7 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          client_id?: string | null
           created_at?: string
           created_by?: string
           created_in_app?: string
@@ -15585,6 +15590,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          client_id?: string | null
           created_at?: string
           created_by?: string
           created_in_app?: string
@@ -15595,7 +15601,29 @@ export type Database = {
           target_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teacher_targets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_targets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_targets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
       }
       time_blocks: {
         Row: {
