@@ -8495,6 +8495,7 @@ export type Database = {
           created_by: string | null
           draft_type: string | null
           id: string
+          review_comment: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           sections: Json
@@ -8514,6 +8515,7 @@ export type Database = {
           created_by?: string | null
           draft_type?: string | null
           id?: string
+          review_comment?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           sections?: Json
@@ -8533,6 +8535,7 @@ export type Database = {
           created_by?: string | null
           draft_type?: string | null
           id?: string
+          review_comment?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           sections?: Json
