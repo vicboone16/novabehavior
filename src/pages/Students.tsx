@@ -76,6 +76,8 @@ export default function Students() {
 
     if (newStudent) {
       store.updateStudentProfile(newStudent.id, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         displayName: displayName.trim() || fullName,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
         dataCollectionStartDate: dataCollectionStartDate ? new Date(dataCollectionStartDate) : undefined,
