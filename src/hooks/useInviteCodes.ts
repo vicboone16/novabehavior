@@ -93,7 +93,7 @@ export function useInviteCodes() {
     if (!user) return null;
     try {
       const { data: codeResult, error: codeError } = await supabase
-        .rpc('generate_invite_code');
+        .rpc('generate_invite_code', { prefix: 'BD' });
       if (codeError) throw codeError;
 
       const expiresAt = params.expiresInDays
