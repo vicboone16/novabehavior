@@ -155,10 +155,12 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     }
   }, [user, userRole]);
 
+  const [staffEmail, setStaffEmail] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
+      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes, userCustomRolesRes, profileRes] = await Promise.all([
         supabase.from('agencies').select('id, name, status').eq('status', 'active').order('name'),
         supabase.from('agency_memberships').select('*').eq('user_id', userId),
         supabase.from('user_app_access').select('*').eq('user_id', userId),
