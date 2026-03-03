@@ -16356,6 +16356,7 @@ export type Database = {
           agency_id: string
           client_id: string | null
           created_at: string
+          email: string | null
           id: string
           linked_via_invite_id: string | null
           redeemed_at: string | null
@@ -16367,6 +16368,7 @@ export type Database = {
           agency_id: string
           client_id?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           linked_via_invite_id?: string | null
           redeemed_at?: string | null
@@ -16378,6 +16380,7 @@ export type Database = {
           agency_id?: string
           client_id?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           linked_via_invite_id?: string | null
           redeemed_at?: string | null
