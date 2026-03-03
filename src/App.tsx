@@ -353,6 +353,7 @@ const App = () => {
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </GlobalErrorBoundary>
   );
 };
 
