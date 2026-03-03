@@ -156,13 +156,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update profile
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Update profile (include email for cross-app lookups)
     await supabaseAdmin
       .from("profiles")
       .update({
         first_name: first_name.trim(),
         last_name: last_name.trim(),
         display_name: displayName,
+        email: normalizedEmail,
         phone: phone || null,
         credential: credential || null,
         npi: npi || null,
