@@ -54,6 +54,7 @@ import { StaffProfilePage } from "./components/staff-profile";
 import { toast } from "sonner";
 import { useBackendGuard } from "@/hooks/useBackendGuard";
 import { BackendGuardScreen } from "@/components/BackendGuardScreen";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
 
@@ -108,11 +109,12 @@ const App = () => {
   }, []);
 
   // Block UI until backend handshake passes
-  if (backendGuard.status === 'checking' || backendGuard.status !== 'ok') {
+  if (backendGuard.status !== 'ok') {
     return <BackendGuardScreen guard={backendGuard} />;
   }
 
   return (
+    <GlobalErrorBoundary region="App Shell">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
@@ -351,6 +353,7 @@ const App = () => {
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </GlobalErrorBoundary>
   );
 };
 
