@@ -109,11 +109,12 @@ const App = () => {
   }, []);
 
   // Block UI until backend handshake passes
-  if (backendGuard.status === 'checking' || backendGuard.status !== 'ok') {
+  if (backendGuard.status !== 'ok') {
     return <BackendGuardScreen guard={backendGuard} />;
   }
 
   return (
+    <GlobalErrorBoundary region="App Shell">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
