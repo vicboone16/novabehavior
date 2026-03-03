@@ -36,61 +36,46 @@ export default function Auth() {
 
     setIsLoading(true);
     setTeacherMode(isTeacherMode);
-    
-    // First check if user is approved
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_approved')
-      .eq('email', loginEmail.toLowerCase())
-      .single();
 
-    const { error } = await signIn(loginEmail, loginPassword);
-    const { data: { user: loggedInUser } } = await supabase.auth.getUser();
-    setIsLoading(false);
+    try {
+      console.log('[Auth] Attempting email/password login for', loginEmail);
+      const { error } = await signIn(loginEmail, loginPassword);
+      setIsLoading(false);
 
-    if (error) {
-      toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
-    } else {
+      if (error) {
+        console.error('[Auth] Login failed:', error.message);
+        toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
+        return;
+      }
+
+      console.log('[Auth] Login succeeded, routing to post-login');
       toast({ title: 'Welcome back!' });
-      // Check if approved after login
-      if (profile && !profile.is_approved) {
-        navigate('/pending-approval');
-      } else if (isTeacherMode) {
-        // Check teacher mode permission
+
+      if (isTeacherMode) {
+        // For teacher mode, check permission then route
+        const { data: { user: loggedInUser } } = await supabase.auth.getUser();
         if (loggedInUser?.id) {
           const { data: perms } = await supabase
             .from('feature_permissions')
             .select('teacher_mode_access, teacher_mode_only')
             .eq('user_id', loggedInUser.id)
             .maybeSingle();
-          
-          if (perms?.teacher_mode_only) {
-            navigate('/teacher-dashboard');
-          } else if (perms?.teacher_mode_access === false) {
+
+          if (perms?.teacher_mode_access === false && !perms?.teacher_mode_only) {
             toast({ title: 'Teacher Mode not enabled', description: 'Contact an administrator to enable Teacher Mode access.', variant: 'destructive' });
-            navigate('/');
-          } else {
-            navigate('/teacher-dashboard');
-          }
-        } else {
-          navigate('/teacher-dashboard');
-        }
-      } else {
-        // Check if user is teacher_mode_only
-        if (loggedInUser?.id) {
-          const { data: perms } = await supabase
-            .from('feature_permissions')
-            .select('teacher_mode_only')
-            .eq('user_id', loggedInUser.id)
-            .maybeSingle();
-          
-          if (perms?.teacher_mode_only) {
-            navigate('/teacher-dashboard');
+            navigate('/post-login');
             return;
           }
         }
-        navigate('/');
+        navigate('/teacher-dashboard');
+      } else {
+        // Normal login → PostLoginRouter handles agency resolution
+        navigate('/post-login');
       }
+    } catch (err: any) {
+      setIsLoading(false);
+      console.error('[Auth] Unexpected login error:', err);
+      toast({ title: 'Login error', description: err?.message || 'An unexpected error occurred', variant: 'destructive' });
     }
   };
 

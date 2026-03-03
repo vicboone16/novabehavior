@@ -18248,10 +18248,12 @@ export type Database = {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
       }
-      has_app_access: {
-        Args: { _agency_id?: string; _app_slug: string; _user_id: string }
-        Returns: boolean
-      }
+      has_app_access:
+        | {
+            Args: { _agency_id?: string; _app_slug: string; _user_id: string }
+            Returns: boolean
+          }
+        | { Args: { p_app_slug: string }; Returns: boolean }
       has_billing_access: { Args: { check_user_id: string }; Returns: boolean }
       has_client_access: { Args: { p_client_id: string }; Returns: boolean }
       has_effective_student_access:
@@ -18423,6 +18425,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_debug_access: { Args: { p_app_slug: string }; Returns: Json }
       rpc_end_session_and_update_utilization:
         | {
             Args: {

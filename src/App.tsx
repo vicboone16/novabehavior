@@ -18,6 +18,7 @@ import AssessmentDashboard from "./pages/AssessmentDashboard";
 import SkillAcquisition from "./pages/SkillAcquisition";
 import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
+import PostLoginRouter from "./pages/PostLoginRouter";
 import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
 import PendingApproval from "./pages/PendingApproval";
@@ -121,6 +122,11 @@ const App = () => {
         <BrowserRouter>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/post-login" element={
+              <ProtectedRoute>
+                <PostLoginRouter />
+              </ProtectedRoute>
+            } />
             {/* Public questionnaire form - no auth required */}
             <Route path="/questionnaire/:token" element={<QuestionnaireForm />} />
             {/* Public consent form - no auth required */}
