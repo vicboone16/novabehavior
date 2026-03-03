@@ -18250,6 +18250,10 @@ export type Database = {
       }
       has_app_access:
         | {
+            Args: { _agency_id?: string; _app_slug?: string; _user_id?: string }
+            Returns: boolean
+          }
+        | {
             Args: { _agency_id?: string; _app_slug: string; _user_id: string }
             Returns: boolean
           }
