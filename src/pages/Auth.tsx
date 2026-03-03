@@ -202,14 +202,36 @@ export default function Auth() {
                         Teacher Mode
                       </Button>
                     </div>
-                    <button
-                      type="button"
-                      className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-                      onClick={() => setLoginMethod('pin')}
-                    >
-                      <Smartphone className="w-4 h-4" />
-                      Use PIN login instead
-                    </button>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        className="text-sm text-primary hover:underline"
+                        onClick={async () => {
+                          if (!loginEmail) {
+                            toast({ title: 'Enter your email first', variant: 'destructive' });
+                            return;
+                          }
+                          const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
+                            redirectTo: `${window.location.origin}/reset-password`,
+                          });
+                          if (error) {
+                            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                          } else {
+                            toast({ title: 'Password reset email sent', description: 'Check your inbox for a reset link.' });
+                          }
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                      <button
+                        type="button"
+                        className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+                        onClick={() => setLoginMethod('pin')}
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        Use PIN login instead
+                      </button>
+                    </div>
                   </CardFooter>
                 </form>
               ) : (
