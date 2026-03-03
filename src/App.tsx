@@ -18,6 +18,7 @@ import AssessmentDashboard from "./pages/AssessmentDashboard";
 import SkillAcquisition from "./pages/SkillAcquisition";
 import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
+import PostLoginRouter from "./pages/PostLoginRouter";
 import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
 import PendingApproval from "./pages/PendingApproval";
