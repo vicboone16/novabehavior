@@ -371,7 +371,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         const missingGlobalRows = APP_DEFINITIONS
           .map(a => a.slug)
           .filter(slug => !existingSlugs.has(slug))
-          .map(slug => ({ user_id: userId, app_slug: slug, role: 'owner', agency_id: null, is_active: true }));
+          .map(slug => ({ user_id: userId, app_slug: slug, role: 'owner', agency_id: null, is_active: true, email: staffEmail }));
 
         if (missingGlobalRows.length > 0) {
           const { error: globalInsertError } = await supabase.from('user_app_access').insert(missingGlobalRows as any);
