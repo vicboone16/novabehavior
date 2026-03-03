@@ -201,6 +201,17 @@ Deno.serve(async (req) => {
         console.error("Agency membership error:", membershipError);
       }
 
+      // Upsert user_agency_access with email for cross-app lookups
+      await supabaseAdmin
+        .from("user_agency_access")
+        .upsert({
+          user_id: userId,
+          agency_id,
+          role: role === "admin" ? "admin" : "member",
+          email: normalizedEmail,
+          created_at: new Date().toISOString(),
+        }, { onConflict: "user_id,agency_id" });
+
       // Set user agency context
       await supabaseAdmin
         .from("user_agency_context")
