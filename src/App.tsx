@@ -122,6 +122,11 @@ const App = () => {
         <BrowserRouter>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/post-login" element={
+              <ProtectedRoute>
+                <PostLoginRouter />
+              </ProtectedRoute>
+            } />
             {/* Public questionnaire form - no auth required */}
             <Route path="/questionnaire/:token" element={<QuestionnaireForm />} />
             {/* Public consent form - no auth required */}
