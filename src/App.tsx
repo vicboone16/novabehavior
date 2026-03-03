@@ -54,6 +54,7 @@ import { StaffProfilePage } from "./components/staff-profile";
 import { toast } from "sonner";
 import { useBackendGuard } from "@/hooks/useBackendGuard";
 import { BackendGuardScreen } from "@/components/BackendGuardScreen";
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
 
