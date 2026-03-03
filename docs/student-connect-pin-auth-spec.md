@@ -16,12 +16,12 @@ Student Connect shares the same auth backend as Nova Track. The 6-digit PIN logi
 
 The `app_handshake` table now has all 4 apps:
 
-| id | app_slug         | environment_name |
-|----|------------------|-----------------|
-| 1  | novatrack        | PROD            |
-| 2  | student_connect  | PROD            |
-| 3  | behaviordecoded  | PROD            |
-| 4  | teacherhub       | PROD            |
+| id  | app_slug        | environment_name |
+| --- | --------------- | ---------------- |
+| 1   | novatrack       | PROD             |
+| 2   | student_connect | PROD             |
+| 3   | behaviordecoded | PROD             |
+| 4   | teacherhub      | PROD             |
 
 ### Backend Guard Config for Student Connect:
 
@@ -41,6 +41,7 @@ const ALLOWED_URL_PATTERNS = [
 ## 2. Database Objects (Already Exist — No Migrations Needed)
 
 ### PIN Auth Tables & Functions
+
 - **`profiles`** — stores `pin_hash`, `is_approved`, `email`, `user_id`
 - **`pin_attempts`** — rate-limiting log
 - **`verify_pin(_user_id uuid, _pin text)`** → `boolean` — SHA-256 hash comparison
@@ -48,16 +49,19 @@ const ALLOWED_URL_PATTERNS = [
 - **`record_pin_attempt(_user_id uuid, _email text, _ip_address text, _success boolean)`** → void
 
 ### App Access Gating
+
 - **`user_app_access`** — controls which apps each user can access
   - Columns: `id`, `user_id`, `app_slug`, `agency_id`, `role`, `is_active`, `granted_by`, `granted_at`, `updated_at`
   - Unique constraint: `(user_id, app_slug)`
 - **`has_app_access(_user_id uuid, _app_slug text, _agency_id uuid DEFAULT NULL)`** → `boolean`
 
 ### Student Visibility
+
 - **`student_app_visibility`** — controls which students appear in which apps
   - Filter by `app_slug = 'student_connect'` and `is_active = true`
 
 ### Edge Function
+
 - **`pin-auth`** — already deployed, `verify_jwt = false`
 
 ---
@@ -68,6 +72,7 @@ const ALLOWED_URL_PATTERNS = [
 **JWT:** Not required
 
 ### Request Body
+
 ```json
 {
   "email": "user@example.com",   // optional — omit for PIN-only lookup
@@ -76,6 +81,7 @@ const ALLOWED_URL_PATTERNS = [
 ```
 
 ### Response (Success — 200)
+
 ```json
 {
   "access_token": "eyJ...",
@@ -87,17 +93,18 @@ const ALLOWED_URL_PATTERNS = [
 ```
 
 ### Error Responses
-| Status | Body | Meaning |
-|--------|------|---------|
-| 400 | `{ "error": "PIN is required" }` | Missing PIN |
-| 400 | `{ "error": "Invalid PIN format" }` | Not 6 digits |
-| 400 | `{ "error": "PIN not set for this user" }` | User has no PIN configured |
-| 401 | `{ "error": "Invalid PIN" }` | Wrong PIN |
-| 403 | `{ "error": "Account pending approval", "pending": true }` | Not yet approved |
-| 404 | `{ "error": "User not found" }` | No matching profile |
-| 409 | `{ "error": "PIN is not unique..." }` | PIN-only lookup matched >1 user |
-| 429 | `{ "error": "Too many failed attempts...", "rateLimited": true }` | Rate limited (5 failures in 5 min) |
-| 500 | `{ "error": "..." }` | Server error |
+
+| Status | Body                                                              | Meaning                            |
+| ------ | ----------------------------------------------------------------- | ---------------------------------- |
+| 400    | `{ "error": "PIN is required" }`                                  | Missing PIN                        |
+| 400    | `{ "error": "Invalid PIN format" }`                               | Not 6 digits                       |
+| 400    | `{ "error": "PIN not set for this user" }`                        | User has no PIN configured         |
+| 401    | `{ "error": "Invalid PIN" }`                                      | Wrong PIN                          |
+| 403    | `{ "error": "Account pending approval", "pending": true }`        | Not yet approved                   |
+| 404    | `{ "error": "User not found" }`                                   | No matching profile                |
+| 409    | `{ "error": "PIN is not unique..." }`                             | PIN-only lookup matched >1 user    |
+| 429    | `{ "error": "Too many failed attempts...", "rateLimited": true }` | Rate limited (5 failures in 5 min) |
+| 500    | `{ "error": "..." }`                                              | Server error                       |
 
 ---
 
@@ -277,8 +284,7 @@ const { data } = await supabase.rpc('has_app_access', {
   _app_slug: 'student_connect',
 });
 
-if (!data) {
-  // Show "Access Not Configured" screen
+
 }
 ```
 
@@ -319,6 +325,7 @@ The `pin-auth` function is already configured with `verify_jwt = false`. No chan
 ## 6. SQL Reference (Already Applied — For Documentation Only)
 
 ### `verify_pin` function
+
 ```sql
 CREATE OR REPLACE FUNCTION public.verify_pin(_user_id uuid, _pin text)
 RETURNS boolean
@@ -343,6 +350,7 @@ $$;
 ```
 
 ### `check_pin_rate_limit` function
+
 ```sql
 CREATE OR REPLACE FUNCTION public.check_pin_rate_limit(
   _email text,
@@ -368,6 +376,7 @@ $$;
 ```
 
 ### `record_pin_attempt` function
+
 ```sql
 CREATE OR REPLACE FUNCTION public.record_pin_attempt(
   _user_id uuid,
@@ -388,6 +397,7 @@ $$;
 ```
 
 ### `pin_attempts` table
+
 ```sql
 CREATE TABLE IF NOT EXISTS public.pin_attempts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -403,6 +413,7 @@ ALTER TABLE public.pin_attempts ENABLE ROW LEVEL SECURITY;
 ```
 
 ### `has_app_access` function
+
 ```sql
 CREATE OR REPLACE FUNCTION public.has_app_access(
   _user_id uuid,
@@ -430,12 +441,12 @@ $$;
 
 ## 7. App Summary
 
-| App              | Slug              | id | PIN Login | Auth Method        |
-|------------------|-------------------|----|-----------|-------------------|
-| Nova Track       | novatrack         | 1  | ✅ Yes    | Email + PIN        |
-| Student Connect  | student_connect   | 2  | ✅ Yes    | Email + PIN        |
-| Behavior Decoded | behaviordecoded   | 3  | ❌ No     | Email + Password   |
-| Teacher Hub      | teacherhub        | 4  | ❌ No     | Email + Password   |
+| App              | Slug            | id  | PIN Login | Auth Method      |
+| ---------------- | --------------- | --- | --------- | ---------------- |
+| Nova Track       | novatrack       | 1   | ✅ Yes    | Email + PIN      |
+| Student Connect  | student_connect | 2   | ✅ Yes    | Email + PIN      |
+| Behavior Decoded | behaviordecoded | 3   | ❌ No     | Email + Password |
+| Teacher Hub      | teacherhub      | 4   | ❌ No     | Email + Password |
 
 ---
 
@@ -477,11 +488,7 @@ Or run a no-op migration.
 >    - Change `EXPECTED_APP_SLUG` to `'student_connect'`
 >    - Change the query from `.eq('id', 1)` to `.eq('id', 2)`
 >    - Keep `ALLOWED_URL_PATTERNS` pointing to `yboqqmkghwhlhhnsegje.supabase.co`
->
 > 2. **PIN Login:** The `pin-auth` edge function is already deployed. Copy the `usePinLogin` hook and `PinLogin` component from the spec. Add PIN login as an option on your auth page.
->
 > 3. **App Access Gating:** Use `has_app_access(auth.uid(), 'student_connect')` to gate access on login. Show an "Access Not Configured" screen if denied.
->
 > 4. **Student Filtering:** Use `student_app_visibility` table filtered by `app_slug = 'student_connect'` to load visible students.
->
 > 5. **Schema refresh:** Run `NOTIFY pgrst, 'reload schema';` or a no-op migration so the API layer picks up the shared tables and functions.
