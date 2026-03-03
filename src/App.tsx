@@ -18,6 +18,7 @@ import AssessmentDashboard from "./pages/AssessmentDashboard";
 import SkillAcquisition from "./pages/SkillAcquisition";
 import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import PostLoginRouter from "./pages/PostLoginRouter";
 import Admin from "./pages/Admin";
 import BehaviorLibrary from "./pages/BehaviorLibrary";
@@ -124,6 +125,7 @@ const App = () => {
         <BrowserRouter>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/post-login" element={
               <ProtectedRoute>
                 <PostLoginRouter />
