@@ -236,6 +236,7 @@ Deno.serve(async (req) => {
         agency_id: aa.agency_id,
         role: aa.role || "staff",
         is_active: true,
+        email: email.toLowerCase().trim(),
         granted_by: callerUser.id,
         granted_at: new Date().toISOString(),
       }));

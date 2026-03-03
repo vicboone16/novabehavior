@@ -16467,6 +16467,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           app_slug: string
+          email: string | null
           granted_at: string
           granted_by: string | null
           id: string
@@ -16478,6 +16479,7 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           app_slug: string
+          email?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
@@ -16489,6 +16491,7 @@ export type Database = {
         Update: {
           agency_id?: string | null
           app_slug?: string
+          email?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
@@ -18098,6 +18101,7 @@ export type Database = {
         Returns: {
           agency_id: string | null
           app_slug: string
+          email: string | null
           granted_at: string
           granted_by: string | null
           id: string

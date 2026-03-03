@@ -155,10 +155,12 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
     }
   }, [user, userRole]);
 
+  const [staffEmail, setStaffEmail] = useState<string | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
+      const [agenciesRes, membershipsRes, appAccessRes, studentAccessRes, studentsRes, rolesRes, customRolesRes, userCustomRolesRes, profileRes] = await Promise.all([
         supabase.from('agencies').select('id, name, status').eq('status', 'active').order('name'),
         supabase.from('agency_memberships').select('*').eq('user_id', userId),
         supabase.from('user_app_access').select('*').eq('user_id', userId),
@@ -167,6 +169,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         supabase.from('user_roles').select('role').eq('user_id', userId),
         supabase.from('custom_roles').select('id, name').order('name'),
         (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', userId),
+        supabase.from('profiles').select('email').eq('user_id', userId).single(),
       ]);
 
       setAgencies(agenciesRes.data || []);
@@ -178,6 +181,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         is_active: true,
       })) as StudentAccess[]);
       setAllStudents((studentsRes.data || []) as { id: string; name: string; agency_id: string | null }[]);
+      setStaffEmail(profileRes.data?.email || null);
 
       const baseRoles = (rolesRes.data || []).map((r: any) => r.role as string);
       const customRoleIds = (userCustomRolesRes.data || []).map((r: any) => `custom:${r.custom_role_id}` as string);
@@ -348,7 +352,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         } else if (a.is_active) {
           const { error } = await supabase.from('user_app_access').insert({
             user_id: userId, app_slug: a.app_slug, role: a.role,
-            agency_id: a.agency_id, is_active: true,
+            agency_id: a.agency_id, is_active: true, email: staffEmail,
           });
           if (error) throw error;
         }
@@ -367,7 +371,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         const missingGlobalRows = APP_DEFINITIONS
           .map(a => a.slug)
           .filter(slug => !existingSlugs.has(slug))
-          .map(slug => ({ user_id: userId, app_slug: slug, role: 'owner', agency_id: null, is_active: true }));
+          .map(slug => ({ user_id: userId, app_slug: slug, role: 'owner', agency_id: null, is_active: true, email: staffEmail }));
 
         if (missingGlobalRows.length > 0) {
           const { error: globalInsertError } = await supabase.from('user_app_access').insert(missingGlobalRows as any);
