@@ -156,13 +156,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update profile
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Update profile (include email for cross-app lookups)
     await supabaseAdmin
       .from("profiles")
       .update({
         first_name: first_name.trim(),
         last_name: last_name.trim(),
         display_name: displayName,
+        email: normalizedEmail,
         phone: phone || null,
         credential: credential || null,
         npi: npi || null,
@@ -197,6 +200,17 @@ Deno.serve(async (req) => {
       if (membershipError) {
         console.error("Agency membership error:", membershipError);
       }
+
+      // Upsert user_agency_access with email for cross-app lookups
+      await supabaseAdmin
+        .from("user_agency_access")
+        .upsert({
+          user_id: userId,
+          agency_id,
+          role: role === "admin" ? "admin" : "member",
+          email: normalizedEmail,
+          created_at: new Date().toISOString(),
+        }, { onConflict: "user_id,agency_id" });
 
       // Set user agency context
       await supabaseAdmin
