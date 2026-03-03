@@ -352,7 +352,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         } else if (a.is_active) {
           const { error } = await supabase.from('user_app_access').insert({
             user_id: userId, app_slug: a.app_slug, role: a.role,
-            agency_id: a.agency_id, is_active: true,
+            agency_id: a.agency_id, is_active: true, email: staffEmail,
           });
           if (error) throw error;
         }
