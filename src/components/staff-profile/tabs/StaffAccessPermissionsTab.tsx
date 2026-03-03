@@ -392,7 +392,11 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         }
 
         if (!id && is_active) {
-          const { error } = await supabase.from('user_student_access').insert(payload);
+          // Set granted_by to the current admin user
+          const insertPayload = { ...payload, granted_by: user?.id || null };
+          const { error } = await supabase
+            .from('user_student_access')
+            .upsert(insertPayload, { onConflict: 'user_id,student_id,app_scope' });
           if (error) throw error;
         }
       }
