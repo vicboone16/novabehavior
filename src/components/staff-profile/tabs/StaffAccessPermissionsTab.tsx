@@ -169,6 +169,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         supabase.from('user_roles').select('role').eq('user_id', userId),
         supabase.from('custom_roles').select('id, name').order('name'),
         (supabase as any).from('user_custom_roles').select('custom_role_id').eq('user_id', userId),
+        supabase.from('profiles').select('email').eq('user_id', userId).single(),
       ]);
 
       setAgencies(agenciesRes.data || []);
@@ -180,6 +181,7 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         is_active: true,
       })) as StudentAccess[]);
       setAllStudents((studentsRes.data || []) as { id: string; name: string; agency_id: string | null }[]);
+      setStaffEmail(profileRes.data?.email || null);
 
       const baseRoles = (rolesRes.data || []).map((r: any) => r.role as string);
       const customRoleIds = (userCustomRolesRes.data || []).map((r: any) => `custom:${r.custom_role_id}` as string);
