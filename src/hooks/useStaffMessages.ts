@@ -61,10 +61,10 @@ export function useStaffMessages(studentId: string | undefined, recipientId?: st
       const senderIds = [...new Set((data || []).map((m) => m.sender_id))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
-        .in("id", senderIds);
+        .select("user_id, display_name, first_name, last_name")
+        .in("user_id", senderIds);
 
-      const nameMap = new Map((profiles || []).map((p) => [p.id, p.full_name]));
+      const nameMap = new Map((profiles || []).map((p) => [p.user_id, p.display_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || "Unknown"]));
 
       // Fetch attachments for all messages
       const messageIds = (data || []).map((m) => m.id);

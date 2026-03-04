@@ -30,19 +30,20 @@ export function useStudentTeachers(studentId: string | undefined) {
       // Get profile info for these users
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds);
+        .select("user_id, display_name, first_name, last_name, email")
+        .in("user_id", userIds);
 
       const profileMap = new Map(
-        (profiles || []).map((p) => [p.id, p])
+        (profiles || []).map((p) => [p.user_id, p])
       );
 
       return userIds
         .map((uid) => {
           const profile = profileMap.get(uid);
+          const name = profile?.display_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Unknown";
           return {
             user_id: uid,
-            full_name: profile?.full_name || "Unknown",
+            full_name: name,
             email: profile?.email || "",
             app_scope: accessRows.find((r) => r.user_id === uid)?.app_scope || "teacherhub",
           };
