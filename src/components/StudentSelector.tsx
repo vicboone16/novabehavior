@@ -140,9 +140,10 @@ export function StudentSelector() {
   }) => {
     if (!confirmStudent) return;
     toggleStudentSelection(confirmStudent.id);
-    if (!sessionStartTime) {
-      startSession(options.linkedAppointmentId);
-    } else if (options.linkedAppointmentId) {
+    // Do NOT auto-start a session when selecting a student.
+    // The session should only start when the user explicitly clicks "Start" on the SessionTimer.
+    // Just store the linked appointment ID if one was selected so it's ready when the session does start.
+    if (options.linkedAppointmentId) {
       const { setLinkedAppointmentId, linkedAppointmentId } = useDataStore.getState();
       if (!linkedAppointmentId) setLinkedAppointmentId(options.linkedAppointmentId);
     }
