@@ -80,26 +80,100 @@ export function CriteriaBuilder({
           <Input value={name} onChange={e => onNameChange(e.target.value)} placeholder="e.g., Mastery ≥80% (3 sessions)" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Measure */}
-          <div className="space-y-1">
-            <Label className="text-xs">Measurement Type</Label>
-            <Select value={value.measure} onValueChange={v => update({ measure: v as MeasureType })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(MEASURE_LABELS).map(([k, label]) => (
-                  <SelectItem key={k} value={k}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Measure */}
+        <div className="space-y-1">
+          <Label className="text-xs">Measurement Type</Label>
+          <Select value={value.measure} onValueChange={v => update({ measure: v as MeasureType })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(MEASURE_LABELS).map(([k, label]) => (
+                <SelectItem key={k} value={k}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          {/* Threshold */}
+        {/* Measure-specific threshold */}
+        {value.measure === 'percent_correct' && (
           <div className="space-y-1">
             <Label className="text-xs">Threshold (%)</Label>
             <Input type="number" min={0} max={100} value={value.threshold} onChange={e => update({ threshold: Number(e.target.value) })} />
           </div>
-        </div>
+        )}
+
+        {value.measure === 'count_trials' && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Required # of successes</Label>
+              <Input type="number" min={1} value={value.threshold} onChange={e => update({ threshold: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Success definition</Label>
+              <Select
+                value={value.success_definition.count_prompted_as_correct ? 'include_prompted' : 'independent_only'}
+                onValueChange={v => updateSuccessDef({ count_prompted_as_correct: v === 'include_prompted' })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="independent_only">Independent only</SelectItem>
+                  <SelectItem value="include_prompted">Include prompted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {value.measure === 'duration' && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Target duration (seconds)</Label>
+              <Input type="number" min={0} value={value.threshold} onChange={e => update({ threshold: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Direction</Label>
+              <Select
+                value={(value as any).duration_direction || 'minimum'}
+                onValueChange={v => update({ ...value, duration_direction: v } as any)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minimum">Minimum (increase)</SelectItem>
+                  <SelectItem value="maximum">Maximum (reduction)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {value.measure === 'rate_frequency' && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Target rate</Label>
+              <Input type="number" min={0} step={0.1} value={value.threshold} onChange={e => update({ threshold: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Unit</Label>
+              <Select
+                value={(value as any).rate_unit || 'per_minute'}
+                onValueChange={v => update({ ...value, rate_unit: v } as any)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="per_minute">Per minute</SelectItem>
+                  <SelectItem value="per_5_minutes">Per 5 min</SelectItem>
+                  <SelectItem value="per_session">Per session</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
+        {value.measure === 'latency' && (
+          <div className="space-y-1">
+            <Label className="text-xs">Max latency (seconds)</Label>
+            <Input type="number" min={0} value={value.threshold} onChange={e => update({ threshold: Number(e.target.value) })} />
+          </div>
+        )}
 
         {/* Success Definition */}
         <div className="space-y-2 border rounded p-3 bg-muted/20">

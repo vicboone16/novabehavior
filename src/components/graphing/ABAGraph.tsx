@@ -209,6 +209,17 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
                 />
               )}
 
+              {/* Baseline mean */}
+              {baselineMeanValue != null && (
+                <ReferenceLine
+                  y={parseFloat(baselineMeanValue.toFixed(1))}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: `BL Mean: ${baselineMeanValue.toFixed(1)}`, position: 'left', fontSize: 9 }}
+                />
+              )}
+
               {/* Phase change lines */}
               {overlays.phaseMarkers && phaseMarkers.map((pm, i) => (
                 <ReferenceLine
