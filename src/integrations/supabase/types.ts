@@ -1867,39 +1867,71 @@ export type Database = {
           advance_mode: string
           auto_advance_enabled: boolean
           auto_open_next_target: boolean
+          auto_start_phase: string | null
           created_at: string
+          end_of_ladder_action: string
           id: string
+          next_action_mode: string
           next_target_rule: Json | null
+          notification_mode: string
+          pathway_id: string | null
           require_confirmation: boolean
           scope: string
           scope_id: string | null
+          sequence_list_json: Json | null
+          sequence_mode: string
+          trigger_next_on: string
           updated_at: string
         }
         Insert: {
           advance_mode?: string
           auto_advance_enabled?: boolean
           auto_open_next_target?: boolean
+          auto_start_phase?: string | null
           created_at?: string
+          end_of_ladder_action?: string
           id?: string
+          next_action_mode?: string
           next_target_rule?: Json | null
+          notification_mode?: string
+          pathway_id?: string | null
           require_confirmation?: boolean
           scope: string
           scope_id?: string | null
+          sequence_list_json?: Json | null
+          sequence_mode?: string
+          trigger_next_on?: string
           updated_at?: string
         }
         Update: {
           advance_mode?: string
           auto_advance_enabled?: boolean
           auto_open_next_target?: boolean
+          auto_start_phase?: string | null
           created_at?: string
+          end_of_ladder_action?: string
           id?: string
+          next_action_mode?: string
           next_target_rule?: Json | null
+          notification_mode?: string
+          pathway_id?: string | null
           require_confirmation?: boolean
           scope?: string
           scope_id?: string | null
+          sequence_list_json?: Json | null
+          sequence_mode?: string
+          trigger_next_on?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "automation_settings_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "program_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       behavior_bank_entries: {
         Row: {
@@ -2144,6 +2176,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      benchmark_stages: {
+        Row: {
+          active: boolean
+          created_at: string
+          criteria_template_id: string | null
+          criteria_type: string
+          id: string
+          name: string
+          phase_sync_enabled: boolean
+          scope: string
+          scope_id: string | null
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          criteria_template_id?: string | null
+          criteria_type: string
+          id?: string
+          name: string
+          phase_sync_enabled?: boolean
+          scope: string
+          scope_id?: string | null
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          criteria_template_id?: string | null
+          criteria_type?: string
+          id?: string
+          name?: string
+          phase_sync_enabled?: boolean
+          scope?: string
+          scope_id?: string | null
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmark_stages_criteria_template_id_fkey"
+            columns: ["criteria_template_id"]
+            isOneToOne: false
+            referencedRelation: "criteria_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_claims: {
         Row: {
@@ -11383,6 +11465,80 @@ export type Database = {
           },
         ]
       }
+      program_pathway_steps: {
+        Row: {
+          auto_create_targets: boolean
+          complete_when: Json | null
+          created_at: string
+          id: string
+          program_id: string
+          program_pathway_id: string
+          start_when: Json | null
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          auto_create_targets?: boolean
+          complete_when?: Json | null
+          created_at?: string
+          id?: string
+          program_id: string
+          program_pathway_id: string
+          start_when?: Json | null
+          step_order?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_create_targets?: boolean
+          complete_when?: Json | null
+          created_at?: string
+          id?: string
+          program_id?: string
+          program_pathway_id?: string
+          start_when?: Json | null
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_pathway_steps_program_pathway_id_fkey"
+            columns: ["program_pathway_id"]
+            isOneToOne: false
+            referencedRelation: "program_pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_pathways: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          scope: string
+          scope_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          scope: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       program_status_history: {
         Row: {
           changed_by: string | null
@@ -13209,8 +13365,12 @@ export type Database = {
       skill_targets: {
         Row: {
           active: boolean
+          active_benchmark_stage_id: string | null
           created_at: string
+          criteria_source: string
+          custom_rule_json: Json | null
           display_order: number
+          global_criteria_id: string | null
           id: string
           mastery_consecutive_sessions: number | null
           mastery_criteria: string | null
@@ -13219,16 +13379,22 @@ export type Database = {
           notes: string | null
           operational_definition: string | null
           phase: string
+          program_criteria_id: string | null
           program_id: string
           prompt_counts_as_correct: boolean | null
+          sort_order: number
           status: string
           status_effective_date: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          active_benchmark_stage_id?: string | null
           created_at?: string
+          criteria_source?: string
+          custom_rule_json?: Json | null
           display_order?: number
+          global_criteria_id?: string | null
           id?: string
           mastery_consecutive_sessions?: number | null
           mastery_criteria?: string | null
@@ -13237,16 +13403,22 @@ export type Database = {
           notes?: string | null
           operational_definition?: string | null
           phase?: string
+          program_criteria_id?: string | null
           program_id: string
           prompt_counts_as_correct?: boolean | null
+          sort_order?: number
           status?: string
           status_effective_date?: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          active_benchmark_stage_id?: string | null
           created_at?: string
+          criteria_source?: string
+          custom_rule_json?: Json | null
           display_order?: number
+          global_criteria_id?: string | null
           id?: string
           mastery_consecutive_sessions?: number | null
           mastery_criteria?: string | null
@@ -13255,13 +13427,36 @@ export type Database = {
           notes?: string | null
           operational_definition?: string | null
           phase?: string
+          program_criteria_id?: string | null
           program_id?: string
           prompt_counts_as_correct?: boolean | null
+          sort_order?: number
           status?: string
           status_effective_date?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "skill_targets_active_benchmark_stage_id_fkey"
+            columns: ["active_benchmark_stage_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_targets_global_criteria_id_fkey"
+            columns: ["global_criteria_id"]
+            isOneToOne: false
+            referencedRelation: "criteria_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_targets_program_criteria_id_fkey"
+            columns: ["program_criteria_id"]
+            isOneToOne: false
+            referencedRelation: "criteria_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "skill_targets_program_id_fkey"
             columns: ["program_id"]
@@ -15533,6 +15728,7 @@ export type Database = {
       target_trials: {
         Row: {
           created_at: string
+          data_state: string
           id: string
           notes: string | null
           outcome: string
@@ -15547,6 +15743,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          data_state?: string
           id?: string
           notes?: string | null
           outcome?: string
@@ -15561,6 +15758,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          data_state?: string
           id?: string
           notes?: string | null
           outcome?: string
@@ -15607,6 +15805,7 @@ export type Database = {
       task_analysis_step_data: {
         Row: {
           created_at: string
+          data_state: string
           id: string
           notes: string | null
           outcome: string
@@ -15619,6 +15818,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          data_state?: string
           id?: string
           notes?: string | null
           outcome?: string
@@ -15631,6 +15831,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          data_state?: string
           id?: string
           notes?: string | null
           outcome?: string
