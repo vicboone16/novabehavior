@@ -1055,13 +1055,14 @@ export const useDataStore = create<DataState>()(
       incrementFrequency: (studentId, behaviorId) => {
         const now = new Date();
         set((state) => {
+          // Only operate on live (non-historical) entries to avoid corrupting recorded data
           const existing = state.frequencyEntries.find(
-            (e) => e.studentId === studentId && e.behaviorId === behaviorId
+            (e) => e.studentId === studentId && e.behaviorId === behaviorId && !e.isHistorical
           );
           if (existing) {
             return {
               frequencyEntries: state.frequencyEntries.map((e) =>
-                e.studentId === studentId && e.behaviorId === behaviorId
+                e === existing
                   ? { 
                       ...e, 
                       count: e.count + 1,
@@ -1091,7 +1092,8 @@ export const useDataStore = create<DataState>()(
       decrementFrequency: (studentId, behaviorId) => {
         set((state) => ({
           frequencyEntries: state.frequencyEntries.map((e) => {
-            if (e.studentId === studentId && e.behaviorId === behaviorId && e.count > 0) {
+            // Only decrement live (non-historical) entries
+            if (e.studentId === studentId && e.behaviorId === behaviorId && !e.isHistorical && e.count > 0) {
               const timestamps = e.timestamps ? [...e.timestamps] : [];
               timestamps.pop(); // Remove last timestamp
               return { ...e, count: e.count - 1, timestamps };
@@ -1103,15 +1105,17 @@ export const useDataStore = create<DataState>()(
 
       resetFrequency: (studentId, behaviorId) => {
         set((state) => ({
+          // Only remove live (non-historical) entries — preserve recorded data
           frequencyEntries: state.frequencyEntries.filter(
-            (e) => !(e.studentId === studentId && e.behaviorId === behaviorId)
+            (e) => e.isHistorical || !(e.studentId === studentId && e.behaviorId === behaviorId)
           ),
         }));
       },
 
       getFrequencyCount: (studentId, behaviorId) => {
+        // Only return count from live (non-historical) entries
         const entry = get().frequencyEntries.find(
-          (e) => e.studentId === studentId && e.behaviorId === behaviorId
+          (e) => e.studentId === studentId && e.behaviorId === behaviorId && !e.isHistorical
         );
         return entry?.count ?? 0;
       },
