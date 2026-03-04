@@ -81,3 +81,79 @@ const { data } = await supabase
 > 4. **No PIN login** — Teacher Hub uses standard email/password only.
 >
 > 5. **Schema refresh:** Run `NOTIFY pgrst, 'reload schema';` or a no-op migration.
+>
+> ---
+>
+> ## Cross-App Messaging Tables (NEW)
+>
+> ### `teacher_messages`
+> Two-way threaded messaging between BCBAs and teachers, scoped per student.
+>
+> | Column | Type | Notes |
+> |--------|------|-------|
+> | id | UUID PK | |
+> | student_id | UUID FK→students | Required |
+> | agency_id | UUID FK→agencies | Optional |
+> | sender_id | UUID | Auth user who sent |
+> | recipient_id | UUID | Auth user who receives |
+> | thread_id | UUID | Group messages into threads |
+> | message_type | TEXT | `message`, `task_assignment`, `data_share`, `pdf_share`, `summary` |
+> | subject | TEXT | Optional subject line |
+> | content | TEXT | Message body |
+> | metadata | JSONB | Attachments, references, etc. |
+> | is_read | BOOLEAN | Recipient has read |
+> | is_reviewed | BOOLEAN | Teacher marked reviewed |
+> | is_completed | BOOLEAN | Teacher marked completed |
+> | parent_message_id | UUID FK→self | For threaded replies |
+> | app_source | TEXT | `teacherhub` or `novatrack` |
+> | created_at | TIMESTAMPTZ | |
+>
+> **RLS:** sender or recipient can read; sender can insert; recipient can update (read/reviewed/completed); admins can view all.
+>
+> **Realtime:** Enabled — subscribe to `teacher_messages` for live updates.
+>
+> ### `teacher_message_attachments`
+> Linked to `teacher_messages.id`. Supports `file`, `pdf_report`, `data_snapshot`, `assessment_result`.
+>
+> ### `pending_student_changes`
+> When a teacher edits a Core-owned student field, create a pending record:
+>
+> ```typescript
+> await supabase.from('pending_student_changes').insert({
+>   student_id: studentId,
+>   agency_id: agencyId,
+>   submitted_by: user.id,
+>   field_changes: {
+>     grade: { from: "3rd", to: "4th", label: "Grade" },
+>     school_name: { from: "Oak Elementary", to: "Pine Elementary", label: "School" }
+>   }
+> });
+> ```
+>
+> BCBAs see these on the student Profile tab and can approve (auto-applies) or reject with a note. Teachers get notified either way.
+>
+> ### Usage from Teacher Hub
+>
+> **Send a message to BCBA:**
+> ```typescript
+> await supabase.from('teacher_messages').insert({
+>   student_id: studentId,
+>   sender_id: user.id,
+>   recipient_id: bcbaUserId, // from student owner or agency admin
+>   message_type: 'message',
+>   content: 'Student showed great progress today!',
+>   app_source: 'teacherhub',
+> });
+> ```
+>
+> **Listen for new messages (realtime):**
+> ```typescript
+> supabase.channel('teacher-inbox')
+>   .on('postgres_changes', {
+>     event: 'INSERT',
+>     schema: 'public',
+>     table: 'teacher_messages',
+>     filter: `recipient_id=eq.${user.id}`,
+>   }, (payload) => { /* new message */ })
+>   .subscribe();
+> ```
