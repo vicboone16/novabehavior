@@ -66,7 +66,7 @@ export function StaffMessageThread({ studentId, studentName }: StaffMessageThrea
     if (!messages || !user) return;
     messages
       .filter((m) => m.recipient_id === user.id && !m.is_read)
-      .forEach((m) => markRead.mutate(m.id));
+      .forEach((m) => markRead.mutate({ messageId: m.id, table: m._table || "staff_messages" }));
   }, [messages, user]);
 
   // Auto-scroll on new messages
