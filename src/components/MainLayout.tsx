@@ -50,6 +50,7 @@ export default function MainLayout() {
   const featurePerms = useFeaturePermissions();
   const { hasCIDAccess } = useClinicalIntelligenceAccess();
   const entityLabel = useEntityLabel();
+  const { data: commsCounts } = usePendingChangesCount();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
