@@ -100,7 +100,19 @@ Deno.serve(async (req) => {
 
     // 4. Fetch visible student IDs
     // Combine student_app_visibility + user_student_access for the requested app
-    const resolvedSlug = app_slug || "behaviordecoded";
+    // Canonicalize app_slug to match database values
+    // The has_app_access RPC uses regex-based canonicalization
+    const slugAliases: Record<string, string> = {
+      behaviordecoded: "behavior_decoded",
+      behavior_decoded: "behavior_decoded",
+      studentconnect: "student_connect",
+      student_connect: "student_connect",
+      teacherhub: "teacher_hub",
+      teacher_hub: "teacher_hub",
+      novatrack: "novatrack",
+    };
+    const inputSlug = (app_slug || "behavior_decoded").toLowerCase().replace(/[\s-]/g, "");
+    const resolvedSlug = slugAliases[inputSlug] || inputSlug;
 
     let visibleStudentIds: string[] = [];
 
