@@ -192,6 +192,9 @@ export default function TeacherDashboard() {
 
             {/* Shared BCBA Summaries */}
             <TeacherSummaries clientId={selectedStudent.id} />
+
+            {/* Messages with BCBA */}
+            <StaffMessageThread studentId={selectedStudent.id} studentName={selectedStudent.name} />
           </div>
         ) : (
           <div className="space-y-6">
