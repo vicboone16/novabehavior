@@ -96,6 +96,9 @@ export default function MainLayout() {
       case 'intelligence':
         navigate('/intelligence');
         break;
+      case 'teacher-comms':
+        navigate('/teacher-comms');
+        break;
     }
   };
 
