@@ -10984,6 +10984,77 @@ export type Database = {
           },
         ]
       }
+      pending_student_changes: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          field_changes: Json
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          student_id: string
+          submitted_by: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          field_changes?: Json
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id: string
+          submitted_by: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          field_changes?: Json
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          student_id?: string
+          submitted_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_student_changes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_student_changes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_student_changes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "pending_student_changes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       pin_auth_attempts: {
         Row: {
           attempted_at: string
@@ -15830,6 +15901,155 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teacher_targets"
             referencedColumns: ["target_id"]
+          },
+        ]
+      }
+      teacher_message_attachments: {
+        Row: {
+          attachment_type: string | null
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string | null
+          id: string
+          message_id: string
+          metadata: Json | null
+          storage_path: string | null
+        }
+        Insert: {
+          attachment_type?: string | null
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_id: string
+          metadata?: Json | null
+          storage_path?: string | null
+        }
+        Update: {
+          attachment_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_id?: string
+          metadata?: Json | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_messages: {
+        Row: {
+          agency_id: string | null
+          app_source: string | null
+          completed_at: string | null
+          content: string
+          created_at: string
+          id: string
+          is_completed: boolean
+          is_read: boolean
+          is_reviewed: boolean
+          message_type: string
+          metadata: Json | null
+          parent_message_id: string | null
+          read_at: string | null
+          recipient_id: string | null
+          reviewed_at: string | null
+          sender_id: string
+          student_id: string
+          subject: string | null
+          thread_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          app_source?: string | null
+          completed_at?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          is_read?: boolean
+          is_reviewed?: boolean
+          message_type?: string
+          metadata?: Json | null
+          parent_message_id?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          reviewed_at?: string | null
+          sender_id: string
+          student_id: string
+          subject?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          app_source?: string | null
+          completed_at?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          is_read?: boolean
+          is_reviewed?: boolean
+          message_type?: string
+          metadata?: Json | null
+          parent_message_id?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          reviewed_at?: string | null
+          sender_id?: string
+          student_id?: string
+          subject?: string | null
+          thread_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_messages_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
           },
         ]
       }
