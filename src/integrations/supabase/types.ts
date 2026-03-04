@@ -13522,6 +13522,140 @@ export type Database = {
           },
         ]
       }
+      staff_message_attachments: {
+        Row: {
+          attachment_type: string | null
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string | null
+          id: string
+          message_id: string
+          metadata: Json | null
+          storage_path: string | null
+        }
+        Insert: {
+          attachment_type?: string | null
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_id: string
+          metadata?: Json | null
+          storage_path?: string | null
+        }
+        Update: {
+          attachment_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          message_id?: string
+          metadata?: Json | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "staff_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_messages: {
+        Row: {
+          agency_id: string | null
+          app_source: string | null
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message_type: string
+          metadata: Json | null
+          parent_message_id: string | null
+          read_at: string | null
+          recipient_id: string | null
+          sender_id: string
+          student_id: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          app_source?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          metadata?: Json | null
+          parent_message_id?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id: string
+          student_id: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          app_source?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          metadata?: Json | null
+          parent_message_id?: string | null
+          read_at?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+          student_id?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_messages_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "staff_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       staff_timesheet_entries: {
         Row: {
           agency_id: string | null

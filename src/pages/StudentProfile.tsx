@@ -65,6 +65,8 @@ import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverT
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
+import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
+import { ShareWithTeacherButton } from '@/components/messaging/ShareWithTeacherButton';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
@@ -811,11 +813,22 @@ export default function StudentProfile() {
 
         {/* Session Notes Tab */}
         <TabsContent value="session-notes" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Session Notes</h3>
+            <ShareWithTeacherButton
+              studentId={student.id}
+              studentName={student.name}
+              variant="button"
+              messageType="data_share"
+              prefillSubject={`Session notes for ${student.name}`}
+            />
+          </div>
           <SessionNotesTab
             studentId={student.id}
             studentName={student.name}
           />
           <TeacherSummaries clientId={student.id} />
+          <StaffMessageThread studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* Files Tab */}
