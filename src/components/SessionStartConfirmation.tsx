@@ -327,12 +327,12 @@ export function SessionStartConfirmation({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Play className="w-5 h-5 text-primary" />
-            Start Session for {student.name}?
+            {sessionAlreadyActive ? 'Add Student to Session' : 'Select Student'}
           </DialogTitle>
           <DialogDescription>
             {sessionAlreadyActive 
               ? 'Add this student to the current session.'
-              : 'Begin a new data collection session for this student.'}
+              : 'Select this student for data collection. You can start the session timer separately when ready.'}
           </DialogDescription>
         </DialogHeader>
 
