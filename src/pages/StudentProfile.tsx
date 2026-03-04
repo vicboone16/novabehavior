@@ -65,6 +65,8 @@ import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverT
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
+import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
+import { ShareWithTeacherButton } from '@/components/messaging/ShareWithTeacherButton';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
