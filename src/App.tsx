@@ -58,6 +58,7 @@ import { BackendGuardScreen } from "@/components/BackendGuardScreen";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
+import TeacherComms from "./pages/TeacherComms";
 
 const queryClient = new QueryClient();
 
