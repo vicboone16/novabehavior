@@ -3,14 +3,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { ComplianceData } from '@/types/supervision';
 import { ComplianceGauge } from './ComplianceGauge';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface ComplianceRow {
+  requirement_id: string;
+  supervisee_user_id: string;
+  supervisor_user_id: string;
+  supervisee_name: string;
+  supervisor_name: string;
+  supervisee_credential: string | null;
+  requirement_type: string;
+  target_percentage: number;
+  billing_period_start: string;
+  billing_period_end: string;
+  supervision_hours: number;
+  direct_supervision_hours: number;
+  indirect_supervision_hours: number;
+  total_fieldwork_hours: number;
+  total_logs: number;
+  pending_approval_count: number;
+}
 
 export function SupervisionDashboard() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [complianceData, setComplianceData] = useState<ComplianceData[]>([]);
+  const [complianceData, setComplianceData] = useState<ComplianceRow[]>([]);
   const [stats, setStats] = useState({
     totalSupervisees: 0,
     compliantCount: 0,
@@ -28,27 +46,27 @@ export function SupervisionDashboard() {
     try {
       setLoading(true);
       
-      // Fetch supervision requirements and calculate compliance
-      const { data: requirements, error } = await supabase
-        .from('supervision_requirements')
+      const { data, error } = await supabase
+        .from('v_supervision_compliance' as any)
         .select('*')
-        .eq('is_active', true);
+        .eq('supervisor_user_id', user!.id);
 
       if (error) throw error;
 
-      // Fetch supervision logs for compliance calculation
-      const { data: logs } = await supabase
-        .from('supervision_logs')
-        .select('*')
-        .gte('supervision_date', new Date(new Date().setDate(1)).toISOString().split('T')[0]);
+      const rows = (data || []) as unknown as ComplianceRow[];
+      const totalPending = rows.reduce((sum, r) => sum + r.pending_approval_count, 0);
+      const totalHours = rows.reduce((sum, r) => sum + r.supervision_hours, 0);
+      const compliant = rows.filter(r => {
+        if (r.target_percentage <= 0) return true;
+        const pct = r.total_fieldwork_hours > 0 ? (r.supervision_hours / r.total_fieldwork_hours) * 100 : 0;
+        return pct >= r.target_percentage;
+      }).length;
 
-      const pendingCount = logs?.filter(l => l.status === 'pending').length || 0;
-      const totalHours = logs?.reduce((sum, l) => sum + (l.duration_minutes / 60), 0) || 0;
-
+      setComplianceData(rows);
       setStats({
-        totalSupervisees: requirements?.length || 0,
-        compliantCount: 0,
-        pendingApproval: pendingCount,
+        totalSupervisees: rows.length,
+        compliantCount: compliant,
+        pendingApproval: totalPending,
         hoursThisPeriod: totalHours,
       });
     } catch (error) {
