@@ -818,6 +818,7 @@ export default function StudentProfile() {
             studentName={student.name}
           />
           <TeacherSummaries clientId={student.id} />
+          <StaffMessageThread studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* Files Tab */}
