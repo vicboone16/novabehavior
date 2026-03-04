@@ -67,6 +67,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
+    if (location.pathname.startsWith('/teacher-comms')) return 'teacher-comms';
     return 'dashboard';
   };
 
