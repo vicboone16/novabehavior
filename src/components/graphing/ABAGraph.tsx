@@ -85,6 +85,14 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
     return result.points;
   }, [chartData, overlays.trendLine]);
 
+  // Baseline mean
+  const baselineMeanValue = useMemo(() => {
+    if (!overlays.baselineMean) return null;
+    const baselinePoints = chartData.filter(d => d.phase === 'Baseline' || d.phase === 'baseline');
+    if (baselinePoints.length === 0) return null;
+    return baselinePoints.reduce((s, p) => s + p.y, 0) / baselinePoints.length;
+  }, [chartData, overlays.baselineMean]);
+
   // Compute cumulative if needed
   const finalChartData = useMemo(() => {
     const isCumulative = metric === 'cumulative_frequency' || metric === 'cumulative_duration';
