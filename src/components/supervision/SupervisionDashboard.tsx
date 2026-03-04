@@ -134,25 +134,34 @@ export function SupervisionDashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {complianceData.map((data) => (
-                <div key={data.supervisee_user_id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{data.supervisee_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {data.supervision_hours.toFixed(1)} / {data.total_direct_hours.toFixed(1)} hours
-                    </p>
+              {complianceData.map((data) => {
+                const pct = data.total_fieldwork_hours > 0
+                  ? (data.supervision_hours / data.total_fieldwork_hours) * 100
+                  : 0;
+                const isCompliant = pct >= data.target_percentage;
+                return (
+                  <div key={data.requirement_id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{data.supervisee_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {data.supervision_hours.toFixed(1)}h supervision · {data.direct_supervision_hours.toFixed(1)}h direct · {data.indirect_supervision_hours.toFixed(1)}h indirect
+                      </p>
+                      {data.pending_approval_count > 0 && (
+                        <p className="text-xs text-yellow-600">{data.pending_approval_count} pending approval</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <ComplianceGauge 
+                        percentage={pct} 
+                        target={data.target_percentage} 
+                      />
+                      <Badge variant={isCompliant ? 'default' : 'destructive'}>
+                        {isCompliant ? 'Compliant' : 'Non-Compliant'}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <ComplianceGauge 
-                      percentage={data.supervision_percentage} 
-                      target={data.target_percentage} 
-                    />
-                    <Badge variant={data.is_compliant ? 'default' : 'destructive'}>
-                      {data.is_compliant ? 'Compliant' : 'Non-Compliant'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
