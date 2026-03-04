@@ -642,6 +642,9 @@ export default function StudentProfile() {
             onUpdate={(updates) => updateStudentProfile(student.id, updates)}
           />
           
+          {/* Pending Teacher Edits */}
+          <PendingStudentChanges studentId={student.id} studentName={student.name} />
+          
           {/* Team & Assignments Section */}
           <Collapsible defaultOpen={false}>
             <Card>
