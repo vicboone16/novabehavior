@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +67,8 @@ export function AddTargetDialog({
     notes_for_staff: '',
   });
   const [saving, setSaving] = useState(false);
+  const [allowUnassigned, setAllowUnassigned] = useState(false);
+  const [confirmUnassigned, setConfirmUnassigned] = useState(false);
 
   useEffect(() => {
     if (editingTarget) {
@@ -86,6 +91,8 @@ export function AddTargetDialog({
         priority: 'medium',
         notes_for_staff: '',
       });
+      setAllowUnassigned(false);
+      setConfirmUnassigned(false);
     }
   }, [editingTarget, open]);
 
@@ -115,6 +122,11 @@ export function AddTargetDialog({
     }
   };
 
+  // Domain acts as program grouping; if no domain selected, it's "unassigned"
+  const isDomainSelected = !!formData.domain_id;
+  const canSubmitUnassigned = allowUnassigned && confirmUnassigned;
+  const canSubmit = formData.title.trim() && (isDomainSelected || canSubmitUnassigned);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -137,7 +149,7 @@ export function AddTargetDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Domain</Label>
+              <Label>Domain (required) *</Label>
               <Select 
                 value={formData.domain_id} 
                 onValueChange={(v) => setFormData(prev => ({ ...prev, domain_id: v }))}
@@ -170,6 +182,41 @@ export function AddTargetDialog({
               </Select>
             </div>
           </div>
+
+          {/* Unassigned target warning */}
+          {!isDomainSelected && !editingTarget && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-destructive">Unassigned target (Inbox)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Targets without a domain/program are not recommended. They won't appear in skill acquisition groupings.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pl-6">
+                <Label className="text-xs">Allow unassigned target</Label>
+                <Switch
+                  checked={allowUnassigned}
+                  onCheckedChange={v => { setAllowUnassigned(v); if (!v) setConfirmUnassigned(false); }}
+                  className="scale-90"
+                />
+              </div>
+              {allowUnassigned && (
+                <div className="flex items-start gap-2 pl-6">
+                  <Checkbox
+                    id="confirm-unassigned"
+                    checked={confirmUnassigned}
+                    onCheckedChange={v => setConfirmUnassigned(!!v)}
+                  />
+                  <Label htmlFor="confirm-unassigned" className="text-xs text-muted-foreground cursor-pointer">
+                    I understand this target will not appear under a program
+                  </Label>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Priority</Label>
@@ -225,7 +272,7 @@ export function AddTargetDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!formData.title.trim() || saving}>
+          <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
             {editingTarget ? 'Save Changes' : 'Create Target'}
           </Button>
         </DialogFooter>

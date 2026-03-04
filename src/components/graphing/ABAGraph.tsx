@@ -85,6 +85,14 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
     return result.points;
   }, [chartData, overlays.trendLine]);
 
+  // Baseline mean
+  const baselineMeanValue = useMemo(() => {
+    if (!overlays.baselineMean) return null;
+    const baselinePoints = chartData.filter(d => d.phase === 'Baseline' || d.phase === 'baseline');
+    if (baselinePoints.length === 0) return null;
+    return baselinePoints.reduce((s, p) => s + p.y, 0) / baselinePoints.length;
+  }, [chartData, overlays.baselineMean]);
+
   // Compute cumulative if needed
   const finalChartData = useMemo(() => {
     const isCumulative = metric === 'cumulative_frequency' || metric === 'cumulative_duration';
@@ -198,6 +206,17 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
                   strokeDasharray="8 4"
                   strokeWidth={1}
                   label={{ value: `${overlays.masteryThresholdValue}%`, position: 'right', fontSize: 10 }}
+                />
+              )}
+
+              {/* Baseline mean */}
+              {baselineMeanValue != null && (
+                <ReferenceLine
+                  y={parseFloat(baselineMeanValue.toFixed(1))}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="4 4"
+                  strokeWidth={1}
+                  label={{ value: `BL Mean: ${baselineMeanValue.toFixed(1)}`, position: 'left', fontSize: 9 }}
                 />
               )}
 
