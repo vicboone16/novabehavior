@@ -67,6 +67,7 @@ import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
 import { ShareWithTeacherButton } from '@/components/messaging/ShareWithTeacherButton';
+import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
