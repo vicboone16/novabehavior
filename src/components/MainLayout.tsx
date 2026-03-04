@@ -36,7 +36,9 @@ import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
 import { useEntityLabel } from '@/hooks/useEntityLabel';
-import { Brain } from 'lucide-react';
+import { Brain, Inbox } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -48,6 +50,7 @@ export default function MainLayout() {
   const featurePerms = useFeaturePermissions();
   const { hasCIDAccess } = useClinicalIntelligenceAccess();
   const entityLabel = useEntityLabel();
+  const { data: commsCounts } = usePendingChangesCount();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
@@ -64,6 +67,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
+    if (location.pathname.startsWith('/teacher-comms')) return 'teacher-comms';
     return 'dashboard';
   };
 
@@ -91,6 +95,9 @@ export default function MainLayout() {
         break;
       case 'intelligence':
         navigate('/intelligence');
+        break;
+      case 'teacher-comms':
+        navigate('/teacher-comms');
         break;
     }
   };
@@ -245,6 +252,18 @@ export default function MainLayout() {
                   Notes Review
                 </TabsTrigger>
               )}
+              <TabsTrigger 
+                value="teacher-comms" 
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold relative"
+              >
+                <Inbox className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                Teacher Comms
+                {(commsCounts?.total || 0) > 0 && (
+                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 ml-1 h-4 min-w-4">
+                    {commsCounts!.total > 99 ? '99+' : commsCounts!.total}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>

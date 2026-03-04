@@ -58,6 +58,7 @@ import { BackendGuardScreen } from "@/components/BackendGuardScreen";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
+import TeacherComms from "./pages/TeacherComms";
 
 const queryClient = new QueryClient();
 
@@ -345,6 +346,7 @@ const App = () => {
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
+              <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
               <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
             </Route>
