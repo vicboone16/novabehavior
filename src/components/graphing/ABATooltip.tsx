@@ -36,19 +36,19 @@ export function ABATooltipContent({ graphType, metric, active, payload, label }:
           {d.independent != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Independent (+):</span>
-              <span className="text-green-600">{d.independent}</span>
+              <span className="text-primary font-medium">{d.independent}</span>
             </div>
           )}
           {d.prompted != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Prompted (+):</span>
-              <span className="text-amber-600">{d.prompted}</span>
+              <span className="text-accent-foreground font-medium">{d.prompted}</span>
             </div>
           )}
           {d.incorrect != null && (
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Incorrect (−):</span>
-              <span className="text-red-600">{d.incorrect}</span>
+              <span className="text-destructive font-medium">{d.incorrect}</span>
             </div>
           )}
         </>
