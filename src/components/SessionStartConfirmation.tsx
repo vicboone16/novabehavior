@@ -620,7 +620,7 @@ export function SessionStartConfirmation({
             ) : (
               <Play className="w-4 h-4 mr-1" />
             )}
-            {startOption === 'continue' ? 'Continue Session' : 'Start Session'}
+            {startOption === 'continue' ? 'Continue Session' : sessionAlreadyActive ? 'Add to Session' : 'Select Student'}
           </Button>
         </DialogFooter>
       </DialogContent>
