@@ -17831,6 +17831,82 @@ export type Database = {
           },
         ]
       }
+      v_supervision_compliance: {
+        Row: {
+          billing_period_end: string | null
+          billing_period_start: string | null
+          direct_supervision_hours: number | null
+          indirect_supervision_hours: number | null
+          is_active: boolean | null
+          pending_approval_count: number | null
+          requirement_id: string | null
+          requirement_type: string | null
+          supervisee_credential: string | null
+          supervisee_name: string | null
+          supervisee_user_id: string | null
+          supervision_hours: number | null
+          supervisor_name: string | null
+          supervisor_user_id: string | null
+          target_percentage: number | null
+          total_fieldwork_hours: number | null
+          total_logs: number | null
+        }
+        Relationships: []
+      }
+      v_supervision_log_details: {
+        Row: {
+          activities: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          id: string | null
+          notes: string | null
+          session_id: string | null
+          start_time: string | null
+          status: string | null
+          student_id: string | null
+          student_name: string | null
+          supervisee_name: string | null
+          supervisee_user_id: string | null
+          supervision_date: string | null
+          supervision_type: string | null
+          supervisor_name: string | null
+          supervisor_user_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_teacher_abc_recent: {
         Row: {
           agency_id: string | null
