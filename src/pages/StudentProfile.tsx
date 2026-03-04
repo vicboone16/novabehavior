@@ -813,6 +813,16 @@ export default function StudentProfile() {
 
         {/* Session Notes Tab */}
         <TabsContent value="session-notes" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Session Notes</h3>
+            <ShareWithTeacherButton
+              studentId={student.id}
+              studentName={student.name}
+              variant="button"
+              messageType="data_share"
+              prefillSubject={`Session notes for ${student.name}`}
+            />
+          </div>
           <SessionNotesTab
             studentId={student.id}
             studentName={student.name}
