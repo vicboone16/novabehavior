@@ -18531,6 +18531,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_get_active_agency: { Args: never; Returns: Json }
       rpc_get_effective_billing_policy_for_active_agency: {
         Args: never
         Returns: Json

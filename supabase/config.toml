@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.esign-boldsign-download]
 verify_jwt = false
+
+[functions.check-user-access]
+verify_jwt = false

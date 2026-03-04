@@ -116,27 +116,32 @@ function AppAccessGate({ children }: { children: React.ReactNode }) {
 
 ---
 
-## 3. Filtering Students by App Scope
+## 3. Filtering Students by App Scope (via Edge Function)
 
-The `student_app_visibility` table controls which students are visible in which apps:
-
-```typescript
-// Load only students visible in Behavior Decoded
-const { data: students } = await supabase
-  .from('student_app_visibility')
-  .select('student_id, students(*)')
-  .eq('app_slug', 'behaviordecoded')
-  .eq('is_active', true);
-```
-
-Alternatively, filter `user_student_access` by `app_scope`:
+**IMPORTANT:** Do NOT query `student_app_visibility` or `user_student_access` directly — RLS blocks cross-app reads with the anon key. Instead, use the `check-user-access` edge function which uses the service role key.
 
 ```typescript
-const { data } = await supabase
-  .from('user_student_access')
-  .select('student_id, students(*)')
-  .eq('app_scope', 'behaviordecoded');
+// Call the edge function with the user's email
+const response = await fetch(
+  `https://yboqqmkghwhlhhnsegje.supabase.co/functions/v1/check-user-access`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: userEmail,
+      app_slug: 'behaviordecoded', // auto-canonicalized to 'behavior_decoded'
+    }),
+  }
+);
+const data = await response.json();
+// data.students → full student objects (id, name, display_name, date_of_birth)
+// data.visible_student_ids → string[] of student UUIDs
+// data.agencies → array of { agency_id, role, agency: {...} }
+// data.current_agency_id → active agency UUID
+// data.roles → ['super_admin', 'admin', 'staff']
 ```
+
+**Slug aliases handled automatically:** `behaviordecoded`, `behavior_decoded`, `behaviorDecoded` all resolve to `behavior_decoded`.
 
 ---
 
