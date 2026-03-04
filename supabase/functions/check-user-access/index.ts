@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     if (visibleStudentIds.length > 0) {
       const { data: studentRows } = await supabaseAdmin
         .from("students")
-        .select("id, name, display_name, date_of_birth, avatar_url, is_archived")
+        .select("id, name, display_name, date_of_birth, is_archived")
         .in("id", visibleStudentIds)
         .eq("is_archived", false);
 
