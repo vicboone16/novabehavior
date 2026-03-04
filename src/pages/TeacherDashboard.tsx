@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
+import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { TeacherModeTOI } from '@/components/toi/TeacherModeTOI';
 import { Student, Behavior } from '@/types/behavior';
