@@ -65,18 +65,38 @@ Deno.serve(async (req) => {
     // 3. Fetch agencies from user_agency_access
     const { data: agencyAccess, error: agencyError } = await supabaseAdmin
       .from("user_agency_access")
-      .select("agency_id, role, agencies(id, name, slug, status, logo_url, coverage_mode, primary_entity_label)")
+      .select("agency_id, role")
       .eq("user_id", userId);
 
     if (agencyError) {
       console.error("Agency access lookup error:", agencyError);
     }
 
-    const agencies = (agencyAccess || []).map((a: any) => ({
-      agency_id: a.agency_id,
-      role: a.role,
-      agency: a.agencies,
-    }));
+    // Deduplicate agency IDs and fetch agency details
+    const uniqueAgencyIds = [...new Set((agencyAccess || []).map((a: any) => a.agency_id))];
+    let agencyDetails: any[] = [];
+    if (uniqueAgencyIds.length > 0) {
+      const { data: agencyRows } = await supabaseAdmin
+        .from("agencies")
+        .select("id, name, slug, status, logo_url, coverage_mode, primary_entity_label")
+        .in("id", uniqueAgencyIds);
+      agencyDetails = agencyRows || [];
+    }
+
+    const agencyMap = Object.fromEntries(agencyDetails.map((a: any) => [a.id, a]));
+    // Deduplicate by agency_id, keeping the first role found
+    const seenAgencyIds = new Set<string>();
+    const agencies = (agencyAccess || [])
+      .filter((a: any) => {
+        if (seenAgencyIds.has(a.agency_id)) return false;
+        seenAgencyIds.add(a.agency_id);
+        return true;
+      })
+      .map((a: any) => ({
+        agency_id: a.agency_id,
+        role: a.role,
+        agency: agencyMap[a.agency_id] || null,
+      }));
 
     // 4. Fetch visible student IDs
     // Combine student_app_visibility + user_student_access for the requested app
