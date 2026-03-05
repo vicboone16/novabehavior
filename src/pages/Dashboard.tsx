@@ -1,9 +1,7 @@
 import { useState } from 'react';
-// @ts-ignore - react-grid-layout uses CommonJS exports
-import ReactGridLayout from 'react-grid-layout';
-const { Responsive, WidthProvider } = ReactGridLayout as any;
+import { ResponsiveGridLayout } from 'react-grid-layout';
+import { useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { Plus, RotateCcw, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -13,8 +11,6 @@ import { DashboardWidgetShell } from '@/components/dashboard/DashboardWidgetShel
 import { WIDGET_COMPONENTS } from '@/components/dashboard/WidgetComponentMap';
 import { WIDGET_REGISTRY, getAvailableWidgetsForRole } from '@/lib/widget-registry';
 import { useAuth } from '@/contexts/AuthContext';
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 export default function Dashboard() {
   const { userRole } = useAuth();
