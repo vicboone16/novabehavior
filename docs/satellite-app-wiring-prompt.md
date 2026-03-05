@@ -432,21 +432,52 @@ Unified event stream for clinical intelligence. **This is in the `behavior_intel
 | recorded_by | uuid | |
 | created_at | timestamptz | |
 
-**To insert events:**
+**Full function signature (verified from database):**
+
+```sql
+behavior_intelligence.insert_event(
+  p_student_id        uuid,              -- Required
+  p_occurred_at       timestamptz,       -- Required
+  p_event_type        text,              -- Required: 'behavior', 'skill_trial', 'reinforcement', etc.
+  p_event_name        text,              -- Required: 'aggression', 'refusal', 'FP', etc.
+  p_value             numeric  DEFAULT NULL,
+  p_intensity         integer  DEFAULT NULL,
+  p_phase             text     DEFAULT NULL,  -- 'baseline', 'acquisition', 'probe', etc.
+  p_prompt_code       text     DEFAULT NULL,  -- 'FP', 'PP', 'G', 'M', 'VP'
+  p_correctness       text     DEFAULT NULL,  -- '+' or '-'
+  p_metadata          jsonb    DEFAULT '{}',
+  p_source_table      text     DEFAULT NULL,  -- e.g. 'behavior_session_data', 'skill_trials'
+  p_source_id         uuid     DEFAULT NULL,  -- Original record ID for dedup
+  p_source_event_key  text     DEFAULT NULL,
+  p_recorded_by       uuid     DEFAULT NULL,
+  p_classroom_id      uuid     DEFAULT NULL,
+  p_school_id         uuid     DEFAULT NULL,
+  p_district_id       uuid     DEFAULT NULL
+) RETURNS uuid
+```
+
+**Dedup logic:** If `p_source_table` AND `p_source_id` are both provided and a matching row already exists in `behavior_events`, the function returns the existing ID without inserting a duplicate.
+
+**To insert events from satellite apps:**
 ```typescript
-const { data } = await supabase.rpc('behavior_intelligence.insert_event', {
-  p_client_id: studentId,
+// Note: PostgREST requires the schema-qualified name.
+// If search_path includes behavior_intelligence, you can call it as just 'insert_event'.
+const { data, error } = await supabase.rpc('insert_event', {
+  p_student_id: studentId,
+  p_occurred_at: new Date().toISOString(),
   p_event_type: 'behavior',
   p_event_name: 'aggression',
-  p_occurred_at: new Date().toISOString(),
-  p_source_app: 'student_connect',
+  p_value: 3,
+  p_intensity: 2,
   p_source_table: 'behavior_session_data',
   p_source_id: originalRecordId,
   p_recorded_by: user.id,
+  p_classroom_id: classroomId,  // optional
 });
+// Returns: uuid of the inserted (or existing) event
 ```
 
-**Note:** The `insert_event` function is idempotent — if `source_table + source_id` already exists, it returns the existing ID without duplicating.
+**IMPORTANT:** The parameter is `p_student_id` (not `p_client_id`). The function lives in the `behavior_intelligence` schema.
 
 ## 7. Available RPCs / Functions
 
