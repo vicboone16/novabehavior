@@ -1345,6 +1345,81 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_teacher_coach_logs: {
+        Row: {
+          agency_id: string | null
+          ai_response: Json
+          created_at: string | null
+          district_id: string | null
+          id: string
+          input_description: string
+          model_used: string | null
+          school_id: string | null
+          student_id: string | null
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          ai_response?: Json
+          created_at?: string | null
+          district_id?: string | null
+          id?: string
+          input_description: string
+          model_used?: string | null
+          school_id?: string | null
+          student_id?: string | null
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          ai_response?: Json
+          created_at?: string | null
+          district_id?: string | null
+          id?: string
+          input_description?: string
+          model_used?: string | null
+          school_id?: string | null
+          student_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_teacher_coach_logs_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_teacher_coach_logs_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_teacher_coach_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_teacher_coach_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ai_teacher_coach_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       allowed_locations: {
         Row: {
           agency_id: string | null
@@ -2123,22 +2198,91 @@ export type Database = {
       }
       behavior_decision_trees: {
         Row: {
+          audience: string | null
           behavior_type: string | null
+          created_at: string | null
+          data_to_collect: string[] | null
+          escalation_protocol: string | null
+          function_of_behavior: string | null
           id: string
           recommended_response: string | null
+          reinforcement_strategy: string | null
+          replacement_behavior: string | null
+          severity: string | null
           trigger: string | null
+          trigger_context: string | null
+          updated_at: string | null
         }
         Insert: {
+          audience?: string | null
           behavior_type?: string | null
+          created_at?: string | null
+          data_to_collect?: string[] | null
+          escalation_protocol?: string | null
+          function_of_behavior?: string | null
           id?: string
           recommended_response?: string | null
+          reinforcement_strategy?: string | null
+          replacement_behavior?: string | null
+          severity?: string | null
           trigger?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
         }
         Update: {
+          audience?: string | null
           behavior_type?: string | null
+          created_at?: string | null
+          data_to_collect?: string[] | null
+          escalation_protocol?: string | null
+          function_of_behavior?: string | null
           id?: string
           recommended_response?: string | null
+          reinforcement_strategy?: string | null
+          replacement_behavior?: string | null
+          severity?: string | null
           trigger?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      behavior_knowledge_base: {
+        Row: {
+          audience: string[] | null
+          category: string
+          content: string
+          created_at: string | null
+          evidence_base: string | null
+          id: string
+          subcategory: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          audience?: string[] | null
+          category: string
+          content: string
+          created_at?: string | null
+          evidence_base?: string | null
+          id?: string
+          subcategory?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          audience?: string[] | null
+          category?: string
+          content?: string
+          created_at?: string | null
+          evidence_base?: string | null
+          id?: string
+          subcategory?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -4371,6 +4515,103 @@ export type Database = {
           school_name?: string | null
         }
         Relationships: []
+      }
+      classroom_members: {
+        Row: {
+          classroom_id: string
+          created_at: string | null
+          id: string
+          role: string
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classroom_members_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classroom_members_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classroom_members_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "classroom_members_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      classrooms: {
+        Row: {
+          classroom_type: string | null
+          created_at: string | null
+          grade_level: string | null
+          id: string
+          name: string
+          school_id: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          classroom_type?: string | null
+          created_at?: string | null
+          grade_level?: string | null
+          id?: string
+          name: string
+          school_id: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          classroom_type?: string | null
+          created_at?: string | null
+          grade_level?: string | null
+          id?: string
+          name?: string
+          school_id?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classrooms_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clearinghouse_submissions: {
         Row: {
@@ -7258,6 +7499,36 @@ export type Database = {
           },
         ]
       }
+      districts: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          settings: Json | null
+          slug: string | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          settings?: Json | null
+          slug?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       document_inbox: {
         Row: {
           ai_confidence_score: number | null
@@ -9977,24 +10248,36 @@ export type Database = {
       lms_badges: {
         Row: {
           created_at: string | null
+          criteria: Json | null
           description: string | null
           icon: string | null
           id: string
           name: string | null
+          slug: string | null
+          title: string | null
+          xp_value: number | null
         }
         Insert: {
           created_at?: string | null
+          criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string | null
+          slug?: string | null
+          title?: string | null
+          xp_value?: number | null
         }
         Update: {
           created_at?: string | null
+          criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string | null
+          slug?: string | null
+          title?: string | null
+          xp_value?: number | null
         }
         Relationships: []
       }
@@ -10032,6 +10315,7 @@ export type Database = {
       }
       lms_courses: {
         Row: {
+          app_visibility: string[] | null
           audience: string | null
           created_at: string | null
           description: string | null
@@ -10041,6 +10325,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          app_visibility?: string[] | null
           audience?: string | null
           created_at?: string | null
           description?: string | null
@@ -10050,6 +10335,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          app_visibility?: string[] | null
           audience?: string | null
           created_at?: string | null
           description?: string | null
@@ -10257,8 +10543,47 @@ export type Database = {
         }
         Relationships: []
       }
+      lms_simulation_attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          responses: Json | null
+          score: number | null
+          simulation_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          responses?: Json | null
+          score?: number | null
+          simulation_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          responses?: Json | null
+          score?: number | null
+          simulation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_simulation_attempts_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "lms_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lms_simulation_steps: {
         Row: {
+          behavior_function: string | null
           choices: Json | null
           correct_choice: string | null
           feedback: string | null
@@ -10268,6 +10593,7 @@ export type Database = {
           step_order: number | null
         }
         Insert: {
+          behavior_function?: string | null
           choices?: Json | null
           correct_choice?: string | null
           feedback?: string | null
@@ -10277,6 +10603,7 @@ export type Database = {
           step_order?: number | null
         }
         Update: {
+          behavior_function?: string | null
           choices?: Json | null
           correct_choice?: string | null
           feedback?: string | null
@@ -10297,19 +10624,40 @@ export type Database = {
       }
       lms_simulations: {
         Row: {
+          audience: string | null
+          category: string | null
+          created_at: string | null
           description: string | null
+          difficulty: string | null
+          estimated_minutes: number | null
           id: string
+          scenario_context: string | null
           title: string | null
+          updated_at: string | null
         }
         Insert: {
+          audience?: string | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          estimated_minutes?: number | null
           id?: string
+          scenario_context?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Update: {
+          audience?: string | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          estimated_minutes?: number | null
           id?: string
+          scenario_context?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -13576,6 +13924,47 @@ export type Database = {
           },
         ]
       }
+      schools: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          district_id: string
+          grade_levels: string[] | null
+          id: string
+          name: string
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          district_id: string
+          grade_levels?: string[] | null
+          id?: string
+          name: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          district_id?: string
+          grade_levels?: string[] | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schools_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scoring_keys: {
         Row: {
           code: string
@@ -16429,6 +16818,58 @@ export type Database = {
           },
         ]
       }
+      student_risk_scores: {
+        Row: {
+          factors: Json | null
+          id: string
+          last_calculated_at: string | null
+          risk_level: string | null
+          risk_score: number | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          factors?: Json | null
+          id?: string
+          last_calculated_at?: string | null
+          risk_level?: string | null
+          risk_score?: number | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          factors?: Json | null
+          id?: string
+          last_calculated_at?: string | null
+          risk_level?: string | null
+          risk_score?: number | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_risk_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_risk_scores_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       student_session_status: {
         Row: {
           created_at: string
@@ -16708,6 +17149,7 @@ export type Database = {
           case_closed_date: string | null
           case_opened_date: string | null
           case_types: Json | null
+          classroom_id: string | null
           color: string
           contact_email: string | null
           contact_phone: string | null
@@ -16721,6 +17163,7 @@ export type Database = {
           diagnoses: Json | null
           discharge_reason: string | null
           display_name: string | null
+          district_id: string | null
           district_name: string | null
           dob: string | null
           documents: Json | null
@@ -16753,6 +17196,7 @@ export type Database = {
           prompt_counts_as_correct: boolean | null
           pronouns: string | null
           school: string | null
+          school_id: string | null
           school_name: string | null
           student_origin: string | null
           updated_at: string
@@ -16772,6 +17216,7 @@ export type Database = {
           case_closed_date?: string | null
           case_opened_date?: string | null
           case_types?: Json | null
+          classroom_id?: string | null
           color?: string
           contact_email?: string | null
           contact_phone?: string | null
@@ -16785,6 +17230,7 @@ export type Database = {
           diagnoses?: Json | null
           discharge_reason?: string | null
           display_name?: string | null
+          district_id?: string | null
           district_name?: string | null
           dob?: string | null
           documents?: Json | null
@@ -16817,6 +17263,7 @@ export type Database = {
           prompt_counts_as_correct?: boolean | null
           pronouns?: string | null
           school?: string | null
+          school_id?: string | null
           school_name?: string | null
           student_origin?: string | null
           updated_at?: string
@@ -16836,6 +17283,7 @@ export type Database = {
           case_closed_date?: string | null
           case_opened_date?: string | null
           case_types?: Json | null
+          classroom_id?: string | null
           color?: string
           contact_email?: string | null
           contact_phone?: string | null
@@ -16849,6 +17297,7 @@ export type Database = {
           diagnoses?: Json | null
           discharge_reason?: string | null
           display_name?: string | null
+          district_id?: string | null
           district_name?: string | null
           dob?: string | null
           documents?: Json | null
@@ -16881,6 +17330,7 @@ export type Database = {
           prompt_counts_as_correct?: boolean | null
           pronouns?: string | null
           school?: string | null
+          school_id?: string | null
           school_name?: string | null
           student_origin?: string | null
           updated_at?: string
@@ -16892,6 +17342,27 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
@@ -19809,6 +20280,40 @@ export type Database = {
           },
         ]
       }
+      v_behavior_patterns: {
+        Row: {
+          avg_duration: number | null
+          behavior_id: string | null
+          frequency_level: string | null
+          peak_time_block: string | null
+          student_id: string | null
+          total_duration: number | null
+          total_events: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_data_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_data_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "session_data_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_behavior_session_metrics: {
         Row: {
           behavior_id: string | null
@@ -20732,13 +21237,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -20748,8 +21246,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -20761,13 +21259,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -20914,6 +21419,10 @@ export type Database = {
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
+      calculate_student_risk_score: {
+        Args: { p_student_id: string }
+        Returns: number
+      }
       can_collect_data: { Args: { p_client_id: string }; Returns: boolean }
       can_generate_reports: { Args: { p_client_id: string }; Returns: boolean }
       can_schedule_rbt: {
