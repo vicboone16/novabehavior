@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+// @ts-ignore - react-grid-layout uses CommonJS exports
+import ReactGridLayout from 'react-grid-layout';
+const { Responsive, WidthProvider } = ReactGridLayout as any;
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { Plus, RotateCcw, Settings2 } from 'lucide-react';
