@@ -98,11 +98,8 @@ export default function Dashboard() {
           cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
           rowHeight={60}
           onLayoutChange={onLayoutChange as any}
-          draggableHandle=".drag-handle"
-          isResizable={true}
-          isDraggable={true}
           compactType="vertical"
-          margin={[12, 12]}
+          margin={[12, 12] as any}
         >
           {activeWidgets.map(widgetId => {
             const def = WIDGET_REGISTRY.find(w => w.id === widgetId);
