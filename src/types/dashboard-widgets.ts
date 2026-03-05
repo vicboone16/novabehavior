@@ -4,19 +4,30 @@ export interface WidgetDefinition {
   id: string;
   title: string;
   description: string;
-  icon: string; // lucide icon name
+  icon: string;
   category: 'core' | 'clinical' | 'classroom' | 'admin' | 'billing';
-  /** Roles that can see this widget. Empty = everyone */
   allowedRoles: string[];
-  /** Default grid layout (w, h in grid units) */
   defaultLayout: { w: number; h: number; minW?: number; minH?: number };
-  /** Feature flag required (if any) */
   requiredFeature?: string;
 }
 
+/** react-grid-layout Layout item */
+export interface GridLayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
+  static?: boolean;
+}
+
 export interface DashboardLayout {
-  widgets: string[]; // widget IDs in order
-  gridLayouts: Record<string, ReactGridLayout.Layout[]>; // breakpoint -> layouts
+  widgets: string[];
+  gridLayouts: Record<string, GridLayoutItem[]>;
 }
 
 export interface UserDashboardPrefs {

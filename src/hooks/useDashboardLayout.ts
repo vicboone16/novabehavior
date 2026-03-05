@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { Layout } from 'react-grid-layout';
+import type { GridLayoutItem } from '@/types/dashboard-widgets';
 import { getDefaultWidgetsForRole, WIDGET_REGISTRY } from '@/lib/widget-registry';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,26 +7,26 @@ const STORAGE_KEY = 'nova-dashboard-layout';
 
 interface StoredLayout {
   widgets: string[];
-  layouts: Record<string, Layout[]>;
+  layouts: Record<string, GridLayoutItem[]>;
 }
 
-function generateDefaultLayouts(widgetIds: string[]): Record<string, Layout[]> {
-  const cols = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 };
-  const layouts: Record<string, Layout[]> = {};
+function generateDefaultLayouts(widgetIds: string[]): Record<string, GridLayoutItem[]> {
+  const cols: Record<string, number> = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 };
+  const layouts: Record<string, GridLayoutItem[]> = {};
 
   for (const bp of Object.keys(cols)) {
-    const bpCols = cols[bp as keyof typeof cols];
+    const bpCols = cols[bp];
     let x = 0;
     let y = 0;
     layouts[bp] = widgetIds.map((id) => {
       const def = WIDGET_REGISTRY.find(w => w.id === id);
       const w = Math.min(def?.defaultLayout.w || 6, bpCols);
       const h = def?.defaultLayout.h || 4;
-      const minW = def?.defaultLayout.minW || 2;
+      const minW = Math.min(def?.defaultLayout.minW || 2, bpCols);
       const minH = def?.defaultLayout.minH || 2;
 
       if (x + w > bpCols) { x = 0; y += h; }
-      const layout: Layout = { i: id, x, y, w, h, minW, minH };
+      const layout: GridLayoutItem = { i: id, x, y, w, h, minW, minH };
       x += w;
       if (x >= bpCols) { x = 0; y += h; }
       return layout;
@@ -40,10 +40,9 @@ export function useDashboardLayout() {
   const role = userRole || 'viewer';
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
-  const [layouts, setLayouts] = useState<Record<string, Layout[]>>({});
+  const [layouts, setLayouts] = useState<Record<string, GridLayoutItem[]>>({});
   const [initialized, setInitialized] = useState(false);
 
-  // Load from localStorage or generate defaults
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -64,14 +63,13 @@ export function useDashboardLayout() {
     setInitialized(true);
   }, [role]);
 
-  // Persist on change
-  const persist = useCallback((widgets: string[], newLayouts: Record<string, Layout[]>) => {
+  const persist = useCallback((widgets: string[], newLayouts: Record<string, GridLayoutItem[]>) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ widgets, layouts: newLayouts }));
     } catch { /* silent */ }
   }, []);
 
-  const onLayoutChange = useCallback((_layout: Layout[], allLayouts: Record<string, Layout[]>) => {
+  const onLayoutChange = useCallback((_layout: GridLayoutItem[], allLayouts: Record<string, GridLayoutItem[]>) => {
     setLayouts(allLayouts);
     persist(activeWidgets, allLayouts);
   }, [activeWidgets, persist]);
@@ -80,7 +78,6 @@ export function useDashboardLayout() {
     if (activeWidgets.includes(widgetId)) return;
     const newWidgets = [...activeWidgets, widgetId];
     const newLayouts = generateDefaultLayouts(newWidgets);
-    // Preserve existing positions for existing widgets
     for (const bp of Object.keys(layouts)) {
       if (newLayouts[bp]) {
         newLayouts[bp] = newLayouts[bp].map(l => {
@@ -96,7 +93,7 @@ export function useDashboardLayout() {
 
   const removeWidget = useCallback((widgetId: string) => {
     const newWidgets = activeWidgets.filter(id => id !== widgetId);
-    const newLayouts: Record<string, Layout[]> = {};
+    const newLayouts: Record<string, GridLayoutItem[]> = {};
     for (const bp of Object.keys(layouts)) {
       newLayouts[bp] = (layouts[bp] || []).filter(l => l.i !== widgetId);
     }
