@@ -2121,6 +2121,27 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_decision_trees: {
+        Row: {
+          behavior_type: string | null
+          id: string
+          recommended_response: string | null
+          trigger: string | null
+        }
+        Insert: {
+          behavior_type?: string | null
+          id?: string
+          recommended_response?: string | null
+          trigger?: string | null
+        }
+        Update: {
+          behavior_type?: string | null
+          id?: string
+          recommended_response?: string | null
+          trigger?: string | null
+        }
+        Relationships: []
+      }
       behavior_lab_attempts: {
         Row: {
           agency_id: string | null
@@ -9953,6 +9974,62 @@ export type Database = {
           },
         ]
       }
+      lms_badges: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      lms_certifications: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          id: string
+          required_score: number | null
+          title: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          required_score?: number | null
+          title?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          required_score?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_certifications_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "lms_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lms_courses: {
         Row: {
           audience: string | null
@@ -10132,6 +10209,33 @@ export type Database = {
           },
         ]
       }
+      lms_resources: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_url: string | null
+          id: string
+          title: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          title?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       lms_scenarios: {
         Row: {
           category: string | null
@@ -10152,6 +10256,126 @@ export type Database = {
           scenario?: string | null
         }
         Relationships: []
+      }
+      lms_simulation_steps: {
+        Row: {
+          choices: Json | null
+          correct_choice: string | null
+          feedback: string | null
+          id: string
+          scenario: string | null
+          simulation_id: string | null
+          step_order: number | null
+        }
+        Insert: {
+          choices?: Json | null
+          correct_choice?: string | null
+          feedback?: string | null
+          id?: string
+          scenario?: string | null
+          simulation_id?: string | null
+          step_order?: number | null
+        }
+        Update: {
+          choices?: Json | null
+          correct_choice?: string | null
+          feedback?: string | null
+          id?: string
+          scenario?: string | null
+          simulation_id?: string | null
+          step_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_simulation_steps_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "lms_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_simulations: {
+        Row: {
+          description: string | null
+          id: string
+          title: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          title?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      lms_user_badges: {
+        Row: {
+          badge_id: string | null
+          earned_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_id?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "lms_badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_user_certifications: {
+        Row: {
+          certification_id: string | null
+          earned: boolean | null
+          earned_at: string | null
+          id: string
+          score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          certification_id?: string | null
+          earned?: boolean | null
+          earned_at?: string | null
+          id?: string
+          score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          certification_id?: string | null
+          earned?: boolean | null
+          earned_at?: string | null
+          id?: string
+          score?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_user_certifications_certification_id_fkey"
+            columns: ["certification_id"]
+            isOneToOne: false
+            referencedRelation: "lms_certifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mentor_assignments: {
         Row: {
@@ -19820,6 +20044,16 @@ export type Database = {
           },
         ]
       }
+      v_lms_course_progress: {
+        Row: {
+          completed_lessons: number | null
+          course_title: string | null
+          percent_complete: number | null
+          total_lessons: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_skill_prompt_distribution_v2: {
         Row: {
           prompt_code: string | null
@@ -20633,13 +20867,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -20649,8 +20876,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -20662,13 +20889,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
