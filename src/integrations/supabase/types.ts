@@ -1511,6 +1511,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "appointments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -1605,6 +1633,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "attendance_logs_student_id_fkey"
@@ -2177,6 +2233,118 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_session_data: {
+        Row: {
+          behavior_id: string
+          created_at: string | null
+          data_state: Database["public"]["Enums"]["data_state"]
+          duration_seconds: number | null
+          frequency: number | null
+          id: string
+          latency_seconds: number | null
+          notes: string | null
+          observation_minutes: number | null
+          session_id: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          behavior_id: string
+          created_at?: string | null
+          data_state?: Database["public"]["Enums"]["data_state"]
+          duration_seconds?: number | null
+          frequency?: number | null
+          id?: string
+          latency_seconds?: number | null
+          notes?: string | null
+          observation_minutes?: number | null
+          session_id: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          behavior_id?: string
+          created_at?: string | null
+          data_state?: Database["public"]["Enums"]["data_state"]
+          duration_seconds?: number | null
+          frequency?: number | null
+          id?: string
+          latency_seconds?: number | null
+          notes?: string | null
+          observation_minutes?: number | null
+          session_id?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_session_data_behavior_id_fkey"
+            columns: ["behavior_id"]
+            isOneToOne: false
+            referencedRelation: "behaviors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
+      behaviors: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       benchmark_stages: {
         Row: {
           active: boolean
@@ -2223,6 +2391,50 @@ export type Database = {
             columns: ["criteria_template_id"]
             isOneToOne: false
             referencedRelation: "criteria_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      benchmarks: {
+        Row: {
+          created_at: string | null
+          criteria: Json | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          target_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          target_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          target_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "benchmarks_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
             referencedColumns: ["id"]
           },
         ]
@@ -3911,6 +4123,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
         ]
       }
@@ -6246,6 +6486,7 @@ export type Database = {
       }
       criteria_evaluations: {
         Row: {
+          client_id: string | null
           criteria_type: string
           evaluated_at: string
           evidence: Json | null
@@ -6259,6 +6500,7 @@ export type Database = {
           window_used: Json | null
         }
         Insert: {
+          client_id?: string | null
           criteria_type: string
           evaluated_at?: string
           evidence?: Json | null
@@ -6272,6 +6514,7 @@ export type Database = {
           window_used?: Json | null
         }
         Update: {
+          client_id?: string | null
           criteria_type?: string
           evaluated_at?: string
           evidence?: Json | null
@@ -7187,6 +7430,7 @@ export type Database = {
           modified_at: string | null
           modified_by: string | null
           name: string
+          sort_order: number | null
           source_tier: string
           status: string
           updated_at: string
@@ -7202,6 +7446,7 @@ export type Database = {
           modified_at?: string | null
           modified_by?: string | null
           name: string
+          sort_order?: number | null
           source_tier?: string
           status?: string
           updated_at?: string
@@ -7217,6 +7462,7 @@ export type Database = {
           modified_at?: string | null
           modified_by?: string | null
           name?: string
+          sort_order?: number | null
           source_tier?: string
           status?: string
           updated_at?: string
@@ -7455,6 +7701,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "enhanced_session_notes_student_id_fkey"
@@ -11300,6 +11574,98 @@ export type Database = {
           },
         ]
       }
+      procedure_steps: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          procedure_id: string
+          step_description: string
+          step_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          procedure_id: string
+          step_description: string
+          step_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          procedure_id?: string
+          step_description?: string
+          step_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedure_steps_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procedures: {
+        Row: {
+          benchmark_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          procedure_type: Database["public"]["Enums"]["procedure_type"] | null
+          sort_order: number | null
+          target_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          procedure_type?: Database["public"]["Enums"]["procedure_type"] | null
+          sort_order?: number | null
+          target_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          procedure_type?: Database["public"]["Enums"]["procedure_type"] | null
+          sort_order?: number | null
+          target_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedures_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procedures_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -11594,10 +11960,174 @@ export type Database = {
           },
         ]
       }
+      programs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          domain_id: string | null
+          generalization_criteria: Json | null
+          id: string
+          maintenance_criteria: Json | null
+          mastery_criteria: Json | null
+          name: string
+          probe_criteria: Json | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          domain_id?: string | null
+          generalization_criteria?: Json | null
+          id?: string
+          maintenance_criteria?: Json | null
+          mastery_criteria?: Json | null
+          name: string
+          probe_criteria?: Json | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          domain_id?: string | null
+          generalization_criteria?: Json | null
+          id?: string
+          maintenance_criteria?: Json | null
+          mastery_criteria?: Json | null
+          name?: string
+          probe_criteria?: Json | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progression_actions: {
+        Row: {
+          action_type: string | null
+          created_at: string | null
+          from_phase: string | null
+          from_program_id: string | null
+          from_target_id: string | null
+          id: string
+          payload: Json | null
+          queue_id: string | null
+          to_phase: string | null
+          to_program_id: string | null
+          to_target_id: string | null
+        }
+        Insert: {
+          action_type?: string | null
+          created_at?: string | null
+          from_phase?: string | null
+          from_program_id?: string | null
+          from_target_id?: string | null
+          id?: string
+          payload?: Json | null
+          queue_id?: string | null
+          to_phase?: string | null
+          to_program_id?: string | null
+          to_target_id?: string | null
+        }
+        Update: {
+          action_type?: string | null
+          created_at?: string | null
+          from_phase?: string | null
+          from_program_id?: string | null
+          from_target_id?: string | null
+          id?: string
+          payload?: Json | null
+          queue_id?: string | null
+          to_phase?: string | null
+          to_program_id?: string | null
+          to_target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progression_actions_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "progression_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progression_queue: {
+        Row: {
+          benchmark_id: string | null
+          client_id: string | null
+          created_at: string | null
+          criteria_evaluation_id: string | null
+          details: string | null
+          evidence: Json | null
+          id: string
+          program_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          snoozed_until: string | null
+          status: string | null
+          student_id: string | null
+          target_id: string | null
+          title: string | null
+          trigger_at: string | null
+          trigger_event: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          criteria_evaluation_id?: string | null
+          details?: string | null
+          evidence?: Json | null
+          id?: string
+          program_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          snoozed_until?: string | null
+          status?: string | null
+          student_id?: string | null
+          target_id?: string | null
+          title?: string | null
+          trigger_at?: string | null
+          trigger_event?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          criteria_evaluation_id?: string | null
+          details?: string | null
+          evidence?: Json | null
+          id?: string
+          program_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          snoozed_until?: string | null
+          status?: string | null
+          student_id?: string | null
+          target_id?: string | null
+          title?: string | null
+          trigger_at?: string | null
+          trigger_event?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       prompt_levels: {
         Row: {
           abbreviation: string
           agency_id: string | null
+          code: string | null
           counts_as_prompted: boolean
           created_at: string
           id: string
@@ -11606,10 +12136,12 @@ export type Database = {
           name: string
           prompt_set_id: string | null
           rank: number
+          updated_at: string | null
         }
         Insert: {
           abbreviation: string
           agency_id?: string | null
+          code?: string | null
           counts_as_prompted?: boolean
           created_at?: string
           id?: string
@@ -11618,10 +12150,12 @@ export type Database = {
           name: string
           prompt_set_id?: string | null
           rank?: number
+          updated_at?: string | null
         }
         Update: {
           abbreviation?: string
           agency_id?: string | null
+          code?: string | null
           counts_as_prompted?: boolean
           created_at?: string
           id?: string
@@ -11630,6 +12164,7 @@ export type Database = {
           name?: string
           prompt_set_id?: string | null
           rank?: number
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -12464,6 +12999,36 @@ export type Database = {
           },
         ]
       }
+      scoring_keys: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_correct: boolean
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_correct: boolean
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_correct?: boolean
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       security_settings: {
         Row: {
           created_at: string
@@ -12633,6 +13198,34 @@ export type Database = {
             referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
         ]
       }
       session_data: {
@@ -12685,6 +13278,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "session_data_student_id_fkey"
@@ -12771,6 +13392,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "session_notes_student_id_fkey"
@@ -12937,6 +13586,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "session_postings_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -13031,6 +13708,7 @@ export type Database = {
           authorized_service_id: string | null
           billed_units: number | null
           billing_status: string | null
+          collected_by: string | null
           coverage_gate_reason_code: string | null
           coverage_gate_status: string | null
           coverage_last_verified_at: string | null
@@ -13039,6 +13717,7 @@ export type Database = {
           end_lat: number | null
           end_lng: number | null
           end_time: string | null
+          ended_at: string | null
           funding_mode_snapshot: string | null
           has_data: boolean | null
           id: string
@@ -13047,17 +13726,22 @@ export type Database = {
           name: string
           note_delegate_method: string | null
           note_delegate_user_id: string | null
+          notes: string | null
           provider_id: string | null
           scheduled_item_id: string | null
           scheduled_item_source: string | null
           service_setting: string | null
           service_type: string | null
           session_length_minutes: number
+          setting: string | null
           start_lat: number | null
           start_lng: number | null
           start_time: string
+          started_at: string | null
           status: string | null
+          student_id: string | null
           student_ids: string[] | null
+          updated_at: string | null
           user_id: string
           utilization_posted_at: string | null
           utilization_status: string
@@ -13073,6 +13757,7 @@ export type Database = {
           authorized_service_id?: string | null
           billed_units?: number | null
           billing_status?: string | null
+          collected_by?: string | null
           coverage_gate_reason_code?: string | null
           coverage_gate_status?: string | null
           coverage_last_verified_at?: string | null
@@ -13081,6 +13766,7 @@ export type Database = {
           end_lat?: number | null
           end_lng?: number | null
           end_time?: string | null
+          ended_at?: string | null
           funding_mode_snapshot?: string | null
           has_data?: boolean | null
           id?: string
@@ -13089,17 +13775,22 @@ export type Database = {
           name: string
           note_delegate_method?: string | null
           note_delegate_user_id?: string | null
+          notes?: string | null
           provider_id?: string | null
           scheduled_item_id?: string | null
           scheduled_item_source?: string | null
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number
+          setting?: string | null
           start_lat?: number | null
           start_lng?: number | null
           start_time: string
+          started_at?: string | null
           status?: string | null
+          student_id?: string | null
           student_ids?: string[] | null
+          updated_at?: string | null
           user_id: string
           utilization_posted_at?: string | null
           utilization_status?: string
@@ -13115,6 +13806,7 @@ export type Database = {
           authorized_service_id?: string | null
           billed_units?: number | null
           billing_status?: string | null
+          collected_by?: string | null
           coverage_gate_reason_code?: string | null
           coverage_gate_status?: string | null
           coverage_last_verified_at?: string | null
@@ -13123,6 +13815,7 @@ export type Database = {
           end_lat?: number | null
           end_lng?: number | null
           end_time?: string | null
+          ended_at?: string | null
           funding_mode_snapshot?: string | null
           has_data?: boolean | null
           id?: string
@@ -13131,17 +13824,22 @@ export type Database = {
           name?: string
           note_delegate_method?: string | null
           note_delegate_user_id?: string | null
+          notes?: string | null
           provider_id?: string | null
           scheduled_item_id?: string | null
           scheduled_item_source?: string | null
           service_setting?: string | null
           service_type?: string | null
           session_length_minutes?: number
+          setting?: string | null
           start_lat?: number | null
           start_lng?: number | null
           start_time?: string
+          started_at?: string | null
           status?: string | null
+          student_id?: string | null
           student_ids?: string[] | null
+          updated_at?: string | null
           user_id?: string
           utilization_posted_at?: string | null
           utilization_status?: string
@@ -13476,6 +14174,115 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_trials: {
+        Row: {
+          benchmark_id: string | null
+          created_at: string | null
+          id: string
+          procedure_step_id: string | null
+          prompt_level_id: string | null
+          recorded_at: string | null
+          score_code: string
+          session_id: string
+          student_id: string
+          target_id: string
+          trial_index: number
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_id?: string | null
+          created_at?: string | null
+          id?: string
+          procedure_step_id?: string | null
+          prompt_level_id?: string | null
+          recorded_at?: string | null
+          score_code: string
+          session_id: string
+          student_id: string
+          target_id: string
+          trial_index?: number
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_id?: string | null
+          created_at?: string | null
+          id?: string
+          procedure_step_id?: string | null
+          prompt_level_id?: string | null
+          recorded_at?: string | null
+          score_code?: string
+          session_id?: string
+          student_id?: string
+          target_id?: string
+          trial_index?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_procedure_step_id_fkey"
+            columns: ["procedure_step_id"]
+            isOneToOne: false
+            referencedRelation: "procedure_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
             referencedColumns: ["id"]
           },
         ]
@@ -14875,6 +15682,47 @@ export type Database = {
           },
         ]
       }
+      student_programs: {
+        Row: {
+          completed_at: string | null
+          completion_rule: Json | null
+          created_at: string | null
+          id: string
+          program_id: string
+          status: Database["public"]["Enums"]["program_status"] | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_rule?: Json | null
+          created_at?: string | null
+          id?: string
+          program_id: string
+          status?: Database["public"]["Enums"]["program_status"] | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completion_rule?: Json | null
+          created_at?: string | null
+          id?: string
+          program_id?: string
+          status?: Database["public"]["Enums"]["program_status"] | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_programs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_prompt_levels: {
         Row: {
           created_at: string
@@ -14981,6 +15829,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "student_session_status_student_id_fkey"
@@ -15467,6 +16343,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "supervision_logs_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -15677,6 +16581,41 @@ export type Database = {
         }
         Relationships: []
       }
+      target_events: {
+        Row: {
+          created_at: string | null
+          event_at: string
+          event_type: string
+          id: string
+          notes: string | null
+          target_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_at?: string
+          event_type: string
+          id?: string
+          notes?: string | null
+          target_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_at?: string
+          event_type?: string
+          id?: string
+          notes?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_events_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       target_status_history: {
         Row: {
           changed_by: string | null
@@ -15787,6 +16726,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "target_trials_target_id_fkey"
             columns: ["target_id"]
             isOneToOne: false
@@ -15798,6 +16765,106 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      targets: {
+        Row: {
+          closed_at: string | null
+          closed_reason:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
+          created_at: string | null
+          description: string | null
+          discontinue_reason_text: string | null
+          hold_at: string | null
+          hold_reason: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          phase: Database["public"]["Enums"]["target_phase"] | null
+          program_id: string
+          reinstated_at: string | null
+          reopened_at: string | null
+          replaced_by_target_id: string | null
+          replaces_target_id: string | null
+          sort_order: number | null
+          status: Database["public"]["Enums"]["target_status"] | null
+          updated_at: string | null
+          version: number | null
+          version_group_id: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_reason?:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
+          created_at?: string | null
+          description?: string | null
+          discontinue_reason_text?: string | null
+          hold_at?: string | null
+          hold_reason?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          phase?: Database["public"]["Enums"]["target_phase"] | null
+          program_id: string
+          reinstated_at?: string | null
+          reopened_at?: string | null
+          replaced_by_target_id?: string | null
+          replaces_target_id?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["target_status"] | null
+          updated_at?: string | null
+          version?: number | null
+          version_group_id?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          closed_reason?:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
+          created_at?: string | null
+          description?: string | null
+          discontinue_reason_text?: string | null
+          hold_at?: string | null
+          hold_reason?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          phase?: Database["public"]["Enums"]["target_phase"] | null
+          program_id?: string
+          reinstated_at?: string | null
+          reopened_at?: string | null
+          replaced_by_target_id?: string | null
+          replaces_target_id?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["target_status"] | null
+          updated_at?: string | null
+          version?: number | null
+          version_group_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "targets_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "targets_replaced_by_target_id_fkey"
+            columns: ["replaced_by_target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "targets_replaces_target_id_fkey"
+            columns: ["replaces_target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
             referencedColumns: ["id"]
           },
         ]
@@ -15856,6 +16923,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "task_analysis_step_data_step_id_fkey"
@@ -16458,6 +17553,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "time_entries_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -16788,6 +17911,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "treatment_fidelity_checks_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -16882,6 +18033,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "unit_deduction_ledger_student_id_fkey"
@@ -17604,6 +18783,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "session_data_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -17824,6 +19031,56 @@ export type Database = {
           },
         ]
       }
+      v_behavior_session_metrics: {
+        Row: {
+          behavior_id: string | null
+          cumulative_frequency: number | null
+          data_state: Database["public"]["Enums"]["data_state"] | null
+          duration_seconds: number | null
+          frequency_plot: number | null
+          latency_seconds: number | null
+          observation_minutes: number | null
+          rate_per_minute: number | null
+          session_day: string | null
+          session_id: string | null
+          session_time: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_session_data_behavior_id_fkey"
+            columns: ["behavior_id"]
+            isOneToOne: false
+            referencedRelation: "behaviors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_behavior_session_metrics_v2: {
+        Row: {
+          behavior_id: string | null
+          cumulative_frequency: number | null
+          data_state: Database["public"]["Enums"]["data_state"] | null
+          duration_seconds: number | null
+          frequency_plot: number | null
+          latency_seconds: number | null
+          observation_minutes: number | null
+          rate_per_minute: number | null
+          session_day: string | null
+          session_id: string | null
+          session_time: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_session_data_behavior_id_fkey"
+            columns: ["behavior_id"]
+            isOneToOne: false
+            referencedRelation: "behaviors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_ci_agency_comparison: {
         Row: {
           agency_id: string | null
@@ -17984,6 +19241,137 @@ export type Database = {
           },
         ]
       }
+      v_skill_target_session_metrics: {
+        Row: {
+          correct_total: number | null
+          incorrect_total: number | null
+          independent_correct: number | null
+          pct_correct: number | null
+          pct_independent: number | null
+          session_day: string | null
+          session_id: string | null
+          session_time: string | null
+          student_id: string | null
+          target_id: string | null
+          trials_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_skill_target_session_metrics_v2: {
+        Row: {
+          correct_total: number | null
+          incorrect_total: number | null
+          independent_correct: number | null
+          pct_correct: number | null
+          pct_independent: number | null
+          session_day: string | null
+          session_id: string | null
+          session_time: string | null
+          student_id: string | null
+          target_id: string | null
+          trials_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_skill_trials_display: {
+        Row: {
+          benchmark_id: string | null
+          created_at: string | null
+          id: string | null
+          procedure_step_id: string | null
+          prompt_code: string | null
+          prompt_level_id: string | null
+          prompt_outcome_code: string | null
+          recorded_at: string | null
+          score_code: string | null
+          session_id: string | null
+          student_id: string | null
+          target_id: string | null
+          trial_index: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_procedure_step_id_fkey"
+            columns: ["procedure_step_id"]
+            isOneToOne: false
+            referencedRelation: "procedure_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_staff_packets_needing_review: {
         Row: {
           abc_count: number | null
@@ -18084,6 +19472,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "supervision_logs_student_id_fkey"
@@ -18626,6 +20042,14 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      create_trigger_if_missing: {
+        Args: {
+          function_name: unknown
+          table_name: unknown
+          trigger_name: string
+        }
+        Returns: undefined
+      }
       effective_cid_access: { Args: { _user_id: string }; Returns: boolean }
       effective_cross_agency_access: {
         Args: { _user_id: string }
@@ -19354,7 +20778,16 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "staff" | "viewer"
+      data_state: "no_data" | "observed_zero" | "measured"
       note_subtype: "clinical_only" | "parent_training_only" | "combined"
+      procedure_type:
+        | "task_analysis"
+        | "prompt_hierarchy"
+        | "chaining"
+        | "discrete_trial"
+        | "natural_environment"
+        | "other"
+      program_status: "active" | "on_hold" | "completed" | "archived"
       service_setting: "school" | "home" | "telehealth" | "clinic" | "community"
       session_note_type:
         | "therapist"
@@ -19362,6 +20795,20 @@ export type Database = {
         | "clinical"
         | "parent_training"
         | "supervision_revision"
+      target_closed_reason:
+        | "mastered"
+        | "discontinued"
+        | "replaced"
+        | "generalized"
+        | "archived"
+        | "other"
+      target_phase:
+        | "baseline"
+        | "acquisition"
+        | "probe"
+        | "generalization"
+        | "maintenance"
+      target_status: "active" | "on_hold" | "closed"
       toi_contributor:
         | "medication_change"
         | "missed_dose"
@@ -19514,7 +20961,17 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "staff", "viewer"],
+      data_state: ["no_data", "observed_zero", "measured"],
       note_subtype: ["clinical_only", "parent_training_only", "combined"],
+      procedure_type: [
+        "task_analysis",
+        "prompt_hierarchy",
+        "chaining",
+        "discrete_trial",
+        "natural_environment",
+        "other",
+      ],
+      program_status: ["active", "on_hold", "completed", "archived"],
       service_setting: ["school", "home", "telehealth", "clinic", "community"],
       session_note_type: [
         "therapist",
@@ -19523,6 +20980,22 @@ export const Constants = {
         "parent_training",
         "supervision_revision",
       ],
+      target_closed_reason: [
+        "mastered",
+        "discontinued",
+        "replaced",
+        "generalized",
+        "archived",
+        "other",
+      ],
+      target_phase: [
+        "baseline",
+        "acquisition",
+        "probe",
+        "generalization",
+        "maintenance",
+      ],
+      target_status: ["active", "on_hold", "closed"],
       toi_contributor: [
         "medication_change",
         "missed_dose",
