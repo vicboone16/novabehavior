@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { GridLayoutItem } from '@/types/dashboard-widgets';
 import { getDefaultWidgetsForRole, WIDGET_REGISTRY } from '@/lib/widget-registry';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'nova-dashboard-layout';
+const DEBOUNCE_MS = 1500;
 
 interface StoredLayout {
   widgets: string[];
@@ -36,43 +38,99 @@ function generateDefaultLayouts(widgetIds: string[]): Record<string, GridLayoutI
 }
 
 export function useDashboardLayout() {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const role = userRole || 'viewer';
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [layouts, setLayouts] = useState<Record<string, GridLayoutItem[]>>({});
   const [initialized, setInitialized] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Load from DB first, fallback to localStorage, then defaults
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: StoredLayout = JSON.parse(stored);
-        setActiveWidgets(parsed.widgets);
-        setLayouts(parsed.layouts);
-      } else {
+    let cancelled = false;
+
+    async function load() {
+      // Try DB if authenticated
+      if (user) {
+        try {
+          const { data } = await supabase
+            .from('dashboard_layouts')
+            .select('widgets, layouts')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (!cancelled && data) {
+            setActiveWidgets(data.widgets as string[]);
+            setLayouts(data.layouts as Record<string, GridLayoutItem[]>);
+            setInitialized(true);
+            return;
+          }
+        } catch { /* fall through */ }
+      }
+
+      // Fallback to localStorage
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored && !cancelled) {
+          const parsed: StoredLayout = JSON.parse(stored);
+          setActiveWidgets(parsed.widgets);
+          setLayouts(parsed.layouts);
+          setInitialized(true);
+
+          // Migrate localStorage to DB if authenticated
+          if (user) {
+            supabase.from('dashboard_layouts').upsert({
+              user_id: user.id,
+              widgets: parsed.widgets,
+              layouts: parsed.layouts as any,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'user_id' }).then(() => {
+              localStorage.removeItem(STORAGE_KEY);
+            });
+          }
+          return;
+        }
+      } catch { /* silent */ }
+
+      // Defaults
+      if (!cancelled) {
         const defaults = getDefaultWidgetsForRole(role);
         setActiveWidgets(defaults);
         setLayouts(generateDefaultLayouts(defaults));
+        setInitialized(true);
       }
-    } catch {
-      const defaults = getDefaultWidgetsForRole(role);
-      setActiveWidgets(defaults);
-      setLayouts(generateDefaultLayouts(defaults));
     }
-    setInitialized(true);
-  }, [role]);
 
-  const persist = useCallback((widgets: string[], newLayouts: Record<string, GridLayoutItem[]>) => {
+    load();
+    return () => { cancelled = true; };
+  }, [role, user]);
+
+  const persistToDb = useCallback((widgets: string[], newLayouts: Record<string, GridLayoutItem[]>) => {
+    // Always write localStorage as immediate cache
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ widgets, layouts: newLayouts }));
     } catch { /* silent */ }
-  }, []);
+
+    // Debounced DB write
+    if (!user) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      supabase.from('dashboard_layouts').upsert({
+        user_id: user.id,
+        widgets,
+        layouts: newLayouts as any,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' }).then(() => {
+        localStorage.removeItem(STORAGE_KEY);
+      });
+    }, DEBOUNCE_MS);
+  }, [user]);
 
   const onLayoutChange = useCallback((_layout: GridLayoutItem[], allLayouts: Record<string, GridLayoutItem[]>) => {
     setLayouts(allLayouts);
-    persist(activeWidgets, allLayouts);
-  }, [activeWidgets, persist]);
+    persistToDb(activeWidgets, allLayouts);
+  }, [activeWidgets, persistToDb]);
 
   const addWidget = useCallback((widgetId: string) => {
     if (activeWidgets.includes(widgetId)) return;
@@ -88,8 +146,8 @@ export function useDashboardLayout() {
     }
     setActiveWidgets(newWidgets);
     setLayouts(newLayouts);
-    persist(newWidgets, newLayouts);
-  }, [activeWidgets, layouts, persist]);
+    persistToDb(newWidgets, newLayouts);
+  }, [activeWidgets, layouts, persistToDb]);
 
   const removeWidget = useCallback((widgetId: string) => {
     const newWidgets = activeWidgets.filter(id => id !== widgetId);
@@ -99,16 +157,16 @@ export function useDashboardLayout() {
     }
     setActiveWidgets(newWidgets);
     setLayouts(newLayouts);
-    persist(newWidgets, newLayouts);
-  }, [activeWidgets, layouts, persist]);
+    persistToDb(newWidgets, newLayouts);
+  }, [activeWidgets, layouts, persistToDb]);
 
   const resetToDefaults = useCallback(() => {
     const defaults = getDefaultWidgetsForRole(role);
     const defaultLayouts = generateDefaultLayouts(defaults);
     setActiveWidgets(defaults);
     setLayouts(defaultLayouts);
-    persist(defaults, defaultLayouts);
-  }, [role, persist]);
+    persistToDb(defaults, defaultLayouts);
+  }, [role, persistToDb]);
 
   return {
     activeWidgets,
