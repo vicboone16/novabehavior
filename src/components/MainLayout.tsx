@@ -13,7 +13,8 @@ import {
   DollarSign,
   BookOpen,
   Smartphone,
-  Menu
+  Menu,
+  Stethoscope
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
