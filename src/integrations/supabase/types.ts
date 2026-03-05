@@ -1539,6 +1539,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "appointments_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "appointments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -1660,6 +1667,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -2317,6 +2331,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "behavior_session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
         ]
@@ -4150,6 +4171,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "claim_line_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
         ]
@@ -7728,6 +7756,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "enhanced_session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -13226,6 +13261,13 @@ export type Database = {
             referencedRelation: "v_skill_target_session_metrics_v2"
             referencedColumns: ["session_id"]
           },
+          {
+            foreignKeyName: "session_closeouts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
         ]
       }
       session_data: {
@@ -13305,6 +13347,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -13419,6 +13468,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -13611,6 +13667,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "session_postings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -14276,6 +14339,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -15859,6 +15929,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "student_session_status_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "student_session_status_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -16371,6 +16448,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "supervision_logs_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -16754,6 +16838,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "target_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "target_trials_target_id_fkey"
             columns: ["target_id"]
             isOneToOne: false
@@ -16950,6 +17041,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "task_analysis_step_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -17581,6 +17679,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "time_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "time_entries_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -17939,6 +18044,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "treatment_fidelity_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "treatment_fidelity_checks_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -18060,6 +18172,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "unit_deduction_ledger_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -18811,6 +18930,13 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
           {
+            foreignKeyName: "session_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
             foreignKeyName: "session_data_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -19241,6 +19367,46 @@ export type Database = {
           },
         ]
       }
+      v_skill_prompt_distribution_v2: {
+        Row: {
+          prompt_code: string | null
+          session_day: string | null
+          student_id: string | null
+          target_id: string | null
+          trials: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_skill_target_daily_metrics_v3: {
+        Row: {
+          correct_total: number | null
+          incorrect_total: number | null
+          independent_correct: number | null
+          pct_correct: number | null
+          pct_independent: number | null
+          session_day: string | null
+          student_id: string | null
+          target_id: string | null
+          trials_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_skill_target_session_metrics: {
         Row: {
           correct_total: number | null
@@ -19266,6 +19432,30 @@ export type Database = {
         ]
       }
       v_skill_target_session_metrics_v2: {
+        Row: {
+          correct_total: number | null
+          incorrect_total: number | null
+          independent_correct: number | null
+          pct_correct: number | null
+          pct_independent: number | null
+          session_day: string | null
+          session_id: string | null
+          session_time: string | null
+          student_id: string | null
+          target_id: string | null
+          trials_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_skill_target_session_metrics_v3: {
         Row: {
           correct_total: number | null
           incorrect_total: number | null
@@ -19361,6 +19551,103 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_skill_trials_display_v2: {
+        Row: {
+          benchmark_id: string | null
+          created_at: string | null
+          id: string | null
+          procedure_step_id: string | null
+          prompt_code: string | null
+          prompt_label: string | null
+          prompt_level_id: string | null
+          prompt_rank: number | null
+          recorded_at: string | null
+          score_code: string | null
+          session_id: string | null
+          student_id: string | null
+          target_id: string | null
+          trial_index: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_benchmark_id_fkey"
+            columns: ["benchmark_id"]
+            isOneToOne: false
+            referencedRelation: "benchmarks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_procedure_step_id_fkey"
+            columns: ["procedure_step_id"]
+            isOneToOne: false
+            referencedRelation: "procedure_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_prompt_level_id_fkey"
+            columns: ["prompt_level_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "skill_trials_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -19499,6 +19786,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "supervision_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
             referencedColumns: ["session_id"]
           },
           {
@@ -19730,13 +20024,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -19746,8 +20033,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -19759,13 +20046,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
