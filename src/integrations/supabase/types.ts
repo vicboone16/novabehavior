@@ -9960,6 +9960,7 @@ export type Database = {
           description: string | null
           estimated_minutes: number | null
           id: string
+          slug: string | null
           title: string | null
         }
         Insert: {
@@ -9968,6 +9969,7 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          slug?: string | null
           title?: string | null
         }
         Update: {
@@ -9976,6 +9978,7 @@ export type Database = {
           description?: string | null
           estimated_minutes?: number | null
           id?: string
+          slug?: string | null
           title?: string | null
         }
         Relationships: []
@@ -10128,6 +10131,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lms_scenarios: {
+        Row: {
+          category: string | null
+          function_answer: string | null
+          id: string
+          scenario: string | null
+        }
+        Insert: {
+          category?: string | null
+          function_answer?: string | null
+          id?: string
+          scenario?: string | null
+        }
+        Update: {
+          category?: string | null
+          function_answer?: string | null
+          id?: string
+          scenario?: string | null
+        }
+        Relationships: []
       }
       mentor_assignments: {
         Row: {
