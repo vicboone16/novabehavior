@@ -4094,6 +4094,152 @@ export type Database = {
           },
         ]
       }
+      ci_signal_rules: {
+        Row: {
+          agency_id: string | null
+          category: string
+          comparison: string
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          is_active: boolean
+          rule_key: string
+          severity: string
+          threshold_unit: string
+          threshold_value: number
+          time_window_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          category?: string
+          comparison?: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          is_active?: boolean
+          rule_key: string
+          severity?: string
+          threshold_unit?: string
+          threshold_value: number
+          time_window_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          category?: string
+          comparison?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          rule_key?: string
+          severity?: string
+          threshold_unit?: string
+          threshold_value?: number
+          time_window_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_signal_rules_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ci_signals: {
+        Row: {
+          agency_id: string
+          client_id: string | null
+          context_json: Json | null
+          created_at: string
+          id: string
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_note: string | null
+          rule_id: string | null
+          severity: string
+          signal_type: string
+          source: string
+          title: string
+        }
+        Insert: {
+          agency_id: string
+          client_id?: string | null
+          context_json?: Json | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_note?: string | null
+          rule_id?: string | null
+          severity?: string
+          signal_type: string
+          source?: string
+          title: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string | null
+          context_json?: Json | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_note?: string | null
+          rule_id?: string | null
+          severity?: string
+          signal_type?: string
+          source?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_signals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_signals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_signals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ci_signals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ci_signals_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "ci_signal_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ci_threshold_rules: {
         Row: {
           active: boolean | null
@@ -21909,6 +22055,19 @@ export type Database = {
           _data_category: string
           _details?: Json
           _student_id: string
+        }
+        Returns: string
+      }
+      insert_supervisor_signal: {
+        Args: {
+          _agency_id: string
+          _client_id?: string
+          _context_json?: Json
+          _message?: string
+          _severity?: string
+          _signal_type?: string
+          _source?: string
+          _title?: string
         }
         Returns: string
       }
