@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Settings, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import type {
   GraphMetric, XAxisMode, AggregationMode, ChartView, GraphOverlays,
 } from '@/types/graphDataState';
@@ -39,7 +39,7 @@ export function GraphControls({
     <div className="flex items-center gap-2 flex-wrap">
       {/* Metric */}
       <Select value={metric} onValueChange={v => onMetricChange(v as GraphMetric)}>
-        <SelectTrigger className="h-7 text-xs w-[140px]"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="h-7 text-xs w-[160px]"><SelectValue /></SelectTrigger>
         <SelectContent>
           {metrics.map(m => (
             <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
@@ -74,7 +74,9 @@ export function GraphControls({
             <SlidersHorizontal className="w-3 h-3" /> Overlays
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3 space-y-3">
+        <PopoverContent className="w-72 p-3 space-y-3" align="end">
+          <p className="text-xs font-medium text-foreground">Graph Overlays</p>
+
           <div className="flex items-center justify-between">
             <Label className="text-xs">Phase Markers</Label>
             <Switch checked={overlays.phaseMarkers} onCheckedChange={v => updateOverlay('phaseMarkers', v)} className="scale-75" />
@@ -87,7 +89,7 @@ export function GraphControls({
                 <Switch checked={overlays.masteryThreshold} onCheckedChange={v => updateOverlay('masteryThreshold', v)} className="scale-75" />
               </div>
               {overlays.masteryThreshold && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pl-2">
                   <Label className="text-xs">Threshold:</Label>
                   <Input
                     type="number"
@@ -103,23 +105,25 @@ export function GraphControls({
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Moving Average</Label>
-            <Switch checked={overlays.movingAverage} onCheckedChange={v => updateOverlay('movingAverage', v)} className="scale-75" />
-          </div>
-          {overlays.movingAverage && (
-            <div className="flex items-center gap-2">
-              <Label className="text-xs">Window:</Label>
-              <Input
-                type="number"
-                value={overlays.movingAverageWindow}
-                onChange={e => updateOverlay('movingAverageWindow', Number(e.target.value))}
-                className="h-6 w-16 text-xs"
-                min={2}
-                max={20}
-              />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Moving Average</Label>
+              <Switch checked={overlays.movingAverage} onCheckedChange={v => updateOverlay('movingAverage', v)} className="scale-75" />
             </div>
-          )}
+            {overlays.movingAverage && (
+              <div className="flex items-center gap-2 pl-2">
+                <Label className="text-xs">Window:</Label>
+                <Input
+                  type="number"
+                  value={overlays.movingAverageWindow}
+                  onChange={e => updateOverlay('movingAverageWindow', Number(e.target.value))}
+                  className="h-6 w-16 text-xs"
+                  min={2}
+                  max={20}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center justify-between">
             <Label className="text-xs">Trend Line (≥6 pts)</Label>
