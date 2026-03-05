@@ -15,6 +15,7 @@ import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
 import Reports from "./pages/Reports";
 import AssessmentDashboard from "./pages/AssessmentDashboard";
+import Clinical from "./pages/Clinical";
 import SkillAcquisition from "./pages/SkillAcquisition";
 import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
