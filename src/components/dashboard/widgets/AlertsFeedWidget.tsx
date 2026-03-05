@@ -17,9 +17,9 @@ const severityColors: Record<string, string> = {
 };
 
 export function AlertsFeedWidget() {
-  const { agencyId } = useAgencyContext();
+  const { currentAgency } = useAgencyContext();
   const { user } = useAuth();
-  const { alerts, loading, resolveAlert } = useCIAlertFeed(agencyId);
+  const { alerts, loading, resolveAlert } = useCIAlertFeed(currentAgency?.id || null);
 
   const handleResolve = async (alertId: string) => {
     if (!user) return;

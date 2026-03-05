@@ -1,3 +1,5 @@
+import { useAgencyContext } from '@/hooks/useAgencyContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupervisorSignals } from '@/hooks/useSupervisorSignals';
 import { Loader2, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -6,11 +8,14 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 export function SupervisorSignalsWidget() {
-  const { signals, loading, resolveSignal } = useSupervisorSignals();
+  const { currentAgency } = useAgencyContext();
+  const { user } = useAuth();
+  const { signals, loading, resolveSignal } = useSupervisorSignals(currentAgency?.id || null);
 
   const handleResolve = async (id: string) => {
-    await resolveSignal(id);
-    toast.success('Signal resolved');
+    if (!user) return;
+    const ok = await resolveSignal(id, user.id);
+    if (ok) toast.success('Signal resolved');
   };
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
@@ -30,13 +35,11 @@ export function SupervisorSignalsWidget() {
     <div className="space-y-2">
       {unresolved.slice(0, 6).map(signal => (
         <div key={signal.id} className="flex items-start gap-2 p-2 rounded-md border border-border/50">
-          <Badge
-            className={`text-[10px] shrink-0 mt-0.5 ${
-              signal.severity === 'critical' ? 'bg-destructive text-destructive-foreground' :
-              signal.severity === 'high' ? 'bg-orange-500 text-white' :
-              'bg-yellow-500 text-white'
-            }`}
-          >
+          <Badge className={`text-[10px] shrink-0 mt-0.5 ${
+            signal.severity === 'critical' ? 'bg-destructive text-destructive-foreground' :
+            signal.severity === 'high' ? 'bg-orange-500 text-white' :
+            'bg-yellow-500 text-white'
+          }`}>
             {signal.severity}
           </Badge>
           <div className="flex-1 min-w-0">

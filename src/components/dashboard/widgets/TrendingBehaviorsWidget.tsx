@@ -4,8 +4,8 @@ import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export function TrendingBehaviorsWidget() {
-  const { agencyId } = useAgencyContext();
-  const { rows, loading } = useCICaseloadFeed(agencyId);
+  const { currentAgency } = useAgencyContext();
+  const { rows, loading } = useCICaseloadFeed(currentAgency?.id || null);
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 

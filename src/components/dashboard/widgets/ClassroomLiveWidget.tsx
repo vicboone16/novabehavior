@@ -1,12 +1,12 @@
-import { useSupervisorSignals } from '@/hooks/useSupervisorSignals';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
+import { useSupervisorSignals } from '@/hooks/useSupervisorSignals';
 import { Loader2, Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
 export function ClassroomLiveWidget() {
-  const { agencyId } = useAgencyContext();
-  const { signals, loading } = useSupervisorSignals();
+  const { currentAgency } = useAgencyContext();
+  const { signals, loading } = useSupervisorSignals(currentAgency?.id || null);
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
@@ -19,12 +19,8 @@ export function ClassroomLiveWidget() {
           <Radio className="w-4 h-4 text-emerald-500" />
           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
         </div>
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Live Feed
-        </span>
-        <Badge variant="secondary" className="text-xs ml-auto">
-          {activeSignals.length} active
-        </Badge>
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Live Feed</span>
+        <Badge variant="secondary" className="text-xs ml-auto">{activeSignals.length} active</Badge>
       </div>
 
       {activeSignals.length === 0 ? (
@@ -38,13 +34,11 @@ export function ClassroomLiveWidget() {
                   <p className="text-sm font-medium truncate">{signal.signal_type?.replace(/_/g, ' ')}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{signal.message}</p>
                 </div>
-                <Badge
-                  className={`text-[10px] shrink-0 ${
-                    signal.severity === 'critical' ? 'bg-destructive text-destructive-foreground' :
-                    signal.severity === 'high' ? 'bg-orange-500 text-white' :
-                    'bg-yellow-500 text-white'
-                  }`}
-                >
+                <Badge className={`text-[10px] shrink-0 ${
+                  signal.severity === 'critical' ? 'bg-destructive text-destructive-foreground' :
+                  signal.severity === 'high' ? 'bg-orange-500 text-white' :
+                  'bg-yellow-500 text-white'
+                }`}>
                   {signal.severity}
                 </Badge>
               </div>

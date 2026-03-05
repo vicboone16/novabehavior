@@ -1,4 +1,3 @@
-import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useCICaseloadFeed } from '@/hooks/useClinicalIntelligence';
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
@@ -12,8 +11,8 @@ function getRiskColor(score: number) {
 }
 
 export function CaseloadRiskWidget() {
-  const { agencyId } = useAgencyContext();
-  const { rows, loading } = useCICaseloadFeed(agencyId);
+  const { currentAgency } = useAgencyContext();
+  const { rows, loading } = useCICaseloadFeed(currentAgency?.id || null);
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
   if (rows.length === 0) return <p className="text-sm text-muted-foreground text-center py-4">No caseload data available</p>;
@@ -25,9 +24,7 @@ export function CaseloadRiskWidget() {
       {sorted.slice(0, 8).map(row => (
         <div key={row.client_id} className="flex items-center justify-between gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors">
           <div className="flex items-center gap-2 min-w-0">
-            <Badge className={`${getRiskColor(row.risk_score)} text-xs shrink-0`}>
-              {row.risk_score}
-            </Badge>
+            <Badge className={`${getRiskColor(row.risk_score)} text-xs shrink-0`}>{row.risk_score}</Badge>
             <span className="text-sm truncate">{row.client_name}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -40,9 +37,7 @@ export function CaseloadRiskWidget() {
           </div>
         </div>
       ))}
-      {rows.length > 8 && (
-        <p className="text-xs text-muted-foreground text-center">+{rows.length - 8} more clients</p>
-      )}
+      {rows.length > 8 && <p className="text-xs text-muted-foreground text-center">+{rows.length - 8} more clients</p>}
     </div>
   );
 }
