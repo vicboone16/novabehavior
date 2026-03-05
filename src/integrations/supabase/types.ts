@@ -2198,22 +2198,52 @@ export type Database = {
       }
       behavior_decision_trees: {
         Row: {
+          audience: string | null
           behavior_type: string | null
+          created_at: string | null
+          data_to_collect: string[] | null
+          escalation_protocol: string | null
+          function_of_behavior: string | null
           id: string
           recommended_response: string | null
+          reinforcement_strategy: string | null
+          replacement_behavior: string | null
+          severity: string | null
           trigger: string | null
+          trigger_context: string | null
+          updated_at: string | null
         }
         Insert: {
+          audience?: string | null
           behavior_type?: string | null
+          created_at?: string | null
+          data_to_collect?: string[] | null
+          escalation_protocol?: string | null
+          function_of_behavior?: string | null
           id?: string
           recommended_response?: string | null
+          reinforcement_strategy?: string | null
+          replacement_behavior?: string | null
+          severity?: string | null
           trigger?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
         }
         Update: {
+          audience?: string | null
           behavior_type?: string | null
+          created_at?: string | null
+          data_to_collect?: string[] | null
+          escalation_protocol?: string | null
+          function_of_behavior?: string | null
           id?: string
           recommended_response?: string | null
+          reinforcement_strategy?: string | null
+          replacement_behavior?: string | null
+          severity?: string | null
           trigger?: string | null
+          trigger_context?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -10541,6 +10571,7 @@ export type Database = {
       }
       lms_simulation_steps: {
         Row: {
+          behavior_function: string | null
           choices: Json | null
           correct_choice: string | null
           feedback: string | null
@@ -10550,6 +10581,7 @@ export type Database = {
           step_order: number | null
         }
         Insert: {
+          behavior_function?: string | null
           choices?: Json | null
           correct_choice?: string | null
           feedback?: string | null
@@ -10559,6 +10591,7 @@ export type Database = {
           step_order?: number | null
         }
         Update: {
+          behavior_function?: string | null
           choices?: Json | null
           correct_choice?: string | null
           feedback?: string | null
@@ -10579,19 +10612,40 @@ export type Database = {
       }
       lms_simulations: {
         Row: {
+          audience: string | null
+          category: string | null
+          created_at: string | null
           description: string | null
+          difficulty: string | null
+          estimated_minutes: number | null
           id: string
+          scenario_context: string | null
           title: string | null
+          updated_at: string | null
         }
         Insert: {
+          audience?: string | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          estimated_minutes?: number | null
           id?: string
+          scenario_context?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Update: {
+          audience?: string | null
+          category?: string | null
+          created_at?: string | null
           description?: string | null
+          difficulty?: string | null
+          estimated_minutes?: number | null
           id?: string
+          scenario_context?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
