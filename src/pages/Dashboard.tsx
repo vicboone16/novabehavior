@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ResponsiveGridLayout } from 'react-grid-layout';
+import { useState, useRef } from 'react';
+import { ResponsiveGridLayout as RGL } from 'react-grid-layout';
 import { useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { Plus, RotateCcw, Settings2 } from 'lucide-react';
@@ -12,9 +12,14 @@ import { WIDGET_COMPONENTS } from '@/components/dashboard/WidgetComponentMap';
 import { WIDGET_REGISTRY, getAvailableWidgetsForRole } from '@/lib/widget-registry';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Cast to any to avoid RGL v2 prop type conflicts
+const ResponsiveGridLayout = RGL as any;
+
 export default function Dashboard() {
   const { userRole } = useAuth();
   const role = userRole || 'viewer';
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { width } = useContainerWidth({ ref: containerRef });
   const {
     activeWidgets,
     layouts,
@@ -32,9 +37,52 @@ export default function Dashboard() {
 
   if (!initialized) return null;
 
+  const gridContent = activeWidgets.length > 0 ? (
+    <div ref={containerRef}>
+      <ResponsiveGridLayout
+        width={width || 1200}
+        className="layout"
+        layouts={layouts}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+        rowHeight={60}
+        onLayoutChange={onLayoutChange}
+        draggableHandle=".drag-handle"
+        compactType="vertical"
+        margin={[12, 12]}
+      >
+        {activeWidgets.map(widgetId => {
+          const def = WIDGET_REGISTRY.find(w => w.id === widgetId);
+          const comp = WIDGET_COMPONENTS[widgetId];
+          if (!def || !comp) return null;
+          return (
+            <div key={widgetId}>
+              <DashboardWidgetShell
+                title={def.title}
+                icon={comp.icon}
+                onRemove={() => removeWidget(widgetId)}
+              >
+                {comp.component()}
+              </DashboardWidgetShell>
+            </div>
+          );
+        })}
+      </ResponsiveGridLayout>
+    </div>
+  ) : (
+    <div className="bg-card border border-border rounded-xl p-12 text-center">
+      <Settings2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+      <h3 className="text-base font-semibold text-foreground mb-2">No widgets configured</h3>
+      <p className="text-sm text-muted-foreground mb-4">Add widgets to customize your dashboard</p>
+      <Button variant="outline" onClick={() => setAddPanelOpen(true)}>
+        <Plus className="w-4 h-4 mr-2" />
+        Add Widget
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-3">
-      {/* Toolbar */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-foreground">Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -78,46 +126,7 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
-
-      {/* Grid */}
-      {activeWidgets.length === 0 ? (
-        <div className="bg-card border border-border rounded-xl p-12 text-center">
-          <Settings2 className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-foreground mb-2">No widgets configured</h3>
-          <p className="text-sm text-muted-foreground mb-4">Add widgets to customize your dashboard</p>
-          <Button variant="outline" onClick={() => setAddPanelOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Widget
-          </Button>
-        </div>
-      ) : (
-        {/* @ts-ignore - RGL v2 props */}
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={layouts}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-          rowHeight={60}
-          onLayoutChange={onLayoutChange}
-        >
-          {activeWidgets.map(widgetId => {
-            const def = WIDGET_REGISTRY.find(w => w.id === widgetId);
-            const comp = WIDGET_COMPONENTS[widgetId];
-            if (!def || !comp) return null;
-            return (
-              <div key={widgetId}>
-                <DashboardWidgetShell
-                  title={def.title}
-                  icon={comp.icon}
-                  onRemove={() => removeWidget(widgetId)}
-                >
-                  {comp.component()}
-                </DashboardWidgetShell>
-              </div>
-            );
-          })}
-        </ResponsiveGridLayout>
-      )}
+      {gridContent}
     </div>
   );
 }
