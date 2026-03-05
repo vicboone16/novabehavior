@@ -86,10 +86,6 @@ export default function MainLayout() {
       case 'reports':
         navigate('/reports');
         break;
-      case 'assessment':
-        navigate('/assessment');
-        break;
-   
 
       case 'schedule':
         navigate('/schedule');
