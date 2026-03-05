@@ -80,6 +80,9 @@ export default function MainLayout() {
       case 'students':
         navigate('/students');
         break;
+      case 'clinical':
+        navigate('/clinical');
+        break;
       case 'reports':
         navigate('/reports');
         break;
