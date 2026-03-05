@@ -1,4 +1,4 @@
-import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity } from 'lucide-react';
+import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar } from 'lucide-react';
 import { NextUpWidgetContent } from './widgets/NextUpWidgetContent';
 import { CaseloadRiskWidget } from './widgets/CaseloadRiskWidget';
 import { AlertsFeedWidget } from './widgets/AlertsFeedWidget';
@@ -7,6 +7,9 @@ import { ClassroomLiveWidget } from './widgets/ClassroomLiveWidget';
 import { SupervisorSignalsWidget } from './widgets/SupervisorSignalsWidget';
 import { BillingOverviewWidget } from './widgets/BillingOverviewWidget';
 import { UtilizationWidget } from './widgets/UtilizationWidget';
+import { RecentSessionNotesWidget } from './widgets/RecentSessionNotesWidget';
+import { ParentCommsWidget } from './widgets/ParentCommsWidget';
+import { ScheduleOverviewWidget } from './widgets/ScheduleOverviewWidget';
 import type { ReactNode } from 'react';
 
 interface WidgetComponent {
@@ -46,5 +49,17 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'utilization': {
     component: () => <UtilizationWidget />,
     icon: <Activity className="w-4 h-4 text-primary" />,
+  },
+  'recent-notes': {
+    component: () => <RecentSessionNotesWidget />,
+    icon: <FileText className="w-4 h-4 text-blue-500" />,
+  },
+  'parent-comms': {
+    component: () => <ParentCommsWidget />,
+    icon: <MessageSquare className="w-4 h-4 text-violet-500" />,
+  },
+  'schedule-overview': {
+    component: () => <ScheduleOverviewWidget />,
+    icon: <Calendar className="w-4 h-4 text-primary" />,
   },
 };

@@ -10,6 +10,7 @@ import { DashboardWidgetShell } from '@/components/dashboard/DashboardWidgetShel
 import { WIDGET_COMPONENTS } from '@/components/dashboard/WidgetComponentMap';
 import { WIDGET_REGISTRY, getAvailableWidgetsForRole } from '@/lib/widget-registry';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ResponsiveGridLayout = RGL as any;
 
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const role = userRole || 'viewer';
   const containerRef = useRef<HTMLDivElement>(null);
   const width = useContainerWidth(containerRef);
+  const isMobile = useIsMobile();
   const {
     activeWidgets, layouts, initialized,
     onLayoutChange, addWidget, removeWidget, resetToDefaults,
@@ -41,6 +43,71 @@ export default function Dashboard() {
   const availableToAdd = getAvailableWidgetsForRole(role).filter(w => !activeWidgets.includes(w.id));
 
   if (!initialized) return null;
+
+  // Mobile: render stacked cards without grid drag
+  if (isMobile) {
+    return (
+      <div className="space-y-3 px-1">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-foreground">Dashboard</h1>
+          <div className="flex items-center gap-1.5">
+            <Sheet open={addPanelOpen} onOpenChange={setAddPanelOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1 h-8 text-xs">
+                  <Plus className="w-3 h-3" />Add
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="max-h-[70vh] rounded-t-2xl">
+                <SheetHeader><SheetTitle>Add Widgets</SheetTitle></SheetHeader>
+                <div className="mt-4 space-y-2 overflow-y-auto">
+                  {availableToAdd.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">All widgets added</p>
+                  ) : availableToAdd.map(w => (
+                    <button key={w.id} onClick={() => { addWidget(w.id); setAddPanelOpen(false); }}
+                      className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{w.title}</span>
+                        <Badge variant="secondary" className="text-[10px]">{w.category}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{w.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={resetToDefaults}>
+              <RotateCcw className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+
+        {activeWidgets.length === 0 ? (
+          <div className="bg-card border border-border rounded-xl p-8 text-center">
+            <Settings2 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">No widgets configured</p>
+            <Button variant="outline" size="sm" onClick={() => setAddPanelOpen(true)}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" />Add Widget
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activeWidgets.map(widgetId => {
+              const def = WIDGET_REGISTRY.find(w => w.id === widgetId);
+              const comp = WIDGET_COMPONENTS[widgetId];
+              if (!def || !comp) return null;
+              return (
+                <div key={widgetId} className="min-h-[200px]">
+                  <DashboardWidgetShell title={def.title} icon={comp.icon} onRemove={() => removeWidget(widgetId)}>
+                    {comp.component()}
+                  </DashboardWidgetShell>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
