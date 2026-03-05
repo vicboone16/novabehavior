@@ -122,6 +122,10 @@ export function useAgencyContext(): AgencyContext {
 
       // Refresh to get new context
       await fetchAgencies();
+      
+      // Broadcast agency change so all useAgencyContext instances re-fetch
+      window.dispatchEvent(new CustomEvent('agency-switched', { detail: { agencyId } }));
+      
       return true;
     } catch (error) {
       console.error('Error switching agency:', error);
