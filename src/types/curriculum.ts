@@ -63,7 +63,7 @@ export interface CurriculumItem {
   forked_from_id?: string | null;
   modified_by?: string | null;
   modified_at?: string | null;
-  edit_history?: Array<{ editedBy: string; editedAt: string; changes: string }>;
+  edit_history?: unknown;
   created_at: string;
   updated_at: string;
   // Joined fields
