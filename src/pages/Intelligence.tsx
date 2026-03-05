@@ -172,6 +172,14 @@ export default function Intelligence() {
     return [...alerts].sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
   }, [alerts]);
 
+  // Filtered signals
+  const filteredSignals = useMemo(() => {
+    const severityOrder: Record<string, number> = { critical: 0, high: 1, action: 2, watch: 3 };
+    let data = [...signals];
+    if (signalTypeFilter !== 'all') data = data.filter(s => s.signal_type === signalTypeFilter);
+    return data.sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
+  }, [signals, signalTypeFilter]);
+
   if (accessLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
