@@ -76,19 +76,46 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     allowedRoles: ['admin', 'super_admin'],
     defaultLayout: { w: 6, h: 4, minW: 3, minH: 3 },
   },
+  {
+    id: 'recent-notes',
+    title: 'Recent Session Notes',
+    description: 'Your latest session notes with status',
+    icon: 'FileText',
+    category: 'clinical',
+    allowedRoles: [],
+    defaultLayout: { w: 6, h: 4, minW: 3, minH: 3 },
+  },
+  {
+    id: 'parent-comms',
+    title: 'Parent Communications',
+    description: 'Recent messages with parents and caregivers',
+    icon: 'MessageSquare',
+    category: 'core',
+    allowedRoles: [],
+    defaultLayout: { w: 6, h: 4, minW: 3, minH: 3 },
+  },
+  {
+    id: 'schedule-overview',
+    title: 'Today\'s Schedule',
+    description: 'Your appointments for today at a glance',
+    icon: 'Calendar',
+    category: 'core',
+    allowedRoles: [],
+    defaultLayout: { w: 6, h: 5, minW: 3, minH: 3 },
+  },
 ];
 
 /** Role-based default widget presets */
 export const ROLE_PRESETS: Record<string, string[]> = {
   // Core widgets everyone sees
-  _core: ['next-up'],
+  _core: ['next-up', 'schedule-overview'],
   // Role-specific additions
-  super_admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization'],
-  admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization'],
-  bcba: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals'],
-  rbt: ['classroom-live', 'trending-behaviors'],
-  teacher: ['classroom-live'],
-  parent: ['trending-behaviors'],
+  super_admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
+  admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
+  bcba: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'recent-notes'],
+  rbt: ['classroom-live', 'trending-behaviors', 'recent-notes'],
+  teacher: ['classroom-live', 'parent-comms'],
+  parent: ['trending-behaviors', 'parent-comms'],
   viewer: [],
 };
 
