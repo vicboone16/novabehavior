@@ -62,7 +62,7 @@ export function useDashboardLayout() {
 
           if (!cancelled && data) {
             setActiveWidgets(data.widgets as string[]);
-            setLayouts(data.layouts as Record<string, GridLayoutItem[]>);
+            setLayouts(data.layouts as unknown as Record<string, GridLayoutItem[]>);
             setInitialized(true);
             return;
           }

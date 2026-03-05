@@ -13,12 +13,12 @@ export function RecentSessionNotesWidget() {
     refetchInterval: 120_000,
     queryFn: async () => {
       const { data } = await supabase
-        .from('session_notes')
-        .select('id, created_at, status, session_id, sessions(student_id, students(first_name, last_name))')
+        .from('session_notes' as any)
+        .select('id, created_at, status, session_id')
         .eq('author_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(6);
-      return data || [];
+      return (data as any[]) || [];
     },
   });
 
@@ -44,15 +44,13 @@ export function RecentSessionNotesWidget() {
   return (
     <div className="space-y-1.5">
       {notes.map((note: any) => {
-        const student = note.sessions?.students;
-        const name = student ? `${student.first_name} ${student.last_name?.[0] || ''}.` : 'Unknown';
         const statusColor = note.status === 'finalized' ? 'bg-emerald-500' : note.status === 'draft' ? 'bg-amber-500' : 'bg-muted-foreground';
 
         return (
           <div key={note.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusColor}`} />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate">{name}</p>
+              <p className="text-xs font-medium truncate">Session Note</p>
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <Clock className="w-2.5 h-2.5" />
                 {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}

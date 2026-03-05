@@ -13,12 +13,12 @@ export function ParentCommsWidget() {
     refetchInterval: 60_000,
     queryFn: async () => {
       const { data } = await supabase
-        .from('messages')
-        .select('id, content, created_at, sender_id, recipient_id, read_at, sender:profiles!messages_sender_id_fkey(display_name)')
+        .from('messages' as any)
+        .select('id, content, created_at, sender_id, recipient_id, read_at')
         .or(`sender_id.eq.${user!.id},recipient_id.eq.${user!.id}`)
         .order('created_at', { ascending: false })
         .limit(8);
-      return data || [];
+      return (data as any[]) || [];
     },
   });
 
@@ -45,7 +45,6 @@ export function ParentCommsWidget() {
     <div className="space-y-1.5">
       {messages.map((msg: any) => {
         const isSent = msg.sender_id === user?.id;
-        const senderName = msg.sender?.display_name || 'Unknown';
         const isUnread = !isSent && !msg.read_at;
 
         return (
@@ -55,7 +54,7 @@ export function ParentCommsWidget() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
-                <span className="text-xs font-medium truncate">{isSent ? 'You' : senderName}</span>
+                <span className="text-xs font-medium truncate">{isSent ? 'You' : 'Parent'}</span>
                 {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
               </div>
               <p className="text-[10px] text-muted-foreground line-clamp-1">{msg.content}</p>
