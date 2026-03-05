@@ -63,8 +63,8 @@ export default function MainLayout() {
   const getActiveTab = () => {
     if (location.pathname.startsWith('/students')) return 'students';
     if (location.pathname.startsWith('/clinical')) return 'clinical';
+    if (location.pathname.startsWith('/assessment')) return 'clinical'; // redirect assessment to clinical
     if (location.pathname.startsWith('/reports')) return 'reports';
-    if (location.pathname.startsWith('/assessment')) return 'assessment';
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
