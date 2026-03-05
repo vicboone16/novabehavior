@@ -9874,6 +9874,38 @@ export type Database = {
           },
         ]
       }
+      lms_activities: {
+        Row: {
+          activity_type: string | null
+          data: Json | null
+          id: string
+          instructions: string | null
+          lesson_id: string | null
+        }
+        Insert: {
+          activity_type?: string | null
+          data?: Json | null
+          id?: string
+          instructions?: string | null
+          lesson_id?: string | null
+        }
+        Update: {
+          activity_type?: string | null
+          data?: Json | null
+          id?: string
+          instructions?: string | null
+          lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_activities_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lms_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lms_assignments: {
         Row: {
           assigned_at: string
@@ -9917,6 +9949,182 @@ export type Database = {
             columns: ["source_alert_id"]
             isOneToOne: false
             referencedRelation: "ci_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_courses: {
+        Row: {
+          audience: string | null
+          created_at: string | null
+          description: string | null
+          estimated_minutes: number | null
+          id: string
+          title: string | null
+        }
+        Insert: {
+          audience?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          title?: string | null
+        }
+        Update: {
+          audience?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      lms_lessons: {
+        Row: {
+          content: Json | null
+          id: string
+          lesson_type: string | null
+          module_id: string | null
+          order_index: number | null
+          title: string | null
+        }
+        Insert: {
+          content?: Json | null
+          id?: string
+          lesson_type?: string | null
+          module_id?: string | null
+          order_index?: number | null
+          title?: string | null
+        }
+        Update: {
+          content?: Json | null
+          id?: string
+          lesson_type?: string | null
+          module_id?: string | null
+          order_index?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "lms_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_modules: {
+        Row: {
+          course_id: string | null
+          estimated_minutes: number | null
+          id: string
+          order_index: number | null
+          title: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          order_index?: number | null
+          title?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          order_index?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "lms_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          id: string
+          lesson_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      lms_questions: {
+        Row: {
+          correct_answer: string | null
+          id: string
+          options: Json | null
+          question: string | null
+          quiz_id: string | null
+        }
+        Insert: {
+          correct_answer?: string | null
+          id?: string
+          options?: Json | null
+          question?: string | null
+          quiz_id?: string | null
+        }
+        Update: {
+          correct_answer?: string | null
+          id?: string
+          options?: Json | null
+          question?: string | null
+          quiz_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "lms_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_quizzes: {
+        Row: {
+          id: string
+          lesson_id: string | null
+          title: string | null
+        }
+        Insert: {
+          id?: string
+          lesson_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          id?: string
+          lesson_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_quizzes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lms_lessons"
             referencedColumns: ["id"]
           },
         ]
