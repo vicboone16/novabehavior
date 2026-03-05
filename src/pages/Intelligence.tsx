@@ -4,7 +4,8 @@ import {
   Brain, AlertTriangle, TrendingUp, TrendingDown, Minus, 
   Shield, Activity, Users, Clock, Target, Heart, 
   ChevronRight, CheckCircle2, XCircle, Search,
-  Building2, CalendarClock, FileWarning
+  Building2, CalendarClock, FileWarning, Radio, Zap,
+  Eye, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -17,6 +18,7 @@ import {
   type AlertFeedRow
 } from '@/hooks/useClinicalIntelligence';
 import { useClinicalTracking } from '@/hooks/useClinicalTracking';
+import { useSupervisorSignals, type SupervisorSignal } from '@/hooks/useSupervisorSignals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -116,10 +118,12 @@ export default function Intelligence() {
   const { alerts, loading: alertsLoading, resolveAlert } = useCIAlertFeed(effectiveAgencyId);
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
   const { authorizations, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
+  const { signals, loading: signalsLoading, resolveSignal } = useSupervisorSignals(effectiveAgencyId);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [trendFilter, setTrendFilter] = useState<string>('all');
+  const [signalTypeFilter, setSignalTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('caseload');
 
   // Agency display name
@@ -167,6 +171,14 @@ export default function Intelligence() {
     const severityOrder: Record<string, number> = { critical: 0, action: 1, high: 1, watch: 2, medium: 2, info: 3 };
     return [...alerts].sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
   }, [alerts]);
+
+  // Filtered signals
+  const filteredSignals = useMemo(() => {
+    const severityOrder: Record<string, number> = { critical: 0, high: 1, action: 2, watch: 3 };
+    let data = [...signals];
+    if (signalTypeFilter !== 'all') data = data.filter(s => s.signal_type === signalTypeFilter);
+    return data.sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
+  }, [signals, signalTypeFilter]);
 
   if (accessLoading) {
     return (
@@ -250,6 +262,13 @@ export default function Intelligence() {
             Alerts
             {kpis.openAlerts > 0 && (
               <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5 py-0">{kpis.openAlerts}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="signals">
+            <Radio className="w-4 h-4 mr-1" />
+            Signals
+            {signals.length > 0 && (
+              <Badge className="ml-1.5 text-[10px] px-1.5 py-0 bg-orange-500 text-white">{signals.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="clinical-tracking">
@@ -416,6 +435,93 @@ export default function Intelligence() {
                           if (!user) return;
                           const ok = await resolveAlert(alert.alert_id, user.id);
                           if (ok) toast.success('Alert resolved');
+                        }}
+                      >
+                        Resolve
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* Signals Tab */}
+        <TabsContent value="signals" className="space-y-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <Select value={signalTypeFilter} onValueChange={setSignalTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Signal Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="escalation">Escalation</SelectItem>
+                <SelectItem value="incident">Incident</SelectItem>
+                <SelectItem value="risk">High Risk</SelectItem>
+                <SelectItem value="pattern">Pattern</SelectItem>
+                <SelectItem value="reinforcement">Reinforcement Gap</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground ml-auto">
+              <Radio className="w-3.5 h-3.5 text-primary animate-pulse" />
+              Live — updates in real-time
+            </div>
+          </div>
+
+          {signalsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredSignals.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ShieldAlert className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="font-medium">No active signals</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supervisor signals appear here when escalation spikes, high-severity incidents, or pattern detections are triggered.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredSignals.map(signal => (
+              <Card key={signal.id} className={signal.severity === 'critical' ? 'border-destructive/40' : signal.severity === 'high' ? 'border-orange-500/40' : ''}>
+                <CardContent className="py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="shrink-0 mt-0.5">
+                        {signal.severity === 'critical' ? (
+                          <Zap className="w-5 h-5 text-destructive" />
+                        ) : signal.severity === 'high' ? (
+                          <AlertTriangle className="w-5 h-5 text-orange-500" />
+                        ) : (
+                          <Eye className="w-5 h-5 text-yellow-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <SeverityBadge severity={signal.severity} />
+                          <Badge variant="outline" className="text-[10px]">{signal.signal_type}</Badge>
+                          <span className="text-[10px] text-muted-foreground uppercase">{signal.source}</span>
+                        </div>
+                        <p className="font-medium text-sm">{signal.title}</p>
+                        {signal.message && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{signal.message}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                          {signal.client_name && <span className="font-medium text-foreground">{signal.client_name}</span>}
+                          <span>{new Date(signal.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          if (!user) return;
+                          const ok = await resolveSignal(signal.id, user.id);
+                          if (ok) toast.success('Signal resolved');
                         }}
                       >
                         Resolve
