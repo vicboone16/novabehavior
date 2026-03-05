@@ -10248,24 +10248,36 @@ export type Database = {
       lms_badges: {
         Row: {
           created_at: string | null
+          criteria: Json | null
           description: string | null
           icon: string | null
           id: string
           name: string | null
+          slug: string | null
+          title: string | null
+          xp_value: number | null
         }
         Insert: {
           created_at?: string | null
+          criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string | null
+          slug?: string | null
+          title?: string | null
+          xp_value?: number | null
         }
         Update: {
           created_at?: string | null
+          criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string | null
+          slug?: string | null
+          title?: string | null
+          xp_value?: number | null
         }
         Relationships: []
       }
