@@ -20113,6 +20113,14 @@ export type Database = {
         Args: { p_agency_id: string; p_date: string }
         Returns: Json
       }
+      fn_check_step_mastery: {
+        Args: {
+          p_consecutive_sessions?: number
+          p_step_id: string
+          p_threshold?: number
+        }
+        Returns: boolean
+      }
       fn_effective_billing_policy: {
         Args: { p_agency_id: string; p_user_id: string }
         Returns: Json
@@ -20120,6 +20128,33 @@ export type Database = {
       fn_round_minutes: {
         Args: { p_minutes: number; p_round_to: number }
         Returns: number
+      }
+      fn_step_trial_metrics: {
+        Args: { p_step_id: string; p_window_days?: number }
+        Returns: {
+          incorrect_count: number
+          independent_count: number
+          pct_independent: number
+          pdi: number
+          prompted_count: number
+          step_id: string
+          total_opportunities: number
+        }[]
+      }
+      fn_target_trial_metrics: {
+        Args: { p_target_id: string; p_window_days?: number }
+        Returns: {
+          incorrect_count: number
+          independent_count: number
+          pct_correct: number
+          pct_incorrect: number
+          pct_independent: number
+          pct_prompted: number
+          pdi: number
+          prompted_count: number
+          target_id: string
+          total_opportunities: number
+        }[]
       }
       fork_curriculum_item: {
         Args: { _agency_id: string; _item_id: string }
