@@ -4891,6 +4891,30 @@ export type Database = {
           },
         ]
       }
+      client_app_links: {
+        Row: {
+          app_slug: string
+          client_id: string
+          id: string
+          is_active: boolean
+          linked_at: string | null
+        }
+        Insert: {
+          app_slug: string
+          client_id: string
+          id?: string
+          is_active?: boolean
+          linked_at?: string | null
+        }
+        Update: {
+          app_slug?: string
+          client_id?: string
+          id?: string
+          is_active?: boolean
+          linked_at?: string | null
+        }
+        Relationships: []
+      }
       client_case_attributes: {
         Row: {
           attribute_key: string
