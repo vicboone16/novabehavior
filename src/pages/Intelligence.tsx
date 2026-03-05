@@ -123,6 +123,7 @@ export default function Intelligence() {
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [trendFilter, setTrendFilter] = useState<string>('all');
+  const [signalTypeFilter, setSignalTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('caseload');
 
   // Agency display name
