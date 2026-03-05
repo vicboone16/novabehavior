@@ -118,6 +118,7 @@ export default function Intelligence() {
   const { alerts, loading: alertsLoading, resolveAlert } = useCIAlertFeed(effectiveAgencyId);
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
   const { authorizations, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
+  const { signals, loading: signalsLoading, resolveSignal } = useSupervisorSignals(effectiveAgencyId);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
