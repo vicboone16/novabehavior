@@ -13,7 +13,8 @@ import {
   DollarSign,
   BookOpen,
   Smartphone,
-  Menu
+  Menu,
+  Stethoscope
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -61,9 +62,9 @@ export default function MainLayout() {
   // Determine active tab from path
   const getActiveTab = () => {
     if (location.pathname.startsWith('/students')) return 'students';
+    if (location.pathname.startsWith('/clinical')) return 'clinical';
     if (location.pathname.startsWith('/reports')) return 'reports';
     if (location.pathname.startsWith('/assessment')) return 'assessment';
-    
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
@@ -78,6 +79,9 @@ export default function MainLayout() {
         break;
       case 'students':
         navigate('/students');
+        break;
+      case 'clinical':
+        navigate('/clinical');
         break;
       case 'reports':
         navigate('/reports');
@@ -209,6 +213,13 @@ export default function MainLayout() {
               >
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 {entityLabel.plural}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="clinical" 
+                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
+              >
+                <Stethoscope className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                Clinical
               </TabsTrigger>
               <TabsTrigger 
                 value="assessment" 

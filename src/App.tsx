@@ -15,6 +15,7 @@ import Students from "./pages/Students";
 import StudentProfile from "./pages/StudentProfile";
 import Reports from "./pages/Reports";
 import AssessmentDashboard from "./pages/AssessmentDashboard";
+import Clinical from "./pages/Clinical";
 import SkillAcquisition from "./pages/SkillAcquisition";
 import NotesReview from "./pages/NotesReview";
 import Auth from "./pages/Auth";
@@ -338,6 +339,7 @@ const App = () => {
               <Route path="/students/:studentId" element={<StudentProfile />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/assessment" element={<AssessmentDashboard />} />
+              <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/notes-review" element={<NotesReview />} />
