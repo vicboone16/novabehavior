@@ -63,8 +63,8 @@ export default function MainLayout() {
   const getActiveTab = () => {
     if (location.pathname.startsWith('/students')) return 'students';
     if (location.pathname.startsWith('/clinical')) return 'clinical';
+    if (location.pathname.startsWith('/assessment')) return 'clinical'; // redirect assessment to clinical
     if (location.pathname.startsWith('/reports')) return 'reports';
-    if (location.pathname.startsWith('/assessment')) return 'assessment';
     if (location.pathname.startsWith('/schedule')) return 'schedule';
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
@@ -86,10 +86,6 @@ export default function MainLayout() {
       case 'reports':
         navigate('/reports');
         break;
-      case 'assessment':
-        navigate('/assessment');
-        break;
-   
 
       case 'schedule':
         navigate('/schedule');
@@ -221,13 +217,8 @@ export default function MainLayout() {
                 <Stethoscope className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 Clinical
               </TabsTrigger>
-              <TabsTrigger 
-                value="assessment" 
-                className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
-              >
-                <ClipboardCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Assessment
-              </TabsTrigger>
+
+
 
 
               <TabsTrigger 

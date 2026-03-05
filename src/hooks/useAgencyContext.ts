@@ -109,6 +109,13 @@ export function useAgencyContext(): AgencyContext {
     fetchAgencies();
   }, [fetchAgencies]);
 
+  // Listen for agency switches from other hook instances
+  useEffect(() => {
+    const handler = () => { fetchAgencies(); };
+    window.addEventListener('agency-switched', handler);
+    return () => window.removeEventListener('agency-switched', handler);
+  }, [fetchAgencies]);
+
   const switchAgency = async (agencyId: string): Promise<boolean> => {
     if (!user) return false;
 
@@ -122,6 +129,10 @@ export function useAgencyContext(): AgencyContext {
 
       // Refresh to get new context
       await fetchAgencies();
+      
+      // Broadcast agency change so all useAgencyContext instances re-fetch
+      window.dispatchEvent(new CustomEvent('agency-switched', { detail: { agencyId } }));
+      
       return true;
     } catch (error) {
       console.error('Error switching agency:', error);
