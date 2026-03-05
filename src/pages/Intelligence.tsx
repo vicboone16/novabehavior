@@ -264,6 +264,13 @@ export default function Intelligence() {
               <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5 py-0">{kpis.openAlerts}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="signals">
+            <Radio className="w-4 h-4 mr-1" />
+            Signals
+            {signals.length > 0 && (
+              <Badge className="ml-1.5 text-[10px] px-1.5 py-0 bg-orange-500 text-white">{signals.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="clinical-tracking">
             <CalendarClock className="w-4 h-4 mr-1" />
             Clinical Tracking
