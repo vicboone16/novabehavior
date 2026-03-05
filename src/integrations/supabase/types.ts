@@ -10032,6 +10032,7 @@ export type Database = {
       }
       lms_courses: {
         Row: {
+          app_visibility: string[] | null
           audience: string | null
           created_at: string | null
           description: string | null
@@ -10041,6 +10042,7 @@ export type Database = {
           title: string | null
         }
         Insert: {
+          app_visibility?: string[] | null
           audience?: string | null
           created_at?: string | null
           description?: string | null
@@ -10050,6 +10052,7 @@ export type Database = {
           title?: string | null
         }
         Update: {
+          app_visibility?: string[] | null
           audience?: string | null
           created_at?: string | null
           description?: string | null
