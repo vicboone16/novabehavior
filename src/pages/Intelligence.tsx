@@ -18,6 +18,7 @@ import {
   type AlertFeedRow
 } from '@/hooks/useClinicalIntelligence';
 import { useClinicalTracking } from '@/hooks/useClinicalTracking';
+import { useSupervisorSignals, type SupervisorSignal } from '@/hooks/useSupervisorSignals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
