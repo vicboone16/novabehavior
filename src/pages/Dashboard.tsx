@@ -91,15 +91,14 @@ export default function Dashboard() {
           </Button>
         </div>
       ) : (
+        {/* @ts-ignore - RGL v2 props */}
         <ResponsiveGridLayout
           className="layout"
-          layouts={layouts as any}
+          layouts={layouts}
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
           cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
           rowHeight={60}
-          onLayoutChange={onLayoutChange as any}
-          compactType="vertical"
-          margin={[12, 12] as any}
+          onLayoutChange={onLayoutChange}
         >
           {activeWidgets.map(widgetId => {
             const def = WIDGET_REGISTRY.find(w => w.id === widgetId);
