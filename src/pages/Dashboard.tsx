@@ -42,6 +42,9 @@ export default function Dashboard() {
 
   const availableToAdd = getAvailableWidgetsForRole(role).filter(w => !activeWidgets.includes(w.id));
 
+  // Debug: log widget state for troubleshooting
+  console.log('[Dashboard] role:', role, 'activeWidgets:', activeWidgets, 'availableToAdd:', availableToAdd.map(w => w.id));
+
   if (!initialized) return null;
 
   // Mobile: render stacked cards without grid drag
