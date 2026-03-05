@@ -112,6 +112,8 @@ export const ROLE_PRESETS: Record<string, string[]> = {
   // Role-specific additions
   super_admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
   admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
+  // 'staff' is the resolved role for bcba/rbt in AuthContext
+  staff: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'recent-notes'],
   bcba: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'recent-notes'],
   rbt: ['classroom-live', 'trending-behaviors', 'recent-notes'],
   teacher: ['classroom-live', 'parent-comms'],
