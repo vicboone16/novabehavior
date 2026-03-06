@@ -54,6 +54,7 @@ import IntelligenceOps from "./pages/IntelligenceOps";
 import ClientDrilldown from "./pages/ClientDrilldown";
 import { StaffProfilePage } from "./components/staff-profile";
 import StaffAssignments from "./pages/StaffAssignments";
+import IncidentLogs from "./pages/IncidentLogs";
  import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
  import PayerDetailPage from "./pages/payers/PayerDetailPage";
  import ServiceDetailPage from "./pages/payers/ServiceDetailPage";
