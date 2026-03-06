@@ -6546,6 +6546,79 @@ export type Database = {
           },
         ]
       }
+      client_intervention_plan_items: {
+        Row: {
+          created_at: string | null
+          custom_fidelity_checklist: Json | null
+          custom_reinforcement: Json | null
+          custom_scripts: Json | null
+          custom_steps: Json | null
+          custom_title: string | null
+          data_collection_method: string | null
+          intervention_id: string | null
+          item_id: string
+          mastery_criteria: Json | null
+          plan_id: string
+          sort_order: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_fidelity_checklist?: Json | null
+          custom_reinforcement?: Json | null
+          custom_scripts?: Json | null
+          custom_steps?: Json | null
+          custom_title?: string | null
+          data_collection_method?: string | null
+          intervention_id?: string | null
+          item_id?: string
+          mastery_criteria?: Json | null
+          plan_id: string
+          sort_order?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_fidelity_checklist?: Json | null
+          custom_reinforcement?: Json | null
+          custom_scripts?: Json | null
+          custom_steps?: Json | null
+          custom_title?: string | null
+          data_collection_method?: string | null
+          intervention_id?: string | null
+          item_id?: string
+          mastery_criteria?: Json | null
+          plan_id?: string
+          sort_order?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_plan_items_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_plan_items_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plans"
+            referencedColumns: ["plan_id"]
+          },
+        ]
+      }
       client_intervention_plans: {
         Row: {
           agency_id: string
@@ -6841,6 +6914,121 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      client_plan_data_links: {
+        Row: {
+          created_at: string | null
+          item_id: string
+          link_id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          item_id: string
+          link_id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string | null
+          item_id?: string
+          link_id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plan_data_links_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plan_items"
+            referencedColumns: ["item_id"]
+          },
+        ]
+      }
+      client_plan_fidelity_runs: {
+        Row: {
+          checklist_results: Json
+          created_at: string | null
+          item_id: string
+          notes: string | null
+          observed_at: string | null
+          observer_user_id: string | null
+          run_id: string
+          score_pct: number | null
+        }
+        Insert: {
+          checklist_results?: Json
+          created_at?: string | null
+          item_id: string
+          notes?: string | null
+          observed_at?: string | null
+          observer_user_id?: string | null
+          run_id?: string
+          score_pct?: number | null
+        }
+        Update: {
+          checklist_results?: Json
+          created_at?: string | null
+          item_id?: string
+          notes?: string | null
+          observed_at?: string | null
+          observer_user_id?: string | null
+          run_id?: string
+          score_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plan_fidelity_runs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plan_items"
+            referencedColumns: ["item_id"]
+          },
+        ]
+      }
+      client_plan_notes: {
+        Row: {
+          author_user_id: string | null
+          content: string
+          created_at: string | null
+          item_id: string | null
+          note_id: string
+          plan_id: string | null
+        }
+        Insert: {
+          author_user_id?: string | null
+          content: string
+          created_at?: string | null
+          item_id?: string | null
+          note_id?: string
+          plan_id?: string | null
+        }
+        Update: {
+          author_user_id?: string | null
+          content?: string
+          created_at?: string | null
+          item_id?: string | null
+          note_id?: string
+          plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plan_notes_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plan_items"
+            referencedColumns: ["item_id"]
+          },
+          {
+            foreignKeyName: "client_plan_notes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plans"
+            referencedColumns: ["plan_id"]
           },
         ]
       }
@@ -16459,6 +16647,304 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "plan_item_publications"
             referencedColumns: ["publication_id"]
+          },
+        ]
+      }
+      published_plan_data_logs: {
+        Row: {
+          created_at: string | null
+          data_type: string
+          log_id: string
+          publish_id: string
+          recorded_at: string | null
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          data_type: string
+          log_id?: string
+          publish_id: string
+          recorded_at?: string | null
+          user_id: string
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          data_type?: string
+          log_id?: string
+          publish_id?: string
+          recorded_at?: string | null
+          user_id?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_data_logs_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
+          },
+        ]
+      }
+      published_plan_data_permissions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          permission_id: string
+          publish_id: string
+          requested_by: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          permission_id?: string
+          publish_id: string
+          requested_by: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          permission_id?: string
+          publish_id?: string
+          requested_by?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_data_permissions_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
+          },
+        ]
+      }
+      published_plan_items: {
+        Row: {
+          agency_id: string | null
+          client_id: string
+          created_at: string | null
+          data_collection_mode: string
+          item_id: string
+          publish_id: string
+          published_by: string | null
+          status: string
+          target_portal: string
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          client_id: string
+          created_at?: string | null
+          data_collection_mode?: string
+          item_id: string
+          publish_id?: string
+          published_by?: string | null
+          status?: string
+          target_portal: string
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          data_collection_mode?: string
+          item_id?: string
+          publish_id?: string
+          published_by?: string | null
+          status?: string
+          target_portal?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_plan_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plan_items"
+            referencedColumns: ["item_id"]
+          },
+        ]
+      }
+      published_plan_notifications: {
+        Row: {
+          agency_id: string | null
+          body: string | null
+          client_id: string | null
+          created_at: string | null
+          is_read: boolean | null
+          notification_id: string
+          notification_type: string
+          publish_id: string | null
+          read_at: string | null
+          recipient_user_id: string
+          title: string
+        }
+        Insert: {
+          agency_id?: string | null
+          body?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          is_read?: boolean | null
+          notification_id?: string
+          notification_type: string
+          publish_id?: string | null
+          read_at?: string | null
+          recipient_user_id: string
+          title: string
+        }
+        Update: {
+          agency_id?: string | null
+          body?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          is_read?: boolean | null
+          notification_id?: string
+          notification_type?: string
+          publish_id?: string | null
+          read_at?: string | null
+          recipient_user_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_notifications_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_plan_notifications_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
+          },
+        ]
+      }
+      published_plan_reactions: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          publish_id: string
+          reaction_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          publish_id: string
+          reaction_id?: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          publish_id?: string
+          reaction_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_reactions_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
+          },
+        ]
+      }
+      published_plan_recipients: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string | null
+          publish_id: string
+          recipient_id: string
+          recipient_type: string
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          publish_id: string
+          recipient_id?: string
+          recipient_type: string
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          publish_id?: string
+          recipient_id?: string
+          recipient_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_recipients_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
+          },
+        ]
+      }
+      published_plan_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string | null
+          publish_id: string
+          snapshot: Json
+          version_id: string
+          version_num: number
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string | null
+          publish_id: string
+          snapshot: Json
+          version_id?: string
+          version_num?: number
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string | null
+          publish_id?: string
+          snapshot?: Json
+          version_id?: string
+          version_num?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_plan_versions_publish_id_fkey"
+            columns: ["publish_id"]
+            isOneToOne: false
+            referencedRelation: "published_plan_items"
+            referencedColumns: ["publish_id"]
           },
         ]
       }
