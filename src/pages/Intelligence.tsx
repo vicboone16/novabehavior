@@ -160,10 +160,11 @@ export default function Intelligence() {
     const total = caseloadRows.length;
     const highRisk = caseloadRows.filter(m => (m.risk_score ?? 0) >= 75).length;
     const staleData = caseloadRows.filter(m => (m.data_freshness ?? 100) <= 20).length;
+    const plateauedGoals = caseloadRows.filter(m => (m.goal_velocity_score ?? 100) < 30).length;
     const lowFidelity = caseloadRows.filter(m => (m.fidelity_score ?? 100) < 80).length;
     const lowParent = caseloadRows.filter(m => (m.parent_impl_score ?? 100) < 60).length;
-    const openAlerts = alerts.length; // v_ci_alert_feed only returns unresolved
-    return { total, highRisk, staleData, lowFidelity, lowParent, openAlerts };
+    const openAlerts = alerts.length;
+    return { total, highRisk, staleData, plateauedGoals, lowFidelity, lowParent, openAlerts };
   }, [caseloadRows, alerts]);
 
   // Sorted alerts (all unresolved from view)
