@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen, Users, GraduationCap, Layers, ShieldCheck, Download } from 'lucide-react';
+import { ArrowLeft, BookOpen, Users, GraduationCap, Layers, ShieldCheck, Download, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSDCTraining } from '@/hooks/useSDCTraining';
+import { OverviewTab } from '@/components/sdc-training/OverviewTab';
 import { InstructorGuideTab } from '@/components/sdc-training/InstructorGuideTab';
 import { StaffWorkbookTab } from '@/components/sdc-training/StaffWorkbookTab';
 import { CoursesTab } from '@/components/sdc-training/CoursesTab';
@@ -14,23 +15,14 @@ import { DownloadsTab } from '@/components/sdc-training/DownloadsTab';
 export default function SDCTraining() {
   const navigate = useNavigate();
   const {
-    modules, certifications, requirements, resources,
-    trainingModules, downloads, certRequirements, certProgress,
+    trainingModules, workbookItems, downloads, certRequirements, certProgress, assignments,
     isLoading, isAdmin, fetchAll,
   } = useSDCTraining();
-  const [activeTab, setActiveTab] = useState('modules');
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const moduleNames = modules.reduce<Record<string, string>>((acc, m) => {
-    acc[m.id] = m.title;
-    return acc;
-  }, {});
-
-  // Count from both systems
-  const totalModules = Math.max(modules.length, trainingModules.length);
-  const totalResources = Math.max(resources.length, downloads.length);
-  const totalCerts = certifications.length || (certRequirements.length > 0 ? 1 : 0);
+  const completedCerts = certProgress.filter(p => ['completed', 'approved'].includes(p.status)).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,13 +44,13 @@ export default function SDCTraining() {
           {/* Stats */}
           <div className="flex items-center gap-6 text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Layers className="w-4 h-4" /> {totalModules} Modules
+              <Layers className="w-4 h-4" /> {trainingModules.length} Modules
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Download className="w-4 h-4" /> {totalResources} Resources
+              <Download className="w-4 h-4" /> {downloads.length} Resources
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <ShieldCheck className="w-4 h-4" /> {certRequirements.length} Cert Requirements
+              <ShieldCheck className="w-4 h-4" /> {completedCerts}/{certRequirements.length} Cert Requirements
             </span>
           </div>
         </div>
@@ -73,6 +65,9 @@ export default function SDCTraining() {
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-6 flex-wrap h-auto gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5">
+                <LayoutDashboard className="w-4 h-4" /> Overview
+              </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger value="instructor" className="flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4" /> Instructor Guide
@@ -95,30 +90,41 @@ export default function SDCTraining() {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="overview">
+              <OverviewTab
+                modules={trainingModules}
+                downloads={downloads}
+                certRequirements={certRequirements}
+                certProgress={certProgress}
+                assignments={assignments}
+                onNavigate={setActiveTab}
+              />
+            </TabsContent>
             {isAdmin && (
               <TabsContent value="instructor">
-                <InstructorGuideTab modules={modules} isAdmin={isAdmin} />
+                <InstructorGuideTab modules={trainingModules} />
               </TabsContent>
             )}
             <TabsContent value="workbook">
-              <StaffWorkbookTab modules={modules} />
+              <StaffWorkbookTab modules={trainingModules} workbookItems={workbookItems} />
             </TabsContent>
             <TabsContent value="courses">
               <CoursesTab />
             </TabsContent>
             <TabsContent value="modules">
-              <ModulesTab modules={modules} />
+              <ModulesTab modules={trainingModules} downloads={downloads} workbookItems={workbookItems} certRequirements={certRequirements} certProgress={certProgress} />
             </TabsContent>
             <TabsContent value="certification">
               <CertificationTab
-                certifications={certifications}
-                requirements={requirements}
+                certRequirements={certRequirements}
+                certProgress={certProgress}
+                modules={trainingModules}
                 isAdmin={isAdmin}
                 onViewDetails={() => navigate('/sdc-training/certification')}
               />
             </TabsContent>
             <TabsContent value="downloads">
-              <DownloadsTab resources={resources} isAdmin={isAdmin} moduleNames={moduleNames} />
+              <DownloadsTab downloads={downloads} modules={trainingModules} isAdmin={isAdmin} />
             </TabsContent>
           </Tabs>
         )}

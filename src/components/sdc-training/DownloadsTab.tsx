@@ -1,34 +1,36 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Lock, BookOpen } from 'lucide-react';
-import type { SDCResource } from '@/hooks/useSDCTraining';
+import { Download, BookOpen, FileText } from 'lucide-react';
+import type { TrainingDownload, TrainingModuleContent } from '@/hooks/useSDCTraining';
 
 interface Props {
-  resources: SDCResource[];
+  downloads: TrainingDownload[];
+  modules: TrainingModuleContent[];
   isAdmin: boolean;
-  moduleNames: Record<string, string>;
 }
 
-const typeIcons: Record<string, string> = {
-  handout: '📄',
-  worksheet: '📝',
-  guide: '📖',
-  reference: '📋',
-  template: '📑',
+const typeEmoji: Record<string, string> = {
+  pdf: '📄',
+  doc: '📝',
+  xlsx: '📊',
+  pptx: '📑',
 };
 
-export function DownloadsTab({ resources, isAdmin, moduleNames }: Props) {
-  // Filter out instructor-only for non-admins
-  const visible = isAdmin ? resources : resources.filter(r => !r.is_instructor_only);
+export function DownloadsTab({ downloads, modules, isAdmin }: Props) {
+  // Filter by audience if not admin
+  const visible = isAdmin ? downloads : downloads.filter(d => d.audience !== 'instructor');
 
-  // Group by module
-  const grouped = visible.reduce<Record<string, SDCResource[]>>((acc, r) => {
-    const key = r.module_id || 'general';
+  // Group by module_key
+  const grouped = visible.reduce<Record<string, TrainingDownload[]>>((acc, d) => {
+    const key = d.module_key || 'general';
     if (!acc[key]) acc[key] = [];
-    acc[key].push(r);
+    acc[key].push(d);
     return acc;
   }, {});
+
+  const getModuleTitle = (key: string) =>
+    key === 'general' ? 'General Resources' : modules.find(m => m.module_key === key)?.title || key;
 
   if (visible.length === 0) {
     return (
@@ -47,23 +49,23 @@ export function DownloadsTab({ resources, isAdmin, moduleNames }: Props) {
         <p className="text-sm text-muted-foreground">Printable handouts, worksheets, and reference guides</p>
       </div>
 
-      {Object.entries(grouped).map(([moduleId, items]) => (
-        <div key={moduleId}>
+      {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([moduleKey, items]) => (
+        <div key={moduleKey}>
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-accent" />
-            {moduleId === 'general' ? 'General Resources' : (moduleNames[moduleId] || 'Unknown Module')}
+            {getModuleTitle(moduleKey)}
           </h3>
           <div className="grid gap-2">
-            {items.map((res) => (
+            {items.sort((a, b) => a.sort_order - b.sort_order).map(res => (
               <Card key={res.id}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{typeIcons[res.resource_type] || '📄'}</span>
+                    <span className="text-xl">{typeEmoji[res.file_type || ''] || '📄'}</span>
                     <div>
                       <p className="font-medium text-sm text-foreground flex items-center gap-2">
                         {res.title}
-                        {res.is_instructor_only && (
-                          <Badge variant="outline" className="text-xs"><Lock className="w-3 h-3 mr-1" />Instructor Only</Badge>
+                        {res.audience === 'instructor' && (
+                          <Badge variant="outline" className="text-xs">Instructor Only</Badge>
                         )}
                       </p>
                       {res.description && <p className="text-xs text-muted-foreground">{res.description}</p>}
