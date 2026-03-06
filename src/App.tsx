@@ -48,6 +48,9 @@ import NotFound from "./pages/NotFound";
 import BehaviorLabCatalog from "./pages/BehaviorLabCatalog";
 import BehaviorLabPlayer from "./pages/BehaviorLabPlayer";
 import IEPLibrary from "./pages/IEPLibrary";
+import BehaviorLibraryFull from "./pages/BehaviorLibraryFull";
+import Academy from "./pages/Academy";
+import InterventionBuilder from "./pages/InterventionBuilder";
 import ClinicalLibrary from "./pages/ClinicalLibrary";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
@@ -378,6 +381,33 @@ const App = () => {
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
               <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
             </Route>
+            <Route path="/behavior-library" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <BehaviorLibraryFull />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/academy" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Academy />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/intervention-builder" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <InterventionBuilder />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
