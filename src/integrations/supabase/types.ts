@@ -5198,116 +5198,57 @@ export type Database = {
       }
       ci_threshold_rules: {
         Row: {
-          active: boolean | null
           agency_id: string | null
-          behavior_category: string | null
           behavior_id: string | null
           client_id: string | null
-          created_at: string | null
-          fidelity_action: number | null
-          fidelity_critical: number | null
-          fidelity_watch: number | null
-          freshness_action: number | null
-          freshness_critical: number | null
-          freshness_watch: number | null
-          function: string | null
-          goal_vel_action: number | null
-          goal_vel_critical: number | null
-          goal_vel_watch: number | null
-          parent_impl_action: number | null
-          parent_impl_critical: number | null
-          parent_impl_watch: number | null
+          comparator: string
+          created_at: string
+          is_active: boolean
+          metric_key: string
+          notes: string | null
           phase: string | null
-          priority: number
-          risk_action: number | null
-          risk_critical: number | null
-          risk_watch: number | null
           rule_id: string
-          scope: string
           setting: string | null
-          target_id: string | null
-          trend_action: number | null
-          trend_critical: number | null
-          trend_watch: number | null
-          updated_at: string | null
+          severity: string
+          threshold_numeric: number | null
+          threshold_text: string | null
+          updated_at: string
         }
         Insert: {
-          active?: boolean | null
           agency_id?: string | null
-          behavior_category?: string | null
           behavior_id?: string | null
           client_id?: string | null
-          created_at?: string | null
-          fidelity_action?: number | null
-          fidelity_critical?: number | null
-          fidelity_watch?: number | null
-          freshness_action?: number | null
-          freshness_critical?: number | null
-          freshness_watch?: number | null
-          function?: string | null
-          goal_vel_action?: number | null
-          goal_vel_critical?: number | null
-          goal_vel_watch?: number | null
-          parent_impl_action?: number | null
-          parent_impl_critical?: number | null
-          parent_impl_watch?: number | null
+          comparator?: string
+          created_at?: string
+          is_active?: boolean
+          metric_key: string
+          notes?: string | null
           phase?: string | null
-          priority?: number
-          risk_action?: number | null
-          risk_critical?: number | null
-          risk_watch?: number | null
           rule_id?: string
-          scope: string
           setting?: string | null
-          target_id?: string | null
-          trend_action?: number | null
-          trend_critical?: number | null
-          trend_watch?: number | null
-          updated_at?: string | null
+          severity: string
+          threshold_numeric?: number | null
+          threshold_text?: string | null
+          updated_at?: string
         }
         Update: {
-          active?: boolean | null
           agency_id?: string | null
-          behavior_category?: string | null
           behavior_id?: string | null
           client_id?: string | null
-          created_at?: string | null
-          fidelity_action?: number | null
-          fidelity_critical?: number | null
-          fidelity_watch?: number | null
-          freshness_action?: number | null
-          freshness_critical?: number | null
-          freshness_watch?: number | null
-          function?: string | null
-          goal_vel_action?: number | null
-          goal_vel_critical?: number | null
-          goal_vel_watch?: number | null
-          parent_impl_action?: number | null
-          parent_impl_critical?: number | null
-          parent_impl_watch?: number | null
+          comparator?: string
+          created_at?: string
+          is_active?: boolean
+          metric_key?: string
+          notes?: string | null
           phase?: string | null
-          priority?: number
-          risk_action?: number | null
-          risk_critical?: number | null
-          risk_watch?: number | null
           rule_id?: string
-          scope?: string
           setting?: string | null
-          target_id?: string | null
-          trend_action?: number | null
-          trend_critical?: number | null
-          trend_watch?: number | null
-          updated_at?: string | null
+          severity?: string
+          threshold_numeric?: number | null
+          threshold_text?: string | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ci_threshold_rules_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       claim_batch_items: {
         Row: {
