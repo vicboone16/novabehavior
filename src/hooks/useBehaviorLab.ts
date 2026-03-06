@@ -117,7 +117,7 @@ export function useBehaviorLab() {
       if (error) throw error;
       return {
         ...data,
-        content: data.content as unknown as GameContent,
+        content: normalizeGameContent(data.content),
       } as BehaviorLabGame;
     } catch (err: any) {
       console.error('Error fetching game:', err);
