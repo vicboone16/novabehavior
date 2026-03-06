@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SupervisionPerformanceTab } from '@/components/intelligence/SupervisionPerformanceTab';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
