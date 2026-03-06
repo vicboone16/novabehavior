@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import type { BehaviorLabGame, BehaviorLabAttempt, GameContent } from '@/types/behaviorLab';
+import { normalizeGameContent } from '@/utils/normalizeGameContent';
 import { toast } from 'sonner';
 
 export function useBehaviorLab() {
@@ -26,7 +27,7 @@ export function useBehaviorLab() {
 
       setGames((data || []).map(g => ({
         ...g,
-        content: g.content as unknown as GameContent,
+        content: normalizeGameContent(g.content),
       })) as BehaviorLabGame[]);
     } catch (err: any) {
       console.error('Error fetching games:', err);
@@ -49,7 +50,7 @@ export function useBehaviorLab() {
 
       setGames((data || []).map(g => ({
         ...g,
-        content: g.content as unknown as GameContent,
+        content: normalizeGameContent(g.content),
       })) as BehaviorLabGame[]);
     } catch (err: any) {
       console.error('Error fetching games:', err);
@@ -116,7 +117,7 @@ export function useBehaviorLab() {
       if (error) throw error;
       return {
         ...data,
-        content: data.content as unknown as GameContent,
+        content: normalizeGameContent(data.content),
       } as BehaviorLabGame;
     } catch (err: any) {
       console.error('Error fetching game:', err);
