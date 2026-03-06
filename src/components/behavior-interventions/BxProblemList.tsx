@@ -35,7 +35,9 @@ export function BxProblemList({
   onAddToStudent
 }: BxProblemListProps) {
   const [search, setSearch] = useState('');
+  const { tags: allBxTags, fetchTags, getTagsForItem, addNewTagToItem, addTagToItem, removeTagFromItem } = useBxTags();
 
+  useEffect(() => { fetchTags(); }, [fetchTags]);
   const filtered = problems.filter(p =>
     p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.problem_code.toLowerCase().includes(search.toLowerCase()) ||
