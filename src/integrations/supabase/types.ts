@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      aba_legacy_migration_map: {
+        Row: {
+          created_at: string
+          intervention_id: string | null
+          legacy_record_key: string
+          legacy_source_id: string
+          migrated_at: string | null
+          migration_map_id: string
+          notes: string | null
+          staging_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          intervention_id?: string | null
+          legacy_record_key: string
+          legacy_source_id: string
+          migrated_at?: string | null
+          migration_map_id?: string
+          notes?: string | null
+          staging_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          intervention_id?: string | null
+          legacy_record_key?: string
+          legacy_source_id?: string
+          migrated_at?: string | null
+          migration_map_id?: string
+          notes?: string | null
+          staging_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aba_legacy_migration_map_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "aba_legacy_migration_map_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "aba_legacy_migration_map_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "aba_legacy_migration_map_legacy_source_id_fkey"
+            columns: ["legacy_source_id"]
+            isOneToOne: false
+            referencedRelation: "aba_legacy_sources"
+            referencedColumns: ["legacy_source_id"]
+          },
+          {
+            foreignKeyName: "aba_legacy_migration_map_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_import_staging"
+            referencedColumns: ["staging_id"]
+          },
+        ]
+      }
+      aba_legacy_sources: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          legacy_source_id: string
+          notes: string | null
+          source_column: string | null
+          source_name: string
+          source_table: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          legacy_source_id?: string
+          notes?: string | null
+          source_column?: string | null
+          source_name: string
+          source_table: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          legacy_source_id?: string
+          notes?: string | null
+          source_column?: string | null
+          source_name?: string
+          source_table?: string
+        }
+        Relationships: []
+      }
       aba_library_import_staging: {
         Row: {
           created_at: string
@@ -25486,19 +25585,30 @@ export type Database = {
           title: string
         }[]
       }
-      aba_library_top_matches_v2: {
-        Args: { p_agency_id: string; p_client_id: string; p_limit?: number }
-        Returns: {
-          contra_count: number
-          evidence_level: string
-          final_score: number
-          intervention_id: string
-          intervention_type: string
-          match_score: number
-          match_tags: Json
-          title: string
-        }[]
-      }
+      aba_library_top_matches_v2:
+        | {
+            Args: { p_agency_id: string; p_client_id: string; p_limit?: number }
+            Returns: {
+              contra_count: number
+              evidence_level: string
+              final_score: number
+              intervention_id: string
+              intervention_type: string
+              match_score: number
+              match_tags: Json
+              title: string
+            }[]
+          }
+        | {
+            Args: { p_client_id: string; p_limit?: number }
+            Returns: {
+              intervention_id: string
+              intervention_type: string
+              reasons_json: Json
+              title: string
+              total_score: number
+            }[]
+          }
       apply_invite_code_access: {
         Args: {
           p_code: string
@@ -25506,6 +25616,14 @@ export type Database = {
           p_redeemer_id: string
         }
         Returns: Json
+      }
+      approve_data_collection: {
+        Args: {
+          p_approved?: boolean
+          p_publish_id: string
+          p_recipient_user_id: string
+        }
+        Returns: undefined
       }
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
@@ -25562,6 +25680,18 @@ export type Database = {
       ci_refresh_all: {
         Args: { _agency_id?: string; _data_source_id?: string }
         Returns: string
+      }
+      ci_refresh_intervention_recs_all: {
+        Args: { p_limit?: number }
+        Returns: undefined
+      }
+      ci_refresh_intervention_recs_for_agency: {
+        Args: { p_agency_id: string; p_limit?: number }
+        Returns: undefined
+      }
+      ci_refresh_intervention_recs_for_client: {
+        Args: { p_agency_id: string; p_client_id: string; p_limit?: number }
+        Returns: undefined
       }
       ci_refresh_metrics: {
         Args: { p_agency_id?: string; p_data_source_id?: string }
@@ -26095,17 +26225,65 @@ export type Database = {
         }
         Returns: string
       }
-      publish_plan_item: {
+      process_aba_import_staging: {
+        Args: { p_staging_id: string }
+        Returns: string
+      }
+      publication_add_feedback: {
         Args: {
-          p_agency_id: string
-          p_channel: string
-          p_client_id: string
-          p_data_collection_mode?: string
-          p_plan_id: string
-          p_plan_item_id: string
+          p_comment?: string
+          p_feedback_type: string
+          p_publication_id: string
+          p_reaction?: string
         }
         Returns: string
       }
+      publication_request_data_collection: {
+        Args: { p_data_schema?: Json; p_publication_id: string }
+        Returns: string
+      }
+      publication_require_data_collection: {
+        Args: {
+          p_data_schema?: Json
+          p_publication_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      publication_set_ack_status: {
+        Args: { p_ack_status: string; p_publication_id: string }
+        Returns: undefined
+      }
+      publication_set_data_collection_status: {
+        Args: {
+          p_enable?: boolean
+          p_publication_id: string
+          p_request_status: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      publish_plan_item:
+        | {
+            Args: {
+              p_agency_id: string
+              p_channel: string
+              p_client_id: string
+              p_data_collection_mode?: string
+              p_plan_id: string
+              p_plan_item_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_data_collection_mode?: string
+              p_plan_item_id: string
+              p_published_by: string
+              p_target_portal?: string
+            }
+            Returns: string
+          }
       rank_interventions: {
         Args: { _client_id: string; _limit?: number }
         Returns: {
@@ -26149,6 +26327,14 @@ export type Database = {
               role_slug: string
             }[]
           }
+      refresh_ci_intervention_recs: {
+        Args: { p_agency_id: string; p_client_id?: string; p_limit?: number }
+        Returns: number
+      }
+      request_data_collection: {
+        Args: { p_publish_id: string }
+        Returns: undefined
+      }
       resolve_alert_threshold: {
         Args: {
           _agency_id?: string
