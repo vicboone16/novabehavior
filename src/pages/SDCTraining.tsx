@@ -15,6 +15,7 @@ export default function SDCTraining() {
   const navigate = useNavigate();
   const {
     modules, certifications, requirements, resources,
+    trainingModules, downloads, certRequirements, certProgress,
     isLoading, isAdmin, fetchAll,
   } = useSDCTraining();
   const [activeTab, setActiveTab] = useState('modules');
@@ -25,6 +26,11 @@ export default function SDCTraining() {
     acc[m.id] = m.title;
     return acc;
   }, {});
+
+  // Count from both systems
+  const totalModules = Math.max(modules.length, trainingModules.length);
+  const totalResources = Math.max(resources.length, downloads.length);
+  const totalCerts = certifications.length || (certRequirements.length > 0 ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,16 +49,16 @@ export default function SDCTraining() {
             </div>
           </div>
 
-          {/* Sticky progress indicator */}
+          {/* Stats */}
           <div className="flex items-center gap-6 text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Layers className="w-4 h-4" /> {modules.length} Modules
+              <Layers className="w-4 h-4" /> {totalModules} Modules
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Download className="w-4 h-4" /> {resources.length} Resources
+              <Download className="w-4 h-4" /> {totalResources} Resources
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <ShieldCheck className="w-4 h-4" /> {certifications.length} Certifications
+              <ShieldCheck className="w-4 h-4" /> {certRequirements.length} Cert Requirements
             </span>
           </div>
         </div>
@@ -108,7 +114,7 @@ export default function SDCTraining() {
                 certifications={certifications}
                 requirements={requirements}
                 isAdmin={isAdmin}
-                onViewDetails={(certId) => navigate(`/sdc-training/certification?id=${certId}`)}
+                onViewDetails={() => navigate('/sdc-training/certification')}
               />
             </TabsContent>
             <TabsContent value="downloads">
