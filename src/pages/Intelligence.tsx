@@ -628,6 +628,11 @@ export default function Intelligence() {
           )}
         </TabsContent>
 
+        {/* Supervision Performance Tab */}
+        <TabsContent value="supervision" className="space-y-4">
+          <SupervisionPerformanceTab agencyId={effectiveAgencyId} />
+        </TabsContent>
+
         {/* Recommendations Tab */}
         <TabsContent value="recommendations" className="space-y-3">
           {recsLoading ? (
