@@ -3318,6 +3318,84 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_library_tags: {
+        Row: {
+          display_label: string
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          tag_type: string
+          tag_value: string
+        }
+        Insert: {
+          display_label: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          tag_type: string
+          tag_value: string
+        }
+        Update: {
+          display_label?: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          tag_type?: string
+          tag_value?: string
+        }
+        Relationships: []
+      }
+      behavior_recommendation_bundles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          goal_id: string | null
+          id: string
+          long_description: string | null
+          objective_id: string | null
+          problem_id: string | null
+          reasons_json: Json | null
+          score: number | null
+          short_description: string | null
+          status: string | null
+          strategy_ids: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          goal_id?: string | null
+          id?: string
+          long_description?: string | null
+          objective_id?: string | null
+          problem_id?: string | null
+          reasons_json?: Json | null
+          score?: number | null
+          short_description?: string | null
+          status?: string | null
+          strategy_ids?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          goal_id?: string | null
+          id?: string
+          long_description?: string | null
+          objective_id?: string | null
+          problem_id?: string | null
+          reasons_json?: Json | null
+          score?: number | null
+          short_description?: string | null
+          status?: string | null
+          strategy_ids?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       behavior_session_data: {
         Row: {
           behavior_id: string
@@ -3419,6 +3497,36 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
         ]
+      }
+      behavior_strategy_training_links: {
+        Row: {
+          academy_module_id: string | null
+          created_at: string | null
+          id: string
+          lms_course_id: string | null
+          lms_lesson_id: string | null
+          lms_module_id: string | null
+          strategy_id: string
+        }
+        Insert: {
+          academy_module_id?: string | null
+          created_at?: string | null
+          id?: string
+          lms_course_id?: string | null
+          lms_lesson_id?: string | null
+          lms_module_id?: string | null
+          strategy_id: string
+        }
+        Update: {
+          academy_module_id?: string | null
+          created_at?: string | null
+          id?: string
+          lms_course_id?: string | null
+          lms_lesson_id?: string | null
+          lms_module_id?: string | null
+          strategy_id?: string
+        }
+        Relationships: []
       }
       behaviors: {
         Row: {
@@ -4350,18 +4458,32 @@ export type Database = {
           contraindications: string[] | null
           created_at: string
           created_by: string | null
+          crisis_relevance: boolean | null
           data_targets: string[] | null
+          data_to_collect: Json | null
+          family_version: string | null
           fidelity_checklist: string[] | null
+          fidelity_tips: Json | null
+          full_description: string | null
+          function_tags: string[] | null
+          grade_band_tags: string[] | null
           id: string
           implementation_steps: string[] | null
           materials: string[] | null
           requires_bcba: boolean | null
           risk_level: string
+          role_tags: string[] | null
+          setting_tags: string[] | null
+          short_description: string | null
+          sort_order: number | null
           staff_script: string | null
+          staff_scripts: Json | null
           status: string
           strategy_code: string
           strategy_name: string
           strategy_type: string[] | null
+          teacher_quick_version: string | null
+          tier_tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -4369,18 +4491,32 @@ export type Database = {
           contraindications?: string[] | null
           created_at?: string
           created_by?: string | null
+          crisis_relevance?: boolean | null
           data_targets?: string[] | null
+          data_to_collect?: Json | null
+          family_version?: string | null
           fidelity_checklist?: string[] | null
+          fidelity_tips?: Json | null
+          full_description?: string | null
+          function_tags?: string[] | null
+          grade_band_tags?: string[] | null
           id?: string
           implementation_steps?: string[] | null
           materials?: string[] | null
           requires_bcba?: boolean | null
           risk_level?: string
+          role_tags?: string[] | null
+          setting_tags?: string[] | null
+          short_description?: string | null
+          sort_order?: number | null
           staff_script?: string | null
+          staff_scripts?: Json | null
           status?: string
           strategy_code: string
           strategy_name: string
           strategy_type?: string[] | null
+          teacher_quick_version?: string | null
+          tier_tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -4388,18 +4524,32 @@ export type Database = {
           contraindications?: string[] | null
           created_at?: string
           created_by?: string | null
+          crisis_relevance?: boolean | null
           data_targets?: string[] | null
+          data_to_collect?: Json | null
+          family_version?: string | null
           fidelity_checklist?: string[] | null
+          fidelity_tips?: Json | null
+          full_description?: string | null
+          function_tags?: string[] | null
+          grade_band_tags?: string[] | null
           id?: string
           implementation_steps?: string[] | null
           materials?: string[] | null
           requires_bcba?: boolean | null
           risk_level?: string
+          role_tags?: string[] | null
+          setting_tags?: string[] | null
+          short_description?: string | null
+          sort_order?: number | null
           staff_script?: string | null
+          staff_scripts?: Json | null
           status?: string
           strategy_code?: string
           strategy_name?: string
           strategy_type?: string[] | null
+          teacher_quick_version?: string | null
+          tier_tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -13525,6 +13675,13 @@ export type Database = {
             referencedRelation: "lms_courses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lms_certifications_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_lms_courses_with_counts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lms_courses: {
@@ -13623,6 +13780,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "lms_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lms_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_lms_courses_with_counts"
             referencedColumns: ["id"]
           },
         ]
@@ -27317,6 +27481,16 @@ export type Database = {
         }
         Relationships: []
       }
+      v_lms_courses_with_counts: {
+        Row: {
+          description: string | null
+          id: string | null
+          lesson_count: number | null
+          module_count: number | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_plan_publications_feed: {
         Row: {
           ack_count: number | null
@@ -28404,13 +28578,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -28420,7 +28587,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -28434,8 +28601,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -28448,6 +28615,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -28455,7 +28636,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -28469,8 +28650,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -28482,20 +28663,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -28592,6 +28766,48 @@ export type Database = {
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
+      archive_bx_strategy: {
+        Args: { p_id: string }
+        Returns: {
+          agency_id: string | null
+          contraindications: string[] | null
+          created_at: string
+          created_by: string | null
+          crisis_relevance: boolean | null
+          data_targets: string[] | null
+          data_to_collect: Json | null
+          family_version: string | null
+          fidelity_checklist: string[] | null
+          fidelity_tips: Json | null
+          full_description: string | null
+          function_tags: string[] | null
+          grade_band_tags: string[] | null
+          id: string
+          implementation_steps: string[] | null
+          materials: string[] | null
+          requires_bcba: boolean | null
+          risk_level: string
+          role_tags: string[] | null
+          setting_tags: string[] | null
+          short_description: string | null
+          sort_order: number | null
+          staff_script: string | null
+          staff_scripts: Json | null
+          status: string
+          strategy_code: string
+          strategy_name: string
+          strategy_type: string[] | null
+          teacher_quick_version: string | null
+          tier_tags: string[] | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bx_strategies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       auto_log_behavior_outcome_for_run: {
         Args: {
           p_baseline_days?: number
@@ -29804,6 +30020,67 @@ export type Database = {
       sync_staff_assignment_to_access: {
         Args: { p_assignment_id: string }
         Returns: Json
+      }
+      upsert_bx_strategy: {
+        Args: {
+          p_crisis_relevance?: boolean
+          p_data_to_collect?: Json
+          p_family_version?: string
+          p_fidelity_tips?: Json
+          p_full_description?: string
+          p_function_tags?: string[]
+          p_grade_band_tags?: string[]
+          p_id?: string
+          p_implementation_steps?: Json
+          p_name?: string
+          p_role_tags?: string[]
+          p_setting_tags?: string[]
+          p_short_description?: string
+          p_sort_order?: number
+          p_staff_scripts?: Json
+          p_status?: string
+          p_teacher_quick_version?: string
+          p_tier_tags?: string[]
+        }
+        Returns: {
+          agency_id: string | null
+          contraindications: string[] | null
+          created_at: string
+          created_by: string | null
+          crisis_relevance: boolean | null
+          data_targets: string[] | null
+          data_to_collect: Json | null
+          family_version: string | null
+          fidelity_checklist: string[] | null
+          fidelity_tips: Json | null
+          full_description: string | null
+          function_tags: string[] | null
+          grade_band_tags: string[] | null
+          id: string
+          implementation_steps: string[] | null
+          materials: string[] | null
+          requires_bcba: boolean | null
+          risk_level: string
+          role_tags: string[] | null
+          setting_tags: string[] | null
+          short_description: string | null
+          sort_order: number | null
+          staff_script: string | null
+          staff_scripts: Json | null
+          status: string
+          strategy_code: string
+          strategy_name: string
+          strategy_type: string[] | null
+          teacher_quick_version: string | null
+          tier_tags: string[] | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bx_strategies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_staff_assignment: {
         Args: {
