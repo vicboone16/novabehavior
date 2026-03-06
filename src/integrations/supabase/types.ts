@@ -24751,30 +24751,54 @@ export type Database = {
         Row: {
           audience: string
           created_at: string
+          demonstration_steps: Json | null
+          discussion_prompts: Json | null
           estimated_minutes: number | null
+          key_takeaways: Json | null
+          learning_objectives: Json | null
+          misconceptions: Json | null
           module_key: string
           overview: string | null
+          practice_activities: Json | null
+          scenario_prompts: Json | null
           status: string
+          talking_points: Json | null
           title: string
           updated_at: string
         }
         Insert: {
           audience?: string
           created_at?: string
+          demonstration_steps?: Json | null
+          discussion_prompts?: Json | null
           estimated_minutes?: number | null
+          key_takeaways?: Json | null
+          learning_objectives?: Json | null
+          misconceptions?: Json | null
           module_key: string
           overview?: string | null
+          practice_activities?: Json | null
+          scenario_prompts?: Json | null
           status?: string
+          talking_points?: Json | null
           title: string
           updated_at?: string
         }
         Update: {
           audience?: string
           created_at?: string
+          demonstration_steps?: Json | null
+          discussion_prompts?: Json | null
           estimated_minutes?: number | null
+          key_takeaways?: Json | null
+          learning_objectives?: Json | null
+          misconceptions?: Json | null
           module_key?: string
           overview?: string | null
+          practice_activities?: Json | null
+          scenario_prompts?: Json | null
           status?: string
+          talking_points?: Json | null
           title?: string
           updated_at?: string
         }
