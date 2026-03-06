@@ -3,48 +3,47 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShieldCheck, CheckCircle2, Circle, Eye } from 'lucide-react';
-import { useSDCTraining, type SDCCertificationProgress } from '@/hooks/useSDCTraining';
-import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '@/components/ui/progress';
+import { ArrowLeft, ShieldCheck, CheckCircle2, Circle, User } from 'lucide-react';
+import { useSDCTraining } from '@/hooks/useSDCTraining';
+import { useAuth } from '@/contexts/AuthContext';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   not_started: { label: 'Not Started', color: 'bg-muted text-muted-foreground' },
   in_progress: { label: 'In Progress', color: 'bg-info/10 text-info' },
   pending_observation: { label: 'Pending Observation', color: 'bg-warning/10 text-warning' },
   certified: { label: 'Certified', color: 'bg-success/10 text-success' },
+  completed: { label: 'Completed', color: 'bg-success/10 text-success' },
+  approved: { label: 'Approved', color: 'bg-success/10 text-success' },
   expired: { label: 'Expired', color: 'bg-destructive/10 text-destructive' },
 };
 
 export default function SDCCertificationTracker() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const certId = searchParams.get('id');
+  const { user } = useAuth();
   const {
-    certifications, requirements, certProgress, isLoading, isAdmin,
-    fetchAll, fetchCertProgress, completeRequirement,
+    certRequirements, certProgress, trainingModules,
+    isLoading, isAdmin, fetchAll, completeTrainingRequirement,
   } = useSDCTraining();
-  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  useEffect(() => {
-    if (certId) {
-      fetchCertProgress(certId);
-      const cert = certifications.find(c => c.id === certId);
-      if (cert) {
-        supabase.from('profiles').select('full_name, email').eq('id', cert.user_id).single().then(({ data }) => setProfile(data));
-      }
-    }
-  }, [certId, certifications, fetchCertProgress]);
+  const isReqComplete = (req: typeof certRequirements[0]) => {
+    return certProgress.some(p =>
+      p.module_key === req.module_key &&
+      p.requirement_type === req.requirement_type &&
+      ['completed', 'approved'].includes(p.status)
+    );
+  };
 
-  const cert = certifications.find(c => c.id === certId);
-  const cfg = cert ? (statusConfig[cert.status] || statusConfig.not_started) : statusConfig.not_started;
+  const completedCount = certRequirements.filter(r => isReqComplete(r)).length;
+  const totalCount = certRequirements.length;
+  const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const isReqComplete = (reqId: string) =>
-    certProgress.some(p => p.requirement_id === reqId && p.completed);
-
-  const completedCount = requirements.filter(r => isReqComplete(r.id)).length;
-  const totalCount = requirements.length;
+  const overallStatus = completedCount === 0 ? 'not_started'
+    : completedCount === totalCount ? 'certified'
+    : 'in_progress';
+  const cfg = statusConfig[overallStatus];
 
   if (isLoading) {
     return (
@@ -68,82 +67,68 @@ export default function SDCCertificationTracker() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {!certId ? (
-          // List all certifications
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">All Certifications</h2>
-            {certifications.length === 0 ? (
-              <p className="text-muted-foreground">No certifications assigned yet.</p>
-            ) : (
-              <div className="grid gap-3">
-                {certifications.map((c) => {
-                  const s = statusConfig[c.status] || statusConfig.not_started;
-                  return (
-                    <Card key={c.id} className="cursor-pointer hover:shadow-sm"
-                      onClick={() => navigate(`/sdc-training/certification?id=${c.id}`)}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <span className="font-medium text-foreground">Staff: {c.user_id.slice(0, 8)}...</span>
-                        <Badge className={s.color}>{s.label}</Badge>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Summary Card */}
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">SDC Behavior Training Certification</h2>
               </div>
-            )}
-          </div>
-        ) : (
-          // Detail view
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">{profile?.full_name || profile?.email || 'Staff Member'}</h2>
-                    <p className="text-sm text-muted-foreground">Assigned: {cert ? new Date(cert.assigned_at).toLocaleDateString() : 'N/A'}</p>
-                  </div>
-                  <Badge className={cfg.color}>{cfg.label}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Progress: {completedCount} / {totalCount} requirements complete
-                </p>
-              </CardContent>
-            </Card>
+              <Badge className={cfg.color}>{cfg.label}</Badge>
+            </div>
+            <div className="flex items-center gap-3 mb-2">
+              <Progress value={pct} className="flex-1 h-2.5" />
+              <span className="text-sm font-medium text-muted-foreground">{completedCount}/{totalCount}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Complete all requirements to earn SDC Behavior Training certification.
+            </p>
+          </CardContent>
+        </Card>
 
-            <h3 className="font-semibold text-foreground">Requirements</h3>
-            {requirements.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No certification requirements defined yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {requirements.map((req) => {
-                  const done = isReqComplete(req.id);
-                  return (
-                    <Card key={req.id}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {done
-                            ? <CheckCircle2 className="w-5 h-5 text-success" />
-                            : <Circle className="w-5 h-5 text-muted-foreground" />}
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{req.description || req.requirement_type}</p>
-                            {req.module_title && (
-                              <p className="text-xs text-muted-foreground">Module: {req.module_title}</p>
-                            )}
-                            <Badge variant="secondary" className="text-xs mt-0.5">{req.requirement_type}</Badge>
-                          </div>
-                        </div>
-                        {!done && isAdmin && (
-                          <Button size="sm" variant="outline"
-                            onClick={() => completeRequirement(certId!, req.id)}>
-                            Mark Complete
-                          </Button>
+        {/* Requirements List */}
+        <h3 className="font-semibold text-foreground">Requirements</h3>
+        {certRequirements.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No certification requirements defined yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {certRequirements.map((req) => {
+              const done = isReqComplete(req);
+              const moduleTitle = req.module_key
+                ? trainingModules.find(m => m.module_key === req.module_key)?.title
+                : null;
+              return (
+                <Card key={req.id}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {done
+                        ? <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                        : <Circle className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{req.title}</p>
+                        {req.description && (
+                          <p className="text-xs text-muted-foreground">{req.description}</p>
                         )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">{req.requirement_type}</Badge>
+                          {moduleTitle && (
+                            <span className="text-xs text-muted-foreground">Module: {moduleTitle}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {!done && isAdmin && req.module_key && (
+                      <Button size="sm" variant="outline"
+                        onClick={() => completeTrainingRequirement(req.module_key!, req.requirement_type)}>
+                        Mark Complete
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
