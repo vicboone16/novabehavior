@@ -21799,6 +21799,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      current_agency_id: { Args: never; Returns: string }
       effective_cid_access: { Args: { _user_id: string }; Returns: boolean }
       effective_cross_agency_access: {
         Args: { _user_id: string }
@@ -22168,6 +22169,7 @@ export type Database = {
         Args: { _agency_id: string; _user_id: string }
         Returns: boolean
       }
+      is_agency_admin_for: { Args: { _agency_id: string }; Returns: boolean }
       is_coverage_verification_due: {
         Args: { _client_id: string }
         Returns: boolean
