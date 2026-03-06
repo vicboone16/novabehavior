@@ -562,7 +562,7 @@ export default function Intelligence() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <KPICard icon={<Activity className="w-5 h-5" />} label="Avg Burn Rate %" value={authKpis.avgBurnRate} variant={authKpis.avgBurnRate < 70 ? 'destructive' : authKpis.avgBurnRate > 120 ? 'warning' : 'default'} />
                 <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} />
-                <KPICard icon={<Shield className="w-5 h-5" />} label="Supervision Off-Track" value={authKpis.supervisionOffTrack} variant={authKpis.supervisionOffTrack > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<Shield className="w-5 h-5" />} label="Supervision Off-Track" value={supervisionOffTrackCount} variant={supervisionOffTrackCount > 0 ? 'destructive' : 'default'} />
                 <KPICard icon={<Users className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'warning' : 'default'} />
               </div>
 
