@@ -97,7 +97,16 @@ export function BxProblemList({
                             {problem.problem_code}
                           </span>
                         </div>
-                        <h4 className="font-medium text-sm truncate">{problem.title}</h4>
+                        <h4 className="font-medium text-sm truncate">
+                          <InlineNameEditor
+                            value={problem.title}
+                            onSave={async (newName) => {
+                              const { error } = await supabase.from('bx_presenting_problems').update({ title: newName } as any).eq('id', problem.id);
+                              if (error) toast.error(error.message);
+                              else toast.success('Problem renamed');
+                            }}
+                          />
+                        </h4>
                         {problem.function_tags && problem.function_tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {problem.function_tags.slice(0, 3).map(tag => (
@@ -107,6 +116,18 @@ export function BxProblemList({
                             ))}
                           </div>
                         )}
+                        <div className="mt-1">
+                          <TagManager
+                            itemId={problem.id}
+                            itemType="problem"
+                            currentTags={getTagsForItem(problem.id, 'problem')}
+                            allTags={allBxTags}
+                            onAddNew={addNewTagToItem}
+                            onAddExisting={addTagToItem}
+                            onRemove={removeTagFromItem}
+                            compact
+                          />
+                        </div>
                       </div>
                     </div>
                   </button>
