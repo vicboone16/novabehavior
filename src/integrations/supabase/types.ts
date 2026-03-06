@@ -24786,6 +24786,116 @@ export type Database = {
           },
         ]
       }
+      v_intervention_effectiveness_by_function: {
+        Row: {
+          avg_confidence_score: number | null
+          avg_percent_change: number | null
+          effective_runs: number | null
+          effectiveness_rate_percent: number | null
+          function_key: string | null
+          function_label: string | null
+          ineffective_runs: number | null
+          intervention_id: string | null
+          intervention_title: string | null
+          total_runs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
+      v_intervention_effectiveness_by_topography: {
+        Row: {
+          avg_confidence_score: number | null
+          avg_percent_change: number | null
+          effective_runs: number | null
+          effectiveness_rate_percent: number | null
+          ineffective_runs: number | null
+          intervention_id: string | null
+          intervention_title: string | null
+          topography_key: string | null
+          topography_label: string | null
+          total_runs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
+      v_intervention_effectiveness_similar_clients: {
+        Row: {
+          age_band: string | null
+          avg_confidence_score: number | null
+          avg_percent_change: number | null
+          comm_level: string | null
+          effectiveness_rate_percent: number | null
+          intervention_id: string | null
+          intervention_title: string | null
+          setting_key: string | null
+          total_runs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
       v_intervention_effectiveness_summary: {
         Row: {
           avg_confidence_score: number | null
@@ -25722,13 +25832,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -25738,7 +25841,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -25752,8 +25855,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -25766,8 +25869,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -25779,13 +25882,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -26051,6 +26161,7 @@ export type Database = {
         }
         Returns: string
       }
+      auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
@@ -26080,6 +26191,11 @@ export type Database = {
         Returns: string
       }
       ci_data_freshness: { Args: { days_since_last: number }; Returns: number }
+      ci_enrich_intervention_recs_all: { Args: never; Returns: number }
+      ci_enrich_intervention_recs_for_client: {
+        Args: { p_agency_id: string; p_client_id: string }
+        Returns: undefined
+      }
       ci_intervention_score: {
         Args: {
           age_match: number
