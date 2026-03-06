@@ -86,10 +86,18 @@ export default function StaffAssignments() {
           </p>
         </div>
         {tab !== 'matrix' && (
-          <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Assign Staff
-          </Button>
+          <div className="flex gap-2">
+            {tab === 'classroom' && (
+              <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                <Users className="h-4 w-4 mr-2" />
+                Quick Assign Team
+              </Button>
+            )}
+            <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Assign Staff
+            </Button>
+          </div>
         )}
       </div>
 
