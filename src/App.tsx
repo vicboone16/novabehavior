@@ -345,6 +345,7 @@ const App = () => {
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/notes-review" element={<NotesReview />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
+              <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
