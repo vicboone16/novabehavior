@@ -14,6 +14,193 @@ export type Database = {
   }
   public: {
     Tables: {
+      aba_library_import_staging: {
+        Row: {
+          created_at: string
+          imported_at: string | null
+          intervention_type: string
+          owner_agency_id: string | null
+          payload: Json
+          staging_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          imported_at?: string | null
+          intervention_type?: string
+          owner_agency_id?: string | null
+          payload: Json
+          staging_id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          imported_at?: string | null
+          intervention_type?: string
+          owner_agency_id?: string | null
+          payload?: Json
+          staging_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      aba_library_intervention_tags: {
+        Row: {
+          intervention_id: string
+          tag_id: string
+          weight: number
+        }
+        Insert: {
+          intervention_id: string
+          tag_id: string
+          weight?: number
+        }
+        Update: {
+          intervention_id?: string
+          tag_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aba_library_intervention_tags_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "aba_library_intervention_tags_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "aba_library_intervention_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_tags"
+            referencedColumns: ["tag_id"]
+          },
+        ]
+      }
+      aba_library_interventions: {
+        Row: {
+          contraindications: Json
+          created_at: string
+          created_by: string | null
+          evidence_level: string | null
+          fidelity_checklist: Json
+          generalization_ideas: Json
+          intervention_id: string
+          intervention_type: string
+          is_active: boolean
+          is_template: boolean
+          measurement_recommendations: Json
+          operational_definition: string | null
+          owner_agency_id: string | null
+          prerequisites: Json
+          prompt_hierarchy: Json
+          reinforcement_examples: Json
+          scripts: Json
+          short_label: string | null
+          sources: Json
+          summary: string | null
+          teaching_steps: Json
+          title: string
+          troubleshooting: Json
+          updated_at: string
+          updated_by: string | null
+          visibility: string
+        }
+        Insert: {
+          contraindications?: Json
+          created_at?: string
+          created_by?: string | null
+          evidence_level?: string | null
+          fidelity_checklist?: Json
+          generalization_ideas?: Json
+          intervention_id?: string
+          intervention_type?: string
+          is_active?: boolean
+          is_template?: boolean
+          measurement_recommendations?: Json
+          operational_definition?: string | null
+          owner_agency_id?: string | null
+          prerequisites?: Json
+          prompt_hierarchy?: Json
+          reinforcement_examples?: Json
+          scripts?: Json
+          short_label?: string | null
+          sources?: Json
+          summary?: string | null
+          teaching_steps?: Json
+          title: string
+          troubleshooting?: Json
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Update: {
+          contraindications?: Json
+          created_at?: string
+          created_by?: string | null
+          evidence_level?: string | null
+          fidelity_checklist?: Json
+          generalization_ideas?: Json
+          intervention_id?: string
+          intervention_type?: string
+          is_active?: boolean
+          is_template?: boolean
+          measurement_recommendations?: Json
+          operational_definition?: string | null
+          owner_agency_id?: string | null
+          prerequisites?: Json
+          prompt_hierarchy?: Json
+          reinforcement_examples?: Json
+          scripts?: Json
+          short_label?: string | null
+          sources?: Json
+          summary?: string | null
+          teaching_steps?: Json
+          title?: string
+          troubleshooting?: Json
+          updated_at?: string
+          updated_by?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
+      aba_library_tags: {
+        Row: {
+          created_at: string
+          description: string | null
+          is_active: boolean
+          tag_id: string
+          tag_key: string
+          tag_label: string
+          tag_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          tag_id?: string
+          tag_key: string
+          tag_label: string
+          tag_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          tag_id?: string
+          tag_key?: string
+          tag_label?: string
+          tag_type?: string
+        }
+        Relationships: []
+      }
       abas3_assessments: {
         Row: {
           administered_by: string | null
@@ -5589,6 +5776,39 @@ export type Database = {
           },
         ]
       }
+      client_intervention_plans: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          name: string
+          plan_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          name?: string
+          plan_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          name?: string
+          plan_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_locations: {
         Row: {
           access_instructions: string | null
@@ -5795,6 +6015,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      client_profile_tags: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          source: string
+          tag_id: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          source?: string
+          tag_id: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          source?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profile_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_tags"
+            referencedColumns: ["tag_id"]
           },
         ]
       }
@@ -21832,6 +22087,19 @@ export type Database = {
           },
         ]
       }
+      v_aba_library_matches: {
+        Row: {
+          agency_id: string | null
+          client_id: string | null
+          evidence_level: string | null
+          intervention_id: string | null
+          intervention_type: string | null
+          match_score: number | null
+          match_tags: Json | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_active_agency: {
         Row: {
           current_agency_id: string | null
@@ -23114,6 +23382,30 @@ export type Database = {
       }
     }
     Functions: {
+      aba_add_intervention_to_plan: {
+        Args: {
+          p_agency_id: string
+          p_client_id: string
+          p_intervention_id: string
+          p_plan_name?: string
+        }
+        Returns: string
+      }
+      aba_import_from_staging: {
+        Args: { p_staging_id: string }
+        Returns: string
+      }
+      aba_library_top_matches: {
+        Args: { p_agency_id: string; p_client_id: string; p_limit?: number }
+        Returns: {
+          evidence_level: string
+          intervention_id: string
+          intervention_type: string
+          match_score: number
+          match_tags: Json
+          title: string
+        }[]
+      }
       apply_invite_code_access: {
         Args: {
           p_code: string
