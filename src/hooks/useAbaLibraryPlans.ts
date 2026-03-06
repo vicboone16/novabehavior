@@ -103,7 +103,7 @@ export function useAbaLibraryPlans(clientId?: string, agencyId?: string) {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // Refresh intervention recommendations
+  // Refresh intervention recommendations (enhanced with detailed reasons_json)
   const refreshRecommendations = useMutation({
     mutationFn: async () => {
       if (!agencyId) throw new Error('Agency ID required');
@@ -114,7 +114,10 @@ export function useAbaLibraryPlans(clientId?: string, agencyId?: string) {
       if (error) throw error;
       return data;
     },
-    onSuccess: (count) => toast.success(`Refreshed ${count} intervention recommendations`),
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['aba-top-matches', clientId] });
+      toast.success(`Refreshed ${count} intervention recommendations`);
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 

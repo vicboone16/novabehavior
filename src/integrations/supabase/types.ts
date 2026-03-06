@@ -26136,6 +26136,79 @@ export type Database = {
           },
         ]
       }
+      v_adaptive_intervention_recommendations: {
+        Row: {
+          adaptive_score: number | null
+          agency_id: string | null
+          base_match_score: number | null
+          client_id: string | null
+          client_risk_score: number | null
+          confidence_score: number | null
+          effectiveness_rate: number | null
+          id: string | null
+          intervention_id: string | null
+          intervention_title: string | null
+          reasons_json: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_intervention_recs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ci_intervention_recs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_agency_forecast_summary: {
         Row: {
           agency_id: string | null
@@ -28140,13 +28213,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -28156,7 +28222,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -28170,8 +28236,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -28184,6 +28250,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -28191,7 +28271,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -28205,8 +28285,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -28218,20 +28298,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -28488,6 +28561,18 @@ export type Database = {
               total_score: number
             }[]
           }
+      acknowledge_publication: {
+        Args: { p_publication_id: string; p_reaction?: string }
+        Returns: string
+      }
+      add_publication_comment: {
+        Args: {
+          p_body: string
+          p_parent_comment_id?: string
+          p_publication_id: string
+        }
+        Returns: string
+      }
       apply_invite_code_access: {
         Args: {
           p_code: string
@@ -28526,6 +28611,14 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      bulk_process_staged_imports: {
+        Args: { p_agency_id: string }
+        Returns: number
+      }
+      bulk_stage_legacy_interventions: {
+        Args: { p_agency_id: string; p_source_table?: string }
+        Returns: number
+      }
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
@@ -28628,6 +28721,15 @@ export type Database = {
         Returns: string
       }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
+      compute_adaptive_intervention_score: {
+        Args: {
+          p_client_risk: number
+          p_confidence_score: number
+          p_effectiveness_rate: number
+          p_match_score: number
+        }
+        Returns: number
+      }
       compute_all_intervention_outcomes: {
         Args: { p_agency_id: string }
         Returns: number
@@ -28831,6 +28933,14 @@ export type Database = {
       estimate_travel_time_minutes: {
         Args: { distance_miles: number }
         Returns: number
+      }
+      fba_suggest_interventions: {
+        Args: { p_function: string; p_setting?: string }
+        Returns: {
+          evidence_level: string
+          intervention_id: string
+          title: string
+        }[]
       }
       fn_apply_rounding: {
         Args: { p_agency_id: string; p_minutes: number }
@@ -29350,6 +29460,10 @@ export type Database = {
       review_parent_weekly_snapshot: {
         Args: { p_comment: string; p_decision: string; p_packet_id: string }
         Returns: Json
+      }
+      revoke_data_collection: {
+        Args: { p_publish_id: string; p_recipient_user_id: string }
+        Returns: undefined
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       rpc_add_time_entry_to_timesheet: {
