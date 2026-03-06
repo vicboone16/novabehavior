@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import type { BehaviorLabGame, BehaviorLabAttempt, GameContent } from '@/types/behaviorLab';
+import { normalizeGameContent } from '@/utils/normalizeGameContent';
 import { toast } from 'sonner';
 
 export function useBehaviorLab() {
