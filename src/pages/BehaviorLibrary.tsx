@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb, UserPlus, Archive, Trash2, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,10 @@ import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteTo
 import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
 import { BxInterventionLibrary } from '@/components/behavior-interventions';
 import { AddBehaviorToStudentDialog } from '@/components/behavior-library/AddBehaviorToStudentDialog';
+import { TagManager } from '@/components/behavior-library/TagManager';
+import { InlineNameEditor } from '@/components/behavior-library/InlineNameEditor';
+import { AISearchBar } from '@/components/behavior-library/AISearchBar';
+import { useBxTags } from '@/hooks/useBxTags';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useBehaviorBankSync,
@@ -42,6 +46,7 @@ import {
   archiveBehaviorToDB,
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BehaviorLibraryProps {
   embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
