@@ -25,7 +25,7 @@ export function useAbaLibraryPlans(clientId?: string, agencyId?: string) {
     mutationFn: async ({ templateId }: { templateId: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      const { data, error } = await supabase.rpc('clone_plan_template_to_client', {
+      const { data, error } = await supabase.rpc('aba_apply_template_to_client_plan', {
         p_template_id: templateId,
         p_client_id: clientId!,
         p_agency_id: agencyId!,
