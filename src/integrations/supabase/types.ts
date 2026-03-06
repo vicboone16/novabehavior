@@ -28561,6 +28561,18 @@ export type Database = {
               total_score: number
             }[]
           }
+      acknowledge_publication: {
+        Args: { p_publication_id: string; p_reaction?: string }
+        Returns: string
+      }
+      add_publication_comment: {
+        Args: {
+          p_body: string
+          p_parent_comment_id?: string
+          p_publication_id: string
+        }
+        Returns: string
+      }
       apply_invite_code_access: {
         Args: {
           p_code: string
@@ -28599,6 +28611,14 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      bulk_process_staged_imports: {
+        Args: { p_agency_id: string }
+        Returns: number
+      }
+      bulk_stage_legacy_interventions: {
+        Args: { p_agency_id: string; p_source_table?: string }
+        Returns: number
+      }
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
@@ -29440,6 +29460,10 @@ export type Database = {
       review_parent_weekly_snapshot: {
         Args: { p_comment: string; p_decision: string; p_packet_id: string }
         Returns: Json
+      }
+      revoke_data_collection: {
+        Args: { p_publish_id: string; p_recipient_user_id: string }
+        Returns: undefined
       }
       revoke_user_access: { Args: { _user_id: string }; Returns: boolean }
       rpc_add_time_entry_to_timesheet: {
