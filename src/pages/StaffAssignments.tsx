@@ -3,10 +3,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Search, Loader2 } from 'lucide-react';
+import { UserPlus, Users, Search, Loader2 } from 'lucide-react';
 import { useStaffAssignments, type StaffAssignment, type StaffAssignmentFormData } from '@/hooks/useStaffAssignments';
 import { AssignmentTable } from '@/components/staff-assignments/AssignmentTable';
 import { AssignmentModal } from '@/components/staff-assignments/AssignmentModal';
+import { BulkClassroomAssignModal } from '@/components/staff-assignments/BulkClassroomAssignModal';
 import { RoleMatrix } from '@/components/staff-assignments/RoleMatrix';
 
 type TabMode = 'agency' | 'classroom' | 'student' | 'matrix';
