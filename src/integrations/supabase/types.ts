@@ -4014,6 +4014,38 @@ export type Database = {
           },
         ]
       }
+      ci_client_component_scores: {
+        Row: {
+          agency_id: string
+          client_id: string
+          component_id: string
+          computed_at: string | null
+          score: number
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          component_id: string
+          computed_at?: string | null
+          score: number
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          component_id?: string
+          computed_at?: string | null
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_component_scores_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "ci_score_components"
+            referencedColumns: ["component_id"]
+          },
+        ]
+      }
       ci_client_metrics: {
         Row: {
           agency_id: string
@@ -23673,6 +23705,20 @@ export type Database = {
           _student_id: string
         }
         Returns: string
+      }
+      rank_interventions: {
+        Args: { _client_id: string; _limit?: number }
+        Returns: {
+          age_match: number
+          category_bucket: string
+          complexity_level: number
+          evidence_rating: number
+          function_match: number
+          intervention_id: string
+          name: string
+          score: number
+          setting_match: number
+        }[]
       }
       record_pin_attempt: {
         Args: {
