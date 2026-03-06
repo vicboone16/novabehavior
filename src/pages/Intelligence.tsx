@@ -117,7 +117,15 @@ export default function Intelligence() {
   const { rows: caseloadRows, loading: metricsLoading } = useCICaseloadFeed(effectiveAgencyId);
   const { alerts, loading: alertsLoading, resolveAlert } = useCIAlertFeed(effectiveAgencyId);
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
-  const { authorizations, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
+  const { authorizations, forecasts, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
+  
+  // Compute supervision off-track from alerts feed
+  const supervisionOffTrackCount = useMemo(() => {
+    return alerts.filter(a => 
+      a.category?.startsWith('supervision_off_track') || 
+      a.category?.startsWith('supervision_at_risk')
+    ).length;
+  }, [alerts]);
   const { signals, loading: signalsLoading, resolveSignal } = useSupervisorSignals(effectiveAgencyId);
   
   const [searchQuery, setSearchQuery] = useState('');
