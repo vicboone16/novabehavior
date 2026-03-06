@@ -16,7 +16,7 @@ export default function StaffAssignments() {
   const {
     assignments, loading,
     profiles, agencies, classrooms, students,
-    createAssignment, updateAssignment, removeAssignment,
+    createAssignment, updateAssignment, removeAssignment, bulkAssignClassroom,
   } = useStaffAssignments();
 
   const [tab, setTab] = useState<TabMode>('agency');
