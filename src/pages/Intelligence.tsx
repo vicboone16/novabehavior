@@ -246,11 +246,13 @@ export default function Intelligence() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard icon={<Users className="w-5 h-5" />} label="Total Clients" value={kpis.total} />
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <KPICard icon={<Users className="w-5 h-5" />} label="My Clients" value={kpis.total} />
         <KPICard icon={<AlertTriangle className="w-5 h-5" />} label="High Risk" value={kpis.highRisk} variant={kpis.highRisk > 0 ? 'destructive' : 'default'} />
         <KPICard icon={<Clock className="w-5 h-5" />} label="Stale Data" value={kpis.staleData} variant={kpis.staleData > 0 ? 'warning' : 'default'} />
-        <KPICard icon={<FileWarning className="w-5 h-5" />} label="Hours At Risk" value={authKpis.hoursAtRisk} variant={authKpis.hoursAtRisk > 0 ? 'warning' : 'default'} />
+        <KPICard icon={<Target className="w-5 h-5" />} label="Plateaued Goals" value={kpis.plateauedGoals} variant={kpis.plateauedGoals > 0 ? 'warning' : 'default'} />
+        <KPICard icon={<Shield className="w-5 h-5" />} label="Fidelity Low" value={kpis.lowFidelity} variant={kpis.lowFidelity > 0 ? 'warning' : 'default'} />
+        <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} variant={kpis.lowParent > 0 ? 'warning' : 'default'} />
         <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
