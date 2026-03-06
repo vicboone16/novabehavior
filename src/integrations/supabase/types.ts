@@ -12576,6 +12576,13 @@ export type Database = {
             referencedRelation: "ci_alerts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lms_assignments_source_alert_id_fkey"
+            columns: ["source_alert_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_alert_feed"
+            referencedColumns: ["alert_id"]
+          },
         ]
       }
       lms_badges: {
@@ -24451,6 +24458,25 @@ export type Database = {
           },
         ]
       }
+      v_agency_forecast_summary: {
+        Row: {
+          agency_id: string | null
+          at_risk: number | null
+          avg_burn_rate: number | null
+          off_track: number | null
+          on_track: number | null
+          total_authorizations: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_authorizations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_authorization_utilization: {
         Row: {
           authorization_id: string | null
@@ -24716,6 +24742,125 @@ export type Database = {
           },
         ]
       }
+      v_ci_alert_feed: {
+        Row: {
+          agency_id: string | null
+          alert_id: string | null
+          alert_key: string | null
+          category: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string | null
+          explanation_json: Json | null
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_alerts_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ci_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      v_ci_caseload_feed: {
+        Row: {
+          agency_id: string | null
+          client_id: string | null
+          client_name: string | null
+          data_freshness: number | null
+          fidelity_score: number | null
+          goal_velocity_score: number | null
+          metrics_updated_at: string | null
+          open_alert_count: number | null
+          parent_impl_score: number | null
+          risk_score: number | null
+          trend_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ci_client_metrics_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ci_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_client_intervention_effectiveness: {
         Row: {
           agency_id: string | null
@@ -24763,6 +24908,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_aba_library_recommendations_v2"
             referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
+      v_clinical_authorization_summary: {
+        Row: {
+          agency_id: string | null
+          auth_number: string | null
+          authorization_id: string | null
+          client_id: string | null
+          client_name: string | null
+          computed_status: string | null
+          days_remaining: number | null
+          direct_hours_per_week: number | null
+          end_date: string | null
+          group_hours_per_week: number | null
+          parent_training_hours_per_week: number | null
+          pct_time_elapsed: number | null
+          pct_used: number | null
+          service_codes: string[] | null
+          start_date: string | null
+          supervision_hours_per_week: number | null
+          units_approved: number | null
+          units_remaining: number | null
+          units_used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_authorizations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -26020,13 +26197,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -26036,7 +26206,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -26050,8 +26220,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -26064,8 +26234,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -26077,13 +26247,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -26407,6 +26584,10 @@ export type Database = {
       ci_refresh_all: {
         Args: { _agency_id?: string; _data_source_id?: string }
         Returns: string
+      }
+      ci_refresh_forecast_alerts: {
+        Args: { p_agency_id?: string }
+        Returns: undefined
       }
       ci_refresh_intervention_recs_all: {
         Args: { p_limit?: number }
