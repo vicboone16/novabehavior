@@ -22,6 +22,7 @@ export default function StaffAssignments() {
   const [tab, setTab] = useState<TabMode>('agency');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffAssignment | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterActive, setFilterActive] = useState<string>('active');
