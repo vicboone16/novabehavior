@@ -22178,6 +22178,10 @@ export type Database = {
         Args: { check_user_id: string }
         Returns: boolean
       }
+      is_same_agency_user: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
       is_student_owner: {
         Args: { _student_id: string; _user_id: string }
         Returns: boolean
