@@ -24591,6 +24591,162 @@ export type Database = {
           },
         ]
       }
+      training_assignments_v2: {
+        Row: {
+          assigned_by: string | null
+          certification_key: string | null
+          created_at: string | null
+          due_date: string | null
+          id: string
+          module_key: string | null
+          notes: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          certification_key?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          module_key?: string | null
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          certification_key?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          module_key?: string | null
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      training_certification_progress: {
+        Row: {
+          approved_by: string | null
+          certification_key: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          module_key: string | null
+          notes: string | null
+          requirement_type: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          certification_key: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_key?: string | null
+          notes?: string | null
+          requirement_type: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          certification_key?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          module_key?: string | null
+          notes?: string | null
+          requirement_type?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      training_certification_requirements: {
+        Row: {
+          certification_key: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_required: boolean | null
+          module_key: string
+          requirement_type: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          certification_key: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          module_key: string
+          requirement_type: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          certification_key?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          module_key?: string
+          requirement_type?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      training_downloads: {
+        Row: {
+          audience: string | null
+          created_at: string | null
+          description: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          module_key: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          audience?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_key: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          audience?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_key?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
       training_modules: {
         Row: {
           agency_id: string | null
