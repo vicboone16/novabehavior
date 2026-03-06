@@ -13750,6 +13750,13 @@ export type Database = {
             referencedRelation: "lms_modules"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lms_lessons_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_lms_modules_with_counts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       lms_modules: {
@@ -27490,6 +27497,31 @@ export type Database = {
           title: string | null
         }
         Relationships: []
+      }
+      v_lms_modules_with_counts: {
+        Row: {
+          course_id: string | null
+          description: string | null
+          id: string | null
+          lesson_count: number | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "lms_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lms_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "v_lms_courses_with_counts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_plan_publications_feed: {
         Row: {
