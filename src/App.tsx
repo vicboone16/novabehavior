@@ -68,6 +68,9 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
 import TeacherComms from "./pages/TeacherComms";
+import SDCTraining from "./pages/SDCTraining";
+import SDCModuleDetail from "./pages/SDCModuleDetail";
+import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 
 const queryClient = new QueryClient();
 
@@ -404,6 +407,33 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <InterventionBuilder />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/sdc-training" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCTraining />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/sdc-training/module/:id" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCModuleDetail />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/sdc-training/certification" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCCertificationTracker />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
