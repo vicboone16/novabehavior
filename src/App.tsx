@@ -68,6 +68,9 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import Diagnostics from "./pages/Diagnostics";
 import ExportHours from "./pages/ExportHours";
 import TeacherComms from "./pages/TeacherComms";
+import SDCTraining from "./pages/SDCTraining";
+import SDCModuleDetail from "./pages/SDCModuleDetail";
+import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 
 const queryClient = new QueryClient();
 
