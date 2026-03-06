@@ -18580,6 +18580,69 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_assignments: {
+        Row: {
+          agency_id: string | null
+          app_context: string | null
+          assigned_at: string
+          assigned_by: string | null
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          classroom_id: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          permission_level: string | null
+          role_slug: string
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          app_context?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          can_collect_data?: boolean | null
+          can_edit_profile?: boolean | null
+          can_generate_reports?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_notes?: boolean | null
+          classroom_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_level?: string | null
+          role_slug: string
+          student_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          app_context?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          can_collect_data?: boolean | null
+          can_edit_profile?: boolean | null
+          can_generate_reports?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_notes?: boolean | null
+          classroom_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_level?: string | null
+          role_slug?: string
+          student_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_availability: {
         Row: {
           created_at: string
@@ -26368,6 +26431,35 @@ export type Database = {
         Returns: undefined
       }
       current_agency_id: { Args: never; Returns: string }
+      disable_staff_assignment: {
+        Args: { p_id: string }
+        Returns: {
+          agency_id: string | null
+          app_context: string | null
+          assigned_at: string
+          assigned_by: string | null
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          classroom_id: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          permission_level: string | null
+          role_slug: string
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       effective_cid_access: { Args: { _user_id: string }; Returns: boolean }
       effective_cross_agency_access: {
         Args: { _user_id: string }
@@ -27289,6 +27381,56 @@ export type Database = {
       switch_agency: {
         Args: { _agency_id: string; _user_id: string }
         Returns: boolean
+      }
+      sync_staff_assignment_to_access: {
+        Args: { p_assignment_id: string }
+        Returns: Json
+      }
+      upsert_staff_assignment: {
+        Args: {
+          p_agency_id?: string
+          p_app_context?: string
+          p_assigned_by?: string
+          p_can_collect_data?: boolean
+          p_can_edit_profile?: boolean
+          p_can_generate_reports?: boolean
+          p_can_view_documents?: boolean
+          p_can_view_notes?: boolean
+          p_classroom_id?: string
+          p_id?: string
+          p_is_active?: boolean
+          p_notes?: string
+          p_permission_level?: string
+          p_role_slug?: string
+          p_student_id?: string
+          p_user_id?: string
+        }
+        Returns: {
+          agency_id: string | null
+          app_context: string | null
+          assigned_at: string
+          assigned_by: string | null
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          classroom_id: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          permission_level: string | null
+          role_slug: string
+          student_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "staff_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       user_has_pin: { Args: { _user_id: string }; Returns: boolean }
       user_session_ids: { Args: { p_user_id: string }; Returns: string[] }
