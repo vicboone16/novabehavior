@@ -11868,6 +11868,106 @@ export type Database = {
           },
         ]
       }
+      incident_logs: {
+        Row: {
+          actions_taken: string | null
+          agency_id: string
+          client_id: string | null
+          created_at: string
+          description: string | null
+          follow_up_notes: string | null
+          follow_up_required: boolean | null
+          id: string
+          incident_type: string
+          location: string | null
+          logged_by: string
+          occurred_at: string
+          severity: number
+          title: string
+          updated_at: string
+          witnesses: string[] | null
+        }
+        Insert: {
+          actions_taken?: string | null
+          agency_id: string
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          incident_type?: string
+          location?: string | null
+          logged_by: string
+          occurred_at?: string
+          severity?: number
+          title: string
+          updated_at?: string
+          witnesses?: string[] | null
+        }
+        Update: {
+          actions_taken?: string | null
+          agency_id?: string
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          incident_type?: string
+          location?: string | null
+          logged_by?: string
+          occurred_at?: string
+          severity?: number
+          title?: string
+          updated_at?: string
+          witnesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "incident_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "incident_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "incident_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       ingestion_jobs: {
         Row: {
           created_at: string

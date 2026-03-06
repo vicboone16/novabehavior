@@ -41,6 +41,9 @@ import Analytics from "./pages/Analytics";
 import Recruiting from "./pages/Recruiting";
 import LMS from "./pages/LMS";
 import ParentTrainingAdmin from "./pages/ParentTrainingAdmin";
+import ParentTrainingViewer from "./pages/ParentTrainingViewer";
+import ParentModulePlayer from "./pages/ParentModulePlayer";
+import ModulePlayer from "./pages/ModulePlayer";
 import NotFound from "./pages/NotFound";
 import BehaviorLabCatalog from "./pages/BehaviorLabCatalog";
 import BehaviorLabPlayer from "./pages/BehaviorLabPlayer";
@@ -313,6 +316,25 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <ParentTrainingAdmin />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-training/view" element={
+              <ProtectedRoute>
+                <ParentTrainingViewer />
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-training/:moduleId" element={
+              <ProtectedRoute>
+                <ParentModulePlayer />
+              </ProtectedRoute>
+            } />
+            <Route path="/module/:moduleId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ModulePlayer />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
