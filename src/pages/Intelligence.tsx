@@ -5,7 +5,7 @@ import {
   Shield, Activity, Users, Clock, Target, Heart, 
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
-  Eye, ShieldAlert
+  Eye, ShieldAlert, Award
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SupervisionPerformanceTab } from '@/components/intelligence/SupervisionPerformanceTab';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
@@ -285,6 +286,10 @@ export default function Intelligence() {
           <TabsTrigger value="clinical-tracking">
             <CalendarClock className="w-4 h-4 mr-1" />
             Clinical Tracking
+          </TabsTrigger>
+          <TabsTrigger value="supervision">
+            <Award className="w-4 h-4 mr-1" />
+            Supervision
           </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
@@ -621,6 +626,11 @@ export default function Intelligence() {
               </Card>
             </>
           )}
+        </TabsContent>
+
+        {/* Supervision Performance Tab */}
+        <TabsContent value="supervision" className="space-y-4">
+          <SupervisionPerformanceTab agencyId={effectiveAgencyId} />
         </TabsContent>
 
         {/* Recommendations Tab */}
