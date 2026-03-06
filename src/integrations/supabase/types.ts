@@ -6264,6 +6264,90 @@ export type Database = {
           },
         ]
       }
+      client_intervention_outcomes: {
+        Row: {
+          agency_id: string
+          baseline_value: number | null
+          baseline_window_end: string | null
+          baseline_window_start: string | null
+          client_id: string
+          comparison_value: number | null
+          comparison_window_end: string | null
+          comparison_window_start: string | null
+          confidence_score: number | null
+          created_at: string
+          data_freshness_score: number | null
+          delta_value: number | null
+          fidelity_score: number | null
+          metric_direction: string
+          metric_key: string
+          notes: string | null
+          outcome_id: string
+          outcome_label: string | null
+          percent_change: number | null
+          run_id: string
+        }
+        Insert: {
+          agency_id: string
+          baseline_value?: number | null
+          baseline_window_end?: string | null
+          baseline_window_start?: string | null
+          client_id: string
+          comparison_value?: number | null
+          comparison_window_end?: string | null
+          comparison_window_start?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          data_freshness_score?: number | null
+          delta_value?: number | null
+          fidelity_score?: number | null
+          metric_direction: string
+          metric_key: string
+          notes?: string | null
+          outcome_id?: string
+          outcome_label?: string | null
+          percent_change?: number | null
+          run_id: string
+        }
+        Update: {
+          agency_id?: string
+          baseline_value?: number | null
+          baseline_window_end?: string | null
+          baseline_window_start?: string | null
+          client_id?: string
+          comparison_value?: number | null
+          comparison_window_end?: string | null
+          comparison_window_start?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          data_freshness_score?: number | null
+          delta_value?: number | null
+          fidelity_score?: number | null
+          metric_direction?: string
+          metric_key?: string
+          notes?: string | null
+          outcome_id?: string
+          outcome_label?: string | null
+          percent_change?: number | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_outcomes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_runs"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_outcomes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_intervention_effectiveness"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
       client_intervention_plan_items: {
         Row: {
           created_at: string | null
@@ -6376,6 +6460,105 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      client_intervention_runs: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          expected_outcome_type: string
+          implementation_status: string
+          intervention_id: string | null
+          notes: string | null
+          phase: string | null
+          plan_id: string | null
+          plan_item_id: string | null
+          run_id: string
+          setting: string | null
+          start_date: string
+          target_behavior_id: string | null
+          target_skill_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          expected_outcome_type?: string
+          implementation_status?: string
+          intervention_id?: string | null
+          notes?: string | null
+          phase?: string | null
+          plan_id?: string | null
+          plan_item_id?: string | null
+          run_id?: string
+          setting?: string | null
+          start_date: string
+          target_behavior_id?: string | null
+          target_skill_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          expected_outcome_type?: string
+          implementation_status?: string
+          intervention_id?: string | null
+          notes?: string | null
+          phase?: string | null
+          plan_id?: string | null
+          plan_item_id?: string | null
+          run_id?: string
+          setting?: string | null
+          start_date?: string
+          target_behavior_id?: string | null
+          target_skill_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "client_intervention_plans"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_plan_item_id_fkey"
+            columns: ["plan_item_id"]
+            isOneToOne: false
+            referencedRelation: "client_plan_items"
+            referencedColumns: ["plan_item_id"]
+          },
+        ]
       }
       client_locations: {
         Row: {
@@ -24316,6 +24499,56 @@ export type Database = {
           },
         ]
       }
+      v_client_intervention_effectiveness: {
+        Row: {
+          agency_id: string | null
+          baseline_value: number | null
+          client_id: string | null
+          comparison_value: number | null
+          confidence_score: number | null
+          data_freshness_score: number | null
+          delta_value: number | null
+          effectiveness_status: string | null
+          end_date: string | null
+          expected_outcome_type: string | null
+          fidelity_score: number | null
+          full_name: string | null
+          implementation_status: string | null
+          intervention_id: string | null
+          intervention_title: string | null
+          metric_direction: string | null
+          metric_key: string | null
+          outcome_label: string | null
+          percent_change: number | null
+          phase: string | null
+          run_id: string | null
+          setting: string | null
+          start_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
       v_clinical_hours_forecast: {
         Row: {
           agency_id: string | null
@@ -24496,6 +24729,81 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      v_intervention_effectiveness_summary: {
+        Row: {
+          avg_confidence_score: number | null
+          avg_percent_change: number | null
+          effective_runs: number | null
+          effectiveness_rate_percent: number | null
+          ineffective_runs: number | null
+          intervention_id: string | null
+          intervention_title: string | null
+          low_confidence_runs: number | null
+          neutral_runs: number | null
+          total_runs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
+          },
+        ]
+      }
+      v_intervention_pattern_summary: {
+        Row: {
+          avg_confidence_score: number | null
+          avg_percent_change: number | null
+          effective_runs: number | null
+          effectiveness_rate_percent: number | null
+          expected_outcome_type: string | null
+          ineffective_runs: number | null
+          intervention_id: string | null
+          intervention_title: string | null
+          phase: string | null
+          setting: string | null
+          total_runs: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "aba_library_interventions"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_matches"
+            referencedColumns: ["intervention_id"]
+          },
+          {
+            foreignKeyName: "client_intervention_runs_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "v_aba_library_recommendations_v2"
+            referencedColumns: ["intervention_id"]
           },
         ]
       }
@@ -25716,6 +26024,10 @@ export type Database = {
         Args: { prior_rate: number; recent_rate: number }
         Returns: number
       }
+      classify_intervention_outcome: {
+        Args: { p_metric_direction: string; p_percent_change: number }
+        Returns: string
+      }
       cleanup_old_pin_attempts: { Args: never; Returns: undefined }
       compute_distance_miles: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
@@ -26216,6 +26528,23 @@ export type Database = {
         }
         Returns: string
       }
+      log_client_intervention_outcome: {
+        Args: {
+          p_baseline_value: number
+          p_baseline_window_end?: string
+          p_baseline_window_start?: string
+          p_comparison_value: number
+          p_comparison_window_end?: string
+          p_comparison_window_start?: string
+          p_data_freshness_score?: number
+          p_fidelity_score?: number
+          p_metric_direction: string
+          p_metric_key: string
+          p_notes?: string
+          p_run_id: string
+        }
+        Returns: string
+      }
       log_data_access: {
         Args: {
           _access_type: string
@@ -26688,6 +27017,18 @@ export type Database = {
       }
       skill_target_student_id: {
         Args: { p_target_id: string }
+        Returns: string
+      }
+      start_client_intervention_run: {
+        Args: {
+          p_agency_id: string
+          p_client_id: string
+          p_expected_outcome_type?: string
+          p_phase?: string
+          p_plan_id: string
+          p_plan_item_id: string
+          p_setting?: string
+        }
         Returns: string
       }
       submit_parent_summary_packets: {
