@@ -776,8 +776,21 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 mr-4">
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                      <h4 className="font-semibold">{behavior.name}</h4>
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                      <InlineNameEditor
+                                        value={behavior.name}
+                                        onSave={async (newName) => {
+                                          // Update the name in the store
+                                          updateBankBehaviorDefinition(behavior.id, behavior.operationalDefinition, behavior.category);
+                                          // For org behaviors synced to DB
+                                          const isGlobalBank = useDataStore.getState().globalBehaviorBank.some(b => b.id === behavior.id);
+                                          if (isGlobalBank && user?.id) {
+                                            const updated = useDataStore.getState().globalBehaviorBank.find(b => b.id === behavior.id);
+                                            if (updated) syncCustomBehaviorToDB({ ...updated, name: newName }, user.id);
+                                          }
+                                          toast({ title: 'Name updated' });
+                                        }}
+                                      />
                                       {behavior.source === 'built-in' && (
                                         <Badge variant="secondary" className="text-xs">Built-in</Badge>
                                       )}
@@ -803,9 +816,19 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-muted-foreground mb-2">
                                       {behavior.operationalDefinition}
                                     </p>
+                                    <TagManager
+                                      itemId={behavior.id}
+                                      itemType="behavior"
+                                      currentTags={getTagsForItem(behavior.id, 'behavior')}
+                                      allTags={allBxTags}
+                                      onAddNew={addNewTagToItem}
+                                      onAddExisting={addTagToItem}
+                                      onRemove={removeTagFromItem}
+                                      compact
+                                    />
                                   </div>
                                   <div className="flex gap-1 flex-shrink-0">
                                     <Button
