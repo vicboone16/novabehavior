@@ -179,7 +179,7 @@ export default function LMS() {
             <Button onClick={() => setShowNewModule(true)} className="gap-2 mb-4"><Plus className="w-4 h-4" />New Module</Button>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {modules.map(m => (
-                <Card key={m.id} className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200" onClick={() => navigate(`/academy/lab`)}>
+                <Card key={m.id} className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200" onClick={() => navigate(`/module/${m.id}`)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">{m.title}</CardTitle>
                     <CardDescription className="line-clamp-2">{m.description || 'No description'}</CardDescription>
