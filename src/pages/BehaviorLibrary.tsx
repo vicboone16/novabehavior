@@ -599,14 +599,25 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                 <CardTitle className="text-base">Search & Filter</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search behaviors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                <div className="space-y-3">
+                  <AISearchBar
+                    onSearch={aiSearch}
+                    results={searchResults}
+                    isSearching={isSearching}
+                    placeholder="AI search: describe a behavior, setting, or strategy..."
+                    onResultClick={(r) => {
+                      setSearchQuery(r.name);
+                    }}
                   />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter behaviors..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Category</Label>
