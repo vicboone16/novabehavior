@@ -5,7 +5,7 @@ import {
   Shield, Activity, Users, Clock, Target, Heart, 
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
-  Eye, ShieldAlert
+  Eye, ShieldAlert, Award
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
