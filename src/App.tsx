@@ -320,6 +320,25 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+            <Route path="/parent-training/view" element={
+              <ProtectedRoute>
+                <ParentTrainingViewer />
+              </ProtectedRoute>
+            } />
+            <Route path="/parent-training/:moduleId" element={
+              <ProtectedRoute>
+                <ParentModulePlayer />
+              </ProtectedRoute>
+            } />
+            <Route path="/module/:moduleId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ModulePlayer />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/inbox" element={
               <ProtectedRoute>
                 <ApprovalCheck>
