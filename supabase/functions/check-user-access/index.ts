@@ -150,7 +150,8 @@ Deno.serve(async (req) => {
 
       visibleStudentIds = (visRows || []).map((r: any) => r.student_id);
     } else {
-      const [visRes, accessRes] = await Promise.all([
+      // Fetch app visibility, user_student_access, AND owned students in parallel
+      const [visRes, accessRes, ownedRes] = await Promise.all([
         supabaseAdmin
           .from("student_app_visibility")
           .select("student_id")
@@ -161,15 +162,30 @@ Deno.serve(async (req) => {
           .select("student_id")
           .eq("user_id", userId)
           .eq("app_scope", resolvedSlug),
+        // Independent mode: users who directly own students (no agency required)
+        supabaseAdmin
+          .from("students")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("is_archived", false),
       ]);
 
       const visSet = new Set((visRes.data || []).map((r: any) => r.student_id));
       const accessIds = (accessRes.data || []).map((r: any) => r.student_id);
+      const ownedIds = (ownedRes.data || []).map((r: any) => r.id);
 
-      visibleStudentIds = accessIds.filter((id: string) => visSet.has(id));
+      // Combine explicit access + owned students, filtered by app visibility
+      const allAccessIds = new Set([...accessIds, ...ownedIds]);
+      visibleStudentIds = Array.from(allAccessIds).filter((id: string) => visSet.has(id));
 
+      // Fallback: if user has agency memberships but no explicit assignments, show all visible
       if (visibleStudentIds.length === 0 && agencies.length > 0) {
         visibleStudentIds = Array.from(visSet);
+      }
+
+      // Fallback for independent users who own students not yet in visibility table
+      if (visibleStudentIds.length === 0 && ownedIds.length > 0) {
+        visibleStudentIds = ownedIds;
       }
     }
 
