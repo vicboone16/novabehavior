@@ -27,7 +27,7 @@ export function useBehaviorLab() {
 
       setGames((data || []).map(g => ({
         ...g,
-        content: g.content as unknown as GameContent,
+        content: normalizeGameContent(g.content),
       })) as BehaviorLabGame[]);
     } catch (err: any) {
       console.error('Error fetching games:', err);
