@@ -24766,35 +24766,6 @@ export type Database = {
           },
         ]
       }
-      v_clinical_hours_forecast: {
-        Row: {
-          agency_id: string | null
-          authorization_id: string | null
-          cancels_7d: number | null
-          client_id: string | null
-          delivered_total_7d: number | null
-          end_date: string | null
-          forecast_status: string | null
-          full_name: string | null
-          no_shows_7d: number | null
-          projected_coverage_hours: number | null
-          required_remaining_hours: number | null
-          scheduled_total_remaining: number | null
-          start_date: string | null
-          weekly_burn_rate_percent: number | null
-          weekly_total_required: number | null
-          weeks_remaining: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clinical_authorizations_agency_id_fkey"
-            columns: ["agency_id"]
-            isOneToOne: false
-            referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       v_clinical_schedule_events_norm: {
         Row: {
           agency_id: string | null
