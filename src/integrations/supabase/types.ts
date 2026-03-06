@@ -4060,6 +4060,41 @@ export type Database = {
           },
         ]
       }
+      bx_item_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          tag_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          tag_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          tag_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_item_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "bx_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bx_objective_strategy_links: {
         Row: {
           created_at: string
@@ -4555,6 +4590,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bx_strategies_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bx_tags: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          tag_key: string
+          tag_label: string
+          tag_type: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          tag_key: string
+          tag_label: string
+          tag_type?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          tag_key?: string
+          tag_label?: string
+          tag_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bx_tags_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
@@ -30568,6 +30644,15 @@ export type Database = {
           p_require_note_final_to_post_override: boolean
         }
         Returns: Json
+      }
+      search_bx_items_by_tags: {
+        Args: { p_item_type?: string; p_tag_keys: string[] }
+        Returns: {
+          item_id: string
+          item_type: string
+          match_count: number
+          matched_tags: string[]
+        }[]
       }
       set_agency_alias: {
         Args: { _agency_id: string; _suffix: string }

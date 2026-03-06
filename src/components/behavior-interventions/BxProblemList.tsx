@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, AlertTriangle, Shield, AlertCircle, Info, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { InlineNameEditor } from '@/components/behavior-library/InlineNameEditor';
+import { TagManager } from '@/components/behavior-library/TagManager';
+import { useBxTags } from '@/hooks/useBxTags';
 import type { BxPresentingProblem, RiskLevel } from '@/types/behaviorIntervention';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const RISK_CONFIG: Record<RiskLevel, { icon: React.ReactNode; color: string }> = {
   low: { icon: <Info className="w-3 h-3" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
@@ -30,7 +35,9 @@ export function BxProblemList({
   onAddToStudent
 }: BxProblemListProps) {
   const [search, setSearch] = useState('');
+  const { tags: allBxTags, fetchTags, getTagsForItem, addNewTagToItem, addTagToItem, removeTagFromItem } = useBxTags();
 
+  useEffect(() => { fetchTags(); }, [fetchTags]);
   const filtered = problems.filter(p =>
     p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.problem_code.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,7 +97,16 @@ export function BxProblemList({
                             {problem.problem_code}
                           </span>
                         </div>
-                        <h4 className="font-medium text-sm truncate">{problem.title}</h4>
+                        <h4 className="font-medium text-sm truncate">
+                          <InlineNameEditor
+                            value={problem.title}
+                            onSave={async (newName) => {
+                              const { error } = await supabase.from('bx_presenting_problems').update({ title: newName } as any).eq('id', problem.id);
+                              if (error) toast.error(error.message);
+                              else toast.success('Problem renamed');
+                            }}
+                          />
+                        </h4>
                         {problem.function_tags && problem.function_tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {problem.function_tags.slice(0, 3).map(tag => (
@@ -100,6 +116,18 @@ export function BxProblemList({
                             ))}
                           </div>
                         )}
+                        <div className="mt-1">
+                          <TagManager
+                            itemId={problem.id}
+                            itemType="problem"
+                            currentTags={getTagsForItem(problem.id, 'problem')}
+                            allTags={allBxTags}
+                            onAddNew={addNewTagToItem}
+                            onAddExisting={addTagToItem}
+                            onRemove={removeTagFromItem}
+                            compact
+                          />
+                        </div>
                       </div>
                     </div>
                   </button>

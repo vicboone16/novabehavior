@@ -266,6 +266,35 @@ export function useBehaviorLibraryData() {
     await saveStrategy({ ...rest, strategy_name: `${source.strategy_name} (Copy)`, strategy_code: `${source.strategy_code}-COPY` });
   }, [strategies, saveStrategy]);
 
+  // Inline name editing for all item types
+  const renameProblem = useCallback(async (id: string, newTitle: string) => {
+    const { error } = await supabase.from('bx_presenting_problems').update({ title: newTitle } as any).eq('id', id);
+    if (error) { toast.error('Failed to rename: ' + error.message); return; }
+    toast.success('Problem renamed');
+    await fetchAll();
+  }, [fetchAll]);
+
+  const renameGoal = useCallback(async (id: string, newTitle: string) => {
+    const { error } = await supabase.from('bx_replacement_goals').update({ goal_title: newTitle } as any).eq('id', id);
+    if (error) { toast.error('Failed to rename: ' + error.message); return; }
+    toast.success('Goal renamed');
+    await fetchAll();
+  }, [fetchAll]);
+
+  const renameObjective = useCallback(async (id: string, newTitle: string) => {
+    const { error } = await supabase.from('bx_objectives').update({ objective_title: newTitle } as any).eq('id', id);
+    if (error) { toast.error('Failed to rename: ' + error.message); return; }
+    toast.success('Objective renamed');
+    await fetchAll();
+  }, [fetchAll]);
+
+  const renameStrategy = useCallback(async (id: string, newName: string) => {
+    const { error } = await supabase.from('bx_strategies').update({ strategy_name: newName } as any).eq('id', id);
+    if (error) { toast.error('Failed to rename: ' + error.message); return; }
+    toast.success('Strategy renamed');
+    await fetchAll();
+  }, [fetchAll]);
+
   // Link management
   const addLink = useCallback(async (table: string, data: Record<string, any>) => {
     const { error } = await (supabase.from as any)(table).insert(data);
@@ -290,6 +319,7 @@ export function useBehaviorLibraryData() {
     getGoalCountForObjective, getLinkedObjectivesForStrategy,
     getLinkedGoalsForStrategy, getLinkedProblemsForStrategy,
     saveStrategy, archiveStrategy, duplicateStrategy,
+    renameProblem, renameGoal, renameObjective, renameStrategy,
     addLink, removeLink,
   };
 }

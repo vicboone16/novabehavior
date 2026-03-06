@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Plus, Search, Copy, ArrowLeft, Merge, Users, Edit2, Building2, RotateCcw, Activity, Lightbulb, UserPlus, Archive, Trash2, ArchiveRestore } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,10 @@ import { PromoteToStandardDialog } from '@/components/behavior-library/PromoteTo
 import { AdvancedMergeDialog } from '@/components/behavior-library/AdvancedMergeDialog';
 import { BxInterventionLibrary } from '@/components/behavior-interventions';
 import { AddBehaviorToStudentDialog } from '@/components/behavior-library/AddBehaviorToStudentDialog';
+import { TagManager } from '@/components/behavior-library/TagManager';
+import { InlineNameEditor } from '@/components/behavior-library/InlineNameEditor';
+import { AISearchBar } from '@/components/behavior-library/AISearchBar';
+import { useBxTags } from '@/hooks/useBxTags';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useBehaviorBankSync,
@@ -42,6 +46,7 @@ import {
   archiveBehaviorToDB,
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BehaviorLibraryProps {
   embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
@@ -175,7 +180,18 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
-  
+
+  // Tags system
+  const {
+    tags: allBxTags, fetchTags, getTagsForItem,
+    addNewTagToItem, addTagToItem, removeTagFromItem,
+    searchResults, isSearching, aiSearch,
+  } = useBxTags();
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
   const [activeLibraryTab, setActiveLibraryTab] = useState<'behaviors' | 'interventions'>('behaviors');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -583,14 +599,25 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                 <CardTitle className="text-base">Search & Filter</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search behaviors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
+                <div className="space-y-3">
+                  <AISearchBar
+                    onSearch={aiSearch}
+                    results={searchResults}
+                    isSearching={isSearching}
+                    placeholder="AI search: describe a behavior, setting, or strategy..."
+                    onResultClick={(r) => {
+                      setSearchQuery(r.name);
+                    }}
                   />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter behaviors..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Category</Label>
@@ -749,8 +776,21 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1 mr-4">
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                      <h4 className="font-semibold">{behavior.name}</h4>
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                      <InlineNameEditor
+                                        value={behavior.name}
+                                        onSave={async (newName) => {
+                                          // Update the name in the store
+                                          updateBankBehaviorDefinition(behavior.id, behavior.operationalDefinition, behavior.category);
+                                          // For org behaviors synced to DB
+                                          const isGlobalBank = useDataStore.getState().globalBehaviorBank.some(b => b.id === behavior.id);
+                                          if (isGlobalBank && user?.id) {
+                                            const updated = useDataStore.getState().globalBehaviorBank.find(b => b.id === behavior.id);
+                                            if (updated) syncCustomBehaviorToDB({ ...updated, name: newName }, user.id);
+                                          }
+                                          toast({ title: 'Name updated' });
+                                        }}
+                                      />
                                       {behavior.source === 'built-in' && (
                                         <Badge variant="secondary" className="text-xs">Built-in</Badge>
                                       )}
@@ -776,9 +816,19 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-muted-foreground mb-2">
                                       {behavior.operationalDefinition}
                                     </p>
+                                    <TagManager
+                                      itemId={behavior.id}
+                                      itemType="behavior"
+                                      currentTags={getTagsForItem(behavior.id, 'behavior')}
+                                      allTags={allBxTags}
+                                      onAddNew={addNewTagToItem}
+                                      onAddExisting={addTagToItem}
+                                      onRemove={removeTagFromItem}
+                                      compact
+                                    />
                                   </div>
                                   <div className="flex gap-1 flex-shrink-0">
                                     <Button
