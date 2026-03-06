@@ -287,6 +287,10 @@ export default function Intelligence() {
             <CalendarClock className="w-4 h-4 mr-1" />
             Clinical Tracking
           </TabsTrigger>
+          <TabsTrigger value="supervision">
+            <Award className="w-4 h-4 mr-1" />
+            Supervision
+          </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
 
