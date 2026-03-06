@@ -180,7 +180,18 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
-  
+
+  // Tags system
+  const {
+    tags: allBxTags, fetchTags, getTagsForItem,
+    addNewTagToItem, addTagToItem, removeTagFromItem,
+    searchResults, isSearching, aiSearch,
+  } = useBxTags();
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
   const [activeLibraryTab, setActiveLibraryTab] = useState<'behaviors' | 'interventions'>('behaviors');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
