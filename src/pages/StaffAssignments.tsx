@@ -3,10 +3,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Search, Loader2 } from 'lucide-react';
+import { UserPlus, Users, Search, Loader2 } from 'lucide-react';
 import { useStaffAssignments, type StaffAssignment, type StaffAssignmentFormData } from '@/hooks/useStaffAssignments';
 import { AssignmentTable } from '@/components/staff-assignments/AssignmentTable';
 import { AssignmentModal } from '@/components/staff-assignments/AssignmentModal';
+import { BulkClassroomAssignModal } from '@/components/staff-assignments/BulkClassroomAssignModal';
 import { RoleMatrix } from '@/components/staff-assignments/RoleMatrix';
 
 type TabMode = 'agency' | 'classroom' | 'student' | 'matrix';
@@ -15,12 +16,13 @@ export default function StaffAssignments() {
   const {
     assignments, loading,
     profiles, agencies, classrooms, students,
-    createAssignment, updateAssignment, removeAssignment,
+    createAssignment, updateAssignment, removeAssignment, bulkAssignClassroom,
   } = useStaffAssignments();
 
   const [tab, setTab] = useState<TabMode>('agency');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffAssignment | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterActive, setFilterActive] = useState<string>('active');
@@ -84,10 +86,18 @@ export default function StaffAssignments() {
           </p>
         </div>
         {tab !== 'matrix' && (
-          <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Assign Staff
-          </Button>
+          <div className="flex gap-2">
+            {tab === 'classroom' && (
+              <Button variant="outline" onClick={() => setBulkOpen(true)}>
+                <Users className="h-4 w-4 mr-2" />
+                Quick Assign Team
+              </Button>
+            )}
+            <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Assign Staff
+            </Button>
+          </div>
         )}
       </div>
 
@@ -169,6 +179,15 @@ export default function StaffAssignments() {
         agencies={agencies}
         classrooms={classrooms}
         students={students}
+      />
+
+      <BulkClassroomAssignModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onBulkAssign={bulkAssignClassroom}
+        profiles={profiles}
+        classrooms={classrooms}
+        agencies={agencies}
       />
     </div>
   );
