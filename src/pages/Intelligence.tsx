@@ -548,8 +548,14 @@ export default function Intelligence() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <KPICard icon={<FileWarning className="w-5 h-5" />} label="Hours At Risk" value={authKpis.hoursAtRisk} variant={authKpis.hoursAtRisk > 0 ? 'warning' : 'default'} />
                 <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring ≤30d" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<Shield className="w-5 h-5" />} label="Off-Track" value={authKpis.offTrackForecasts} variant={authKpis.offTrackForecasts > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<AlertTriangle className="w-5 h-5" />} label="At Risk" value={authKpis.atRiskForecasts} variant={authKpis.atRiskForecasts > 0 ? 'warning' : 'default'} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <KPICard icon={<Activity className="w-5 h-5" />} label="Avg Burn Rate %" value={authKpis.avgBurnRate} variant={authKpis.avgBurnRate < 70 ? 'destructive' : authKpis.avgBurnRate > 120 ? 'warning' : 'default'} />
                 <KPICard icon={<Heart className="w-5 h-5" />} label="Parent Training Due" value={kpis.lowParent} />
-                <KPICard icon={<Shield className="w-5 h-5" />} label="Off-Track Forecasts" value={authKpis.offTrackForecasts} variant={authKpis.offTrackForecasts > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<Shield className="w-5 h-5" />} label="Supervision Off-Track" value={authKpis.supervisionOffTrack} variant={authKpis.supervisionOffTrack > 0 ? 'destructive' : 'default'} />
+                <KPICard icon={<Users className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'warning' : 'default'} />
               </div>
 
               <Card>
