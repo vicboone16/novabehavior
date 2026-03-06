@@ -25393,6 +25393,31 @@ export type Database = {
           },
         ]
       }
+      v_staff_assignments: {
+        Row: {
+          agency_id: string | null
+          app_context: string | null
+          assigned_at: string | null
+          can_collect_data: boolean | null
+          can_edit_profile: boolean | null
+          can_generate_reports: boolean | null
+          can_view_documents: boolean | null
+          can_view_notes: boolean | null
+          classroom_id: string | null
+          email: string | null
+          id: string | null
+          is_active: boolean | null
+          notes: string | null
+          permission_level: string | null
+          role_slug: string | null
+          staff_name: string | null
+          student_id: string | null
+          student_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_staff_packets_needing_review: {
         Row: {
           abc_count: number | null
