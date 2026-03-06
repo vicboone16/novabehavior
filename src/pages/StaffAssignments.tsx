@@ -180,6 +180,15 @@ export default function StaffAssignments() {
         classrooms={classrooms}
         students={students}
       />
+
+      <BulkClassroomAssignModal
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onBulkAssign={bulkAssignClassroom}
+        profiles={profiles}
+        classrooms={classrooms}
+        agencies={agencies}
+      />
     </div>
   );
 }

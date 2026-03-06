@@ -151,6 +151,26 @@ export function useStaffAssignments() {
     }
   };
 
+  const bulkAssignClassroom = async (classroomId: string, userIds: string[], roleSlug: string) => {
+    try {
+      const rows = userIds.map(uid => ({
+        user_id: uid,
+        classroom_id: classroomId,
+        role_slug: roleSlug,
+        assigned_by: user?.id,
+        is_active: true,
+      }));
+      const { error } = await supabase.from('staff_assignments').insert(rows);
+      if (error) throw error;
+      toast.success(`${userIds.length} staff assigned to classroom`);
+      fetchAssignments();
+      return true;
+    } catch (err: any) {
+      toast.error('Bulk assign failed: ' + err.message);
+      return false;
+    }
+  };
+
   return {
     assignments,
     loading,
@@ -162,6 +182,7 @@ export function useStaffAssignments() {
     updateAssignment,
     removeAssignment,
     deleteAssignment,
+    bulkAssignClassroom,
     refetch: fetchAssignments,
   };
 }
