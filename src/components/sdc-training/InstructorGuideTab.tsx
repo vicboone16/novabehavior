@@ -1,19 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { BookOpen, Clock, Target, MessageSquare, AlertTriangle, CheckCircle2, Lightbulb, Users } from 'lucide-react';
-import type { SDCModule } from '@/hooks/useSDCTraining';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Clock, Target, MessageSquare, AlertTriangle, CheckCircle2, Lightbulb, Users, Printer, Play, HelpCircle } from 'lucide-react';
+import type { TrainingModuleContent } from '@/hooks/useSDCTraining';
 
 interface Props {
-  modules: SDCModule[];
-  isAdmin: boolean;
+  modules: TrainingModuleContent[];
 }
 
-function JsonList({ items, fallback = 'None specified' }: { items: any[]; fallback?: string }) {
-  if (!items || items.length === 0) return <p className="text-sm text-muted-foreground italic">{fallback}</p>;
+function JsonList({ items, fallback = 'None specified' }: { items: any; fallback?: string }) {
+  const arr = Array.isArray(items) ? items : [];
+  if (arr.length === 0) return <p className="text-sm text-muted-foreground italic">{fallback}</p>;
   return (
     <ul className="space-y-1.5">
-      {items.map((item, i) => (
+      {arr.map((item, i) => (
         <li key={i} className="text-sm flex items-start gap-2">
           <span className="text-primary mt-0.5">•</span>
           <span>{typeof item === 'string' ? item : item.text || item.label || JSON.stringify(item)}</span>
@@ -23,7 +24,10 @@ function JsonList({ items, fallback = 'None specified' }: { items: any[]; fallba
   );
 }
 
-export function InstructorGuideTab({ modules, isAdmin }: Props) {
+export function InstructorGuideTab({ modules }: Props) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(modules[0]?.module_key || null);
+  const selected = modules.find(m => m.module_key === selectedKey);
+
   if (modules.length === 0) {
     return (
       <div className="text-center py-16">
@@ -41,132 +45,129 @@ export function InstructorGuideTab({ modules, isAdmin }: Props) {
           <h2 className="text-xl font-bold text-foreground">Instructor Guide</h2>
           <p className="text-sm text-muted-foreground">Trainer-facing content for in-person delivery</p>
         </div>
-        <Badge variant="outline" className="text-xs">{modules.length} Modules</Badge>
+        <Button variant="outline" size="sm" onClick={() => window.print()} className="print:hidden">
+          <Printer className="w-4 h-4 mr-2" /> Print
+        </Button>
       </div>
 
-      <Accordion type="multiple" className="space-y-3">
-        {modules.map((mod) => (
-          <AccordionItem key={mod.id} value={mod.id} className="border rounded-lg bg-card px-4">
-            <AccordionTrigger className="hover:no-underline py-4">
-              <div className="flex items-center gap-3 text-left">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                  {mod.sort_order}
-                </div>
+      <div className="flex gap-6">
+        {/* Module list sidebar */}
+        <div className="w-72 flex-shrink-0 space-y-1 print:hidden">
+          {modules.map((mod, idx) => (
+            <button
+              key={mod.module_key}
+              onClick={() => setSelectedKey(mod.module_key)}
+              className={`w-full text-left p-3 rounded-lg text-sm transition-colors flex items-center gap-3 ${
+                selectedKey === mod.module_key
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'hover:bg-muted text-foreground'
+              }`}
+            >
+              <span className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                {idx + 1}
+              </span>
+              <span className="truncate">{mod.title}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail panel */}
+        <div className="flex-1 min-w-0">
+          {selected ? (
+            <Card>
+              <CardContent className="p-6 space-y-6">
+                {/* Header */}
                 <div>
-                  <p className="font-semibold text-foreground">{mod.title}</p>
-                  <div className="flex items-center gap-3 mt-0.5">
+                  <h3 className="text-lg font-bold text-foreground">{selected.title}</h3>
+                  <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {mod.estimated_minutes} min
+                      <Clock className="w-3 h-3" /> {selected.estimated_minutes} min
                     </span>
-                    <Badge variant="secondary" className="text-xs">{mod.status}</Badge>
+                    <Badge variant="secondary" className="text-xs">{selected.status}</Badge>
+                    <Badge variant="outline" className="text-xs">{selected.audience}</Badge>
                   </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6">
-              <div className="grid gap-6">
+
                 {/* Overview */}
-                {mod.training_objective && (
+                {selected.overview && (
                   <section>
                     <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                      <Target className="w-4 h-4 text-accent" /> Training Objective
+                      <Target className="w-4 h-4 text-accent" /> Overview
                     </h4>
-                    <p className="text-sm text-muted-foreground">{mod.training_objective}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{selected.overview}</p>
                   </section>
                 )}
 
-                {/* Instructor Script */}
-                {mod.instructor_script && (
-                  <section>
-                    <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                      <BookOpen className="w-4 h-4 text-accent" /> Instructor Script / Talking Points
-                    </h4>
-                    <div className="bg-muted/50 rounded-lg p-4 text-sm whitespace-pre-wrap">{mod.instructor_script}</div>
-                  </section>
-                )}
+                {/* Learning Objectives */}
+                <section>
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-success" /> Learning Objectives
+                  </h4>
+                  <JsonList items={selected.learning_objectives} />
+                </section>
 
                 {/* Talking Points */}
                 <section>
                   <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                    <MessageSquare className="w-4 h-4 text-info" /> Key Talking Points
+                    <MessageSquare className="w-4 h-4 text-info" /> Instructor Talking Points
                   </h4>
-                  <JsonList items={mod.instructor_talking_points} />
-                </section>
-
-                {/* Key Definitions */}
-                <section>
-                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                    <Lightbulb className="w-4 h-4 text-warning" /> Key Definitions
-                  </h4>
-                  <JsonList items={mod.key_definitions} />
+                  <JsonList items={selected.talking_points} />
                 </section>
 
                 {/* Discussion Prompts */}
                 <section>
                   <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                    <Users className="w-4 h-4 text-success" /> Discussion Prompts
+                    <Users className="w-4 h-4 text-accent" /> Discussion Prompts
                   </h4>
-                  <JsonList items={mod.discussion_prompts} />
+                  <JsonList items={selected.discussion_prompts} />
                 </section>
 
-                {/* Scenario Practice */}
-                <section>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Scenario Practice Prompts</h4>
-                  <JsonList items={mod.scenario_practice_prompts} />
-                </section>
-
-                {/* Demonstration Notes */}
-                {mod.demonstration_notes && (
-                  <section>
-                    <h4 className="font-semibold text-sm mb-2 text-foreground">Demonstration / Modeling</h4>
-                    <p className="text-sm text-muted-foreground">{mod.demonstration_notes}</p>
-                  </section>
-                )}
-
-                {/* Examples */}
-                <section>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Examples to Use</h4>
-                  <JsonList items={mod.examples} />
-                </section>
-
-                {/* Staff Misconceptions */}
+                {/* Demonstration Steps */}
                 <section>
                   <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                    <AlertTriangle className="w-4 h-4 text-destructive" /> Staff Misconceptions to Correct
+                    <Play className="w-4 h-4 text-primary" /> Demonstration / Modeling
                   </h4>
-                  <JsonList items={mod.staff_misconceptions} />
+                  <JsonList items={selected.demonstration_steps} />
                 </section>
 
-                {/* Common Staff Errors */}
-                <section>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Common Staff Errors</h4>
-                  <JsonList items={mod.common_staff_errors} />
-                </section>
-
-                {/* Fidelity Check */}
+                {/* Practice Activities */}
                 <section>
                   <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
-                    <CheckCircle2 className="w-4 h-4 text-success" /> Fidelity Check Items
+                    <Lightbulb className="w-4 h-4 text-warning" /> Practice Activities
                   </h4>
-                  <JsonList items={mod.fidelity_check_items} />
+                  <JsonList items={selected.practice_activities} />
                 </section>
 
-                {/* Coaching Recommendations */}
+                {/* Scenario Prompts */}
                 <section>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Follow-Up Coaching Recommendations</h4>
-                  <JsonList items={mod.coaching_recommendations} />
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
+                    <HelpCircle className="w-4 h-4 text-info" /> Scenario Prompts
+                  </h4>
+                  <JsonList items={selected.scenario_prompts} />
+                </section>
+
+                {/* Misconceptions */}
+                <section>
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
+                    <AlertTriangle className="w-4 h-4 text-destructive" /> Common Misconceptions to Correct
+                  </h4>
+                  <JsonList items={selected.misconceptions} />
                 </section>
 
                 {/* Key Takeaways */}
                 <section>
-                  <h4 className="font-semibold text-sm mb-2 text-foreground">Key Takeaways</h4>
-                  <JsonList items={mod.key_takeaways} />
+                  <h4 className="font-semibold text-sm flex items-center gap-2 mb-2 text-foreground">
+                    <BookOpen className="w-4 h-4 text-primary" /> Key Takeaways
+                  </h4>
+                  <JsonList items={selected.key_takeaways} />
                 </section>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">Select a module to view instructor content.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
