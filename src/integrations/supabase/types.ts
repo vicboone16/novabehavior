@@ -10164,7 +10164,7 @@ export type Database = {
         Row: {
           agency_id: string
           app_context: string
-          client_id: string
+          client_id: string | null
           code: string
           created_at: string
           created_by: string
@@ -10183,7 +10183,7 @@ export type Database = {
         Insert: {
           agency_id: string
           app_context?: string
-          client_id: string
+          client_id?: string | null
           code: string
           created_at?: string
           created_by: string
@@ -10202,7 +10202,7 @@ export type Database = {
         Update: {
           agency_id?: string
           app_context?: string
-          client_id?: string
+          client_id?: string | null
           code?: string
           created_at?: string
           created_by?: string
@@ -18619,6 +18619,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           app_source: string | null
+          body: string | null
           completed_at: string | null
           content: string
           created_at: string
@@ -18641,6 +18642,7 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           app_source?: string | null
+          body?: string | null
           completed_at?: string | null
           content: string
           created_at?: string
@@ -18663,6 +18665,7 @@ export type Database = {
         Update: {
           agency_id?: string | null
           app_source?: string | null
+          body?: string | null
           completed_at?: string | null
           content?: string
           created_at?: string
@@ -21613,6 +21616,14 @@ export type Database = {
       }
     }
     Functions: {
+      apply_invite_code_access: {
+        Args: {
+          p_code: string
+          p_expected_app_context: string
+          p_redeemer_id: string
+        }
+        Returns: Json
+      }
       approve_user:
         | { Args: { _user_id: string }; Returns: boolean }
         | { Args: { _approved_by: string; _user_id: string }; Returns: boolean }
@@ -21645,6 +21656,18 @@ export type Database = {
         Returns: string
       }
       ci_data_freshness: { Args: { days_since_last: number }; Returns: number }
+      ci_intervention_score: {
+        Args: {
+          age_match: number
+          comm_match: number
+          complexity_level: number
+          contra_penalty: number
+          evidence_rating: number
+          function_match: number
+          setting_match: number
+        }
+        Returns: number
+      }
       ci_parent_impl: {
         Args: { avg_consistency: number; modules_completed: number }
         Returns: number
@@ -21682,6 +21705,24 @@ export type Database = {
         Returns: number
       }
       create_invite_code:
+        | {
+            Args: {
+              p_agency_id: string
+              p_app_context: string
+              p_created_by: string
+              p_expires_at: string
+              p_invite_scope: string
+              p_max_uses: number
+              p_role_slug: string
+              p_target_email: string
+            }
+            Returns: {
+              expires_at: string
+              invite_code: string
+              invite_id: string
+              max_uses: number
+            }[]
+          }
         | {
             Args: {
               p_agency_id: string
@@ -21727,7 +21768,7 @@ export type Database = {
             Returns: {
               agency_id: string
               app_context: string
-              client_id: string
+              client_id: string | null
               code: string
               created_at: string
               created_by: string
@@ -22171,7 +22212,25 @@ export type Database = {
         Returns: undefined
       }
       redeem_agency_invite_code: { Args: { p_code: string }; Returns: Json }
-      redeem_invite_code: { Args: { _code: string }; Returns: Json }
+      redeem_invite_code:
+        | { Args: { _code: string }; Returns: Json }
+        | {
+            Args: {
+              p_code: string
+              p_expected_app_context: string
+              p_redeemer_id: string
+            }
+            Returns: {
+              agency_id: string
+              app_context: string
+              client_id: string
+              invite_id: string
+              invite_scope: string
+              message: string
+              redeemed: boolean
+              role_slug: string
+            }[]
+          }
       resolve_alert_threshold: {
         Args: {
           _agency_id?: string
