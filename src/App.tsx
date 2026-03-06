@@ -411,6 +411,33 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+            <Route path="/sdc-training" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCTraining />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/sdc-training/module/:id" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCModuleDetail />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/sdc-training/certification" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SDCCertificationTracker />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
