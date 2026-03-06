@@ -26161,10 +26161,7 @@ export type Database = {
         }
         Returns: string
       }
-      auto_refresh_intervention_outcomes_all: {
-        Args: never
-        Returns: undefined
-      }
+      auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
@@ -26194,7 +26191,7 @@ export type Database = {
         Returns: string
       }
       ci_data_freshness: { Args: { days_since_last: number }; Returns: number }
-      ci_enrich_intervention_recs_all: { Args: never; Returns: undefined }
+      ci_enrich_intervention_recs_all: { Args: never; Returns: number }
       ci_enrich_intervention_recs_for_client: {
         Args: { p_agency_id: string; p_client_id: string }
         Returns: undefined
