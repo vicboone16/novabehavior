@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -44,9 +44,38 @@ Deno.serve(async (req) => {
     }
 
     if (!profile) {
+      // Try auth.users as fallback for users whose profile email may differ
+      const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
+      const authUser = (authData?.users || []).find(
+        (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+
+      if (!authUser) {
+        return new Response(
+          JSON.stringify({ error: "No user found for this email", email }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Profile row missing — return minimal access so login succeeds
       return new Response(
-        JSON.stringify({ error: "No profile found for this email", email }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          user_id: authUser.id,
+          email: authUser.email,
+          display_name: authUser.user_metadata?.display_name || null,
+          first_name: authUser.user_metadata?.first_name || null,
+          last_name: authUser.user_metadata?.last_name || null,
+          roles: [],
+          is_super_admin: false,
+          is_admin: false,
+          agencies: [],
+          current_agency_id: null,
+          visible_student_ids: [],
+          students: [],
+          training_assignments: [],
+          app_slug: app_slug || "behavior_decoded",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -84,7 +113,6 @@ Deno.serve(async (req) => {
     }
 
     const agencyMap = Object.fromEntries(agencyDetails.map((a: any) => [a.id, a]));
-    // Deduplicate by agency_id, keeping the first role found
     const seenAgencyIds = new Set<string>();
     const agencies = (agencyAccess || [])
       .filter((a: any) => {
@@ -99,9 +127,6 @@ Deno.serve(async (req) => {
       }));
 
     // 4. Fetch visible student IDs
-    // Combine student_app_visibility + user_student_access for the requested app
-    // Canonicalize app_slug to match database values
-    // The has_app_access RPC uses regex-based canonicalization
     const slugAliases: Record<string, string> = {
       behaviordecoded: "behavior_decoded",
       behavior_decoded: "behavior_decoded",
@@ -117,7 +142,6 @@ Deno.serve(async (req) => {
     let visibleStudentIds: string[] = [];
 
     if (isSuperAdmin || isAdmin) {
-      // Admins see all students visible in the app
       const { data: visRows } = await supabaseAdmin
         .from("student_app_visibility")
         .select("student_id")
@@ -126,7 +150,6 @@ Deno.serve(async (req) => {
 
       visibleStudentIds = (visRows || []).map((r: any) => r.student_id);
     } else {
-      // Non-admins: intersection of student_app_visibility + user_student_access
       const [visRes, accessRes] = await Promise.all([
         supabaseAdmin
           .from("student_app_visibility")
@@ -143,10 +166,8 @@ Deno.serve(async (req) => {
       const visSet = new Set((visRes.data || []).map((r: any) => r.student_id));
       const accessIds = (accessRes.data || []).map((r: any) => r.student_id);
 
-      // Student must be both visible in the app AND assigned to this user
       visibleStudentIds = accessIds.filter((id: string) => visSet.has(id));
 
-      // If user has no explicit access records but has agency access, fall back to all visible
       if (visibleStudentIds.length === 0 && agencies.length > 0) {
         visibleStudentIds = Array.from(visSet);
       }
@@ -171,6 +192,38 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
 
+    // 7. Fetch parent training assignments (for Behavior Decoded integration)
+    let trainingAssignments: any[] = [];
+    try {
+      const { data: assignmentRows } = await supabaseAdmin
+        .from("academy_module_assignments")
+        .select(`
+          assignment_id,
+          module_id,
+          status,
+          due_date,
+          academy_modules (
+            title,
+            short_description,
+            audience,
+            est_minutes,
+            skill_tags
+          )
+        `)
+        .eq("coach_user_id", userId)
+        .in("status", ["assigned", "in_progress"]);
+
+      trainingAssignments = (assignmentRows || []).map((a: any) => ({
+        assignment_id: a.assignment_id,
+        module_id: a.module_id,
+        status: a.status,
+        due_date: a.due_date,
+        module: a.academy_modules || null,
+      }));
+    } catch (e) {
+      console.error("Training assignments lookup (non-fatal):", e);
+    }
+
     return new Response(
       JSON.stringify({
         user_id: userId,
@@ -185,6 +238,7 @@ Deno.serve(async (req) => {
         current_agency_id: agencyContext?.current_agency_id || agencies[0]?.agency_id || null,
         visible_student_ids: visibleStudentIds,
         students,
+        training_assignments: trainingAssignments,
         app_slug: resolvedSlug,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

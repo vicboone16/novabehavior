@@ -369,6 +369,7 @@ const App = () => {
               <Route path="/notes-review" element={<NotesReview />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
+              <Route path="/incident-logs" element={<IncidentLogs />} />
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
