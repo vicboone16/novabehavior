@@ -1,0 +1,1 @@
+ALTER TABLE public.training_certification_requirements ALTER COLUMN module_key DROP NOT NULL;

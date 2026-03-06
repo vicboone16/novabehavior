@@ -24679,7 +24679,7 @@ export type Database = {
           description: string | null
           id: string
           is_required: boolean | null
-          module_key: string
+          module_key: string | null
           requirement_type: string
           sort_order: number | null
           title: string
@@ -24690,7 +24690,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_required?: boolean | null
-          module_key: string
+          module_key?: string | null
           requirement_type: string
           sort_order?: number | null
           title: string
@@ -24701,7 +24701,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_required?: boolean | null
-          module_key?: string
+          module_key?: string | null
           requirement_type?: string
           sort_order?: number | null
           title?: string
