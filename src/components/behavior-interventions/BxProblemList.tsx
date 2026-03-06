@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, AlertTriangle, Shield, AlertCircle, Info, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { InlineNameEditor } from '@/components/behavior-library/InlineNameEditor';
+import { TagManager } from '@/components/behavior-library/TagManager';
+import { useBxTags } from '@/hooks/useBxTags';
 import type { BxPresentingProblem, RiskLevel } from '@/types/behaviorIntervention';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const RISK_CONFIG: Record<RiskLevel, { icon: React.ReactNode; color: string }> = {
   low: { icon: <Info className="w-3 h-3" />, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
