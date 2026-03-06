@@ -181,6 +181,12 @@ export default function MainLayout() {
                         Teacher Mode
                       </DropdownMenuItem>
                     )}
+                    {hasCIDAccess && (
+                      <DropdownMenuItem onClick={() => navigate('/intelligence')}>
+                        <Brain className="w-4 h-4 mr-2" />
+                        Intelligence
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
