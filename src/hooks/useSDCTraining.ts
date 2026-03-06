@@ -369,9 +369,9 @@ export function useSDCTraining() {
     fetchTrainingModules, fetchWorkbookItems, fetchDownloads, fetchCertRequirements,
     fetchCertProgress, fetchAssignments, completeTrainingRequirement,
     // Legacy data
-    modules, certifications, requirements, legacyCertProgress as certProgress_legacy, resources,
+    modules, certifications, requirements, legacyCertProgress, resources,
     fetchModules, fetchResources, fetchCertifications, fetchRequirements,
-    fetchLegacyCertProgress as fetchCertProgress_legacy, completeRequirement,
+    fetchLegacyCertProgress, completeRequirement,
     // Common
     isLoading, isAdmin, fetchAll, checkAdmin,
   };
