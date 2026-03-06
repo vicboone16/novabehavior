@@ -18425,6 +18425,288 @@ export type Database = {
         }
         Relationships: []
       }
+      sdc_certification_progress: {
+        Row: {
+          certification_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          requirement_id: string
+          score: number | null
+        }
+        Insert: {
+          certification_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requirement_id: string
+          score?: number | null
+        }
+        Update: {
+          certification_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requirement_id?: string
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdc_certification_progress_certification_id_fkey"
+            columns: ["certification_id"]
+            isOneToOne: false
+            referencedRelation: "sdc_certifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdc_certification_progress_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "sdc_certification_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdc_certification_requirements: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          module_id: string
+          requirement_type: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          module_id: string
+          requirement_type?: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          module_id?: string
+          requirement_type?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdc_certification_requirements_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "sdc_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sdc_certifications: {
+        Row: {
+          agency_id: string | null
+          assigned_at: string
+          assigned_by: string | null
+          certified_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          renewal_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          certified_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          renewal_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          certified_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          renewal_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sdc_training_modules: {
+        Row: {
+          abc_worksheets: Json | null
+          academy_module_id: string | null
+          coaching_recommendations: Json | null
+          common_staff_errors: Json | null
+          created_at: string
+          created_by: string | null
+          data_collection_practice: Json | null
+          demonstration_notes: string | null
+          discussion_prompts: Json | null
+          estimated_minutes: number | null
+          examples: Json | null
+          fidelity_check_items: Json | null
+          guided_practice: Json | null
+          id: string
+          instructor_script: string | null
+          instructor_talking_points: Json | null
+          intervention_planning_prompts: Json | null
+          key_definitions: Json | null
+          key_takeaways: Json | null
+          knowledge_check: Json | null
+          matching_activities: Json | null
+          reflection_prompts: Json | null
+          reinforcement_planning: Json | null
+          scenario_practice_prompts: Json | null
+          scenario_questions: Json | null
+          sort_order: number
+          staff_misconceptions: Json | null
+          status: string
+          title: string
+          training_objective: string | null
+          updated_at: string
+          workbook_reading_content: string | null
+        }
+        Insert: {
+          abc_worksheets?: Json | null
+          academy_module_id?: string | null
+          coaching_recommendations?: Json | null
+          common_staff_errors?: Json | null
+          created_at?: string
+          created_by?: string | null
+          data_collection_practice?: Json | null
+          demonstration_notes?: string | null
+          discussion_prompts?: Json | null
+          estimated_minutes?: number | null
+          examples?: Json | null
+          fidelity_check_items?: Json | null
+          guided_practice?: Json | null
+          id?: string
+          instructor_script?: string | null
+          instructor_talking_points?: Json | null
+          intervention_planning_prompts?: Json | null
+          key_definitions?: Json | null
+          key_takeaways?: Json | null
+          knowledge_check?: Json | null
+          matching_activities?: Json | null
+          reflection_prompts?: Json | null
+          reinforcement_planning?: Json | null
+          scenario_practice_prompts?: Json | null
+          scenario_questions?: Json | null
+          sort_order?: number
+          staff_misconceptions?: Json | null
+          status?: string
+          title: string
+          training_objective?: string | null
+          updated_at?: string
+          workbook_reading_content?: string | null
+        }
+        Update: {
+          abc_worksheets?: Json | null
+          academy_module_id?: string | null
+          coaching_recommendations?: Json | null
+          common_staff_errors?: Json | null
+          created_at?: string
+          created_by?: string | null
+          data_collection_practice?: Json | null
+          demonstration_notes?: string | null
+          discussion_prompts?: Json | null
+          estimated_minutes?: number | null
+          examples?: Json | null
+          fidelity_check_items?: Json | null
+          guided_practice?: Json | null
+          id?: string
+          instructor_script?: string | null
+          instructor_talking_points?: Json | null
+          intervention_planning_prompts?: Json | null
+          key_definitions?: Json | null
+          key_takeaways?: Json | null
+          knowledge_check?: Json | null
+          matching_activities?: Json | null
+          reflection_prompts?: Json | null
+          reinforcement_planning?: Json | null
+          scenario_practice_prompts?: Json | null
+          scenario_questions?: Json | null
+          sort_order?: number
+          staff_misconceptions?: Json | null
+          status?: string
+          title?: string
+          training_objective?: string | null
+          updated_at?: string
+          workbook_reading_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdc_training_modules_academy_module_id_fkey"
+            columns: ["academy_module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
+      sdc_training_resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string | null
+          id: string
+          is_instructor_only: boolean
+          module_id: string | null
+          resource_type: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_instructor_only?: boolean
+          module_id?: string | null
+          resource_type?: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_instructor_only?: boolean
+          module_id?: string | null
+          resource_type?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdc_training_resources_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "sdc_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_settings: {
         Row: {
           created_at: string
@@ -24373,6 +24655,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      training_workbook_items: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          id: string
+          instructions: string | null
+          is_active: boolean | null
+          item_type: string
+          module_key: string
+          sort_order: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          item_type: string
+          module_key: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          item_type?: string
+          module_key?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       treatment_fidelity_checks: {
         Row: {
