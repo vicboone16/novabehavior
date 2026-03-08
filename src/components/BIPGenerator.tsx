@@ -272,6 +272,8 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
   const [monitoringPlan, setMonitoringPlan] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [newTeamMember, setNewTeamMember] = useState('');
+  const [includeStrategySections, setIncludeStrategySections] = useState(true);
+  const [strategyExportPayload, setStrategyExportPayload] = useState<StrategyExportPayload | null>(null);
 
   const activeStudents = useMemo(() => 
     students.filter(s => !s.isArchived), 
