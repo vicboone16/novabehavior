@@ -26,7 +26,7 @@ export interface RecommendationProfile {
   age_band: string | null;
   tier: string | null;
   is_active: boolean | null;
-  strategy_count: number | null;
+  strategy_count?: number | null;
 }
 
 export interface SavedResult {
