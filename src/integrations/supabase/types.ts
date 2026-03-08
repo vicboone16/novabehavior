@@ -15645,39 +15645,57 @@ export type Database = {
       parent_training_assignments: {
         Row: {
           agency_id: string | null
+          assigned_at: string | null
+          assigned_by: string | null
           assignment_id: string
+          caregiver_id: string | null
           client_id: string
           created_at: string
           created_by: string | null
           due_at: string | null
+          due_date: string | null
+          id: string | null
           module_id: string
           module_version_id: string
+          notes: string | null
           parent_user_id: string
           status: string
           updated_at: string
         }
         Insert: {
           agency_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
           assignment_id?: string
+          caregiver_id?: string | null
           client_id: string
           created_at?: string
           created_by?: string | null
           due_at?: string | null
+          due_date?: string | null
+          id?: string | null
           module_id: string
           module_version_id: string
+          notes?: string | null
           parent_user_id: string
           status?: string
           updated_at?: string
         }
         Update: {
           agency_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
           assignment_id?: string
+          caregiver_id?: string | null
           client_id?: string
           created_at?: string
           created_by?: string | null
           due_at?: string | null
+          due_date?: string | null
+          id?: string | null
           module_id?: string
           module_version_id?: string
+          notes?: string | null
           parent_user_id?: string
           status?: string
           updated_at?: string
@@ -15708,52 +15726,82 @@ export type Database = {
       }
       parent_training_custom_goals: {
         Row: {
+          add_to_library: boolean | null
           agency_id: string | null
+          baseline_definition: string | null
+          caregiver_id: string | null
+          client_id: string | null
           created_at: string | null
           created_by: string | null
           custom_goal_id: string
           default_baseline: string | null
           default_target: string | null
           description: string | null
+          goal_description: string | null
+          goal_title: string | null
+          id: string | null
+          is_active: boolean | null
           is_library_candidate: boolean | null
           mastery_criteria: string | null
           measurement_method: string | null
           module_id: string | null
+          promoted_goal_id: string | null
           promoted_to_goal_id: string | null
+          target_definition: string | null
           title: string
           unit: string | null
           updated_at: string | null
         }
         Insert: {
+          add_to_library?: boolean | null
           agency_id?: string | null
+          baseline_definition?: string | null
+          caregiver_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_goal_id?: string
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          goal_description?: string | null
+          goal_title?: string | null
+          id?: string | null
+          is_active?: boolean | null
           is_library_candidate?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
+          promoted_goal_id?: string | null
           promoted_to_goal_id?: string | null
+          target_definition?: string | null
           title: string
           unit?: string | null
           updated_at?: string | null
         }
         Update: {
+          add_to_library?: boolean | null
           agency_id?: string | null
+          baseline_definition?: string | null
+          caregiver_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           custom_goal_id?: string
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          goal_description?: string | null
+          goal_title?: string | null
+          id?: string | null
+          is_active?: boolean | null
           is_library_candidate?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
+          promoted_goal_id?: string | null
           promoted_to_goal_id?: string | null
+          target_definition?: string | null
           title?: string
           unit?: string | null
           updated_at?: string | null
@@ -15784,32 +15832,53 @@ export type Database = {
       }
       parent_training_data: {
         Row: {
+          caregiver_id: string | null
           created_at: string | null
           data_id: string
+          data_text: string | null
+          data_value: number | null
+          entered_by: string | null
           goal_assignment_id: string
+          goal_id: string | null
+          id: string | null
           logged_at: string | null
           logged_by: string | null
           notes: string | null
+          session_date: string | null
           text_value: string | null
           value: number | null
         }
         Insert: {
+          caregiver_id?: string | null
           created_at?: string | null
           data_id?: string
+          data_text?: string | null
+          data_value?: number | null
+          entered_by?: string | null
           goal_assignment_id: string
+          goal_id?: string | null
+          id?: string | null
           logged_at?: string | null
           logged_by?: string | null
           notes?: string | null
+          session_date?: string | null
           text_value?: string | null
           value?: number | null
         }
         Update: {
+          caregiver_id?: string | null
           created_at?: string | null
           data_id?: string
+          data_text?: string | null
+          data_value?: number | null
+          entered_by?: string | null
           goal_assignment_id?: string
+          goal_id?: string | null
+          id?: string | null
           logged_at?: string | null
           logged_by?: string | null
           notes?: string | null
+          session_date?: string | null
           text_value?: string | null
           value?: number | null
         }
@@ -15835,17 +15904,30 @@ export type Database = {
           assignment_id: string
           baseline_text: string | null
           baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
           created_at: string | null
           current_value: number | null
+          custom_baseline_definition: string | null
+          custom_goal_description: string | null
           custom_goal_id: string | null
+          custom_goal_title: string | null
+          custom_mastery_criteria: string | null
+          custom_measurement_method: string | null
+          custom_target_definition: string | null
+          custom_unit: string | null
           description: string | null
           goal_assignment_id: string
           goal_id: string | null
           goal_source: string | null
+          id: string | null
+          insurance_billable: boolean | null
           mastery_criteria: string | null
           measurement_method: string | null
+          module_assignment_id: string | null
           notes: string | null
           save_as_library_candidate: boolean | null
+          start_date: string | null
           status: string | null
           target_date: string | null
           target_text: string | null
@@ -15858,17 +15940,30 @@ export type Database = {
           assignment_id: string
           baseline_text?: string | null
           baseline_value?: number | null
+          caregiver_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           current_value?: number | null
+          custom_baseline_definition?: string | null
+          custom_goal_description?: string | null
           custom_goal_id?: string | null
+          custom_goal_title?: string | null
+          custom_mastery_criteria?: string | null
+          custom_measurement_method?: string | null
+          custom_target_definition?: string | null
+          custom_unit?: string | null
           description?: string | null
           goal_assignment_id?: string
           goal_id?: string | null
           goal_source?: string | null
+          id?: string | null
+          insurance_billable?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
+          module_assignment_id?: string | null
           notes?: string | null
           save_as_library_candidate?: boolean | null
+          start_date?: string | null
           status?: string | null
           target_date?: string | null
           target_text?: string | null
@@ -15881,17 +15976,30 @@ export type Database = {
           assignment_id?: string
           baseline_text?: string | null
           baseline_value?: number | null
+          caregiver_id?: string | null
+          client_id?: string | null
           created_at?: string | null
           current_value?: number | null
+          custom_baseline_definition?: string | null
+          custom_goal_description?: string | null
           custom_goal_id?: string | null
+          custom_goal_title?: string | null
+          custom_mastery_criteria?: string | null
+          custom_measurement_method?: string | null
+          custom_target_definition?: string | null
+          custom_unit?: string | null
           description?: string | null
           goal_assignment_id?: string
           goal_id?: string | null
           goal_source?: string | null
+          id?: string | null
+          insurance_billable?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
+          module_assignment_id?: string | null
           notes?: string | null
           save_as_library_candidate?: boolean | null
+          start_date?: string | null
           status?: string | null
           target_date?: string | null
           target_text?: string | null
@@ -15926,52 +16034,73 @@ export type Database = {
       }
       parent_training_goals: {
         Row: {
+          baseline: number | null
+          baseline_definition: string | null
           created_at: string | null
           created_by: string | null
           default_baseline: string | null
           default_target: string | null
           description: string | null
           display_order: number | null
+          goal_description: string | null
           goal_id: string
           goal_key: string
+          goal_title: string | null
+          id: string | null
           is_active: boolean | null
           mastery_criteria: string | null
           measurement_method: string | null
           module_id: string | null
+          target: number | null
+          target_definition: string | null
           title: string
           unit: string | null
           updated_at: string | null
         }
         Insert: {
+          baseline?: number | null
+          baseline_definition?: string | null
           created_at?: string | null
           created_by?: string | null
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
           display_order?: number | null
+          goal_description?: string | null
           goal_id?: string
           goal_key: string
+          goal_title?: string | null
+          id?: string | null
           is_active?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
+          target?: number | null
+          target_definition?: string | null
           title: string
           unit?: string | null
           updated_at?: string | null
         }
         Update: {
+          baseline?: number | null
+          baseline_definition?: string | null
           created_at?: string | null
           created_by?: string | null
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
           display_order?: number | null
+          goal_description?: string | null
           goal_id?: string
           goal_key?: string
+          goal_title?: string | null
+          id?: string | null
           is_active?: boolean | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
+          target?: number | null
+          target_definition?: string | null
           title?: string
           unit?: string | null
           updated_at?: string | null
@@ -15996,49 +16125,64 @@ export type Database = {
       parent_training_homework: {
         Row: {
           assignment_id: string
+          caregiver_id: string | null
           client_id: string
           created_at: string | null
           file_url: string | null
           homework_id: string
+          id: string | null
+          module_assignment_id: string | null
           notes: string | null
           parent_user_id: string
+          response_json: Json | null
           response_text: string | null
           review_status: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           reviewer_notes: string | null
+          submission_type: string | null
           submitted_at: string | null
           title: string
         }
         Insert: {
           assignment_id: string
+          caregiver_id?: string | null
           client_id: string
           created_at?: string | null
           file_url?: string | null
           homework_id?: string
+          id?: string | null
+          module_assignment_id?: string | null
           notes?: string | null
           parent_user_id: string
+          response_json?: Json | null
           response_text?: string | null
           review_status?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reviewer_notes?: string | null
+          submission_type?: string | null
           submitted_at?: string | null
           title: string
         }
         Update: {
           assignment_id?: string
+          caregiver_id?: string | null
           client_id?: string
           created_at?: string | null
           file_url?: string | null
           homework_id?: string
+          id?: string | null
+          module_assignment_id?: string | null
           notes?: string | null
           parent_user_id?: string
+          response_json?: Json | null
           response_text?: string | null
           review_status?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reviewer_notes?: string | null
+          submission_type?: string | null
           submitted_at?: string | null
           title?: string
         }
@@ -16156,56 +16300,83 @@ export type Database = {
         Row: {
           agency_id: string | null
           agency_mode_visible: boolean | null
+          audience: string | null
           behavior_decoded_enabled: boolean | null
           canonical_key: string | null
+          category: string | null
           created_at: string
           created_by: string | null
+          curriculum_source: string | null
+          description: string | null
           display_order: number | null
           est_minutes: number
+          id: string | null
           independent_mode_visible: boolean | null
+          is_active: boolean | null
           module_id: string
+          module_key: string | null
+          order_index: number | null
           scope: string
           short_description: string | null
           skill_tags: string[]
           status: string
           title: string
           updated_at: string
+          visibility_scope: string | null
         }
         Insert: {
           agency_id?: string | null
           agency_mode_visible?: boolean | null
+          audience?: string | null
           behavior_decoded_enabled?: boolean | null
           canonical_key?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
+          curriculum_source?: string | null
+          description?: string | null
           display_order?: number | null
           est_minutes?: number
+          id?: string | null
           independent_mode_visible?: boolean | null
+          is_active?: boolean | null
           module_id?: string
+          module_key?: string | null
+          order_index?: number | null
           scope?: string
           short_description?: string | null
           skill_tags?: string[]
           status?: string
           title: string
           updated_at?: string
+          visibility_scope?: string | null
         }
         Update: {
           agency_id?: string | null
           agency_mode_visible?: boolean | null
+          audience?: string | null
           behavior_decoded_enabled?: boolean | null
           canonical_key?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
+          curriculum_source?: string | null
+          description?: string | null
           display_order?: number | null
           est_minutes?: number
+          id?: string | null
           independent_mode_visible?: boolean | null
+          is_active?: boolean | null
           module_id?: string
+          module_key?: string | null
+          order_index?: number | null
           scope?: string
           short_description?: string | null
           skill_tags?: string[]
           status?: string
           title?: string
           updated_at?: string
+          visibility_scope?: string | null
         }
         Relationships: []
       }
@@ -16270,11 +16441,15 @@ export type Database = {
         Row: {
           agency_id: string | null
           assignment_id: string | null
+          caregiver_id: string | null
           caregiver_response: string | null
           client_id: string
           created_at: string | null
           duration_minutes: number
           homework_assigned: string | null
+          id: string | null
+          logged_by: string | null
+          module_assignment_id: string | null
           module_id: string | null
           next_steps: string | null
           parent_user_id: string
@@ -16288,11 +16463,15 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           assignment_id?: string | null
+          caregiver_id?: string | null
           caregiver_response?: string | null
           client_id: string
           created_at?: string | null
           duration_minutes: number
           homework_assigned?: string | null
+          id?: string | null
+          logged_by?: string | null
+          module_assignment_id?: string | null
           module_id?: string | null
           next_steps?: string | null
           parent_user_id: string
@@ -16306,11 +16485,15 @@ export type Database = {
         Update: {
           agency_id?: string | null
           assignment_id?: string | null
+          caregiver_id?: string | null
           caregiver_response?: string | null
           client_id?: string
           created_at?: string | null
           duration_minutes?: number
           homework_assigned?: string | null
+          id?: string | null
+          logged_by?: string | null
+          module_assignment_id?: string | null
           module_id?: string | null
           next_steps?: string | null
           parent_user_id?: string
@@ -29567,6 +29750,36 @@ export type Database = {
           },
         ]
       }
+      v_parent_training_assignments: {
+        Row: {
+          assigned_at: string | null
+          caregiver_id: string | null
+          client_id: string | null
+          due_date: string | null
+          id: string | null
+          module_id: string | null
+          module_key: string | null
+          module_title: string | null
+          notes: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
       v_parent_training_assignments_dashboard: {
         Row: {
           agency_id: string | null
@@ -29613,46 +29826,24 @@ export type Database = {
       }
       v_parent_training_custom_goals: {
         Row: {
-          agency_id: string | null
+          add_to_library: boolean | null
+          baseline_definition: string | null
+          caregiver_id: string | null
+          client_id: string | null
           created_at: string | null
-          created_by: string | null
           custom_goal_id: string | null
-          default_baseline: string | null
-          default_target: string | null
-          description: string | null
-          is_library_candidate: boolean | null
+          goal_description: string | null
+          goal_title: string | null
+          is_active: boolean | null
           mastery_criteria: string | null
           measurement_method: string | null
-          module_id: string | null
+          module_key: string | null
           module_title: string | null
-          promoted_to_goal_id: string | null
-          title: string | null
+          promoted_goal_id: string | null
+          target_definition: string | null
           unit: string | null
-          updated_at: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "parent_training_modules"
-            referencedColumns: ["module_id"]
-          },
-          {
-            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "v_parent_training_module_goal_counts"
-            referencedColumns: ["module_id"]
-          },
-          {
-            foreignKeyName: "parent_training_custom_goals_promoted_to_goal_id_fkey"
-            columns: ["promoted_to_goal_id"]
-            isOneToOne: false
-            referencedRelation: "parent_training_goals"
-            referencedColumns: ["goal_id"]
-          },
-        ]
+        Relationships: []
       }
       v_parent_training_effective_goals: {
         Row: {
@@ -29719,6 +29910,70 @@ export type Database = {
           },
         ]
       }
+      v_parent_training_goal_assignments: {
+        Row: {
+          baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          current_value: number | null
+          goal_id: string | null
+          goal_key: string | null
+          goal_title: string | null
+          id: string | null
+          insurance_billable: boolean | null
+          measurement_method: string | null
+          module_assignment_id: string | null
+          start_date: string | null
+          status: string | null
+          target_date: string | null
+          target_value: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      v_parent_training_goals: {
+        Row: {
+          baseline_definition: string | null
+          created_at: string | null
+          description: string | null
+          goal_description: string | null
+          goal_key: string | null
+          goal_title: string | null
+          id: string | null
+          is_active: boolean | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          module_id: string | null
+          module_key: string | null
+          module_title: string | null
+          target_definition: string | null
+          title: string | null
+          unit: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
       v_parent_training_module_goal_counts: {
         Row: {
           agency_id: string | null
@@ -29748,6 +30003,125 @@ export type Database = {
           title?: string | null
         }
         Relationships: []
+      }
+      v_parent_training_modules: {
+        Row: {
+          audience: string | null
+          behavior_decoded_enabled: boolean | null
+          created_at: string | null
+          curriculum_source: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          module_key: string | null
+          order_index: number | null
+          status: string | null
+          title: string | null
+          visibility_scope: string | null
+        }
+        Insert: {
+          audience?: string | null
+          behavior_decoded_enabled?: boolean | null
+          created_at?: string | null
+          curriculum_source?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          module_key?: string | null
+          order_index?: number | null
+          status?: string | null
+          title?: string | null
+          visibility_scope?: string | null
+        }
+        Update: {
+          audience?: string | null
+          behavior_decoded_enabled?: boolean | null
+          created_at?: string | null
+          curriculum_source?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          module_key?: string | null
+          order_index?: number | null
+          status?: string | null
+          title?: string | null
+          visibility_scope?: string | null
+        }
+        Relationships: []
+      }
+      v_parent_training_modules_behavior_decoded: {
+        Row: {
+          agency_mode_visible: boolean | null
+          behavior_decoded_enabled: boolean | null
+          category: string | null
+          curriculum_source: string | null
+          description: string | null
+          id: string | null
+          independent_mode_visible: boolean | null
+          is_active: boolean | null
+          module_key: string | null
+          order_index: number | null
+          title: string | null
+          visibility_scope: string | null
+        }
+        Insert: {
+          agency_mode_visible?: boolean | null
+          behavior_decoded_enabled?: boolean | null
+          category?: string | null
+          curriculum_source?: string | null
+          description?: string | null
+          id?: string | null
+          independent_mode_visible?: boolean | null
+          is_active?: boolean | null
+          module_key?: string | null
+          order_index?: number | null
+          title?: string | null
+          visibility_scope?: string | null
+        }
+        Update: {
+          agency_mode_visible?: boolean | null
+          behavior_decoded_enabled?: boolean | null
+          category?: string | null
+          curriculum_source?: string | null
+          description?: string | null
+          id?: string | null
+          independent_mode_visible?: boolean | null
+          is_active?: boolean | null
+          module_key?: string | null
+          order_index?: number | null
+          title?: string | null
+          visibility_scope?: string | null
+        }
+        Relationships: []
+      }
+      v_parent_training_progress: {
+        Row: {
+          data_text: string | null
+          data_value: number | null
+          goal_assignment_id: string | null
+          goal_id: string | null
+          goal_title: string | null
+          id: string | null
+          measurement_method: string | null
+          notes: string | null
+          session_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
+            columns: ["goal_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goal_assignments"
+            referencedColumns: ["goal_assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
+            columns: ["goal_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_effective_goals"
+            referencedColumns: ["goal_assignment_id"]
+          },
+        ]
       }
       v_plan_publications_feed: {
         Row: {
@@ -31292,6 +31666,25 @@ export type Database = {
         Args: { p_publication_id: string; p_reaction?: string }
         Returns: string
       }
+      add_custom_parent_training_goal: {
+        Args: {
+          p_add_to_library?: boolean
+          p_baseline_definition?: string
+          p_caregiver_id: string
+          p_client_id: string
+          p_created_by?: string
+          p_goal_description?: string
+          p_goal_title: string
+          p_mastery_criteria?: string
+          p_measurement_method?: string
+          p_module_assignment_id: string
+          p_module_key: string
+          p_target_date?: string
+          p_target_definition?: string
+          p_unit?: string
+        }
+        Returns: string
+      }
       add_publication_comment: {
         Args: {
           p_body: string
@@ -31418,17 +31811,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      assign_parent_training_module: {
-        Args: {
-          p_agency_id?: string
-          p_client_id: string
-          p_created_by?: string
-          p_due_at?: string
-          p_module_id: string
-          p_parent_user_id: string
-        }
-        Returns: string
-      }
+      assign_parent_training_module:
+        | {
+            Args: {
+              p_assigned_by?: string
+              p_caregiver_id: string
+              p_client_id: string
+              p_due_date?: string
+              p_module_key: string
+              p_target_date?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_agency_id?: string
+              p_client_id: string
+              p_created_by?: string
+              p_due_at?: string
+              p_module_id: string
+              p_parent_user_id: string
+            }
+            Returns: string
+          }
       auto_log_behavior_outcome_for_run: {
         Args: {
           p_baseline_days?: number
@@ -31448,14 +31853,19 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
-      build_parent_training_insurance_summary: {
-        Args: {
-          p_client_id: string
-          p_end_date?: string
-          p_start_date?: string
-        }
-        Returns: Json
-      }
+      build_parent_training_insurance_summary:
+        | {
+            Args: { p_caregiver_id: string; p_client_id: string }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_client_id: string
+              p_end_date?: string
+              p_start_date?: string
+            }
+            Returns: Json
+          }
       build_report_strategy_export_payload: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: Json
@@ -32202,18 +32612,34 @@ export type Database = {
         }
         Returns: string
       }
-      log_parent_training_goal_data: {
-        Args: {
-          p_goal_assignment_id: string
-          p_logged_by?: string
-          p_notes?: string
-          p_text_value?: string
-          p_value?: number
-        }
-        Returns: string
-      }
+      log_parent_training_goal_data:
+        | {
+            Args: {
+              p_caregiver_id: string
+              p_data_text?: string
+              p_data_value?: number
+              p_entered_by?: string
+              p_goal_assignment_id: string
+              p_notes?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_goal_assignment_id: string
+              p_logged_by?: string
+              p_notes?: string
+              p_text_value?: string
+              p_value?: number
+            }
+            Returns: string
+          }
       process_aba_import_staging: {
         Args: { p_staging_id: string }
+        Returns: string
+      }
+      promote_custom_parent_goal_to_library: {
+        Args: { p_custom_goal_id: string; p_goal_key: string }
         Returns: string
       }
       publication_add_feedback: {
@@ -32814,6 +33240,25 @@ export type Database = {
       sync_staff_assignment_to_access: {
         Args: { p_assignment_id: string }
         Returns: Json
+      }
+      update_parent_training_goal_assignment: {
+        Args: {
+          p_baseline_value?: number
+          p_current_value?: number
+          p_custom_baseline_definition?: string
+          p_custom_goal_description?: string
+          p_custom_goal_title?: string
+          p_custom_mastery_criteria?: string
+          p_custom_measurement_method?: string
+          p_custom_target_definition?: string
+          p_custom_unit?: string
+          p_goal_assignment_id: string
+          p_notes?: string
+          p_save_as_library_candidate?: boolean
+          p_target_date?: string
+          p_target_value?: number
+        }
+        Returns: string
       }
       update_strategy_section_content: {
         Args: { p_content_text: string; p_id: string }
