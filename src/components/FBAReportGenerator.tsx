@@ -261,6 +261,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [allowPartialExport, setAllowPartialExport] = useState(true);
   const [showDraftIndicators, setShowDraftIndicators] = useState(true);
+  const [includeStrategySections, setIncludeStrategySections] = useState(true);
+  const [strategyExportPayload, setStrategyExportPayload] = useState<StrategyExportPayload | null>(null);
 
   // School FBA editable fields
   const [schoolFields, setSchoolFields] = useState({
