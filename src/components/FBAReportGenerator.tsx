@@ -2199,6 +2199,21 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 rows={4}
               />
             </div>
+
+            {/* Suggested Strategies from Library */}
+            <SuggestedStrategiesPanel
+              detectedFunction={analysisData?.primaryFunction?.function}
+              studentId={selectedStudentId || undefined}
+              onAddToDraft={(content) => {
+                // Append to recommendedStrategies text field
+                setSchoolFields(prev => ({
+                  ...prev,
+                  recommendedStrategies: prev.recommendedStrategies
+                    ? `${prev.recommendedStrategies}\n• ${content.strategyName}: ${content.teacherQuickVersion || content.description}`
+                    : `• ${content.strategyName}: ${content.teacherQuickVersion || content.description}`,
+                }));
+              }}
+            />
           </TabsContent>
 
           {/* Preview Tab */}
