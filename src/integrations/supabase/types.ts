@@ -5953,6 +5953,7 @@ export type Database = {
       }
       classroom_members: {
         Row: {
+          agency_id: string | null
           classroom_id: string
           created_at: string | null
           id: string
@@ -5961,6 +5962,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          agency_id?: string | null
           classroom_id: string
           created_at?: string | null
           id?: string
@@ -5969,6 +5971,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          agency_id?: string | null
           classroom_id?: string
           created_at?: string | null
           id?: string
