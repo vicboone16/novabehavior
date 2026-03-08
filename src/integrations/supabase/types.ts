@@ -18531,6 +18531,132 @@ export type Database = {
           },
         ]
       }
+      report_strategy_narratives: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          generated_text: string
+          id: string
+          narrative_type: string
+          report_id: string
+          report_type: string
+          strategy_ids: string[] | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_text: string
+          id?: string
+          narrative_type: string
+          report_id: string
+          report_type: string
+          strategy_ids?: string[] | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_text?: string
+          id?: string
+          narrative_type?: string
+          report_id?: string
+          report_type?: string
+          strategy_ids?: string[] | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      report_strategy_section_content: {
+        Row: {
+          content_text: string
+          created_at: string | null
+          id: string
+          inserted_by: string | null
+          narrative_type: string
+          report_id: string
+          report_type: string
+          source_narrative_id: string | null
+          student_id: string | null
+          target_section_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          content_text: string
+          created_at?: string | null
+          id?: string
+          inserted_by?: string | null
+          narrative_type: string
+          report_id: string
+          report_type: string
+          source_narrative_id?: string | null
+          student_id?: string | null
+          target_section_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          content_text?: string
+          created_at?: string | null
+          id?: string
+          inserted_by?: string | null
+          narrative_type?: string
+          report_id?: string
+          report_type?: string
+          source_narrative_id?: string | null
+          student_id?: string | null
+          target_section_key?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_strategy_section_map: {
+        Row: {
+          created_at: string | null
+          display_label: string
+          id: string
+          is_default: boolean
+          narrative_type: string
+          report_type: string
+          target_section_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_label: string
+          id?: string
+          is_default?: boolean
+          narrative_type: string
+          report_type: string
+          target_section_key: string
+        }
+        Update: {
+          created_at?: string | null
+          display_label?: string
+          id?: string
+          is_default?: boolean
+          narrative_type?: string
+          report_type?: string
+          target_section_key?: string
+        }
+        Relationships: []
+      }
       report_strategy_selections: {
         Row: {
           created_at: string | null
@@ -28871,6 +28997,45 @@ export type Database = {
           },
         ]
       }
+      v_report_strategy_narratives: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          generated_text: string | null
+          id: string | null
+          narrative_type: string | null
+          report_id: string | null
+          report_type: string | null
+          strategy_ids: string[] | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_text?: string | null
+          id?: string | null
+          narrative_type?: string | null
+          report_id?: string | null
+          report_type?: string | null
+          strategy_ids?: string[] | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_text?: string | null
+          id?: string | null
+          narrative_type?: string | null
+          report_id?: string | null
+          report_type?: string | null
+          strategy_ids?: string[] | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_report_strategy_selections: {
         Row: {
           created_at: string | null
@@ -30684,6 +30849,14 @@ export type Database = {
       generate_invite_code:
         | { Args: never; Returns: string }
         | { Args: { prefix?: string }; Returns: string }
+      generate_report_strategy_narrative: {
+        Args: {
+          p_narrative_type?: string
+          p_report_id: string
+          p_report_type: string
+        }
+        Returns: string
+      }
       get_client_coverage_mode: {
         Args: { _client_id: string }
         Returns: string
@@ -31477,6 +31650,35 @@ export type Database = {
           p_require_note_final_to_post_override: boolean
         }
         Returns: Json
+      }
+      save_report_strategy_narrative: {
+        Args: {
+          p_created_by?: string
+          p_generated_text: string
+          p_narrative_type: string
+          p_report_id: string
+          p_report_type: string
+          p_strategy_ids?: string[]
+          p_student_id: string
+        }
+        Returns: {
+          created_at: string | null
+          created_by: string | null
+          generated_text: string
+          id: string
+          narrative_type: string
+          report_id: string
+          report_type: string
+          strategy_ids: string[] | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "report_strategy_narratives"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       search_bx_items_by_tags: {
         Args: { p_item_type?: string; p_tag_keys: string[] }
