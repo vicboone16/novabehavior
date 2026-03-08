@@ -160,24 +160,36 @@ export function useNextUpEvents() {
   const clockIn = useCallback(async (event: NextUpEvent) => {
     if (!user) throw new Error('Not authenticated');
 
+    const insertPayload: Record<string, any> = {
+      user_id: user.id,
+      start_time: new Date().toISOString(),
+      status: 'active',
+      student_ids: event.client_id ? [event.client_id] : [],
+      scheduled_item_id: event.schedule_event_id,
+      scheduled_item_source: event.source || 'clinical_schedule_events',
+      name: `Session – ${event.client_name}`,
+    };
+
+    if (event.authorization_id) {
+      insertPayload.authorization_id = event.authorization_id;
+    }
+
     const { data, error } = await supabase
       .from('sessions')
-      .insert({
-        user_id: user.id,
-        start_time: new Date().toISOString(),
-        status: 'active',
-        student_ids: event.client_id ? [event.client_id] : [],
-        scheduled_item_id: event.schedule_event_id,
-        scheduled_item_source: 'clinical_schedule_events',
-        authorization_id: event.authorization_id,
-        name: `Session – ${event.client_name}`,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) throw error;
 
-    // Refresh the list after clocking in
+    // If source is appointments, mark appointment as in-progress
+    if (event.source === 'appointments') {
+      await supabase
+        .from('appointments')
+        .update({ linked_session_id: data.id, status: 'in_progress' })
+        .eq('id', event.schedule_event_id);
+    }
+
     await fetchEvents();
     return data;
   }, [user, fetchEvents]);
