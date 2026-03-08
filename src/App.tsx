@@ -71,6 +71,7 @@ import TeacherComms from "./pages/TeacherComms";
 import SDCTraining from "./pages/SDCTraining";
 import SDCModuleDetail from "./pages/SDCModuleDetail";
 import SDCCertificationTracker from "./pages/SDCCertificationTracker";
+import BehaviorStrategies from "./pages/BehaviorStrategies";
 
 const queryClient = new QueryClient();
 
@@ -434,6 +435,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <SDCCertificationTracker />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/behavior-strategies" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <BehaviorStrategies />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
