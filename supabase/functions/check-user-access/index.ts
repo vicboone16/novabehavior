@@ -43,8 +43,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!profile) {
+    // Resolve userId — prefer profile, fallback to auth.users
+    let userId: string;
+    let resolvedEmail = email;
+    let resolvedDisplayName: string | null = null;
+    let resolvedFirstName: string | null = null;
+    let resolvedLastName: string | null = null;
+
+    if (profile) {
+      userId = profile.user_id;
+      resolvedEmail = profile.email || email;
+      resolvedDisplayName = profile.display_name;
+      resolvedFirstName = profile.first_name;
+      resolvedLastName = profile.last_name;
+    } else {
       // Try auth.users as fallback for users whose profile email may differ
+      console.log("Profile not found for email, trying auth.users fallback:", email);
       const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
       const authUser = (authData?.users || []).find(
         (u: any) => u.email?.toLowerCase() === email.toLowerCase()
@@ -57,29 +71,13 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Profile row missing — return minimal access so login succeeds
-      return new Response(
-        JSON.stringify({
-          user_id: authUser.id,
-          email: authUser.email,
-          display_name: authUser.user_metadata?.display_name || null,
-          first_name: authUser.user_metadata?.first_name || null,
-          last_name: authUser.user_metadata?.last_name || null,
-          roles: [],
-          is_super_admin: false,
-          is_admin: false,
-          agencies: [],
-          current_agency_id: null,
-          visible_student_ids: [],
-          students: [],
-          training_assignments: [],
-          app_slug: app_slug || "behavior_decoded",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      userId = authUser.id;
+      resolvedEmail = authUser.email || email;
+      resolvedDisplayName = authUser.user_metadata?.display_name || null;
+      resolvedFirstName = authUser.user_metadata?.first_name || null;
+      resolvedLastName = authUser.user_metadata?.last_name || null;
+      console.log("Auth fallback resolved user_id:", userId);
     }
-
-    const userId = profile.user_id;
 
     // 2. Check user roles (super_admin / admin get global access)
     const { data: roleRows } = await supabaseAdmin
