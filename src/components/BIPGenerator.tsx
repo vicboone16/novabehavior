@@ -639,6 +639,8 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
             spacing: { before: 400, after: 200 },
           }),
           ...teamMembers.map(m => new Paragraph({ text: `• ${m}`, spacing: { after: 100 } })),
+          // Strategy-based export sections (append-only)
+          ...buildStrategyExportParagraphs(strategyExportPayload),
         ].filter(Boolean) as Paragraph[],
       }],
     });
