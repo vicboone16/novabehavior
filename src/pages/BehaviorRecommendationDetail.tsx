@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Loader2, Eye, ExternalLink } from 'lucide-react';
 import { useBehaviorRecommendations, SavedResultDetail } from '@/hooks/useBehaviorRecommendations';
+import { InterventionPackets } from '@/components/behavior-strategies/InterventionPackets';
 import { supabase } from '@/integrations/supabase/client';
 
 const formatLabel = (s: string | null) => s?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '—';
