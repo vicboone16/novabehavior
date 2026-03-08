@@ -156,7 +156,7 @@ export default function BehaviorRecommendationDetail() {
             category: null,
             description: d.rationale || null,
             teacher_quick_version: d.teacher_quick_version || null,
-            family_version: d.family_version || null,
+            family_version: (d as any).family_version || null,
             data_to_collect: null,
             fidelity_tips: null,
             staff_scripts: null,
