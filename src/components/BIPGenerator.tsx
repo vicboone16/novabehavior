@@ -32,6 +32,9 @@ import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
 import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
+import { MappedNarrativeSections, type SectionTarget } from '@/components/behavior-strategies/MappedNarrativeSections';
+import { StrategyContentPreview, type StrategyExportPayload } from '@/components/behavior-strategies/StrategyContentPreview';
+import { buildStrategyExportParagraphs } from '@/lib/strategyExportSections';
 
 interface BIPGeneratorProps {
   student?: Student;

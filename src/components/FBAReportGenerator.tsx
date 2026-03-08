@@ -2924,6 +2924,17 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
               </Card>
             </div>
 
+            {/* Strategy Content Preview */}
+            {selectedStudentId && (
+              <StrategyContentPreview
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                includeStrategySections={includeStrategySections}
+                onToggleInclude={setIncludeStrategySections}
+                onPayloadReady={setStrategyExportPayload}
+              />
+            )}
+
             {/* Data Summary */}
             {selectedStudent && analysisData && (
               <Card className="mt-4">
