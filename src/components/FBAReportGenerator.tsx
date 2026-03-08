@@ -2255,6 +2255,28 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 }}
               />
             )}
+
+            {/* Mapped Narrative Sections */}
+            {selectedStudentId && (
+              <MappedNarrativeSections
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                studentId={selectedStudentId}
+                onInsertIntoSection={(sectionTarget, text, narrativeType) => {
+                  const label = `\n\nSuggested Strategy Narrative:\n${text}`;
+                  if (sectionTarget === 'recommendations_section' || sectionTarget === 'intervention_section') {
+                    setSchoolFields(prev => ({
+                      ...prev,
+                      recommendedStrategies: prev.recommendedStrategies
+                        ? `${prev.recommendedStrategies}${label}`
+                        : text,
+                    }));
+                  } else {
+                    setAdditionalNotes(prev => prev ? `${prev}${label}` : text);
+                  }
+                }}
+              />
+            )}
           </TabsContent>
 
           {/* Preview Tab */}
