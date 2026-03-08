@@ -28,19 +28,28 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // 1. Resolve email → user_id via profiles
-    const { data: profile, error: profileError } = await supabaseAdmin
+    // 1. Resolve email → user_id via profiles (exact match first, then case-insensitive)
+    let profile: any = null;
+    const { data: exactProfile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("user_id, display_name, first_name, last_name, email")
       .eq("email", email)
       .maybeSingle();
 
-    if (profileError) {
+    if (!profileError && exactProfile) {
+      profile = exactProfile;
+    } else {
+      // Case-insensitive fallback
+      const { data: iProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, display_name, first_name, last_name, email")
+        .ilike("email", email)
+        .maybeSingle();
+      if (iProfile) profile = iProfile;
+    }
+
+    if (profileError && !profile) {
       console.error("Profile lookup error:", profileError);
-      return new Response(
-        JSON.stringify({ error: "Profile lookup failed", details: profileError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     // Resolve userId — prefer profile, fallback to auth.users
@@ -57,12 +66,20 @@ Deno.serve(async (req) => {
       resolvedFirstName = profile.first_name;
       resolvedLastName = profile.last_name;
     } else {
-      // Try auth.users as fallback for users whose profile email may differ
+      // Try auth.users as fallback — paginate to find the user
       console.log("Profile not found for email, trying auth.users fallback:", email);
-      const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
-      const authUser = (authData?.users || []).find(
-        (u: any) => u.email?.toLowerCase() === email.toLowerCase()
-      );
+      let authUser: any = null;
+      let page = 1;
+      const perPage = 1000;
+      while (!authUser) {
+        const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        if (authErr || !authData?.users?.length) break;
+        authUser = authData.users.find(
+          (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+        if (authData.users.length < perPage) break; // last page
+        page++;
+      }
 
       if (!authUser) {
         return new Response(
