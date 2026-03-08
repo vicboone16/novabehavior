@@ -1046,6 +1046,28 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Suggested Strategies Panel from Library */}
+              <SuggestedStrategiesPanel
+                detectedFunction={primaryFunction !== 'unknown' ? primaryFunction : undefined}
+                studentId={selectedStudentId || undefined}
+                onAppendStrategy={(strategy, category) => {
+                  // Map category to BIP strategy type
+                  const cat = (category || '').toLowerCase();
+                  if (cat.includes('antecedent') || cat.includes('prevent')) {
+                    addStrategy('preventative', strategy);
+                  } else if (cat.includes('teach') || cat.includes('replacement')) {
+                    addStrategy('teaching', strategy);
+                  } else if (cat.includes('reinforce') || cat.includes('consequence')) {
+                    addStrategy('reinforcement', strategy);
+                  } else if (cat.includes('react') || cat.includes('crisis') || cat.includes('de-escalat')) {
+                    addStrategy('reactive', strategy);
+                  } else {
+                    // Default to preventative
+                    addStrategy('preventative', strategy);
+                  }
+                }}
+              />
             </TabsContent>
 
             {/* Plans Tab */}
