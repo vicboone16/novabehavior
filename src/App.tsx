@@ -72,6 +72,8 @@ import SDCTraining from "./pages/SDCTraining";
 import SDCModuleDetail from "./pages/SDCModuleDetail";
 import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 import BehaviorStrategies from "./pages/BehaviorStrategies";
+import BehaviorRecommendations from "./pages/BehaviorRecommendations";
+import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
 
 const queryClient = new QueryClient();
 
@@ -444,6 +446,24 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <BehaviorStrategies />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/behavior-recommendations" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <BehaviorRecommendations />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/behavior-recommendations/result/:id" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <BehaviorRecommendationDetail />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
