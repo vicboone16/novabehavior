@@ -31,6 +31,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
+import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
 
 interface BIPGeneratorProps {
   student?: Student;
@@ -1068,6 +1069,28 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   }
                 }}
               />
+
+              {/* Strategy Narrative Builder */}
+              {selectedStudentId && (
+                <StrategyNarrativeBuilder
+                  reportId={`bip-${selectedStudentId}`}
+                  reportType="bip"
+                  studentId={selectedStudentId}
+                  onInsertClinical={(text) => {
+                    // Append clinical narrative to preventative strategies as a block
+                    setPreventativeStrategies(prev => [
+                      ...prev,
+                      `[Clinical Narrative] ${text.split('\n')[0]}`,
+                    ]);
+                  }}
+                  onInsertTeacher={(text) => {
+                    setTeachingStrategies(prev => [
+                      ...prev,
+                      `[Teacher Guide] ${text.split('\n').filter(l => l.trim()).slice(0, 3).join(' | ')}`,
+                    ]);
+                  }}
+                />
+              )}
             </TabsContent>
 
             {/* Plans Tab */}
