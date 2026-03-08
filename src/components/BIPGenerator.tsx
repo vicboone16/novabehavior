@@ -1098,6 +1098,25 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   }}
                 />
               )}
+
+            {/* Mapped Narrative Sections */}
+            {selectedStudentId && (
+              <MappedNarrativeSections
+                reportId={`bip-${selectedStudentId}`}
+                reportType="bip"
+                studentId={selectedStudentId}
+                onInsertIntoSection={(sectionTarget, text) => {
+                  const cat = sectionTarget;
+                  if (cat === 'intervention_section' || cat === 'recommendations_section') {
+                    setPreventativeStrategies(prev => [...prev, `[Strategy Narrative] ${text.split('\n')[0]}`]);
+                  } else if (cat === 'teacher_implementation_section') {
+                    setTeachingStrategies(prev => [...prev, `[Teacher Narrative] ${text.split('\n')[0]}`]);
+                  } else {
+                    setMonitoringPlan(prev => prev ? `${prev}\n\nSuggested Strategy Narrative:\n${text}` : text);
+                  }
+                }}
+              />
+            )}
             </TabsContent>
 
             {/* Plans Tab */}
