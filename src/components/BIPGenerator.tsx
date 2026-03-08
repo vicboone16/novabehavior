@@ -4,7 +4,7 @@ import {
   FileText, Download, Printer, Shield, Plus, Trash2, 
   CheckCircle2, AlertTriangle, Target, Lightbulb, Users,
   Calendar, Clock, Save, ChevronDown, ChevronUp, Brain,
-  ArrowRight, Sparkles, BookOpen, Heart
+  ArrowRight, Sparkles, BookOpen, Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
