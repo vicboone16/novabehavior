@@ -71,6 +71,7 @@ import TeacherComms from "./pages/TeacherComms";
 import SDCTraining from "./pages/SDCTraining";
 import SDCModuleDetail from "./pages/SDCModuleDetail";
 import SDCCertificationTracker from "./pages/SDCCertificationTracker";
+import BehaviorStrategies from "./pages/BehaviorStrategies";
 
 const queryClient = new QueryClient();
 
