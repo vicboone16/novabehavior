@@ -18531,6 +18531,74 @@ export type Database = {
           },
         ]
       }
+      report_strategy_selections: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          report_id: string
+          report_type: string
+          sort_order: number | null
+          source: string | null
+          strategy_id: string
+          student_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          report_id: string
+          report_type: string
+          sort_order?: number | null
+          source?: string | null
+          strategy_id: string
+          student_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          report_id?: string
+          report_type?: string
+          sort_order?: number | null
+          source?: string | null
+          strategy_id?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "behavior_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+        ]
+      }
       review_queue: {
         Row: {
           created_at: string
@@ -28803,6 +28871,58 @@ export type Database = {
           },
         ]
       }
+      v_report_strategy_selections: {
+        Row: {
+          created_at: string | null
+          data_to_collect: Json | null
+          description: string | null
+          family_version: string | null
+          fidelity_tips: Json | null
+          id: string | null
+          notes: string | null
+          report_id: string | null
+          report_type: string | null
+          sort_order: number | null
+          source: string | null
+          staff_scripts: Json | null
+          strategy_group: string | null
+          strategy_id: string | null
+          strategy_key: string | null
+          strategy_name: string | null
+          student_id: string | null
+          teacher_quick_version: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "behavior_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_search"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+        ]
+      }
       v_skill_prompt_distribution_v2: {
         Row: {
           prompt_code: string | null
@@ -30046,6 +30166,34 @@ export type Database = {
         }
         Returns: string
       }
+      add_strategy_to_report_draft: {
+        Args: {
+          p_created_by?: string
+          p_notes?: string
+          p_report_id: string
+          p_report_type: string
+          p_strategy_id: string
+          p_student_id: string
+        }
+        Returns: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          report_id: string
+          report_type: string
+          sort_order: number | null
+          source: string | null
+          strategy_id: string
+          student_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "report_strategy_selections"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_invite_code_access: {
         Args: {
           p_code: string
@@ -30974,6 +31122,14 @@ export type Database = {
       refresh_ci_intervention_recs: {
         Args: { p_agency_id: string; p_client_id?: string; p_limit?: number }
         Returns: number
+      }
+      remove_strategy_from_report_draft: {
+        Args: {
+          p_report_id: string
+          p_report_type: string
+          p_strategy_id: string
+        }
+        Returns: boolean
       }
       request_data_collection: {
         Args: { p_publish_id: string }
