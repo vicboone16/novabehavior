@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay, parseISO, differenceInMinutes } from 'date-fns';
 
 export interface NextUpEvent {
   schedule_event_id: string;
@@ -17,6 +17,7 @@ export interface NextUpEvent {
   duration_minutes: number;
   status: string;
   bucket: string | null;
+  source: 'clinical_schedule_events' | 'appointments';
 }
 
 export function useNextUpEvents() {
@@ -33,10 +34,11 @@ export function useNextUpEvents() {
     }
 
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
+      const now = new Date();
+      const today = format(now, 'yyyy-MM-dd');
 
-      // Query the normalized view filtered by agency + today + scheduled status
-      const { data: scheduleRows, error: schedError } = await supabase
+      // ── Source 1: clinical_schedule_events (normalized view) ──
+      const schedPromise = supabase
         .from('v_clinical_schedule_events_norm' as any)
         .select('*')
         .eq('agency_id', currentAgency.id)
@@ -44,30 +46,34 @@ export function useNextUpEvents() {
         .eq('status', 'scheduled')
         .order('start_time', { ascending: true });
 
-      if (schedError) throw schedError;
+      // ── Source 2: appointments table ──
+      const apptPromise = supabase
+        .from('appointments')
+        .select('id, title, student_id, staff_user_id, start_time, end_time, status, linked_session_id, students(first_name, last_name)')
+        .or(`staff_user_id.eq.${user.id},created_by.eq.${user.id}`)
+        .gte('start_time', startOfDay(now).toISOString())
+        .lte('start_time', endOfDay(now).toISOString())
+        .in('status', ['scheduled', 'confirmed'])
+        .order('start_time', { ascending: true });
 
-      if (!scheduleRows || scheduleRows.length === 0) {
-        setEvents([]);
-        setLoading(false);
-        return;
-      }
+      const [schedResult, apptResult] = await Promise.all([schedPromise, apptPromise]);
 
-      // Collect unique client IDs to fetch names
-      const clientIds = [...new Set((scheduleRows as any[]).map((r: any) => r.client_id).filter(Boolean))];
+      // ── Process clinical schedule events ──
+      const scheduleRows = (schedResult.data || []) as any[];
+      const clinicalClientIds = [...new Set(scheduleRows.map((r: any) => r.client_id).filter(Boolean))];
 
       let clientMap: Record<string, string> = {};
-      if (clientIds.length > 0) {
+      if (clinicalClientIds.length > 0) {
         const { data: students } = await supabase
           .from('students')
           .select('id, name')
-          .in('id', clientIds);
-
+          .in('id', clinicalClientIds);
         if (students) {
           clientMap = Object.fromEntries(students.map((s: any) => [s.id, s.name]));
         }
       }
 
-      const mapped: NextUpEvent[] = (scheduleRows as any[]).map((row: any) => {
+      const clinicalEvents: NextUpEvent[] = scheduleRows.map((row: any) => {
         const hours = Number(row.scheduled_hours) || 0;
         return {
           schedule_event_id: row.schedule_event_id,
@@ -82,10 +88,63 @@ export function useNextUpEvents() {
           duration_minutes: Math.round(hours * 60),
           status: row.status,
           bucket: row.bucket,
+          source: 'clinical_schedule_events' as const,
         };
       });
 
-      setEvents(mapped);
+      // ── Process appointments ──
+      const appointments = (apptResult.data || []) as any[];
+      const appointmentEvents: NextUpEvent[] = appointments
+        .filter((apt: any) => !apt.linked_session_id) // exclude already-clocked-in
+        .map((apt: any) => {
+          const start = parseISO(apt.start_time);
+          const end = parseISO(apt.end_time);
+          const mins = differenceInMinutes(end, start);
+          const student = apt.students;
+          const clientName = student
+            ? `${student.first_name} ${student.last_name || ''}`.trim()
+            : apt.title || 'Appointment';
+
+          return {
+            schedule_event_id: apt.id,
+            client_id: apt.student_id || '',
+            client_name: clientName,
+            staff_user_id: apt.staff_user_id,
+            authorization_id: null,
+            scheduled_date: today,
+            start_time: apt.start_time,
+            end_time: apt.end_time,
+            scheduled_hours: mins / 60,
+            duration_minutes: mins,
+            status: 'scheduled',
+            bucket: null,
+            source: 'appointments' as const,
+          };
+        });
+
+      // ── Merge & deduplicate (prefer clinical if same client+time) ──
+      const seen = new Set<string>();
+      const merged: NextUpEvent[] = [];
+
+      // Clinical events first (higher priority)
+      for (const ev of clinicalEvents) {
+        const key = `${ev.client_id}|${ev.start_time}`;
+        seen.add(key);
+        merged.push(ev);
+      }
+      for (const ev of appointmentEvents) {
+        const key = `${ev.client_id}|${ev.start_time}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          merged.push(ev);
+        }
+      }
+
+      // Sort by start_time, filter out past events
+      merged.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+      const upcoming = merged.filter(ev => new Date(ev.end_time) >= now);
+
+      setEvents(upcoming);
     } catch (err) {
       console.error('Error fetching next-up events:', err);
       setEvents([]);
@@ -101,24 +160,36 @@ export function useNextUpEvents() {
   const clockIn = useCallback(async (event: NextUpEvent) => {
     if (!user) throw new Error('Not authenticated');
 
+    const insertPayload: Record<string, any> = {
+      user_id: user.id,
+      start_time: new Date().toISOString(),
+      status: 'active',
+      student_ids: event.client_id ? [event.client_id] : [],
+      scheduled_item_id: event.schedule_event_id,
+      scheduled_item_source: event.source || 'clinical_schedule_events',
+      name: `Session – ${event.client_name}`,
+    };
+
+    if (event.authorization_id) {
+      insertPayload.authorization_id = event.authorization_id;
+    }
+
     const { data, error } = await supabase
       .from('sessions')
-      .insert({
-        user_id: user.id,
-        start_time: new Date().toISOString(),
-        status: 'active',
-        student_ids: event.client_id ? [event.client_id] : [],
-        scheduled_item_id: event.schedule_event_id,
-        scheduled_item_source: 'clinical_schedule_events',
-        authorization_id: event.authorization_id,
-        name: `Session – ${event.client_name}`,
-      })
+      .insert(insertPayload as any)
       .select()
       .single();
 
     if (error) throw error;
 
-    // Refresh the list after clocking in
+    // If source is appointments, mark appointment as in-progress
+    if (event.source === 'appointments') {
+      await supabase
+        .from('appointments')
+        .update({ linked_session_id: data.id, status: 'in_progress' })
+        .eq('id', event.schedule_event_id);
+    }
+
     await fetchEvents();
     return data;
   }, [user, fetchEvents]);
