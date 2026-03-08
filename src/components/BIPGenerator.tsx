@@ -35,6 +35,7 @@ import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/Strat
 import { MappedNarrativeSections, type SectionTarget } from '@/components/behavior-strategies/MappedNarrativeSections';
 import { StrategyContentPreview, type StrategyExportPayload } from '@/components/behavior-strategies/StrategyContentPreview';
 import { buildStrategyExportParagraphs } from '@/lib/strategyExportSections';
+import { InterventionPackets } from '@/components/behavior-strategies/InterventionPackets';
 
 interface BIPGeneratorProps {
   student?: Student;
@@ -1115,6 +1116,16 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                     setMonitoringPlan(prev => prev ? `${prev}\n\nSuggested Strategy Narrative:\n${text}` : text);
                   }
                 }}
+              />
+            )}
+
+            {/* Intervention Packets */}
+            {selectedStudentId && (
+              <InterventionPackets
+                reportId={`bip-${selectedStudentId}`}
+                reportType="bip"
+                studentName={selectedStudent?.name}
+                studentId={selectedStudentId}
               />
             )}
             </TabsContent>

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Loader2, Eye, ExternalLink } from 'lucide-react';
 import { useBehaviorRecommendations, SavedResultDetail } from '@/hooks/useBehaviorRecommendations';
+import { InterventionPackets } from '@/components/behavior-strategies/InterventionPackets';
 import { supabase } from '@/integrations/supabase/client';
 
 const formatLabel = (s: string | null) => s?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '—';
@@ -141,6 +142,29 @@ export default function BehaviorRecommendationDetail() {
           </Card>
         ))}
       </div>
+
+      {/* Intervention Packets from selected strategies */}
+      {details.length > 0 && (
+        <InterventionPackets
+          reportId={id || ''}
+          reportType="recommendation"
+          studentId={meta?.student_id || undefined}
+          strategies={details.filter(d => d.selected).map(d => ({
+            id: d.strategy_id || '',
+            strategy_name: d.strategy_name || 'Unknown',
+            strategy_group: d.strategy_group || null,
+            category: null,
+            description: d.rationale || null,
+            teacher_quick_version: d.teacher_quick_version || null,
+            family_version: (d as any).family_version || null,
+            data_to_collect: null,
+            fidelity_tips: null,
+            staff_scripts: null,
+            implementation_notes: null,
+            evidence_level: null,
+          }))}
+        />
+      )}
     </div>
   );
 }

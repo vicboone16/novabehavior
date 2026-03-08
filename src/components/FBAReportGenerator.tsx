@@ -39,6 +39,7 @@ import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/Strat
 import { MappedNarrativeSections, type SectionTarget } from '@/components/behavior-strategies/MappedNarrativeSections';
 import { StrategyContentPreview, type StrategyExportPayload } from '@/components/behavior-strategies/StrategyContentPreview';
 import { buildStrategyExportParagraphs } from '@/lib/strategyExportSections';
+import { InterventionPackets } from '@/components/behavior-strategies/InterventionPackets';
 import { generateInsuranceReport } from '@/lib/insuranceReportExport';
 import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
 import { renderFunctionBarChart, renderFrequencyBarChart, renderIndirectAssessmentChart } from '@/lib/fbaChartRenderer';
@@ -2275,6 +2276,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                     setAdditionalNotes(prev => prev ? `${prev}${label}` : text);
                   }
                 }}
+              />
+            )}
+
+            {/* Intervention Packets */}
+            {selectedStudentId && (
+              <InterventionPackets
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                studentName={selectedStudent?.name}
+                studentId={selectedStudentId}
               />
             )}
           </TabsContent>
