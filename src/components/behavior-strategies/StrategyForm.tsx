@@ -127,7 +127,7 @@ export function StrategyForm({ open, onClose, onSave, strategy, steps, onSaveSte
                 <label className="text-xs font-medium">Strategy Key *</label>
                 <Input value={form.strategy_key || ''} onChange={e => { set('strategy_key', e.target.value); if (strategy) setKeyEdited(true); }} className="h-8 text-sm" />
                 {keyEdited && strategy && (
-                  <p className="text-[10px] text-amber-600 flex items-center gap-1 mt-0.5">
+                  <p className="text-[10px] text-destructive flex items-center gap-1 mt-0.5">
                     <AlertTriangle className="h-3 w-3" /> Changing the key may affect links
                   </p>
                 )}
