@@ -169,15 +169,43 @@ Deno.serve(async (req) => {
       return json({ error: "not_authenticated" }, 401);
     }
 
-    // Validate token against local auth
+    // Try local (Nova Core) auth first, then known satellite projects
+    let authUser: { email?: string | null } | null = null;
+
+    // 1) Local verification
     const localSupa = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: { user: authUser }, error: authErr } = await localSupa.auth.getUser();
-    if (authErr || !authUser?.email) {
-      return json({ error: "not_authenticated", detail: authErr?.message }, 401);
+    const { data: localData, error: localErr } = await localSupa.auth.getUser();
+    if (!localErr && localData?.user?.email) {
+      authUser = localData.user;
+    }
+
+    // 2) Satellite project fallback (Behavior Decoded, etc.)
+    if (!authUser) {
+      const satellites = [
+        { url: Deno.env.get("SATELLITE_BD_URL"), key: Deno.env.get("SATELLITE_BD_ANON_KEY") },
+      ].filter(s => s.url && s.key);
+
+      for (const sat of satellites) {
+        try {
+          const satClient = createClient(sat.url!, sat.key!, {
+            global: { headers: { Authorization: authHeader } },
+            auth: { persistSession: false, autoRefreshToken: false },
+          });
+          const { data: satData, error: satErr } = await satClient.auth.getUser();
+          if (!satErr && satData?.user?.email) {
+            authUser = satData.user;
+            break;
+          }
+        } catch (_) { /* try next */ }
+      }
+    }
+
+    if (!authUser?.email) {
+      return json({ error: "not_authenticated", detail: "JWT not recognized by any known project" }, 401);
     }
 
     const email = authUser.email.toLowerCase().trim();
