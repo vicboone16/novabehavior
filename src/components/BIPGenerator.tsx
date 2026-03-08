@@ -1118,6 +1118,16 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                 }}
               />
             )}
+
+            {/* Intervention Packets */}
+            {selectedStudentId && (
+              <InterventionPackets
+                reportId={`bip-${selectedStudentId}`}
+                reportType="bip"
+                studentName={selectedStudent?.name}
+                studentId={selectedStudentId}
+              />
+            )}
             </TabsContent>
 
             {/* Plans Tab */}

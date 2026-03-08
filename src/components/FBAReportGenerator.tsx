@@ -2278,6 +2278,16 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 }}
               />
             )}
+
+            {/* Intervention Packets */}
+            {selectedStudentId && (
+              <InterventionPackets
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                studentName={selectedStudent?.name}
+                studentId={selectedStudentId}
+              />
+            )}
           </TabsContent>
 
           {/* Preview Tab */}
