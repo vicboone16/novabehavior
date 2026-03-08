@@ -3500,6 +3500,13 @@ export type Database = {
             referencedRelation: "v_behavior_strategy_training_summary"
             referencedColumns: ["strategy_id"]
           },
+          {
+            foreignKeyName: "behavior_recommendation_profile_strategies_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
+            referencedColumns: ["strategy_id"]
+          },
         ]
       }
       behavior_recommendation_profiles: {
@@ -3619,6 +3626,13 @@ export type Database = {
             columns: ["strategy_id"]
             isOneToOne: false
             referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+          {
+            foreignKeyName: "behavior_recommendation_result_strategies_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
             referencedColumns: ["strategy_id"]
           },
         ]
@@ -3905,6 +3919,13 @@ export type Database = {
             referencedRelation: "v_behavior_strategy_training_summary"
             referencedColumns: ["strategy_id"]
           },
+          {
+            foreignKeyName: "behavior_strategy_steps_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
+            referencedColumns: ["strategy_id"]
+          },
         ]
       }
       behavior_strategy_tags: {
@@ -3953,6 +3974,13 @@ export type Database = {
             columns: ["strategy_id"]
             isOneToOne: false
             referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+          {
+            foreignKeyName: "behavior_strategy_tags_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
             referencedColumns: ["strategy_id"]
           },
         ]
@@ -18622,6 +18650,13 @@ export type Database = {
             foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
             columns: ["source_narrative_id"]
             isOneToOne: false
+            referencedRelation: "v_report_export_latest_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
             referencedRelation: "v_report_strategy_narratives"
             referencedColumns: ["id"]
           },
@@ -18721,6 +18756,13 @@ export type Database = {
             columns: ["strategy_id"]
             isOneToOne: false
             referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
             referencedColumns: ["strategy_id"]
           },
         ]
@@ -27947,6 +27989,13 @@ export type Database = {
             referencedRelation: "v_behavior_strategy_training_summary"
             referencedColumns: ["strategy_id"]
           },
+          {
+            foreignKeyName: "behavior_recommendation_result_strategies_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
+            referencedColumns: ["strategy_id"]
+          },
         ]
       }
       v_behavior_session_metrics: {
@@ -28997,6 +29046,93 @@ export type Database = {
           },
         ]
       }
+      v_report_export_latest_narratives: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          generated_text: string | null
+          id: string | null
+          narrative_type: string | null
+          report_id: string | null
+          report_type: string | null
+          strategy_ids: string[] | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      v_report_export_latest_section_content: {
+        Row: {
+          content_text: string | null
+          created_at: string | null
+          id: string | null
+          inserted_by: string | null
+          narrative_type: string | null
+          report_id: string | null
+          report_type: string | null
+          source_narrative_id: string | null
+          student_id: string | null
+          target_section_key: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_latest_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_report_export_selected_strategies: {
+        Row: {
+          created_at: string | null
+          data_to_collect: Json | null
+          description: string | null
+          family_version: string | null
+          fidelity_tips: Json | null
+          notes: string | null
+          report_id: string | null
+          report_type: string | null
+          sort_order: number | null
+          staff_scripts: Json | null
+          strategy_group: string | null
+          strategy_id: string | null
+          strategy_key: string | null
+          strategy_name: string | null
+          student_id: string | null
+          teacher_quick_version: string | null
+        }
+        Relationships: []
+      }
+      v_report_strategy_export_summary: {
+        Row: {
+          has_caregiver_summary: boolean | null
+          has_clinical_narrative: boolean | null
+          has_strategy_content: boolean | null
+          has_teacher_summary: boolean | null
+          mapped_section_count: number | null
+          report_id: string | null
+          report_type: string | null
+          selected_strategy_count: number | null
+        }
+        Relationships: []
+      }
       v_report_strategy_narratives: {
         Row: {
           created_at: string | null
@@ -29033,6 +29169,94 @@ export type Database = {
           strategy_ids?: string[] | null
           student_id?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_report_strategy_section_content: {
+        Row: {
+          content_text: string | null
+          created_at: string | null
+          id: string | null
+          inserted_by: string | null
+          narrative_type: string | null
+          report_id: string | null
+          report_type: string | null
+          source_narrative_id: string | null
+          student_id: string | null
+          target_section_key: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_text?: string | null
+          created_at?: string | null
+          id?: string | null
+          inserted_by?: string | null
+          narrative_type?: string | null
+          report_id?: string | null
+          report_type?: string | null
+          source_narrative_id?: string | null
+          student_id?: string | null
+          target_section_key?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_text?: string | null
+          created_at?: string | null
+          id?: string | null
+          inserted_by?: string | null
+          narrative_type?: string | null
+          report_id?: string | null
+          report_type?: string | null
+          source_narrative_id?: string | null
+          student_id?: string | null
+          target_section_key?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_latest_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_strategy_section_content_source_narrative_id_fkey"
+            columns: ["source_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_strategy_narratives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_report_strategy_section_map: {
+        Row: {
+          display_label: string | null
+          is_default: boolean | null
+          narrative_type: string | null
+          report_type: string | null
+          target_section_key: string | null
+        }
+        Insert: {
+          display_label?: string | null
+          is_default?: boolean | null
+          narrative_type?: string | null
+          report_type?: string | null
+          target_section_key?: string | null
+        }
+        Update: {
+          display_label?: string | null
+          is_default?: boolean | null
+          narrative_type?: string | null
+          report_type?: string | null
+          target_section_key?: string | null
         }
         Relationships: []
       }
@@ -29084,6 +29308,13 @@ export type Database = {
             columns: ["strategy_id"]
             isOneToOne: false
             referencedRelation: "v_behavior_strategy_training_summary"
+            referencedColumns: ["strategy_id"]
+          },
+          {
+            foreignKeyName: "report_strategy_selections_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "v_report_export_selected_strategies"
             referencedColumns: ["strategy_id"]
           },
         ]
@@ -29971,13 +30202,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -29987,7 +30211,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -30001,8 +30225,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -30015,6 +30239,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -30022,7 +30260,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -30036,8 +30274,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -30049,20 +30287,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -30359,6 +30590,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      append_strategy_narrative_to_section: {
+        Args: {
+          p_inserted_by?: string
+          p_narrative_id: string
+          p_report_id: string
+          p_report_type: string
+          p_student_id: string
+          p_target_section_key: string
+        }
+        Returns: {
+          content_text: string
+          created_at: string | null
+          id: string
+          inserted_by: string | null
+          narrative_type: string
+          report_id: string
+          report_type: string
+          source_narrative_id: string | null
+          student_id: string | null
+          target_section_key: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "report_strategy_section_content"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       apply_invite_code_access: {
         Args: {
           p_code: string
@@ -30439,6 +30699,10 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      build_report_strategy_export_payload: {
+        Args: { p_report_id: string; p_report_type: string }
+        Returns: Json
+      }
       bulk_process_staged_imports: {
         Args: { p_agency_id: string }
         Returns: number
@@ -31304,6 +31568,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_strategy_section_content: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
       request_data_collection: {
         Args: { p_publish_id: string }
         Returns: undefined
@@ -31728,6 +31996,28 @@ export type Database = {
       sync_staff_assignment_to_access: {
         Args: { p_assignment_id: string }
         Returns: Json
+      }
+      update_strategy_section_content: {
+        Args: { p_content_text: string; p_id: string }
+        Returns: {
+          content_text: string
+          created_at: string | null
+          id: string
+          inserted_by: string | null
+          narrative_type: string
+          report_id: string
+          report_type: string
+          source_narrative_id: string | null
+          student_id: string | null
+          target_section_key: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "report_strategy_section_content"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_bx_strategy: {
         Args: {

@@ -32,6 +32,9 @@ import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
 import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
+import { MappedNarrativeSections, type SectionTarget } from '@/components/behavior-strategies/MappedNarrativeSections';
+import { StrategyContentPreview, type StrategyExportPayload } from '@/components/behavior-strategies/StrategyContentPreview';
+import { buildStrategyExportParagraphs } from '@/lib/strategyExportSections';
 
 interface BIPGeneratorProps {
   student?: Student;
@@ -269,6 +272,8 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
   const [monitoringPlan, setMonitoringPlan] = useState('');
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [newTeamMember, setNewTeamMember] = useState('');
+  const [includeStrategySections, setIncludeStrategySections] = useState(true);
+  const [strategyExportPayload, setStrategyExportPayload] = useState<StrategyExportPayload | null>(null);
 
   const activeStudents = useMemo(() => 
     students.filter(s => !s.isArchived), 
@@ -634,6 +639,8 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
             spacing: { before: 400, after: 200 },
           }),
           ...teamMembers.map(m => new Paragraph({ text: `• ${m}`, spacing: { after: 100 } })),
+          // Strategy-based export sections (append-only)
+          ...buildStrategyExportParagraphs(strategyExportPayload),
         ].filter(Boolean) as Paragraph[],
       }],
     });
@@ -1091,6 +1098,25 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   }}
                 />
               )}
+
+            {/* Mapped Narrative Sections */}
+            {selectedStudentId && (
+              <MappedNarrativeSections
+                reportId={`bip-${selectedStudentId}`}
+                reportType="bip"
+                studentId={selectedStudentId}
+                onInsertIntoSection={(sectionTarget, text) => {
+                  const cat = sectionTarget;
+                  if (cat === 'intervention_section' || cat === 'recommendations_section') {
+                    setPreventativeStrategies(prev => [...prev, `[Strategy Narrative] ${text.split('\n')[0]}`]);
+                  } else if (cat === 'teacher_implementation_section') {
+                    setTeachingStrategies(prev => [...prev, `[Teacher Narrative] ${text.split('\n')[0]}`]);
+                  } else {
+                    setMonitoringPlan(prev => prev ? `${prev}\n\nSuggested Strategy Narrative:\n${text}` : text);
+                  }
+                }}
+              />
+            )}
             </TabsContent>
 
             {/* Plans Tab */}
@@ -1216,6 +1242,17 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Strategy Content Preview */}
+              {selectedStudentId && (
+                <StrategyContentPreview
+                  reportId={`bip-${selectedStudentId}`}
+                  reportType="bip"
+                  includeStrategySections={includeStrategySections}
+                  onToggleInclude={setIncludeStrategySections}
+                  onPayloadReady={setStrategyExportPayload}
+                />
+              )}
 
               {/* Summary */}
               {selectedStudent && (

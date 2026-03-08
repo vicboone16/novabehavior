@@ -36,6 +36,9 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
 import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
+import { MappedNarrativeSections, type SectionTarget } from '@/components/behavior-strategies/MappedNarrativeSections';
+import { StrategyContentPreview, type StrategyExportPayload } from '@/components/behavior-strategies/StrategyContentPreview';
+import { buildStrategyExportParagraphs } from '@/lib/strategyExportSections';
 import { generateInsuranceReport } from '@/lib/insuranceReportExport';
 import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
 import { renderFunctionBarChart, renderFrequencyBarChart, renderIndirectAssessmentChart } from '@/lib/fbaChartRenderer';
@@ -258,6 +261,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [allowPartialExport, setAllowPartialExport] = useState(true);
   const [showDraftIndicators, setShowDraftIndicators] = useState(true);
+  const [includeStrategySections, setIncludeStrategySections] = useState(true);
+  const [strategyExportPayload, setStrategyExportPayload] = useState<StrategyExportPayload | null>(null);
 
   // School FBA editable fields
   const [schoolFields, setSchoolFields] = useState({
@@ -1348,6 +1353,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
             text: additionalNotes,
             spacing: { after: 300 },
           }),
+          // Strategy-based export sections (append-only)
+          ...buildStrategyExportParagraphs(strategyExportPayload),
           // Signature
           new Paragraph({
             text: '',
@@ -2248,6 +2255,28 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 }}
               />
             )}
+
+            {/* Mapped Narrative Sections */}
+            {selectedStudentId && (
+              <MappedNarrativeSections
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                studentId={selectedStudentId}
+                onInsertIntoSection={(sectionTarget, text, narrativeType) => {
+                  const label = `\n\nSuggested Strategy Narrative:\n${text}`;
+                  if (sectionTarget === 'recommendations_section' || sectionTarget === 'intervention_section') {
+                    setSchoolFields(prev => ({
+                      ...prev,
+                      recommendedStrategies: prev.recommendedStrategies
+                        ? `${prev.recommendedStrategies}${label}`
+                        : text,
+                    }));
+                  } else {
+                    setAdditionalNotes(prev => prev ? `${prev}${label}` : text);
+                  }
+                }}
+              />
+            )}
           </TabsContent>
 
           {/* Preview Tab */}
@@ -2894,6 +2923,17 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 </CardContent>
               </Card>
             </div>
+
+            {/* Strategy Content Preview */}
+            {selectedStudentId && (
+              <StrategyContentPreview
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                includeStrategySections={includeStrategySections}
+                onToggleInclude={setIncludeStrategySections}
+                onPayloadReady={setStrategyExportPayload}
+              />
+            )}
 
             {/* Data Summary */}
             {selectedStudent && analysisData && (
