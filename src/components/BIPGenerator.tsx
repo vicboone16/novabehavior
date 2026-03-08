@@ -30,6 +30,7 @@ import {
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
+import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
 
 interface BIPGeneratorProps {
   student?: Student;
