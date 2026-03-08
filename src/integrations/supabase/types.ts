@@ -6037,6 +6037,7 @@ export type Database = {
       }
       classrooms: {
         Row: {
+          agency_id: string | null
           classroom_type: string | null
           created_at: string | null
           grade_level: string | null
@@ -6047,6 +6048,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          agency_id?: string | null
           classroom_type?: string | null
           created_at?: string | null
           grade_level?: string | null
@@ -6057,6 +6059,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          agency_id?: string | null
           classroom_type?: string | null
           created_at?: string | null
           grade_level?: string | null
