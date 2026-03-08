@@ -2215,6 +2215,39 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 }));
               }}
             />
+
+            {/* Strategy Narrative Builder */}
+            {selectedStudentId && (
+              <StrategyNarrativeBuilder
+                reportId={`fba-${selectedStudentId}`}
+                reportType="fba"
+                studentId={selectedStudentId}
+                onInsertClinical={(text) => {
+                  setSchoolFields(prev => ({
+                    ...prev,
+                    recommendedStrategies: prev.recommendedStrategies
+                      ? `${prev.recommendedStrategies}\n\n${text}`
+                      : text,
+                  }));
+                }}
+                onInsertTeacher={(text) => {
+                  setSchoolFields(prev => ({
+                    ...prev,
+                    recommendedStrategies: prev.recommendedStrategies
+                      ? `${prev.recommendedStrategies}\n\n--- Teacher Summary ---\n${text}`
+                      : `--- Teacher Summary ---\n${text}`,
+                  }));
+                }}
+                onInsertCaregiver={(text) => {
+                  setSchoolFields(prev => ({
+                    ...prev,
+                    recommendedStrategies: prev.recommendedStrategies
+                      ? `${prev.recommendedStrategies}\n\n--- Caregiver Summary ---\n${text}`
+                      : `--- Caregiver Summary ---\n${text}`,
+                  }));
+                }}
+              />
+            )}
           </TabsContent>
 
           {/* Preview Tab */}

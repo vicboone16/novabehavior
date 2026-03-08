@@ -1069,6 +1069,28 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                   }
                 }}
               />
+
+              {/* Strategy Narrative Builder */}
+              {selectedStudentId && (
+                <StrategyNarrativeBuilder
+                  reportId={`bip-${selectedStudentId}`}
+                  reportType="bip"
+                  studentId={selectedStudentId}
+                  onInsertClinical={(text) => {
+                    // Append clinical narrative to preventative strategies as a block
+                    setPreventativeStrategies(prev => [
+                      ...prev,
+                      `[Clinical Narrative] ${text.split('\n')[0]}`,
+                    ]);
+                  }}
+                  onInsertTeacher={(text) => {
+                    setTeachingStrategies(prev => [
+                      ...prev,
+                      `[Teacher Guide] ${text.split('\n').filter(l => l.trim()).slice(0, 3).join(' | ')}`,
+                    ]);
+                  }}
+                />
+              )}
             </TabsContent>
 
             {/* Plans Tab */}
