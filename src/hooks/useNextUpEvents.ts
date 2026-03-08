@@ -176,7 +176,7 @@ export function useNextUpEvents() {
 
     const { data, error } = await supabase
       .from('sessions')
-      .insert(insertPayload)
+      .insert(insertPayload as any)
       .select()
       .single();
 
