@@ -1243,6 +1243,17 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
                 </Card>
               </div>
 
+              {/* Strategy Content Preview */}
+              {selectedStudentId && (
+                <StrategyContentPreview
+                  reportId={`bip-${selectedStudentId}`}
+                  reportType="bip"
+                  includeStrategySections={includeStrategySections}
+                  onToggleInclude={setIncludeStrategySections}
+                  onPayloadReady={setStrategyExportPayload}
+                />
+              )}
+
               {/* Summary */}
               {selectedStudent && (
                 <Card>
