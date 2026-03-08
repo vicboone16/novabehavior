@@ -34,6 +34,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
 import { generateInsuranceReport } from '@/lib/insuranceReportExport';
 import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
 import { renderFunctionBarChart, renderFrequencyBarChart, renderIndirectAssessmentChart } from '@/lib/fbaChartRenderer';
