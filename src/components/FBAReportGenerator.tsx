@@ -1353,6 +1353,8 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
             text: additionalNotes,
             spacing: { after: 300 },
           }),
+          // Strategy-based export sections (append-only)
+          ...buildStrategyExportParagraphs(strategyExportPayload),
           // Signature
           new Paragraph({
             text: '',
