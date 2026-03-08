@@ -241,10 +241,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         user_id: userId,
-        email: profile.email,
-        display_name: profile.display_name,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
+        email: resolvedEmail,
+        display_name: resolvedDisplayName,
+        first_name: resolvedFirstName,
+        last_name: resolvedLastName,
         roles,
         is_super_admin: isSuperAdmin,
         is_admin: isAdmin,
