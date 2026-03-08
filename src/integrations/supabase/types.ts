@@ -15691,11 +15691,371 @@ export type Database = {
             referencedColumns: ["module_id"]
           },
           {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+          {
             foreignKeyName: "parent_training_assignments_module_version_id_fkey"
             columns: ["module_version_id"]
             isOneToOne: false
             referencedRelation: "parent_training_module_versions"
             referencedColumns: ["module_version_id"]
+          },
+        ]
+      }
+      parent_training_custom_goals: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_goal_id: string
+          default_baseline: string | null
+          default_target: string | null
+          description: string | null
+          is_library_candidate: boolean | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          module_id: string | null
+          promoted_to_goal_id: string | null
+          title: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_goal_id?: string
+          default_baseline?: string | null
+          default_target?: string | null
+          description?: string | null
+          is_library_candidate?: boolean | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          module_id?: string | null
+          promoted_to_goal_id?: string | null
+          title: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_goal_id?: string
+          default_baseline?: string | null
+          default_target?: string | null
+          description?: string | null
+          is_library_candidate?: boolean | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          module_id?: string | null
+          promoted_to_goal_id?: string | null
+          title?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_custom_goals_promoted_to_goal_id_fkey"
+            columns: ["promoted_to_goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      parent_training_data: {
+        Row: {
+          created_at: string | null
+          data_id: string
+          goal_assignment_id: string
+          logged_at: string | null
+          logged_by: string | null
+          notes: string | null
+          text_value: string | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_id?: string
+          goal_assignment_id: string
+          logged_at?: string | null
+          logged_by?: string | null
+          notes?: string | null
+          text_value?: string | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          data_id?: string
+          goal_assignment_id?: string
+          logged_at?: string | null
+          logged_by?: string | null
+          notes?: string | null
+          text_value?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
+            columns: ["goal_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goal_assignments"
+            referencedColumns: ["goal_assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
+            columns: ["goal_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_effective_goals"
+            referencedColumns: ["goal_assignment_id"]
+          },
+        ]
+      }
+      parent_training_goal_assignments: {
+        Row: {
+          assignment_id: string
+          baseline_text: string | null
+          baseline_value: number | null
+          created_at: string | null
+          current_value: number | null
+          custom_goal_id: string | null
+          description: string | null
+          goal_assignment_id: string
+          goal_id: string | null
+          goal_source: string | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          notes: string | null
+          save_as_library_candidate: boolean | null
+          status: string | null
+          target_date: string | null
+          target_text: string | null
+          target_value: number | null
+          title: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assignment_id: string
+          baseline_text?: string | null
+          baseline_value?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          custom_goal_id?: string | null
+          description?: string | null
+          goal_assignment_id?: string
+          goal_id?: string | null
+          goal_source?: string | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          notes?: string | null
+          save_as_library_candidate?: boolean | null
+          status?: string | null
+          target_date?: string | null
+          target_text?: string | null
+          target_value?: number | null
+          title: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assignment_id?: string
+          baseline_text?: string | null
+          baseline_value?: number | null
+          created_at?: string | null
+          current_value?: number | null
+          custom_goal_id?: string | null
+          description?: string | null
+          goal_assignment_id?: string
+          goal_id?: string | null
+          goal_source?: string | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          notes?: string | null
+          save_as_library_candidate?: boolean | null
+          status?: string | null
+          target_date?: string | null
+          target_text?: string | null
+          target_value?: number | null
+          title?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_assignments"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_assignments_dashboard"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      parent_training_goals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          default_baseline: string | null
+          default_target: string | null
+          description: string | null
+          display_order: number | null
+          goal_id: string
+          goal_key: string
+          is_active: boolean | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          module_id: string | null
+          title: string
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          default_baseline?: string | null
+          default_target?: string | null
+          description?: string | null
+          display_order?: number | null
+          goal_id?: string
+          goal_key: string
+          is_active?: boolean | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          module_id?: string | null
+          title: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          default_baseline?: string | null
+          default_target?: string | null
+          description?: string | null
+          display_order?: number | null
+          goal_id?: string
+          goal_key?: string
+          is_active?: boolean | null
+          mastery_criteria?: string | null
+          measurement_method?: string | null
+          module_id?: string | null
+          title?: string
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
+      parent_training_homework: {
+        Row: {
+          assignment_id: string
+          client_id: string
+          created_at: string | null
+          file_url: string | null
+          homework_id: string
+          notes: string | null
+          parent_user_id: string
+          response_text: string | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          submitted_at: string | null
+          title: string
+        }
+        Insert: {
+          assignment_id: string
+          client_id: string
+          created_at?: string | null
+          file_url?: string | null
+          homework_id?: string
+          notes?: string | null
+          parent_user_id: string
+          response_text?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          submitted_at?: string | null
+          title: string
+        }
+        Update: {
+          assignment_id?: string
+          client_id?: string
+          created_at?: string | null
+          file_url?: string | null
+          homework_id?: string
+          notes?: string | null
+          parent_user_id?: string
+          response_text?: string | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          submitted_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_homework_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_assignments"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_homework_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_assignments_dashboard"
+            referencedColumns: ["assignment_id"]
           },
         ]
       }
@@ -15783,15 +16143,26 @@ export type Database = {
             referencedRelation: "parent_training_modules"
             referencedColumns: ["module_id"]
           },
+          {
+            foreignKeyName: "parent_training_module_versions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
         ]
       }
       parent_training_modules: {
         Row: {
           agency_id: string | null
+          agency_mode_visible: boolean | null
+          behavior_decoded_enabled: boolean | null
           canonical_key: string | null
           created_at: string
           created_by: string | null
+          display_order: number | null
           est_minutes: number
+          independent_mode_visible: boolean | null
           module_id: string
           scope: string
           short_description: string | null
@@ -15802,10 +16173,14 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          agency_mode_visible?: boolean | null
+          behavior_decoded_enabled?: boolean | null
           canonical_key?: string | null
           created_at?: string
           created_by?: string | null
+          display_order?: number | null
           est_minutes?: number
+          independent_mode_visible?: boolean | null
           module_id?: string
           scope?: string
           short_description?: string | null
@@ -15816,10 +16191,14 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          agency_mode_visible?: boolean | null
+          behavior_decoded_enabled?: boolean | null
           canonical_key?: string | null
           created_at?: string
           created_by?: string | null
+          display_order?: number | null
           est_minutes?: number
+          independent_mode_visible?: boolean | null
           module_id?: string
           scope?: string
           short_description?: string | null
@@ -15877,6 +16256,99 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "parent_training_assignments"
             referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_progress_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_assignments_dashboard"
+            referencedColumns: ["assignment_id"]
+          },
+        ]
+      }
+      parent_training_session_logs: {
+        Row: {
+          agency_id: string | null
+          assignment_id: string | null
+          caregiver_response: string | null
+          client_id: string
+          created_at: string | null
+          duration_minutes: number
+          homework_assigned: string | null
+          module_id: string | null
+          next_steps: string | null
+          parent_user_id: string
+          provider_id: string
+          service_code: string | null
+          session_date: string
+          session_log_id: string
+          session_summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          assignment_id?: string | null
+          caregiver_response?: string | null
+          client_id: string
+          created_at?: string | null
+          duration_minutes: number
+          homework_assigned?: string | null
+          module_id?: string | null
+          next_steps?: string | null
+          parent_user_id: string
+          provider_id: string
+          service_code?: string | null
+          session_date: string
+          session_log_id?: string
+          session_summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          assignment_id?: string | null
+          caregiver_response?: string | null
+          client_id?: string
+          created_at?: string | null
+          duration_minutes?: number
+          homework_assigned?: string | null
+          module_id?: string | null
+          next_steps?: string | null
+          parent_user_id?: string
+          provider_id?: string
+          service_code?: string | null
+          session_date?: string
+          session_log_id?: string
+          session_summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_session_logs_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_assignments"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_session_logs_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_assignments_dashboard"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_session_logs_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_session_logs_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
           },
         ]
       }
@@ -29095,6 +29567,188 @@ export type Database = {
           },
         ]
       }
+      v_parent_training_assignments_dashboard: {
+        Row: {
+          agency_id: string | null
+          assignment_id: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          due_at: string | null
+          est_minutes: number | null
+          goal_count: number | null
+          homework_count: number | null
+          module_description: string | null
+          module_id: string | null
+          module_title: string | null
+          module_version_id: string | null
+          parent_user_id: string | null
+          session_log_count: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_version_id_fkey"
+            columns: ["module_version_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_module_versions"
+            referencedColumns: ["module_version_id"]
+          },
+        ]
+      }
+      v_parent_training_custom_goals: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          created_by: string | null
+          custom_goal_id: string | null
+          default_baseline: string | null
+          default_target: string | null
+          description: string | null
+          is_library_candidate: boolean | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          module_id: string | null
+          module_title: string | null
+          promoted_to_goal_id: string | null
+          title: string | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_custom_goals_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_custom_goals_promoted_to_goal_id_fkey"
+            columns: ["promoted_to_goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      v_parent_training_effective_goals: {
+        Row: {
+          agency_id: string | null
+          assignment_id: string | null
+          baseline_text: string | null
+          baseline_value: number | null
+          client_id: string | null
+          current_value: number | null
+          custom_goal_id: string | null
+          description: string | null
+          goal_assignment_id: string | null
+          goal_id: string | null
+          goal_source: string | null
+          mastery_criteria: string | null
+          measurement_method: string | null
+          module_id: string | null
+          module_title: string | null
+          notes: string | null
+          parent_user_id: string | null
+          save_as_library_candidate: boolean | null
+          status: string | null
+          target_date: string | null
+          target_text: string | null
+          target_value: number | null
+          title: string | null
+          unit: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_assignments"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_assignments_dashboard"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      v_parent_training_module_goal_counts: {
+        Row: {
+          agency_id: string | null
+          display_order: number | null
+          goal_count: number | null
+          module_id: string | null
+          scope: string | null
+          status: string | null
+          title: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          display_order?: number | null
+          goal_count?: never
+          module_id?: string | null
+          scope?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          display_order?: number | null
+          goal_count?: never
+          module_id?: string | null
+          scope?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       v_plan_publications_feed: {
         Row: {
           ack_count: number | null
@@ -30764,6 +31418,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      assign_parent_training_module: {
+        Args: {
+          p_agency_id?: string
+          p_client_id: string
+          p_created_by?: string
+          p_due_at?: string
+          p_module_id: string
+          p_parent_user_id: string
+        }
+        Returns: string
+      }
       auto_log_behavior_outcome_for_run: {
         Args: {
           p_baseline_days?: number
@@ -30783,6 +31448,14 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      build_parent_training_insurance_summary: {
+        Args: {
+          p_client_id: string
+          p_end_date?: string
+          p_start_date?: string
+        }
+        Returns: Json
+      }
       build_report_strategy_export_payload: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: Json
@@ -31526,6 +32199,16 @@ export type Database = {
           _data_category: string
           _details?: Json
           _student_id: string
+        }
+        Returns: string
+      }
+      log_parent_training_goal_data: {
+        Args: {
+          p_goal_assignment_id: string
+          p_logged_by?: string
+          p_notes?: string
+          p_text_value?: string
+          p_value?: number
         }
         Returns: string
       }
