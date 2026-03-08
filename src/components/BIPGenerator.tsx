@@ -31,6 +31,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
+import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
 
 interface BIPGeneratorProps {
   student?: Student;

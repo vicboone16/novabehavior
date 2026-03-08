@@ -35,6 +35,7 @@ import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SuggestedStrategiesPanel } from '@/components/behavior-strategies/SuggestedStrategiesPanel';
+import { StrategyNarrativeBuilder } from '@/components/behavior-strategies/StrategyNarrativeBuilder';
 import { generateInsuranceReport } from '@/lib/insuranceReportExport';
 import { generateSchoolFBAReport, type SchoolFBAData } from '@/lib/schoolFBAExport';
 import { renderFunctionBarChart, renderFrequencyBarChart, renderIndirectAssessmentChart } from '@/lib/fbaChartRenderer';
