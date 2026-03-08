@@ -72,6 +72,8 @@ import SDCTraining from "./pages/SDCTraining";
 import SDCModuleDetail from "./pages/SDCModuleDetail";
 import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 import BehaviorStrategies from "./pages/BehaviorStrategies";
+import BehaviorRecommendations from "./pages/BehaviorRecommendations";
+import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
 
 const queryClient = new QueryClient();
 
