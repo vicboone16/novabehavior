@@ -24901,6 +24901,7 @@ export type Database = {
           source_type: string
           status: string
           student_id: string
+          target_id: string | null
           title: string
           updated_at: string
         }
@@ -24941,6 +24942,7 @@ export type Database = {
           source_type?: string
           status?: string
           student_id: string
+          target_id?: string | null
           title: string
           updated_at?: string
         }
@@ -24981,6 +24983,7 @@ export type Database = {
           source_type?: string
           status?: string
           student_id?: string
+          target_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -25040,6 +25043,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -25937,6 +25947,7 @@ export type Database = {
           replaces_target_id: string | null
           sort_order: number | null
           status: Database["public"]["Enums"]["target_status"] | null
+          target_name: string | null
           updated_at: string | null
           version: number | null
           version_group_id: string | null
@@ -25963,6 +25974,7 @@ export type Database = {
           replaces_target_id?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["target_status"] | null
+          target_name?: string | null
           updated_at?: string | null
           version?: number | null
           version_group_id?: string | null
@@ -25989,6 +26001,7 @@ export type Database = {
           replaces_target_id?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["target_status"] | null
+          target_name?: string | null
           updated_at?: string | null
           version?: number | null
           version_group_id?: string | null
@@ -26023,6 +26036,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      task_analysis_progress_steps: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          independent: boolean | null
+          notes: string | null
+          outcome: string | null
+          prompt_level: string | null
+          recorded_by: string | null
+          session_date: string
+          step_label: string | null
+          step_number: number
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          independent?: boolean | null
+          notes?: string | null
+          outcome?: string | null
+          prompt_level?: string | null
+          recorded_by?: string | null
+          session_date: string
+          step_label?: string | null
+          step_number?: number
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          independent?: boolean | null
+          notes?: string | null
+          outcome?: string | null
+          prompt_level?: string | null
+          recorded_by?: string | null
+          session_date?: string
+          step_label?: string | null
+          step_number?: number
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
       }
       task_analysis_step_data: {
         Row: {
@@ -31098,6 +31162,22 @@ export type Database = {
           },
         ]
       }
+      v_mts_session_summary: {
+        Row: {
+          client_id: string | null
+          completed_intervals: number | null
+          definition_id: string | null
+          definition_name: string | null
+          interval_seconds: number | null
+          mts_session_id: string | null
+          observation_duration_minutes: number | null
+          observed_percent: number | null
+          present_intervals: number | null
+          session_date: string | null
+          student_id: string | null
+        }
+        Relationships: []
+      }
       v_multiple_baseline_graph_series: {
         Row: {
           baseline_unit: string | null
@@ -31113,6 +31193,72 @@ export type Database = {
           target_id: string | null
         }
         Relationships: []
+      }
+      v_objective_target_progression_candidates: {
+        Row: {
+          step_label: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_parent_caregiver_library_items: {
         Row: {
@@ -33090,6 +33236,19 @@ export type Database = {
           },
         ]
       }
+      v_task_analysis_progress_summary: {
+        Row: {
+          client_id: string | null
+          independent_step_percent: number | null
+          independent_steps: number | null
+          session_date: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+          total_steps: number | null
+        }
+        Relationships: []
+      }
       v_teacher_abc_recent: {
         Row: {
           agency_id: string | null
@@ -34778,6 +34937,10 @@ export type Database = {
           score: number
           setting_match: number
         }[]
+      }
+      recalculate_mts_session: {
+        Args: { p_mts_session_id: string }
+        Returns: string
       }
       recalculate_parent_training_goal_mastery: {
         Args: { p_goal_assignment_id: string }
