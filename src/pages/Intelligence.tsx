@@ -272,7 +272,10 @@ export default function Intelligence() {
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
-      {/* Clinical Intelligence Summary Cards */}
+      {/* Clinical Intelligence Alert Rollup Cards */}
+      <AlertRollupCards agencyId={effectiveAgencyId} />
+
+      {/* Skill/Replacement Intelligence Summary Cards */}
       <CaseloadIntelligenceCards agencyId={effectiveAgencyId} />
 
       {/* Main Tabs */}
