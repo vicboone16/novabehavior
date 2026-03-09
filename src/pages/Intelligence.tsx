@@ -126,6 +126,9 @@ export default function Intelligence() {
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
   const { authorizations, forecasts, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
   
+  // Unified CI alerts for priority alerts tab
+  const { alerts: ciIntelAlerts, loading: ciIntelLoading, resolveAlert: resolveCIAlert } = useClinicalIntelligenceAlerts(effectiveAgencyId);
+  
   // Compute supervision off-track from alerts feed
   const supervisionOffTrackCount = useMemo(() => {
     return alerts.filter(a => 
