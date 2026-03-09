@@ -55,21 +55,29 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
 
   // Behavior-programming context insights
   const bxProgrammingInsights: Array<{ label: string; detail: string }> = [];
-  if (behaviorIntel) {
-    if (behaviorIntel.transition_risk_flag && weakReplacements.length > 0) {
-      bxProgrammingInsights.push({
-        label: 'Replacement weak during transitions',
-        detail: 'Behavior is context-specific to transitions but replacement program may not address this setting',
-      });
-    }
-    if (behaviorIntel.escape_pattern_flag) {
-      bxProgrammingInsights.push({
-        label: 'Escape-maintained behavior detected',
-        detail: 'Programming should include escape extinction or functional communication training for escape',
-      });
-    }
-    if (behaviorIntel.top_trigger_context && behaviorIntel.top_trigger_context !== 'other' && behaviorIntel.top_trigger_context_count && behaviorIntel.top_trigger_context_count > 5) {
-      bxProgrammingInsights.push({
+  const hasTransitionRisk = behaviorIntel?.transition_risk_flag || bxSummary?.transition_risk_flag;
+  const hasEscapePattern = behaviorIntel?.escape_pattern_flag || bxSummary?.escape_pattern_flag;
+  const topTrigger = behaviorIntel?.top_trigger_context;
+  const topTriggerCount = behaviorIntel?.top_trigger_context_count;
+
+  if (hasTransitionRisk && weakReplacements.length > 0) {
+    bxProgrammingInsights.push({
+      label: 'Replacement weak during transitions',
+      detail: 'Behavior is context-specific to transitions but replacement program may not address this setting',
+    });
+  }
+  if (hasEscapePattern) {
+    bxProgrammingInsights.push({
+      label: 'Escape-maintained behavior detected',
+      detail: 'Programming should include escape extinction or functional communication training for escape',
+    });
+  }
+  if (topTrigger && topTrigger !== 'other' && topTriggerCount && topTriggerCount > 5) {
+    bxProgrammingInsights.push({
+      label: `Behavior concentrated in ${formatTrigger(topTrigger)} contexts`,
+      detail: 'Intervention may need revision to target this specific context',
+    });
+  }
         label: `Behavior concentrated in ${formatTrigger(behaviorIntel.top_trigger_context)} contexts`,
         detail: 'Intervention may need revision to target this specific context',
       });
