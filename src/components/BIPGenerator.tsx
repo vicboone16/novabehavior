@@ -667,6 +667,18 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
             Behavior Intervention Plan Generator
+            <div className="ml-auto">
+              <NovaAILauncher
+                clientId={selectedStudentId}
+                clientName={selectedStudent?.name}
+                context="bip_builder"
+                actions={[
+                  { label: 'Suggest Interventions', prompt: 'Suggest evidence-based interventions for this student', mode: 'case_behavior_analysis' },
+                  { label: 'Suggest Replacement Behaviors', prompt: 'Suggest replacement behaviors based on behavior function', mode: 'replacement_behavior_selector' },
+                  { label: 'Draft BIP Summary', prompt: 'Draft a BIP summary paragraph for this student', mode: 'case_report_language' },
+                ]}
+              />
+            </div>
           </DialogTitle>
         </DialogHeader>
 
