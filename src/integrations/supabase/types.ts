@@ -29961,9 +29961,15 @@ export type Database = {
           benchmark_step_id: string | null
           criterion_unit: string | null
           criterion_value: number | null
+          end_date: string | null
           is_active: boolean | null
+          is_met: boolean | null
+          met_at: string | null
+          notes: string | null
           phase_label: string | null
           phase_start_date: string | null
+          start_date: string | null
+          step_status: string | null
           student_target_id: string | null
           target_id: string | null
         }
@@ -29973,9 +29979,15 @@ export type Database = {
           benchmark_step_id?: string | null
           criterion_unit?: string | null
           criterion_value?: number | null
+          end_date?: string | null
           is_active?: boolean | null
-          phase_label?: never
+          is_met?: boolean | null
+          met_at?: string | null
+          notes?: string | null
+          phase_label?: string | null
           phase_start_date?: string | null
+          start_date?: string | null
+          step_status?: never
           student_target_id?: string | null
           target_id?: string | null
         }
@@ -29985,9 +29997,15 @@ export type Database = {
           benchmark_step_id?: string | null
           criterion_unit?: string | null
           criterion_value?: number | null
+          end_date?: string | null
           is_active?: boolean | null
-          phase_label?: never
+          is_met?: boolean | null
+          met_at?: string | null
+          notes?: string | null
+          phase_label?: string | null
           phase_start_date?: string | null
+          start_date?: string | null
+          step_status?: never
           student_target_id?: string | null
           target_id?: string | null
         }
@@ -31610,6 +31628,25 @@ export type Database = {
           },
         ]
       }
+      v_progression_group_summary: {
+        Row: {
+          client_id: string | null
+          configured_steps: number | null
+          current_step: number | null
+          current_step_label: string | null
+          group_id: string | null
+          group_name: string | null
+          mastered_steps: number | null
+          next_step_label: string | null
+          progression_status: string | null
+          progression_type: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+          total_steps: number | null
+        }
+        Relationships: []
+      }
       v_replacement_behavior_context_summary: {
         Row: {
           lunch_time_risk_flag: boolean | null
@@ -33161,13 +33198,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -33177,7 +33207,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -33191,8 +33221,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -33205,6 +33235,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -33212,7 +33256,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -33226,8 +33270,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -33239,20 +33283,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -33352,13 +33389,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -33368,7 +33398,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -33382,8 +33412,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -33396,6 +33426,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -33403,7 +33447,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -33417,8 +33461,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -33430,20 +33474,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
