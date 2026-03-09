@@ -191,7 +191,7 @@ export function CurriculumSystemManager() {
       ) : (
         <div className="grid gap-3">
           {filtered.map(sys => (
-            <Card key={sys.id} className="hover:shadow-sm transition-shadow">
+            <Card key={sys.id} className={`hover:shadow-sm transition-shadow ${isVBMapp(sys) ? 'cursor-pointer ring-1 ring-primary/20 hover:ring-primary/40' : ''}`} onClick={() => isVBMapp(sys) && setBrowsing('vbmapp')}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -203,11 +203,12 @@ export function CurriculumSystemManager() {
                         {sys.source_tier}
                       </Badge>
                       {sys.version && <Badge variant="outline" className="text-[10px]">v{sys.version}</Badge>}
+                      {isVBMapp(sys) && <Badge variant="default" className="text-[10px] gap-1"><ExternalLink className="w-2.5 h-2.5" />Browse</Badge>}
                     </div>
                     {sys.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{sys.description}</p>}
                     {sys.publisher && <p className="text-[10px] text-muted-foreground mt-0.5">Publisher: {sys.publisher}</p>}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <div className="flex items-center gap-1 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(sys)}>
                       <Edit2 className="w-3.5 h-3.5" />
                     </Button>
