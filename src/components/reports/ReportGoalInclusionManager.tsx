@@ -138,11 +138,14 @@ export function ReportGoalInclusionManager() {
               />
             )}
 
-            {step === 'preview' && (
+            {step === 'preview' && reportId && (
               <PreviewStep
                 inclusions={inclusions.filter(i => i.include_in_report)}
                 reportType={reportType}
                 clientName={selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : ''}
+                getNarrativeForInclusion={getNarrativeForInclusion}
+                onUpdateNarrative={updateNarrative}
+                generatingNarratives={generating}
               />
             )}
           </div>
