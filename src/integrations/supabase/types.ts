@@ -15104,6 +15104,126 @@ export type Database = {
           },
         ]
       }
+      mts_definitions: {
+        Row: {
+          audience: string | null
+          behavior_name: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          definition_name: string
+          id: string
+          interval_seconds: number
+          is_active: boolean | null
+          observation_duration_minutes: number
+          student_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          audience?: string | null
+          behavior_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_name: string
+          id?: string
+          interval_seconds?: number
+          is_active?: boolean | null
+          observation_duration_minutes?: number
+          student_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          audience?: string | null
+          behavior_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_name?: string
+          id?: string
+          interval_seconds?: number
+          is_active?: boolean | null
+          observation_duration_minutes?: number
+          student_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
+      mts_interval_data: {
+        Row: {
+          created_at: string | null
+          id: string
+          interval_number: number
+          interval_timestamp: string | null
+          mts_session_id: string
+          notes: string | null
+          observed_present: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interval_number: number
+          interval_timestamp?: string | null
+          mts_session_id: string
+          notes?: string | null
+          observed_present?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interval_number?: number
+          interval_timestamp?: string | null
+          mts_session_id?: string
+          notes?: string | null
+          observed_present?: boolean | null
+        }
+        Relationships: []
+      }
+      mts_sessions: {
+        Row: {
+          client_id: string | null
+          completed_intervals: number | null
+          created_at: string | null
+          created_by: string | null
+          definition_id: string
+          ended_at: string | null
+          expected_intervals: number | null
+          id: string
+          observed_percent: number | null
+          session_date: string | null
+          started_at: string | null
+          student_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          completed_intervals?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_id: string
+          ended_at?: string | null
+          expected_intervals?: number | null
+          id?: string
+          observed_percent?: number | null
+          session_date?: string | null
+          started_at?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          completed_intervals?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_id?: string
+          ended_at?: string | null
+          expected_intervals?: number | null
+          id?: string
+          observed_percent?: number | null
+          session_date?: string | null
+          started_at?: string | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       note_requirements: {
         Row: {
           created_at: string
@@ -34661,6 +34781,10 @@ export type Database = {
       }
       recalculate_parent_training_goal_mastery: {
         Args: { p_goal_assignment_id: string }
+        Returns: string
+      }
+      recalculate_progression_group: {
+        Args: { p_group_id: string }
         Returns: string
       }
       recalculate_replacement_behavior_strength: {
