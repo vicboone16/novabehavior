@@ -34515,9 +34515,45 @@ export type Database = {
           watch_threshold: number
         }[]
       }
+      resolve_automation_settings: {
+        Args: {
+          p_benchmark_id: string
+          p_program_id: string
+          p_student_id: string
+          p_target_id: string
+        }
+        Returns: {
+          auto_advance_phase: boolean
+          auto_start_phase: Database["public"]["Enums"]["target_phase"]
+          automation_mode: Database["public"]["Enums"]["automation_mode"]
+          automation_settings_id: string
+          benchmark_rule: Json
+          next_action_mode: Database["public"]["Enums"]["next_action_mode"]
+          pathway_id: string
+          pathway_rule: Json
+          require_confirmation: boolean
+          sequence_list: Json
+          sequence_mode: string
+          trigger_next_on: Database["public"]["Enums"]["trigger_next_on"]
+        }[]
+      }
       resolve_criteria: {
         Args: { _criteria_type: string; _target_id: string }
         Returns: string
+      }
+      resolve_criteria_assignment: {
+        Args: {
+          p_benchmark_id: string
+          p_criteria_type: Database["public"]["Enums"]["criteria_type"]
+          p_program_id: string
+          p_student_id: string
+          p_target_id: string
+        }
+        Returns: {
+          criteria_assignment_id: string
+          criteria_template_id: string
+          effective_definition: Json
+        }[]
       }
       resolve_publication_recipients: {
         Args: { p_agency_id: string; p_channel: string; p_client_id: string }
