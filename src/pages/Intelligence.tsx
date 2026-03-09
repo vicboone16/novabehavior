@@ -687,6 +687,16 @@ export default function Intelligence() {
             </div>
           )}
         </TabsContent>
+
+        {/* Clinical Intelligence Alerts Tab */}
+        <TabsContent value="clinical-alerts" className="space-y-4">
+          <ClinicalAlertsPanel agencyId={effectiveAgencyId} />
+        </TabsContent>
+
+        {/* BCBA Export Center Tab */}
+        <TabsContent value="exports" className="space-y-4">
+          <BCBAExportCenter agencyId={effectiveAgencyId} />
+        </TabsContent>
       </Tabs>
     </div>
   );
