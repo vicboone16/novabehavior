@@ -15636,6 +15636,33 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_case_quick_action_history: {
+        Row: {
+          action_key: string
+          context_session_id: string | null
+          created_at: string | null
+          id: string
+          reasoning_output_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_key: string
+          context_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          reasoning_output_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_key?: string
+          context_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          reasoning_output_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_case_quick_actions: {
         Row: {
           action_description: string | null
@@ -31929,6 +31956,86 @@ export type Database = {
         }
         Relationships: []
       }
+      v_nova_ai_behavior_context: {
+        Row: {
+          problem_behavior_count: number | null
+          problem_behavior_name: string | null
+          replacement_behavior_count: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
+          student_id: string | null
+        }
+        Insert: {
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Update: {
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_nova_ai_caregiver_context: {
         Row: {
           baseline_value: number | null
@@ -31942,6 +32049,66 @@ export type Database = {
           percent_to_goal: number | null
           student_id: string | null
           target_value: number | null
+        }
+        Relationships: []
+      }
+      v_nova_ai_case_context_summary: {
+        Row: {
+          attention_pattern_flag: boolean | null
+          behavior_alert_count: number | null
+          behavior_name: string | null
+          caregiver_alert_count: number | null
+          caregiver_in_progress_goals: number | null
+          caregiver_mastered_goals: number | null
+          caregiver_not_started_goals: number | null
+          caregiver_total_goals: number | null
+          client_id: string | null
+          escape_pattern_flag: boolean | null
+          last_data_submission_at: string | null
+          last_homework_submission_at: string | null
+          lunch_time_risk_flag: boolean | null
+          programming_alert_count: number | null
+          skill_alert_count: number | null
+          student_id: string | null
+          top_antecedent_pattern: string | null
+          top_consequence_pattern: string | null
+          top_time_of_day: string | null
+          total_behavior_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
+      }
+      v_nova_ai_case_quick_actions: {
+        Row: {
+          action_description: string | null
+          action_key: string | null
+          action_title: string | null
+          default_prompt_text: string | null
+          default_reasoning_mode: string | null
+          domain_group: string | null
+          id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          action_description?: string | null
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          domain_group?: string | null
+          id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          action_description?: string | null
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          domain_group?: string | null
+          id?: string | null
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -35689,6 +35856,22 @@ export type Database = {
       is_super_admin:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      launch_and_log_nova_ai_case_quick_action: {
+        Args: {
+          p_action_key: string
+          p_context_session_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      launch_nova_ai_case_quick_action: {
+        Args: {
+          p_action_key: string
+          p_context_session_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       log_audit_event: {
         Args: {
           _action: string
