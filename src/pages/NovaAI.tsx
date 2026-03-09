@@ -215,6 +215,9 @@ export default function NovaAI() {
           <TabsTrigger value="reasoning" className="gap-1.5 text-xs">
             <Stethoscope className="w-3.5 h-3.5" /> Clinical Reasoning
           </TabsTrigger>
+          <TabsTrigger value="case" className="gap-1.5 text-xs">
+            <UserSearch className="w-3.5 h-3.5" /> Case-Aware Reasoning
+          </TabsTrigger>
           <TabsTrigger value="prompts" className="gap-1.5 text-xs">
             <Sparkles className="w-3.5 h-3.5" /> Quick Prompts
           </TabsTrigger>
