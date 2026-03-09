@@ -12918,12 +12918,18 @@ export type Database = {
           created_by: string | null
           criterion_unit: string | null
           criterion_value: number | null
+          end_date: string | null
           id: string
           is_active: boolean | null
+          is_met: boolean
+          met_at: string | null
+          notes: string | null
           phase_label: string | null
           phase_start_date: string | null
+          start_date: string | null
           student_target_id: string | null
           target_id: string | null
+          updated_at: string
         }
         Insert: {
           benchmark_label: string
@@ -12932,12 +12938,18 @@ export type Database = {
           created_by?: string | null
           criterion_unit?: string | null
           criterion_value?: number | null
+          end_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_met?: boolean
+          met_at?: string | null
+          notes?: string | null
           phase_label?: string | null
           phase_start_date?: string | null
+          start_date?: string | null
           student_target_id?: string | null
           target_id?: string | null
+          updated_at?: string
         }
         Update: {
           benchmark_label?: string
@@ -12946,12 +12958,18 @@ export type Database = {
           created_by?: string | null
           criterion_unit?: string | null
           criterion_value?: number | null
+          end_date?: string | null
           id?: string
           is_active?: boolean | null
+          is_met?: boolean
+          met_at?: string | null
+          notes?: string | null
           phase_label?: string | null
           phase_start_date?: string | null
+          start_date?: string | null
           student_target_id?: string | null
           target_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -18491,6 +18509,57 @@ export type Database = {
           },
         ]
       }
+      progression_groups: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_step: number | null
+          current_step_label: string | null
+          group_name: string
+          id: string
+          next_step_label: string | null
+          progression_status: string | null
+          progression_type: string
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+          total_steps: number | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_step?: number | null
+          current_step_label?: string | null
+          group_name: string
+          id?: string
+          next_step_label?: string | null
+          progression_status?: string | null
+          progression_type: string
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+          total_steps?: number | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_step?: number | null
+          current_step_label?: string | null
+          group_name?: string
+          id?: string
+          next_step_label?: string | null
+          progression_status?: string | null
+          progression_type?: string
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+          total_steps?: number | null
+        }
+        Relationships: []
+      }
       progression_queue: {
         Row: {
           benchmark_id: string | null
@@ -18551,6 +18620,54 @@ export type Database = {
           trigger_at?: string | null
           trigger_event?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      progression_steps: {
+        Row: {
+          created_at: string | null
+          criterion_unit: string | null
+          criterion_value: number | null
+          group_id: string
+          id: string
+          is_mastered: boolean | null
+          linked_student_target_id: string | null
+          linked_target_id: string | null
+          linked_task_step_id: string | null
+          mastered_at: string | null
+          step_label: string
+          step_order: number | null
+          step_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criterion_unit?: string | null
+          criterion_value?: number | null
+          group_id: string
+          id?: string
+          is_mastered?: boolean | null
+          linked_student_target_id?: string | null
+          linked_target_id?: string | null
+          linked_task_step_id?: string | null
+          mastered_at?: string | null
+          step_label: string
+          step_order?: number | null
+          step_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criterion_unit?: string | null
+          criterion_value?: number | null
+          group_id?: string
+          id?: string
+          is_mastered?: boolean | null
+          linked_student_target_id?: string | null
+          linked_target_id?: string | null
+          linked_task_step_id?: string | null
+          mastered_at?: string | null
+          step_label?: string
+          step_order?: number | null
+          step_type?: string | null
         }
         Relationships: []
       }
