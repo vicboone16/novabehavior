@@ -51,6 +51,21 @@ export interface ABADataPoint {
   notes?: string;
 }
 
+export interface BenchmarkCriterionStep {
+  benchmark_step_id: string;
+  benchmark_label: string;
+  benchmark_order: number;
+  criterion_value: number | null;
+  criterion_unit: string | null;
+  phase_label: string | null;
+  phase_start_date: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  is_met: boolean;
+  step_status: 'met' | 'active' | 'pending';
+}
+
 export interface GraphOverlays {
   phaseMarkers: boolean;
   masteryThreshold: boolean;
@@ -61,6 +76,8 @@ export interface GraphOverlays {
   baselineMean: boolean;
   goalLine: boolean;
   dataCompleteness: boolean;
+  changingCriterion: boolean;
+  changingCriterionLabels: boolean;
 }
 
 export const DEFAULT_OVERLAYS: GraphOverlays = {
@@ -73,4 +90,6 @@ export const DEFAULT_OVERLAYS: GraphOverlays = {
   baselineMean: false,
   goalLine: false,
   dataCompleteness: false,
+  changingCriterion: false,
+  changingCriterionLabels: true,
 };
