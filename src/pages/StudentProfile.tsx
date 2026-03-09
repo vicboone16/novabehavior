@@ -554,6 +554,10 @@ export default function StudentProfile() {
             <Info className="w-3 h-3" />
             Profile
           </TabsTrigger>
+          <TabsTrigger value="intelligence" className="gap-1 text-xs">
+            <Zap className="w-3 h-3" />
+            Intelligence
+          </TabsTrigger>
           <TabsTrigger value="programming" className="gap-1 text-xs">
             <Layers className="w-3 h-3" />
             Programming
