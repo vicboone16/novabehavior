@@ -231,11 +231,12 @@ function SmartGoalEngineBadges({ goal }: { goal: PTGoal }) {
 /*  Modules Tab                                                        */
 /* ------------------------------------------------------------------ */
 function ModulesTab({
-  modules, loading, onEdit, onToggleActive
+  modules, loading, onEdit, onToggleActive, onAssign
 }: {
   modules: PTModule[]; loading: boolean;
   onEdit: (m: PTModule) => void;
   onToggleActive: (m: PTModule) => void;
+  onAssign: (m: PTModule) => void;
 }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
