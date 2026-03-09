@@ -8867,6 +8867,156 @@ export type Database = {
           },
         ]
       }
+      clinical_curricula_benchmarks: {
+        Row: {
+          benchmark_order: number | null
+          benchmark_text: string | null
+          goal_id: string | null
+          id: string
+        }
+        Insert: {
+          benchmark_order?: number | null
+          benchmark_text?: string | null
+          goal_id?: string | null
+          id?: string
+        }
+        Update: {
+          benchmark_order?: number | null
+          benchmark_text?: string | null
+          goal_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_curricula_benchmarks_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_curricula_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_curricula_collections: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          key: string
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          key: string
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          key?: string
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      clinical_curricula_domains: {
+        Row: {
+          collection_id: string | null
+          id: string
+          key: string | null
+          sort_order: number | null
+          title: string | null
+        }
+        Insert: {
+          collection_id?: string | null
+          id?: string
+          key?: string | null
+          sort_order?: number | null
+          title?: string | null
+        }
+        Update: {
+          collection_id?: string | null
+          id?: string
+          key?: string | null
+          sort_order?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_curricula_domains_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_curricula_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_curricula_goals: {
+        Row: {
+          age_group_tags: string[] | null
+          clinical_goal: string | null
+          domain_id: string | null
+          id: string
+          key: string | null
+          objective_text: string | null
+          older_examples: string[] | null
+          setting_tags: string[] | null
+          skill_tags: string[] | null
+          sort_order: number | null
+          title: string | null
+          vbmapp_domain: string | null
+          vbmapp_level: number | null
+          younger_examples: string[] | null
+        }
+        Insert: {
+          age_group_tags?: string[] | null
+          clinical_goal?: string | null
+          domain_id?: string | null
+          id?: string
+          key?: string | null
+          objective_text?: string | null
+          older_examples?: string[] | null
+          setting_tags?: string[] | null
+          skill_tags?: string[] | null
+          sort_order?: number | null
+          title?: string | null
+          vbmapp_domain?: string | null
+          vbmapp_level?: number | null
+          younger_examples?: string[] | null
+        }
+        Update: {
+          age_group_tags?: string[] | null
+          clinical_goal?: string | null
+          domain_id?: string | null
+          id?: string
+          key?: string | null
+          objective_text?: string | null
+          older_examples?: string[] | null
+          setting_tags?: string[] | null
+          skill_tags?: string[] | null
+          sort_order?: number | null
+          title?: string | null
+          vbmapp_domain?: string | null
+          vbmapp_level?: number | null
+          younger_examples?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_curricula_goals_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_curricula_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_intelligence_alerts: {
         Row: {
           alert_type: string
@@ -37946,6 +38096,14 @@ export type Database = {
           matched_tags: string[]
         }[]
       }
+      search_vbmapp_goals: {
+        Args: { search_text: string }
+        Returns: {
+          clinical_goal: string
+          domain: string
+          goal_title: string
+        }[]
+      }
       seed_nova_ai_case_reasoning_output: {
         Args: {
           p_context_session_id: string
@@ -37975,6 +38133,8 @@ export type Database = {
         Args: { _pin: string; _user_id: string }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       skill_program_student_id: {
         Args: { p_program_id: string }
         Returns: string
