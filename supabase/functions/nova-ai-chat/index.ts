@@ -46,16 +46,20 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, evidence_mode } = await req.json();
+    const { messages, evidence_mode, system_suffix } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemContent = evidence_mode 
+    let systemContent = evidence_mode 
       ? SYSTEM_PROMPT + "\n\nEVIDENCE MODE IS ENABLED. Include detailed citations and research references in every response."
       : SYSTEM_PROMPT + "\n\nEVIDENCE MODE IS DISABLED. Provide practical guidance with lighter references.";
+
+    if (system_suffix) {
+      systemContent += system_suffix;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

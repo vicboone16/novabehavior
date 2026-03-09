@@ -15582,6 +15582,60 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_case_context_sessions: {
+        Row: {
+          client_id: string | null
+          context_scope: string | null
+          created_at: string | null
+          date_from: string | null
+          date_to: string | null
+          id: string
+          notes: string | null
+          selected_behavior_ids: Json | null
+          selected_goal_ids: Json | null
+          selected_graph_ids: Json | null
+          selected_report_item_ids: Json | null
+          selected_target_ids: Json | null
+          student_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_graph_ids?: Json | null
+          selected_report_item_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_graph_ids?: Json | null
+          selected_report_item_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_categories: {
         Row: {
           category_key: string | null
@@ -15726,6 +15780,162 @@ export type Database = {
           id?: string
           prompt?: string | null
           title?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_logs: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          mode_key: string
+          prompt_text: string | null
+          response_text: string | null
+          selected_context_json: Json | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          mode_key: string
+          prompt_text?: string | null
+          response_text?: string | null
+          selected_context_json?: Json | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          mode_key?: string
+          prompt_text?: string | null
+          response_text?: string | null
+          selected_context_json?: Json | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_modes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mode_key: string
+          mode_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key: string
+          mode_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key?: string
+          mode_name?: string
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          mode_key: string
+          template_body: string
+          template_title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key: string
+          template_body: string
+          template_title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key?: string
+          template_body?: string
+          template_title?: string
+        }
+        Relationships: []
+      }
+      nova_ai_replacement_behavior_library: {
+        Row: {
+          age_group: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          likely_function: string | null
+          problem_behavior: string | null
+          rationale: string | null
+          replacement_behavior: string | null
+          setting: string | null
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          likely_function?: string | null
+          problem_behavior?: string | null
+          rationale?: string | null
+          replacement_behavior?: string | null
+          setting?: string | null
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          likely_function?: string | null
+          problem_behavior?: string | null
+          rationale?: string | null
+          replacement_behavior?: string | null
+          setting?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_report_presets: {
+        Row: {
+          created_at: string | null
+          default_style: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          preset_key: string
+          preset_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_style?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          preset_key: string
+          preset_name: string
+        }
+        Update: {
+          created_at?: string | null
+          default_style?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          preset_key?: string
+          preset_name?: string
         }
         Relationships: []
       }
@@ -31641,6 +31851,27 @@ export type Database = {
         }
         Relationships: []
       }
+      v_nova_ai_clinical_context_summary: {
+        Row: {
+          attention_pattern_flag: boolean | null
+          behavior_alert_count: number | null
+          behavior_name: string | null
+          caregiver_alert_count: number | null
+          client_id: string | null
+          escape_pattern_flag: boolean | null
+          lunch_time_risk_flag: boolean | null
+          programming_alert_count: number | null
+          skill_alert_count: number | null
+          student_id: string | null
+          top_antecedent_pattern: string | null
+          top_consequence_pattern: string | null
+          top_time_of_day: string | null
+          total_behavior_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
+      }
       v_objective_target_progression_candidates: {
         Row: {
           step_label: string | null
@@ -33940,13 +34171,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -33956,7 +34180,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -33970,8 +34194,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -33984,6 +34208,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -33991,7 +34229,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -34005,8 +34243,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -34018,20 +34256,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
