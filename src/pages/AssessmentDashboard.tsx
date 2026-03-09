@@ -6,6 +6,7 @@ import {
   Square, Timer, History, PieChart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
