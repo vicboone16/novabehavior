@@ -43,7 +43,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
     );
   }
 
-  if (summaries.length === 0 && alerts.length === 0 && !intel) {
+  if (summaries.length === 0 && alerts.length === 0 && !intel && !summary) {
     return (
       <Card>
         <CardContent className="py-6 text-center text-muted-foreground">
