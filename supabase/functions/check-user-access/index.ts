@@ -12,11 +12,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, app_slug } = await req.json();
+    // Auth check - require a valid JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate the JWT using anon key client
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use the authenticated user's email, ignoring any email in the request body
+    const authenticatedEmail = claimsData.claims.email as string;
+
+    const { app_slug } = await req.json().catch(() => ({ app_slug: undefined }));
+    const email = authenticatedEmail;
 
     if (!email) {
       return new Response(
-        JSON.stringify({ error: "email is required" }),
+        JSON.stringify({ error: "Could not determine user email from token" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

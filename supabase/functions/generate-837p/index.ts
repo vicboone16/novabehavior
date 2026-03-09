@@ -139,7 +139,18 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { claims, submitterInfo } = await req.json();
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !data?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const { claims: claimsInput, submitterInfo } = await req.json();
     
     if (!claims || !Array.isArray(claims) || claims.length === 0) {
       return new Response(JSON.stringify({ error: 'No claims provided' }), {
