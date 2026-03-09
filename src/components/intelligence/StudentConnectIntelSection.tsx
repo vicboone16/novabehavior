@@ -1,7 +1,8 @@
-import { Heart, Star, TrendingUp, Loader2, Sparkles } from 'lucide-react';
+import { Heart, Star, TrendingUp, Loader2, Sparkles, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useStudentConnectAlerts, useStudentIntelSummary } from '@/hooks/useClinicalIntelligenceAlerts';
+import { useBehaviorEventIntelligence } from '@/hooks/useBehaviorEventIntelligence';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Props {
@@ -23,8 +24,9 @@ const toneBadgeColors: Record<string, string> = {
 export function StudentConnectIntelSection({ studentId }: Props) {
   const { summary, loading: summaryLoading } = useStudentIntelSummary(studentId);
   const { alerts, loading: alertsLoading } = useStudentConnectAlerts(studentId);
+  const { connectHighlights, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
 
-  const loading = summaryLoading || alertsLoading;
+  const loading = summaryLoading || alertsLoading || bxLoading;
 
   if (loading) {
     return (
@@ -34,7 +36,7 @@ export function StudentConnectIntelSection({ studentId }: Props) {
     );
   }
 
-  if (!summary && alerts.length === 0) {
+  if (!summary && alerts.length === 0 && connectHighlights.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
@@ -63,6 +65,37 @@ export function StudentConnectIntelSection({ studentId }: Props) {
             <ProgressCard label="Total Skills Tracked" value={summary.total_targets} color="text-foreground" />
           )}
         </div>
+      )}
+
+      {/* Behavior Support Highlights (simplified, role-appropriate) */}
+      {connectHighlights.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="w-4 h-4 text-emerald-500" />
+              Behavior Support Highlights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {connectHighlights.map((h, i) => (
+                <div key={i} className="flex items-center gap-3 p-2 rounded-md border border-border/30">
+                  {h.tone === 'positive' ? (
+                    <Star className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : h.tone === 'needs_attention' ? (
+                    <TrendingUp className="w-4 h-4 text-orange-500 shrink-0" />
+                  ) : (
+                    <Heart className="w-4 h-4 text-blue-500 shrink-0" />
+                  )}
+                  <p className="text-sm text-foreground">{h.label}</p>
+                  <Badge variant="outline" className={`ml-auto text-[9px] ${toneBadgeColors[h.tone] || ''}`}>
+                    {h.tone === 'positive' ? '✨' : h.tone === 'needs_attention' ? '📋' : '💙'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Student-connect-safe alerts */}

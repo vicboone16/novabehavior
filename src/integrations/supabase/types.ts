@@ -28822,6 +28822,96 @@ export type Database = {
           },
         ]
       }
+      v_behavior_event_intelligence: {
+        Row: {
+          attention_function_count: number | null
+          attention_pattern_flag: boolean | null
+          automatic_function_count: number | null
+          avg_duration_seconds: number | null
+          avg_intensity: number | null
+          demand_events: number | null
+          denial_events: number | null
+          escape_function_count: number | null
+          escape_pattern_flag: boolean | null
+          low_attention_events: number | null
+          lunch_recess_events: number | null
+          lunch_recess_risk_flag: boolean | null
+          peak_risk_time_block: string | null
+          peak_risk_time_block_count: number | null
+          primary_function_count: number | null
+          primary_function_hypothesis: string | null
+          student_id: string | null
+          tangible_function_count: number | null
+          top_antecedent_1: string | null
+          top_antecedent_1_count: number | null
+          top_antecedent_2: string | null
+          top_antecedent_2_count: number | null
+          top_antecedent_3: string | null
+          top_antecedent_3_count: number | null
+          top_consequence_1: string | null
+          top_consequence_1_count: number | null
+          top_consequence_2: string | null
+          top_consequence_2_count: number | null
+          top_trigger_context: string | null
+          top_trigger_context_count: number | null
+          total_abc_events: number | null
+          transition_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_events: number | null
+          unstructured_risk_flag: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "abc_logs_client_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_behavior_patterns: {
         Row: {
           avg_duration: number | null
@@ -29528,6 +29618,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_clinical_intelligence_alert_rollup: {
+        Row: {
+          alert_count: number | null
+          alert_type: string | null
+          domain: string | null
+          severity: string | null
+        }
+        Relationships: []
       }
       v_clinical_intelligence_alerts: {
         Row: {
@@ -31278,6 +31377,38 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      v_student_connect_intel_alerts: {
+        Row: {
+          alert_type: string | null
+          client_id: string | null
+          detected_at: string | null
+          domain: string | null
+          recommended_action: string | null
+          severity: string | null
+          student_id: string | null
+          summary: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      v_student_intelligence_summary: {
+        Row: {
+          behavior_alert_count: number | null
+          behavior_spike_count: number | null
+          caregiver_alert_count: number | null
+          emerging_replacement_behavior_count: number | null
+          programming_alert_count: number | null
+          programming_review_needed_count: number | null
+          prompt_dependency_count: number | null
+          ready_to_advance_count: number | null
+          skill_alert_count: number | null
+          stalled_target_count: number | null
+          strong_replacement_behavior_count: number | null
+          student_id: string | null
+          weak_replacement_behavior_count: number | null
+        }
+        Relationships: []
       }
       v_student_target_mastery_engine_summary: {
         Row: {
