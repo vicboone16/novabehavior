@@ -7,6 +7,7 @@ import {
   ArrowRight, Sparkles, BookOpen, Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
