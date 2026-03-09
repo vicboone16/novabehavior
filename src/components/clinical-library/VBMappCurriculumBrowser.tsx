@@ -92,14 +92,18 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
   const handleSearch = useCallback(async (text: string) => {
     setSearch(text);
     if (!text.trim()) { setSearchResults(null); return; }
-    const { data, error } = await supabase.rpc('search_vbmapp_goals', { search_text: text.trim() });
+    const selectedDomain = domainFilter !== 'all' ? domains.find(d => d.id === domainFilter)?.title : null;
+    const selectedLevel = levelFilter !== 'all' ? parseInt(levelFilter) : null;
+    const { data, error } = await supabase.rpc('search_vbmapp_curricula', {
+      p_query: text.trim(),
+      p_domain: selectedDomain || null,
+      p_level: selectedLevel || null,
+      p_age_tag: null
+    });
     if (error) { console.error(error); return; }
-    // Map search results back to goal objects by matching titles
-    const matched = goals.filter(g =>
-      (data as any[]).some(r => r.goal_title === g.title)
-    );
-    setSearchResults(matched);
-  }, [goals]);
+    const matchedIds = new Set((data as any[]).map(r => r.goal_id));
+    setSearchResults(goals.filter(g => matchedIds.has(g.id)));
+  }, [goals, domains, domainFilter, levelFilter]);
 
   const toggleDomain = (id: string) => {
     setExpandedDomains(prev => {
