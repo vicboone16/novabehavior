@@ -55,6 +55,9 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
   const [domainFilter, setDomainFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [searchResults, setSearchResults] = useState<Goal[] | null>(null);
+  const [aiSearch, setAiSearch] = useState(false);
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiMatchInfo, setAiMatchInfo] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
