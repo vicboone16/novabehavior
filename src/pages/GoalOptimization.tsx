@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import {
   Target, GraduationCap, Stethoscope, Loader2, Play, AlertTriangle,
-  TrendingUp, BookOpen, BarChart3, RefreshCw, CheckCircle2
+  TrendingUp, BookOpen, BarChart3, RefreshCw, CheckCircle2, History, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { OptimizationRecommendationCard } from '@/components/optimization/OptimizationRecommendationCard';
