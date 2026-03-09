@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Search, ChevronDown, ChevronUp, BookOpen, Target, ListChecks, Filter } from 'lucide-react';
+import { ArrowLeft, Search, ChevronDown, ChevronUp, BookOpen, Target, ListChecks, Filter, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -54,6 +55,9 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
   const [domainFilter, setDomainFilter] = useState<string>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [searchResults, setSearchResults] = useState<Goal[] | null>(null);
+  const [aiSearch, setAiSearch] = useState(false);
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiMatchInfo, setAiMatchInfo] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -91,7 +95,31 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
 
   const handleSearch = useCallback(async (text: string) => {
     setSearch(text);
-    if (!text.trim()) { setSearchResults(null); return; }
+    if (!text.trim()) { setSearchResults(null); setAiMatchInfo({}); return; }
+
+    if (aiSearch) {
+      setAiSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('curriculum-ai-search', {
+          body: { query: text.trim() },
+        });
+        if (error) throw error;
+        const matchedIds = new Set((data?.top_matching_goals ?? []).map((r: any) => r.goal_id));
+        const matchInfoMap: Record<string, string> = {};
+        (data?.top_matching_goals ?? []).forEach((r: any) => { matchInfoMap[r.goal_id] = r.why_matches; });
+        setAiMatchInfo(matchInfoMap);
+        setSearchResults(goals.filter(g => matchedIds.has(g.id)));
+      } catch (e) {
+        console.error(e);
+        toast.error('AI search failed, falling back to text search');
+        setAiSearch(false);
+        // Fall through to RPC search below
+      } finally {
+        setAiSearching(false);
+      }
+      return;
+    }
+
     const selectedDomain = domainFilter !== 'all' ? domains.find(d => d.id === domainFilter)?.title : null;
     const selectedLevel = levelFilter !== 'all' ? parseInt(levelFilter) : null;
     const { data, error } = await supabase.rpc('search_vbmapp_curricula', {
@@ -103,7 +131,8 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
     if (error) { console.error(error); return; }
     const matchedIds = new Set((data as any[]).map(r => r.goal_id));
     setSearchResults(goals.filter(g => matchedIds.has(g.id)));
-  }, [goals, domains, domainFilter, levelFilter]);
+    setAiMatchInfo({});
+  }, [goals, domains, domainFilter, levelFilter, aiSearch]);
 
   const toggleDomain = (id: string) => {
     setExpandedDomains(prev => {
@@ -147,13 +176,25 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {aiSearching ? (
+            <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+          ) : aiSearch ? (
+            <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          )}
           <Input
-            placeholder="Search goals..."
+            placeholder={aiSearch ? "AI-powered search..." : "Search goals..."}
             value={search}
             onChange={e => handleSearch(e.target.value)}
             className="pl-9"
           />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Switch checked={aiSearch} onCheckedChange={setAiSearch} className="scale-90" />
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> AI
+          </span>
         </div>
         <Select value={domainFilter} onValueChange={setDomainFilter}>
           <SelectTrigger className="w-[180px]">
@@ -233,6 +274,13 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
                                 )}
                               </div>
                             </div>
+
+                            {aiMatchInfo[goal.id] && (
+                              <div className="pl-6 flex items-start gap-1.5">
+                                <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                                <p className="text-xs text-primary">{aiMatchInfo[goal.id]}</p>
+                              </div>
+                            )}
 
                             {goal.clinical_goal && (
                               <div className="pl-6">
