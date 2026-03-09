@@ -2928,6 +2928,42 @@ export type Database = {
           },
         ]
       }
+      bcba_export_snapshots: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date_from: string | null
+          date_to: string | null
+          export_type: string
+          id: string
+          payload: Json | null
+          student_id: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          export_type: string
+          id?: string
+          payload?: Json | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          export_type?: string
+          id?: string
+          payload?: Json | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       behavior_bank_entries: {
         Row: {
           agency_id: string | null
@@ -23998,19 +24034,36 @@ export type Database = {
         Row: {
           added_by: string | null
           baseline_data: Json | null
+          consecutive_sessions_at_criterion: number | null
           created_at: string
+          current_accuracy: number | null
+          current_duration: number | null
+          current_latency: number | null
           current_performance: Json | null
+          current_prompt_independence: number | null
           customized: boolean
           data_collection_type: string | null
           date_added: string
           date_mastered: string | null
           description: string | null
           domain_id: string | null
+          generalization_context_count: number | null
+          generalization_required: boolean | null
           id: string
+          last_mastery_check_date: string | null
           linked_prerequisite_ids: string[] | null
+          lower_is_better: boolean | null
           mastery_criteria: string | null
+          mastery_rule_type: string | null
+          mastery_status: string | null
+          mastery_threshold: number | null
           notes_for_staff: string | null
+          percent_to_mastery: number | null
           priority: string | null
+          required_consecutive_sessions: number | null
+          required_prompt_level: string | null
+          required_sessions: number | null
+          sessions_at_criterion: number | null
           source_id: string | null
           source_type: string
           status: string
@@ -24021,19 +24074,36 @@ export type Database = {
         Insert: {
           added_by?: string | null
           baseline_data?: Json | null
+          consecutive_sessions_at_criterion?: number | null
           created_at?: string
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
           current_performance?: Json | null
+          current_prompt_independence?: number | null
           customized?: boolean
           data_collection_type?: string | null
           date_added?: string
           date_mastered?: string | null
           description?: string | null
           domain_id?: string | null
+          generalization_context_count?: number | null
+          generalization_required?: boolean | null
           id?: string
+          last_mastery_check_date?: string | null
           linked_prerequisite_ids?: string[] | null
+          lower_is_better?: boolean | null
           mastery_criteria?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
           notes_for_staff?: string | null
+          percent_to_mastery?: number | null
           priority?: string | null
+          required_consecutive_sessions?: number | null
+          required_prompt_level?: string | null
+          required_sessions?: number | null
+          sessions_at_criterion?: number | null
           source_id?: string | null
           source_type?: string
           status?: string
@@ -24044,19 +24114,36 @@ export type Database = {
         Update: {
           added_by?: string | null
           baseline_data?: Json | null
+          consecutive_sessions_at_criterion?: number | null
           created_at?: string
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
           current_performance?: Json | null
+          current_prompt_independence?: number | null
           customized?: boolean
           data_collection_type?: string | null
           date_added?: string
           date_mastered?: string | null
           description?: string | null
           domain_id?: string | null
+          generalization_context_count?: number | null
+          generalization_required?: boolean | null
           id?: string
+          last_mastery_check_date?: string | null
           linked_prerequisite_ids?: string[] | null
+          lower_is_better?: boolean | null
           mastery_criteria?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
           notes_for_staff?: string | null
+          percent_to_mastery?: number | null
           priority?: string | null
+          required_consecutive_sessions?: number | null
+          required_prompt_level?: string | null
+          required_sessions?: number | null
+          sessions_at_criterion?: number | null
           source_id?: string | null
           source_type?: string
           status?: string
@@ -28559,6 +28646,20 @@ export type Database = {
           },
         ]
       }
+      v_bcba_session_export_core: {
+        Row: {
+          behavior: string | null
+          event_time: string | null
+          measurement_type: string | null
+          notes: string | null
+          session_date: string | null
+          source_table: string | null
+          student_id: string | null
+          value_numeric: number | null
+          value_text: string | null
+        }
+        Relationships: []
+      }
       v_behavior_daily_metrics: {
         Row: {
           agency_id: string | null
@@ -31644,13 +31745,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -31660,7 +31754,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -31674,8 +31768,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31688,6 +31782,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -31695,7 +31803,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -31709,8 +31817,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31722,20 +31830,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -31992,6 +32093,10 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      build_bcba_session_export: {
+        Args: { p_date_from: string; p_date_to: string; p_student_id: string }
+        Returns: Json
+      }
       build_parent_training_goal_sheet: {
         Args: { p_caregiver_id: string; p_client_id: string }
         Returns: Json
