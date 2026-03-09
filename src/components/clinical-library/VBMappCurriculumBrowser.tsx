@@ -59,7 +59,7 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
     setLoading(true);
     const [domainRes, goalRes] = await Promise.all([
       supabase.from('clinical_curricula_domains').select('id, key, title, sort_order').order('sort_order'),
-      supabase.from('clinical_curricula_goals').select('id, domain_id, key, title, clinical_goal, objective_text, vbmapp_domain, vbmapp_level, younger_examples, older_examples, sort_order').order('sort_order'),
+      supabase.from('clinical_curricula_goals').select('id, domain_id, key, title, clinical_goal, objective_text, vbmapp_domain, vbmapp_level, younger_examples, older_examples, benchmark_count, is_active, sort_order').eq('is_active', true).order('sort_order'),
     ]);
     if (domainRes.error) { toast.error('Failed to load domains'); console.error(domainRes.error); }
     if (goalRes.error) { toast.error('Failed to load goals'); console.error(goalRes.error); }
