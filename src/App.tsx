@@ -387,6 +387,7 @@ const App = () => {
               <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
               <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
+              <Route path="/advanced-design" element={<AdvancedDesignAnalysis />} />
             </Route>
             <Route path="/behavior-library" element={
               <ProtectedRoute>

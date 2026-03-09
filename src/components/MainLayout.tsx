@@ -102,6 +102,9 @@ export default function MainLayout() {
       case 'teacher-comms':
         navigate('/teacher-comms');
         break;
+      case 'advanced-design':
+        navigate('/advanced-design');
+        break;
     }
   };
 
