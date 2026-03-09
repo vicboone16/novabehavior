@@ -62,6 +62,9 @@ export default function GoalOptimization() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [domainFilter, setDomainFilter] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('recommendations');
+  const [exportHistory, setExportHistory] = useState<any[]>([]);
+  const [goalDrafts, setGoalDrafts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
