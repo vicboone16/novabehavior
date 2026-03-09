@@ -262,8 +262,18 @@ export default function AssessmentDashboard() {
             FBA workflow, tools, and analysis in one place
           </p>
         </div>
-
-        <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+        <div className="flex items-center gap-2">
+          <NovaAILauncher
+            clientId={selectedStudentId}
+            clientName={selectedStudent?.name}
+            context="assessment_dashboard"
+            actions={[
+              { label: 'Summarize Assessment Findings', prompt: 'Summarize the assessment findings for this student', mode: 'full_clinical_review' },
+              { label: 'Suggest Next Steps', prompt: 'Based on the assessment data, suggest clinical next steps', mode: 'full_clinical_review' },
+              { label: 'Draft FBA Hypothesis', prompt: 'Draft an FBA hypothesis based on assessment observations', mode: 'case_report_language' },
+            ]}
+          />
+          <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
           <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Select a student..." />
           </SelectTrigger>
