@@ -38,7 +38,7 @@ interface ABAGraphProps {
  * - observed_zero: point at y=0, line connects
  * - measured: point at value, line connects
  */
-export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', phaseMarkers = [] }: ABAGraphProps) {
+export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', phaseMarkers = [], benchmarkSteps = [], onAdvanceBenchmark }: ABAGraphProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const [metric, setMetric] = useState<GraphMetric>(graphType === 'skills' ? 'percent_correct' : 'frequency');
   const [xAxis, setXAxis] = useState<XAxisMode>('date');
