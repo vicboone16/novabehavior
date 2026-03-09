@@ -2928,6 +2928,42 @@ export type Database = {
           },
         ]
       }
+      bcba_export_snapshots: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          date_from: string | null
+          date_to: string | null
+          export_type: string
+          id: string
+          payload: Json | null
+          student_id: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          export_type: string
+          id?: string
+          payload?: Json | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          export_type?: string
+          id?: string
+          payload?: Json | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       behavior_bank_entries: {
         Row: {
           agency_id: string | null
