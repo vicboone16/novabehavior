@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.zoom-signature]
 verify_jwt = false
+
+[functions.nova-ai-chat]
+verify_jwt = false
