@@ -71,6 +71,7 @@ export default function MainLayout() {
     if (location.pathname.startsWith('/notes-review')) return 'notes-review';
     if (location.pathname.startsWith('/intelligence')) return 'intelligence';
     if (location.pathname.startsWith('/teacher-comms')) return 'teacher-comms';
+    if (location.pathname.startsWith('/advanced-design')) return 'advanced-design';
     return 'dashboard';
   };
 
