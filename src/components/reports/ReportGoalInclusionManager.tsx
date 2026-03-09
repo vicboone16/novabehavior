@@ -65,6 +65,11 @@ export function ReportGoalInclusionManager() {
     initialize, updateInclusion, loadSelectedInclusions,
   } = useReportGoalInclusions(reportId);
 
+  const {
+    narratives, generating, seedNarratives, loadNarratives,
+    updateNarrative, getNarrativeForInclusion,
+  } = useReportNarratives(reportId);
+
   // Load clients on open
   useEffect(() => {
     if (open) {
