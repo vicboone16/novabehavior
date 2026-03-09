@@ -136,7 +136,7 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
 function StatusBadge({ active }: { active: boolean | null }) {
   return active === false
     ? <Badge variant="outline" className="text-muted-foreground border-border text-[10px]">Inactive</Badge>
-    : <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 text-[10px]">Active</Badge>;
+    : <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">Active</Badge>;
 }
 
 /* ------------------------------------------------------------------ */
