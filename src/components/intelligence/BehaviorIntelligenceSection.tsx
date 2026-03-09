@@ -152,7 +152,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
       )}
 
       {/* High-Risk Times & Contexts */}
-      {intel && intel.total_abc_events > 0 && (
+      {totalEvents > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
