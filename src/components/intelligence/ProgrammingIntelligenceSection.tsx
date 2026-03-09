@@ -40,7 +40,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
   const needsReview = flags.filter(f => f.type === 'stalled' || f.type === 'mastery_mismatch' || f.type === 'review_needed');
   const weakReplacements = replSummaries.filter(s => s.replacement_status === 'weak');
 
-  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0 || (behaviorIntel && behaviorIntel.total_abc_events > 0);
+  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0 || bxTotalEvents > 0;
 
   if (!hasData) {
     return (
