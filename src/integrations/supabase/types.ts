@@ -33404,6 +33404,14 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_progression_queue: {
+        Args: { p_queue_id: string; p_reviewer_id?: string }
+        Returns: undefined
+      }
+      approve_and_apply_queue: {
+        Args: { p_queue_id: string; p_reviewer_id: string }
+        Returns: undefined
+      }
       approve_data_collection: {
         Args: {
           p_approved?: boolean
@@ -33990,6 +33998,10 @@ export type Database = {
       generate_invite_code:
         | { Args: never; Returns: string }
         | { Args: { prefix?: string }; Returns: string }
+      generate_progression_from_evaluation: {
+        Args: { p_evaluation_id: string }
+        Returns: string
+      }
       generate_report_strategy_narrative: {
         Args: {
           p_narrative_type?: string
@@ -34328,6 +34340,10 @@ export type Database = {
             }
             Returns: string
           }
+      next_phase_for_criteria: {
+        Args: { p_type: Database["public"]["Enums"]["criteria_type"] }
+        Returns: Database["public"]["Enums"]["target_phase"]
+      }
       process_aba_import_staging: {
         Args: { p_staging_id: string }
         Returns: string
