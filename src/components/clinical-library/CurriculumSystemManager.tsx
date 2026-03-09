@@ -30,6 +30,7 @@ export function CurriculumSystemManager() {
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<CurriculumSystem | null>(null);
+  const [browsing, setBrowsing] = useState<string | null>(null);
   
   // Form state
   const [formName, setFormName] = useState('');
