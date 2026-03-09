@@ -3,7 +3,7 @@ import {
   Search, BookOpen, Target, Star, Plus, Edit2, CheckCircle2,
   ArrowUpCircle, Filter, FileText, Eye, EyeOff, ToggleLeft, ToggleRight,
   ChevronDown, Clock, TrendingUp, TrendingDown, Minus, Activity, Hash,
-  Percent, BarChart3, Copy, XCircle, Sparkles
+  Percent, BarChart3, Copy, XCircle, Sparkles, UserPlus, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
