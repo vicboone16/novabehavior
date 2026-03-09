@@ -431,11 +431,14 @@ function InclusionRow({ inclusion, onUpdate }: { inclusion: ReportGoalInclusion;
 /*  Step 3: Preview                                                    */
 /* ------------------------------------------------------------------ */
 function PreviewStep({
-  inclusions, reportType, clientName,
+  inclusions, reportType, clientName, getNarrativeForInclusion, onUpdateNarrative, generatingNarratives,
 }: {
   inclusions: ReportGoalInclusion[];
   reportType: string;
   clientName: string;
+  getNarrativeForInclusion: (inclusionId: string) => ReportNarrative | null;
+  onUpdateNarrative: (narrativeId: string, updates: { edited_narrative?: string; use_edited_version?: boolean }) => void;
+  generatingNarratives: boolean;
 }) {
   const rtLabel = REPORT_TYPES.find(r => r.value === reportType)?.label || reportType;
 
@@ -471,41 +474,19 @@ function PreviewStep({
               <cfg.icon className={`w-3.5 h-3.5 ${cfg.color}`} />
               {cfg.label}
             </h4>
-            <div className="space-y-1.5">
-              {items.map((inc, i) => (
-                <div key={inc.id} className="flex items-center gap-3 p-2.5 rounded border border-border/50 bg-card">
-                  <span className="text-[10px] text-muted-foreground w-5 text-center">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{inc.item_title}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {inc.include_summary && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger><Type className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
-                          <TooltipContent><p className="text-xs">Summary included</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {inc.include_table && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger><Table2 className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
-                          <TooltipContent><p className="text-xs">Data table included</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {inc.include_graph && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger><BarChart3 className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
-                          <TooltipContent><p className="text-xs">Graph included</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {items.map((inc, i) => {
+                const narrative = getNarrativeForInclusion(inc.id);
+                return (
+                  <PreviewItemWithNarrative
+                    key={inc.id}
+                    inclusion={inc}
+                    index={i}
+                    narrative={narrative}
+                    onUpdateNarrative={onUpdateNarrative}
+                  />
+                );
+              })}
             </div>
           </div>
         );
@@ -514,6 +495,131 @@ function PreviewStep({
       {inclusions.length === 0 && (
         <div className="text-center py-8 text-muted-foreground text-sm">
           No items selected for this report
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreviewItemWithNarrative({
+  inclusion, index, narrative, onUpdateNarrative,
+}: {
+  inclusion: ReportGoalInclusion;
+  index: number;
+  narrative: ReportNarrative | null;
+  onUpdateNarrative: (narrativeId: string, updates: { edited_narrative?: string; use_edited_version?: boolean }) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState('');
+
+  const startEdit = () => {
+    setEditText(narrative?.edited_narrative || narrative?.auto_narrative || '');
+    setEditing(true);
+  };
+
+  const saveEdit = () => {
+    if (narrative) {
+      onUpdateNarrative(narrative.narrative_id, {
+        edited_narrative: editText,
+        use_edited_version: true,
+      });
+    }
+    setEditing(false);
+  };
+
+  const toggleVersion = () => {
+    if (narrative) {
+      onUpdateNarrative(narrative.narrative_id, {
+        use_edited_version: !narrative.use_edited_version,
+      });
+    }
+  };
+
+  return (
+    <div className="rounded border border-border/50 bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-2.5">
+        <span className="text-[10px] text-muted-foreground w-5 text-center">{index + 1}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-foreground truncate">{inclusion.item_title}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {inclusion.include_summary && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Type className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                <TooltipContent><p className="text-xs">Summary included</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {inclusion.include_table && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><Table2 className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                <TooltipContent><p className="text-xs">Data table included</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {inclusion.include_graph && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger><BarChart3 className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                <TooltipContent><p className="text-xs">Graph included</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      </div>
+
+      {/* Narrative block */}
+      {narrative && (
+        <div className="border-t border-border/30 bg-muted/20 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span className="text-[10px] font-medium text-foreground">
+                {narrative.use_edited_version ? 'Edited Narrative' : 'Auto Narrative'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {narrative.edited_narrative && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] px-1.5"
+                  onClick={toggleVersion}
+                >
+                  {narrative.use_edited_version ? (
+                    <><ToggleRight className="w-3 h-3 mr-0.5" /> Using edited</>
+                  ) : (
+                    <><ToggleLeft className="w-3 h-3 mr-0.5" /> Using auto</>
+                  )}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={startEdit}>
+                <Pencil className="w-3 h-3 mr-0.5" /> Edit
+              </Button>
+            </div>
+          </div>
+
+          {editing ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editText}
+                onChange={e => setEditText(e.target.value)}
+                rows={4}
+                className="text-xs"
+              />
+              <div className="flex justify-end gap-1.5">
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+                <Button size="sm" className="h-6 text-xs" onClick={saveEdit}>Save</Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {narrative.active_narrative || narrative.auto_narrative || 'No narrative generated yet.'}
+            </p>
+          )}
         </div>
       )}
     </div>
