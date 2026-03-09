@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { ResponseExportActions } from './ResponseExportActions';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
@@ -317,6 +318,9 @@ export function ClinicalReasoningSection() {
                 </div>
               )}
             </div>
+            {response && !isLoading && (
+              <ResponseExportActions responseText={response} />
+            )}
           </CardContent>
         </Card>
       )}

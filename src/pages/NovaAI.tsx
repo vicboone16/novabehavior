@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +38,7 @@ interface QuickPrompt { id: string; title: string | null; prompt: string | null;
 
 export default function NovaAI() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('ask');
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -46,6 +48,19 @@ export default function NovaAI() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle contextual launch from other pages
+  useEffect(() => {
+    const prompt = searchParams.get('prompt');
+    const clientId = searchParams.get('clientId');
+    const context = searchParams.get('context');
+    if (clientId) {
+      setActiveTab('case');
+    } else if (prompt) {
+      setInput(prompt);
+      textareaRef.current?.focus();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     db.from('nova_ai_quick_prompts').select('*').order('title').then(({ data }: any) => {

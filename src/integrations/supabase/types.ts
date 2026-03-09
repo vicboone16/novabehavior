@@ -15762,6 +15762,81 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_contextual_entry_points: {
+        Row: {
+          action_title: string
+          created_at: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          entry_key: string
+          entry_name: string
+          id: string
+          is_active: boolean | null
+          page_key: string
+          sort_order: number | null
+        }
+        Insert: {
+          action_title: string
+          created_at?: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          entry_key: string
+          entry_name: string
+          id?: string
+          is_active?: boolean | null
+          page_key: string
+          sort_order?: number | null
+        }
+        Update: {
+          action_title?: string
+          created_at?: string | null
+          default_prompt_text?: string
+          default_reasoning_mode?: string
+          entry_key?: string
+          entry_name?: string
+          id?: string
+          is_active?: boolean | null
+          page_key?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      nova_ai_contextual_launch_logs: {
+        Row: {
+          client_id: string | null
+          context_session_id: string | null
+          created_at: string | null
+          entry_key: string | null
+          id: string
+          page_key: string | null
+          reasoning_output_id: string | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_session_id?: string | null
+          created_at?: string | null
+          entry_key?: string | null
+          id?: string
+          page_key?: string | null
+          reasoning_output_id?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_session_id?: string | null
+          created_at?: string | null
+          entry_key?: string | null
+          id?: string
+          page_key?: string | null
+          reasoning_output_id?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_conversations: {
         Row: {
           created_at: string | null
@@ -15779,6 +15854,69 @@ export type Database = {
           created_at?: string | null
           id?: string
           title?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_export_targets: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          target_key: string
+          target_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          target_key: string
+          target_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          target_key?: string
+          target_name?: string
+        }
+        Relationships: []
+      }
+      nova_ai_fba_drafts: {
+        Row: {
+          client_id: string | null
+          content: string | null
+          context_snapshot_json: Json | null
+          created_at: string | null
+          id: string
+          section_key: string | null
+          source_reasoning_output_id: string | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          section_key?: string | null
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          section_key?: string | null
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -15864,6 +16002,48 @@ export type Database = {
           id?: string
           message?: string | null
           role?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_output_exports: {
+        Row: {
+          client_id: string | null
+          context_snapshot_json: Json | null
+          created_at: string | null
+          destination_record_id: string | null
+          destination_section_key: string | null
+          export_target_key: string
+          exported_text: string | null
+          id: string
+          reasoning_output_id: string
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          destination_record_id?: string | null
+          destination_section_key?: string | null
+          export_target_key: string
+          exported_text?: string | null
+          id?: string
+          reasoning_output_id: string
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          destination_record_id?: string | null
+          destination_section_key?: string | null
+          export_target_key?: string
+          exported_text?: string | null
+          id?: string
+          reasoning_output_id?: string
+          student_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -15978,6 +16158,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_reassessment_drafts: {
+        Row: {
+          client_id: string | null
+          content: string | null
+          context_snapshot_json: Json | null
+          created_at: string | null
+          id: string
+          section_key: string | null
+          source_reasoning_output_id: string | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          section_key?: string | null
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          section_key?: string | null
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_replacement_behavior_library: {
         Row: {
           age_group: string | null
@@ -16065,6 +16281,48 @@ export type Database = {
           summary?: string | null
           topic?: string | null
           year?: number | null
+        }
+        Relationships: []
+      }
+      nova_ai_saved_clinical_drafts: {
+        Row: {
+          client_id: string | null
+          content: string | null
+          context_snapshot_json: Json | null
+          created_at: string | null
+          draft_title: string | null
+          draft_type: string | null
+          id: string
+          source_reasoning_output_id: string | null
+          student_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          draft_title?: string | null
+          draft_type?: string | null
+          id?: string
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          content?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          draft_title?: string | null
+          draft_type?: string | null
+          id?: string
+          source_reasoning_output_id?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -32133,6 +32391,54 @@ export type Database = {
         }
         Relationships: []
       }
+      v_nova_ai_contextual_entry_points: {
+        Row: {
+          action_title: string | null
+          default_prompt_text: string | null
+          default_reasoning_mode: string | null
+          entry_key: string | null
+          entry_name: string | null
+          id: string | null
+          page_key: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          entry_key?: string | null
+          entry_name?: string | null
+          id?: string | null
+          page_key?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          entry_key?: string | null
+          entry_name?: string | null
+          id?: string | null
+          page_key?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      v_nova_ai_output_export_history: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          destination_record_id: string | null
+          destination_section_key: string | null
+          export_target_key: string | null
+          id: string | null
+          reasoning_output_id: string | null
+          student_id: string | null
+          target_name: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_nova_ai_skill_context: {
         Row: {
           consecutive_sessions_at_criterion: number | null
@@ -35482,6 +35788,43 @@ export type Database = {
         Args: { distance_miles: number }
         Returns: number
       }
+      export_nova_ai_to_clinical_draft: {
+        Args: {
+          p_draft_title: string
+          p_draft_type?: string
+          p_reasoning_output_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      export_nova_ai_to_fba_draft: {
+        Args: { p_reasoning_output_id: string; p_section_key?: string }
+        Returns: string
+      }
+      export_nova_ai_to_reassessment_draft: {
+        Args: { p_reasoning_output_id: string; p_section_key?: string }
+        Returns: string
+      }
+      export_nova_ai_to_report_narrative: {
+        Args: {
+          p_client_id: string
+          p_domain?: string
+          p_reasoning_output_id: string
+          p_report_id: string
+          p_source_object_id?: string
+          p_source_object_type?: string
+          p_student_id: string
+        }
+        Returns: string
+      }
+      export_nova_ai_to_session_note: {
+        Args: {
+          p_reasoning_output_id: string
+          p_section?: string
+          p_session_note_draft_id: string
+        }
+        Returns: string
+      }
       fba_suggest_interventions: {
         Args: { p_function: string; p_setting?: string }
         Returns: {
@@ -35868,6 +36211,14 @@ export type Database = {
         Args: {
           p_action_key: string
           p_context_session_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      launch_nova_ai_contextual_entry: {
+        Args: {
+          p_context_session_id: string
+          p_entry_key: string
           p_user_id: string
         }
         Returns: string

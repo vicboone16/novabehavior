@@ -18,6 +18,7 @@ import {
   DollarSign,
   Link2,
 } from 'lucide-react';
+import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -145,6 +146,16 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
           </p>
         </div>
         <div className="flex gap-2">
+          <NovaAILauncher
+            clientId={studentId}
+            clientName={studentName}
+            context="session_notes"
+            actions={[
+              { label: 'Summarize This Session', prompt: 'Summarize the current session data for this student', mode: 'case_behavior_analysis' },
+              { label: 'Draft SOAP Assessment', prompt: 'Draft a SOAP-style assessment for this session', mode: 'case_report_language' },
+              { label: 'Suggest Next Steps', prompt: 'Based on this student\'s data, suggest clinical next steps', mode: 'full_clinical_review' },
+            ]}
+          />
           <Button variant="outline" size="sm" onClick={refreshNotes}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>

@@ -8,6 +8,7 @@ import {
   Building2, School, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1393,6 +1394,18 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
           <DialogTitle className="flex items-center gap-2">
             <FileCheck className="w-5 h-5 text-primary" />
             FBA Report Generator
+            <div className="ml-auto">
+              <NovaAILauncher
+                clientId={selectedStudentId}
+                clientName={selectedStudent?.name}
+                context="fba_builder"
+                actions={[
+                  { label: 'Draft FBA Hypothesis', prompt: 'Draft an FBA hypothesis statement based on this student\'s behavior data', mode: 'case_report_language' },
+                  { label: 'Explain Behavior Patterns', prompt: 'Explain the behavior patterns observed for this student', mode: 'case_behavior_analysis' },
+                  { label: 'Suggest Replacement Behaviors', prompt: 'Suggest replacement behaviors for this student based on behavior function', mode: 'replacement_behavior_selector' },
+                ]}
+              />
+            </div>
           </DialogTitle>
         </DialogHeader>
 

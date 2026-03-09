@@ -9,18 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Activity, Brain, Users2, ClipboardList, FileText, Send, Loader2,
-  ArrowLeft, AlertTriangle, TrendingUp, Shield, UserCheck
+  ArrowLeft, AlertTriangle, TrendingUp, Shield, UserCheck, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { CaseQuickActions, type QuickAction } from './CaseQuickActions';
+import { ResponseExportActions } from './ResponseExportActions';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
 
-type CaseMode = 'case_behavior_analysis' | 'case_skill_analysis' | 'case_caregiver_analysis' | 'full_clinical_review' | 'case_report_language';
+type CaseMode = 'case_behavior_analysis' | 'case_skill_analysis' | 'case_caregiver_analysis' | 'full_clinical_review' | 'case_report_language' | string;
 
 interface ModeConfig {
-  key: CaseMode;
+  key: string;
   label: string;
   icon: React.ReactNode;
   description: string;
@@ -32,6 +34,8 @@ const CASE_MODES: ModeConfig[] = [
   { key: 'case_caregiver_analysis', label: 'Case Caregiver Analysis', icon: <Users2 className="w-5 h-5" />, description: 'Review caregiver training progress and engagement signals' },
   { key: 'full_clinical_review', label: 'Full Clinical Review', icon: <Brain className="w-5 h-5" />, description: 'Comprehensive review across behavior, skill, and caregiver data' },
   { key: 'case_report_language', label: 'Case Report Language', icon: <FileText className="w-5 h-5" />, description: 'Draft clinical language using the case context' },
+  { key: 'replacement_behavior_selector', label: 'Replacement Behavior Selector', icon: <ClipboardList className="w-5 h-5" />, description: 'Suggest replacement behaviors' },
+  { key: 'case_full_clinical_review', label: 'Full Clinical Review', icon: <Brain className="w-5 h-5" />, description: 'Comprehensive case review' },
 ];
 
 interface Client { client_id: string; first_name: string; last_name: string; }
@@ -70,16 +74,21 @@ export function CaseAwareReasoningSection() {
   const [behaviorContext, setBehaviorContext] = useState<BehaviorContext[]>([]);
   const [contextLoaded, setContextLoaded] = useState(false);
   const [loadingContext, setLoadingContext] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<CaseMode | null>(null);
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
+  const [activeActionTitle, setActiveActionTitle] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState('');
+  const [reasoningOutputId, setReasoningOutputId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     db.from('clients').select('client_id, first_name, last_name').order('last_name').limit(500)
       .then(({ data }: any) => { if (data) setClients(data); });
+    db.from('nova_ai_case_quick_actions').select('*').eq('is_active', true).order('sort_order')
+      .then(({ data }: any) => { if (data) setQuickActions(data); });
   }, []);
 
   useEffect(() => {
@@ -98,15 +107,11 @@ export function CaseAwareReasoningSection() {
       setBehaviorContext(behRes.data || []);
       setContextLoaded(true);
 
-      // Create session
       const { data: sess } = await db.from('nova_ai_case_context_sessions').insert({
-        user_id: user?.id,
-        client_id: selectedClientId,
-        context_scope: contextScope,
+        user_id: user?.id, client_id: selectedClientId, context_scope: contextScope,
         context_snapshot: { case: ctxRes.data, behaviors: behRes.data },
       }).select('id').single();
       if (sess) setSessionId(sess.id);
-
       toast.success('Case context loaded');
     } catch (e) {
       console.error(e);
@@ -116,7 +121,7 @@ export function CaseAwareReasoningSection() {
     }
   };
 
-  const buildCasePrompt = (): string => {
+  const buildCasePrompt = (overrideInput?: string): string => {
     const parts: string[] = [];
     if (caseContext) {
       parts.push('=== CASE CONTEXT ===');
@@ -142,33 +147,32 @@ export function CaseAwareReasoningSection() {
         parts.push(`${b.problem_behavior_name}: problem=${b.problem_behavior_count}, replacement=${b.replacement_behavior_count}, ratio=${b.replacement_to_problem_ratio}, status=${b.replacement_status}`);
       });
     }
-    if (input.trim()) parts.push(`\n=== PROVIDER QUESTION ===\n${input.trim()}`);
+    const txt = overrideInput ?? input;
+    if (txt.trim()) parts.push(`\n=== PROVIDER QUESTION ===\n${txt.trim()}`);
     return parts.join('\n');
   };
 
-  const getSystemSuffix = (): string => {
+  const getSystemSuffix = (mode?: string): string => {
+    const m = mode || selectedMode;
     const base = '\n\nYou are analyzing a specific student/client case using real clinical data. Interpret the data like a BCBA would. Be specific, practical, and clinically grounded.';
-    switch (selectedMode) {
-      case 'case_behavior_analysis':
-        return base + '\n\nStructure your response with:\n## Behavior Summary\n## Pattern Interpretation\n## Possible Clinical Concerns\n## Possible Next Steps';
-      case 'case_skill_analysis':
-        return base + '\n\nStructure your response with:\n## Skill Progress Summary\n## Stalled / Prompt Dependency Signals\n## Clinical Interpretation\n## Possible Next Steps';
-      case 'case_caregiver_analysis':
-        return base + '\n\nStructure your response with:\n## Caregiver Progress Summary\n## Engagement / Follow-Through Signals\n## Clinical Interpretation\n## Possible Next Steps';
-      case 'full_clinical_review':
-        return base + '\n\nStructure your response with:\n## Overall Case Summary\n## Strengths / Progress\n## Concerns / Barriers\n## Priority Next Steps';
-      case 'case_report_language':
-        return base + '\n\nStructure your response with:\n## Draft Report Language\n## Concise Version\n## Formal Version';
-      default:
-        return base;
-    }
+    const suffixes: Record<string, string> = {
+      case_behavior_analysis: '\n\nStructure your response with:\n## Behavior Summary\n## Pattern Interpretation\n## Possible Clinical Concerns\n## Possible Next Steps',
+      case_skill_analysis: '\n\nStructure your response with:\n## Skill Progress Summary\n## Stalled / Prompt Dependency Signals\n## Clinical Interpretation\n## Possible Next Steps',
+      case_caregiver_analysis: '\n\nStructure your response with:\n## Caregiver Progress Summary\n## Engagement / Follow-Through Signals\n## Clinical Interpretation\n## Possible Next Steps',
+      full_clinical_review: '\n\nStructure your response with:\n## Overall Case Summary\n## Strengths / Progress\n## Concerns / Barriers\n## Priority Next Steps',
+      case_full_clinical_review: '\n\nStructure your response with:\n## Overall Case Summary\n## Strengths / Progress\n## Concerns / Barriers\n## Priority Next Steps',
+      case_report_language: '\n\nStructure your response with:\n## Draft Report Language\n## Concise Version\n## Formal Version',
+      replacement_behavior_selector: '\n\nStructure your response with:\n## Suggested Replacement Behaviors\n## Why They Fit\n## Teaching Considerations\n## Reinforcement Considerations',
+    };
+    return base + (suffixes[m || ''] || '');
   };
 
-  const submit = async () => {
-    const prompt = buildCasePrompt();
-    if (!prompt.trim() || isLoading || !selectedMode) return;
+  const runReasoning = async (promptText: string, mode: string, actionKey?: string) => {
+    const prompt = buildCasePrompt(promptText);
+    if (!prompt.trim() || isLoading) return;
     setIsLoading(true);
     setResponse('');
+    setReasoningOutputId(null);
     let fullResponse = '';
 
     try {
@@ -181,7 +185,7 @@ export function CaseAwareReasoningSection() {
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
           evidence_mode: true,
-          system_suffix: getSystemSuffix(),
+          system_suffix: getSystemSuffix(mode),
         }),
       });
 
@@ -220,15 +224,21 @@ export function CaseAwareReasoningSection() {
       }
 
       if (fullResponse) {
-        await db.from('nova_ai_case_reasoning_outputs').insert({
-          user_id: user?.id,
-          session_id: sessionId,
-          client_id: selectedClientId,
-          reasoning_mode: selectedMode,
-          prompt_text: input.trim() || null,
+        const { data: output } = await db.from('nova_ai_case_reasoning_outputs').insert({
+          user_id: user?.id, session_id: sessionId, client_id: selectedClientId,
+          reasoning_mode: mode, prompt_text: promptText || null,
           context_snapshot: { case: caseContext, behaviors: behaviorContext },
           response_text: fullResponse,
-        });
+        }).select('id').single();
+        if (output) setReasoningOutputId(output.id);
+
+        // Log quick action usage
+        if (actionKey && sessionId) {
+          await db.from('nova_ai_case_quick_action_history').insert({
+            context_session_id: sessionId, user_id: user?.id,
+            action_key: actionKey, reasoning_output_id: output?.id,
+          });
+        }
       }
     } catch (e) {
       console.error('Case reasoning error:', e);
@@ -238,10 +248,28 @@ export function CaseAwareReasoningSection() {
     }
   };
 
+  const submit = () => {
+    if (!selectedMode) return;
+    runReasoning(input, selectedMode);
+  };
+
+  const handleQuickAction = (action: QuickAction) => {
+    setSelectedMode(action.default_reasoning_mode);
+    setActiveActionTitle(action.action_title);
+    setInput(action.default_prompt_text || '');
+    runReasoning(action.default_prompt_text || '', action.default_reasoning_mode, action.action_key);
+  };
+
   const resetAll = () => {
     setSelectedMode(null);
+    setActiveActionTitle(null);
     setResponse('');
+    setReasoningOutputId(null);
     setInput('');
+  };
+
+  const handleRerun = () => {
+    if (selectedMode) runReasoning(input, selectedMode);
   };
 
   const clientName = clients.find(c => c.client_id === selectedClientId);
@@ -259,13 +287,11 @@ export function CaseAwareReasoningSection() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Student / Client</Label>
-              <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setContextLoaded(false); }}>
+              <Select value={selectedClientId} onValueChange={(v) => { setSelectedClientId(v); setContextLoaded(false); resetAll(); }}>
                 <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                 <SelectContent>
                   {clients.map(c => (
-                    <SelectItem key={c.client_id} value={c.client_id}>
-                      {c.last_name}, {c.first_name}
-                    </SelectItem>
+                    <SelectItem key={c.client_id} value={c.client_id}>{c.last_name}, {c.first_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -308,62 +334,55 @@ export function CaseAwareReasoningSection() {
                 <ContextCard label="Top Consequence" value={caseContext.top_consequence_pattern} icon={<ClipboardList className="w-3.5 h-3.5" />} span />
               )}
               {(caseContext.caregiver_total_goals || 0) > 0 && (
-                <ContextCard
-                  label="Caregiver Goals"
-                  value={`${caseContext.caregiver_mastered_goals}/${caseContext.caregiver_total_goals} mastered`}
-                  icon={<UserCheck className="w-3.5 h-3.5" />}
-                  span
-                />
+                <ContextCard label="Caregiver Goals" value={`${caseContext.caregiver_mastered_goals}/${caseContext.caregiver_total_goals} mastered`} icon={<UserCheck className="w-3.5 h-3.5" />} span />
               )}
             </>
           )}
           {behaviorContext.length > 0 && behaviorContext.slice(0, 3).map((b, i) => (
-            <ContextCard
-              key={i}
-              label={b.problem_behavior_name || 'Behavior'}
-              value={`${b.replacement_status || 'unknown'} (ratio: ${b.replacement_to_problem_ratio ?? 'N/A'})`}
-              icon={<Activity className="w-3.5 h-3.5" />}
-            />
+            <ContextCard key={i} label={b.problem_behavior_name || 'Behavior'} value={`${b.replacement_status || 'unknown'} (ratio: ${b.replacement_to_problem_ratio ?? 'N/A'})`} icon={<Activity className="w-3.5 h-3.5" />} />
           ))}
         </div>
       )}
 
-      {/* Mode Selection */}
+      {/* Quick Actions */}
+      {contextLoaded && !selectedMode && quickActions.length > 0 && (
+        <CaseQuickActions actions={quickActions} onLaunch={handleQuickAction} isLoading={isLoading} />
+      )}
+
+      {/* Manual Mode Selection */}
       {contextLoaded && !selectedMode && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {CASE_MODES.map(m => (
-            <Card
-              key={m.key}
-              className="cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all"
-              onClick={() => setSelectedMode(m.key)}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <span className="text-primary">{m.icon}</span>
-                  {m.label}
-                </CardTitle>
-                <CardDescription className="text-xs">{m.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Or choose a reasoning mode</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {CASE_MODES.filter(m => !['case_full_clinical_review', 'replacement_behavior_selector'].includes(m.key)).map(m => (
+              <Card key={m.key} className="cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all" onClick={() => setSelectedMode(m.key)}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <span className="text-primary">{m.icon}</span>{m.label}
+                  </CardTitle>
+                  <CardDescription className="text-xs">{m.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Active Mode */}
+      {/* Active Mode / Response Workspace */}
       {contextLoaded && selectedMode && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetAll}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <span className="text-primary">{CASE_MODES.find(m => m.key === selectedMode)?.icon}</span>
+            <span className="text-primary">
+              {CASE_MODES.find(m => m.key === selectedMode)?.icon || <Brain className="w-5 h-5" />}
+            </span>
             <h3 className="text-base font-semibold text-foreground">
-              {CASE_MODES.find(m => m.key === selectedMode)?.label}
+              {activeActionTitle || CASE_MODES.find(m => m.key === selectedMode)?.label || selectedMode}
             </h3>
             {clientName && (
-              <Badge variant="outline" className="text-xs ml-auto">
-                {clientName.first_name} {clientName.last_name}
-              </Badge>
+              <Badge variant="outline" className="text-xs ml-auto">{clientName.first_name} {clientName.last_name}</Badge>
             )}
           </div>
 
@@ -372,13 +391,20 @@ export function CaseAwareReasoningSection() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-              placeholder="Add additional context or a specific question (optional)..."
+              placeholder="Add additional context or refine your question..."
               className="resize-none min-h-[60px] max-h-32"
               rows={2}
             />
-            <Button onClick={submit} disabled={isLoading} size="icon" className="shrink-0 h-11 w-11">
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button onClick={submit} disabled={isLoading} size="icon" className="shrink-0 h-11 w-11">
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+              {response && !isLoading && (
+                <Button onClick={handleRerun} variant="ghost" size="icon" className="shrink-0 h-8 w-11" title="Rerun">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {(response || isLoading) && (
@@ -396,6 +422,14 @@ export function CaseAwareReasoningSection() {
                     </div>
                   )}
                 </div>
+                {response && !isLoading && (
+                  <ResponseExportActions
+                    responseText={response}
+                    reasoningOutputId={reasoningOutputId}
+                    clientId={selectedClientId}
+                    sessionId={sessionId}
+                  />
+                )}
               </CardContent>
             </Card>
           )}
