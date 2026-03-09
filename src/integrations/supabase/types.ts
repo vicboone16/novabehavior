@@ -14021,6 +14021,51 @@ export type Database = {
           },
         ]
       }
+      interval_definitions: {
+        Row: {
+          behavior_name: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          definition_name: string
+          id: string
+          interval_seconds: number
+          interval_type: string
+          is_active: boolean | null
+          mts_enabled: boolean | null
+          observation_duration_minutes: number
+          student_id: string | null
+        }
+        Insert: {
+          behavior_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_name: string
+          id?: string
+          interval_seconds?: number
+          interval_type?: string
+          is_active?: boolean | null
+          mts_enabled?: boolean | null
+          observation_duration_minutes?: number
+          student_id?: string | null
+        }
+        Update: {
+          behavior_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_name?: string
+          id?: string
+          interval_seconds?: number
+          interval_type?: string
+          is_active?: boolean | null
+          mts_enabled?: boolean | null
+          observation_duration_minutes?: number
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       intervention_packets: {
         Row: {
           created_at: string | null
@@ -26470,6 +26515,75 @@ export type Database = {
           },
         ]
       }
+      teacher_interval_data: {
+        Row: {
+          created_at: string | null
+          id: string
+          interval_number: number | null
+          interval_timestamp: string | null
+          observed_present: boolean | null
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interval_number?: number | null
+          interval_timestamp?: string | null
+          observed_present?: boolean | null
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interval_number?: number | null
+          interval_timestamp?: string | null
+          observed_present?: boolean | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      teacher_interval_sessions: {
+        Row: {
+          client_id: string | null
+          completed_intervals: number | null
+          created_at: string | null
+          created_by: string | null
+          definition_id: string | null
+          ended_at: string | null
+          expected_intervals: number | null
+          id: string
+          interval_type: string | null
+          started_at: string | null
+          student_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          completed_intervals?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_id?: string | null
+          ended_at?: string | null
+          expected_intervals?: number | null
+          id?: string
+          interval_type?: string | null
+          started_at?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          completed_intervals?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          definition_id?: string | null
+          ended_at?: string | null
+          expected_intervals?: number | null
+          id?: string
+          interval_type?: string | null
+          started_at?: string | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       teacher_message_attachments: {
         Row: {
           attachment_type: string | null
@@ -33339,6 +33453,22 @@ export type Database = {
           setting?: string | null
           staff_initials?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_teacher_mts_summary: {
+        Row: {
+          client_id: string | null
+          definition_id: string | null
+          ended_at: string | null
+          expected_intervals: number | null
+          interval_type: string | null
+          intervals_completed: number | null
+          observed_percent: number | null
+          observed_present: number | null
+          session_id: string | null
+          started_at: string | null
+          student_id: string | null
         }
         Relationships: []
       }
