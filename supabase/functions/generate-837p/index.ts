@@ -152,7 +152,7 @@ serve(async (req: Request) => {
 
     const { claims: claimsInput, submitterInfo } = await req.json();
     
-    if (!claims || !Array.isArray(claims) || claims.length === 0) {
+    if (!claimsInput || !Array.isArray(claimsInput) || claimsInput.length === 0) {
       return new Response(JSON.stringify({ error: 'No claims provided' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -166,13 +166,13 @@ serve(async (req: Request) => {
       contactPhone: submitterInfo?.contactPhone || '0000000000',
     };
 
-    const fileContent = generate837P(claims, defaultSubmitter);
+    const fileContent = generate837P(claimsInput, defaultSubmitter);
     
     return new Response(JSON.stringify({
       success: true,
-      claimCount: claims.length,
+      claimCount: claimsInput.length,
       fileContent,
-      filename: `837P_${new Date().toISOString().slice(0, 10)}_${claims.length}claims.txt`,
+      filename: `837P_${new Date().toISOString().slice(0, 10)}_${claimsInput.length}claims.txt`,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
