@@ -8961,49 +8961,58 @@ export type Database = {
       clinical_curricula_goals: {
         Row: {
           age_group_tags: string[] | null
-          clinical_goal: string | null
+          benchmark_count: number
+          clinical_goal: string
           domain_id: string | null
           id: string
+          is_active: boolean
           key: string | null
           objective_text: string | null
           older_examples: string[] | null
+          search_text: unknown
           setting_tags: string[] | null
           skill_tags: string[] | null
           sort_order: number | null
           title: string | null
-          vbmapp_domain: string | null
+          vbmapp_domain: string
           vbmapp_level: number | null
           younger_examples: string[] | null
         }
         Insert: {
           age_group_tags?: string[] | null
-          clinical_goal?: string | null
+          benchmark_count?: number
+          clinical_goal: string
           domain_id?: string | null
           id?: string
+          is_active?: boolean
           key?: string | null
           objective_text?: string | null
           older_examples?: string[] | null
+          search_text?: unknown
           setting_tags?: string[] | null
           skill_tags?: string[] | null
           sort_order?: number | null
           title?: string | null
-          vbmapp_domain?: string | null
+          vbmapp_domain: string
           vbmapp_level?: number | null
           younger_examples?: string[] | null
         }
         Update: {
           age_group_tags?: string[] | null
-          clinical_goal?: string | null
+          benchmark_count?: number
+          clinical_goal?: string
           domain_id?: string | null
           id?: string
+          is_active?: boolean
           key?: string | null
           objective_text?: string | null
           older_examples?: string[] | null
+          search_text?: unknown
           setting_tags?: string[] | null
           skill_tags?: string[] | null
           sort_order?: number | null
           title?: string | null
-          vbmapp_domain?: string | null
+          vbmapp_domain?: string
           vbmapp_level?: number | null
           younger_examples?: string[] | null
         }
