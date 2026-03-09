@@ -11,11 +11,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   BrainCircuit, Send, Loader2, BookOpen, Lightbulb, Users,
   GraduationCap, Search, Target, FileText, ClipboardList, Sparkles,
-  MessageSquare, Stethoscope
+  MessageSquare, Stethoscope, UserSearch
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { ClinicalReasoningSection } from '@/components/nova-ai/ClinicalReasoningSection';
+import { CaseAwareReasoningSection } from '@/components/nova-ai/CaseAwareReasoningSection';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
@@ -214,6 +215,9 @@ export default function NovaAI() {
           <TabsTrigger value="reasoning" className="gap-1.5 text-xs">
             <Stethoscope className="w-3.5 h-3.5" /> Clinical Reasoning
           </TabsTrigger>
+          <TabsTrigger value="case" className="gap-1.5 text-xs">
+            <UserSearch className="w-3.5 h-3.5" /> Case-Aware Reasoning
+          </TabsTrigger>
           <TabsTrigger value="prompts" className="gap-1.5 text-xs">
             <Sparkles className="w-3.5 h-3.5" /> Quick Prompts
           </TabsTrigger>
@@ -301,6 +305,11 @@ export default function NovaAI() {
         {/* Clinical Reasoning */}
         <TabsContent value="reasoning">
           <ClinicalReasoningSection />
+        </TabsContent>
+
+        {/* Case-Aware Reasoning */}
+        <TabsContent value="case">
+          <CaseAwareReasoningSection />
         </TabsContent>
 
         {/* Quick Prompts Library */}
