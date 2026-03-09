@@ -124,14 +124,31 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
     return baselinePoints.reduce((s, p) => s + (p.y ?? 0), 0) / baselinePoints.length;
   }, [chartData, overlays.baselineMean]);
 
+  // Build stair-step criterion data for benchmark changing criterion
+  const criterionStairData = useMemo(() => {
+    if (!overlays.changingCriterion || benchmarkSteps.length === 0) return null;
+    return chartData.map(d => {
+      // Find which benchmark step applies to this data point
+      const step = benchmarkSteps.find(s => {
+        if (s.start_date && s.end_date) {
+          return d.date >= s.start_date && d.date <= s.end_date;
+        }
+        if (s.start_date) return d.date >= s.start_date;
+        return false;
+      }) || benchmarkSteps.find(s => s.is_active);
+      return step?.criterion_value ?? null;
+    });
+  }, [chartData, benchmarkSteps, overlays.changingCriterion]);
+
   // Final data with overlays merged
   const finalChartData = useMemo(() => {
     return chartData.map((d, i) => ({
       ...d,
       movingAvg: movingAvgData?.[i] ?? null,
       trend: trendLineValues?.[i] ?? null,
+      criterion: criterionStairData?.[i] ?? null,
     }));
-  }, [chartData, movingAvgData, trendLineValues]);
+  }, [chartData, movingAvgData, trendLineValues, criterionStairData]);
 
   const yDomain = isPercent ? [0, 100] : [0, 'auto'] as [number, string | number];
   const yTicks = isPercent ? [0, 20, 40, 60, 80, 100] : undefined;
