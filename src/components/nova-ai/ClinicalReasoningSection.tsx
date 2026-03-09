@@ -318,6 +318,9 @@ export function ClinicalReasoningSection() {
                 </div>
               )}
             </div>
+            {response && !isLoading && (
+              <ResponseExportActions responseText={response} />
+            )}
           </CardContent>
         </Card>
       )}
