@@ -14,6 +14,7 @@ import { SkillProgressReports } from '@/components/skills/SkillProgressReports';
 import { ReportBrandingEditor } from '@/components/reports';
 import { InsuranceReportGenerator } from '@/components/reports/InsuranceReportGenerator';
 import { ReportGoalInclusionManager } from '@/components/reports/ReportGoalInclusionManager';
+import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
 import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart, Building2, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
