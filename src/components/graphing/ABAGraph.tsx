@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend, Area,
+  ReferenceLine, Legend, Area, ReferenceArea,
 } from 'recharts';
-import { Image, TrendingUp } from 'lucide-react';
+import { Image, TrendingUp, StepForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { ABATooltipContent } from './ABATooltip';
 import { splitMiddleTrendLine, type DataPoint } from '@/lib/graphCalculations';
 import type {
   ABADataPoint, GraphMetric, XAxisMode, AggregationMode, ChartView, GraphOverlays,
+  BenchmarkCriterionStep,
 } from '@/types/graphDataState';
 import { DEFAULT_OVERLAYS } from '@/types/graphDataState';
 
@@ -27,6 +28,8 @@ interface ABAGraphProps {
   title?: string;
   graphType?: 'skills' | 'behavior';
   phaseMarkers?: PhaseMarker[];
+  benchmarkSteps?: BenchmarkCriterionStep[];
+  onAdvanceBenchmark?: () => void;
 }
 
 /**
@@ -35,7 +38,7 @@ interface ABAGraphProps {
  * - observed_zero: point at y=0, line connects
  * - measured: point at value, line connects
  */
-export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', phaseMarkers = [] }: ABAGraphProps) {
+export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', phaseMarkers = [], benchmarkSteps = [], onAdvanceBenchmark }: ABAGraphProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const [metric, setMetric] = useState<GraphMetric>(graphType === 'skills' ? 'percent_correct' : 'frequency');
   const [xAxis, setXAxis] = useState<XAxisMode>('date');
@@ -121,14 +124,31 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
     return baselinePoints.reduce((s, p) => s + (p.y ?? 0), 0) / baselinePoints.length;
   }, [chartData, overlays.baselineMean]);
 
+  // Build stair-step criterion data for benchmark changing criterion
+  const criterionStairData = useMemo(() => {
+    if (!overlays.changingCriterion || benchmarkSteps.length === 0) return null;
+    return chartData.map(d => {
+      // Find which benchmark step applies to this data point
+      const step = benchmarkSteps.find(s => {
+        if (s.start_date && s.end_date) {
+          return d.date >= s.start_date && d.date <= s.end_date;
+        }
+        if (s.start_date) return d.date >= s.start_date;
+        return false;
+      }) || benchmarkSteps.find(s => s.is_active);
+      return step?.criterion_value ?? null;
+    });
+  }, [chartData, benchmarkSteps, overlays.changingCriterion]);
+
   // Final data with overlays merged
   const finalChartData = useMemo(() => {
     return chartData.map((d, i) => ({
       ...d,
       movingAvg: movingAvgData?.[i] ?? null,
       trend: trendLineValues?.[i] ?? null,
+      criterion: criterionStairData?.[i] ?? null,
     }));
-  }, [chartData, movingAvgData, trendLineValues]);
+  }, [chartData, movingAvgData, trendLineValues, criterionStairData]);
 
   const yDomain = isPercent ? [0, 100] : [0, 'auto'] as [number, string | number];
   const yTicks = isPercent ? [0, 20, 40, 60, 80, 100] : undefined;
@@ -351,9 +371,53 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
                   isAnimationActive={false}
                 />
               )}
+
+              {/* Changing criterion stair-step line */}
+              {overlays.changingCriterion && criterionStairData && (
+                <Line
+                  type="stepAfter"
+                  dataKey="criterion"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  dot={false}
+                  name="Criterion"
+                  connectNulls={true}
+                  isAnimationActive={false}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Benchmark step labels */}
+        {overlays.changingCriterion && overlays.changingCriterionLabels && benchmarkSteps.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {benchmarkSteps.map((step) => (
+              <Badge
+                key={step.benchmark_step_id}
+                variant={step.step_status === 'active' ? 'default' : step.step_status === 'met' ? 'secondary' : 'outline'}
+                className="text-[10px] gap-1"
+              >
+                <StepForward className="w-2.5 h-2.5" />
+                {step.phase_label || step.benchmark_label}
+                {step.criterion_value != null && `: ${step.criterion_value}${step.criterion_unit || ''}`}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Advance benchmark button */}
+        {overlays.changingCriterion && onAdvanceBenchmark && benchmarkSteps.some(s => s.is_active) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={onAdvanceBenchmark}
+          >
+            <StepForward className="w-3 h-3" /> Advance to Next Benchmark
+          </Button>
+        )}
 
         {/* Status badges */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -368,6 +432,11 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
           {overlays.trendLine && trendLineValues && (
             <Badge variant="outline" className="text-xs">
               <TrendingUp className="w-3 h-3 mr-1" /> Trend active
+            </Badge>
+          )}
+          {overlays.changingCriterion && benchmarkSteps.length > 0 && (
+            <Badge variant="outline" className="text-xs text-amber-600">
+              <StepForward className="w-3 h-3 mr-1" /> Changing Criterion
             </Badge>
           )}
           {isCumulative && (

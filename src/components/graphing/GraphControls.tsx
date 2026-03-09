@@ -139,6 +139,20 @@ export function GraphControls({
             <Label className="text-xs">Data Completeness</Label>
             <Switch checked={overlays.dataCompleteness} onCheckedChange={v => updateOverlay('dataCompleteness', v)} className="scale-75" />
           </div>
+
+          <div className="border-t border-border/50 pt-2 mt-1 space-y-2">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Changing Criterion</p>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Benchmark Criterion Line</Label>
+              <Switch checked={overlays.changingCriterion} onCheckedChange={v => updateOverlay('changingCriterion', v)} className="scale-75" />
+            </div>
+            {overlays.changingCriterion && (
+              <div className="flex items-center justify-between pl-2">
+                <Label className="text-xs">Show Labels</Label>
+                <Switch checked={overlays.changingCriterionLabels} onCheckedChange={v => updateOverlay('changingCriterionLabels', v)} className="scale-75" />
+              </div>
+            )}
+          </div>
         </PopoverContent>
       </Popover>
     </div>
