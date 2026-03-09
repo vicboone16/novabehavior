@@ -16439,6 +16439,39 @@ export type Database = {
           },
         ]
       }
+      parent_training_report_snapshots: {
+        Row: {
+          caregiver_id: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          report_payload: Json | null
+          report_type: string
+          title: string | null
+        }
+        Insert: {
+          caregiver_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          report_payload?: Json | null
+          report_type: string
+          title?: string | null
+        }
+        Update: {
+          caregiver_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          report_payload?: Json | null
+          report_type?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       parent_training_session_logs: {
         Row: {
           agency_id: string | null
@@ -29826,6 +29859,31 @@ export type Database = {
           },
         ]
       }
+      v_parent_training_caregiver_goal_sheet: {
+        Row: {
+          baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          current_value: number | null
+          effective_baseline_definition: string | null
+          effective_goal_description: string | null
+          effective_goal_title: string | null
+          effective_mastery_criteria: string | null
+          effective_measurement_method: string | null
+          effective_target_definition: string | null
+          effective_unit: string | null
+          goal_assignment_id: string | null
+          goal_source: string | null
+          mastery_status: string | null
+          module_assignment_id: string | null
+          notes: string | null
+          percent_to_goal: number | null
+          status: string | null
+          target_date: string | null
+          target_value: number | null
+        }
+        Relationships: []
+      }
       v_parent_training_custom_goals: {
         Row: {
           add_to_library: boolean | null
@@ -29913,6 +29971,39 @@ export type Database = {
           },
         ]
       }
+      v_parent_training_goal_engine_summary: {
+        Row: {
+          baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          current_value: number | null
+          data_points: number | null
+          goal_assignment_id: string | null
+          goal_id: string | null
+          goal_source: string | null
+          goal_title: string | null
+          insurance_billable: boolean | null
+          last_data_date: string | null
+          mastery_status: string | null
+          measurement_method: string | null
+          module_assignment_id: string | null
+          notes: string | null
+          percent_to_goal: number | null
+          start_date: string | null
+          status: string | null
+          target_date: string | null
+          target_value: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_goals"
+            referencedColumns: ["goal_id"]
+          },
+        ]
+      }
       v_parent_training_goal_progress: {
         Row: {
           baseline_value: number | null
@@ -29969,6 +30060,39 @@ export type Database = {
             referencedColumns: ["module_id"]
           },
         ]
+      }
+      v_parent_training_homework_summary: {
+        Row: {
+          assignment_pk: string | null
+          caregiver_id: string | null
+          client_id: string | null
+          file_url: string | null
+          homework_id: string | null
+          homework_title: string | null
+          module_assignment_id: string | null
+          module_key: string | null
+          module_title: string | null
+          notes: string | null
+          review_status: string | null
+          reviewer_notes: string | null
+          submission_type: string | null
+          submitted_at: string | null
+        }
+        Relationships: []
+      }
+      v_parent_training_module_completion_summary: {
+        Row: {
+          assigned_at: string | null
+          assigned_goal_count: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          due_date: string | null
+          module_assignment_id: string | null
+          module_key: string | null
+          module_title: string | null
+          status: string | null
+        }
+        Relationships: []
       }
       v_parent_training_module_goal_counts: {
         Row: {
@@ -30111,6 +30235,20 @@ export type Database = {
             referencedColumns: ["goal_assignment_id"]
           },
         ]
+      }
+      v_parent_training_progress_report_summary: {
+        Row: {
+          assigned_module_count: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          completed_module_count: number | null
+          homework_submission_count: number | null
+          in_progress_goal_count: number | null
+          mastered_goal_count: number | null
+          session_log_count: number | null
+          total_goal_count: number | null
+        }
+        Relationships: []
       }
       v_plan_publications_feed: {
         Row: {
@@ -31842,6 +31980,14 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      build_parent_training_goal_sheet: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
+      build_parent_training_homework_summary: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
       build_parent_training_insurance_summary:
         | {
             Args: { p_caregiver_id: string; p_client_id: string }
@@ -31855,6 +32001,10 @@ export type Database = {
             }
             Returns: Json
           }
+      build_parent_training_progress_report: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
       build_report_strategy_export_payload: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: Json
@@ -33151,6 +33301,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      save_parent_training_report_snapshot: {
+        Args: {
+          p_caregiver_id: string
+          p_client_id: string
+          p_created_by?: string
+          p_report_payload: Json
+          p_report_type: string
+          p_title: string
+        }
+        Returns: string
       }
       save_report_strategy_narrative: {
         Args: {

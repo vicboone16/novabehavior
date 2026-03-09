@@ -367,6 +367,59 @@ export function useParentTrainingAdmin(agencyId?: string | null) {
     return data;
   }, []);
 
+  // Report RPCs
+  const buildGoalSheet = useCallback(async (clientId: string, caregiverId: string) => {
+    const { data, error } = await db.rpc('build_parent_training_goal_sheet', {
+      p_client_id: clientId,
+      p_caregiver_id: caregiverId,
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const buildProgressReport = useCallback(async (clientId: string, caregiverId: string) => {
+    const { data, error } = await db.rpc('build_parent_training_progress_report', {
+      p_client_id: clientId,
+      p_caregiver_id: caregiverId,
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const buildHomeworkSummary = useCallback(async (clientId: string, caregiverId: string) => {
+    const { data, error } = await db.rpc('build_parent_training_homework_summary', {
+      p_client_id: clientId,
+      p_caregiver_id: caregiverId,
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const saveReportSnapshot = useCallback(async (
+    clientId: string, caregiverId: string, reportType: string, title: string, payload: any
+  ) => {
+    const { data, error } = await db.rpc('save_parent_training_report_snapshot', {
+      p_client_id: clientId,
+      p_caregiver_id: caregiverId,
+      p_report_type: reportType,
+      p_title: title,
+      p_report_payload: payload,
+      p_created_by: user?.id || null,
+    });
+    if (error) throw error;
+    toast.success('Report snapshot saved');
+    return data;
+  }, [user]);
+
+  const fetchModuleCompletionSummary = useCallback(async (clientId?: string, caregiverId?: string) => {
+    let q = db.from('v_parent_training_module_completion_summary').select('*');
+    if (clientId) q = q.eq('client_id', clientId);
+    if (caregiverId) q = q.eq('caregiver_id', caregiverId);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  }, []);
+
   return {
     goals, goalAssignments, homework, sessionLogs, customGoals, assignmentsDashboard, goalData, isLoading,
     fetchGoals, createGoal, updateGoal,
@@ -377,5 +430,7 @@ export function useParentTrainingAdmin(agencyId?: string | null) {
     fetchCustomGoals, promoteGoalToLibrary,
     logGoalData, fetchGoalData,
     buildInsuranceSummary,
+    buildGoalSheet, buildProgressReport, buildHomeworkSummary,
+    saveReportSnapshot, fetchModuleCompletionSummary,
   };
 }
