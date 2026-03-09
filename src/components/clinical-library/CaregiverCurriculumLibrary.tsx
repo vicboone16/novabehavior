@@ -361,11 +361,11 @@ function CustomGoalCandidatesTab({ goals, loading, onPromote }: { goals: PTCusto
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         {isPromoted ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 text-[10px]">
+                          <Badge variant="secondary" className="text-[10px]">
                             <CheckCircle2 className="w-3 h-3 mr-1" /> Promoted
                           </Badge>
                         ) : isCandidate ? (
-                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-[10px]">
+                          <Badge variant="default" className="text-[10px]">
                             <ArrowUpCircle className="w-3 h-3 mr-1" /> Library Candidate
                           </Badge>
                         ) : (
