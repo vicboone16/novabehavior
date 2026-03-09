@@ -31980,6 +31980,14 @@ export type Database = {
         Returns: string
       }
       auto_refresh_intervention_outcomes_all: { Args: never; Returns: number }
+      build_parent_training_goal_sheet: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
+      build_parent_training_homework_summary: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
       build_parent_training_insurance_summary:
         | {
             Args: { p_caregiver_id: string; p_client_id: string }
@@ -31993,6 +32001,10 @@ export type Database = {
             }
             Returns: Json
           }
+      build_parent_training_progress_report: {
+        Args: { p_caregiver_id: string; p_client_id: string }
+        Returns: Json
+      }
       build_report_strategy_export_payload: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: Json
@@ -33289,6 +33301,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      save_parent_training_report_snapshot: {
+        Args: {
+          p_caregiver_id: string
+          p_client_id: string
+          p_created_by?: string
+          p_report_payload: Json
+          p_report_type: string
+          p_title: string
+        }
+        Returns: string
       }
       save_report_strategy_narrative: {
         Args: {
