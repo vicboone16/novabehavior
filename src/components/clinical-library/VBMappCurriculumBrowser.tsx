@@ -95,7 +95,31 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
 
   const handleSearch = useCallback(async (text: string) => {
     setSearch(text);
-    if (!text.trim()) { setSearchResults(null); return; }
+    if (!text.trim()) { setSearchResults(null); setAiMatchInfo({}); return; }
+
+    if (aiSearch) {
+      setAiSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('curriculum-ai-search', {
+          body: { query: text.trim() },
+        });
+        if (error) throw error;
+        const matchedIds = new Set((data?.top_matching_goals ?? []).map((r: any) => r.goal_id));
+        const matchInfoMap: Record<string, string> = {};
+        (data?.top_matching_goals ?? []).forEach((r: any) => { matchInfoMap[r.goal_id] = r.why_matches; });
+        setAiMatchInfo(matchInfoMap);
+        setSearchResults(goals.filter(g => matchedIds.has(g.id)));
+      } catch (e) {
+        console.error(e);
+        toast.error('AI search failed, falling back to text search');
+        setAiSearch(false);
+        // Fall through to RPC search below
+      } finally {
+        setAiSearching(false);
+      }
+      return;
+    }
+
     const selectedDomain = domainFilter !== 'all' ? domains.find(d => d.id === domainFilter)?.title : null;
     const selectedLevel = levelFilter !== 'all' ? parseInt(levelFilter) : null;
     const { data, error } = await supabase.rpc('search_vbmapp_curricula', {
@@ -107,7 +131,8 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
     if (error) { console.error(error); return; }
     const matchedIds = new Set((data as any[]).map(r => r.goal_id));
     setSearchResults(goals.filter(g => matchedIds.has(g.id)));
-  }, [goals, domains, domainFilter, levelFilter]);
+    setAiMatchInfo({});
+  }, [goals, domains, domainFilter, levelFilter, aiSearch]);
 
   const toggleDomain = (id: string) => {
     setExpandedDomains(prev => {
