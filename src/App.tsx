@@ -74,6 +74,7 @@ import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 import BehaviorStrategies from "./pages/BehaviorStrategies";
 import BehaviorRecommendations from "./pages/BehaviorRecommendations";
 import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
+import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 
 const queryClient = new QueryClient();
 
