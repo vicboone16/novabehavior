@@ -28912,6 +28912,68 @@ export type Database = {
           },
         ]
       }
+      v_behavior_event_intelligence_summary: {
+        Row: {
+          attention_pattern_flag: boolean | null
+          behavior_name: string | null
+          escape_pattern_flag: boolean | null
+          first_event_date: string | null
+          last_event_date: string | null
+          lunch_time_risk_flag: boolean | null
+          student_id: string | null
+          top_antecedent_pattern: string | null
+          top_consequence_pattern: string | null
+          top_time_of_day: string | null
+          total_behavior_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
+      }
+      v_behavior_event_source_enriched: {
+        Row: {
+          activity_name: string | null
+          antecedent: string | null
+          attention_pattern_flag: boolean | null
+          behavior_name: string | null
+          consequence: string | null
+          escape_pattern_flag: boolean | null
+          event_date: string | null
+          event_time: string | null
+          intervention_phase: string | null
+          lunch_time_risk_flag: boolean | null
+          notes: string | null
+          replacement_behavior_name: string | null
+          routine_name: string | null
+          setting_name: string | null
+          source_table: string | null
+          staff_name: string | null
+          student_id: string | null
+          time_of_day_bucket: string | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
+      }
+      v_behavior_event_source_normalized: {
+        Row: {
+          activity_name: string | null
+          antecedent: string | null
+          behavior_name: string | null
+          consequence: string | null
+          event_date: string | null
+          event_time: string | null
+          intervention_phase: string | null
+          notes: string | null
+          replacement_behavior_name: string | null
+          routine_name: string | null
+          setting_name: string | null
+          source_table: string | null
+          staff_name: string | null
+          student_id: string | null
+        }
+        Relationships: []
+      }
       v_behavior_patterns: {
         Row: {
           avg_duration: number | null
@@ -30589,6 +30651,18 @@ export type Database = {
             referencedColumns: ["plan_item_id"]
           },
         ]
+      }
+      v_replacement_behavior_context_summary: {
+        Row: {
+          lunch_time_risk_flag: boolean | null
+          replacement_behavior_events: number | null
+          student_id: string | null
+          time_of_day_bucket: string | null
+          total_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
       }
       v_replacement_behavior_strength_summary: {
         Row: {
