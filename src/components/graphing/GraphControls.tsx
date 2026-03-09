@@ -152,6 +152,10 @@ export function GraphControls({
                 <Switch checked={overlays.changingCriterionLabels} onCheckedChange={v => updateOverlay('changingCriterionLabels', v)} className="scale-75" />
               </div>
             )}
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Staged Progression</Label>
+              <Switch checked={overlays.stagedProgression} onCheckedChange={v => updateOverlay('stagedProgression', v)} className="scale-75" />
+            </div>
           </div>
         </PopoverContent>
       </Popover>
