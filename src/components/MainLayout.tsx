@@ -153,6 +153,10 @@ export default function MainLayout() {
                   <BrainCircuit className="w-4 h-4" />
                   <span>Nova AI</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/optimization')} className="gap-1">
+                  <Target className="w-4 h-4" />
+                  <span>Optimization</span>
+                </Button>
                 {featurePerms.teacher_mode_access && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
                     <GraduationCap className="w-4 h-4" />
