@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -138,9 +139,20 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { claims, submitterInfo } = await req.json();
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !data?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const { claims: claimsInput, submitterInfo } = await req.json();
     
-    if (!claims || !Array.isArray(claims) || claims.length === 0) {
+    if (!claimsInput || !Array.isArray(claimsInput) || claimsInput.length === 0) {
       return new Response(JSON.stringify({ error: 'No claims provided' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -154,13 +166,13 @@ serve(async (req: Request) => {
       contactPhone: submitterInfo?.contactPhone || '0000000000',
     };
 
-    const fileContent = generate837P(claims, defaultSubmitter);
+    const fileContent = generate837P(claimsInput, defaultSubmitter);
     
     return new Response(JSON.stringify({
       success: true,
-      claimCount: claims.length,
+      claimCount: claimsInput.length,
       fileContent,
-      filename: `837P_${new Date().toISOString().slice(0, 10)}_${claims.length}claims.txt`,
+      filename: `837P_${new Date().toISOString().slice(0, 10)}_${claimsInput.length}claims.txt`,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
