@@ -76,8 +76,8 @@ function useParentModules() {
       .order('display_order', { ascending: true, nullsFirst: false });
 
     if (fullMods) {
-      const countMap = new Map((mods || []).map((m: any) => [m.module_id, m.goal_count]));
-      setModules(fullMods.map(m => ({ ...m, goal_count: countMap.get(m.module_id) ?? 0 })));
+      const countMap = new Map((mods || []).map((m: any) => [m.module_id, m.goal_count as number]));
+      setModules(fullMods.map(m => ({ ...m, goal_count: (countMap.get(m.module_id) as number) ?? 0 })));
     }
     setLoading(false);
   };
