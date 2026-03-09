@@ -357,11 +357,10 @@ export function useParentTrainingAdmin(agencyId?: string | null) {
   }, []);
 
   // Insurance summary
-  const buildInsuranceSummary = useCallback(async (clientId: string, startDate?: string, endDate?: string) => {
+  const buildInsuranceSummary = useCallback(async (clientId: string, caregiverId?: string) => {
     const { data, error } = await db.rpc('build_parent_training_insurance_summary', {
       p_client_id: clientId,
-      p_start_date: startDate || null,
-      p_end_date: endDate || null,
+      p_caregiver_id: caregiverId || clientId,
     });
     if (error) throw error;
     return data;
