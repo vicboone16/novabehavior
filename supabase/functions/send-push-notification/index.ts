@@ -148,6 +148,12 @@ serve(async (req) => {
   }
 
   try {
+    // Auth check - require authentication for all paths
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
@@ -162,9 +168,13 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get auth header for user context
-    const authHeader = req.headers.get("Authorization");
+
+    // Validate the JWT
+    const authClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     
     const body = await req.json();
     const { 
@@ -176,7 +186,7 @@ serve(async (req) => {
     } = body;
 
     // Handle test notification
-    if (test && authHeader) {
+    if (test) {
       const { data: { user } } = await supabase.auth.getUser(
         authHeader.replace("Bearer ", "")
       );
