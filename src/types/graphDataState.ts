@@ -78,6 +78,7 @@ export interface GraphOverlays {
   dataCompleteness: boolean;
   changingCriterion: boolean;
   changingCriterionLabels: boolean;
+  stagedProgression: boolean;
 }
 
 export const DEFAULT_OVERLAYS: GraphOverlays = {
@@ -92,4 +93,5 @@ export const DEFAULT_OVERLAYS: GraphOverlays = {
   dataCompleteness: false,
   changingCriterion: false,
   changingCriterionLabels: true,
+  stagedProgression: false,
 };
