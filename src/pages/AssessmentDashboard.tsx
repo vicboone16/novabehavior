@@ -333,6 +333,7 @@ export default function AssessmentDashboard() {
             )}
           </SelectContent>
         </Select>
+        </div>
       </div>
 
       {/* Active Observation Banner - Shows ALL active observations across all students */}
