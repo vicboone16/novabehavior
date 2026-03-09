@@ -1999,6 +1999,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_chat_logs: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          question: string | null
+          response: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          question?: string | null
+          response?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          question?: string | null
+          response?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_prompt_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      ai_quick_prompts: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          prompt: string | null
+          title: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          prompt?: string | null
+          title?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          prompt?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       ai_teacher_coach_logs: {
         Row: {
           agency_id: string | null
@@ -15492,6 +15564,27 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      nova_ai_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

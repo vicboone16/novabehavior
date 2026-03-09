@@ -37,7 +37,7 @@ import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
 import { useEntityLabel } from '@/hooks/useEntityLabel';
-import { Brain, Inbox, FlaskConical } from 'lucide-react';
+import { Brain, Inbox, FlaskConical, BrainCircuit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 import { useAdvancedDesignAccess } from '@/hooks/useAdvancedDesignAccess';
@@ -149,6 +149,10 @@ export default function MainLayout() {
                   <BookOpen className="w-4 h-4" />
                   <span>Clinical Library</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/ask-nova')} className="gap-1">
+                  <BrainCircuit className="w-4 h-4" />
+                  <span>Ask Nova AI</span>
+                </Button>
                 {featurePerms.teacher_mode_access && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
                     <GraduationCap className="w-4 h-4" />
@@ -180,6 +184,10 @@ export default function MainLayout() {
                     <DropdownMenuItem onClick={() => navigate('/clinical-library')}>
                       <BookOpen className="w-4 h-4 mr-2" />
                       Clinical Library
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/ask-nova')}>
+                      <BrainCircuit className="w-4 h-4 mr-2" />
+                      Ask Nova AI
                     </DropdownMenuItem>
                     {featurePerms.teacher_mode_access && (
                       <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>
