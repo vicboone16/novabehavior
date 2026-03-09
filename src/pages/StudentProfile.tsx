@@ -78,6 +78,9 @@ import { toast } from 'sonner';
 import { FundingModeToggle, PayersAuthorizationsTab, InsuranceStatusBanner, AuthorizationUsagePage } from '@/components/funding';
 import { useFundingMode } from '@/hooks/useFundingMode';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
+import { SkillMasteryIntelligenceCard } from '@/components/intelligence/SkillMasteryIntelligenceCard';
+import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
