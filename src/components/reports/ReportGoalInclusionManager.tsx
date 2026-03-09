@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Search, Shield, Target, Heart, BookOpen, BarChart3, FileText,
   Table2, Type, ChevronDown, ChevronUp, GripVertical, CheckCircle2,
-  Loader2, AlertCircle, Users
+  Loader2, AlertCircle, Users, Sparkles, Pencil, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,12 +12,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useReportGoalInclusions, type ReportGoalInclusion } from '@/hooks/useReportGoalInclusions';
+import { useReportNarratives, type ReportNarrative } from '@/hooks/useReportNarratives';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
