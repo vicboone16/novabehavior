@@ -15920,6 +15920,11 @@ export type Database = {
           goal_id: string | null
           goal_source: string | null
           id: string | null
+          inherited_lower_is_better: boolean | null
+          inherited_mastery_rule_type: string | null
+          inherited_mastery_threshold: number | null
+          inherited_required_consecutive_sessions: number | null
+          inherited_target_direction: string | null
           insurance_billable: boolean | null
           last_data_date: string | null
           last_mastery_check_date: string | null
@@ -15966,6 +15971,11 @@ export type Database = {
           goal_id?: string | null
           goal_source?: string | null
           id?: string | null
+          inherited_lower_is_better?: boolean | null
+          inherited_mastery_rule_type?: string | null
+          inherited_mastery_threshold?: number | null
+          inherited_required_consecutive_sessions?: number | null
+          inherited_target_direction?: string | null
           insurance_billable?: boolean | null
           last_data_date?: string | null
           last_mastery_check_date?: string | null
@@ -16012,6 +16022,11 @@ export type Database = {
           goal_id?: string | null
           goal_source?: string | null
           id?: string | null
+          inherited_lower_is_better?: boolean | null
+          inherited_mastery_rule_type?: string | null
+          inherited_mastery_threshold?: number | null
+          inherited_required_consecutive_sessions?: number | null
+          inherited_target_direction?: string | null
           insurance_billable?: boolean | null
           last_data_date?: string | null
           last_mastery_check_date?: string | null
@@ -29994,14 +30009,23 @@ export type Database = {
           baseline_value: number | null
           caregiver_id: string | null
           client_id: string | null
+          consecutive_sessions_met: number | null
           current_value: number | null
           data_points: number | null
           goal_assignment_id: string | null
+          goal_description: string | null
           goal_title: string | null
           last_data_date: string | null
+          last_mastery_check_date: string | null
+          lower_is_better: boolean | null
+          mastery_rule_type: string | null
           mastery_status: string | null
+          mastery_threshold: number | null
           measurement_method: string | null
+          module_assignment_id: string | null
           percent_to_goal: number | null
+          required_consecutive_sessions: number | null
+          target_direction: string | null
           target_value: number | null
         }
         Relationships: []
@@ -33379,29 +33403,62 @@ export type Database = {
         Args: { _agency_id: string; _user_id: string }
         Returns: boolean
       }
+      sync_all_parent_training_assignment_goal_defaults: {
+        Args: never
+        Returns: number
+      }
+      sync_parent_training_assignment_goal_defaults: {
+        Args: { p_module_assignment_id: string }
+        Returns: number
+      }
       sync_staff_assignment_to_access: {
         Args: { p_assignment_id: string }
         Returns: Json
       }
-      update_parent_training_goal_assignment: {
-        Args: {
-          p_baseline_value?: number
-          p_current_value?: number
-          p_custom_baseline_definition?: string
-          p_custom_goal_description?: string
-          p_custom_goal_title?: string
-          p_custom_mastery_criteria?: string
-          p_custom_measurement_method?: string
-          p_custom_target_definition?: string
-          p_custom_unit?: string
-          p_goal_assignment_id: string
-          p_notes?: string
-          p_save_as_library_candidate?: boolean
-          p_target_date?: string
-          p_target_value?: number
-        }
-        Returns: string
-      }
+      update_parent_training_goal_assignment:
+        | {
+            Args: {
+              p_baseline_value?: number
+              p_current_value?: number
+              p_custom_baseline_definition?: string
+              p_custom_goal_description?: string
+              p_custom_goal_title?: string
+              p_custom_mastery_criteria?: string
+              p_custom_measurement_method?: string
+              p_custom_target_definition?: string
+              p_custom_unit?: string
+              p_goal_assignment_id: string
+              p_notes?: string
+              p_save_as_library_candidate?: boolean
+              p_target_date?: string
+              p_target_value?: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_baseline_value?: number
+              p_current_value?: number
+              p_custom_baseline_definition?: string
+              p_custom_goal_description?: string
+              p_custom_goal_title?: string
+              p_custom_lower_is_better?: boolean
+              p_custom_mastery_criteria?: string
+              p_custom_mastery_rule_type?: string
+              p_custom_mastery_threshold?: number
+              p_custom_measurement_method?: string
+              p_custom_required_consecutive_sessions?: number
+              p_custom_target_definition?: string
+              p_custom_target_direction?: string
+              p_custom_unit?: string
+              p_goal_assignment_id: string
+              p_notes?: string
+              p_save_as_library_candidate?: boolean
+              p_target_date?: string
+              p_target_value?: number
+            }
+            Returns: string
+          }
       update_strategy_section_content: {
         Args: { p_content_text: string; p_id: string }
         Returns: {
