@@ -37,7 +37,7 @@ import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
 import { useEntityLabel } from '@/hooks/useEntityLabel';
-import { Brain, Inbox, FlaskConical, BrainCircuit } from 'lucide-react';
+import { Brain, Inbox, FlaskConical, BrainCircuit, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 import { useAdvancedDesignAccess } from '@/hooks/useAdvancedDesignAccess';
