@@ -31137,6 +31137,7 @@ export type Database = {
       }
       v_behavior_optimization_candidates: {
         Row: {
+          last_replacement_analysis_date: string | null
           problem_behavior_count: number | null
           problem_behavior_name: string | null
           replacement_behavior_count: number | null
@@ -31148,6 +31149,7 @@ export type Database = {
           student_id: string | null
         }
         Insert: {
+          last_replacement_analysis_date?: string | null
           problem_behavior_count?: never
           problem_behavior_name?: string | null
           replacement_behavior_count?: never
@@ -31159,6 +31161,7 @@ export type Database = {
           student_id?: string | null
         }
         Update: {
+          last_replacement_analysis_date?: string | null
           problem_behavior_count?: never
           problem_behavior_name?: string | null
           replacement_behavior_count?: never
