@@ -32,6 +32,13 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex gap-2">
+          <NovaAILauncher
+            context="report_generator"
+            actions={[
+              { label: 'Draft Report Section', prompt: 'Draft a clinical progress summary for inclusion in a report', mode: 'case_report_language' },
+              { label: 'Write Progress Summary', prompt: 'Write a comprehensive clinical progress summary', mode: 'case_report_language' },
+            ]}
+          />
           <Button variant="outline" size="sm" onClick={() => setShowBrandingEditor(true)}>
             <Palette className="w-4 h-4 mr-1" />
             Branding
