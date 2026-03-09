@@ -157,6 +157,15 @@ export default function GoalOptimization() {
     if (selectedClient) loadLatestRun();
   }, [selectedClient, loadLatestRun]);
 
+  // Load export history and goal drafts when we have a run
+  useEffect(() => {
+    if (!runSummary?.run_id) { setExportHistory([]); setGoalDrafts([]); return; }
+    db.from('v_goal_optimization_export_history').select('*').eq('run_id', runSummary.run_id).order('created_at', { ascending: false })
+      .then(({ data }: any) => setExportHistory(data || []));
+    db.from('goal_suggestion_drafts').select('*').eq('run_id', runSummary.run_id).order('created_at', { ascending: false })
+      .then(({ data }: any) => setGoalDrafts(data || []));
+  }, [runSummary?.run_id]);
+
   const filtered = domainFilter === 'all'
     ? recommendations
     : recommendations.filter(r => r.domain === domainFilter);
