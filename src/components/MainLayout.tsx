@@ -37,9 +37,10 @@ import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
 import { useEntityLabel } from '@/hooks/useEntityLabel';
-import { Brain, Inbox } from 'lucide-react';
+import { Brain, Inbox, FlaskConical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
+import { useAdvancedDesignAccess } from '@/hooks/useAdvancedDesignAccess';
 
 export default function MainLayout() {
   const location = useLocation();
