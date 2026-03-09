@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2, Archive, ArchiveRestore, Search, BookOpen, Upload } from 'lucide-react';
+import { Plus, Edit2, Archive, ArchiveRestore, Search, BookOpen, Upload, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { CurriculumSystem } from '@/types/curriculum';
+import { VBMappCurriculumBrowser } from './VBMappCurriculumBrowser';
 
 const SYSTEM_TYPES = [
   { value: 'assessment', label: 'Assessment' },
