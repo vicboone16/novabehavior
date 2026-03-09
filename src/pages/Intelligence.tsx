@@ -269,15 +269,22 @@ export default function Intelligence() {
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
+      {/* Clinical Intelligence Summary Cards */}
+      <CaseloadIntelligenceCards agencyId={effectiveAgencyId} />
+
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="caseload">Caseload</TabsTrigger>
           <TabsTrigger value="alerts">
             Alerts
             {kpis.openAlerts > 0 && (
               <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5 py-0">{kpis.openAlerts}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="clinical-alerts">
+            <Lightbulb className="w-4 h-4 mr-1" />
+            Intelligence Alerts
           </TabsTrigger>
           <TabsTrigger value="signals">
             <Radio className="w-4 h-4 mr-1" />
@@ -293,6 +300,10 @@ export default function Intelligence() {
           <TabsTrigger value="supervision">
             <Award className="w-4 h-4 mr-1" />
             Supervision
+          </TabsTrigger>
+          <TabsTrigger value="exports">
+            <FileText className="w-4 h-4 mr-1" />
+            BCBA Exports
           </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
