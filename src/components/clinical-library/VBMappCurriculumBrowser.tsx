@@ -27,6 +27,8 @@ interface Goal {
   vbmapp_level: number | null;
   younger_examples: string[] | null;
   older_examples: string[] | null;
+  benchmark_count: number;
+  is_active: boolean;
   sort_order: number;
 }
 
