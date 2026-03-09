@@ -12338,6 +12338,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          feature_key: string
+          feature_name: string
+          id: string
+          is_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          feature_key: string
+          feature_name: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          feature_key?: string
+          feature_name?: string
+          id?: string
+          is_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       feature_permissions: {
         Row: {
           activity_tracking: boolean | null
