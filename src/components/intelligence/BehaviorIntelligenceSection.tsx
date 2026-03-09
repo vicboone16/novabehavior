@@ -91,7 +91,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
       )}
 
       {/* Event Pattern Summary */}
-      {intel && intel.total_abc_events > 0 && (
+      {totalEvents > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Antecedent / Trigger Patterns */}
           <Card>
