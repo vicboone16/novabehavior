@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,15 +11,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from '@/components/ui/select';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip, TooltipContent, TooltipTrigger, TooltipProvider
+} from '@/components/ui/tooltip';
 import {
   Target, AlertTriangle, TrendingUp, ArrowRight,
   MoreHorizontal, FileText, ClipboardList, BrainCircuit,
-  BookOpen, Stethoscope, Check, Loader2, Copy
+  BookOpen, Stethoscope, Loader2, History, CheckCircle2,
+  PenSquare, Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -59,36 +60,90 @@ const DOMAIN_ICONS: Record<string, React.ReactNode> = {
   program: <TrendingUp className="w-3.5 h-3.5" />,
 };
 
+interface ExportRecord {
+  export_id: string;
+  export_target: string;
+  created_at: string;
+}
+
 export function OptimizationRecommendationCard({ rec, mode }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showDraftDialog, setShowDraftDialog] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [exportTarget, setExportTarget] = useState('');
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [draftTitle, setDraftTitle] = useState(rec.title);
   const [saving, setSaving] = useState(false);
+  const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
+  const [exportedTargets, setExportedTargets] = useState<Set<string>>(new Set());
+
+  // Load export history for this recommendation
+  useEffect(() => {
+    db.from('v_goal_optimization_export_history')
+      .select('export_id, export_target, created_at')
+      .eq('output_id', rec.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }: any) => {
+        const records = (data || []) as ExportRecord[];
+        setExportHistory(records);
+        setExportedTargets(new Set(records.map(r => r.export_target)));
+      });
+  }, [rec.id]);
 
   const severity = rec.severity || 'low';
   const domain = rec.domain || 'program';
 
-  const handleExport = async (target: string, destinationKey?: string) => {
+  const handleExportViaRPC = async (target: string) => {
     if (!user) return;
     setSaving(true);
     try {
-      await db.from('goal_optimization_exports').insert({
-        run_id: rec.run_id,
-        output_id: rec.id,
-        export_target: target,
-        destination_key: destinationKey || null,
-        exported_text: [rec.title, rec.rationale, rec.recommended_action, rec.suggested_goal_text].filter(Boolean).join('\n\n'),
-        context_json: { mode, domain: rec.domain, severity: rec.severity },
-        created_by: user.id,
-      });
-      toast.success(`Sent to ${target.replace(/_/g, ' ')}`);
-      setShowExportDialog(false);
-    } catch (e) {
+      let rpcName = '';
+      let params: any = {};
+
+      switch (target) {
+        case 'iep_prep':
+          rpcName = 'export_optimization_to_iep_prep';
+          params = { p_output_id: rec.id, p_run_id: rec.run_id, p_created_by: user.id };
+          break;
+        case 'reassessment':
+          rpcName = 'export_optimization_to_reassessment';
+          params = { p_output_id: rec.id, p_run_id: rec.run_id, p_created_by: user.id };
+          break;
+        case 'programming_dashboard':
+          rpcName = 'export_optimization_to_programming_dashboard';
+          params = { p_output_id: rec.id, p_run_id: rec.run_id, p_created_by: user.id };
+          break;
+        case 'nova_ai':
+          rpcName = 'export_optimization_to_nova_ai';
+          params = { p_output_id: rec.id, p_run_id: rec.run_id, p_created_by: user.id };
+          break;
+        default:
+          // Fallback direct insert
+          await db.from('goal_optimization_exports').insert({
+            run_id: rec.run_id, output_id: rec.id, export_target: target,
+            exported_text: [rec.title, rec.rationale, rec.recommended_action].filter(Boolean).join('\n\n'),
+            context_json: { mode, domain: rec.domain, severity: rec.severity },
+            created_by: user.id,
+          });
+          toast.success(`Sent to ${target.replace(/_/g, ' ')}`);
+          setExportedTargets(prev => new Set([...prev, target]));
+          setSaving(false);
+          return;
+      }
+
+      const { error } = await db.rpc(rpcName, params);
+      if (error) throw error;
+
+      setExportedTargets(prev => new Set([...prev, target]));
+
+      if (target === 'nova_ai') {
+        const prompt = `Analyze this optimization recommendation and provide clinical reasoning, implementation suggestions, and report-ready language:\n\nTitle: ${rec.title}\nDomain: ${rec.domain}\nSeverity: ${rec.severity}\nRationale: ${rec.rationale}\nRecommended Action: ${rec.recommended_action}${rec.suggested_goal_text ? `\nSuggested Goal: ${rec.suggested_goal_text}` : ''}`;
+        navigate(`/nova-ai?prompt=${encodeURIComponent(prompt)}&context=optimization`);
+      } else {
+        toast.success(`Sent to ${target.replace(/_/g, ' ')}`);
+      }
+    } catch (e: any) {
       console.error(e);
-      toast.error('Export failed');
+      toast.error(e.message || 'Export failed');
     } finally {
       setSaving(false);
     }
@@ -98,37 +153,34 @@ export function OptimizationRecommendationCard({ rec, mode }: Props) {
     if (!user) return;
     setSaving(true);
     try {
-      await db.from('goal_suggestion_drafts').insert({
-        student_id: rec.student_id,
-        run_id: rec.run_id,
-        output_id: rec.id,
-        draft_title: draftTitle || rec.title,
-        draft_mode: mode === 'school' ? 'iep' : 'clinical',
-        goal_text: rec.suggested_goal_text,
-        benchmark_text: rec.suggested_benchmark_text,
-        support_text: rec.suggested_support_text,
-        domain: rec.domain,
-        created_by: user.id,
+      const { error } = await db.rpc('export_optimization_to_goal_draft', {
+        p_output_id: rec.id,
+        p_run_id: rec.run_id,
+        p_draft_title: draftTitle || rec.title,
+        p_draft_mode: mode === 'school' ? 'iep' : 'clinical',
+        p_created_by: user.id,
       });
+      if (error) throw error;
+      setExportedTargets(prev => new Set([...prev, 'suggested_goal_draft']));
       toast.success('Goal draft created');
       setShowDraftDialog(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Failed to create draft');
+      toast.error(e.message || 'Failed to create draft');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAskNovaAI = () => {
-    const prompt = `Analyze this optimization recommendation and provide clinical reasoning, implementation suggestions, and report-ready language:\n\nTitle: ${rec.title}\nDomain: ${rec.domain}\nRationale: ${rec.rationale}\nRecommended Action: ${rec.recommended_action}${rec.suggested_goal_text ? `\nSuggested Goal: ${rec.suggested_goal_text}` : ''}`;
-    navigate(`/nova-ai?prompt=${encodeURIComponent(prompt)}&context=optimization`);
-  };
+  const handleAskNovaAI = () => handleExportViaRPC('nova_ai');
+
+  const formatTarget = (t: string) => t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
-    <>
+    <TooltipProvider>
       <Card className={`border ${SEVERITY_STYLES[severity]} transition-colors`}>
         <CardContent className="p-4 space-y-3">
+          {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               {DOMAIN_ICONS[domain] || <Target className="w-3.5 h-3.5" />}
@@ -137,39 +189,64 @@ export function OptimizationRecommendationCard({ rec, mode }: Props) {
             <div className="flex items-center gap-1.5 shrink-0">
               <Badge variant="outline" className="text-[10px] capitalize">{domain}</Badge>
               <Badge variant={severity === 'high' ? 'destructive' : 'secondary'} className="text-[10px] capitalize">{severity}</Badge>
+              {exportedTargets.size > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-[10px] gap-0.5 cursor-pointer" onClick={() => setShowHistoryDialog(true)}>
+                      <CheckCircle2 className="w-2.5 h-2.5" /> {exportedTargets.size}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent><p className="text-xs">Exported to {exportedTargets.size} workflow(s)</p></TooltipContent>
+                </Tooltip>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7">
                     <MoreHorizontal className="w-3.5 h-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-52">
                   {mode === 'school' && (
-                    <DropdownMenuItem onClick={() => handleExport('iep_prep')}>
+                    <DropdownMenuItem onClick={() => handleExportViaRPC('iep_prep')} disabled={saving}>
                       <FileText className="w-3.5 h-3.5 mr-2" /> Send to IEP Prep
+                      {exportedTargets.has('iep_prep') && <CheckCircle2 className="w-3 h-3 ml-auto text-primary" />}
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => handleExport('reassessment')}>
+                  <DropdownMenuItem onClick={() => handleExportViaRPC('reassessment')} disabled={saving}>
                     <ClipboardList className="w-3.5 h-3.5 mr-2" /> Send to Reassessment
+                    {exportedTargets.has('reassessment') && <CheckCircle2 className="w-3 h-3 ml-auto text-primary" />}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExport('programming_dashboard')}>
+                  <DropdownMenuItem onClick={() => handleExportViaRPC('programming_dashboard')} disabled={saving}>
                     <Stethoscope className="w-3.5 h-3.5 mr-2" /> Send to Programming
+                    {exportedTargets.has('programming_dashboard') && <CheckCircle2 className="w-3 h-3 ml-auto text-primary" />}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleAskNovaAI}>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleAskNovaAI} disabled={saving}>
                     <BrainCircuit className="w-3.5 h-3.5 mr-2" /> Ask Nova AI
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
-                    <Target className="w-3.5 h-3.5 mr-2" /> Convert to Goal Draft
+                  <DropdownMenuItem onClick={() => setShowDraftDialog(true)} disabled={saving}>
+                    <PenSquare className="w-3.5 h-3.5 mr-2" /> Convert to Goal Draft
+                    {exportedTargets.has('suggested_goal_draft') && <CheckCircle2 className="w-3 h-3 ml-auto text-primary" />}
                   </DropdownMenuItem>
+                  {exportHistory.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setShowHistoryDialog(true)}>
+                        <History className="w-3.5 h-3.5 mr-2" /> Export History ({exportHistory.length})
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
 
+          {/* Rationale */}
           {rec.rationale && (
-            <p className="text-xs text-muted-foreground">{rec.rationale}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{rec.rationale}</p>
           )}
 
+          {/* Recommended action */}
           {rec.recommended_action && (
             <div className="flex items-start gap-1.5">
               <ArrowRight className="w-3 h-3 mt-0.5 text-primary shrink-0" />
@@ -177,27 +254,48 @@ export function OptimizationRecommendationCard({ rec, mode }: Props) {
             </div>
           )}
 
+          {/* Suggested texts */}
           {rec.suggested_goal_text && (
             <div className="bg-background/60 rounded p-2">
               <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Suggested Goal</p>
               <p className="text-xs">{rec.suggested_goal_text}</p>
             </div>
           )}
+          {rec.suggested_benchmark_text && (
+            <div className="bg-background/60 rounded p-2">
+              <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Suggested Benchmark</p>
+              <p className="text-xs">{rec.suggested_benchmark_text}</p>
+            </div>
+          )}
+          {rec.suggested_support_text && (
+            <div className="bg-background/60 rounded p-2">
+              <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Suggested Support</p>
+              <p className="text-xs">{rec.suggested_support_text}</p>
+            </div>
+          )}
 
+          {/* Quick action buttons */}
           <div className="flex flex-wrap gap-1.5 pt-1">
             {mode === 'school' && (
-              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => handleExport('iep_prep')}>
+              <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => handleExportViaRPC('iep_prep')} disabled={saving}>
                 <FileText className="w-3 h-3" /> IEP Prep
+                {exportedTargets.has('iep_prep') && <CheckCircle2 className="w-2.5 h-2.5 text-primary" />}
               </Button>
             )}
-            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => handleExport('reassessment')}>
+            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => handleExportViaRPC('reassessment')} disabled={saving}>
               <ClipboardList className="w-3 h-3" /> Reassessment
+              {exportedTargets.has('reassessment') && <CheckCircle2 className="w-2.5 h-2.5 text-primary" />}
             </Button>
-            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={handleAskNovaAI}>
+            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => handleExportViaRPC('programming_dashboard')} disabled={saving}>
+              <Layers className="w-3 h-3" /> Programming
+              {exportedTargets.has('programming_dashboard') && <CheckCircle2 className="w-2.5 h-2.5 text-primary" />}
+            </Button>
+            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={handleAskNovaAI} disabled={saving}>
               <BrainCircuit className="w-3 h-3" /> Nova AI
             </Button>
-            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => setShowDraftDialog(true)}>
-              <Target className="w-3 h-3" /> Goal Draft
+            <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1" onClick={() => setShowDraftDialog(true)} disabled={saving}>
+              <PenSquare className="w-3 h-3" /> Goal Draft
+              {exportedTargets.has('suggested_goal_draft') && <CheckCircle2 className="w-2.5 h-2.5 text-primary" />}
             </Button>
           </div>
         </CardContent>
@@ -227,6 +325,12 @@ export function OptimizationRecommendationCard({ rec, mode }: Props) {
                 <p className="text-xs">{rec.suggested_benchmark_text}</p>
               </div>
             )}
+            {rec.suggested_support_text && (
+              <div className="bg-muted/50 rounded p-2">
+                <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Support</p>
+                <p className="text-xs">{rec.suggested_support_text}</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowDraftDialog(false)}>Cancel</Button>
@@ -237,6 +341,35 @@ export function OptimizationRecommendationCard({ rec, mode }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      {/* Export History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <History className="w-4 h-4" /> Export History
+            </DialogTitle>
+            <DialogDescription className="text-xs">Where this recommendation has been sent.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2 max-h-64 overflow-y-auto">
+            {exportHistory.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No exports yet</p>
+            ) : (
+              exportHistory.map(h => (
+                <div key={h.export_id} className="flex items-center justify-between p-2 rounded bg-muted/40">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-xs font-medium">{formatTarget(h.export_target)}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    {new Date(h.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </TooltipProvider>
   );
 }
