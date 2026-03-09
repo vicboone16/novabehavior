@@ -797,8 +797,18 @@ export default function StudentProfile() {
           </Collapsible>
         </TabsContent>
 
+        {/* Student Intelligence Tab */}
+        <TabsContent value="intelligence" className="space-y-4">
+          <StudentIntelligencePanel studentId={student.id} />
+        </TabsContent>
+
         {/* Programming Tab (unified Skills + Behaviors) */}
         <TabsContent value="programming" className="space-y-4">
+          {/* Intelligence cards at top of Programming */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <SkillMasteryIntelligenceCard studentId={student.id} />
+            <ReplacementBehaviorCard studentId={student.id} />
+          </div>
           <ProgrammingModule
             studentId={student.id}
             studentName={student.name}
