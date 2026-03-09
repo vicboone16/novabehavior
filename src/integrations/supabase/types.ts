@@ -15890,13 +15890,6 @@ export type Database = {
             referencedRelation: "parent_training_goal_assignments"
             referencedColumns: ["goal_assignment_id"]
           },
-          {
-            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
-            columns: ["goal_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "v_parent_training_effective_goals"
-            referencedColumns: ["goal_assignment_id"]
-          },
         ]
       }
       parent_training_goal_assignments: {
@@ -15922,10 +15915,13 @@ export type Database = {
           goal_source: string | null
           id: string | null
           insurance_billable: boolean | null
+          last_data_date: string | null
           mastery_criteria: string | null
+          mastery_status: string | null
           measurement_method: string | null
           module_assignment_id: string | null
           notes: string | null
+          percent_to_goal: number | null
           save_as_library_candidate: boolean | null
           start_date: string | null
           status: string | null
@@ -15958,10 +15954,13 @@ export type Database = {
           goal_source?: string | null
           id?: string | null
           insurance_billable?: boolean | null
+          last_data_date?: string | null
           mastery_criteria?: string | null
+          mastery_status?: string | null
           measurement_method?: string | null
           module_assignment_id?: string | null
           notes?: string | null
+          percent_to_goal?: number | null
           save_as_library_candidate?: boolean | null
           start_date?: string | null
           status?: string | null
@@ -15994,10 +15993,13 @@ export type Database = {
           goal_source?: string | null
           id?: string | null
           insurance_billable?: boolean | null
+          last_data_date?: string | null
           mastery_criteria?: string | null
+          mastery_status?: string | null
           measurement_method?: string | null
           module_assignment_id?: string | null
           notes?: string | null
+          percent_to_goal?: number | null
           save_as_library_candidate?: boolean | null
           start_date?: string | null
           status?: string | null
@@ -29847,60 +29849,33 @@ export type Database = {
       }
       v_parent_training_effective_goals: {
         Row: {
-          agency_id: string | null
-          assignment_id: string | null
-          baseline_text: string | null
           baseline_value: number | null
+          caregiver_id: string | null
           client_id: string | null
           current_value: number | null
-          custom_goal_id: string | null
-          description: string | null
+          effective_baseline_definition: string | null
+          effective_goal_description: string | null
+          effective_goal_title: string | null
+          effective_mastery_criteria: string | null
+          effective_measurement_method: string | null
+          effective_target_definition: string | null
+          effective_unit: string | null
           goal_assignment_id: string | null
           goal_id: string | null
           goal_source: string | null
-          mastery_criteria: string | null
-          measurement_method: string | null
-          module_id: string | null
-          module_title: string | null
+          insurance_billable: boolean | null
+          last_data_date: string | null
+          mastery_status: string | null
+          module_assignment_id: string | null
           notes: string | null
-          parent_user_id: string | null
+          percent_to_goal: number | null
           save_as_library_candidate: boolean | null
+          start_date: string | null
           status: string | null
           target_date: string | null
-          target_text: string | null
           target_value: number | null
-          title: string | null
-          unit: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "parent_training_assignments_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "parent_training_modules"
-            referencedColumns: ["module_id"]
-          },
-          {
-            foreignKeyName: "parent_training_assignments_module_id_fkey"
-            columns: ["module_id"]
-            isOneToOne: false
-            referencedRelation: "v_parent_training_module_goal_counts"
-            referencedColumns: ["module_id"]
-          },
-          {
-            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "parent_training_assignments"
-            referencedColumns: ["assignment_id"]
-          },
-          {
-            foreignKeyName: "parent_training_goal_assignments_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "v_parent_training_assignments_dashboard"
-            referencedColumns: ["assignment_id"]
-          },
           {
             foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
             columns: ["goal_id"]
@@ -29937,6 +29912,27 @@ export type Database = {
             referencedColumns: ["goal_id"]
           },
         ]
+      }
+      v_parent_training_goal_progress: {
+        Row: {
+          baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          current_value: number | null
+          data_points: number | null
+          goal_assignment_id: string | null
+          goal_description: string | null
+          goal_key: string | null
+          goal_title: string | null
+          insurance_billable: boolean | null
+          measurement_method: string | null
+          module_assignment_id: string | null
+          start_date: string | null
+          status: string | null
+          target_date: string | null
+          target_value: number | null
+        }
+        Relationships: []
       }
       v_parent_training_goals: {
         Row: {
@@ -30112,13 +30108,6 @@ export type Database = {
             columns: ["goal_assignment_id"]
             isOneToOne: false
             referencedRelation: "parent_training_goal_assignments"
-            referencedColumns: ["goal_assignment_id"]
-          },
-          {
-            foreignKeyName: "parent_training_data_goal_assignment_id_fkey"
-            columns: ["goal_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "v_parent_training_effective_goals"
             referencedColumns: ["goal_assignment_id"]
           },
         ]
