@@ -53,6 +53,7 @@ export default function MainLayout() {
   const { hasCIDAccess } = useClinicalIntelligenceAccess();
   const entityLabel = useEntityLabel();
   const { data: commsCounts } = usePendingChangesCount();
+  const { hasAccess: hasAdvancedDesignAccess } = useAdvancedDesignAccess();
   
   // Show "Return to Mobile" button when user opted for desktop on a mobile device
   const showMobileButton = isDeviceMobile && preference === 'desktop';
