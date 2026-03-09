@@ -185,6 +185,10 @@ export default function MainLayout() {
                       <BookOpen className="w-4 h-4 mr-2" />
                       Clinical Library
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/ask-nova')}>
+                      <BrainCircuit className="w-4 h-4 mr-2" />
+                      Ask Nova AI
+                    </DropdownMenuItem>
                     {featurePerms.teacher_mode_access && (
                       <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>
                         <GraduationCap className="w-4 h-4 mr-2" />
