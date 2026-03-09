@@ -271,69 +271,153 @@ export default function GoalOptimization() {
         </div>
       )}
 
-      {/* Recommendations */}
+      {/* Tabs: Recommendations / Goal Drafts / Export History */}
       {recommendations.length > 0 && (
-        <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recommendations</h2>
+            <TabsList>
+              <TabsTrigger value="recommendations" className="text-xs gap-1">
+                <Target className="w-3 h-3" /> Recommendations ({recommendations.length})
+              </TabsTrigger>
+              <TabsTrigger value="drafts" className="text-xs gap-1">
+                <FileText className="w-3 h-3" /> Goal Drafts ({goalDrafts.length})
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-xs gap-1">
+                <History className="w-3 h-3" /> Export History ({exportHistory.length})
+              </TabsTrigger>
+            </TabsList>
             <div className="flex items-center gap-2">
-              <Select value={domainFilter} onValueChange={setDomainFilter}>
-                <SelectTrigger className="w-36 h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Domains</SelectItem>
-                  {domains.map(d => (
-                    <SelectItem key={d} value={d!} className="capitalize">{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {activeTab === 'recommendations' && (
+                <Select value={domainFilter} onValueChange={setDomainFilter}>
+                  <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {domains.map(d => (
+                      <SelectItem key={d} value={d!} className="capitalize">{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={loadLatestRun}>
                 <RefreshCw className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
 
-          {/* Grouped by domain */}
-          {['skill', 'behavior', 'caregiver', 'program'].map(domain => {
-            const domainRecs = filtered.filter(r => r.domain === domain);
-            if (domainRecs.length === 0) return null;
-            return (
-              <div key={domain} className="space-y-2">
-                <h3 className="text-sm font-semibold capitalize flex items-center gap-1.5">
-                  {domain === 'skill' && <Target className="w-3.5 h-3.5" />}
-                  {domain === 'behavior' && <AlertTriangle className="w-3.5 h-3.5" />}
-                  {domain === 'caregiver' && <BookOpen className="w-3.5 h-3.5" />}
-                  {domain === 'program' && <TrendingUp className="w-3.5 h-3.5" />}
-                  {domain} ({domainRecs.length})
-                </h3>
+          <TabsContent value="recommendations" className="space-y-4 mt-4">
+            {['skill', 'behavior', 'caregiver', 'program'].map(domain => {
+              const domainRecs = filtered.filter(r => r.domain === domain);
+              if (domainRecs.length === 0) return null;
+              return (
+                <div key={domain} className="space-y-2">
+                  <h3 className="text-sm font-semibold capitalize flex items-center gap-1.5">
+                    {domain === 'skill' && <Target className="w-3.5 h-3.5" />}
+                    {domain === 'behavior' && <AlertTriangle className="w-3.5 h-3.5" />}
+                    {domain === 'caregiver' && <BookOpen className="w-3.5 h-3.5" />}
+                    {domain === 'program' && <TrendingUp className="w-3.5 h-3.5" />}
+                    {domain} ({domainRecs.length})
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {domainRecs.map(rec => (
+                      <OptimizationRecommendationCard key={rec.id} rec={rec as Recommendation} mode={mode} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {filtered.filter(r => !['skill', 'behavior', 'caregiver', 'program'].includes(r.domain || '')).length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Other</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {domainRecs.map(rec => (
-                    <OptimizationRecommendationCard
-                      key={rec.id}
-                      rec={rec as Recommendation}
-                      mode={mode}
-                    />
-                  ))}
+                  {filtered
+                    .filter(r => !['skill', 'behavior', 'caregiver', 'program'].includes(r.domain || ''))
+                    .map(rec => (
+                      <OptimizationRecommendationCard key={rec.id} rec={rec as Recommendation} mode={mode} />
+                    ))}
                 </div>
               </div>
-            );
-          })}
+            )}
+          </TabsContent>
 
-          {/* Ungrouped */}
-          {filtered.filter(r => !['skill', 'behavior', 'caregiver', 'program'].includes(r.domain || '')).length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold">Other</h3>
+          <TabsContent value="drafts" className="mt-4">
+            {goalDrafts.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="p-6 text-center">
+                  <FileText className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">No goal drafts created yet. Use "Convert to Goal Draft" on any recommendation.</p>
+                </CardContent>
+              </Card>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filtered
-                  .filter(r => !['skill', 'behavior', 'caregiver', 'program'].includes(r.domain || ''))
-                  .map(rec => (
-                    <OptimizationRecommendationCard key={rec.id} rec={rec as Recommendation} mode={mode} />
-                  ))}
+                {goalDrafts.map((d: any) => (
+                  <Card key={d.id}>
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold">{d.draft_title}</h4>
+                        <Badge variant="outline" className="text-[10px] capitalize">{d.draft_mode}</Badge>
+                      </div>
+                      {d.goal_text && (
+                        <div className="bg-muted/40 rounded p-2">
+                          <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Goal</p>
+                          <p className="text-xs">{d.goal_text}</p>
+                        </div>
+                      )}
+                      {d.benchmark_text && (
+                        <div className="bg-muted/40 rounded p-2">
+                          <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Benchmark</p>
+                          <p className="text-xs">{d.benchmark_text}</p>
+                        </div>
+                      )}
+                      {d.support_text && (
+                        <div className="bg-muted/40 rounded p-2">
+                          <p className="text-[10px] text-muted-foreground font-medium mb-0.5">Support</p>
+                          <p className="text-xs">{d.support_text}</p>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px] capitalize">{d.domain}</Badge>
+                        <Badge variant={d.status === 'draft' ? 'outline' : 'default'} className="text-[10px] capitalize">{d.status}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-4">
+            {exportHistory.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="p-6 text-center">
+                  <History className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">No exports yet. Use the action buttons on recommendations to send them to workflows.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {exportHistory.map((h: any) => (
+                  <Card key={h.export_id}>
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium">{h.recommendation_title || 'Recommendation'}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Sent to <span className="font-medium capitalize">{(h.export_target || '').replace(/_/g, ' ')}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] capitalize">{h.domain}</Badge>
+                        <span className="text-[10px] text-muted-foreground">{new Date(h.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Empty state */}
