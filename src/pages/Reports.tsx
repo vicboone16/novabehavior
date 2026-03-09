@@ -40,6 +40,18 @@ export default function Reports() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Goal Inclusion Report — prominent placement */}
+        <div className="bg-card border-2 border-primary/20 rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">Goal & Data Selector</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Select behavior goals, skill targets, and caregiver goals to include in reports with optional graphs, tables, and summaries
+          </p>
+          <ReportGoalInclusionManager />
+        </div>
+
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-primary" />
