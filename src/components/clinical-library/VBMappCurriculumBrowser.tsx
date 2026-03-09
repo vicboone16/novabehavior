@@ -271,7 +271,7 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
                                 onClick={() => loadBenchmarks(goal.id)}
                               >
                                 <ListChecks className="w-3.5 h-3.5" />
-                                {expandedBenchmarks.has(goal.id) ? 'Hide Benchmarks' : 'Show Benchmarks'}
+                                {expandedBenchmarks.has(goal.id) ? 'Hide Benchmarks' : `Show Benchmarks${goal.benchmark_count ? ` (${goal.benchmark_count})` : ''}`}
                               </Button>
                               {expandedBenchmarks.has(goal.id) && benchmarks[goal.id] && (
                                 <div className="mt-2 space-y-1.5">
