@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,6 +78,9 @@ import { toast } from 'sonner';
 import { FundingModeToggle, PayersAuthorizationsTab, InsuranceStatusBanner, AuthorizationUsagePage } from '@/components/funding';
 import { useFundingMode } from '@/hooks/useFundingMode';
 import { useClientProfile } from '@/hooks/useClientProfile';
+import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
+import { SkillMasteryIntelligenceCard } from '@/components/intelligence/SkillMasteryIntelligenceCard';
+import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
@@ -554,6 +557,10 @@ export default function StudentProfile() {
             <Info className="w-3 h-3" />
             Profile
           </TabsTrigger>
+          <TabsTrigger value="intelligence" className="gap-1 text-xs">
+            <Zap className="w-3 h-3" />
+            Intelligence
+          </TabsTrigger>
           <TabsTrigger value="programming" className="gap-1 text-xs">
             <Layers className="w-3 h-3" />
             Programming
@@ -790,8 +797,18 @@ export default function StudentProfile() {
           </Collapsible>
         </TabsContent>
 
+        {/* Student Intelligence Tab */}
+        <TabsContent value="intelligence" className="space-y-4">
+          <StudentIntelligencePanel studentId={student.id} />
+        </TabsContent>
+
         {/* Programming Tab (unified Skills + Behaviors) */}
         <TabsContent value="programming" className="space-y-4">
+          {/* Intelligence cards at top of Programming */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <SkillMasteryIntelligenceCard studentId={student.id} />
+            <ReplacementBehaviorCard studentId={student.id} />
+          </div>
           <ProgrammingModule
             studentId={student.id}
             studentName={student.name}

@@ -5,7 +5,7 @@ import {
   Shield, Activity, Users, Clock, Target, Heart, 
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
-  Eye, ShieldAlert, Award
+  Eye, ShieldAlert, Award, Hand, FileText, Lightbulb
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -30,6 +30,9 @@ import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SupervisionPerformanceTab } from '@/components/intelligence/SupervisionPerformanceTab';
+import { CaseloadIntelligenceCards } from '@/components/intelligence/CaseloadIntelligenceCards';
+import { ClinicalAlertsPanel } from '@/components/intelligence/ClinicalAlertsPanel';
+import { BCBAExportCenter } from '@/components/intelligence/BCBAExportCenter';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
@@ -266,15 +269,22 @@ export default function Intelligence() {
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
+      {/* Clinical Intelligence Summary Cards */}
+      <CaseloadIntelligenceCards agencyId={effectiveAgencyId} />
+
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="caseload">Caseload</TabsTrigger>
           <TabsTrigger value="alerts">
             Alerts
             {kpis.openAlerts > 0 && (
               <Badge variant="destructive" className="ml-1.5 text-[10px] px-1.5 py-0">{kpis.openAlerts}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="clinical-alerts">
+            <Lightbulb className="w-4 h-4 mr-1" />
+            Intelligence Alerts
           </TabsTrigger>
           <TabsTrigger value="signals">
             <Radio className="w-4 h-4 mr-1" />
@@ -290,6 +300,10 @@ export default function Intelligence() {
           <TabsTrigger value="supervision">
             <Award className="w-4 h-4 mr-1" />
             Supervision
+          </TabsTrigger>
+          <TabsTrigger value="exports">
+            <FileText className="w-4 h-4 mr-1" />
+            BCBA Exports
           </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
@@ -672,6 +686,16 @@ export default function Intelligence() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Clinical Intelligence Alerts Tab */}
+        <TabsContent value="clinical-alerts" className="space-y-4">
+          <ClinicalAlertsPanel agencyId={effectiveAgencyId} />
+        </TabsContent>
+
+        {/* BCBA Export Center Tab */}
+        <TabsContent value="exports" className="space-y-4">
+          <BCBAExportCenter agencyId={effectiveAgencyId} />
         </TabsContent>
       </Tabs>
     </div>

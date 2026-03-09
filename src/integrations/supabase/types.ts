@@ -22771,12 +22771,18 @@ export type Database = {
           function_hypothesis: string[] | null
           id: string
           implementation_owner: string[] | null
+          last_replacement_analysis_date: string | null
           link_status: string
           notes: string | null
           objective_id: string | null
+          problem_behavior_frequency: number | null
           problem_id: string | null
           recommendation_reason: string | null
           recommended_score: number | null
+          replacement_behavior_frequency: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
           review_due: string | null
           setting_notes: string | null
           start_date: string | null
@@ -22792,12 +22798,18 @@ export type Database = {
           function_hypothesis?: string[] | null
           id?: string
           implementation_owner?: string[] | null
+          last_replacement_analysis_date?: string | null
           link_status?: string
           notes?: string | null
           objective_id?: string | null
+          problem_behavior_frequency?: number | null
           problem_id?: string | null
           recommendation_reason?: string | null
           recommended_score?: number | null
+          replacement_behavior_frequency?: number | null
+          replacement_status?: string | null
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
           review_due?: string | null
           setting_notes?: string | null
           start_date?: string | null
@@ -22813,12 +22825,18 @@ export type Database = {
           function_hypothesis?: string[] | null
           id?: string
           implementation_owner?: string[] | null
+          last_replacement_analysis_date?: string | null
           link_status?: string
           notes?: string | null
           objective_id?: string | null
+          problem_behavior_frequency?: number | null
           problem_id?: string | null
           recommendation_reason?: string | null
           recommended_score?: number | null
+          replacement_behavior_frequency?: number | null
+          replacement_status?: string | null
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
           review_due?: string | null
           setting_notes?: string | null
           start_date?: string | null
@@ -30398,6 +30416,92 @@ export type Database = {
           },
         ]
       }
+      v_replacement_behavior_strength_summary: {
+        Row: {
+          last_replacement_analysis_date: string | null
+          plan_link_id: string | null
+          problem_behavior_count: number | null
+          problem_behavior_name: string | null
+          replacement_behavior_count: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
+          student_id: string | null
+        }
+        Insert: {
+          last_replacement_analysis_date?: string | null
+          plan_link_id?: string | null
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Update: {
+          last_replacement_analysis_date?: string | null
+          plan_link_id?: string | null
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_report_export_latest_narratives: {
         Row: {
           created_at: string | null
@@ -30783,6 +30887,28 @@ export type Database = {
           },
         ]
       }
+      v_skill_target_session_summary: {
+        Row: {
+          accuracy_percent: number | null
+          avg_duration_seconds: number | null
+          avg_latency_seconds: number | null
+          correct_trials: number | null
+          generalization_context_count: number | null
+          independent_percent: number | null
+          session_date: string | null
+          student_target_id: string | null
+          total_trials: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_trials_target_id_fkey"
+            columns: ["student_target_id"]
+            isOneToOne: false
+            referencedRelation: "targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_skill_trials_display: {
         Row: {
           benchmark_id: string | null
@@ -31072,6 +31198,125 @@ export type Database = {
           {
             foreignKeyName: "parent_summary_packets_client_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      v_student_target_mastery_engine_summary: {
+        Row: {
+          consecutive_sessions_at_criterion: number | null
+          current_accuracy: number | null
+          current_duration: number | null
+          current_latency: number | null
+          current_prompt_independence: number | null
+          date_added: string | null
+          date_mastered: string | null
+          generalization_context_count: number | null
+          generalization_required: boolean | null
+          last_mastery_check_date: string | null
+          mastery_rule_type: string | null
+          mastery_status: string | null
+          mastery_threshold: number | null
+          percent_to_mastery: number | null
+          required_consecutive_sessions: number | null
+          required_prompt_level: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_status: string | null
+          target_title: string | null
+        }
+        Insert: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
+          current_prompt_independence?: number | null
+          date_added?: string | null
+          date_mastered?: string | null
+          generalization_context_count?: number | null
+          generalization_required?: boolean | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          required_consecutive_sessions?: number | null
+          required_prompt_level?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_status?: string | null
+          target_title?: string | null
+        }
+        Update: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
+          current_prompt_independence?: number | null
+          date_added?: string | null
+          date_mastered?: string | null
+          generalization_context_count?: number | null
+          generalization_required?: boolean | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          required_consecutive_sessions?: number | null
+          required_prompt_level?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_status?: string | null
+          target_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -31745,13 +31990,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -31761,7 +31999,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -31775,8 +32013,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31789,6 +32027,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -31796,7 +32048,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -31810,8 +32062,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31823,20 +32075,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -32969,6 +33214,14 @@ export type Database = {
       }
       recalculate_parent_training_goal_mastery: {
         Args: { p_goal_assignment_id: string }
+        Returns: string
+      }
+      recalculate_replacement_behavior_strength: {
+        Args: { p_student_id: string }
+        Returns: number
+      }
+      recalculate_student_target_mastery: {
+        Args: { p_student_target_id: string }
         Returns: string
       }
       recommend_behavior_strategies: {
