@@ -193,6 +193,10 @@ export default function MainLayout() {
                       <BrainCircuit className="w-4 h-4 mr-2" />
                       Nova AI
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/optimization')}>
+                      <Target className="w-4 h-4 mr-2" />
+                      Optimization
+                    </DropdownMenuItem>
                     {featurePerms.teacher_mode_access && (
                       <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>
                         <GraduationCap className="w-4 h-4 mr-2" />
