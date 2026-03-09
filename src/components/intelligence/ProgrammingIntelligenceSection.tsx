@@ -20,7 +20,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
     currentAgency?.id || null,
     { studentId, unresolvedOnly: true }
   );
-  const { intel: behaviorIntel, contextAlerts: bxContextAlerts, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
+  const { intel: behaviorIntel, summary: bxSummary, contextAlerts: bxContextAlerts, totalEvents: bxTotalEvents, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
 
   const programmingAlerts = alerts.filter(a => 
     ['skill', 'behavior', 'programming'].includes(a.domain)
@@ -40,7 +40,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
   const needsReview = flags.filter(f => f.type === 'stalled' || f.type === 'mastery_mismatch' || f.type === 'review_needed');
   const weakReplacements = replSummaries.filter(s => s.replacement_status === 'weak');
 
-  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0 || (behaviorIntel && behaviorIntel.total_abc_events > 0);
+  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0 || bxTotalEvents > 0;
 
   if (!hasData) {
     return (
@@ -55,26 +55,31 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
 
   // Behavior-programming context insights
   const bxProgrammingInsights: Array<{ label: string; detail: string }> = [];
-  if (behaviorIntel) {
-    if (behaviorIntel.transition_risk_flag && weakReplacements.length > 0) {
-      bxProgrammingInsights.push({
-        label: 'Replacement weak during transitions',
-        detail: 'Behavior is context-specific to transitions but replacement program may not address this setting',
-      });
-    }
-    if (behaviorIntel.escape_pattern_flag) {
-      bxProgrammingInsights.push({
-        label: 'Escape-maintained behavior detected',
-        detail: 'Programming should include escape extinction or functional communication training for escape',
-      });
-    }
-    if (behaviorIntel.top_trigger_context && behaviorIntel.top_trigger_context !== 'other' && behaviorIntel.top_trigger_context_count && behaviorIntel.top_trigger_context_count > 5) {
-      bxProgrammingInsights.push({
-        label: `Behavior concentrated in ${formatTrigger(behaviorIntel.top_trigger_context)} contexts`,
-        detail: 'Intervention may need revision to target this specific context',
-      });
-    }
+  const hasTransitionRisk = behaviorIntel?.transition_risk_flag || bxSummary?.transition_risk_flag;
+  const hasEscapePattern = behaviorIntel?.escape_pattern_flag || bxSummary?.escape_pattern_flag;
+  const topTrigger = behaviorIntel?.top_trigger_context;
+  const topTriggerCount = behaviorIntel?.top_trigger_context_count;
+
+  if (hasTransitionRisk && weakReplacements.length > 0) {
+    bxProgrammingInsights.push({
+      label: 'Replacement weak during transitions',
+      detail: 'Behavior is context-specific to transitions but replacement program may not address this setting',
+    });
   }
+  if (hasEscapePattern) {
+    bxProgrammingInsights.push({
+      label: 'Escape-maintained behavior detected',
+      detail: 'Programming should include escape extinction or functional communication training for escape',
+    });
+  }
+  if (topTrigger && topTrigger !== 'other' && topTriggerCount && topTriggerCount > 5) {
+    bxProgrammingInsights.push({
+      label: `Behavior concentrated in ${formatTrigger(topTrigger)} contexts`,
+      detail: 'Intervention may need revision to target this specific context',
+    });
+  }
+
+
 
   return (
     <div className="space-y-3">

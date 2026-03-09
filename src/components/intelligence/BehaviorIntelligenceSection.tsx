@@ -31,7 +31,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
     currentAgency?.id || null,
     { domain: 'behavior', studentId, unresolvedOnly: true }
   );
-  const { intel, contextAlerts, topAntecedents, topConsequences, loading: eventLoading } = useBehaviorEventIntelligence(studentId);
+  const { intel, summary, contextAlerts, topAntecedents, topConsequences, totalEvents, loading: eventLoading } = useBehaviorEventIntelligence(studentId);
 
   const loading = replLoading || alertsLoading || eventLoading;
 
@@ -43,7 +43,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
     );
   }
 
-  if (summaries.length === 0 && alerts.length === 0 && !intel) {
+  if (summaries.length === 0 && alerts.length === 0 && !intel && !summary) {
     return (
       <Card>
         <CardContent className="py-6 text-center text-muted-foreground">
@@ -91,7 +91,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
       )}
 
       {/* Event Pattern Summary */}
-      {intel && intel.total_abc_events > 0 && (
+      {totalEvents > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Antecedent / Trigger Patterns */}
           <Card>
@@ -152,7 +152,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
       )}
 
       {/* High-Risk Times & Contexts */}
-      {intel && intel.total_abc_events > 0 && (
+      {totalEvents > 0 && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
