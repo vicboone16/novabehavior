@@ -30,6 +30,8 @@ export default function ParentTrainingAdmin() {
     fetchSessionLogs, createSessionLog,
     fetchCustomGoals, promoteGoalToLibrary,
     logGoalData, buildInsuranceSummary,
+    buildGoalSheet, buildProgressReport, buildHomeworkSummary,
+    saveReportSnapshot, fetchModuleCompletionSummary,
   } = useParentTrainingAdmin(agencyId);
 
   const isLoading = modulesLoading || adminLoading;
