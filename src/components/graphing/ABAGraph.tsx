@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, Legend, Area,
+  ReferenceLine, Legend, Area, ReferenceArea,
 } from 'recharts';
-import { Image, TrendingUp } from 'lucide-react';
+import { Image, TrendingUp, StepForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { ABATooltipContent } from './ABATooltip';
 import { splitMiddleTrendLine, type DataPoint } from '@/lib/graphCalculations';
 import type {
   ABADataPoint, GraphMetric, XAxisMode, AggregationMode, ChartView, GraphOverlays,
+  BenchmarkCriterionStep,
 } from '@/types/graphDataState';
 import { DEFAULT_OVERLAYS } from '@/types/graphDataState';
 
@@ -27,6 +28,8 @@ interface ABAGraphProps {
   title?: string;
   graphType?: 'skills' | 'behavior';
   phaseMarkers?: PhaseMarker[];
+  benchmarkSteps?: BenchmarkCriterionStep[];
+  onAdvanceBenchmark?: () => void;
 }
 
 /**
