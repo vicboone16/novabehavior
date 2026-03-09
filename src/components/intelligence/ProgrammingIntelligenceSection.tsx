@@ -1,23 +1,16 @@
-import { Layers, ArrowUpRight, AlertTriangle, Shield, Target, Lightbulb, Loader2 } from 'lucide-react';
+import { Layers, ArrowUpRight, AlertTriangle, Shield, Target, Lightbulb, Loader2, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSkillMasteryIntelligence } from '@/hooks/useSkillMasteryIntelligence';
 import { useReplacementBehaviorIntelligence, getReplacementStatusColor } from '@/hooks/useReplacementBehaviorIntelligence';
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
+import { useBehaviorEventIntelligence, formatTrigger } from '@/hooks/useBehaviorEventIntelligence';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { ClinicalIntelAlertList } from './ClinicalIntelAlertList';
 
 interface Props {
   studentId: string;
 }
-
-const programmingSuggestions = [
-  'Review mastery criteria for stalled targets',
-  'Increase generalization opportunities',
-  'Adjust prompting strategy for prompt-dependent targets',
-  'Revisit replacement behavior selection for weak programs',
-  'Schedule BCBA review for flagged programs',
-];
 
 export function ProgrammingIntelligenceSection({ studentId }: Props) {
   const { currentAgency } = useAgencyContext();
@@ -27,13 +20,13 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
     currentAgency?.id || null,
     { studentId, unresolvedOnly: true }
   );
+  const { intel: behaviorIntel, contextAlerts: bxContextAlerts, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
 
-  // Filter alerts to programming-relevant domains
   const programmingAlerts = alerts.filter(a => 
     ['skill', 'behavior', 'programming'].includes(a.domain)
   );
 
-  const loading = skillLoading || replLoading || alertsLoading;
+  const loading = skillLoading || replLoading || alertsLoading || bxLoading;
 
   if (loading) {
     return (
@@ -47,7 +40,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
   const needsReview = flags.filter(f => f.type === 'stalled' || f.type === 'mastery_mismatch' || f.type === 'review_needed');
   const weakReplacements = replSummaries.filter(s => s.replacement_status === 'weak');
 
-  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0;
+  const hasData = flags.length > 0 || replSummaries.length > 0 || programmingAlerts.length > 0 || (behaviorIntel && behaviorIntel.total_abc_events > 0);
 
   if (!hasData) {
     return (
@@ -60,6 +53,29 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
     );
   }
 
+  // Behavior-programming context insights
+  const bxProgrammingInsights: Array<{ label: string; detail: string }> = [];
+  if (behaviorIntel) {
+    if (behaviorIntel.transition_risk_flag && weakReplacements.length > 0) {
+      bxProgrammingInsights.push({
+        label: 'Replacement weak during transitions',
+        detail: 'Behavior is context-specific to transitions but replacement program may not address this setting',
+      });
+    }
+    if (behaviorIntel.escape_pattern_flag) {
+      bxProgrammingInsights.push({
+        label: 'Escape-maintained behavior detected',
+        detail: 'Programming should include escape extinction or functional communication training for escape',
+      });
+    }
+    if (behaviorIntel.top_trigger_context && behaviorIntel.top_trigger_context !== 'other' && behaviorIntel.top_trigger_context_count && behaviorIntel.top_trigger_context_count > 5) {
+      bxProgrammingInsights.push({
+        label: `Behavior concentrated in ${formatTrigger(behaviorIntel.top_trigger_context)} contexts`,
+        detail: 'Intervention may need revision to target this specific context',
+      });
+    }
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -67,7 +83,6 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
       </h3>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Programs Ready for Advancement */}
         <Card className={readyToAdvance.length > 0 ? 'border-emerald-500/30' : ''}>
           <CardContent className="py-3 px-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -80,7 +95,6 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
           </CardContent>
         </Card>
 
-        {/* Programs Needing Review */}
         <Card className={needsReview.length > 0 ? 'border-orange-500/30' : ''}>
           <CardContent className="py-3 px-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -93,7 +107,6 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
           </CardContent>
         </Card>
 
-        {/* Weak Replacements */}
         <Card className={weakReplacements.length > 0 ? 'border-destructive/30' : ''}>
           <CardContent className="py-3 px-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -106,7 +119,6 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
           </CardContent>
         </Card>
 
-        {/* Stalled */}
         <Card className={stats.stalled > 0 ? 'border-orange-500/30' : ''}>
           <CardContent className="py-3 px-4">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -119,6 +131,28 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Behavior-Programming Context Insights */}
+      {bxProgrammingInsights.length > 0 && (
+        <Card className="border-orange-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Zap className="w-4 h-4 text-orange-500" />
+              Behavior-Programming Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {bxProgrammingInsights.map((insight, i) => (
+                <div key={i} className="p-2 rounded-md border border-border/30">
+                  <p className="text-xs font-medium text-foreground">{insight.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{insight.detail}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Programming Alerts */}
       {programmingAlerts.length > 0 && (
@@ -134,7 +168,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
       )}
 
       {/* Suggested Actions */}
-      {(needsReview.length > 0 || weakReplacements.length > 0) && (
+      {(needsReview.length > 0 || weakReplacements.length > 0 || bxProgrammingInsights.length > 0) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -144,17 +178,34 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
           </CardHeader>
           <CardContent>
             <ul className="space-y-1">
-              {programmingSuggestions
-                .filter((_, i) => {
-                  if (i === 0) return stats.stalled > 0;
-                  if (i === 3) return weakReplacements.length > 0;
-                  return needsReview.length > 0;
-                })
-                .map((a, i) => (
-                  <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                    <span className="text-primary mt-0.5">→</span> {a}
+              {stats.stalled > 0 && (
+                <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-primary mt-0.5">→</span> Review mastery criteria for stalled targets
+                </li>
+              )}
+              {needsReview.length > 0 && (
+                <>
+                  <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="text-primary mt-0.5">→</span> Increase generalization opportunities
                   </li>
-                ))}
+                  <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="text-primary mt-0.5">→</span> Adjust prompting strategy for prompt-dependent targets
+                  </li>
+                </>
+              )}
+              {weakReplacements.length > 0 && (
+                <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-primary mt-0.5">→</span> Revisit replacement behavior selection for weak programs
+                </li>
+              )}
+              {bxProgrammingInsights.length > 0 && (
+                <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-primary mt-0.5">→</span> Revise intervention to target context-specific behavior patterns
+                </li>
+              )}
+              <li className="text-xs text-muted-foreground flex items-start gap-1.5">
+                <span className="text-primary mt-0.5">→</span> Schedule BCBA review for flagged programs
+              </li>
             </ul>
           </CardContent>
         </Card>

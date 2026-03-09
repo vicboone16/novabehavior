@@ -10,11 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { useBCBAExport } from '@/hooks/useBCBAExport';
 import { useSkillMasteryIntelligence } from '@/hooks/useSkillMasteryIntelligence';
 import { useReplacementBehaviorIntelligence, getReplacementStatusColor } from '@/hooks/useReplacementBehaviorIntelligence';
+import { useBehaviorEventIntelligence, formatTimeBlock, formatTrigger, formatFunction } from '@/hooks/useBehaviorEventIntelligence';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, subMonths } from 'date-fns';
 
-type ExportType = 'session' | 'skill_mastery' | 'replacement' | 'clinical_review';
+type ExportType = 'session' | 'skill_mastery' | 'replacement' | 'clinical_review' | 'fba_support';
 
 interface Props {
   agencyId: string | null;
@@ -31,6 +32,7 @@ export function BCBAExportCenter({ agencyId }: Props) {
   const { result: sessionExport, loading: sessionLoading, fetchExport } = useBCBAExport();
   const { targets: masteryTargets, loading: masteryLoading } = useSkillMasteryIntelligence(selectedStudent || null);
   const { summaries: replSummaries, loading: replLoading } = useReplacementBehaviorIntelligence(selectedStudent || null);
+  const { intel: behaviorIntel, contextAlerts, topAntecedents, topConsequences, loading: bxLoading } = useBehaviorEventIntelligence(selectedStudent || null);
 
   // Load students on mount
   useState(() => {
@@ -61,7 +63,6 @@ export function BCBAExportCenter({ agencyId }: Props) {
     if (exportType === 'session') {
       await fetchExport(selectedStudent, dateFrom, dateTo);
     }
-    // For other types, the data is already loaded via hooks
   };
 
   const handleCopyToClipboard = () => {
@@ -84,6 +85,39 @@ export function BCBAExportCenter({ agencyId }: Props) {
         `${s.problem_behavior_name || ''}\t${s.replacement_status}\t${s.problem_behavior_count}\t${s.replacement_behavior_count}\t${s.replacement_to_problem_ratio ?? 'N/A'}\t${s.replacement_strength_score ?? 0}`
       );
       text = [header, ...rows].join('\n');
+    } else if (exportType === 'fba_support' && behaviorIntel) {
+      const lines: string[] = [
+        '=== FBA Support Export ===',
+        `Total ABC Events (90 days): ${behaviorIntel.total_abc_events}`,
+        '',
+        '--- Antecedent Patterns ---',
+        ...topAntecedents.map(a => `  ${a.label}: ${a.count} events`),
+        '',
+        '--- Consequence Patterns ---',
+        ...topConsequences.map(c => `  ${c.label}: ${c.count} events`),
+        '',
+        '--- Trigger Contexts ---',
+        `  Transitions: ${behaviorIntel.transition_events}${behaviorIntel.transition_risk_flag ? ' ⚠️ HIGH RISK' : ''}`,
+        `  Unstructured: ${behaviorIntel.unstructured_events}${behaviorIntel.unstructured_risk_flag ? ' ⚠️ HIGH RISK' : ''}`,
+        `  Lunch/Recess: ${behaviorIntel.lunch_recess_events}${behaviorIntel.lunch_recess_risk_flag ? ' ⚠️ HIGH RISK' : ''}`,
+        `  Demands: ${behaviorIntel.demand_events}`,
+        `  Denial: ${behaviorIntel.denial_events}`,
+        `  Low Attention: ${behaviorIntel.low_attention_events}`,
+        '',
+        '--- Time of Day Risk ---',
+        `  Peak: ${behaviorIntel.peak_risk_time_block ? formatTimeBlock(behaviorIntel.peak_risk_time_block) : 'N/A'} (${behaviorIntel.peak_risk_time_block_count ?? 0} events)`,
+        '',
+        '--- Function Hypothesis ---',
+        `  Escape: ${behaviorIntel.escape_function_count}${behaviorIntel.escape_pattern_flag ? ' ⚠️ PRIMARY' : ''}`,
+        `  Attention: ${behaviorIntel.attention_function_count}${behaviorIntel.attention_pattern_flag ? ' ⚠️ PRIMARY' : ''}`,
+        `  Tangible: ${behaviorIntel.tangible_function_count}`,
+        `  Automatic: ${behaviorIntel.automatic_function_count}`,
+        `  Primary: ${behaviorIntel.primary_function_hypothesis ? formatFunction(behaviorIntel.primary_function_hypothesis) : 'Undetermined'}`,
+        '',
+        '--- Context Alerts ---',
+        ...contextAlerts.map(a => `  [${a.severity.toUpperCase()}] ${a.label}: ${a.detail}`),
+      ];
+      text = lines.join('\n');
     }
     if (text) {
       navigator.clipboard.writeText(text);
@@ -91,7 +125,7 @@ export function BCBAExportCenter({ agencyId }: Props) {
     }
   };
 
-  const loading = sessionLoading || masteryLoading || replLoading;
+  const loading = sessionLoading || masteryLoading || replLoading || bxLoading;
 
   return (
     <div className="space-y-4">
@@ -129,6 +163,7 @@ export function BCBAExportCenter({ agencyId }: Props) {
                   <SelectItem value="session">Session Data</SelectItem>
                   <SelectItem value="skill_mastery">Skill Mastery Summary</SelectItem>
                   <SelectItem value="replacement">Replacement Behavior</SelectItem>
+                  <SelectItem value="fba_support">FBA Support Export</SelectItem>
                   <SelectItem value="clinical_review">Clinical Review</SelectItem>
                 </SelectContent>
               </Select>
@@ -159,7 +194,89 @@ export function BCBAExportCenter({ agencyId }: Props) {
         </CardContent>
       </Card>
 
-      {/* Preview */}
+      {/* FBA Support Preview */}
+      {exportType === 'fba_support' && selectedStudent && !bxLoading && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">FBA Support Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!behaviorIntel || behaviorIntel.total_abc_events === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No ABC data available for FBA support.</p>
+            ) : (
+              <div className="space-y-3">
+                {/* Antecedent patterns */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Top Antecedent Patterns</p>
+                  {topAntecedents.map((a, i) => (
+                    <div key={i} className="flex justify-between text-xs py-0.5">
+                      <span className="text-foreground">{a.label}</span>
+                      <Badge variant="outline" className="text-[10px]">{a.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+                {/* Consequence patterns */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Top Consequence Patterns</p>
+                  {topConsequences.map((c, i) => (
+                    <div key={i} className="flex justify-between text-xs py-0.5">
+                      <span className="text-foreground">{c.label}</span>
+                      <Badge variant="outline" className="text-[10px]">{c.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+                {/* Function hypothesis */}
+                {behaviorIntel.primary_function_hypothesis && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Primary Function Hypothesis</p>
+                    <Badge className="bg-primary text-primary-foreground text-xs">
+                      {formatFunction(behaviorIntel.primary_function_hypothesis)}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground ml-2">({behaviorIntel.primary_function_count} events)</span>
+                  </div>
+                )}
+                {/* Risk contexts */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">High-Risk Contexts</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {behaviorIntel.transition_risk_flag && (
+                      <Badge variant="destructive" className="text-[10px] justify-center">Transitions ({behaviorIntel.transition_events})</Badge>
+                    )}
+                    {behaviorIntel.unstructured_risk_flag && (
+                      <Badge variant="destructive" className="text-[10px] justify-center">Unstructured ({behaviorIntel.unstructured_events})</Badge>
+                    )}
+                    {behaviorIntel.lunch_recess_risk_flag && (
+                      <Badge variant="destructive" className="text-[10px] justify-center">Lunch/Recess ({behaviorIntel.lunch_recess_events})</Badge>
+                    )}
+                    {behaviorIntel.escape_pattern_flag && (
+                      <Badge variant="destructive" className="text-[10px] justify-center">Escape ({behaviorIntel.escape_function_count})</Badge>
+                    )}
+                    {behaviorIntel.attention_pattern_flag && (
+                      <Badge variant="destructive" className="text-[10px] justify-center">Attention ({behaviorIntel.attention_function_count})</Badge>
+                    )}
+                  </div>
+                </div>
+                {/* Context alerts */}
+                {contextAlerts.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Context Alerts</p>
+                    {contextAlerts.map((a, i) => (
+                      <div key={i} className="flex items-center gap-2 py-1">
+                        <Badge className={`text-[10px] ${a.severity === 'high' ? 'bg-destructive text-destructive-foreground' : a.severity === 'moderate' ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                          {a.severity}
+                        </Badge>
+                        <span className="text-xs text-foreground">{a.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Session Export Preview */}
       {exportType === 'session' && sessionExport && (
         <Card>
           <CardHeader className="pb-2">
