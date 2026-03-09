@@ -15582,6 +15582,60 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_case_context_sessions: {
+        Row: {
+          client_id: string | null
+          context_scope: string | null
+          created_at: string | null
+          date_from: string | null
+          date_to: string | null
+          id: string
+          notes: string | null
+          selected_behavior_ids: Json | null
+          selected_goal_ids: Json | null
+          selected_graph_ids: Json | null
+          selected_report_item_ids: Json | null
+          selected_target_ids: Json | null
+          student_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_graph_ids?: Json | null
+          selected_report_item_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_graph_ids?: Json | null
+          selected_report_item_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_categories: {
         Row: {
           category_key: string | null
@@ -15726,6 +15780,162 @@ export type Database = {
           id?: string
           prompt?: string | null
           title?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_logs: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          mode_key: string
+          prompt_text: string | null
+          response_text: string | null
+          selected_context_json: Json | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          mode_key: string
+          prompt_text?: string | null
+          response_text?: string | null
+          selected_context_json?: Json | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          mode_key?: string
+          prompt_text?: string | null
+          response_text?: string | null
+          selected_context_json?: Json | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_modes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mode_key: string
+          mode_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key: string
+          mode_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key?: string
+          mode_name?: string
+        }
+        Relationships: []
+      }
+      nova_ai_reasoning_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          mode_key: string
+          template_body: string
+          template_title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key: string
+          template_body: string
+          template_title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode_key?: string
+          template_body?: string
+          template_title?: string
+        }
+        Relationships: []
+      }
+      nova_ai_replacement_behavior_library: {
+        Row: {
+          age_group: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          likely_function: string | null
+          problem_behavior: string | null
+          rationale: string | null
+          replacement_behavior: string | null
+          setting: string | null
+        }
+        Insert: {
+          age_group?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          likely_function?: string | null
+          problem_behavior?: string | null
+          rationale?: string | null
+          replacement_behavior?: string | null
+          setting?: string | null
+        }
+        Update: {
+          age_group?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          likely_function?: string | null
+          problem_behavior?: string | null
+          rationale?: string | null
+          replacement_behavior?: string | null
+          setting?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_report_presets: {
+        Row: {
+          created_at: string | null
+          default_style: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          preset_key: string
+          preset_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_style?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          preset_key: string
+          preset_name: string
+        }
+        Update: {
+          created_at?: string | null
+          default_style?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          preset_key?: string
+          preset_name?: string
         }
         Relationships: []
       }
