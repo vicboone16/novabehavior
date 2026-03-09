@@ -15830,11 +15830,14 @@ export type Database = {
           default_baseline: string | null
           default_target: string | null
           description: string | null
+          display_group: string | null
           goal_description: string | null
           goal_title: string | null
           id: string | null
           is_active: boolean | null
           is_library_candidate: boolean | null
+          library_section: string | null
+          library_subsection: string | null
           mastery_criteria: string | null
           measurement_method: string | null
           module_id: string | null
@@ -15857,11 +15860,14 @@ export type Database = {
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          display_group?: string | null
           goal_description?: string | null
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
           is_library_candidate?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
@@ -15884,11 +15890,14 @@ export type Database = {
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          display_group?: string | null
           goal_description?: string | null
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
           is_library_candidate?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           mastery_criteria?: string | null
           measurement_method?: string | null
           module_id?: string | null
@@ -16172,6 +16181,7 @@ export type Database = {
           default_baseline: string | null
           default_target: string | null
           description: string | null
+          display_group: string | null
           display_order: number | null
           goal_description: string | null
           goal_id: string
@@ -16179,6 +16189,8 @@ export type Database = {
           goal_title: string | null
           id: string | null
           is_active: boolean | null
+          library_section: string | null
+          library_subsection: string | null
           lower_is_better: boolean | null
           mastery_criteria: string | null
           mastery_rule_type: string | null
@@ -16201,6 +16213,7 @@ export type Database = {
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          display_group?: string | null
           display_order?: number | null
           goal_description?: string | null
           goal_id?: string
@@ -16208,6 +16221,8 @@ export type Database = {
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           lower_is_better?: boolean | null
           mastery_criteria?: string | null
           mastery_rule_type?: string | null
@@ -16230,6 +16245,7 @@ export type Database = {
           default_baseline?: string | null
           default_target?: string | null
           description?: string | null
+          display_group?: string | null
           display_order?: number | null
           goal_description?: string | null
           goal_id?: string
@@ -16237,6 +16253,8 @@ export type Database = {
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           lower_is_better?: boolean | null
           mastery_criteria?: string | null
           mastery_rule_type?: string | null
@@ -16454,11 +16472,14 @@ export type Database = {
           created_by: string | null
           curriculum_source: string | null
           description: string | null
+          display_group: string | null
           display_order: number | null
           est_minutes: number
           id: string | null
           independent_mode_visible: boolean | null
           is_active: boolean | null
+          library_section: string | null
+          library_subsection: string | null
           module_id: string
           module_key: string | null
           order_index: number | null
@@ -16481,11 +16502,14 @@ export type Database = {
           created_by?: string | null
           curriculum_source?: string | null
           description?: string | null
+          display_group?: string | null
           display_order?: number | null
           est_minutes?: number
           id?: string | null
           independent_mode_visible?: boolean | null
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           module_id?: string
           module_key?: string | null
           order_index?: number | null
@@ -16508,11 +16532,14 @@ export type Database = {
           created_by?: string | null
           curriculum_source?: string | null
           description?: string | null
+          display_group?: string | null
           display_order?: number | null
           est_minutes?: number
           id?: string | null
           independent_mode_visible?: boolean | null
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           module_id?: string
           module_key?: string | null
           order_index?: number | null
@@ -26438,10 +26465,13 @@ export type Database = {
           audience: string | null
           created_at: string | null
           description: string | null
+          display_group: string | null
           file_type: string | null
           file_url: string | null
           id: string
           is_active: boolean | null
+          library_section: string | null
+          library_subsection: string | null
           module_key: string
           sort_order: number | null
           title: string
@@ -26450,10 +26480,13 @@ export type Database = {
           audience?: string | null
           created_at?: string | null
           description?: string | null
+          display_group?: string | null
           file_type?: string | null
           file_url?: string | null
           id?: string
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           module_key: string
           sort_order?: number | null
           title: string
@@ -26462,10 +26495,13 @@ export type Database = {
           audience?: string | null
           created_at?: string | null
           description?: string | null
+          display_group?: string | null
           file_type?: string | null
           file_url?: string | null
           id?: string
           is_active?: boolean | null
+          library_section?: string | null
+          library_subsection?: string | null
           module_key?: string
           sort_order?: number | null
           title?: string
@@ -26596,36 +26632,48 @@ export type Database = {
       }
       training_workbook_items: {
         Row: {
+          audience: string | null
           content: Json | null
           created_at: string | null
+          display_group: string | null
           id: string
           instructions: string | null
           is_active: boolean | null
           item_type: string
+          library_section: string | null
+          library_subsection: string | null
           module_key: string
           sort_order: number | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          audience?: string | null
           content?: Json | null
           created_at?: string | null
+          display_group?: string | null
           id?: string
           instructions?: string | null
           is_active?: boolean | null
           item_type: string
+          library_section?: string | null
+          library_subsection?: string | null
           module_key: string
           sort_order?: number | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          audience?: string | null
           content?: Json | null
           created_at?: string | null
+          display_group?: string | null
           id?: string
           instructions?: string | null
           is_active?: boolean | null
           item_type?: string
+          library_section?: string | null
+          library_subsection?: string | null
           module_key?: string
           sort_order?: number | null
           title?: string
@@ -30191,6 +30239,68 @@ export type Database = {
           },
         ]
       }
+      v_parent_caregiver_library_items: {
+        Row: {
+          audience: string | null
+          created_at: string | null
+          description: string | null
+          display_group: string | null
+          id: string | null
+          is_active: boolean | null
+          item_key: string | null
+          item_type: string | null
+          library_section: string | null
+          library_subsection: string | null
+          meta_1: string | null
+          meta_2: string | null
+          meta_3: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      v_parent_caregiver_library_summary: {
+        Row: {
+          created_at: string | null
+          curriculum_source: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          item_key: string | null
+          item_type: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      v_parent_caregiver_materials: {
+        Row: {
+          audience: string | null
+          created_at: string | null
+          description: string | null
+          file_type: string | null
+          file_url: string | null
+          id: string | null
+          is_active: boolean | null
+          module_key: string | null
+          sort_order: number | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      v_parent_caregiver_module_materials: {
+        Row: {
+          description: string | null
+          file_type: string | null
+          file_url: string | null
+          material_id: string | null
+          material_source: string | null
+          material_title: string | null
+          module_id: string | null
+          module_key: string | null
+          module_title: string | null
+          sort_order: number | null
+        }
+        Relationships: []
+      }
       v_parent_training_assignments: {
         Row: {
           assigned_at: string | null
@@ -32273,13 +32383,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -32289,7 +32392,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -32303,8 +32406,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32317,6 +32420,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -32324,7 +32441,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -32338,8 +32455,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32351,20 +32468,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
