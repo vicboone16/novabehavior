@@ -176,13 +176,25 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {aiSearching ? (
+            <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+          ) : aiSearch ? (
+            <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          )}
           <Input
-            placeholder="Search goals..."
+            placeholder={aiSearch ? "AI-powered search..." : "Search goals..."}
             value={search}
             onChange={e => handleSearch(e.target.value)}
             className="pl-9"
           />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Switch checked={aiSearch} onCheckedChange={setAiSearch} className="scale-90" />
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> AI
+          </span>
         </div>
         <Select value={domainFilter} onValueChange={setDomainFilter}>
           <SelectTrigger className="w-[180px]">
