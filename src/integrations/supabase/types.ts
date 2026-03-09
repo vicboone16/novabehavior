@@ -22771,12 +22771,18 @@ export type Database = {
           function_hypothesis: string[] | null
           id: string
           implementation_owner: string[] | null
+          last_replacement_analysis_date: string | null
           link_status: string
           notes: string | null
           objective_id: string | null
+          problem_behavior_frequency: number | null
           problem_id: string | null
           recommendation_reason: string | null
           recommended_score: number | null
+          replacement_behavior_frequency: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
           review_due: string | null
           setting_notes: string | null
           start_date: string | null
@@ -22792,12 +22798,18 @@ export type Database = {
           function_hypothesis?: string[] | null
           id?: string
           implementation_owner?: string[] | null
+          last_replacement_analysis_date?: string | null
           link_status?: string
           notes?: string | null
           objective_id?: string | null
+          problem_behavior_frequency?: number | null
           problem_id?: string | null
           recommendation_reason?: string | null
           recommended_score?: number | null
+          replacement_behavior_frequency?: number | null
+          replacement_status?: string | null
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
           review_due?: string | null
           setting_notes?: string | null
           start_date?: string | null
@@ -22813,12 +22825,18 @@ export type Database = {
           function_hypothesis?: string[] | null
           id?: string
           implementation_owner?: string[] | null
+          last_replacement_analysis_date?: string | null
           link_status?: string
           notes?: string | null
           objective_id?: string | null
+          problem_behavior_frequency?: number | null
           problem_id?: string | null
           recommendation_reason?: string | null
           recommended_score?: number | null
+          replacement_behavior_frequency?: number | null
+          replacement_status?: string | null
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
           review_due?: string | null
           setting_notes?: string | null
           start_date?: string | null
