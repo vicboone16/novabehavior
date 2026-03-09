@@ -198,8 +198,8 @@ export function PTReportsTab({
 
 function MasteryBadge({ status }: { status: string | null }) {
   if (!status || status === 'not_started') return <Badge variant="outline" className="text-xs">Not Started</Badge>;
-  if (status === 'in_progress') return <Badge className="text-xs bg-amber-500/20 text-amber-700 border-amber-300">In Progress</Badge>;
-  if (status === 'mastered') return <Badge className="text-xs bg-emerald-500/20 text-emerald-700 border-emerald-300">Mastered</Badge>;
+  if (status === 'in_progress') return <Badge variant="secondary" className="text-xs">In Progress</Badge>;
+  if (status === 'mastered') return <Badge variant="default" className="text-xs">Mastered</Badge>;
   return <Badge variant="secondary" className="text-xs">{status}</Badge>;
 }
 
