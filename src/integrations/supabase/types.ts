@@ -10117,6 +10117,50 @@ export type Database = {
           },
         ]
       }
+      criteria_assignments: {
+        Row: {
+          created_at: string | null
+          criteria_template_id: string
+          criteria_type: Database["public"]["Enums"]["criteria_type"]
+          id: string
+          is_active: boolean | null
+          override_definition: Json | null
+          scope: Database["public"]["Enums"]["scope_type"]
+          scope_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_template_id: string
+          criteria_type: Database["public"]["Enums"]["criteria_type"]
+          id?: string
+          is_active?: boolean | null
+          override_definition?: Json | null
+          scope: Database["public"]["Enums"]["scope_type"]
+          scope_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria_template_id?: string
+          criteria_type?: Database["public"]["Enums"]["criteria_type"]
+          id?: string
+          is_active?: boolean | null
+          override_definition?: Json | null
+          scope?: Database["public"]["Enums"]["scope_type"]
+          scope_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "criteria_assignments_criteria_template_id_fkey"
+            columns: ["criteria_template_id"]
+            isOneToOne: false
+            referencedRelation: "criteria_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       criteria_evaluations: {
         Row: {
           client_id: string | null
@@ -25590,6 +25634,7 @@ export type Database = {
       }
       targets: {
         Row: {
+          active_benchmark_stage_id: string | null
           closed_at: string | null
           closed_reason:
             | Database["public"]["Enums"]["target_closed_reason"]
@@ -25615,6 +25660,7 @@ export type Database = {
           version_group_id: string | null
         }
         Insert: {
+          active_benchmark_stage_id?: string | null
           closed_at?: string | null
           closed_reason?:
             | Database["public"]["Enums"]["target_closed_reason"]
@@ -25640,6 +25686,7 @@ export type Database = {
           version_group_id?: string | null
         }
         Update: {
+          active_benchmark_stage_id?: string | null
           closed_at?: string | null
           closed_reason?:
             | Database["public"]["Enums"]["target_closed_reason"]
@@ -25665,6 +25712,13 @@ export type Database = {
           version_group_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "targets_active_benchmark_stage_fkey"
+            columns: ["active_benchmark_stage_id"]
+            isOneToOne: false
+            referencedRelation: "benchmark_stages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "targets_program_id_fkey"
             columns: ["program_id"]
@@ -35112,7 +35166,15 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "staff" | "viewer"
+      automation_mode: "manual" | "alert" | "queue_for_review" | "auto_advance"
+      criteria_result: "met" | "not_met" | "insufficient_data"
+      criteria_type: "mastery" | "probe" | "generalization" | "maintenance"
       data_state: "no_data" | "observed_zero" | "measured"
+      next_action_mode:
+        | "none"
+        | "next_target_in_program"
+        | "next_benchmark_stage"
+        | "next_program_in_pathway"
       note_subtype: "clinical_only" | "parent_training_only" | "combined"
       procedure_type:
         | "task_analysis"
@@ -35122,6 +35184,21 @@ export type Database = {
         | "natural_environment"
         | "other"
       program_status: "active" | "on_hold" | "completed" | "archived"
+      progression_action_type:
+        | "advance_phase"
+        | "advance_benchmark"
+        | "activate_next_target"
+        | "activate_next_program"
+        | "close_target"
+        | "notify_review"
+      queue_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "snoozed"
+        | "applied"
+        | "cancelled"
+      scope_type: "global" | "student" | "program" | "target" | "benchmark"
       service_setting: "school" | "home" | "telehealth" | "clinic" | "community"
       session_note_type:
         | "therapist"
@@ -35166,6 +35243,13 @@ export type Database = {
         | "sensory_room"
         | "outside"
         | "other"
+      trigger_next_on:
+        | "mastery_met"
+        | "probe_met"
+        | "generalization_met"
+        | "maintenance_met"
+        | "target_closed"
+        | "any_criteria_met"
       vb_mapp_fill_state: "EMPTY" | "HALF" | "FULL"
     }
     CompositeTypes: {
@@ -35295,7 +35379,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "staff", "viewer"],
+      automation_mode: ["manual", "alert", "queue_for_review", "auto_advance"],
+      criteria_result: ["met", "not_met", "insufficient_data"],
+      criteria_type: ["mastery", "probe", "generalization", "maintenance"],
       data_state: ["no_data", "observed_zero", "measured"],
+      next_action_mode: [
+        "none",
+        "next_target_in_program",
+        "next_benchmark_stage",
+        "next_program_in_pathway",
+      ],
       note_subtype: ["clinical_only", "parent_training_only", "combined"],
       procedure_type: [
         "task_analysis",
@@ -35306,6 +35399,23 @@ export const Constants = {
         "other",
       ],
       program_status: ["active", "on_hold", "completed", "archived"],
+      progression_action_type: [
+        "advance_phase",
+        "advance_benchmark",
+        "activate_next_target",
+        "activate_next_program",
+        "close_target",
+        "notify_review",
+      ],
+      queue_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "snoozed",
+        "applied",
+        "cancelled",
+      ],
+      scope_type: ["global", "student", "program", "target", "benchmark"],
       service_setting: ["school", "home", "telehealth", "clinic", "community"],
       session_note_type: [
         "therapist",
@@ -35355,6 +35465,14 @@ export const Constants = {
         "sensory_room",
         "outside",
         "other",
+      ],
+      trigger_next_on: [
+        "mastery_met",
+        "probe_met",
+        "generalization_met",
+        "maintenance_met",
+        "target_closed",
+        "any_criteria_met",
       ],
       vb_mapp_fill_state: ["EMPTY", "HALF", "FULL"],
     },
