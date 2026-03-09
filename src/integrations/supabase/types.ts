@@ -29979,30 +29979,14 @@ export type Database = {
           current_value: number | null
           data_points: number | null
           goal_assignment_id: string | null
-          goal_id: string | null
-          goal_source: string | null
           goal_title: string | null
-          insurance_billable: boolean | null
           last_data_date: string | null
           mastery_status: string | null
           measurement_method: string | null
-          module_assignment_id: string | null
-          notes: string | null
           percent_to_goal: number | null
-          start_date: string | null
-          status: string | null
-          target_date: string | null
           target_value: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "parent_training_goal_assignments_goal_id_fkey"
-            columns: ["goal_id"]
-            isOneToOne: false
-            referencedRelation: "parent_training_goals"
-            referencedColumns: ["goal_id"]
-          },
-        ]
+        Relationships: []
       }
       v_parent_training_goal_progress: {
         Row: {
