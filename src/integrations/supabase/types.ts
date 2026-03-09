@@ -15636,6 +15636,84 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_case_quick_actions: {
+        Row: {
+          action_description: string | null
+          action_key: string
+          action_title: string
+          created_at: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          domain_group: string | null
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+        }
+        Insert: {
+          action_description?: string | null
+          action_key: string
+          action_title: string
+          created_at?: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          domain_group?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+        }
+        Update: {
+          action_description?: string | null
+          action_key?: string
+          action_title?: string
+          created_at?: string | null
+          default_prompt_text?: string
+          default_reasoning_mode?: string
+          domain_group?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      nova_ai_case_reasoning_outputs: {
+        Row: {
+          client_id: string | null
+          context_session_id: string | null
+          context_snapshot_json: Json | null
+          created_at: string | null
+          id: string
+          prompt_text: string | null
+          reasoning_mode: string
+          response_text: string | null
+          student_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_session_id?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          prompt_text?: string | null
+          reasoning_mode: string
+          response_text?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_session_id?: string | null
+          context_snapshot_json?: Json | null
+          created_at?: string | null
+          id?: string
+          prompt_text?: string | null
+          reasoning_mode?: string
+          response_text?: string | null
+          student_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_categories: {
         Row: {
           category_key: string | null
@@ -31851,6 +31929,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_nova_ai_caregiver_context: {
+        Row: {
+          baseline_value: number | null
+          current_value: number | null
+          data_points: number | null
+          goal_assignment_id: string | null
+          goal_title: string | null
+          last_data_date: string | null
+          mastery_status: string | null
+          measurement_method: string | null
+          percent_to_goal: number | null
+          student_id: string | null
+          target_value: number | null
+        }
+        Relationships: []
+      }
       v_nova_ai_clinical_context_summary: {
         Row: {
           attention_pattern_flag: boolean | null
@@ -31871,6 +31965,104 @@ export type Database = {
           unstructured_time_risk_flag: boolean | null
         }
         Relationships: []
+      }
+      v_nova_ai_skill_context: {
+        Row: {
+          consecutive_sessions_at_criterion: number | null
+          current_accuracy: number | null
+          current_duration: number | null
+          current_latency: number | null
+          current_prompt_independence: number | null
+          last_mastery_check_date: string | null
+          mastery_rule_type: string | null
+          mastery_status: string | null
+          mastery_threshold: number | null
+          percent_to_mastery: number | null
+          required_consecutive_sessions: number | null
+          student_id: string | null
+          student_target_id: string | null
+        }
+        Insert: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          required_consecutive_sessions?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+        }
+        Update: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_duration?: number | null
+          current_latency?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          required_consecutive_sessions?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
       }
       v_objective_target_progression_candidates: {
         Row: {
@@ -34738,6 +34930,10 @@ export type Database = {
         Args: { p_source_object_id: string }
         Returns: string
       }
+      build_nova_ai_case_context_snapshot: {
+        Args: { p_context_session_id: string }
+        Returns: Json
+      }
       build_parent_training_goal_sheet: {
         Args: { p_caregiver_id: string; p_client_id: string }
         Returns: Json
@@ -36188,6 +36384,15 @@ export type Database = {
           match_count: number
           matched_tags: string[]
         }[]
+      }
+      seed_nova_ai_case_reasoning_output: {
+        Args: {
+          p_context_session_id: string
+          p_prompt_text: string
+          p_reasoning_mode: string
+          p_user_id: string
+        }
+        Returns: string
       }
       seed_report_goal_narratives: {
         Args: { p_created_by?: string; p_report_id: string }
