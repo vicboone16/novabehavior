@@ -307,6 +307,11 @@ export default function NovaAI() {
           <ClinicalReasoningSection />
         </TabsContent>
 
+        {/* Case-Aware Reasoning */}
+        <TabsContent value="case">
+          <CaseAwareReasoningSection />
+        </TabsContent>
+
         {/* Quick Prompts Library */}
         <TabsContent value="prompts">
           <div className="space-y-3">
