@@ -471,8 +471,8 @@ function ModuleCompletionPreview({ data }: { data: any }) {
 
 function GoalSourceBadge({ source }: { source: string | null }) {
   if (!source || source === 'library') return <Badge variant="outline" className="text-xs">Library</Badge>;
-  if (source === 'modified_library') return <Badge className="text-xs bg-blue-500/20 text-blue-700 border-blue-300">Modified</Badge>;
-  if (source === 'custom') return <Badge className="text-xs bg-purple-500/20 text-purple-700 border-purple-300">Custom</Badge>;
+  if (source === 'modified_library') return <Badge variant="secondary" className="text-xs">Modified</Badge>;
+  if (source === 'custom') return <Badge variant="default" className="text-xs">Custom</Badge>;
   return <Badge variant="secondary" className="text-xs">{source}</Badge>;
 }
 
