@@ -278,6 +278,15 @@ export default function MainLayout() {
                   </Badge>
                 )}
               </TabsTrigger>
+              {hasAdvancedDesignAccess && (
+                <TabsTrigger 
+                  value="advanced-design" 
+                  className="gap-1.5 md:gap-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-muted data-[state=active]:text-foreground data-[state=active]:font-bold"
+                >
+                  <FlaskConical className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  Design Lab
+                </TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         </div>
