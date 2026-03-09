@@ -20,7 +20,7 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
     currentAgency?.id || null,
     { studentId, unresolvedOnly: true }
   );
-  const { intel: behaviorIntel, contextAlerts: bxContextAlerts, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
+  const { intel: behaviorIntel, summary: bxSummary, contextAlerts: bxContextAlerts, totalEvents: bxTotalEvents, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
 
   const programmingAlerts = alerts.filter(a => 
     ['skill', 'behavior', 'programming'].includes(a.domain)
