@@ -697,9 +697,19 @@ export default function Intelligence() {
           )}
         </TabsContent>
 
-        {/* Clinical Intelligence Alerts Tab */}
+        {/* Clinical Intelligence Alerts Tab — unified with filtering + drilldown */}
         <TabsContent value="clinical-alerts" className="space-y-4">
           <ClinicalAlertsPanel agencyId={effectiveAgencyId} />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">
+            Priority Alerts (All Domains)
+          </h3>
+          <ClinicalIntelAlertList
+            alerts={ciIntelAlerts}
+            loading={ciIntelLoading}
+            resolveAlert={resolveCIAlert}
+            showFilters
+            emptyMessage="No active intelligence alerts right now"
+          />
         </TabsContent>
 
         {/* BCBA Export Center Tab */}

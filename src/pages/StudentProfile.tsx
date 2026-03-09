@@ -81,6 +81,9 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
 import { SkillMasteryIntelligenceCard } from '@/components/intelligence/SkillMasteryIntelligenceCard';
 import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
+import { BehaviorIntelligenceSection } from '@/components/intelligence/BehaviorIntelligenceSection';
+import { SkillIntelligenceSection } from '@/components/intelligence/SkillIntelligenceSection';
+import { ProgrammingIntelligenceSection } from '@/components/intelligence/ProgrammingIntelligenceSection';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
