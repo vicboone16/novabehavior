@@ -275,6 +275,13 @@ export function VBMappCurriculumBrowser({ onBack }: Props) {
                               </div>
                             </div>
 
+                            {aiMatchInfo[goal.id] && (
+                              <div className="pl-6 flex items-start gap-1.5">
+                                <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                                <p className="text-xs text-primary">{aiMatchInfo[goal.id]}</p>
+                              </div>
+                            )}
+
                             {goal.clinical_goal && (
                               <div className="pl-6">
                                 <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Clinical Goal</p>
