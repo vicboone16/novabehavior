@@ -33,6 +33,9 @@ import { SupervisionPerformanceTab } from '@/components/intelligence/Supervision
 import { CaseloadIntelligenceCards } from '@/components/intelligence/CaseloadIntelligenceCards';
 import { ClinicalAlertsPanel } from '@/components/intelligence/ClinicalAlertsPanel';
 import { BCBAExportCenter } from '@/components/intelligence/BCBAExportCenter';
+import { AlertRollupCards } from '@/components/intelligence/AlertRollupCards';
+import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelAlertList';
+import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
