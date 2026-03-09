@@ -371,9 +371,53 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
                   isAnimationActive={false}
                 />
               )}
+
+              {/* Changing criterion stair-step line */}
+              {overlays.changingCriterion && criterionStairData && (
+                <Line
+                  type="stepAfter"
+                  dataKey="criterion"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  dot={false}
+                  name="Criterion"
+                  connectNulls={true}
+                  isAnimationActive={false}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Benchmark step labels */}
+        {overlays.changingCriterion && overlays.changingCriterionLabels && benchmarkSteps.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {benchmarkSteps.map((step) => (
+              <Badge
+                key={step.benchmark_step_id}
+                variant={step.step_status === 'active' ? 'default' : step.step_status === 'met' ? 'secondary' : 'outline'}
+                className="text-[10px] gap-1"
+              >
+                <StepForward className="w-2.5 h-2.5" />
+                {step.phase_label || step.benchmark_label}
+                {step.criterion_value != null && `: ${step.criterion_value}${step.criterion_unit || ''}`}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Advance benchmark button */}
+        {overlays.changingCriterion && onAdvanceBenchmark && benchmarkSteps.some(s => s.is_active) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={onAdvanceBenchmark}
+          >
+            <StepForward className="w-3 h-3" /> Advance to Next Benchmark
+          </Button>
+        )}
 
         {/* Status badges */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -388,6 +432,11 @@ export function ABAGraph({ data, title = 'Data Analysis', graphType = 'skills', 
           {overlays.trendLine && trendLineValues && (
             <Badge variant="outline" className="text-xs">
               <TrendingUp className="w-3 h-3 mr-1" /> Trend active
+            </Badge>
+          )}
+          {overlays.changingCriterion && benchmarkSteps.length > 0 && (
+            <Badge variant="outline" className="text-xs text-amber-600">
+              <StepForward className="w-3 h-3 mr-1" /> Changing Criterion
             </Badge>
           )}
           {isCumulative && (
