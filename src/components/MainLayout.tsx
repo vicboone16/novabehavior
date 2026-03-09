@@ -37,7 +37,7 @@ import { useMobilePreference } from '@/hooks/useMobilePreference';
 import { useFeaturePermissions } from '@/hooks/useFeaturePermissions';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
 import { useEntityLabel } from '@/hooks/useEntityLabel';
-import { Brain, Inbox, FlaskConical, BrainCircuit } from 'lucide-react';
+import { Brain, Inbox, FlaskConical, BrainCircuit, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 import { useAdvancedDesignAccess } from '@/hooks/useAdvancedDesignAccess';
@@ -153,6 +153,10 @@ export default function MainLayout() {
                   <BrainCircuit className="w-4 h-4" />
                   <span>Nova AI</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/optimization')} className="gap-1">
+                  <Target className="w-4 h-4" />
+                  <span>Optimization</span>
+                </Button>
                 {featurePerms.teacher_mode_access && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
                     <GraduationCap className="w-4 h-4" />
@@ -188,6 +192,10 @@ export default function MainLayout() {
                     <DropdownMenuItem onClick={() => navigate('/nova-ai')}>
                       <BrainCircuit className="w-4 h-4 mr-2" />
                       Nova AI
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/optimization')}>
+                      <Target className="w-4 h-4 mr-2" />
+                      Optimization
                     </DropdownMenuItem>
                     {featurePerms.teacher_mode_access && (
                       <DropdownMenuItem onClick={() => navigate('/teacher-dashboard')}>

@@ -13108,6 +13108,294 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_optimization_exports: {
+        Row: {
+          context_json: Json | null
+          created_at: string | null
+          created_by: string | null
+          destination_key: string | null
+          export_target: string
+          exported_text: string | null
+          id: string
+          output_id: string
+          run_id: string
+        }
+        Insert: {
+          context_json?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          destination_key?: string | null
+          export_target: string
+          exported_text?: string | null
+          id?: string
+          output_id: string
+          run_id: string
+        }
+        Update: {
+          context_json?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          destination_key?: string | null
+          export_target?: string
+          exported_text?: string | null
+          id?: string
+          output_id?: string
+          run_id?: string
+        }
+        Relationships: []
+      }
+      goal_optimization_outputs: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string
+          id: string
+          profile_key: string
+          rationale: string | null
+          recommendation_key: string
+          recommended_action: string | null
+          run_id: string
+          severity: string | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain: string
+          id?: string
+          profile_key: string
+          rationale?: string | null
+          recommendation_key: string
+          recommended_action?: string | null
+          run_id: string
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string
+          id?: string
+          profile_key?: string
+          rationale?: string | null
+          recommendation_key?: string
+          recommended_action?: string | null
+          run_id?: string
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      goal_optimization_profiles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mode: string
+          profile_key: string
+          profile_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode: string
+          profile_key: string
+          profile_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mode?: string
+          profile_key?: string
+          profile_name?: string
+        }
+        Relationships: []
+      }
+      goal_optimization_recommendation_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          recommendation_key: string
+          recommendation_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recommendation_key: string
+          recommendation_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recommendation_key?: string
+          recommendation_name?: string
+        }
+        Relationships: []
+      }
+      goal_optimization_rules: {
+        Row: {
+          action_template: string
+          created_at: string | null
+          domain: string
+          id: string
+          is_active: boolean | null
+          profile_key: string
+          rationale_template: string
+          recommendation_key: string
+          rule_key: string
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          action_template: string
+          created_at?: string | null
+          domain: string
+          id?: string
+          is_active?: boolean | null
+          profile_key: string
+          rationale_template: string
+          recommendation_key: string
+          rule_key: string
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          action_template?: string
+          created_at?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean | null
+          profile_key?: string
+          rationale_template?: string
+          recommendation_key?: string
+          rule_key?: string
+          severity?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      goal_optimization_runs: {
+        Row: {
+          client_id: string | null
+          context_scope: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          profile_key: string
+          run_notes: string | null
+          selected_behavior_ids: Json | null
+          selected_goal_ids: Json | null
+          selected_program_ids: Json | null
+          selected_target_ids: Json | null
+          student_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          profile_key: string
+          run_notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_program_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          context_scope?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          profile_key?: string
+          run_notes?: string | null
+          selected_behavior_ids?: Json | null
+          selected_goal_ids?: Json | null
+          selected_program_ids?: Json | null
+          selected_target_ids?: Json | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
+      goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          created_by: string | null
+          domain: string | null
+          draft_mode: string | null
+          draft_title: string
+          goal_text: string | null
+          id: string
+          output_id: string | null
+          run_id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain?: string | null
+          draft_mode?: string | null
+          draft_title: string
+          goal_text?: string | null
+          id?: string
+          output_id?: string | null
+          run_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain?: string | null
+          draft_mode?: string | null
+          draft_title?: string
+          goal_text?: string | null
+          id?: string
+          output_id?: string | null
+          run_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       graph_annotations: {
         Row: {
           annotation_type: string
@@ -30847,6 +31135,92 @@ export type Database = {
         }
         Relationships: []
       }
+      v_behavior_optimization_candidates: {
+        Row: {
+          problem_behavior_count: number | null
+          problem_behavior_name: string | null
+          replacement_behavior_count: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+        }
+        Insert: {
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          source_object_id?: string | null
+          source_object_type?: never
+          student_id?: string | null
+        }
+        Update: {
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          source_object_id?: string | null
+          source_object_type?: never
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_behavior_patterns: {
         Row: {
           avg_duration: number | null
@@ -31212,6 +31586,19 @@ export type Database = {
           step_status?: never
           student_target_id?: string | null
           target_id?: string | null
+        }
+        Relationships: []
+      }
+      v_caregiver_optimization_candidates: {
+        Row: {
+          data_points: number | null
+          goal_title: string | null
+          last_data_date: string | null
+          mastery_status: string | null
+          percent_to_goal: number | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
         }
         Relationships: []
       }
@@ -31732,6 +32119,109 @@ export type Database = {
             referencedColumns: ["authorization_id"]
           },
         ]
+      }
+      v_goal_optimization_context: {
+        Row: {
+          attention_pattern_flag: boolean | null
+          behavior_alert_count: number | null
+          behavior_name: string | null
+          caregiver_alert_count: number | null
+          caregiver_in_progress_goals: number | null
+          caregiver_mastered_goals: number | null
+          caregiver_not_started_goals: number | null
+          caregiver_total_goals: number | null
+          client_id: string | null
+          escape_pattern_flag: boolean | null
+          last_data_submission_at: string | null
+          last_homework_submission_at: string | null
+          lunch_time_risk_flag: boolean | null
+          programming_alert_count: number | null
+          skill_alert_count: number | null
+          student_id: string | null
+          top_antecedent_pattern: string | null
+          top_consequence_pattern: string | null
+          top_time_of_day: string | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+        }
+        Relationships: []
+      }
+      v_goal_optimization_recommendations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          profile_key: string | null
+          rationale: string | null
+          recommendation_key: string | null
+          recommended_action: string | null
+          run_id: string | null
+          severity: string | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          profile_key?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          profile_key?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      v_goal_optimization_run_summary: {
+        Row: {
+          behavior_recommendation_count: number | null
+          caregiver_recommendation_count: number | null
+          client_id: string | null
+          context_scope: string | null
+          created_at: string | null
+          created_by: string | null
+          high_priority_count: number | null
+          profile_key: string | null
+          recommendation_count: number | null
+          run_id: string | null
+          skill_recommendation_count: number | null
+          student_id: string | null
+        }
+        Relationships: []
       }
       v_graph_phase_markers: {
         Row: {
@@ -33745,6 +34235,98 @@ export type Database = {
           use_edited_version?: boolean | null
         }
         Relationships: []
+      }
+      v_skill_optimization_candidates: {
+        Row: {
+          consecutive_sessions_at_criterion: number | null
+          current_accuracy: number | null
+          current_prompt_independence: number | null
+          last_mastery_check_date: string | null
+          mastery_rule_type: string | null
+          mastery_status: string | null
+          mastery_threshold: number | null
+          percent_to_mastery: number | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+        }
+        Insert: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          source_object_id?: string | null
+          source_object_type?: never
+          student_id?: string | null
+        }
+        Update: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          source_object_id?: string | null
+          source_object_type?: never
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
       }
       v_skill_prompt_distribution_v2: {
         Row: {
@@ -36838,6 +37420,15 @@ export type Database = {
           p_require_note_final_to_post_override: boolean
         }
         Returns: Json
+      }
+      run_goal_optimization_engine: {
+        Args: {
+          p_context_scope?: string
+          p_created_by?: string
+          p_profile_key: string
+          p_student_id: string
+        }
+        Returns: string
       }
       save_intervention_packet: {
         Args: {
