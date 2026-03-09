@@ -15899,15 +15899,21 @@ export type Database = {
           baseline_value: number | null
           caregiver_id: string | null
           client_id: string | null
+          consecutive_sessions_met: number | null
           created_at: string | null
           current_value: number | null
           custom_baseline_definition: string | null
           custom_goal_description: string | null
           custom_goal_id: string | null
           custom_goal_title: string | null
+          custom_lower_is_better: boolean | null
           custom_mastery_criteria: string | null
+          custom_mastery_rule_type: string | null
+          custom_mastery_threshold: number | null
           custom_measurement_method: string | null
+          custom_required_consecutive_sessions: number | null
           custom_target_definition: string | null
+          custom_target_direction: string | null
           custom_unit: string | null
           description: string | null
           goal_assignment_id: string
@@ -15916,6 +15922,7 @@ export type Database = {
           id: string | null
           insurance_billable: boolean | null
           last_data_date: string | null
+          last_mastery_check_date: string | null
           mastery_criteria: string | null
           mastery_status: string | null
           measurement_method: string | null
@@ -15938,15 +15945,21 @@ export type Database = {
           baseline_value?: number | null
           caregiver_id?: string | null
           client_id?: string | null
+          consecutive_sessions_met?: number | null
           created_at?: string | null
           current_value?: number | null
           custom_baseline_definition?: string | null
           custom_goal_description?: string | null
           custom_goal_id?: string | null
           custom_goal_title?: string | null
+          custom_lower_is_better?: boolean | null
           custom_mastery_criteria?: string | null
+          custom_mastery_rule_type?: string | null
+          custom_mastery_threshold?: number | null
           custom_measurement_method?: string | null
+          custom_required_consecutive_sessions?: number | null
           custom_target_definition?: string | null
+          custom_target_direction?: string | null
           custom_unit?: string | null
           description?: string | null
           goal_assignment_id?: string
@@ -15955,6 +15968,7 @@ export type Database = {
           id?: string | null
           insurance_billable?: boolean | null
           last_data_date?: string | null
+          last_mastery_check_date?: string | null
           mastery_criteria?: string | null
           mastery_status?: string | null
           measurement_method?: string | null
@@ -15977,15 +15991,21 @@ export type Database = {
           baseline_value?: number | null
           caregiver_id?: string | null
           client_id?: string | null
+          consecutive_sessions_met?: number | null
           created_at?: string | null
           current_value?: number | null
           custom_baseline_definition?: string | null
           custom_goal_description?: string | null
           custom_goal_id?: string | null
           custom_goal_title?: string | null
+          custom_lower_is_better?: boolean | null
           custom_mastery_criteria?: string | null
+          custom_mastery_rule_type?: string | null
+          custom_mastery_threshold?: number | null
           custom_measurement_method?: string | null
+          custom_required_consecutive_sessions?: number | null
           custom_target_definition?: string | null
+          custom_target_direction?: string | null
           custom_unit?: string | null
           description?: string | null
           goal_assignment_id?: string
@@ -15994,6 +16014,7 @@ export type Database = {
           id?: string | null
           insurance_billable?: boolean | null
           last_data_date?: string | null
+          last_mastery_check_date?: string | null
           mastery_criteria?: string | null
           mastery_status?: string | null
           measurement_method?: string | null
@@ -16050,11 +16071,16 @@ export type Database = {
           goal_title: string | null
           id: string | null
           is_active: boolean | null
+          lower_is_better: boolean | null
           mastery_criteria: string | null
+          mastery_rule_type: string | null
+          mastery_threshold: number | null
           measurement_method: string | null
           module_id: string | null
+          required_consecutive_sessions: number | null
           target: number | null
           target_definition: string | null
+          target_direction: string | null
           title: string
           unit: string | null
           updated_at: string | null
@@ -16074,11 +16100,16 @@ export type Database = {
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
+          lower_is_better?: boolean | null
           mastery_criteria?: string | null
+          mastery_rule_type?: string | null
+          mastery_threshold?: number | null
           measurement_method?: string | null
           module_id?: string | null
+          required_consecutive_sessions?: number | null
           target?: number | null
           target_definition?: string | null
+          target_direction?: string | null
           title: string
           unit?: string | null
           updated_at?: string | null
@@ -16098,11 +16129,16 @@ export type Database = {
           goal_title?: string | null
           id?: string | null
           is_active?: boolean | null
+          lower_is_better?: boolean | null
           mastery_criteria?: string | null
+          mastery_rule_type?: string | null
+          mastery_threshold?: number | null
           measurement_method?: string | null
           module_id?: string | null
+          required_consecutive_sessions?: number | null
           target?: number | null
           target_definition?: string | null
+          target_direction?: string | null
           title?: string
           unit?: string | null
           updated_at?: string | null
@@ -29859,31 +29895,6 @@ export type Database = {
           },
         ]
       }
-      v_parent_training_caregiver_goal_sheet: {
-        Row: {
-          baseline_value: number | null
-          caregiver_id: string | null
-          client_id: string | null
-          current_value: number | null
-          effective_baseline_definition: string | null
-          effective_goal_description: string | null
-          effective_goal_title: string | null
-          effective_mastery_criteria: string | null
-          effective_measurement_method: string | null
-          effective_target_definition: string | null
-          effective_unit: string | null
-          goal_assignment_id: string | null
-          goal_source: string | null
-          mastery_status: string | null
-          module_assignment_id: string | null
-          notes: string | null
-          percent_to_goal: number | null
-          status: string | null
-          target_date: string | null
-          target_value: number | null
-        }
-        Relationships: []
-      }
       v_parent_training_custom_goals: {
         Row: {
           add_to_library: boolean | null
@@ -29910,19 +29921,26 @@ export type Database = {
           baseline_value: number | null
           caregiver_id: string | null
           client_id: string | null
+          consecutive_sessions_met: number | null
           current_value: number | null
           effective_baseline_definition: string | null
           effective_goal_description: string | null
           effective_goal_title: string | null
+          effective_lower_is_better: boolean | null
           effective_mastery_criteria: string | null
+          effective_mastery_rule_type: string | null
+          effective_mastery_threshold: number | null
           effective_measurement_method: string | null
+          effective_required_consecutive_sessions: number | null
           effective_target_definition: string | null
+          effective_target_direction: string | null
           effective_unit: string | null
           goal_assignment_id: string | null
           goal_id: string | null
           goal_source: string | null
           insurance_billable: boolean | null
           last_data_date: string | null
+          last_mastery_check_date: string | null
           mastery_status: string | null
           module_assignment_id: string | null
           notes: string | null
@@ -31602,13 +31620,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -31618,7 +31629,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -31632,8 +31643,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31646,6 +31657,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -31653,7 +31678,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -31667,8 +31692,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -31680,20 +31705,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -32819,6 +32837,10 @@ export type Database = {
           score: number
           setting_match: number
         }[]
+      }
+      recalculate_parent_training_goal_mastery: {
+        Args: { p_goal_assignment_id: string }
+        Returns: string
       }
       recommend_behavior_strategies: {
         Args: { p_environment?: string; p_function: string }
