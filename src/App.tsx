@@ -76,6 +76,7 @@ import BehaviorRecommendations from "./pages/BehaviorRecommendations";
 import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
 import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 import AskNovaAI from "./pages/AskNovaAI";
+import NovaAI from "./pages/NovaAI";
 
 const queryClient = new QueryClient();
 
