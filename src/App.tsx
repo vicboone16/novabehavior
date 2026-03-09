@@ -74,6 +74,7 @@ import SDCCertificationTracker from "./pages/SDCCertificationTracker";
 import BehaviorStrategies from "./pages/BehaviorStrategies";
 import BehaviorRecommendations from "./pages/BehaviorRecommendations";
 import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
+import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 
 const queryClient = new QueryClient();
 
@@ -386,6 +387,7 @@ const App = () => {
               <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
               <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
+              <Route path="/advanced-design" element={<AdvancedDesignAnalysis />} />
             </Route>
             <Route path="/behavior-library" element={
               <ProtectedRoute>

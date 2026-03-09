@@ -28159,6 +28159,39 @@ export type Database = {
           },
         ]
       }
+      user_feature_access: {
+        Row: {
+          access_level: string | null
+          created_at: string | null
+          feature_key: string
+          granted_by: string | null
+          id: string
+          updated_at: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_level?: string | null
+          created_at?: string | null
+          feature_key: string
+          granted_by?: string | null
+          id?: string
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_level?: string | null
+          created_at?: string | null
+          feature_key?: string
+          granted_by?: string | null
+          id?: string
+          updated_at?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_feature_flags: {
         Row: {
           auto_narratives_enabled: boolean | null
@@ -29635,6 +29668,18 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      v_advanced_design_analysis_access: {
+        Row: {
+          access_level: string | null
+          feature_key: string | null
+          feature_name: string | null
+          has_access: boolean | null
+          is_enabled: boolean | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       v_agency_forecast_summary: {
         Row: {
