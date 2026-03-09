@@ -5,7 +5,7 @@ import {
   Shield, Activity, Users, Clock, Target, Heart, 
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
-  Eye, ShieldAlert, Award
+  Eye, ShieldAlert, Award, Hand, FileText, Lightbulb
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -30,6 +30,9 @@ import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SupervisionPerformanceTab } from '@/components/intelligence/SupervisionPerformanceTab';
+import { CaseloadIntelligenceCards } from '@/components/intelligence/CaseloadIntelligenceCards';
+import { ClinicalAlertsPanel } from '@/components/intelligence/ClinicalAlertsPanel';
+import { BCBAExportCenter } from '@/components/intelligence/BCBAExportCenter';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
