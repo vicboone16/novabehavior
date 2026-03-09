@@ -81,6 +81,9 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
 import { SkillMasteryIntelligenceCard } from '@/components/intelligence/SkillMasteryIntelligenceCard';
 import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
+import { BehaviorIntelligenceSection } from '@/components/intelligence/BehaviorIntelligenceSection';
+import { SkillIntelligenceSection } from '@/components/intelligence/SkillIntelligenceSection';
+import { ProgrammingIntelligenceSection } from '@/components/intelligence/ProgrammingIntelligenceSection';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
@@ -800,6 +803,10 @@ export default function StudentProfile() {
         {/* Student Intelligence Tab */}
         <TabsContent value="intelligence" className="space-y-4">
           <StudentIntelligencePanel studentId={student.id} />
+          {/* Behavior Intelligence Section */}
+          <BehaviorIntelligenceSection studentId={student.id} />
+          {/* Skill Intelligence Section */}
+          <SkillIntelligenceSection studentId={student.id} />
         </TabsContent>
 
         {/* Programming Tab (unified Skills + Behaviors) */}
@@ -809,6 +816,8 @@ export default function StudentProfile() {
             <SkillMasteryIntelligenceCard studentId={student.id} />
             <ReplacementBehaviorCard studentId={student.id} />
           </div>
+          {/* Programming Intelligence Section */}
+          <ProgrammingIntelligenceSection studentId={student.id} />
           <ProgrammingModule
             studentId={student.id}
             studentName={student.name}

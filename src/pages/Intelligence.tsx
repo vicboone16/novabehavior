@@ -33,6 +33,9 @@ import { SupervisionPerformanceTab } from '@/components/intelligence/Supervision
 import { CaseloadIntelligenceCards } from '@/components/intelligence/CaseloadIntelligenceCards';
 import { ClinicalAlertsPanel } from '@/components/intelligence/ClinicalAlertsPanel';
 import { BCBAExportCenter } from '@/components/intelligence/BCBAExportCenter';
+import { AlertRollupCards } from '@/components/intelligence/AlertRollupCards';
+import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelAlertList';
+import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
@@ -122,6 +125,9 @@ export default function Intelligence() {
   const { alerts, loading: alertsLoading, resolveAlert } = useCIAlertFeed(effectiveAgencyId);
   const { recs, loading: recsLoading } = useCIInterventionRecs(effectiveAgencyId);
   const { authorizations, forecasts, loading: authLoading, kpis: authKpis } = useClinicalTracking(effectiveAgencyId);
+  
+  // Unified CI alerts for priority alerts tab
+  const { alerts: ciIntelAlerts, loading: ciIntelLoading, resolveAlert: resolveCIAlert } = useClinicalIntelligenceAlerts(effectiveAgencyId);
   
   // Compute supervision off-track from alerts feed
   const supervisionOffTrackCount = useMemo(() => {
@@ -269,7 +275,10 @@ export default function Intelligence() {
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
-      {/* Clinical Intelligence Summary Cards */}
+      {/* Clinical Intelligence Alert Rollup Cards */}
+      <AlertRollupCards agencyId={effectiveAgencyId} />
+
+      {/* Skill/Replacement Intelligence Summary Cards */}
       <CaseloadIntelligenceCards agencyId={effectiveAgencyId} />
 
       {/* Main Tabs */}
@@ -688,9 +697,19 @@ export default function Intelligence() {
           )}
         </TabsContent>
 
-        {/* Clinical Intelligence Alerts Tab */}
+        {/* Clinical Intelligence Alerts Tab — unified with filtering + drilldown */}
         <TabsContent value="clinical-alerts" className="space-y-4">
           <ClinicalAlertsPanel agencyId={effectiveAgencyId} />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mt-4">
+            Priority Alerts (All Domains)
+          </h3>
+          <ClinicalIntelAlertList
+            alerts={ciIntelAlerts}
+            loading={ciIntelLoading}
+            resolveAlert={resolveCIAlert}
+            showFilters
+            emptyMessage="No active intelligence alerts right now"
+          />
         </TabsContent>
 
         {/* BCBA Export Center Tab */}

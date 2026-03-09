@@ -8747,6 +8747,63 @@ export type Database = {
           },
         ]
       }
+      clinical_intelligence_alerts: {
+        Row: {
+          alert_type: string
+          client_id: string | null
+          created_at: string | null
+          detected_at: string | null
+          domain: string
+          id: string
+          is_active: boolean | null
+          is_student_connect_visible: boolean | null
+          recommended_action: string | null
+          resolved_at: string | null
+          severity: string | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          client_id?: string | null
+          created_at?: string | null
+          detected_at?: string | null
+          domain: string
+          id?: string
+          is_active?: boolean | null
+          is_student_connect_visible?: boolean | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          client_id?: string | null
+          created_at?: string | null
+          detected_at?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean | null
+          is_student_connect_visible?: boolean | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       clinical_schedule_events: {
         Row: {
           agency_id: string
@@ -29472,6 +29529,24 @@ export type Database = {
           },
         ]
       }
+      v_clinical_intelligence_alerts: {
+        Row: {
+          alert_type: string | null
+          client_id: string | null
+          detected_at: string | null
+          domain: string | null
+          is_active: boolean | null
+          is_student_connect_visible: boolean | null
+          recommended_action: string | null
+          severity: string | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+          summary: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_clinical_schedule_events_norm: {
         Row: {
           agency_id: string | null
@@ -33741,6 +33816,7 @@ export type Database = {
         Args: { p_target_id: string }
         Returns: string
       }
+      snapshot_clinical_intelligence_alerts: { Args: never; Returns: number }
       start_client_intervention_run: {
         Args: {
           p_agency_id: string
