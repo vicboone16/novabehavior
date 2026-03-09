@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import IEPLibrary from './IEPLibrary';
@@ -9,10 +9,12 @@ import { CurriculumSystemManager } from '@/components/clinical-library/Curriculu
 import { DomainManager } from '@/components/clinical-library/DomainManager';
 import { GoalTemplateManager } from '@/components/clinical-library/GoalTemplateManager';
 import { CurriculumItemManager } from '@/components/clinical-library/CurriculumItemManager';
+import { CaregiverCurriculumLibrary } from '@/components/clinical-library/CaregiverCurriculumLibrary';
 
 const TABS = [
   { value: 'iep', label: 'IEP Supports', icon: BookOpen },
   { value: 'behavior', label: 'Behavior Bank', icon: Activity },
+  { value: 'caregiver', label: 'Caregiver Curriculum', icon: Heart },
   { value: 'curricula', label: 'Curricula', icon: Settings2 },
   { value: 'domains', label: 'Domains', icon: Layers },
   { value: 'items', label: 'Skill Items', icon: FileText },
@@ -36,7 +38,7 @@ export default function ClinicalLibrary() {
               </Button>
               <div>
                 <h1 className="text-lg font-bold text-foreground">Clinical Library</h1>
-                <p className="text-xs text-muted-foreground">IEP supports, behavior interventions, curricula & skill building</p>
+                <p className="text-xs text-muted-foreground">IEP supports, behavior interventions, caregiver curriculum & skill building</p>
               </div>
             </div>
           </div>
@@ -65,6 +67,7 @@ export default function ClinicalLibrary() {
       <div className="container py-6">
         {activeTab === 'iep' && <IEPLibrary />}
         {activeTab === 'behavior' && <BehaviorLibrary embedded />}
+        {activeTab === 'caregiver' && <CaregiverCurriculumLibrary />}
         {activeTab === 'curricula' && <CurriculumSystemManager />}
         {activeTab === 'domains' && <DomainManager />}
         {activeTab === 'items' && <CurriculumItemManager />}
