@@ -350,6 +350,16 @@ function ModulesTab({
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
+                          <Button variant="default" size="sm" className="h-7 gap-1 text-xs" onClick={() => onAssign(mod)}>
+                            <UserPlus className="w-3 h-3" /> Assign
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Assign module to caregiver</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onToggleActive(mod)}>
                             {mod.is_active !== false ? <ToggleRight className="w-4 h-4 text-primary" /> : <ToggleLeft className="w-4 h-4 text-muted-foreground" />}
                           </Button>
