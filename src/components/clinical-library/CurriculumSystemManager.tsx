@@ -160,6 +160,12 @@ export function CurriculumSystemManager() {
     }
   };
 
+  const isVBMapp = (sys: CurriculumSystem) => sys.name.toLowerCase().includes('vb-mapp') || sys.name.toLowerCase().includes('vbmapp');
+
+  if (browsing === 'vbmapp') {
+    return <VBMappCurriculumBrowser onBack={() => setBrowsing(null)} />;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
