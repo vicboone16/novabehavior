@@ -15567,6 +15567,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_behavior_definition_templates: {
+        Row: {
+          id: string
+          template: string | null
+        }
+        Insert: {
+          id?: string
+          template?: string | null
+        }
+        Update: {
+          id?: string
+          template?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_categories: {
+        Row: {
+          category_key: string | null
+          description: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          category_key?: string | null
+          description?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          category_key?: string | null
+          description?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       nova_ai_conversations: {
         Row: {
           created_at: string | null
@@ -15585,6 +15621,135 @@ export type Database = {
           id?: string
           title?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_fba_templates: {
+        Row: {
+          id: string
+          template: string | null
+        }
+        Insert: {
+          id?: string
+          template?: string | null
+        }
+        Update: {
+          id?: string
+          template?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_goal_templates: {
+        Row: {
+          goal_type: string | null
+          id: string
+          template: string | null
+        }
+        Insert: {
+          goal_type?: string | null
+          id?: string
+          template?: string | null
+        }
+        Update: {
+          goal_type?: string | null
+          id?: string
+          template?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_intervention_library: {
+        Row: {
+          behavior_function: string | null
+          description: string | null
+          id: string
+          setting: string | null
+          strategy_name: string | null
+        }
+        Insert: {
+          behavior_function?: string | null
+          description?: string | null
+          id?: string
+          setting?: string | null
+          strategy_name?: string | null
+        }
+        Update: {
+          behavior_function?: string | null
+          description?: string | null
+          id?: string
+          setting?: string | null
+          strategy_name?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_messages: {
+        Row: {
+          category: string | null
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          role: string | null
+        }
+        Insert: {
+          category?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          role?: string | null
+        }
+        Update: {
+          category?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_quick_prompts: {
+        Row: {
+          category: string | null
+          id: string
+          prompt: string | null
+          title: string | null
+        }
+        Insert: {
+          category?: string | null
+          id?: string
+          prompt?: string | null
+          title?: string | null
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          prompt?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      nova_ai_research_sources: {
+        Row: {
+          citation: string | null
+          id: string
+          summary: string | null
+          topic: string | null
+          year: number | null
+        }
+        Insert: {
+          citation?: string | null
+          id?: string
+          summary?: string | null
+          topic?: string | null
+          year?: number | null
+        }
+        Update: {
+          citation?: string | null
+          id?: string
+          summary?: string | null
+          topic?: string | null
+          year?: number | null
         }
         Relationships: []
       }

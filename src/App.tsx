@@ -76,6 +76,7 @@ import BehaviorRecommendations from "./pages/BehaviorRecommendations";
 import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
 import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 import AskNovaAI from "./pages/AskNovaAI";
+import NovaAI from "./pages/NovaAI";
 
 const queryClient = new QueryClient();
 
@@ -390,6 +391,7 @@ const App = () => {
               <Route path="/academy/lab/:gameId" element={<BehaviorLabPlayer />} />
               <Route path="/advanced-design" element={<AdvancedDesignAnalysis />} />
               <Route path="/ask-nova" element={<AskNovaAI />} />
+              <Route path="/nova-ai" element={<NovaAI />} />
             </Route>
             <Route path="/behavior-library" element={
               <ProtectedRoute>
