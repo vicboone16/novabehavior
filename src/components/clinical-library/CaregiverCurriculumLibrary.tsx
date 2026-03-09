@@ -3,7 +3,7 @@ import {
   Search, BookOpen, Target, Star, Plus, Edit2, CheckCircle2,
   ArrowUpCircle, Filter, FileText, Eye, EyeOff, ToggleLeft, ToggleRight,
   ChevronDown, Clock, TrendingUp, TrendingDown, Minus, Activity, Hash,
-  Percent, BarChart3, Copy, XCircle, Sparkles
+  Percent, BarChart3, Copy, XCircle, Sparkles, UserPlus, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -231,11 +231,12 @@ function SmartGoalEngineBadges({ goal }: { goal: PTGoal }) {
 /*  Modules Tab                                                        */
 /* ------------------------------------------------------------------ */
 function ModulesTab({
-  modules, loading, onEdit, onToggleActive
+  modules, loading, onEdit, onToggleActive, onAssign
 }: {
   modules: PTModule[]; loading: boolean;
   onEdit: (m: PTModule) => void;
   onToggleActive: (m: PTModule) => void;
+  onAssign: (m: PTModule) => void;
 }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -346,6 +347,16 @@ function ModulesTab({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="default" size="sm" className="h-7 gap-1 text-xs" onClick={() => onAssign(mod)}>
+                            <UserPlus className="w-3 h-3" /> Assign
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p className="text-xs">Assign module to caregiver</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -887,6 +898,134 @@ function GoalEditDialog({ goal, modules, open, onClose, onSave, isNew }: {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Module Assign Dialog                                               */
+/* ------------------------------------------------------------------ */
+function ModuleAssignDialog({ module, open, onClose }: {
+  module: PTModule | null; open: boolean; onClose: () => void;
+}) {
+  const [clientId, setClientId] = useState('');
+  const [caregiverId, setCaregiverId] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [clients, setClients] = useState<Array<{ client_id: string; first_name: string; last_name: string }>>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setClientId(''); setCaregiverId(''); setDueDate(''); setNotes('');
+      setSuccess(false);
+      // Load clients
+      setLoadingClients(true);
+      db.from('clients').select('client_id, first_name, last_name').eq('status', 'active').order('last_name').then(({ data }: any) => {
+        setClients(data || []);
+        setLoadingClients(false);
+      });
+    }
+  }, [open]);
+
+  const handleAssign = async () => {
+    if (!module || !clientId) return;
+    setSaving(true);
+    try {
+      // Use the RPC with the most flexible signature
+      const { error } = await db.rpc('assign_parent_training_module', {
+        p_module_id: module.module_id,
+        p_client_id: clientId,
+        p_assigned_by: (await supabase.auth.getUser()).data.user?.id || '',
+      });
+      if (error) throw error;
+      setSuccess(true);
+      toast.success('Module assigned successfully');
+    } catch (err: any) {
+      toast.error('Failed to assign module: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-primary" />
+            Assign Module
+          </DialogTitle>
+          <DialogDescription>
+            {module ? `Assign "${module.title}" to a caregiver/client` : 'Assign a parent training module'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {success ? (
+          <div className="py-6 text-center space-y-3">
+            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
+            <p className="text-sm font-medium text-foreground">Module assigned successfully</p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4 py-2">
+              {module && (
+                <div className="p-3 rounded-md bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">{module.title}</span>
+                  </div>
+                  {module.goal_count != null && (
+                    <span className="text-[10px] text-muted-foreground ml-6">{module.goal_count} goals • {module.est_minutes || '–'}min</span>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <Label>Client / Student *</Label>
+                <Select value={clientId || '_none'} onValueChange={v => setClientId(v === '_none' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder={loadingClients ? 'Loading…' : 'Select client'} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Select client…</SelectItem>
+                    {clients.map(c => (
+                      <SelectItem key={c.client_id} value={c.client_id}>
+                        {c.last_name}, {c.first_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Caregiver ID (optional)</Label>
+                <Input value={caregiverId} onChange={e => setCaregiverId(e.target.value)} placeholder="Leave blank if single caregiver" />
+              </div>
+
+              <div>
+                <Label>Due Date (optional)</Label>
+                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+              </div>
+
+              <div>
+                <Label>Notes (optional)</Label>
+                <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Assignment notes…" />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleAssign} disabled={saving || !clientId} className="gap-1">
+                {saving ? 'Assigning…' : <><UserPlus className="w-3.5 h-3.5" /> Assign Module</>}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 export function CaregiverCurriculumLibrary() {
@@ -901,6 +1040,8 @@ export function CaregiverCurriculumLibrary() {
   const [editGoal, setEditGoal] = useState<PTGoal | null>(null);
   const [showGoalDialog, setShowGoalDialog] = useState(false);
   const [isNewGoal, setIsNewGoal] = useState(false);
+  const [assignModule, setAssignModule] = useState<PTModule | null>(null);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   // Module toggle
   const handleToggleModule = async (mod: PTModule) => {
@@ -1023,7 +1164,13 @@ export function CaregiverCurriculumLibrary() {
         </TabsList>
 
         <TabsContent value="modules" className="mt-4">
-          <ModulesTab modules={modules} loading={modulesLoading} onEdit={m => { setEditModule(m); setShowModuleDialog(true); }} onToggleActive={handleToggleModule} />
+          <ModulesTab
+            modules={modules}
+            loading={modulesLoading}
+            onEdit={m => { setEditModule(m); setShowModuleDialog(true); }}
+            onToggleActive={handleToggleModule}
+            onAssign={m => { setAssignModule(m); setShowAssignDialog(true); }}
+          />
         </TabsContent>
         <TabsContent value="goals" className="mt-4">
           <GoalsTab goals={goals} loading={goalsLoading} modules={modules} onEdit={g => { setEditGoal(g); setIsNewGoal(false); setShowGoalDialog(true); }} onToggleActive={handleToggleGoal} onDuplicate={handleDuplicateGoal} />
@@ -1039,6 +1186,7 @@ export function CaregiverCurriculumLibrary() {
       {/* Dialogs */}
       <ModuleEditDialog module={editModule} open={showModuleDialog} onClose={() => setShowModuleDialog(false)} onSave={refreshModules} />
       <GoalEditDialog goal={editGoal} modules={modules} open={showGoalDialog} onClose={() => setShowGoalDialog(false)} onSave={refreshGoals} isNew={isNewGoal} />
+      <ModuleAssignDialog module={assignModule} open={showAssignDialog} onClose={() => setShowAssignDialog(false)} />
     </div>
   );
 }
