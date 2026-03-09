@@ -132,11 +132,13 @@ export default function ParentTrainingAdmin() {
 
           <TabsContent value="reports">
             <PTReportsTab
-              goalAssignments={goalAssignments}
-              sessionLogs={sessionLogs}
-              assignments={assignmentsDashboard}
               isLoading={isLoading}
-              onBuildSummary={buildInsuranceSummary}
+              onBuildGoalSheet={buildGoalSheet}
+              onBuildProgressReport={buildProgressReport}
+              onBuildHomeworkSummary={buildHomeworkSummary}
+              onBuildInsuranceSummary={buildInsuranceSummary}
+              onFetchModuleCompletion={fetchModuleCompletionSummary}
+              onSaveSnapshot={saveReportSnapshot}
             />
           </TabsContent>
         </Tabs>
