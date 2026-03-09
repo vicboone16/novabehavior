@@ -149,6 +149,10 @@ export default function MainLayout() {
                   <BookOpen className="w-4 h-4" />
                   <span>Clinical Library</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/ask-nova')} className="gap-1">
+                  <BrainCircuit className="w-4 h-4" />
+                  <span>Ask Nova AI</span>
+                </Button>
                 {featurePerms.teacher_mode_access && (
                   <Button variant="outline" size="sm" onClick={() => navigate('/teacher-dashboard')} className="gap-2">
                     <GraduationCap className="w-4 h-4" />
