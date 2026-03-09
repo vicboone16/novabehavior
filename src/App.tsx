@@ -393,6 +393,7 @@ const App = () => {
               <Route path="/advanced-design" element={<AdvancedDesignAnalysis />} />
               <Route path="/ask-nova" element={<AskNovaAI />} />
               <Route path="/nova-ai" element={<NovaAI />} />
+              <Route path="/optimization" element={<GoalOptimization />} />
             </Route>
             <Route path="/behavior-library" element={
               <ProtectedRoute>
