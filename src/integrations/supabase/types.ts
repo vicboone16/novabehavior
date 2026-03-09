@@ -5444,6 +5444,54 @@ export type Database = {
           },
         ]
       }
+      changing_criterion_steps: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          criterion_value: number
+          group_id: string
+          id: string
+          notes: string | null
+          phase_label: string | null
+          phase_start_date: string | null
+          step_order: number | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          criterion_value: number
+          group_id: string
+          id?: string
+          notes?: string | null
+          phase_label?: string | null
+          phase_start_date?: string | null
+          step_order?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          criterion_value?: number
+          group_id?: string
+          id?: string
+          notes?: string | null
+          phase_label?: string | null
+          phase_start_date?: string | null
+          step_order?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       ci_alert_thresholds: {
         Row: {
           action_threshold: number
@@ -12953,6 +13001,54 @@ export type Database = {
         }
         Relationships: []
       }
+      graph_phase_markers: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          graph_scope: string | null
+          id: string
+          marker_date: string | null
+          marker_session_id: string | null
+          notes: string | null
+          phase_label: string
+          phase_type: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          graph_scope?: string | null
+          id?: string
+          marker_date?: string | null
+          marker_session_id?: string | null
+          notes?: string | null
+          phase_label: string
+          phase_type?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          graph_scope?: string | null
+          id?: string
+          marker_date?: string | null
+          marker_session_id?: string | null
+          notes?: string | null
+          phase_label?: string
+          phase_type?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       graph_presets: {
         Row: {
           created_at: string | null
@@ -19597,6 +19693,57 @@ export type Database = {
         }
         Relationships: []
       }
+      report_goal_narratives: {
+        Row: {
+          auto_narrative: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          domain: string
+          edited_narrative: string | null
+          id: string
+          inclusion_id: string
+          report_id: string | null
+          source_object_id: string
+          source_object_type: string
+          student_id: string | null
+          updated_at: string | null
+          use_edited_version: boolean | null
+        }
+        Insert: {
+          auto_narrative?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain: string
+          edited_narrative?: string | null
+          id?: string
+          inclusion_id: string
+          report_id?: string | null
+          source_object_id: string
+          source_object_type: string
+          student_id?: string | null
+          updated_at?: string | null
+          use_edited_version?: boolean | null
+        }
+        Update: {
+          auto_narrative?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          domain?: string
+          edited_narrative?: string | null
+          id?: string
+          inclusion_id?: string
+          report_id?: string | null
+          source_object_id?: string
+          source_object_type?: string
+          student_id?: string | null
+          updated_at?: string | null
+          use_edited_version?: boolean | null
+        }
+        Relationships: []
+      }
       report_strategy_narratives: {
         Row: {
           created_at: string | null
@@ -19804,6 +19951,78 @@ export type Database = {
             referencedColumns: ["strategy_id"]
           },
         ]
+      }
+      research_graph_groups: {
+        Row: {
+          baseline_unit: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          design_type: string
+          group_name: string
+          id: string
+          notes: string | null
+          student_id: string | null
+        }
+        Insert: {
+          baseline_unit?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          design_type: string
+          group_name: string
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          baseline_unit?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          design_type?: string
+          group_name?: string
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
+      research_graph_series: {
+        Row: {
+          behavior_id: string | null
+          created_at: string | null
+          group_id: string
+          id: string
+          phase_start_date: string | null
+          series_label: string
+          series_order: number | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          behavior_id?: string | null
+          created_at?: string | null
+          group_id: string
+          id?: string
+          phase_start_date?: string | null
+          series_label: string
+          series_order?: number | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          behavior_id?: string | null
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          phase_start_date?: string | null
+          series_label?: string
+          series_order?: number | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
       }
       review_queue: {
         Row: {
@@ -20909,6 +21128,57 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      session_note_drafts: {
+        Row: {
+          assessment_text: string | null
+          auto_summary_json: Json | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          include_auto_data: boolean | null
+          note_type: string | null
+          objective_text: string | null
+          plan_text: string | null
+          session_id: string | null
+          student_id: string | null
+          subjective_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assessment_text?: string | null
+          auto_summary_json?: Json | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          include_auto_data?: boolean | null
+          note_type?: string | null
+          objective_text?: string | null
+          plan_text?: string | null
+          session_id?: string | null
+          student_id?: string | null
+          subjective_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assessment_text?: string | null
+          auto_summary_json?: Json | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          include_auto_data?: boolean | null
+          note_type?: string | null
+          objective_text?: string | null
+          plan_text?: string | null
+          session_id?: string | null
+          student_id?: string | null
+          subjective_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       session_notes: {
         Row: {
@@ -29468,6 +29738,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_changing_criterion_design: {
+        Row: {
+          client_id: string | null
+          criterion_value: number | null
+          group_id: string | null
+          group_name: string | null
+          phase_label: string | null
+          phase_start_date: string | null
+          step_id: string | null
+          step_order: number | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Relationships: []
+      }
       v_ci_agency_comparison: {
         Row: {
           agency_id: string | null
@@ -29970,6 +30256,51 @@ export type Database = {
           },
         ]
       }
+      v_graph_phase_markers: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          graph_scope: string | null
+          id: string | null
+          marker_date: string | null
+          marker_session_id: string | null
+          notes: string | null
+          phase_label: string | null
+          phase_type: string | null
+          student_id: string | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          graph_scope?: string | null
+          id?: string | null
+          marker_date?: string | null
+          marker_session_id?: string | null
+          notes?: string | null
+          phase_label?: string | null
+          phase_type?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          graph_scope?: string | null
+          id?: string | null
+          marker_date?: string | null
+          marker_session_id?: string | null
+          notes?: string | null
+          phase_label?: string | null
+          phase_type?: string | null
+          student_id?: string | null
+          student_target_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       v_iep_drafts_recent: {
         Row: {
           client_id: string | null
@@ -30373,6 +30704,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_multiple_baseline_graph_series: {
+        Row: {
+          baseline_unit: string | null
+          behavior_id: string | null
+          design_type: string | null
+          group_id: string | null
+          group_name: string | null
+          phase_start_date: string | null
+          series_id: string | null
+          series_label: string | null
+          series_order: number | null
+          student_target_id: string | null
+          target_id: string | null
+        }
+        Relationships: []
       }
       v_parent_caregiver_library_items: {
         Row: {
@@ -31452,6 +31799,51 @@ export type Database = {
             referencedColumns: ["strategy_id"]
           },
         ]
+      }
+      v_selected_report_goal_narratives: {
+        Row: {
+          active_narrative: string | null
+          auto_narrative: string | null
+          client_id: string | null
+          domain: string | null
+          edited_narrative: string | null
+          inclusion_id: string | null
+          narrative_id: string | null
+          report_id: string | null
+          source_object_id: string | null
+          source_object_type: string | null
+          student_id: string | null
+          use_edited_version: boolean | null
+        }
+        Insert: {
+          active_narrative?: never
+          auto_narrative?: string | null
+          client_id?: string | null
+          domain?: string | null
+          edited_narrative?: string | null
+          inclusion_id?: string | null
+          narrative_id?: string | null
+          report_id?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          use_edited_version?: boolean | null
+        }
+        Update: {
+          active_narrative?: never
+          auto_narrative?: string | null
+          client_id?: string | null
+          domain?: string | null
+          edited_narrative?: string | null
+          inclusion_id?: string | null
+          narrative_id?: string | null
+          report_id?: string | null
+          source_object_id?: string | null
+          source_object_type?: string | null
+          student_id?: string | null
+          use_edited_version?: boolean | null
+        }
+        Relationships: []
       }
       v_skill_prompt_distribution_v2: {
         Row: {
@@ -33065,6 +33457,14 @@ export type Database = {
         Args: { p_date_from: string; p_date_to: string; p_student_id: string }
         Returns: Json
       }
+      build_behavior_goal_narrative: {
+        Args: { p_source_object_id: string }
+        Returns: string
+      }
+      build_caregiver_goal_narrative: {
+        Args: { p_source_object_id: string }
+        Returns: string
+      }
       build_parent_training_goal_sheet: {
         Args: { p_caregiver_id: string; p_client_id: string }
         Returns: Json
@@ -33090,9 +33490,25 @@ export type Database = {
         Args: { p_caregiver_id: string; p_client_id: string }
         Returns: Json
       }
+      build_report_goal_narrative: {
+        Args: {
+          p_domain: string
+          p_source_object_id: string
+          p_source_object_type: string
+        }
+        Returns: string
+      }
       build_report_strategy_export_payload: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: Json
+      }
+      build_session_note_auto_summary: {
+        Args: { p_session_id: string }
+        Returns: Json
+      }
+      build_skill_goal_narrative: {
+        Args: { p_source_object_id: string }
+        Returns: string
       }
       bulk_process_staged_imports: {
         Args: { p_agency_id: string }
@@ -34448,6 +34864,18 @@ export type Database = {
           matched_tags: string[]
         }[]
       }
+      seed_report_goal_narratives: {
+        Args: { p_created_by?: string; p_report_id: string }
+        Returns: number
+      }
+      seed_session_note_draft: {
+        Args: {
+          p_created_by?: string
+          p_note_type?: string
+          p_session_id: string
+        }
+        Returns: string
+      }
       set_agency_alias: {
         Args: { _agency_id: string; _suffix: string }
         Returns: Json
@@ -34541,6 +34969,14 @@ export type Database = {
             }
             Returns: string
           }
+      update_report_goal_narrative: {
+        Args: {
+          p_edited_narrative?: string
+          p_narrative_id: string
+          p_use_edited_version?: boolean
+        }
+        Returns: string
+      }
       update_strategy_section_content: {
         Args: { p_content_text: string; p_id: string }
         Returns: {
