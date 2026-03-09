@@ -162,7 +162,14 @@ export function ReportGoalInclusionManager() {
                 <Button variant="ghost" size="sm" onClick={handleReset}>← Back</Button>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">{selectedCount} items selected</span>
-                  <Button onClick={() => setStep('preview')} disabled={selectedCount === 0}>
+                  <Button onClick={async () => {
+                    if (reportId) {
+                      await seedNarratives(reportId);
+                      await loadNarratives(reportId);
+                    }
+                    setStep('preview');
+                  }} disabled={selectedCount === 0 || generating}>
+                    {generating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
                     Preview Report Items
                   </Button>
                 </div>
