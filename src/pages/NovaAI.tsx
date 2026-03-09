@@ -11,11 +11,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   BrainCircuit, Send, Loader2, BookOpen, Lightbulb, Users,
   GraduationCap, Search, Target, FileText, ClipboardList, Sparkles,
-  MessageSquare, Stethoscope
+  MessageSquare, Stethoscope, UserSearch
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { ClinicalReasoningSection } from '@/components/nova-ai/ClinicalReasoningSection';
+import { CaseAwareReasoningSection } from '@/components/nova-ai/CaseAwareReasoningSection';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
