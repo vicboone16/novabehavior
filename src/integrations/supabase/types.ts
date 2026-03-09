@@ -15741,14 +15741,18 @@ export type Database = {
           assigned_at: string | null
           assigned_by: string | null
           assignment_id: string
+          assignment_source: string | null
+          assignment_status: string | null
           caregiver_id: string | null
           client_id: string
+          completed_at: string | null
           created_at: string
           created_by: string | null
           due_at: string | null
           due_date: string | null
           id: string | null
           module_id: string
+          module_library_origin: boolean | null
           module_version_id: string
           notes: string | null
           parent_user_id: string
@@ -15760,14 +15764,18 @@ export type Database = {
           assigned_at?: string | null
           assigned_by?: string | null
           assignment_id?: string
+          assignment_source?: string | null
+          assignment_status?: string | null
           caregiver_id?: string | null
           client_id: string
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
           due_at?: string | null
           due_date?: string | null
           id?: string | null
           module_id: string
+          module_library_origin?: boolean | null
           module_version_id: string
           notes?: string | null
           parent_user_id: string
@@ -15779,14 +15787,18 @@ export type Database = {
           assigned_at?: string | null
           assigned_by?: string | null
           assignment_id?: string
+          assignment_source?: string | null
+          assignment_status?: string | null
           caregiver_id?: string | null
           client_id?: string
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
           due_at?: string | null
           due_date?: string | null
           id?: string | null
           module_id?: string
+          module_library_origin?: boolean | null
           module_version_id?: string
           notes?: string | null
           parent_user_id?: string
@@ -15934,6 +15946,7 @@ export type Database = {
       }
       parent_training_data: {
         Row: {
+          assignment_id: string | null
           caregiver_id: string | null
           created_at: string | null
           data_id: string
@@ -15946,11 +15959,14 @@ export type Database = {
           logged_at: string | null
           logged_by: string | null
           notes: string | null
+          recorded_at: string | null
+          recorded_by: string | null
           session_date: string | null
           text_value: string | null
           value: number | null
         }
         Insert: {
+          assignment_id?: string | null
           caregiver_id?: string | null
           created_at?: string | null
           data_id?: string
@@ -15963,11 +15979,14 @@ export type Database = {
           logged_at?: string | null
           logged_by?: string | null
           notes?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
           session_date?: string | null
           text_value?: string | null
           value?: number | null
         }
         Update: {
+          assignment_id?: string | null
           caregiver_id?: string | null
           created_at?: string | null
           data_id?: string
@@ -15980,6 +15999,8 @@ export type Database = {
           logged_at?: string | null
           logged_by?: string | null
           notes?: string | null
+          recorded_at?: string | null
+          recorded_by?: string | null
           session_date?: string | null
           text_value?: string | null
           value?: number | null
@@ -16366,6 +16387,63 @@ export type Database = {
             referencedColumns: ["assignment_id"]
           },
         ]
+      }
+      parent_training_intelligence_alerts: {
+        Row: {
+          alert_type: string
+          caregiver_id: string | null
+          client_id: string | null
+          created_at: string | null
+          detected_at: string | null
+          goal_assignment_id: string | null
+          id: string
+          is_active: boolean | null
+          is_clinical_dashboard_visible: boolean | null
+          is_student_connect_visible: boolean | null
+          module_assignment_id: string | null
+          recommended_action: string | null
+          resolved_at: string | null
+          severity: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          caregiver_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          detected_at?: string | null
+          goal_assignment_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_clinical_dashboard_visible?: boolean | null
+          is_student_connect_visible?: boolean | null
+          module_assignment_id?: string | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          caregiver_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          detected_at?: string | null
+          goal_assignment_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_clinical_dashboard_visible?: boolean | null
+          is_student_connect_visible?: boolean | null
+          module_assignment_id?: string | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       parent_training_library: {
         Row: {
@@ -30301,6 +30379,73 @@ export type Database = {
         }
         Relationships: []
       }
+      v_parent_training_assignment_intelligence_summary: {
+        Row: {
+          assigned_at: string | null
+          assignment_status: string | null
+          caregiver_id: string | null
+          client_id: string | null
+          completed_at: string | null
+          data_points: number | null
+          due_date: string | null
+          homework_submission_count: number | null
+          in_progress_goals: number | null
+          last_data_submission_at: string | null
+          last_homework_submission_at: string | null
+          mastered_goals: number | null
+          module_assignment_id: string | null
+          module_id: string | null
+          module_key: string | null
+          module_title: string | null
+          not_started_goals: number | null
+          total_goals: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
+      v_parent_training_assignment_progress: {
+        Row: {
+          assigned_at: string | null
+          assignment_id: string | null
+          assignment_status: string | null
+          client_id: string | null
+          completed_at: string | null
+          goals_with_data: number | null
+          module_id: string | null
+          module_title: string | null
+          total_goals: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "parent_training_modules"
+            referencedColumns: ["module_id"]
+          },
+          {
+            foreignKeyName: "parent_training_assignments_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_training_module_goal_counts"
+            referencedColumns: ["module_id"]
+          },
+        ]
+      }
       v_parent_training_assignments: {
         Row: {
           assigned_at: string | null
@@ -30495,6 +30640,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_parent_training_goal_intelligence_summary: {
+        Row: {
+          baseline_value: number | null
+          caregiver_id: string | null
+          client_id: string | null
+          current_value: number | null
+          data_points: number | null
+          goal_assignment_id: string | null
+          goal_title: string | null
+          last_data_date: string | null
+          mastery_status: string | null
+          measurement_method: string | null
+          module_assignment_id: string | null
+          percent_to_goal: number | null
+          target_value: number | null
+        }
+        Relationships: []
+      }
       v_parent_training_goal_progress: {
         Row: {
           baseline_value: number | null
@@ -30568,6 +30731,32 @@ export type Database = {
           reviewer_notes: string | null
           submission_type: string | null
           submitted_at: string | null
+        }
+        Relationships: []
+      }
+      v_parent_training_intelligence_alert_rollup: {
+        Row: {
+          alert_count: number | null
+          alert_type: string | null
+          severity: string | null
+        }
+        Relationships: []
+      }
+      v_parent_training_intelligence_alerts: {
+        Row: {
+          alert_type: string | null
+          caregiver_id: string | null
+          client_id: string | null
+          detected_at: string | null
+          goal_assignment_id: string | null
+          is_active: boolean | null
+          is_clinical_dashboard_visible: boolean | null
+          is_student_connect_visible: boolean | null
+          module_assignment_id: string | null
+          recommended_action: string | null
+          severity: string | null
+          summary: string | null
+          title: string | null
         }
         Relationships: []
       }
@@ -31576,24 +31765,26 @@ export type Database = {
         }
         Relationships: []
       }
+      v_student_connect_parent_training_alerts: {
+        Row: {
+          alert_type: string | null
+          caregiver_id: string | null
+          detected_at: string | null
+          recommended_action: string | null
+          severity: string | null
+          student_id: string | null
+          summary: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       v_student_intelligence_summary: {
         Row: {
-          attention_pattern_signal_count: number | null
           behavior_alert_count: number | null
           caregiver_alert_count: number | null
-          emerging_replacement_behavior_count: number | null
-          escape_pattern_signal_count: number | null
-          lunch_recess_escalation_count: number | null
           programming_alert_count: number | null
-          prompt_dependency_count: number | null
-          ready_to_advance_count: number | null
           skill_alert_count: number | null
-          stalled_target_count: number | null
-          strong_replacement_behavior_count: number | null
           student_id: string | null
-          transition_triggered_escalation_count: number | null
-          unstructured_time_risk_count: number | null
-          weak_replacement_behavior_count: number | null
         }
         Relationships: []
       }
@@ -32192,13 +32383,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -32208,7 +32392,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -32222,8 +32406,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32236,6 +32420,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -32243,7 +32441,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -32257,8 +32455,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32270,20 +32468,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -32383,13 +32574,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -32399,7 +32583,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -32413,8 +32597,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32427,6 +32611,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -32434,7 +32632,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -32448,8 +32646,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -32461,20 +32659,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -32698,6 +32889,14 @@ export type Database = {
               p_due_date?: string
               p_module_key: string
               p_target_date?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_assigned_by: string
+              p_client_id: string
+              p_module_id: string
             }
             Returns: string
           }
