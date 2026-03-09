@@ -31,7 +31,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
     currentAgency?.id || null,
     { domain: 'behavior', studentId, unresolvedOnly: true }
   );
-  const { intel, contextAlerts, topAntecedents, topConsequences, loading: eventLoading } = useBehaviorEventIntelligence(studentId);
+  const { intel, summary, contextAlerts, topAntecedents, topConsequences, totalEvents, loading: eventLoading } = useBehaviorEventIntelligence(studentId);
 
   const loading = replLoading || alertsLoading || eventLoading;
 
