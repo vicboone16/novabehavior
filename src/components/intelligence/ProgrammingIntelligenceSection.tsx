@@ -78,11 +78,8 @@ export function ProgrammingIntelligenceSection({ studentId }: Props) {
       detail: 'Intervention may need revision to target this specific context',
     });
   }
-        label: `Behavior concentrated in ${formatTrigger(behaviorIntel.top_trigger_context)} contexts`,
-        detail: 'Intervention may need revision to target this specific context',
-      });
-    }
-  }
+
+
 
   return (
     <div className="space-y-3">
