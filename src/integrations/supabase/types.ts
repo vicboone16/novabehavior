@@ -6288,6 +6288,353 @@ export type Database = {
         }
         Relationships: []
       }
+      cl_goal_benchmarks: {
+        Row: {
+          benchmark_order: number
+          benchmark_text: string
+          benchmark_title: string | null
+          created_at: string
+          goal_id: string
+          id: string
+          mastery_criteria: string | null
+          prompt_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          benchmark_order: number
+          benchmark_text: string
+          benchmark_title?: string | null
+          created_at?: string
+          goal_id: string
+          id?: string
+          mastery_criteria?: string | null
+          prompt_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          benchmark_order?: number
+          benchmark_text?: string
+          benchmark_title?: string | null
+          created_at?: string
+          goal_id?: string
+          id?: string
+          mastery_criteria?: string | null
+          prompt_level?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_goal_benchmarks_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "cl_goal_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_goal_library: {
+        Row: {
+          age_band: string
+          created_at: string
+          domain: string | null
+          function_tags: string[]
+          goal_code: string
+          goal_type: string
+          id: string
+          is_active: boolean
+          learner_profile: string[]
+          library_id: string
+          long_description: string | null
+          metadata: Json
+          objective: string
+          search_document: unknown
+          setting: string
+          sort_order: number
+          strand: string | null
+          subdomain: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          age_band?: string
+          created_at?: string
+          domain?: string | null
+          function_tags?: string[]
+          goal_code: string
+          goal_type?: string
+          id?: string
+          is_active?: boolean
+          learner_profile?: string[]
+          library_id: string
+          long_description?: string | null
+          metadata?: Json
+          objective: string
+          search_document?: unknown
+          setting?: string
+          sort_order?: number
+          strand?: string | null
+          subdomain?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          age_band?: string
+          created_at?: string
+          domain?: string | null
+          function_tags?: string[]
+          goal_code?: string
+          goal_type?: string
+          id?: string
+          is_active?: boolean
+          learner_profile?: string[]
+          library_id?: string
+          long_description?: string | null
+          metadata?: Json
+          objective?: string
+          search_document?: unknown
+          setting?: string
+          sort_order?: number
+          strand?: string | null
+          subdomain?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_goal_library_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "cl_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_goal_tag_map: {
+        Row: {
+          goal_id: string
+          tag_id: string
+        }
+        Insert: {
+          goal_id: string
+          tag_id: string
+        }
+        Update: {
+          goal_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_goal_tag_map_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "cl_goal_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cl_goal_tag_map_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "cl_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_intervention_library: {
+        Row: {
+          age_band: string
+          category: string
+          created_at: string
+          description: string
+          domain: string | null
+          function_tags: string[]
+          id: string
+          intensity_level: string | null
+          intervention_code: string
+          is_active: boolean
+          learner_profile: string[]
+          library_id: string
+          metadata: Json
+          search_document: unknown
+          setting: string
+          sort_order: number
+          subdomain: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          age_band?: string
+          category: string
+          created_at?: string
+          description: string
+          domain?: string | null
+          function_tags?: string[]
+          id?: string
+          intensity_level?: string | null
+          intervention_code: string
+          is_active?: boolean
+          learner_profile?: string[]
+          library_id: string
+          metadata?: Json
+          search_document?: unknown
+          setting?: string
+          sort_order?: number
+          subdomain?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          age_band?: string
+          category?: string
+          created_at?: string
+          description?: string
+          domain?: string | null
+          function_tags?: string[]
+          id?: string
+          intensity_level?: string | null
+          intervention_code?: string
+          is_active?: boolean
+          learner_profile?: string[]
+          library_id?: string
+          metadata?: Json
+          search_document?: unknown
+          setting?: string
+          sort_order?: number
+          subdomain?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_intervention_library_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "cl_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_intervention_steps: {
+        Row: {
+          created_at: string
+          id: string
+          intervention_id: string
+          step_order: number
+          step_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intervention_id: string
+          step_order: number
+          step_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intervention_id?: string
+          step_order?: number
+          step_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_intervention_steps_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "cl_intervention_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_intervention_tag_map: {
+        Row: {
+          intervention_id: string
+          tag_id: string
+        }
+        Insert: {
+          intervention_id: string
+          tag_id: string
+        }
+        Update: {
+          intervention_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cl_intervention_tag_map_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "cl_intervention_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cl_intervention_tag_map_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "cl_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cl_libraries: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          library_type: string
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          library_type: string
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          library_type?: string
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cl_tags: {
+        Row: {
+          id: string
+          normalized_tag: string | null
+          tag_type: string
+          tag_value: string
+        }
+        Insert: {
+          id?: string
+          normalized_tag?: string | null
+          tag_type: string
+          tag_value: string
+        }
+        Update: {
+          id?: string
+          normalized_tag?: string | null
+          tag_type?: string
+          tag_value?: string
+        }
+        Relationships: []
+      }
       claim_batch_items: {
         Row: {
           claim_batch_id: string
