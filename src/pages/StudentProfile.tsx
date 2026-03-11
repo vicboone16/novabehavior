@@ -63,6 +63,7 @@ import { StudentObservationsTab } from '@/components/observation-requests/Studen
 import { StudentIEPPrepTab } from '@/components/iep/StudentIEPPrepTab';
 import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverTrainingTab';
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
+import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
@@ -811,6 +812,8 @@ export default function StudentProfile() {
 
         {/* Programming Tab (unified Skills + Behaviors) */}
         <TabsContent value="programming" className="space-y-4">
+          {/* Goal Suggestion Engine — Programming Surface */}
+          <GoalSuggestionEnginePanel studentId={student.id} surface="programming" />
           {/* Intelligence cards at top of Programming */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <SkillMasteryIntelligenceCard studentId={student.id} />
@@ -888,6 +891,8 @@ export default function StudentProfile() {
 
         {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
         <TabsContent value="assessment" className="space-y-4">
+          {/* Goal Suggestion Engine — Reassessment Surface */}
+          <GoalSuggestionEnginePanel studentId={student.id} surface="reassessment" />
           <div className="grid gap-4">
             {/* Active Observation Banner */}
             <ActiveObservationsBanner 
