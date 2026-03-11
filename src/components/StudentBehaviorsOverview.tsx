@@ -613,6 +613,7 @@ export function StudentBehaviorsOverview({
   }, [dateRange, filteredBehaviors, frequencyEntries, historicalData, abcEntries, studentId]);
 
   // Chart data: duration over time (includes ABC durationMinutes)
+  // Only includes days where actual duration data was recorded
   const durationChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -623,6 +624,7 @@ export function StudentBehaviorsOverview({
       const dayEnd = endOfDay(day);
 
       const dataPoint: any = { date: format(day, 'MMM d') };
+      let hasData = false;
 
       filteredBehaviors.forEach((behavior, idx) => {
         // Duration from durationEntries
@@ -643,11 +645,16 @@ export function StudentBehaviorsOverview({
         );
         duration += dayABC.reduce((s, e) => s + (((e as any).durationMinutes || 0) * 60), 0);
         
-        dataPoint[`${behavior.name} (sec)`] = duration;
+        // Only include if actual data exists for this day
+        const hadEntries = dayDuration.length > 0 || dayABC.length > 0;
+        if (hadEntries) {
+          dataPoint[`${behavior.name} (sec)`] = duration; // 0 is valid if timed but no duration
+          hasData = true;
+        }
       });
 
-      return dataPoint;
-    });
+      return hasData ? dataPoint : null;
+    }).filter(Boolean);
   }, [dateRange, filteredBehaviors, durationEntries, abcEntries, studentId]);
 
   // ABC distribution data
