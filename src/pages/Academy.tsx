@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Route, Layers, FileText, ClipboardList, BarChart3, Search, ChevronRight, CheckCircle2, Clock, Play, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Route, Layers, FileText, ClipboardList, BarChart3, Search, ChevronRight, CheckCircle2, Clock, Play, X, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
