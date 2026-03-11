@@ -14,7 +14,8 @@ import {
   BookOpen,
   Smartphone,
   Menu,
-  Stethoscope
+  Stethoscope,
+  FolderOpen,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
