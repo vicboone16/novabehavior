@@ -323,6 +323,14 @@ export default function UserProfile() {
           </CardContent>
         </Card>
 
+        {/* Security Section */}
+        <div className="pt-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
+            <Lock className="w-5 h-5" />
+            Security
+          </h2>
+        </div>
+
         {/* PIN Setup */}
         <Card>
           <CardHeader>
