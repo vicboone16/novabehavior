@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, UserPlus, DollarSign, Briefcase, Plus, LayoutGrid, List, Download, BarChart3, Shield, FileText, CreditCard, Clock, Send, Upload, Building2, ScrollText, AlertCircle, ClipboardCheck, FileStack, LineChart, Sparkles, TrendingDown, Timer, PieChart } from 'lucide-react';
+import { ArrowLeft, Briefcase, Plus, LayoutGrid, List, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasPermission, PERMISSIONS, type PermissionContext } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
+import { useAppNavigation } from '@/hooks/useAppNavigation';
+import { getNavIcon } from '@/lib/navIcons';
 
 // Referral components
 import { ReferralKanban } from '@/components/referrals/ReferralKanban';
@@ -28,12 +30,13 @@ import { ReadyForClaimQueue } from '@/components/billing/ReadyForClaimQueue';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ServiceRequestsPanel } from '@/components/service-requests/ServiceRequestsPanel';
 import { subDays } from 'date-fns';
-
-const OPERATION_TABS = [
-  { value: 'referrals', label: 'Referrals', icon: UserPlus, permission: PERMISSIONS.AUTH_VIEW },
-  { value: 'billing', label: 'Billing & Analytics', icon: DollarSign, permission: PERMISSIONS.BILLING_VIEW },
-];
+import {
+  BarChart3, Shield, FileText, CreditCard, Clock, Send,
+  Upload, Building2, ScrollText, AlertCircle, ClipboardCheck,
+  FileStack, LineChart, Sparkles, TrendingDown, Timer, PieChart, DollarSign,
+} from 'lucide-react';
 
 export default function Operations() {
   const navigate = useNavigate();
@@ -41,17 +44,27 @@ export default function Operations() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'referrals';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const { getChildrenOf } = useAppNavigation();
 
   const permContext: PermissionContext = {
     userRole: userRole as any,
     userId: user?.id || null,
   };
 
-  const visibleTabs = OPERATION_TABS.filter(tab =>
-    hasPermission(permContext, tab.permission)
-  );
+  // Get Operations children from DB
+  const operationsTabs = getChildrenOf('operations');
 
-  if (visibleTabs.length === 0) {
+  // Map tab value from nav_key or route param
+  const getTabValue = (item: { nav_key: string; route: string | null }) => {
+    // Extract ?tab= from route
+    if (item.route) {
+      const url = new URL(item.route, 'http://x');
+      return url.searchParams.get('tab') || item.nav_key;
+    }
+    return item.nav_key;
+  };
+
+  if (operationsTabs.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-2">
@@ -87,20 +100,25 @@ export default function Operations() {
         </div>
       </header>
 
+      {/* Section tabs rendered from DB */}
       <div className="border-b border-border bg-card/50">
         <div className="container">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="h-11 bg-transparent border-none flex-wrap">
-              {visibleTabs.map(tab => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
+              {operationsTabs.map(tab => {
+                const Icon = getNavIcon(tab.icon);
+                const tabValue = getTabValue(tab);
+                return (
+                  <TabsTrigger
+                    key={tab.nav_key}
+                    value={tabValue}
+                    className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  >
+                    {Icon && <Icon className="w-3.5 h-3.5" />}
+                    {tab.label}
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
           </Tabs>
         </div>
@@ -109,6 +127,9 @@ export default function Operations() {
       <div className="container py-6">
         {activeTab === 'referrals' && <ReferralContent />}
         {activeTab === 'billing' && <BillingContent />}
+        {activeTab === 'authorizations' && <AuthorizationsContent />}
+        {activeTab === 'insurance' && <InsuranceContent />}
+        {activeTab === 'service-requests' && <ServiceRequestsContent />}
       </div>
     </div>
   );
@@ -152,25 +173,73 @@ function ReferralContent() {
   );
 }
 
+/* ─────────────────────── Authorizations Content ─────────────────────── */
+function AuthorizationsContent() {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Manage service authorizations across all clients.</p>
+      <GlobalAuthorizationDashboard />
+    </div>
+  );
+}
+
+/* ─────────────────────── Insurance Content ─────────────────────── */
+function InsuranceContent() {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Insurance eligibility, payer configuration, and contract management.</p>
+      <Tabs defaultValue="eligibility">
+        <TabsList>
+          <TabsTrigger value="eligibility" className="gap-1.5"><Shield className="w-3.5 h-3.5" />Eligibility</TabsTrigger>
+          <TabsTrigger value="payers" className="gap-1.5"><Building2 className="w-3.5 h-3.5" />Payer Config</TabsTrigger>
+          <TabsTrigger value="contracts" className="gap-1.5"><ScrollText className="w-3.5 h-3.5" />Contracts</TabsTrigger>
+        </TabsList>
+        <TabsContent value="eligibility">
+          <Card><CardHeader><CardTitle>Insurance Eligibility Verification</CardTitle></CardHeader>
+            <CardContent><EligibilityChecker studentId="demo" studentName="Demo Patient" clientPayers={[]} /></CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="payers">
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" />Payer Configuration</CardTitle></CardHeader>
+            <CardContent><Button onClick={() => {}} className="gap-2"><Building2 className="w-4 h-4" />Open Payer Directory</Button></CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="contracts"><ContractRateManager /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────────── Service Requests Content ─────────────────────── */
+function ServiceRequestsContent() {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Manage internal service requests and workflows.</p>
+      <ServiceRequestsPanel />
+    </div>
+  );
+}
+
 /* ─────────────────────── Billing Content ─────────────────────── */
-
-const BILLING_PAGES = [
-  { key: 'overview', label: 'Overview', icon: BarChart3 },
-  { key: 'authorizations', label: 'Authorizations', icon: Shield },
-  { key: 'claims', label: 'Claims Processing', icon: FileText },
-  { key: 'payments', label: 'Payments & Reconciliation', icon: CreditCard },
-  { key: 'contracts', label: 'Contracts & Payers', icon: Building2 },
-  { key: 'analytics', label: 'Analytics', icon: LineChart },
-] as const;
-
-type BillingPageKey = typeof BILLING_PAGES[number]['key'];
-
 function BillingContent() {
   const [searchParams] = useSearchParams();
-  const initialPage = (searchParams.get('billingPage') as BillingPageKey) || 'overview';
+  const { getChildrenOf } = useAppNavigation();
+  const initialPage = searchParams.get('billingPage') || 'overview';
   const initialSubTab = searchParams.get('billingTab') || '';
-  const [activePage, setActivePage] = useState<BillingPageKey>(initialPage);
+  const [activePage, setActivePage] = useState(initialPage);
   const [showClaimGenerator, setShowClaimGenerator] = useState(false);
+
+  // Get billing sub-pages from DB
+  const billingPages = getChildrenOf('ops-billing');
+
+  // Extract billingPage value from route param
+  const getPageKey = (item: { route: string | null; nav_key: string }) => {
+    if (item.route) {
+      const url = new URL(item.route, 'http://x');
+      return url.searchParams.get('billingPage') || item.nav_key;
+    }
+    return item.nav_key;
+  };
 
   return (
     <div className="space-y-4">
@@ -182,29 +251,29 @@ function BillingContent() {
         </Button>
       </div>
 
-      {/* Page-level navigation */}
+      {/* Page-level navigation – rendered from DB */}
       <div className="flex gap-1.5 flex-wrap border-b border-border pb-3">
-        {BILLING_PAGES.map(page => {
-          const Icon = page.icon;
+        {billingPages.map(page => {
+          const Icon = getNavIcon(page.icon);
+          const pageKey = getPageKey(page);
           return (
             <Button
-              key={page.key}
-              variant={activePage === page.key ? 'secondary' : 'ghost'}
+              key={page.nav_key}
+              variant={activePage === pageKey ? 'secondary' : 'ghost'}
               size="sm"
               className={cn(
                 'gap-1.5 text-xs',
-                activePage === page.key && 'bg-primary/10 text-primary border border-primary/20'
+                activePage === pageKey && 'bg-primary/10 text-primary border border-primary/20'
               )}
-              onClick={() => setActivePage(page.key)}
+              onClick={() => setActivePage(pageKey)}
             >
-              <Icon className="w-3.5 h-3.5" />
+              {Icon && <Icon className="w-3.5 h-3.5" />}
               {page.label}
             </Button>
           );
         })}
       </div>
 
-      {/* Page content with inner tabs */}
       {activePage === 'overview' && <BillingOverviewPage defaultTab={initialSubTab} />}
       {activePage === 'authorizations' && <BillingAuthorizationsPage defaultTab={initialSubTab} />}
       {activePage === 'claims' && <BillingClaimsPage defaultTab={initialSubTab} />}
