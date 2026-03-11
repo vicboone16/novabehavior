@@ -120,74 +120,201 @@ export default function Operations() {
   );
 }
 
-// Sub-content components - these embed the existing pages or provide placeholders
+// Referral Content - full inline pipeline
 function ReferralContent() {
+  const [referralTab, setReferralTab] = useState('pipeline');
+  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+  const [showReferralDialog, setShowReferralDialog] = useState(false);
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Manage new client referrals and intake process.
-      </p>
-      {/* Renders the referral components inline */}
-      <iframe src="/referrals" className="hidden" />
-      <div className="text-center py-8">
-        <Button onClick={() => window.location.href = '/referrals'}>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Open Referrals Pipeline
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Manage new client referrals and intake process.
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex border rounded-md">
+            <Button
+              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button onClick={() => setShowReferralDialog(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            New Referral
+          </Button>
+        </div>
+      </div>
+
+      <Tabs value={referralTab} onValueChange={setReferralTab}>
+        <TabsList>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+        </TabsList>
+        <TabsContent value="pipeline">
+          <ReferralKanban viewMode={viewMode} />
+        </TabsContent>
+        <TabsContent value="waitlist">
+          <WaitlistManager />
+        </TabsContent>
+      </Tabs>
+
+      <ReferralDialog
+        open={showReferralDialog}
+        onOpenChange={setShowReferralDialog}
+        onSuccess={() => setShowReferralDialog(false)}
+      />
+    </div>
+  );
+}
+
+// Billing Content - full inline billing dashboard
+function BillingContent() {
+  const navigate = useNavigate();
+  const [billingTab, setBillingTab] = useState('dashboard');
+  const [showClaimGenerator, setShowClaimGenerator] = useState(false);
+  const [analyticsTab, setAnalyticsTab] = useState('overview');
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [analyticsFilters, setAnalyticsFilters] = useState({
+    staffId: null as string | null,
+    payerId: null as string | null,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Claims, payments, and business intelligence.
+        </p>
+        <Button onClick={() => setShowClaimGenerator(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          New Claim
         </Button>
       </div>
+
+      <Tabs value={billingTab} onValueChange={setBillingTab}>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
+          <TabsTrigger value="prior-auth">Prior Auth</TabsTrigger>
+          <TabsTrigger value="ar-readiness">AR Readiness</TabsTrigger>
+          <TabsTrigger value="authorizations">Authorizations</TabsTrigger>
+          <TabsTrigger value="claims">All Claims</TabsTrigger>
+          <TabsTrigger value="denials">Denials</TabsTrigger>
+          <TabsTrigger value="payers">Payer Config</TabsTrigger>
+          <TabsTrigger value="contracts">Contracts</TabsTrigger>
+          <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
+          <TabsTrigger value="needs-review">Needs Review</TabsTrigger>
+          <TabsTrigger value="ready-for-claim">Ready for Claim</TabsTrigger>
+          <TabsTrigger value="era">ERA/835</TabsTrigger>
+          <TabsTrigger value="clearinghouse">Clearinghouse</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard"><BillingDashboard /></TabsContent>
+        <TabsContent value="payments">
+          <Card><CardHeader><CardTitle>Patient Payments</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">Select a patient from the Students page to collect payments.</p>
+              <PatientPaymentPortal studentId="demo" studentName="Demo Patient" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="eligibility">
+          <Card><CardHeader><CardTitle>Insurance Eligibility Verification</CardTitle></CardHeader>
+            <CardContent>
+              <EligibilityChecker studentId="demo" studentName="Demo Patient" clientPayers={[]} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="prior-auth">
+          <Card><CardHeader><CardTitle>AI-Powered Prior Authorization</CardTitle></CardHeader>
+            <CardContent>
+              <PriorAuthGenerator studentId="demo" studentName="Demo Patient" payers={[]} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="ar-readiness"><ARReadinessDashboard /></TabsContent>
+        <TabsContent value="authorizations"><GlobalAuthorizationDashboard /></TabsContent>
+        <TabsContent value="claims"><BillingDashboard showAllClaims /></TabsContent>
+        <TabsContent value="denials"><DenialTracker /></TabsContent>
+        <TabsContent value="payers">
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" />Payer Configuration</CardTitle></CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/billing/payers')} className="gap-2"><Building2 className="w-4 h-4" />Open Payer Directory</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="contracts"><ContractRateManager /></TabsContent>
+        <TabsContent value="timesheets"><TimesheetDashboard /></TabsContent>
+        <TabsContent value="needs-review"><NeedsReviewList /></TabsContent>
+        <TabsContent value="ready-for-claim"><ReadyForClaimQueue /></TabsContent>
+        <TabsContent value="era"><ERAProcessingTab /></TabsContent>
+        <TabsContent value="clearinghouse"><ClearinghouseTab /></TabsContent>
+        <TabsContent value="analytics">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Tabs value={analyticsTab} onValueChange={setAnalyticsTab}>
+                <TabsList>
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="revenue">Revenue</TabsTrigger>
+                  <TabsTrigger value="utilization">Utilization</TabsTrigger>
+                  <TabsTrigger value="productivity">Productivity</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <div className="flex items-center gap-2">
+                <AnalyticsFilters dateRange={dateRange} onDateRangeChange={setDateRange} filters={analyticsFilters} onFiltersChange={setAnalyticsFilters} />
+                <Button variant="outline" className="gap-2"><Download className="w-4 h-4" />Export</Button>
+              </div>
+            </div>
+            <AnalyticsDashboard dateRange={dateRange} filters={analyticsFilters} view={analyticsTab as 'overview' | 'revenue' | 'utilization' | 'productivity'} />
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {showClaimGenerator && (
+        <ClaimGenerator open={showClaimGenerator} onOpenChange={setShowClaimGenerator} onSuccess={() => setShowClaimGenerator(false)} />
+      )}
     </div>
   );
 }
 
-function BillingContent() {
-  return (
-    <div className="text-center py-8">
-      <Button onClick={() => window.location.href = '/billing'}>
-        <DollarSign className="w-4 h-4 mr-2" />
-        Open Billing Dashboard
-      </Button>
-    </div>
-  );
-}
-
+// Authorizations - inline
 function AuthorizationsContent() {
-  return (
-    <div className="text-center py-8 space-y-3">
-      <Shield className="w-12 h-12 text-muted-foreground mx-auto" />
-      <h3 className="font-semibold">Authorizations</h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Manage service authorizations, track utilization, and monitor expiration dates.
-      </p>
-      <Button onClick={() => window.location.href = '/billing?tab=authorizations'}>
-        Open Authorizations
-      </Button>
-    </div>
-  );
+  return <GlobalAuthorizationDashboard />;
 }
 
+// Insurance - inline eligibility + payer config
 function InsuranceContent() {
+  const navigate = useNavigate();
   return (
-    <div className="text-center py-8 space-y-3">
-      <FileText className="w-12 h-12 text-muted-foreground mx-auto" />
-      <h3 className="font-semibold">Insurance</h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Manage insurance payers, verify eligibility, and handle prior authorizations.
-      </p>
-      <Button onClick={() => window.location.href = '/billing/payers'}>
-        Open Insurance / Payers
-      </Button>
-    </div>
-  );
-}
-
-function ServiceRequestsContent() {
-  return (
-    <div className="text-center py-8 space-y-3">
-      <ClipboardList className="w-12 h-12 text-muted-foreground mx-auto" />
-      <h3 className="font-semibold">Service Requests</h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Track and manage service requests from clients, schools, and partner organizations.
-      </p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle>Insurance Eligibility Verification</CardTitle></CardHeader>
+        <CardContent>
+          <EligibilityChecker studentId="demo" studentName="Demo Patient" clientPayers={[]} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Building2 className="w-5 h-5" />Payer Configuration</CardTitle></CardHeader>
+        <CardContent>
+          <Button onClick={() => navigate('/billing/payers')} className="gap-2"><Building2 className="w-4 h-4" />Open Payer Directory</Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
