@@ -1,32 +1,46 @@
 import { useMemo } from 'react';
 import {
   Target, AlertTriangle, Zap, ArrowUpRight, Shield,
-  PauseCircle, Hand, Loader2
+  PauseCircle, Hand, Loader2, Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCaseloadSkillIntelligence } from '@/hooks/useSkillMasteryIntelligence';
 import { useCaseloadReplacementIntelligence } from '@/hooks/useReplacementBehaviorIntelligence';
 
-function StatCard({ icon, label, value, variant = 'default' }: {
+function StatCard({ icon, label, value, variant = 'default', description }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   variant?: 'default' | 'destructive' | 'warning' | 'success';
+  description?: string;
 }) {
   const borderColor = variant === 'destructive' ? 'border-destructive/30' : variant === 'warning' ? 'border-orange-500/30' : variant === 'success' ? 'border-emerald-500/30' : 'border-border';
   const textColor = variant === 'destructive' ? 'text-destructive' : variant === 'warning' ? 'text-orange-500' : variant === 'success' ? 'text-emerald-500' : 'text-foreground';
 
-  return (
+  const cardContent = (
     <Card className={borderColor}>
       <CardContent className="py-3 px-4">
-        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
           {icon}
-          <span className="text-xs">{label}</span>
+          <span className="text-xs flex-1">{label}</span>
+          {description && <Info className="w-3 h-3 opacity-40 flex-shrink-0" />}
         </div>
         <p className={`text-2xl font-bold ${textColor}`}>{value}</p>
       </CardContent>
     </Card>
+  );
+
+  if (!description) return cardContent;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-xs text-xs leading-relaxed">
+        <p>{description}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
