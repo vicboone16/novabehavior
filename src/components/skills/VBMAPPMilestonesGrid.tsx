@@ -496,7 +496,67 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       });
   }, [selectedAssessmentId]);
 
-  // ── Create new assessment ─────────────────────────────────────────────────
+  // ── Load overlay results for historical assessments ───────────────────────
+  useEffect(() => {
+    if (!selectedAssessmentId || assessments.length <= 1) {
+      setOverlayResults({});
+      return;
+    }
+    const otherIds = assessments
+      .filter(a => a.assessment_id !== selectedAssessmentId)
+      .slice(0, 3) // max 3 historical overlays
+      .map(a => a.assessment_id);
+
+    if (otherIds.length === 0) { setOverlayResults({}); return; }
+
+    Promise.all(
+      otherIds.map(id =>
+        supabase
+          .from('vb_mapp_assessment_results')
+          .select('*')
+          .eq('assessment_id', id)
+          .then(({ data }) => {
+            const map: Record<string, ItemResult> = {};
+            (data ?? []).forEach((r: any) => { map[r.item_id] = r as ItemResult; });
+            return { id, map };
+          })
+      )
+    ).then(results => {
+      const combined: Record<string, Record<string, ItemResult>> = {};
+      results.forEach(({ id, map }) => { combined[id] = map; });
+      setOverlayResults(combined);
+    });
+  }, [selectedAssessmentId, assessments]);
+
+  // ── Build overlay objects for coordinate grid ─────────────────────────────
+  const OVERLAY_COLORS = ['#a855f7', '#f97316', '#14b8a6'];
+  const gridOverlays: AssessmentOverlay[] = useMemo(() => {
+    if (!selectedAssessmentId) return [];
+    const otherAssessments = assessments
+      .filter(a => a.assessment_id !== selectedAssessmentId)
+      .slice(0, 3);
+    return otherAssessments
+      .map((a, i) => ({
+        assessmentId: a.assessment_id,
+        assessmentDate: a.assessment_date,
+        color: OVERLAY_COLORS[i] || '#888',
+        label: `${i + 2}${i === 0 ? 'nd' : i === 1 ? 'rd' : 'th'}`,
+        results: overlayResults[a.assessment_id] || {},
+      }));
+  }, [assessments, selectedAssessmentId, overlayResults]);
+
+  // ── Handle grid cell click (cycle EMPTY → HALF → FULL → EMPTY) ───────────
+  const handleGridCellClick = useCallback(
+    (itemId: string, currentFill: 'EMPTY' | 'HALF' | 'FULL') => {
+      const nextFill: FillState =
+        currentFill === 'EMPTY' ? 'HALF' :
+        currentFill === 'HALF' ? 'FULL' : 'EMPTY';
+      handleCellUpdate(itemId, { fill_state: nextFill, tested_circle: false });
+    },
+    [handleCellUpdate]
+  );
+
+
   const handleCreateAssessment = async () => {
     setCreatingAssessment(true);
     const { data, error } = await supabase
