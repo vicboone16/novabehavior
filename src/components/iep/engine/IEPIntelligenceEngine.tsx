@@ -43,6 +43,7 @@ const SECTIONS = [
   { key: 'suggestions', label: 'Suggestions', icon: Lightbulb },
   { key: 'talking_points', label: 'Talking Pts', icon: MessageSquare },
   { key: 'documents', label: 'Docs', icon: ClipboardCheck },
+  { key: 'exports', label: 'Exports', icon: History },
   { key: 'packet', label: 'Packet', icon: FileText },
 ];
 
