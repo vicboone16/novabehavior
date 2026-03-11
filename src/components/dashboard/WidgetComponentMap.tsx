@@ -63,4 +63,8 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
     component: () => <ScheduleOverviewWidget />,
     icon: <Calendar className="w-4 h-4 text-primary" />,
   },
+  'personal-notes': {
+    component: () => <PersonalNotesWidget />,
+    icon: <StickyNote className="w-4 h-4 text-amber-500" />,
+  },
 };
