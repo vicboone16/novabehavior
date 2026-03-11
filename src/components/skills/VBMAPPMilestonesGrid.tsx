@@ -877,10 +877,10 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
                 size="sm"
                 variant="outline"
                 onClick={handleExportPdf}
-                title="Export / Print milestones grid"
+                title="Download milestones grid as PDF"
               >
-                <Printer className="w-3.5 h-3.5 mr-1" />
-                Export Grid
+                <Download className="w-3.5 h-3.5 mr-1" />
+                Export PDF
               </Button>
               <Button
                 size="sm"
