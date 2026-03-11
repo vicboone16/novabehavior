@@ -1290,12 +1290,55 @@ export function StudentBehaviorsOverview({
                               </Badge>
                             )}
                           </div>
-                          <div className="flex gap-1 mt-0.5">
-                            {(behavior.methods || [behavior.type]).map(method => (
-                              <Badge key={method} variant="secondary" className="text-xs py-0">
-                                {METHOD_LABELS[method]}
-                              </Badge>
-                            ))}
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {editingMethodsBehaviorId === behavior.id ? (
+                              <>
+                                {ALL_METHODS.map(m => (
+                                  <Badge
+                                    key={m.value}
+                                    variant={editingMethods.includes(m.value) ? 'default' : 'outline'}
+                                    className="text-xs py-0 cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); toggleEditingMethod(m.value); }}
+                                  >
+                                    {m.label}
+                                  </Badge>
+                                ))}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0 ml-1"
+                                  onClick={(e) => { e.stopPropagation(); saveEditMethods(); }}
+                                  disabled={editingMethods.length === 0}
+                                >
+                                  <Check className="w-3 h-3 text-primary" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => { e.stopPropagation(); setEditingMethodsBehaviorId(null); }}
+                                >
+                                  <X className="w-3 h-3 text-muted-foreground" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                {(behavior.methods || [behavior.type]).map(method => (
+                                  <Badge key={method} variant="secondary" className="text-xs py-0">
+                                    {METHOD_LABELS[method]}
+                                  </Badge>
+                                ))}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0 ml-1 opacity-40 hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); startEditMethods(behavior.id, behavior.methods || [behavior.type]); }}
+                                  title="Edit data collection methods"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
