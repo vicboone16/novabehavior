@@ -927,6 +927,29 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          {selectedAssessmentId && (
+            <div className="flex border border-border rounded-lg overflow-hidden">
+              <Button
+                size="sm"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                className="rounded-none h-8 px-3 text-xs"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="w-3.5 h-3.5 mr-1" />
+                Grid
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                className="rounded-none h-8 px-3 text-xs"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-3.5 h-3.5 mr-1" />
+                List
+              </Button>
+            </div>
+          )}
           <Button
             size="sm"
             variant="outline"
