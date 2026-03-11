@@ -24,7 +24,6 @@ export function UserMenu() {
   const { isSyncing, isLoading, lastSyncTime, syncNow, reloadFromCloud, syncStatus } = useSync();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showPinSetup, setShowPinSetup] = useState(false);
   const [showAdminPin, setShowAdminPin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
