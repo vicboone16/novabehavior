@@ -25391,6 +25391,42 @@ export type Database = {
           },
         ]
       }
+      security_scan_results: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          findings: Json
+          id: string
+          scan_type: string
+          status: string
+          summary: Json
+          triggered_by: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          findings?: Json
+          id?: string
+          scan_type?: string
+          status?: string
+          summary?: Json
+          triggered_by: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          findings?: Json
+          id?: string
+          scan_type?: string
+          status?: string
+          summary?: Json
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       security_settings: {
         Row: {
           created_at: string
