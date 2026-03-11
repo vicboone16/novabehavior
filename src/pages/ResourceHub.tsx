@@ -30,6 +30,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { ServiceRequestsPanel } from '@/components/service-requests/ServiceRequestsPanel';
+import { ProgramTemplatesPanel } from '@/components/templates/ProgramTemplatesPanel';
 
 interface LibraryItem {
   id: string;
