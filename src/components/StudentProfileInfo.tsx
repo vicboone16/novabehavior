@@ -247,6 +247,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setDiagnosesText((student.diagnoses || []).join(', '));
     setPrimarySetting(student.primarySetting || '');
     setPrimarySupervisorStaffId(student.primarySupervisorStaffId || '');
+    setMidTierSupervisorStaffId(student.midTierSupervisorStaffId || '');
     setCaseOpenedDate(formatDateForInput(student.caseOpenedDate));
     setActivationStatus(student.activationStatus || '');
     setContactEmail(student.contactEmail || '');
