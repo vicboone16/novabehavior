@@ -11,7 +11,7 @@ export function ScheduleOverviewWidget() {
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ['dashboard-schedule', user?.id, format(today, 'yyyy-MM-dd')],
     enabled: !!user,
-    refetchInterval: 120_000,
+    refetchInterval: 60_000, // Refresh every minute to clear ended appointments
     queryFn: async () => {
       const { data } = await supabase
         .from('appointments')
@@ -19,9 +19,13 @@ export function ScheduleOverviewWidget() {
         .or(`staff_user_id.eq.${user!.id},created_by.eq.${user!.id}`)
         .gte('start_time', startOfDay(today).toISOString())
         .lte('start_time', endOfDay(today).toISOString())
+        .not('status', 'in', '(cancelled,completed)')
         .order('start_time', { ascending: true })
         .limit(10);
-      return data || [];
+      
+      // Filter out past appointments (ended more than 15 min ago)
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+      return (data || []).filter((apt: any) => new Date(apt.end_time) > cutoff);
     },
   });
 
