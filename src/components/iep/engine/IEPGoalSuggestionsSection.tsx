@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, CheckCircle2, Target, XCircle, Edit2 } from 'lucide-react';
+import { CheckCircle2, Target, XCircle } from 'lucide-react';
+import { TreatmentIntelligenceActions } from '@/components/optimization/TreatmentIntelligenceActions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -22,16 +22,6 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function IEPGoalSuggestionsSection({ goalDrafts, studentId, onRefresh }: Props) {
-  const navigate = useNavigate();
-
-  const askNovaAI = (draft: any) => {
-    const params = new URLSearchParams();
-    params.set('prompt', `Review this goal draft for IEP: "${draft.draft_title}". Goal: ${draft.goal_text || 'N/A'}. Benchmark: ${draft.benchmark_text || 'N/A'}. Rationale: ${draft.rationale || 'N/A'}.`);
-    params.set('clientId', studentId);
-    params.set('context', 'iep_goal_suggestion');
-    navigate(`/nova-ai?${params.toString()}`);
-  };
-
   const updateStatus = async (id: string, status: string) => {
     const { error } = await db.from('iep_meeting_goal_draft_items').update({ status }).eq('id', id);
     if (error) toast.error(error.message);
@@ -50,41 +40,52 @@ export function IEPGoalSuggestionsSection({ goalDrafts, studentId, onRefresh }: 
 
   return (
     <div className="space-y-2">
-      {goalDrafts.map(d => (
-        <Card key={d.id} className="hover:border-primary/20 transition-colors">
-          <CardContent className="p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Target className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span className="text-xs font-semibold truncate">{d.draft_title || 'Goal Draft'}</span>
-                  <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${STATUS_COLORS[d.status] || ''}`}>
-                    {d.status?.replace(/_/g, ' ')}
-                  </Badge>
+      {goalDrafts.map(d => {
+        const contextText = `Goal Draft: ${d.draft_title || 'N/A'}. Goal: ${d.goal_text || 'N/A'}. Benchmark: ${d.benchmark_text || 'N/A'}. Support: ${d.support_text || 'N/A'}. Rationale: ${d.rationale || 'N/A'}.`;
+        return (
+          <Card key={d.id} className="hover:border-primary/20 transition-colors">
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="text-xs font-semibold truncate">{d.draft_title || 'Goal Draft'}</span>
+                    <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${STATUS_COLORS[d.status] || ''}`}>
+                      {d.status?.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                  {d.goal_text && <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1">{d.goal_text}</p>}
+                  {d.benchmark_text && (
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5"><span className="font-medium">Benchmark:</span> {d.benchmark_text}</p>
+                  )}
+                  {d.support_text && (
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5"><span className="font-medium">Support:</span> {d.support_text}</p>
+                  )}
+                  {/* Treatment Intelligence Actions */}
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <TreatmentIntelligenceActions
+                      studentId={studentId}
+                      section="goal_suggestions"
+                      sourceObjectId={d.id}
+                      contextText={contextText}
+                      title={d.draft_title}
+                      compact={false}
+                    />
+                  </div>
                 </div>
-                {d.goal_text && <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1">{d.goal_text}</p>}
-                {d.benchmark_text && (
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5"><span className="font-medium">Benchmark:</span> {d.benchmark_text}</p>
-                )}
-                {d.support_text && (
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5"><span className="font-medium">Support:</span> {d.support_text}</p>
-                )}
+                <div className="flex gap-1 shrink-0">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-success" onClick={() => updateStatus(d.id, 'approved')}>
+                    <CheckCircle2 className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => updateStatus(d.id, 'excluded')}>
+                    <XCircle className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => askNovaAI(d)}>
-                  <BrainCircuit className="w-3 h-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-success" onClick={() => updateStatus(d.id, 'approved')}>
-                  <CheckCircle2 className="w-3 h-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => updateStatus(d.id, 'excluded')}>
-                  <XCircle className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

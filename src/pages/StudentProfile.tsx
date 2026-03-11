@@ -608,8 +608,8 @@ export default function StudentProfile() {
             Observations
           </TabsTrigger>
           <TabsTrigger value="iep-prep" className="gap-1 text-xs">
-            <Lightbulb className="w-3 h-3" />
-            IEP Prep
+            <BrainCircuit className="w-3 h-3" />
+            IEP Engine
           </TabsTrigger>
           <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
             <Heart className="w-3 h-3" />

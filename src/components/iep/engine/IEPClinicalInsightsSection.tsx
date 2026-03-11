@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BrainCircuit, Sparkles, TrendingUp, AlertTriangle, Heart, Lightbulb } from 'lucide-react';
+import { TreatmentIntelligenceActions } from '@/components/optimization/TreatmentIntelligenceActions';
 
 interface Props {
   intelligenceContext: any;
@@ -35,6 +35,12 @@ export function IEPClinicalInsightsSection({ intelligenceContext, snapshot, stud
   if (ctx.behavior_alert_count > 0) priorities.push(`${ctx.behavior_alert_count} behavior alerts to discuss`);
   if (ctx.programming_alert_count > 0) priorities.push(`${ctx.programming_alert_count} programming alerts`);
   if (ctx.caregiver_alert_count > 0) priorities.push(`${ctx.caregiver_alert_count} caregiver training flags`);
+
+  const insightsSummary = [
+    strengths.length > 0 ? `Strengths: ${strengths.join(', ')}` : '',
+    concerns.length > 0 ? `Concerns: ${concerns.join(', ')}` : '',
+    priorities.length > 0 ? `Priorities: ${priorities.join(', ')}` : '',
+  ].filter(Boolean).join('. ');
 
   return (
     <div className="space-y-3">
@@ -119,7 +125,7 @@ export function IEPClinicalInsightsSection({ intelligenceContext, snapshot, stud
         </Card>
       )}
 
-      {/* Nova AI Actions */}
+      {/* Nova AI Quick Actions */}
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => askNovaAI('Generate clinical meeting insights for this student including strengths, concerns, and recommended discussion priorities based on current data.')}>
           <Sparkles className="w-3 h-3" /> Generate Meeting Insights
@@ -131,6 +137,22 @@ export function IEPClinicalInsightsSection({ intelligenceContext, snapshot, stud
           <BrainCircuit className="w-3 h-3" /> Draft IEP Summary Language
         </Button>
       </div>
+
+      {/* Treatment Intelligence Export Actions */}
+      {insightsSummary && (
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-muted-foreground mb-2 font-medium">Export Clinical Insights</p>
+            <TreatmentIntelligenceActions
+              studentId={studentId}
+              section="clinical_recommendations"
+              contextText={insightsSummary}
+              title="Clinical Insights Summary"
+              compact={false}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

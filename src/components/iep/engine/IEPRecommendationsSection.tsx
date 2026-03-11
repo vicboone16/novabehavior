@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BrainCircuit, CheckCircle2, Zap, AlertTriangle, Info } from 'lucide-react';
+import { CheckCircle2, Zap, AlertTriangle, Info } from 'lucide-react';
+import { TreatmentIntelligenceActions } from '@/components/optimization/TreatmentIntelligenceActions';
 
 interface Props {
   recommendations: any[];
@@ -17,16 +17,6 @@ const SEV: Record<string, { icon: React.ReactNode; cls: string }> = {
 };
 
 export function IEPRecommendationsSection({ recommendations, studentId, onApprove }: Props) {
-  const navigate = useNavigate();
-
-  const askNovaAI = (rec: any) => {
-    const params = new URLSearchParams();
-    params.set('prompt', `Explain this IEP recommendation: "${rec.title}". Rationale: ${rec.rationale || 'N/A'}. Recommended action: ${rec.recommended_action || 'N/A'}.`);
-    params.set('clientId', studentId);
-    params.set('context', 'iep_recommendation');
-    navigate(`/nova-ai?${params.toString()}`);
-  };
-
   if (recommendations.length === 0) {
     return (
       <Card>
@@ -52,6 +42,7 @@ export function IEPRecommendationsSection({ recommendations, studentId, onApprov
           <div className="space-y-2">
             {recs.map(r => {
               const sev = SEV[r.severity || 'medium'] || SEV.medium;
+              const contextText = `Recommendation: ${r.title || 'N/A'}. Rationale: ${r.rationale || 'N/A'}. Action: ${r.recommended_action || 'N/A'}. Goal: ${r.suggested_goal_text || 'N/A'}.`;
               return (
                 <Card key={r.id} className="hover:border-primary/20 transition-colors">
                   <CardContent className="p-3">
@@ -68,11 +59,19 @@ export function IEPRecommendationsSection({ recommendations, studentId, onApprov
                             <span className="font-medium">Action:</span> {r.recommended_action}
                           </p>
                         )}
+                        {/* Treatment Intelligence Actions */}
+                        <div className="mt-2 pt-2 border-t border-border/50">
+                          <TreatmentIntelligenceActions
+                            studentId={studentId}
+                            section="clinical_recommendations"
+                            sourceObjectId={r.id}
+                            contextText={contextText}
+                            title={r.title}
+                            compact={false}
+                          />
+                        </div>
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => askNovaAI(r)}>
-                          <BrainCircuit className="w-3 h-3" />
-                        </Button>
                         {onApprove && (
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-success" onClick={() => onApprove(r)}>
                             <CheckCircle2 className="w-3 h-3" />
