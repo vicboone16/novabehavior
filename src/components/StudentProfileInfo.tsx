@@ -585,26 +585,54 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Case Management</h4>
 
-              {/* Supervisor & Status */}
+              {/* Supervising BCBA */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <UserCheck className="w-4 h-4" />
-                    Primary Supervisor
+                    Supervising BCBA
                   </Label>
                   <Select value={primarySupervisorStaffId} onValueChange={setPrimarySupervisorStaffId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select supervisor" />
+                      <SelectValue placeholder="Select BCBA supervisor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {supervisors.map((s) => (
+                      <SelectItem value="">None</SelectItem>
+                      {bcbaStaff.map((s) => (
                         <SelectItem key={s.user_id} value={s.user_id}>
-                          {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credential})
+                          {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credentials.join(', ')})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Mid-Tier Supervisor
+                  </Label>
+                  <Select value={midTierSupervisorStaffId} onValueChange={setMidTierSupervisorStaffId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Lead RBT / BCaBA (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {allStaff.filter(s => s.user_id !== primarySupervisorStaffId).map((s) => (
+                        <SelectItem key={s.user_id} value={s.user_id}>
+                          {s.display_name || `${s.first_name} ${s.last_name}`}
+                          {s.credentials.length > 0 ? ` (${s.credentials.join(', ')})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    A Lead RBT or BCaBA who supervises day-to-day but reports to the BCBA above
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Activation Status</Label>
                   <Select value={activationStatus} onValueChange={setActivationStatus}>
