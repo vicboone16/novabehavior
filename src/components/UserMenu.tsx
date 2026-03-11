@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, ShieldCheck, Smartphone, BookOpen, User, Users } from 'lucide-react';
+import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, ShieldCheck, BookOpen, User, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
