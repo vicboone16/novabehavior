@@ -355,7 +355,7 @@ export default function ResourceHub() {
                   Resource Hub
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Team files, personal cloud storage & uploads
+                  Team files, personal cloud, service requests & templates
                 </p>
               </div>
             </div>
