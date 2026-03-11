@@ -15,7 +15,7 @@ export function RecentSessionNotesWidget() {
       const { data } = await supabase
         .from('session_notes' as any)
         .select('id, created_at, status, session_id')
-        .eq('author_id', user!.id)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(6);
       return (data as any[]) || [];
