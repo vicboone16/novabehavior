@@ -187,15 +187,6 @@ export function UserMenu() {
             <BookOpen className="mr-2 h-4 w-4" />
             LMS / Training
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setShowPinSetup(true);
-            }}
-          >
-            <Smartphone className="mr-2 h-4 w-4" />
-            Set Up Quick PIN
-          </DropdownMenuItem>
           {isAdmin && (
             <>
               <DropdownMenuSeparator />
