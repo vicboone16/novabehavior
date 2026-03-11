@@ -116,13 +116,13 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
   const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
 
-  // Load supervisors list
+  // Load supervisors list — show all approved staff so any can be assigned
   useEffect(() => {
     const loadSupervisors = async () => {
       const { data } = await supabase
         .from('profiles')
         .select('user_id, display_name, first_name, last_name, credential')
-        .in('credential', ['BCBA', 'BCaBA', 'BCBA-D']);
+        .eq('is_approved', true);
       setSupervisors(data || []);
     };
     loadSupervisors();
