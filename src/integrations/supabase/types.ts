@@ -17142,6 +17142,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_optimization_quick_actions: {
+        Row: {
+          action_key: string
+          action_title: string
+          created_at: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          source_type: string
+        }
+        Insert: {
+          action_key: string
+          action_title: string
+          created_at?: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          source_type: string
+        }
+        Update: {
+          action_key?: string
+          action_title?: string
+          created_at?: string | null
+          default_prompt_text?: string
+          default_reasoning_mode?: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          source_type?: string
+        }
+        Relationships: []
+      }
       nova_ai_output_exports: {
         Row: {
           client_id: string | null
@@ -33017,6 +33053,45 @@ export type Database = {
           },
         ]
       }
+      v_clinical_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_clinical_hours_forecast: {
         Row: {
           agency_id: string | null
@@ -33435,6 +33510,96 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      v_iep_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_iep_prep_optimization_recommendations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          rationale: string | null
+          recommendation_key: string | null
+          recommended_action: string | null
+          run_id: string | null
+          severity: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
       }
       v_intervention_effectiveness_by_function: {
         Row: {
@@ -33990,6 +34155,36 @@ export type Database = {
           id?: string | null
           page_key?: string | null
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      v_nova_ai_optimization_quick_actions: {
+        Row: {
+          action_key: string | null
+          action_title: string | null
+          default_prompt_text: string | null
+          default_reasoning_mode: string | null
+          id: string | null
+          sort_order: number | null
+          source_type: string | null
+        }
+        Insert: {
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          id?: string | null
+          sort_order?: number | null
+          source_type?: string | null
+        }
+        Update: {
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          id?: string | null
+          sort_order?: number | null
+          source_type?: string | null
         }
         Relationships: []
       }
@@ -34806,6 +35001,57 @@ export type Database = {
           },
         ]
       }
+      v_programming_optimization_recommendations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          rationale: string | null
+          recommendation_key: string | null
+          recommended_action: string | null
+          run_id: string | null
+          severity: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       v_progression_group_summary: {
         Row: {
           client_id: string | null
@@ -34824,6 +35070,105 @@ export type Database = {
           total_steps: number | null
         }
         Relationships: []
+      }
+      v_reassessment_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          mode: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          mode?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          mode?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_reassessment_optimization_recommendations: {
+        Row: {
+          created_at: string | null
+          domain: string | null
+          export_id: string | null
+          id: string | null
+          rationale: string | null
+          recommended_action: string | null
+          source_type: string | null
+          status: string | null
+          student_id: string | null
+          suggested_goal_text: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain?: string | null
+          export_id?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommended_action?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+          suggested_goal_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string | null
+          export_id?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommended_action?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+          suggested_goal_text?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reassessment_recommendation_items_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "goal_optimization_exports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reassessment_recommendation_items_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "v_goal_optimization_export_history"
+            referencedColumns: ["export_id"]
+          },
+        ]
       }
       v_replacement_behavior_context_summary: {
         Row: {
@@ -36738,13 +37083,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -36754,7 +37092,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -36768,8 +37106,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -36782,6 +37120,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -36789,7 +37141,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -36803,8 +37155,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -36816,20 +37168,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -38006,6 +38351,24 @@ export type Database = {
         Args: {
           p_context_session_id: string
           p_entry_key: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      launch_nova_ai_from_goal_draft: {
+        Args: {
+          p_action_key?: string
+          p_context_session_id: string
+          p_draft_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      launch_nova_ai_from_optimization_recommendation: {
+        Args: {
+          p_action_key?: string
+          p_context_session_id: string
+          p_recommendation_id: string
           p_user_id: string
         }
         Returns: string
