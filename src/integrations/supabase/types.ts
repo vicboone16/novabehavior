@@ -24869,12 +24869,21 @@ export type Database = {
         Row: {
           active: boolean
           active_benchmark_stage_id: string | null
+          closed_at: string | null
+          closed_reason:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
           created_at: string
           criteria_source: string
           custom_rule_json: Json | null
+          discontinue_reason_text: string | null
           display_order: number
           global_criteria_id: string | null
+          hold_at: string | null
+          hold_reason: string | null
           id: string
+          is_required: boolean
+          lifecycle_status: Database["public"]["Enums"]["target_status"]
           mastery_consecutive_sessions: number | null
           mastery_criteria: string | null
           mastery_percent: number | null
@@ -24885,20 +24894,35 @@ export type Database = {
           program_criteria_id: string | null
           program_id: string
           prompt_counts_as_correct: boolean | null
+          reinstated_at: string | null
+          reopened_at: string | null
+          replaced_by_target_id: string | null
+          replaces_target_id: string | null
           sort_order: number
           status: string
           status_effective_date: string
           updated_at: string
+          version: number
+          version_group_id: string | null
         }
         Insert: {
           active?: boolean
           active_benchmark_stage_id?: string | null
+          closed_at?: string | null
+          closed_reason?:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
           created_at?: string
           criteria_source?: string
           custom_rule_json?: Json | null
+          discontinue_reason_text?: string | null
           display_order?: number
           global_criteria_id?: string | null
+          hold_at?: string | null
+          hold_reason?: string | null
           id?: string
+          is_required?: boolean
+          lifecycle_status?: Database["public"]["Enums"]["target_status"]
           mastery_consecutive_sessions?: number | null
           mastery_criteria?: string | null
           mastery_percent?: number | null
@@ -24909,20 +24933,35 @@ export type Database = {
           program_criteria_id?: string | null
           program_id: string
           prompt_counts_as_correct?: boolean | null
+          reinstated_at?: string | null
+          reopened_at?: string | null
+          replaced_by_target_id?: string | null
+          replaces_target_id?: string | null
           sort_order?: number
           status?: string
           status_effective_date?: string
           updated_at?: string
+          version?: number
+          version_group_id?: string | null
         }
         Update: {
           active?: boolean
           active_benchmark_stage_id?: string | null
+          closed_at?: string | null
+          closed_reason?:
+            | Database["public"]["Enums"]["target_closed_reason"]
+            | null
           created_at?: string
           criteria_source?: string
           custom_rule_json?: Json | null
+          discontinue_reason_text?: string | null
           display_order?: number
           global_criteria_id?: string | null
+          hold_at?: string | null
+          hold_reason?: string | null
           id?: string
+          is_required?: boolean
+          lifecycle_status?: Database["public"]["Enums"]["target_status"]
           mastery_consecutive_sessions?: number | null
           mastery_criteria?: string | null
           mastery_percent?: number | null
@@ -24933,10 +24972,16 @@ export type Database = {
           program_criteria_id?: string | null
           program_id?: string
           prompt_counts_as_correct?: boolean | null
+          reinstated_at?: string | null
+          reopened_at?: string | null
+          replaced_by_target_id?: string | null
+          replaces_target_id?: string | null
           sort_order?: number
           status?: string
           status_effective_date?: string
           updated_at?: string
+          version?: number
+          version_group_id?: string | null
         }
         Relationships: [
           {
@@ -24986,6 +25031,48 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaced_by_target_id_fkey"
+            columns: ["replaced_by_target_id"]
+            isOneToOne: false
+            referencedRelation: "canon_goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaced_by_target_id_fkey"
+            columns: ["replaced_by_target_id"]
+            isOneToOne: false
+            referencedRelation: "goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaced_by_target_id_fkey"
+            columns: ["replaced_by_target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaces_target_id_fkey"
+            columns: ["replaces_target_id"]
+            isOneToOne: false
+            referencedRelation: "canon_goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaces_target_id_fkey"
+            columns: ["replaces_target_id"]
+            isOneToOne: false
+            referencedRelation: "goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "skill_targets_replaces_target_id_fkey"
+            columns: ["replaces_target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
             referencedColumns: ["id"]
           },
         ]
@@ -28224,6 +28311,70 @@ export type Database = {
           tag_type?: string
         }
         Relationships: []
+      }
+      target_activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_phase: string | null
+          new_status: string | null
+          notes: string | null
+          performed_by: string | null
+          previous_phase: string | null
+          previous_status: string | null
+          reason: string | null
+          target_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_phase?: string | null
+          new_status?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          previous_phase?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          target_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_phase?: string | null
+          new_status?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          previous_phase?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "target_activity_log_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "canon_goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "target_activity_log_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "goal_data"
+            referencedColumns: ["target_id"]
+          },
+          {
+            foreignKeyName: "target_activity_log_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "skill_targets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       target_events: {
         Row: {
@@ -40149,6 +40300,12 @@ export type Database = {
         | "discrete_trial"
         | "natural_environment"
         | "other"
+      program_instance_status:
+        | "active"
+        | "on_hold"
+        | "completed"
+        | "paused"
+        | "archived"
       program_status: "active" | "on_hold" | "completed" | "archived"
       progression_action_type:
         | "advance_phase"
@@ -40363,6 +40520,13 @@ export const Constants = {
         "discrete_trial",
         "natural_environment",
         "other",
+      ],
+      program_instance_status: [
+        "active",
+        "on_hold",
+        "completed",
+        "paused",
+        "archived",
       ],
       program_status: ["active", "on_hold", "completed", "archived"],
       progression_action_type: [
