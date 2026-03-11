@@ -465,6 +465,7 @@ export default function ResourceHub() {
             {filtered.map(item => renderFileCard(item, activeTab === 'team'))}
           </div>
         )}
+        </>)}
       </div>
 
       {/* Upload Dialog */}
