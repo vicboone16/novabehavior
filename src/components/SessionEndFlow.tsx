@@ -66,6 +66,7 @@ export function SessionEndFlow({
     selectedStudentIds, 
     endStudentSession,
     resetAllStudentSessionStatuses,
+    resetSessionData,
     currentSessionId,
     sessionStartTime,
     getStudentSessionStatus,
@@ -331,8 +332,8 @@ export function SessionEndFlow({
 
   const handleComplete = () => {
     if (mode === 'all') {
-      // If ending all, also reset the session
-      resetAllStudentSessionStatuses();
+      // Reset session metadata, clear data entries, and deselect students
+      resetSessionData();
     }
     onComplete();
     onOpenChange(false);
@@ -625,7 +626,7 @@ export function SessionEndFlow({
     if (!isOpen && dbEnded) {
       // User closed dialog after session was ended in DB — must clean up local state
       if (mode === 'all') {
-        resetAllStudentSessionStatuses();
+        resetSessionData();
       }
       onComplete();
     }
