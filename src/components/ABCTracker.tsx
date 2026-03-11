@@ -35,6 +35,8 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [showEntries, setShowEntries] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  const [editDateValue, setEditDateValue] = useState('');
 
   const student = students.find(s => s.id === studentId);
   const customAntecedents = getStudentAntecedents(studentId);
