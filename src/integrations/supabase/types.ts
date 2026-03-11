@@ -26119,6 +26119,65 @@ export type Database = {
           },
         ]
       }
+      shared_library_items: {
+        Row: {
+          agency_id: string | null
+          category: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          is_pinned: boolean
+          storage_path: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          agency_id?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          is_pinned?: boolean
+          storage_path: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          agency_id?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          is_pinned?: boolean
+          storage_path?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_library_items_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_session_data: {
         Row: {
           behavior_id: string | null
