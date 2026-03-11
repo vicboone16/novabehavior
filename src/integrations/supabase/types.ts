@@ -9117,6 +9117,122 @@ export type Database = {
           },
         ]
       }
+      client_program_items: {
+        Row: {
+          client_program_id: string
+          created_at: string
+          description: string | null
+          id: string
+          item_type: string
+          metadata_json: Json
+          sort_order: number
+          source_template_item_id: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_program_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type: string
+          metadata_json?: Json
+          sort_order?: number
+          source_template_item_id?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_program_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: string
+          metadata_json?: Json
+          sort_order?: number
+          source_template_item_id?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_program_items_client_program_id_fkey"
+            columns: ["client_program_id"]
+            isOneToOne: false
+            referencedRelation: "client_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_program_items_source_template_item_id_fkey"
+            columns: ["source_template_item_id"]
+            isOneToOne: false
+            referencedRelation: "program_template_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_programs: {
+        Row: {
+          activated_at: string | null
+          agency_id: string
+          assigned_by: string
+          baseline_json: Json | null
+          client_id: string
+          created_at: string
+          customization_notes: string | null
+          description: string | null
+          domain: string | null
+          id: string
+          source_template_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          agency_id: string
+          assigned_by: string
+          baseline_json?: Json | null
+          client_id: string
+          created_at?: string
+          customization_notes?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          source_template_id?: string | null
+          status: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          agency_id?: string
+          assigned_by?: string
+          baseline_json?: Json | null
+          client_id?: string
+          created_at?: string
+          customization_notes?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          source_template_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_programs_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_safety_medical: {
         Row: {
           allergies: Json | null
@@ -22478,6 +22594,116 @@ export type Database = {
           },
         ]
       }
+      program_template_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          item_type: string
+          metadata_json: Json
+          sort_order: number
+          template_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type: string
+          metadata_json?: Json
+          sort_order?: number
+          template_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: string
+          metadata_json?: Json
+          sort_order?: number
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_templates: {
+        Row: {
+          age_range: string | null
+          agency_id: string | null
+          category: string
+          created_at: string
+          created_by: string
+          data_collection_guidance: string | null
+          description: string | null
+          domain: string | null
+          id: string
+          implementation_notes: string | null
+          mastery_guidance: string | null
+          prerequisites: string | null
+          prompt_guidance: string | null
+          reinforcement_guidance: string | null
+          scope: string
+          status: string
+          target_population: string | null
+          title: string
+          updated_at: string
+          version_no: number
+        }
+        Insert: {
+          age_range?: string | null
+          agency_id?: string | null
+          category: string
+          created_at?: string
+          created_by: string
+          data_collection_guidance?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          implementation_notes?: string | null
+          mastery_guidance?: string | null
+          prerequisites?: string | null
+          prompt_guidance?: string | null
+          reinforcement_guidance?: string | null
+          scope: string
+          status: string
+          target_population?: string | null
+          title: string
+          updated_at?: string
+          version_no?: number
+        }
+        Update: {
+          age_range?: string | null
+          agency_id?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string
+          data_collection_guidance?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          implementation_notes?: string | null
+          mastery_guidance?: string | null
+          prerequisites?: string | null
+          prompt_guidance?: string | null
+          reinforcement_guidance?: string | null
+          scope?: string
+          status?: string
+          target_population?: string | null
+          title?: string
+          updated_at?: string
+          version_no?: number
+        }
+        Relationships: []
+      }
       programming_recommendation_items: {
         Row: {
           created_at: string | null
@@ -25562,6 +25788,190 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      service_request_attachments: {
+        Row: {
+          agency_id: string
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          mime_type: string | null
+          request_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          request_id: string
+          uploaded_by: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          request_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_request_attachments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_request_types: {
+        Row: {
+          agency_id: string | null
+          default_assigned_role: string | null
+          default_priority: string | null
+          id: string
+          is_active: boolean
+          request_type_key: string
+          request_type_name: string
+        }
+        Insert: {
+          agency_id?: string | null
+          default_assigned_role?: string | null
+          default_priority?: string | null
+          id?: string
+          is_active?: boolean
+          request_type_key: string
+          request_type_name: string
+        }
+        Update: {
+          agency_id?: string | null
+          default_assigned_role?: string | null
+          default_priority?: string | null
+          id?: string
+          is_active?: boolean
+          request_type_key?: string
+          request_type_name?: string
+        }
+        Relationships: []
+      }
+      service_request_updates: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          new_assigned_to: string | null
+          new_status: string | null
+          note_text: string | null
+          old_assigned_to: string | null
+          old_status: string | null
+          request_id: string
+          update_type: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          new_assigned_to?: string | null
+          new_status?: string | null
+          note_text?: string | null
+          old_assigned_to?: string | null
+          old_status?: string | null
+          request_id: string
+          update_type: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          new_assigned_to?: string | null
+          new_status?: string | null
+          note_text?: string | null
+          old_assigned_to?: string | null
+          old_status?: string | null
+          request_id?: string
+          update_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_request_updates_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_requests: {
+        Row: {
+          agency_id: string
+          assigned_role: string | null
+          assigned_to: string | null
+          client_id: string | null
+          closed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          related_module: string | null
+          request_type: string
+          requested_by: string
+          resolution_summary: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          assigned_role?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_module?: string | null
+          request_type: string
+          requested_by: string
+          resolution_summary?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          assigned_role?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          related_module?: string | null
+          request_type?: string
+          requested_by?: string
+          resolution_summary?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       session_blocking_reasons: {
         Row: {
