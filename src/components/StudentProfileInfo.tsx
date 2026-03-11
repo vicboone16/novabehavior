@@ -64,6 +64,8 @@ const ACTIVATION_STATUS_OPTIONS = [
 export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [bcbaStaff, setBcbaStaff] = useState<any[]>([]);
+  const [allStaff, setAllStaff] = useState<any[]>([]);
   
   // Basic Name Fields
   const [firstName, setFirstName] = useState(student.firstName || '');
@@ -107,6 +109,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   // Settings
   const [primarySetting, setPrimarySetting] = useState<string>(student.primarySetting || '');
   const [primarySupervisorStaffId, setPrimarySupervisorStaffId] = useState(student.primarySupervisorStaffId || '');
+  const [midTierSupervisorStaffId, setMidTierSupervisorStaffId] = useState(student.midTierSupervisorStaffId || '');
   
   // Case Status
   const [caseOpenedDate, setCaseOpenedDate] = useState(formatDateForInput(student.caseOpenedDate));
@@ -116,16 +119,48 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
   const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
 
-  // Load supervisors list — show all approved staff so any can be assigned
+  // Load staff with credentials from staff_credentials table
   useEffect(() => {
-    const loadSupervisors = async () => {
-      const { data } = await supabase
+    const loadStaffWithCredentials = async () => {
+      // Get all approved profiles
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name, first_name, last_name, credential')
         .eq('is_approved', true);
-      setSupervisors(data || []);
+      
+      // Get verified credentials from staff_credentials
+      const { data: credentials } = await supabase
+        .from('staff_credentials')
+        .select('user_id, credential_type, is_verified')
+        .in('credential_type', ['BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA'])
+        .eq('is_verified', true);
+      
+      const allProfiles = profiles || [];
+      const credMap = new Map<string, string[]>();
+      (credentials || []).forEach(c => {
+        const existing = credMap.get(c.user_id) || [];
+        existing.push(c.credential_type);
+        credMap.set(c.user_id, existing);
+      });
+      
+      // Enrich profiles with credential info
+      const enriched = allProfiles.map(p => ({
+        ...p,
+        credentials: credMap.get(p.user_id) || (p.credential ? [p.credential] : []),
+      }));
+      
+      setAllStaff(enriched);
+      
+      // BCBAs for primary supervisor
+      const bcbas = enriched.filter(p => 
+        p.credentials.some((c: string) => ['BCBA', 'BCBA-D', 'BCaBA'].includes(c))
+      );
+      setBcbaStaff(bcbas);
+      
+      // All staff can be mid-tier supervisors
+      setSupervisors(enriched);
     };
-    loadSupervisors();
+    loadStaffWithCredentials();
   }, []);
 
   const toggleCaseType = (type: CaseType) => {
