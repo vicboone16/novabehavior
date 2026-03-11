@@ -330,7 +330,15 @@ export default function NovaAI() {
 
         {/* Quick Prompts Library */}
         <TabsContent value="prompts">
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Optimization Quick Actions */}
+            <NovaAIOptimizationActions
+              onLaunch={(action, contextText) => {
+                setInput(contextText);
+                setActiveTab('ask');
+                setTimeout(() => textareaRef.current?.focus(), 100);
+              }}
+            />
             <div>
               <h2 className="text-lg font-semibold text-foreground">Quick Prompt Library</h2>
               <p className="text-sm text-muted-foreground">Click any prompt to load it into the chat</p>
