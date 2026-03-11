@@ -128,12 +128,12 @@ export const ROLE_PRESETS: Record<string, string[]> = {
   // Core widgets everyone sees
   _core: ['next-up', 'schedule-overview'],
   // Role-specific additions
-  super_admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
-  admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes'],
+  super_admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes', 'service-requests'],
+  admin: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'billing-overview', 'utilization', 'recent-notes', 'service-requests'],
   // 'staff' is the resolved role for bcba/rbt in AuthContext
-  staff: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'recent-notes'],
-  bcba: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'recent-notes'],
-  rbt: ['classroom-live', 'trending-behaviors', 'recent-notes'],
+  staff: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'recent-notes', 'service-requests'],
+  bcba: ['caseload-risk', 'alerts-feed', 'trending-behaviors', 'classroom-live', 'supervisor-signals', 'recent-notes', 'service-requests'],
+  rbt: ['classroom-live', 'trending-behaviors', 'recent-notes', 'service-requests'],
   teacher: ['classroom-live', 'parent-comms'],
   parent: ['trending-behaviors', 'parent-comms'],
   viewer: [],
