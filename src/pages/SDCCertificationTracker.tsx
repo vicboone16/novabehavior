@@ -83,7 +83,7 @@ export default function SDCCertificationTracker() {
               <span className="text-sm font-medium text-muted-foreground">{completedCount}/{totalCount}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Complete all requirements to earn SDC Behavior Training certification.
+              Complete all requirements to earn Team Training certification.
             </p>
           </CardContent>
         </Card>
