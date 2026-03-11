@@ -2018,11 +2018,29 @@ export const useDataStore = create<DataState>()(
       startSession: (linkedAppointmentId?: string, existingSessionId?: string) => {
         // Store as Date.now() timestamp-based Date to avoid serialization issues
         const now = new Date();
+        const newSessionId = existingSessionId || crypto.randomUUID();
+        const state = get();
+        
+        // Clean stale live entries from previous sessions that were never properly saved/ended.
+        // Preserve: historical entries, entries belonging to saved sessions, entries with no sessionId that are historical.
+        const savedSessionIds = new Set(state.sessions.map(s => s.id));
+        const isStale = (e: { sessionId?: string; isHistorical?: boolean }) => {
+          if (e.isHistorical) return false; // Never remove historical data
+          if (!e.sessionId) return true; // Orphaned live entry with no session — stale
+          if (savedSessionIds.has(e.sessionId)) return false; // Belongs to a saved session
+          if (e.sessionId === state.currentSessionId) return true; // Old active session being replaced
+          return true; // Entry from an unsaved, non-current session — stale
+        };
+        
         set({ 
           sessionStartTime: now,
-          // If joining an existing shared session, use that session's ID
-          currentSessionId: existingSessionId || crypto.randomUUID(),
+          currentSessionId: newSessionId,
           linkedAppointmentId: linkedAppointmentId || null,
+          // Remove stale live entries so new session starts clean
+          frequencyEntries: state.frequencyEntries.filter(e => !isStale(e)),
+          durationEntries: state.durationEntries.filter(e => !isStale(e as any)),
+          abcEntries: state.abcEntries.filter(e => !isStale(e as any)),
+          intervalEntries: state.intervalEntries.filter(e => !isStale(e as any)),
         });
       },
 
