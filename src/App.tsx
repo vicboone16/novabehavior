@@ -223,7 +223,25 @@ const App = () => {
               <ProtectedRoute>
                 <ApprovalCheck>
                   <SyncProvider>
-                    <SharedLibrary />
+                    <ResourceHub />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/resource-hub" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ResourceHub />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/operations" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Operations />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
