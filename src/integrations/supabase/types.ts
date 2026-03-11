@@ -37437,9 +37437,9 @@ export type Database = {
           context_json: Json | null
           created_at: string | null
           created_by: string | null
-          export_id: string | null
           export_target: string | null
           exported_text: string | null
+          id: string | null
           source_object_id: string | null
           source_section: string | null
           student_id: string | null
@@ -37448,9 +37448,9 @@ export type Database = {
           context_json?: Json | null
           created_at?: string | null
           created_by?: string | null
-          export_id?: string | null
           export_target?: string | null
           exported_text?: string | null
+          id?: string | null
           source_object_id?: string | null
           source_section?: string | null
           student_id?: string | null
@@ -37459,9 +37459,9 @@ export type Database = {
           context_json?: Json | null
           created_at?: string | null
           created_by?: string | null
-          export_id?: string | null
           export_target?: string | null
           exported_text?: string | null
+          id?: string | null
           source_object_id?: string | null
           source_section?: string | null
           student_id?: string | null
