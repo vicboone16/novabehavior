@@ -2332,6 +2332,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_navigation_structure: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_visible: boolean
+          label: string
+          level: number
+          nav_key: string
+          parent_key: string | null
+          route: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean
+          label: string
+          level?: number
+          nav_key: string
+          parent_key?: string | null
+          route: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean
+          label?: string
+          level?: number
+          nav_key?: string
+          parent_key?: string | null
+          route?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       app_notifications: {
         Row: {
           agency_id: string
