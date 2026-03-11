@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Calendar, School, GraduationCap, Briefcase, FlaskConical, Save, X, Edit2, FileText, Stethoscope, MapPin, UserCheck, Phone, Mail } from 'lucide-react';
+import { User, Users, Calendar, School, GraduationCap, Briefcase, FlaskConical, Save, X, Edit2, FileText, Stethoscope, MapPin, UserCheck, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,6 +64,8 @@ const ACTIVATION_STATUS_OPTIONS = [
 export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [supervisors, setSupervisors] = useState<any[]>([]);
+  const [bcbaStaff, setBcbaStaff] = useState<any[]>([]);
+  const [allStaff, setAllStaff] = useState<any[]>([]);
   
   // Basic Name Fields
   const [firstName, setFirstName] = useState(student.firstName || '');
@@ -107,6 +109,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   // Settings
   const [primarySetting, setPrimarySetting] = useState<string>(student.primarySetting || '');
   const [primarySupervisorStaffId, setPrimarySupervisorStaffId] = useState(student.primarySupervisorStaffId || '');
+  const [midTierSupervisorStaffId, setMidTierSupervisorStaffId] = useState(student.midTierSupervisorStaffId || '');
   
   // Case Status
   const [caseOpenedDate, setCaseOpenedDate] = useState(formatDateForInput(student.caseOpenedDate));
@@ -116,16 +119,48 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
   const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
 
-  // Load supervisors list — show all approved staff so any can be assigned
+  // Load staff with credentials from staff_credentials table
   useEffect(() => {
-    const loadSupervisors = async () => {
-      const { data } = await supabase
+    const loadStaffWithCredentials = async () => {
+      // Get all approved profiles
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name, first_name, last_name, credential')
         .eq('is_approved', true);
-      setSupervisors(data || []);
+      
+      // Get verified credentials from staff_credentials
+      const { data: credentials } = await supabase
+        .from('staff_credentials')
+        .select('user_id, credential_type, is_verified')
+        .in('credential_type', ['BCBA', 'BCBA-D', 'BCaBA', 'RBT', 'QBA'])
+        .eq('is_verified', true);
+      
+      const allProfiles = profiles || [];
+      const credMap = new Map<string, string[]>();
+      (credentials || []).forEach(c => {
+        const existing = credMap.get(c.user_id) || [];
+        existing.push(c.credential_type);
+        credMap.set(c.user_id, existing);
+      });
+      
+      // Enrich profiles with credential info
+      const enriched = allProfiles.map(p => ({
+        ...p,
+        credentials: credMap.get(p.user_id) || (p.credential ? [p.credential] : []),
+      }));
+      
+      setAllStaff(enriched);
+      
+      // BCBAs for primary supervisor
+      const bcbas = enriched.filter(p => 
+        p.credentials.some((c: string) => ['BCBA', 'BCBA-D', 'BCaBA'].includes(c))
+      );
+      setBcbaStaff(bcbas);
+      
+      // All staff can be mid-tier supervisors
+      setSupervisors(enriched);
     };
-    loadSupervisors();
+    loadStaffWithCredentials();
   }, []);
 
   const toggleCaseType = (type: CaseType) => {
@@ -179,6 +214,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       diagnoses: diagnosesArray.length > 0 ? diagnosesArray : undefined,
       primarySetting: primarySetting as Student['primarySetting'] || undefined,
       primarySupervisorStaffId: primarySupervisorStaffId || undefined,
+      midTierSupervisorStaffId: midTierSupervisorStaffId || undefined,
       caseOpenedDate: parseDate(caseOpenedDate),
       activationStatus: activationStatus as Student['activationStatus'] || undefined,
       contactEmail: contactEmail || undefined,
@@ -211,6 +247,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setDiagnosesText((student.diagnoses || []).join(', '));
     setPrimarySetting(student.primarySetting || '');
     setPrimarySupervisorStaffId(student.primarySupervisorStaffId || '');
+    setMidTierSupervisorStaffId(student.midTierSupervisorStaffId || '');
     setCaseOpenedDate(formatDateForInput(student.caseOpenedDate));
     setActivationStatus(student.activationStatus || '');
     setContactEmail(student.contactEmail || '');
@@ -222,9 +259,17 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const ageInfo = student.dateOfBirth ? calculateAge(new Date(student.dateOfBirth)) : null;
   const zodiacSign = student.dateOfBirth ? getZodiacSign(new Date(student.dateOfBirth)) : null;
 
-  // Find supervisor name
-  const supervisorName = supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.display_name || 
-    supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.first_name || '';
+  // Find supervisor names
+  const getStaffName = (userId: string | undefined) => {
+    if (!userId) return '';
+    const s = allStaff.find(s => s.user_id === userId);
+    if (!s) return '';
+    const name = s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim();
+    const creds = s.credentials?.length ? ` (${s.credentials.join(', ')})` : '';
+    return `${name}${creds}`;
+  };
+  const supervisorName = getStaffName(student.primarySupervisorStaffId);
+  const midTierName = getStaffName(student.midTierSupervisorStaffId);
 
   return (
     <Card>
@@ -540,26 +585,54 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Case Management</h4>
 
-              {/* Supervisor & Status */}
+              {/* Supervising BCBA */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <UserCheck className="w-4 h-4" />
-                    Primary Supervisor
+                    Supervising BCBA
                   </Label>
                   <Select value={primarySupervisorStaffId} onValueChange={setPrimarySupervisorStaffId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select supervisor" />
+                      <SelectValue placeholder="Select BCBA supervisor" />
                     </SelectTrigger>
                     <SelectContent>
-                      {supervisors.map((s) => (
+                      <SelectItem value="">None</SelectItem>
+                      {bcbaStaff.map((s) => (
                         <SelectItem key={s.user_id} value={s.user_id}>
-                          {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credential})
+                          {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credentials.join(', ')})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Mid-Tier Supervisor
+                  </Label>
+                  <Select value={midTierSupervisorStaffId} onValueChange={setMidTierSupervisorStaffId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Lead RBT / BCaBA (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {allStaff.filter(s => s.user_id !== primarySupervisorStaffId).map((s) => (
+                        <SelectItem key={s.user_id} value={s.user_id}>
+                          {s.display_name || `${s.first_name} ${s.last_name}`}
+                          {s.credentials.length > 0 ? ` (${s.credentials.join(', ')})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    A Lead RBT or BCaBA who supervises day-to-day but reports to the BCBA above
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Activation Status</Label>
                   <Select value={activationStatus} onValueChange={setActivationStatus}>
@@ -691,11 +764,17 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
               </div>
             )}
 
-            {/* Supervisor */}
+            {/* Supervisors */}
             {supervisorName && (
               <div className="flex items-center gap-3 text-sm">
                 <UserCheck className="w-4 h-4 text-muted-foreground" />
-                <span>Supervisor: {supervisorName}</span>
+                <span>Supervising BCBA: {supervisorName}</span>
+              </div>
+            )}
+            {midTierName && (
+              <div className="flex items-center gap-3 text-sm">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span>Mid-Tier Supervisor: {midTierName}</span>
               </div>
             )}
 

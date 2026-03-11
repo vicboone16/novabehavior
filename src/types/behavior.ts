@@ -465,8 +465,11 @@ export interface Student {
   diagnoses?: string[];
   // Primary Setting
   primarySetting?: 'home' | 'school' | 'clinic' | 'community' | 'telehealth';
-  // Primary Supervisor
+  // Primary Supervisor (Supervising BCBA)
   primarySupervisorStaffId?: string;
+  // Mid-Tier Supervisor (Lead RBT / BCaBA who also has a supervisor above them)
+  midTierSupervisorStaffId?: string;
+  isMidTierSupervisor?: boolean;
   // Case Status
   caseOpenedDate?: Date;
   caseClosedDate?: Date;
