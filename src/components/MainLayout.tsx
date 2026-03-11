@@ -15,7 +15,8 @@ import {
   Smartphone,
   Menu,
   Stethoscope,
-  FolderOpen,
+  HardDrive,
+  Briefcase,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
