@@ -12,38 +12,33 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check - require a valid JWT
+    // Auth: try user JWT first, fall back to email in body (cross-project calls)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    let authenticatedEmail: string | null = null;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      const authClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
       );
+      try {
+        const { data: userData } = await authClient.auth.getUser();
+        if (userData?.user?.email) {
+          authenticatedEmail = userData.user.email;
+        }
+      } catch (_) {
+        // Not a valid user JWT — may be cross-project anon key call
+      }
     }
 
-    // Validate the JWT using anon key client
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: userData, error: userErr } = await authClient.auth.getUser();
-    if (userErr || !userData?.user?.email) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Use the authenticated user's email, ignoring any email in the request body
-    const authenticatedEmail = userData.user.email;
-
-    const { app_slug } = await req.json().catch(() => ({ app_slug: undefined }));
-    const email = authenticatedEmail;
+    const body = await req.json().catch(() => ({} as any));
+    const email = authenticatedEmail || body.email;
+    const app_slug = body.app_slug;
 
     if (!email) {
       return new Response(
-        JSON.stringify({ error: "Could not determine user email from token" }),
+        JSON.stringify({ error: "No email could be resolved. Provide a valid JWT or email in the body." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
