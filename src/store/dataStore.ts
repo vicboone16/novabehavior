@@ -187,7 +187,7 @@ interface DataState {
   // ABC actions
   addABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
   addEnhancedABCEntry: (entry: Omit<ABCEntry, 'id' | 'timestamp'>) => void;
-  updateABCEntry: (id: string, updates: Partial<Omit<ABCEntry, 'id' | 'timestamp'>>) => void;
+  updateABCEntry: (id: string, updates: Partial<Omit<ABCEntry, 'id'>>) => void;
   deleteABCEntry: (id: string) => void;
   
   // Frequency actions
