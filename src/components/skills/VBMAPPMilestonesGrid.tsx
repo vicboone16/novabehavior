@@ -714,15 +714,19 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
     }
   };
 
-  // ── Print / Export ────────────────────────────────────────────────────────
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+  // ── PDF Export ─────────────────────────────────────────────────────────────
+  const handleExportPdf = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: html2canvas } = await import('html2canvas');
+    const { toast } = await import('sonner');
 
     const selectedA = assessments.find(a => a.assessment_id === selectedAssessmentId);
     const dateStr = selectedA ? format(new Date(selectedA.assessment_date), 'MMMM d, yyyy') : '';
 
-    // Build HTML table of all milestones
+    // Build an off-screen container with the grid HTML
+    const container = document.createElement('div');
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1100px;background:#fff;padding:24px;font-family:Arial,sans-serif;font-size:13px;color:#222';
+
     const domainRows = domainGroups.map(({ domain, items }) => {
       const cells = items.map(item => {
         const r = results[item.item_id];
@@ -742,20 +746,42 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       return `<tr style="background:#f0f4f8"><td colspan="6" style="padding:6px 8px;font-weight:700;font-size:13px">${domain}</td></tr>${cells}`;
     }).join('');
 
-    const html = `<!DOCTYPE html><html><head><title>VB-MAPP Milestones — ${studentName}</title>
-    <style>body{font-family:Arial,sans-serif;font-size:13px;color:#222;margin:20px}
-    h1{font-size:18px;margin-bottom:4px}p{color:#555;margin:0 0 12px}
-    table{width:100%;border-collapse:collapse}th{background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px}
-    @media print{body{margin:10px}}</style></head>
-    <body><h1>VB-MAPP Milestones Grid</h1>
-    <p>Student: <strong>${studentName}</strong> &nbsp;|&nbsp; Assessment date: <strong>${dateStr}</strong></p>
-    <table><thead><tr><th>Code</th><th>Milestone</th><th style="text-align:center">Score</th><th>Status</th><th>Criteria / Prompt</th><th>Notes</th></tr></thead>
-    <tbody>${domainRows}</tbody></table></body></html>`;
+    container.innerHTML = `
+      <h1 style="font-size:18px;margin-bottom:4px">VB-MAPP Milestones Grid</h1>
+      <p style="color:#555;margin:0 0 12px">Student: <strong>${studentName}</strong> &nbsp;|&nbsp; Assessment date: <strong>${dateStr}</strong></p>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Code</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Milestone</th><th style="background:#e8edf2;padding:6px 8px;text-align:center;font-size:12px">Score</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Status</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Criteria / Prompt</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Notes</th></tr></thead>
+        <tbody>${domainRows}</tbody>
+      </table>`;
 
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 300);
+    document.body.appendChild(container);
+
+    try {
+      toast.info('Generating PDF…');
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      document.body.removeChild(container);
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+
+      // Multi-page support
+      while (position < imgHeight) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -position, imgWidth, imgHeight);
+        position += pageHeight;
+      }
+
+      const safeName = studentName?.replace(/\s+/g, '-') || 'student';
+      pdf.save(`vbmapp-milestones-${safeName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      toast.success('PDF downloaded');
+    } catch (err) {
+      document.body.removeChild(container);
+      console.error('PDF export error:', err);
+      toast.error('Failed to generate PDF');
+    }
   };
 
   // ── Group template items by domain ───────────────────────────────────────
