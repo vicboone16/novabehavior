@@ -332,8 +332,8 @@ export function SessionEndFlow({
 
   const handleComplete = () => {
     if (mode === 'all') {
-      // If ending all, also reset the session
-      resetAllStudentSessionStatuses();
+      // Reset session metadata, clear data entries, and deselect students
+      resetSessionData();
     }
     onComplete();
     onOpenChange(false);
