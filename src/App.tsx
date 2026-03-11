@@ -78,6 +78,7 @@ import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 import AskNovaAI from "./pages/AskNovaAI";
 import NovaAI from "./pages/NovaAI";
 import GoalOptimization from "./pages/GoalOptimization";
+import SharedLibrary from "./pages/SharedLibrary";
 
 const queryClient = new QueryClient();
 
