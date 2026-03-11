@@ -14684,6 +14684,144 @@ export type Database = {
           },
         ]
       }
+      iep_meeting_attendees: {
+        Row: {
+          attendee_email: string | null
+          attendee_name: string | null
+          attendee_role: string | null
+          created_at: string | null
+          id: string
+          is_confirmed: boolean | null
+          meeting_session_id: string
+        }
+        Insert: {
+          attendee_email?: string | null
+          attendee_name?: string | null
+          attendee_role?: string | null
+          created_at?: string | null
+          id?: string
+          is_confirmed?: boolean | null
+          meeting_session_id: string
+        }
+        Update: {
+          attendee_email?: string | null
+          attendee_name?: string | null
+          attendee_role?: string | null
+          created_at?: string | null
+          id?: string
+          is_confirmed?: boolean | null
+          meeting_session_id?: string
+        }
+        Relationships: []
+      }
+      iep_meeting_checklist_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_complete: boolean | null
+          item_key: string | null
+          item_label: string
+          meeting_session_id: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          item_key?: string | null
+          item_label: string
+          meeting_session_id: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_complete?: boolean | null
+          item_key?: string | null
+          item_label?: string
+          meeting_session_id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      iep_meeting_goal_draft_items: {
+        Row: {
+          benchmark_text: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string
+          meeting_session_id: string
+          rationale: string | null
+          source_goal_draft_id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string
+          meeting_session_id: string
+          rationale?: string | null
+          source_goal_draft_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string
+          meeting_session_id?: string
+          rationale?: string | null
+          source_goal_draft_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+        }
+        Relationships: []
+      }
+      iep_meeting_intelligence_snapshots: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meeting_session_id: string
+          snapshot_json: Json | null
+          student_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id: string
+          snapshot_json?: Json | null
+          student_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id?: string
+          snapshot_json?: Json | null
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       iep_meeting_preps: {
         Row: {
           attendees: Json | null
@@ -14784,6 +14922,189 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      iep_meeting_recommendation_items: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meeting_session_id: string
+          rationale: string | null
+          recommendation_category: string | null
+          recommended_action: string | null
+          severity: string | null
+          source_object_id: string | null
+          source_type: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id: string
+          rationale?: string | null
+          recommendation_category?: string | null
+          recommended_action?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id?: string
+          rationale?: string | null
+          recommendation_category?: string | null
+          recommended_action?: string | null
+          severity?: string | null
+          source_object_id?: string | null
+          source_type?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      iep_meeting_sessions: {
+        Row: {
+          case_manager_name: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          grade_level: string | null
+          id: string
+          include_behavior_summary: boolean | null
+          include_caregiver_training: boolean | null
+          include_goal_progress: boolean | null
+          include_parent_friendly_summary: boolean | null
+          include_recommendations: boolean | null
+          include_talking_points: boolean | null
+          meeting_date: string | null
+          meeting_title: string | null
+          meeting_type: string | null
+          school_name: string | null
+          status: string | null
+          student_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          case_manager_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          grade_level?: string | null
+          id?: string
+          include_behavior_summary?: boolean | null
+          include_caregiver_training?: boolean | null
+          include_goal_progress?: boolean | null
+          include_parent_friendly_summary?: boolean | null
+          include_recommendations?: boolean | null
+          include_talking_points?: boolean | null
+          meeting_date?: string | null
+          meeting_title?: string | null
+          meeting_type?: string | null
+          school_name?: string | null
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          case_manager_name?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          grade_level?: string | null
+          id?: string
+          include_behavior_summary?: boolean | null
+          include_caregiver_training?: boolean | null
+          include_goal_progress?: boolean | null
+          include_parent_friendly_summary?: boolean | null
+          include_recommendations?: boolean | null
+          include_talking_points?: boolean | null
+          meeting_date?: string | null
+          meeting_title?: string | null
+          meeting_type?: string | null
+          school_name?: string | null
+          status?: string | null
+          student_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      iep_meeting_talking_points: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          display_order: number | null
+          id: string
+          meeting_session_id: string
+          point_category: string | null
+          point_text: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          meeting_session_id: string
+          point_category?: string | null
+          point_text: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          meeting_session_id?: string
+          point_category?: string | null
+          point_text?: string
+        }
+        Relationships: []
+      }
+      iep_parent_friendly_summaries: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meeting_session_id: string
+          student_id: string | null
+          summary_text: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id: string
+          student_id?: string | null
+          summary_text?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_session_id?: string
+          student_id?: string | null
+          summary_text?: string | null
+        }
+        Relationships: []
       }
       iep_prep_recommendation_items: {
         Row: {
