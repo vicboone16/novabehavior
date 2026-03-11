@@ -33818,6 +33818,89 @@ export type Database = {
         }
         Relationships: []
       }
+      v_iep_behavior_summary: {
+        Row: {
+          plan_link_id: string | null
+          problem_behavior_count: number | null
+          problem_behavior_name: string | null
+          replacement_behavior_count: number | null
+          replacement_status: string | null
+          replacement_strength_score: number | null
+          replacement_to_problem_ratio: number | null
+          student_id: string | null
+        }
+        Insert: {
+          plan_link_id?: string | null
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Update: {
+          plan_link_id?: string | null
+          problem_behavior_count?: never
+          problem_behavior_name?: string | null
+          replacement_behavior_count?: never
+          replacement_status?: never
+          replacement_strength_score?: number | null
+          replacement_to_problem_ratio?: number | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_bx_plan_links_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_iep_drafts_recent: {
         Row: {
           client_id: string | null
@@ -33907,6 +33990,95 @@ export type Database = {
           },
         ]
       }
+      v_iep_goal_progress_summary: {
+        Row: {
+          consecutive_sessions_at_criterion: number | null
+          current_accuracy: number | null
+          current_prompt_independence: number | null
+          last_mastery_check_date: string | null
+          mastery_rule_type: string | null
+          mastery_status: string | null
+          mastery_threshold: number | null
+          percent_to_mastery: number | null
+          student_id: string | null
+          student_target_id: string | null
+        }
+        Insert: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+        }
+        Update: {
+          consecutive_sessions_at_criterion?: number | null
+          current_accuracy?: number | null
+          current_prompt_independence?: number | null
+          last_mastery_check_date?: string | null
+          mastery_rule_type?: string | null
+          mastery_status?: string | null
+          mastery_threshold?: number | null
+          percent_to_mastery?: number | null
+          student_id?: string | null
+          student_target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_targets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       v_iep_goal_suggestion_drafts: {
         Row: {
           benchmark_text: string | null
@@ -33943,6 +34115,85 @@ export type Database = {
           student_id?: string | null
           support_text?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_iep_meeting_intelligence_context: {
+        Row: {
+          attention_pattern_flag: boolean | null
+          behavior_alert_count: number | null
+          behavior_name: string | null
+          caregiver_alert_count: number | null
+          caregiver_in_progress_goals: number | null
+          caregiver_mastered_goals: number | null
+          caregiver_not_started_goals: number | null
+          caregiver_total_goals: number | null
+          client_id: string | null
+          emerging_replacement_behavior_count: number | null
+          escape_pattern_flag: boolean | null
+          last_data_submission_at: string | null
+          last_homework_submission_at: string | null
+          lunch_time_risk_flag: boolean | null
+          programming_alert_count: number | null
+          prompt_dependency_count: number | null
+          ready_to_advance_count: number | null
+          skill_alert_count: number | null
+          stalled_target_count: number | null
+          strong_replacement_behavior_count: number | null
+          student_id: string | null
+          top_antecedent_pattern: string | null
+          top_consequence_pattern: string | null
+          top_time_of_day: string | null
+          total_behavior_events: number | null
+          transition_risk_flag: boolean | null
+          unstructured_time_risk_flag: boolean | null
+          weak_replacement_behavior_count: number | null
+        }
+        Relationships: []
+      }
+      v_iep_meeting_readiness_summary: {
+        Row: {
+          attendee_count: number | null
+          goal_draft_count: number | null
+          meeting_session_id: string | null
+          readiness_percent: number | null
+          recommendation_count: number | null
+          talking_point_count: number | null
+        }
+        Insert: {
+          attendee_count?: never
+          goal_draft_count?: never
+          meeting_session_id?: string | null
+          readiness_percent?: never
+          recommendation_count?: never
+          talking_point_count?: never
+        }
+        Update: {
+          attendee_count?: never
+          goal_draft_count?: never
+          meeting_session_id?: string | null
+          readiness_percent?: never
+          recommendation_count?: never
+          talking_point_count?: never
+        }
+        Relationships: []
+      }
+      v_iep_meeting_workspace: {
+        Row: {
+          case_manager_name: string | null
+          client_id: string | null
+          goal_draft_count: number | null
+          grade_level: string | null
+          meeting_date: string | null
+          meeting_session_id: string | null
+          meeting_title: string | null
+          meeting_type: string | null
+          readiness_percent: number | null
+          recommendation_count: number | null
+          school_name: string | null
+          status: string | null
+          student_id: string | null
+          talking_point_count: number | null
         }
         Relationships: []
       }
@@ -38325,36 +38576,63 @@ export type Database = {
         Args: { p_created_by: string; p_output_id: string; p_run_id: string }
         Returns: string
       }
-      export_treatment_goal_draft_to_reassessment: {
-        Args: {
-          p_created_by: string
-          p_source_object_id: string
-          p_source_section: string
-          p_student_id: string
-          p_text: string
-        }
-        Returns: string
-      }
-      export_treatment_recommendation_to_bip: {
-        Args: {
-          p_created_by: string
-          p_source_object_id: string
-          p_source_section: string
-          p_student_id: string
-          p_text: string
-        }
-        Returns: string
-      }
-      export_treatment_recommendation_to_clinical_draft: {
-        Args: {
-          p_created_by: string
-          p_source_object_id: string
-          p_source_section: string
-          p_student_id: string
-          p_text: string
-        }
-        Returns: string
-      }
+      export_treatment_goal_draft_to_reassessment:
+        | {
+            Args: {
+              p_created_by?: string
+              p_goal_draft_item_id: string
+              p_section_key?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_source_object_id: string
+              p_source_section: string
+              p_student_id: string
+              p_text: string
+            }
+            Returns: string
+          }
+      export_treatment_recommendation_to_bip:
+        | {
+            Args: {
+              p_created_by?: string
+              p_recommendation_id: string
+              p_section_key?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_source_object_id: string
+              p_source_section: string
+              p_student_id: string
+              p_text: string
+            }
+            Returns: string
+          }
+      export_treatment_recommendation_to_clinical_draft:
+        | {
+            Args: {
+              p_created_by?: string
+              p_draft_title?: string
+              p_recommendation_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_source_object_id: string
+              p_source_section: string
+              p_student_id: string
+              p_text: string
+            }
+            Returns: string
+          }
       export_treatment_recommendation_to_fba:
         | {
             Args: {
@@ -38374,16 +38652,25 @@ export type Database = {
             }
             Returns: string
           }
-      export_treatment_recommendation_to_session_note: {
-        Args: {
-          p_created_by: string
-          p_source_object_id: string
-          p_source_section: string
-          p_student_id: string
-          p_text: string
-        }
-        Returns: string
-      }
+      export_treatment_recommendation_to_session_note:
+        | {
+            Args: {
+              p_recommendation_id: string
+              p_section?: string
+              p_session_note_draft_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_source_object_id: string
+              p_source_section: string
+              p_student_id: string
+              p_text: string
+            }
+            Returns: string
+          }
       fba_suggest_interventions: {
         Args: { p_function: string; p_setting?: string }
         Returns: {
