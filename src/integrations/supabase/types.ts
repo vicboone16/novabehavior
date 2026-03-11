@@ -33436,6 +33436,57 @@ export type Database = {
           },
         ]
       }
+      v_iep_prep_optimization_recommendations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          rationale: string | null
+          recommendation_key: string | null
+          recommended_action: string | null
+          run_id: string | null
+          severity: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       v_intervention_effectiveness_by_function: {
         Row: {
           avg_confidence_score: number | null
@@ -34805,6 +34856,57 @@ export type Database = {
             referencedColumns: ["plan_item_id"]
           },
         ]
+      }
+      v_programming_optimization_recommendations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          domain: string | null
+          id: string | null
+          rationale: string | null
+          recommendation_key: string | null
+          recommended_action: string | null
+          run_id: string | null
+          severity: string | null
+          student_id: string | null
+          suggested_benchmark_text: string | null
+          suggested_goal_text: string | null
+          suggested_support_text: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          domain?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommendation_key?: string | null
+          recommended_action?: string | null
+          run_id?: string | null
+          severity?: string | null
+          student_id?: string | null
+          suggested_benchmark_text?: string | null
+          suggested_goal_text?: string | null
+          suggested_support_text?: string | null
+          title?: string | null
+        }
+        Relationships: []
       }
       v_progression_group_summary: {
         Row: {
@@ -36738,13 +36840,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -36754,7 +36849,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -36768,8 +36863,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -36782,6 +36877,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -36789,7 +36898,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -36803,8 +36912,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -36816,20 +36925,13 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
