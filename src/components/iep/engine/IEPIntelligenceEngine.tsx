@@ -11,7 +11,7 @@ import {
 import {
   Calendar, BarChart3, Target, BrainCircuit, Zap, Lightbulb,
   MessageSquare, ClipboardCheck, FileText, Plus, Loader2, RefreshCw,
-  Sparkles, AlertTriangle
+  Sparkles, AlertTriangle, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIEPEngineData, type IEPMeeting } from './useIEPEngineData';
