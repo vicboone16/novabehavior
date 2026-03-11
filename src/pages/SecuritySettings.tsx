@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { getAuditLogs, getDataAccessLogs, logAuditEvent } from '@/lib/auditLogger';
 import { format } from 'date-fns';
+import { SecurityScanTab } from '@/components/security/SecurityScanTab';
 
 interface SecuritySetting {
   id: string;
