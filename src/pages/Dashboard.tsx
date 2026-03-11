@@ -166,10 +166,26 @@ export default function Dashboard() {
               </div>
             </SheetContent>
           </Sheet>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={resetToDefaults}>
-            <RotateCcw className="w-3.5 h-3.5" />
-            Reset
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset dashboard?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all your current widgets and restore the default layout for your role. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={resetToDefaults}>Yes, reset</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
