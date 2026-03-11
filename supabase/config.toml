@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.curriculum-ai-search]
 verify_jwt = false
+
+[functions.run-security-scan]
+verify_jwt = false

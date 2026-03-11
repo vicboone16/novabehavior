@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { getAuditLogs, getDataAccessLogs, logAuditEvent } from '@/lib/auditLogger';
 import { format } from 'date-fns';
+import { SecurityScanTab } from '@/components/security/SecurityScanTab';
 
 interface SecuritySetting {
   id: string;
@@ -252,10 +253,14 @@ export default function SecuritySettings() {
       </div>
 
       <Tabs defaultValue="settings" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Settings
+          </TabsTrigger>
+          <TabsTrigger value="scan" className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Security Scan
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -403,6 +408,10 @@ export default function SecuritySettings() {
               Save Settings
             </Button>
           </div>
+        </TabsContent>
+
+        <TabsContent value="scan" className="space-y-4">
+          <SecurityScanTab />
         </TabsContent>
 
         <TabsContent value="audit" className="space-y-4">
