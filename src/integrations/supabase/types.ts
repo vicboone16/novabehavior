@@ -14119,6 +14119,54 @@ export type Database = {
         }
         Relationships: []
       }
+      iep_documents: {
+        Row: {
+          agency_id: string | null
+          cleaned_text: string | null
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          ocr_raw_text: string | null
+          pipeline_status: string
+          student_id: string | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          agency_id?: string | null
+          cleaned_text?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          ocr_raw_text?: string | null
+          pipeline_status?: string
+          student_id?: string | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          agency_id?: string | null
+          cleaned_text?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          ocr_raw_text?: string | null
+          pipeline_status?: string
+          student_id?: string | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       iep_drafts: {
         Row: {
           agency_id: string | null
@@ -14236,6 +14284,201 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      iep_extracted_accommodations: {
+        Row: {
+          accommodation_text: string | null
+          category: string | null
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          id: string
+          raw_json: Json | null
+          setting: string | null
+        }
+        Insert: {
+          accommodation_text?: string | null
+          category?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          id?: string
+          raw_json?: Json | null
+          setting?: string | null
+        }
+        Update: {
+          accommodation_text?: string | null
+          category?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          raw_json?: Json | null
+          setting?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_extracted_accommodations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "iep_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iep_extracted_goals: {
+        Row: {
+          baseline: string | null
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          goal_area: string | null
+          goal_text: string | null
+          id: string
+          measurement_method: string | null
+          raw_json: Json | null
+          status: string | null
+          target: string | null
+        }
+        Insert: {
+          baseline?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          goal_area?: string | null
+          goal_text?: string | null
+          id?: string
+          measurement_method?: string | null
+          raw_json?: Json | null
+          status?: string | null
+          target?: string | null
+        }
+        Update: {
+          baseline?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          goal_area?: string | null
+          goal_text?: string | null
+          id?: string
+          measurement_method?: string | null
+          raw_json?: Json | null
+          status?: string | null
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_extracted_goals_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "iep_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iep_extracted_progress: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          date_reported: string | null
+          document_id: string
+          goal_id: string | null
+          id: string
+          metric_value: string | null
+          progress_text: string | null
+          raw_json: Json | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          date_reported?: string | null
+          document_id: string
+          goal_id?: string | null
+          id?: string
+          metric_value?: string | null
+          progress_text?: string | null
+          raw_json?: Json | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          date_reported?: string | null
+          document_id?: string
+          goal_id?: string | null
+          id?: string
+          metric_value?: string | null
+          progress_text?: string | null
+          raw_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_extracted_progress_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "iep_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iep_extracted_progress_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "iep_extracted_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iep_extracted_services: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          document_id: string
+          duration: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          location: string | null
+          provider: string | null
+          raw_json: Json | null
+          service_type: string | null
+          start_date: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id: string
+          duration?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          location?: string | null
+          provider?: string | null
+          raw_json?: Json | null
+          service_type?: string | null
+          start_date?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          document_id?: string
+          duration?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          location?: string | null
+          provider?: string | null
+          raw_json?: Json | null
+          service_type?: string | null
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iep_extracted_services_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "iep_documents"
+            referencedColumns: ["id"]
           },
         ]
       }
