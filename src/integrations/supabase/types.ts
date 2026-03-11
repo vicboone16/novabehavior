@@ -33053,6 +33053,45 @@ export type Database = {
           },
         ]
       }
+      v_clinical_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_clinical_hours_forecast: {
         Row: {
           agency_id: string | null
@@ -33471,6 +33510,45 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      v_iep_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       v_iep_prep_optimization_recommendations: {
         Row: {
@@ -34077,6 +34155,36 @@ export type Database = {
           id?: string | null
           page_key?: string | null
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      v_nova_ai_optimization_quick_actions: {
+        Row: {
+          action_key: string | null
+          action_title: string | null
+          default_prompt_text: string | null
+          default_reasoning_mode: string | null
+          id: string | null
+          sort_order: number | null
+          source_type: string | null
+        }
+        Insert: {
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          id?: string | null
+          sort_order?: number | null
+          source_type?: string | null
+        }
+        Update: {
+          action_key?: string | null
+          action_title?: string | null
+          default_prompt_text?: string | null
+          default_reasoning_mode?: string | null
+          id?: string | null
+          sort_order?: number | null
+          source_type?: string | null
         }
         Relationships: []
       }
@@ -34962,6 +35070,105 @@ export type Database = {
           total_steps: number | null
         }
         Relationships: []
+      }
+      v_reassessment_goal_suggestion_drafts: {
+        Row: {
+          benchmark_text: string | null
+          created_at: string | null
+          domain: string | null
+          draft_title: string | null
+          goal_text: string | null
+          id: string | null
+          mode: string | null
+          status: string | null
+          student_id: string | null
+          support_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          mode?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_text?: string | null
+          created_at?: string | null
+          domain?: string | null
+          draft_title?: string | null
+          goal_text?: string | null
+          id?: string | null
+          mode?: string | null
+          status?: string | null
+          student_id?: string | null
+          support_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      v_reassessment_optimization_recommendations: {
+        Row: {
+          created_at: string | null
+          domain: string | null
+          export_id: string | null
+          id: string | null
+          rationale: string | null
+          recommended_action: string | null
+          source_type: string | null
+          status: string | null
+          student_id: string | null
+          suggested_goal_text: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain?: string | null
+          export_id?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommended_action?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+          suggested_goal_text?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string | null
+          export_id?: string | null
+          id?: string | null
+          rationale?: string | null
+          recommended_action?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+          suggested_goal_text?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reassessment_recommendation_items_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "goal_optimization_exports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reassessment_recommendation_items_export_id_fkey"
+            columns: ["export_id"]
+            isOneToOne: false
+            referencedRelation: "v_goal_optimization_export_history"
+            referencedColumns: ["export_id"]
+          },
+        ]
       }
       v_replacement_behavior_context_summary: {
         Row: {
