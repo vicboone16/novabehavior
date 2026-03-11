@@ -35,7 +35,7 @@ const OPERATION_TABS = [
   { value: 'billing', label: 'Billing', icon: DollarSign, permission: PERMISSIONS.BILLING_VIEW },
   { value: 'authorizations', label: 'Authorizations', icon: Shield, permission: PERMISSIONS.AUTH_VIEW },
   { value: 'insurance', label: 'Insurance', icon: FileText, permission: PERMISSIONS.BILLING_VIEW },
-  { value: 'service-requests', label: 'Service Requests', icon: ClipboardList, permission: PERMISSIONS.AUTH_VIEW },
+  
 ];
 
 export default function Operations() {
