@@ -25,6 +25,7 @@ import { IEPTalkingPointsSection } from './IEPTalkingPointsSection';
 import { IEPDocumentsChecklistSection } from './IEPDocumentsChecklistSection';
 import { IEPMeetingPacketBuilder } from './IEPMeetingPacketBuilder';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
+import { IEPExportHistorySection } from './IEPExportHistorySection';
 import { supabase } from '@/integrations/supabase/client';
 
 const db = supabase as any;
