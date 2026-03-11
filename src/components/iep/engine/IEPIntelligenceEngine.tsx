@@ -11,7 +11,7 @@ import {
 import {
   Calendar, BarChart3, Target, BrainCircuit, Zap, Lightbulb,
   MessageSquare, ClipboardCheck, FileText, Plus, Loader2, RefreshCw,
-  Sparkles, AlertTriangle
+  Sparkles, AlertTriangle, History
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIEPEngineData, type IEPMeeting } from './useIEPEngineData';
@@ -25,6 +25,7 @@ import { IEPTalkingPointsSection } from './IEPTalkingPointsSection';
 import { IEPDocumentsChecklistSection } from './IEPDocumentsChecklistSection';
 import { IEPMeetingPacketBuilder } from './IEPMeetingPacketBuilder';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
+import { IEPExportHistorySection } from './IEPExportHistorySection';
 import { supabase } from '@/integrations/supabase/client';
 
 const db = supabase as any;
@@ -42,6 +43,7 @@ const SECTIONS = [
   { key: 'suggestions', label: 'Suggestions', icon: Lightbulb },
   { key: 'talking_points', label: 'Talking Pts', icon: MessageSquare },
   { key: 'documents', label: 'Docs', icon: ClipboardCheck },
+  { key: 'exports', label: 'Exports', icon: History },
   { key: 'packet', label: 'Packet', icon: FileText },
 ];
 
@@ -305,6 +307,10 @@ export function IEPIntelligenceEngine({ studentId }: Props) {
               onToggleChecklist={engine.toggleChecklistItem}
               onAddAttendee={(name, role) => engine.addAttendee(meetingSessionId, name, role)}
             />
+          </TabsContent>
+
+          <TabsContent value="exports" className="mt-3">
+            <IEPExportHistorySection studentId={studentId} />
           </TabsContent>
 
           <TabsContent value="packet" className="mt-3">

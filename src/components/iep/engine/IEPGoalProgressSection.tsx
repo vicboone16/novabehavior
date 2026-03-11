@@ -3,7 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Target, BrainCircuit, MessageSquarePlus, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Target, MessageSquarePlus, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TreatmentIntelligenceActions } from '@/components/optimization/TreatmentIntelligenceActions';
 
 interface Props {
   goalProgress: any[];
@@ -19,16 +20,6 @@ const STATUS_STYLES: Record<string, { icon: React.ReactNode; color: string }> = 
 };
 
 export function IEPGoalProgressSection({ goalProgress, studentId, onAddTalkingPoint }: Props) {
-  const navigate = useNavigate();
-
-  const askNovaAI = (prompt: string) => {
-    const params = new URLSearchParams();
-    params.set('prompt', prompt);
-    params.set('clientId', studentId);
-    params.set('context', 'iep_goal_progress');
-    navigate(`/nova-ai?${params.toString()}`);
-  };
-
   if (goalProgress.length === 0) {
     return (
       <Card>
@@ -44,6 +35,7 @@ export function IEPGoalProgressSection({ goalProgress, studentId, onAddTalkingPo
       {goalProgress.map((g, i) => {
         const st = STATUS_STYLES[g.mastery_status] || STATUS_STYLES.emerging;
         const pct = g.percent_to_mastery ?? 0;
+        const contextText = `Goal progress: ${pct}% to mastery, accuracy ${g.current_accuracy ?? 'N/A'}%, independence ${g.current_prompt_independence ?? 'N/A'}%, status: ${g.mastery_status || 'unknown'}, consecutive sessions at criterion: ${g.consecutive_sessions_at_criterion ?? 0}.`;
         return (
           <Card key={i} className="hover:border-primary/20 transition-colors">
             <CardContent className="p-3">
@@ -70,11 +62,18 @@ export function IEPGoalProgressSection({ goalProgress, studentId, onAddTalkingPo
                     {g.current_prompt_independence != null && <span>Independence: {g.current_prompt_independence}%</span>}
                     {g.consecutive_sessions_at_criterion != null && <span>Consecutive: {g.consecutive_sessions_at_criterion}</span>}
                   </div>
+                  {/* Treatment Intelligence Actions */}
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <TreatmentIntelligenceActions
+                      studentId={studentId}
+                      section="skill_program_progress"
+                      contextText={contextText}
+                      title={`Goal ${g.student_target_id?.slice(0, 8) || ''}`}
+                      compact={false}
+                    />
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => askNovaAI(`Draft goal progress language for target with ${pct}% progress to mastery, accuracy ${g.current_accuracy}%, status ${g.mastery_status}.`)}>
-                    <BrainCircuit className="w-3 h-3" />
-                  </Button>
                   {onAddTalkingPoint && (
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onAddTalkingPoint('goals', `Goal ${g.student_target_id?.slice(0, 8)}: ${pct}% to mastery, status: ${g.mastery_status}`)}>
                       <MessageSquarePlus className="w-3 h-3" />

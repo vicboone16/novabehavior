@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -608,8 +608,8 @@ export default function StudentProfile() {
             Observations
           </TabsTrigger>
           <TabsTrigger value="iep-prep" className="gap-1 text-xs">
-            <Lightbulb className="w-3 h-3" />
-            IEP Prep
+            <BrainCircuit className="w-3 h-3" />
+            IEP Engine
           </TabsTrigger>
           <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
             <Heart className="w-3 h-3" />

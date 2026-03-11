@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, TrendingUp, BrainCircuit, MessageSquarePlus } from 'lucide-react';
+import { TreatmentIntelligenceActions } from '@/components/optimization/TreatmentIntelligenceActions';
 
 interface Props {
   behaviorSummary: any[];
@@ -67,49 +68,59 @@ export function IEPBehaviorIntelligenceSection({ behaviorSummary, intelligenceCo
         </Card>
       ) : (
         <div className="space-y-2">
-          {behaviorSummary.map((b, i) => (
-            <Card key={i} className="hover:border-primary/20 transition-colors">
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
-                      <span className="text-xs font-semibold truncate">{b.problem_behavior_name || 'Behavior'}</span>
-                      {b.replacement_to_problem_ratio != null && (
-                        <Badge variant={b.replacement_to_problem_ratio >= 1 ? 'default' : 'secondary'} className="text-[9px] px-1.5 py-0">
-                          {b.replacement_to_problem_ratio >= 1 ? 'Strong' : b.replacement_to_problem_ratio >= 0.5 ? 'Emerging' : 'Weak'} Replacement
-                        </Badge>
+          {behaviorSummary.map((b, i) => {
+            const contextText = `Behavior: ${b.problem_behavior_name || 'Unknown'}. Problem count: ${b.problem_behavior_count ?? 0}, Replacement count: ${b.replacement_behavior_count ?? 0}, Ratio: ${b.replacement_to_problem_ratio?.toFixed(2) ?? 'N/A'}.`;
+            return (
+              <Card key={i} className="hover:border-primary/20 transition-colors">
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                        <span className="text-xs font-semibold truncate">{b.problem_behavior_name || 'Behavior'}</span>
+                        {b.replacement_to_problem_ratio != null && (
+                          <Badge variant={b.replacement_to_problem_ratio >= 1 ? 'default' : 'secondary'} className="text-[9px] px-1.5 py-0">
+                            {b.replacement_to_problem_ratio >= 1 ? 'Strong' : b.replacement_to_problem_ratio >= 0.5 ? 'Emerging' : 'Weak'} Replacement
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                        <div>
+                          <p className="text-sm font-bold text-destructive">{b.problem_behavior_count ?? 0}</p>
+                          <p className="text-[9px] text-muted-foreground">Problem</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-success">{b.replacement_behavior_count ?? 0}</p>
+                          <p className="text-[9px] text-muted-foreground">Replacement</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{b.replacement_to_problem_ratio?.toFixed(2) ?? '—'}</p>
+                          <p className="text-[9px] text-muted-foreground">Ratio</p>
+                        </div>
+                      </div>
+                      {/* Treatment Intelligence Actions */}
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <TreatmentIntelligenceActions
+                          studentId={studentId}
+                          section="behavior_intelligence"
+                          contextText={contextText}
+                          title={b.problem_behavior_name}
+                          compact={false}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      {onAddTalkingPoint && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onAddTalkingPoint('behavior', `${b.problem_behavior_name}: ${b.problem_behavior_count} incidents, replacement ratio ${b.replacement_to_problem_ratio?.toFixed(2) ?? 'N/A'}`)}>
+                          <MessageSquarePlus className="w-3 h-3" />
+                        </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2 text-center">
-                      <div>
-                        <p className="text-sm font-bold text-destructive">{b.problem_behavior_count ?? 0}</p>
-                        <p className="text-[9px] text-muted-foreground">Problem</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-success">{b.replacement_behavior_count ?? 0}</p>
-                        <p className="text-[9px] text-muted-foreground">Replacement</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{b.replacement_to_problem_ratio?.toFixed(2) ?? '—'}</p>
-                        <p className="text-[9px] text-muted-foreground">Ratio</p>
-                      </div>
-                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => askNovaAI(`Explain behavior trend for: ${b.problem_behavior_name}. Problem count: ${b.problem_behavior_count}, replacement count: ${b.replacement_behavior_count}.`)}>
-                      <BrainCircuit className="w-3 h-3" />
-                    </Button>
-                    {onAddTalkingPoint && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onAddTalkingPoint('behavior', `${b.problem_behavior_name}: ${b.problem_behavior_count} incidents, replacement ratio ${b.replacement_to_problem_ratio?.toFixed(2) ?? 'N/A'}`)}>
-                        <MessageSquarePlus className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
