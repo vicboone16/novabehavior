@@ -548,6 +548,17 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
 
 
 
+  // ── Handle grid cell click (cycle EMPTY → HALF → FULL → EMPTY) ───────────
+  const handleGridCellClick = useCallback(
+    (itemId: string, currentFill: 'EMPTY' | 'HALF' | 'FULL') => {
+      const nextFill: FillState =
+        currentFill === 'EMPTY' ? 'HALF' :
+        currentFill === 'HALF' ? 'FULL' : 'EMPTY';
+      handleCellUpdate(itemId, { fill_state: nextFill, tested_circle: false });
+    },
+    [handleCellUpdate]
+  );
+
 
   const handleCreateAssessment = async () => {
     setCreatingAssessment(true);
