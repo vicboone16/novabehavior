@@ -1,40 +1,25 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2, Heart, User, Building2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import IEPLibrary from './IEPLibrary';
-import BehaviorLibrary from './BehaviorLibrary';
-import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
-import { DomainManager } from '@/components/clinical-library/DomainManager';
-import { GoalTemplateManager } from '@/components/clinical-library/GoalTemplateManager';
-import { CurriculumItemManager } from '@/components/clinical-library/CurriculumItemManager';
-import { CaregiverCurriculumLibrary } from '@/components/clinical-library/CaregiverCurriculumLibrary';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-
-const TABS = [
-  { value: 'iep', label: 'IEP Supports', icon: BookOpen },
-  { value: 'behavior', label: 'Behavior Bank', icon: Activity },
-  { value: 'caregiver', label: 'Caregiver Curriculum', icon: Heart },
-  { value: 'curricula', label: 'Curricula', icon: Settings2 },
-  { value: 'domains', label: 'Domains', icon: Layers },
-  { value: 'items', label: 'Skill Items', icon: FileText },
-  { value: 'templates', label: 'Goal Templates', icon: Target },
-];
+import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
+import { ClinicalCollectionsLanding } from '@/components/clinical-library/ClinicalCollectionsLanding';
 
 type LibraryScope = 'personal' | 'organization';
+type ActiveSection = null | 'curriculum_systems' | 'clinical_collections';
 
 export default function ClinicalLibrary() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'iep';
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const initialSection = searchParams.get('section') as ActiveSection;
+  const [activeSection, setActiveSection] = useState<ActiveSection>(initialSection);
   const [libraryScope, setLibraryScope] = useState<LibraryScope>(
     (searchParams.get('scope') as LibraryScope) || 'organization'
   );
   const { userRole } = useAuth();
-
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   return (
@@ -43,12 +28,24 @@ export default function ClinicalLibrary() {
         <div className="container py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <Button variant="ghost" size="icon" onClick={() => {
+                if (activeSection) {
+                  setActiveSection(null);
+                } else {
+                  navigate('/');
+                }
+              }}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
                 <h1 className="text-lg font-bold text-foreground">Clinical Library</h1>
-                <p className="text-xs text-muted-foreground">IEP supports, behavior interventions, caregiver curriculum & skill building</p>
+                <p className="text-xs text-muted-foreground">
+                  {activeSection === 'curriculum_systems'
+                    ? 'Standardized curriculum frameworks & formal assessment systems'
+                    : activeSection === 'clinical_collections'
+                    ? 'Goal banks, interventions, templates & custom programs'
+                    : 'Curriculum systems, goal banks, interventions & clinical resources'}
+                </p>
               </div>
             </div>
             {/* Library Scope Toggle */}
@@ -88,25 +85,6 @@ export default function ClinicalLibrary() {
         </div>
       </header>
 
-      <div className="border-b border-border bg-card/50">
-        <div className="container">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="h-12 bg-transparent border-none flex-wrap">
-              {TABS.map(tab => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-
       <div className="container py-6">
         {libraryScope === 'personal' && (
           <div className="mb-4 p-3 rounded-lg border border-border bg-muted/30">
@@ -117,13 +95,65 @@ export default function ClinicalLibrary() {
             </p>
           </div>
         )}
-        {activeTab === 'iep' && <IEPLibrary />}
-        {activeTab === 'behavior' && <BehaviorLibrary embedded />}
-        {activeTab === 'caregiver' && <CaregiverCurriculumLibrary />}
-        {activeTab === 'curricula' && <CurriculumSystemManager />}
-        {activeTab === 'domains' && <DomainManager />}
-        {activeTab === 'items' && <CurriculumItemManager />}
-        {activeTab === 'templates' && <GoalTemplateManager />}
+
+        {/* Top-level landing: two pathway cards */}
+        {!activeSection && (
+          <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto mt-4">
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => setActiveSection('curriculum_systems')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Settings2 className="w-7 h-7 text-primary" />
+                  </div>
+                </div>
+                <h2 className="text-lg font-bold mb-1">Curriculum Systems</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Formal, standardized curriculum frameworks and assessment systems.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['VB-MAPP', 'ABLLS-R', 'AFLS', 'EFL'].map(name => (
+                    <Badge key={name} variant="secondary" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => setActiveSection('clinical_collections')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Layers className="w-7 h-7 text-primary" />
+                  </div>
+                </div>
+                <h2 className="text-lg font-bold mb-1">Clinical Collections</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Goal banks, intervention libraries, behavior reduction, templates & custom programs.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Goal Banks', 'Interventions', 'Behavior Reduction', 'Skill Acquisition', 'Templates'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Curriculum Systems drill-down */}
+        {activeSection === 'curriculum_systems' && (
+          <CurriculumSystemManager />
+        )}
+
+        {/* Clinical Collections drill-down */}
+        {activeSection === 'clinical_collections' && (
+          <ClinicalCollectionsLanding onBack={() => setActiveSection(null)} />
+        )}
       </div>
     </div>
   );
