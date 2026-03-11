@@ -467,17 +467,29 @@ export function DataSummary() {
         </div>
       </div>
 
-      {/* Per-student Session Notes */}
+      {/* Per-student Session Notes & Timeline */}
       {currentSessionId && selectedStudents.length > 0 && (
-        <div className="mb-4 space-y-2">
+        <div className="mb-4 space-y-3">
           {selectedStudents.map(student => (
-            <StudentSessionNotes
-              key={student.id}
-              sessionId={currentSessionId}
-              studentId={student.id}
-              studentName={student.name}
-              compact={selectedStudents.length > 1}
-            />
+            <div key={student.id} className="space-y-2">
+              <StudentSessionNotes
+                sessionId={currentSessionId}
+                studentId={student.id}
+                studentName={student.name}
+                compact={selectedStudents.length > 1}
+              />
+              <div className="flex items-center gap-2 pl-2">
+                <AddTimelineEntryButton
+                  studentId={student.id}
+                  studentName={student.name}
+                  compact
+                />
+              </div>
+              <StudentTimelineEntries
+                studentId={student.id}
+                sessionId={currentSessionId}
+              />
+            </div>
           ))}
         </div>
       )}
