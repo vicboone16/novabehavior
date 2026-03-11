@@ -218,6 +218,15 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+            <Route path="/shared-library" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <SharedLibrary />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/behaviors" element={
               <ProtectedRoute>
                 <ApprovalCheck>
