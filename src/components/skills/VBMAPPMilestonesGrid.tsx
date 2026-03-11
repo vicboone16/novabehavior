@@ -1024,8 +1024,17 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
             </Button>
           </CardContent>
         </Card>
+      ) : viewMode === 'grid' ? (
+        /* ── Coordinate Grid View ── */
+        <VBMAPPCoordinateGrid
+          items={templateItems}
+          currentAssessmentId={selectedAssessmentId}
+          currentResults={results}
+          overlays={gridOverlays}
+          onCellClick={handleGridCellClick}
+        />
       ) : (
-        /* ── Domain sections ── */
+        /* ── Domain List View ── */
         <div className="space-y-3">
           {domainGroups.map(({ domain, items }) => (
             <DomainSection
