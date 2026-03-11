@@ -24235,6 +24235,50 @@ export type Database = {
         }
         Relationships: []
       }
+      resource_folders: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          folder_type: string
+          id: string
+          name: string
+          owner_user_id: string | null
+          parent_folder_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          folder_type: string
+          id?: string
+          name: string
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          folder_type?: string
+          id?: string
+          name?: string
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "resource_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_queue: {
         Row: {
           created_at: string
