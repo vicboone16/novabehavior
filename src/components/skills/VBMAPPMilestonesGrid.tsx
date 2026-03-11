@@ -876,7 +876,7 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handlePrint}
+                onClick={handleExportPdf}
                 title="Export / Print milestones grid"
               >
                 <Printer className="w-3.5 h-3.5 mr-1" />
