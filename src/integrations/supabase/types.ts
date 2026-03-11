@@ -17142,6 +17142,42 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_optimization_quick_actions: {
+        Row: {
+          action_key: string
+          action_title: string
+          created_at: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          source_type: string
+        }
+        Insert: {
+          action_key: string
+          action_title: string
+          created_at?: string | null
+          default_prompt_text: string
+          default_reasoning_mode: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          source_type: string
+        }
+        Update: {
+          action_key?: string
+          action_title?: string
+          created_at?: string | null
+          default_prompt_text?: string
+          default_reasoning_mode?: string
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          source_type?: string
+        }
+        Relationships: []
+      }
       nova_ai_output_exports: {
         Row: {
           client_id: string | null
