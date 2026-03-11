@@ -5,7 +5,7 @@ import { useDataStore } from '@/store/dataStore';
 import { 
   TrendingUp, TrendingDown, Minus, Activity, Calendar, 
   BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon,
-  Layers, AlertTriangle, UserPlus
+  Layers, AlertTriangle, UserPlus, Edit2, Check, X
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -119,6 +119,36 @@ export function StudentBehaviorsOverview({
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [showPhaseLines, setShowPhaseLines] = useState(true);
+  const [editingMethodsBehaviorId, setEditingMethodsBehaviorId] = useState<string | null>(null);
+  const [editingMethods, setEditingMethods] = useState<DataCollectionMethod[]>([]);
+  const { updateBehaviorMethods } = useDataStore();
+
+  const ALL_METHODS: { value: DataCollectionMethod; label: string }[] = [
+    { value: 'frequency', label: 'Frequency' },
+    { value: 'duration', label: 'Duration' },
+    { value: 'latency', label: 'Latency' },
+    { value: 'abc', label: 'ABC' },
+    { value: 'interval', label: 'Interval' },
+  ];
+
+  const startEditMethods = (behaviorId: string, currentMethods: DataCollectionMethod[]) => {
+    setEditingMethodsBehaviorId(behaviorId);
+    setEditingMethods(currentMethods.length > 0 ? [...currentMethods] : ['frequency']);
+  };
+
+  const saveEditMethods = () => {
+    if (editingMethodsBehaviorId && editingMethods.length > 0) {
+      updateBehaviorMethods(studentId, editingMethodsBehaviorId, editingMethods);
+      setEditingMethodsBehaviorId(null);
+      toast.success('Data collection methods updated');
+    }
+  };
+
+  const toggleEditingMethod = (method: DataCollectionMethod) => {
+    setEditingMethods(prev =>
+      prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]
+    );
+  };
 
   // For the "All Time" preset we still need a concrete range so charts can render.
   // We compute the earliest available timestamp for this student and use "today" as the end.
@@ -1260,12 +1290,55 @@ export function StudentBehaviorsOverview({
                               </Badge>
                             )}
                           </div>
-                          <div className="flex gap-1 mt-0.5">
-                            {(behavior.methods || [behavior.type]).map(method => (
-                              <Badge key={method} variant="secondary" className="text-xs py-0">
-                                {METHOD_LABELS[method]}
-                              </Badge>
-                            ))}
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {editingMethodsBehaviorId === behavior.id ? (
+                              <>
+                                {ALL_METHODS.map(m => (
+                                  <Badge
+                                    key={m.value}
+                                    variant={editingMethods.includes(m.value) ? 'default' : 'outline'}
+                                    className="text-xs py-0 cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); toggleEditingMethod(m.value); }}
+                                  >
+                                    {m.label}
+                                  </Badge>
+                                ))}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0 ml-1"
+                                  onClick={(e) => { e.stopPropagation(); saveEditMethods(); }}
+                                  disabled={editingMethods.length === 0}
+                                >
+                                  <Check className="w-3 h-3 text-primary" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => { e.stopPropagation(); setEditingMethodsBehaviorId(null); }}
+                                >
+                                  <X className="w-3 h-3 text-muted-foreground" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                {(behavior.methods || [behavior.type]).map(method => (
+                                  <Badge key={method} variant="secondary" className="text-xs py-0">
+                                    {METHOD_LABELS[method]}
+                                  </Badge>
+                                ))}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 p-0 ml-1 opacity-40 hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); startEditMethods(behavior.id, behavior.methods || [behavior.type]); }}
+                                  title="Edit data collection methods"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
