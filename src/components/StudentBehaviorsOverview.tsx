@@ -960,7 +960,8 @@ export function StudentBehaviorsOverview({
                           dataKey={behavior.name}
                           stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                           strokeWidth={2}
-                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                          connectNulls={false}
                         />
                       ))}
                       {/* Phase Change Lines */}
