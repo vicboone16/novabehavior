@@ -214,6 +214,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       diagnoses: diagnosesArray.length > 0 ? diagnosesArray : undefined,
       primarySetting: primarySetting as Student['primarySetting'] || undefined,
       primarySupervisorStaffId: primarySupervisorStaffId || undefined,
+      midTierSupervisorStaffId: midTierSupervisorStaffId || undefined,
       caseOpenedDate: parseDate(caseOpenedDate),
       activationStatus: activationStatus as Student['activationStatus'] || undefined,
       contactEmail: contactEmail || undefined,
