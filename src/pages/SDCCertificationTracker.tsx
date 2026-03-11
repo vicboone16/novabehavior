@@ -58,7 +58,7 @@ export default function SDCCertificationTracker() {
       <div className="border-b bg-card">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Button variant="ghost" size="sm" onClick={() => navigate('/sdc-training')} className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to SDC Training
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Team Trainings
           </Button>
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-accent" />
@@ -74,7 +74,7 @@ export default function SDCCertificationTracker() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold text-foreground">SDC Behavior Training Certification</h2>
+                <h2 className="text-lg font-semibold text-foreground">Team Training Certification</h2>
               </div>
               <Badge className={cfg.color}>{cfg.label}</Badge>
             </div>
@@ -83,7 +83,7 @@ export default function SDCCertificationTracker() {
               <span className="text-sm font-medium text-muted-foreground">{completedCount}/{totalCount}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Complete all requirements to earn SDC Behavior Training certification.
+              Complete all requirements to earn Team Training certification.
             </p>
           </CardContent>
         </Card>

@@ -168,7 +168,7 @@ export function ModulesTab({ modules, downloads, workbookItems, certRequirements
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-foreground">SDC Training Modules</h2>
+        <h2 className="text-xl font-bold text-foreground">Training Modules</h2>
         <p className="text-sm text-muted-foreground">Click a module for full details</p>
       </div>
 

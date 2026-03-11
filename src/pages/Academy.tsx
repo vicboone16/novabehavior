@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Route, Layers, FileText, ClipboardList, BarChart3, Search, ChevronRight, CheckCircle2, Clock, Play, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Route, Layers, FileText, ClipboardList, BarChart3, Search, ChevronRight, CheckCircle2, Clock, Play, X, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -227,6 +227,7 @@ export default function Academy() {
               <TabsTrigger value="lessons" className="gap-1"><FileText className="w-3.5 h-3.5" />Lessons ({data.lessons.length})</TabsTrigger>
               <TabsTrigger value="assignments" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />Assignments ({data.myAssignments.length})</TabsTrigger>
               <TabsTrigger value="progress" className="gap-1"><BarChart3 className="w-3.5 h-3.5" />My Progress</TabsTrigger>
+              <TabsTrigger value="team-trainings" className="gap-1"><GraduationCap className="w-3.5 h-3.5" />Team Trainings</TabsTrigger>
             </TabsList>
 
             <div className="relative mb-4">
@@ -376,6 +377,20 @@ export default function Academy() {
                   })}
                 </div>
               )}
+            </TabsContent>
+
+            {/* TEAM TRAININGS */}
+            <TabsContent value="team-trainings">
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <GraduationCap className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-40" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Team Trainings</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Staff training modules, certification tracking, instructor guides, and downloadable resources.</p>
+                  <Button onClick={() => navigate('/sdc-training')} className="gap-2">
+                    <GraduationCap className="w-4 h-4" /> Open Team Trainings
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         )}

@@ -30,13 +30,13 @@ export default function SDCTraining() {
       <div className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-4 mb-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/academy')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">SDC Behavior Training System</h1>
+              <h1 className="text-2xl font-bold text-foreground">Team Trainings</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Social Development Class staff training, certification, and resources
+                Staff training, certification, and resources
               </p>
             </div>
           </div>

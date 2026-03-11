@@ -57,7 +57,7 @@ export default function SDCModuleDetail() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-lg text-muted-foreground">Module not found</p>
-        <Button onClick={() => navigate('/sdc-training')}>Back to SDC Training</Button>
+        <Button onClick={() => navigate('/sdc-training')}>Back to Team Trainings</Button>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function SDCModuleDetail() {
       <div className="border-b bg-card">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Button variant="ghost" size="sm" onClick={() => navigate('/sdc-training')} className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to SDC Training
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Team Trainings
           </Button>
           <div className="flex items-start justify-between">
             <h1 className="text-2xl font-bold text-foreground">{mod.title}</h1>

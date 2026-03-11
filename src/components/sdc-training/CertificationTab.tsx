@@ -55,7 +55,7 @@ export function CertificationTab({ certRequirements, certProgress, modules, isAd
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">Certification Tracker</h2>
-          <p className="text-sm text-muted-foreground">Track SDC training certification status</p>
+          <p className="text-sm text-muted-foreground">Track team training certification status</p>
         </div>
         <Button variant="outline" size="sm" onClick={onViewDetails}>
           <Eye className="w-4 h-4 mr-2" /> Full Tracker
@@ -66,7 +66,7 @@ export function CertificationTab({ certRequirements, certProgress, modules, isAd
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground">SDC Behavior Training Certification</h3>
+            <h3 className="font-semibold text-foreground">Team Training Certification</h3>
             <Badge className={cfg.color}>{cfg.label}</Badge>
           </div>
           <div className="flex items-center gap-3 mb-2">
