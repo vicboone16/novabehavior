@@ -102,7 +102,7 @@ export default function ResourceHub() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'team';
 
-  const [activeTab, setActiveTab] = useState<'team' | 'personal' | 'upload'>(initialTab as any);
+  const [activeTab, setActiveTab] = useState<'team' | 'personal' | 'upload' | 'requests' | 'templates'>(initialTab as any);
   const [teamItems, setTeamItems] = useState<LibraryItem[]>([]);
   const [personalItems, setPersonalItems] = useState<PersonalFile[]>([]);
   const [loading, setLoading] = useState(true);
