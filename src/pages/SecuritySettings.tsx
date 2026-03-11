@@ -409,6 +409,10 @@ export default function SecuritySettings() {
           </div>
         </TabsContent>
 
+        <TabsContent value="scan" className="space-y-4">
+          <SecurityScanTab />
+        </TabsContent>
+
         <TabsContent value="audit" className="space-y-4">
           <Card>
             <CardHeader>
