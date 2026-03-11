@@ -75,27 +75,15 @@ export function CurriculumSystemManager() {
   }, [statusFilter]);
 
   const fetchCollections = useCallback(async () => {
-    const [{ data: cols }, { data: domainCounts }, { data: goalCounts }] = await Promise.all([
+    const [{ data: cols }, { data: dCounts }, { data: gData }, { data: dAll }] = await Promise.all([
       supabase.from('clinical_curricula_collections').select('*').eq('is_active', true).order('sort_order'),
-      supabase.rpc('exec_sql', { sql: "SELECT collection_id, COUNT(*)::int as cnt FROM clinical_curricula_domains GROUP BY collection_id" }).catch(() => ({ data: null })),
-      supabase.rpc('exec_sql', { sql: "SELECT d.collection_id, COUNT(g.id)::int as cnt FROM clinical_curricula_goals g JOIN clinical_curricula_domains d ON g.domain_id = d.id WHERE g.is_active GROUP BY d.collection_id" }).catch(() => ({ data: null })),
+      supabase.from('clinical_curricula_domains').select('collection_id'),
+      supabase.from('clinical_curricula_goals').select('domain_id').eq('is_active', true),
+      supabase.from('clinical_curricula_domains').select('id, collection_id'),
     ]);
 
     if (cols) {
-      // Try to get counts via separate queries if RPC not available
       const collsWithCounts = (cols as any[]).map(c => ({ ...c, domain_count: 0, goal_count: 0 }));
-
-      // Fetch counts separately
-      const { data: dCounts } = await supabase
-        .from('clinical_curricula_domains')
-        .select('collection_id');
-      const { data: gData } = await supabase
-        .from('clinical_curricula_goals')
-        .select('domain_id')
-        .eq('is_active', true);
-      const { data: dAll } = await supabase
-        .from('clinical_curricula_domains')
-        .select('id, collection_id');
 
       if (dCounts && dAll) {
         const domainCountMap = new Map<string, number>();
