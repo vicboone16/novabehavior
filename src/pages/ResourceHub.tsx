@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Upload, Search, FolderOpen, FileText, Image, Video, Music, File, 
   Trash2, Pin, PinOff, Download, Grid, List, Tag, Filter, Plus, 
-  Lock, Users as UsersIcon, FolderPlus, HardDrive, Cloud
+  Lock, Users as UsersIcon, FolderPlus, HardDrive, Cloud,
+  ClipboardList, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { ServiceRequestsPanel } from '@/components/service-requests/ServiceRequestsPanel';
+import { ProgramTemplatesPanel } from '@/components/templates/ProgramTemplatesPanel';
 
 interface LibraryItem {
   id: string;
@@ -99,7 +102,7 @@ export default function ResourceHub() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'team';
 
-  const [activeTab, setActiveTab] = useState<'team' | 'personal' | 'upload'>(initialTab as any);
+  const [activeTab, setActiveTab] = useState<'team' | 'personal' | 'upload' | 'requests' | 'templates'>(initialTab as any);
   const [teamItems, setTeamItems] = useState<LibraryItem[]>([]);
   const [personalItems, setPersonalItems] = useState<PersonalFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -352,7 +355,7 @@ export default function ResourceHub() {
                   Resource Hub
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Team files, personal cloud storage & uploads
+                  Team files, personal cloud, service requests & templates
                 </p>
               </div>
             </div>
@@ -367,7 +370,7 @@ export default function ResourceHub() {
       <div className="border-b border-border bg-card/50">
         <div className="container">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="h-11 bg-transparent border-none">
+            <TabsList className="h-11 bg-transparent border-none flex-nowrap overflow-x-auto">
               <TabsTrigger value="team" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <UsersIcon className="w-3.5 h-3.5" />
                 Team Files
@@ -375,6 +378,14 @@ export default function ResourceHub() {
               <TabsTrigger value="personal" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Lock className="w-3.5 h-3.5" />
                 Personal Files
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <ClipboardList className="w-3.5 h-3.5" />
+                Service Requests
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <BookOpen className="w-3.5 h-3.5" />
+                Templates
               </TabsTrigger>
               <TabsTrigger value="upload" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Upload className="w-3.5 h-3.5" />
@@ -386,6 +397,15 @@ export default function ResourceHub() {
       </div>
 
       <div className="container py-6 space-y-4">
+        {/* Service Requests Tab */}
+        {activeTab === 'requests' && <ServiceRequestsPanel />}
+        
+        {/* Templates Tab */}
+        {activeTab === 'templates' && <ProgramTemplatesPanel />}
+        
+        {/* File tabs content */}
+        {(activeTab === 'team' || activeTab === 'personal') && (<>
+
         {/* Search & Filters */}
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[200px]">
@@ -445,6 +465,7 @@ export default function ResourceHub() {
             {filtered.map(item => renderFileCard(item, activeTab === 'team'))}
           </div>
         )}
+        </>)}
       </div>
 
       {/* Upload Dialog */}

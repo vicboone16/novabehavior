@@ -1,4 +1,4 @@
-import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar, StickyNote } from 'lucide-react';
+import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar, StickyNote, ClipboardList } from 'lucide-react';
 import { NextUpWidgetContent } from './widgets/NextUpWidgetContent';
 import { CaseloadRiskWidget } from './widgets/CaseloadRiskWidget';
 import { AlertsFeedWidget } from './widgets/AlertsFeedWidget';
@@ -11,6 +11,7 @@ import { RecentSessionNotesWidget } from './widgets/RecentSessionNotesWidget';
 import { ParentCommsWidget } from './widgets/ParentCommsWidget';
 import { ScheduleOverviewWidget } from './widgets/ScheduleOverviewWidget';
 import { PersonalNotesWidget } from './widgets/PersonalNotesWidget';
+import { ServiceRequestsWidget } from './ServiceRequestsWidget';
 import type { ReactNode } from 'react';
 
 interface WidgetComponent {
@@ -66,5 +67,9 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'personal-notes': {
     component: () => <PersonalNotesWidget />,
     icon: <StickyNote className="w-4 h-4 text-amber-500" />,
+  },
+  'service-requests': {
+    component: () => <ServiceRequestsWidget />,
+    icon: <ClipboardList className="w-4 h-4 text-primary" />,
   },
 };
