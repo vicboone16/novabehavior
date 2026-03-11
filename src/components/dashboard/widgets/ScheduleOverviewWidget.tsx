@@ -11,7 +11,7 @@ export function ScheduleOverviewWidget() {
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ['dashboard-schedule', user?.id, format(today, 'yyyy-MM-dd')],
     enabled: !!user,
-    refetchInterval: 120_000,
+    refetchInterval: 60_000, // Refresh every minute to clear ended appointments
     queryFn: async () => {
       const { data } = await supabase
         .from('appointments')
