@@ -309,6 +309,10 @@ export function IEPIntelligenceEngine({ studentId }: Props) {
             />
           </TabsContent>
 
+          <TabsContent value="exports" className="mt-3">
+            <IEPExportHistorySection studentId={studentId} />
+          </TabsContent>
+
           <TabsContent value="packet" className="mt-3">
             <IEPMeetingPacketBuilder
               meeting={engine.meeting}
