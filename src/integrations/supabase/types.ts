@@ -16829,6 +16829,91 @@ export type Database = {
         }
         Relationships: []
       }
+      mtss_fidelity_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          log_date: string | null
+          logged_by: string | null
+          minutes_delivered: number | null
+          notes: string | null
+          plan_intervention_id: string
+          rating: Database["public"]["Enums"]["fidelity_rating"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          log_date?: string | null
+          logged_by?: string | null
+          minutes_delivered?: number | null
+          notes?: string | null
+          plan_intervention_id: string
+          rating?: Database["public"]["Enums"]["fidelity_rating"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          log_date?: string | null
+          logged_by?: string | null
+          minutes_delivered?: number | null
+          notes?: string | null
+          plan_intervention_id?: string
+          rating?: Database["public"]["Enums"]["fidelity_rating"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mtss_fidelity_logs_plan_intervention_id_fkey"
+            columns: ["plan_intervention_id"]
+            isOneToOne: false
+            referencedRelation: "student_mtss_plan_interventions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mtss_interventions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          district_id: string | null
+          id: string
+          materials: Json | null
+          name: string
+          recommended_days_per_week: number | null
+          recommended_minutes_per_day: number | null
+          tier: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          district_id?: string | null
+          id?: string
+          materials?: Json | null
+          name: string
+          recommended_days_per_week?: number | null
+          recommended_minutes_per_day?: number | null
+          tier: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          district_id?: string | null
+          id?: string
+          materials?: Json | null
+          name?: string
+          recommended_days_per_week?: number | null
+          recommended_minutes_per_day?: number | null
+          tier?: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mtss_interventions_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_requirements: {
         Row: {
           created_at: string
@@ -26919,6 +27004,169 @@ export type Database = {
           },
           {
             foreignKeyName: "student_iep_supports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      student_mtss_plan_interventions: {
+        Row: {
+          created_at: string | null
+          dosage_days_per_week: number | null
+          dosage_minutes_per_day: number | null
+          end_date: string | null
+          id: string
+          intervention_id: string
+          notes: string | null
+          owner_user_id: string | null
+          plan_id: string
+          start_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dosage_days_per_week?: number | null
+          dosage_minutes_per_day?: number | null
+          end_date?: string | null
+          id?: string
+          intervention_id: string
+          notes?: string | null
+          owner_user_id?: string | null
+          plan_id: string
+          start_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dosage_days_per_week?: number | null
+          dosage_minutes_per_day?: number | null
+          end_date?: string | null
+          id?: string
+          intervention_id?: string
+          notes?: string | null
+          owner_user_id?: string | null
+          plan_id?: string
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_mtss_plan_interventions_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "mtss_interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plan_interventions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "student_mtss_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_mtss_plans: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          district_id: string | null
+          id: string
+          next_review_date: string | null
+          primary_goal: string | null
+          review_interval_days: number | null
+          school_id: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["mtss_status"]
+          student_id: string
+          tier: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          district_id?: string | null
+          id?: string
+          next_review_date?: string | null
+          primary_goal?: string | null
+          review_interval_days?: number | null
+          school_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["mtss_status"]
+          student_id: string
+          tier: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          district_id?: string | null
+          id?: string
+          next_review_date?: string | null
+          primary_goal?: string | null
+          review_interval_days?: number | null
+          school_id?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["mtss_status"]
+          student_id?: string
+          tier?: Database["public"]["Enums"]["mtss_tier"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_mtss_plans_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_mtss_plans_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
@@ -40341,6 +40589,9 @@ export type Database = {
       criteria_result: "met" | "not_met" | "insufficient_data"
       criteria_type: "mastery" | "probe" | "generalization" | "maintenance"
       data_state: "no_data" | "observed_zero" | "measured"
+      fidelity_rating: "not_started" | "partial" | "met" | "exceeded"
+      mtss_status: "active" | "monitoring" | "exited" | "paused"
+      mtss_tier: "tier_1" | "tier_2" | "tier_3"
       next_action_mode:
         | "none"
         | "next_target_in_program"
@@ -40560,6 +40811,9 @@ export const Constants = {
       criteria_result: ["met", "not_met", "insufficient_data"],
       criteria_type: ["mastery", "probe", "generalization", "maintenance"],
       data_state: ["no_data", "observed_zero", "measured"],
+      fidelity_rating: ["not_started", "partial", "met", "exceeded"],
+      mtss_status: ["active", "monitoring", "exited", "paused"],
+      mtss_tier: ["tier_1", "tier_2", "tier_3"],
       next_action_mode: [
         "none",
         "next_target_in_program",
