@@ -556,6 +556,7 @@ export function StudentBehaviorsOverview({
   }, [filteredBehaviors]);
 
   // Chart data: frequency over time (combines frequencyEntries + historicalData + ABC frequencyCount)
+  // Only includes days where actual data was recorded — no placeholder zeros for missing dates
   const frequencyChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -566,6 +567,7 @@ export function StudentBehaviorsOverview({
       const dayEnd = endOfDay(day);
 
       const dataPoint: any = { date: format(day, 'MMM d') };
+      let hasData = false;
 
       filteredBehaviors.forEach((behavior) => {
         // Count from frequencyEntries
@@ -597,14 +599,21 @@ export function StudentBehaviorsOverview({
         );
         count += dayABC.reduce((s, e) => s + ((e as any).frequencyCount || 1), 0);
         
-        dataPoint[behavior.name] = count;
+        // Only include if there was actual data recorded (frequency entries, historical, or ABC)
+        const hadEntries = dayFrequency.length > 0 || histFrequency.length > 0 || dayABC.length > 0;
+        if (hadEntries) {
+          dataPoint[behavior.name] = count; // 0 is valid if observed but not occurred
+          hasData = true;
+        }
+        // If no entries exist for this day, leave the key absent (renders as gap)
       });
 
-      return dataPoint;
-    });
+      return hasData ? dataPoint : null;
+    }).filter(Boolean);
   }, [dateRange, filteredBehaviors, frequencyEntries, historicalData, abcEntries, studentId]);
 
   // Chart data: duration over time (includes ABC durationMinutes)
+  // Only includes days where actual duration data was recorded
   const durationChartData = useMemo(() => {
     if (!dateRange) return [];
     
@@ -615,6 +624,7 @@ export function StudentBehaviorsOverview({
       const dayEnd = endOfDay(day);
 
       const dataPoint: any = { date: format(day, 'MMM d') };
+      let hasData = false;
 
       filteredBehaviors.forEach((behavior, idx) => {
         // Duration from durationEntries
@@ -635,11 +645,16 @@ export function StudentBehaviorsOverview({
         );
         duration += dayABC.reduce((s, e) => s + (((e as any).durationMinutes || 0) * 60), 0);
         
-        dataPoint[`${behavior.name} (sec)`] = duration;
+        // Only include if actual data exists for this day
+        const hadEntries = dayDuration.length > 0 || dayABC.length > 0;
+        if (hadEntries) {
+          dataPoint[`${behavior.name} (sec)`] = duration; // 0 is valid if timed but no duration
+          hasData = true;
+        }
       });
 
-      return dataPoint;
-    });
+      return hasData ? dataPoint : null;
+    }).filter(Boolean);
   }, [dateRange, filteredBehaviors, durationEntries, abcEntries, studentId]);
 
   // ABC distribution data
@@ -945,7 +960,8 @@ export function StudentBehaviorsOverview({
                           dataKey={behavior.name}
                           stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                           strokeWidth={2}
-                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                          connectNulls={false}
                         />
                       ))}
                       {/* Phase Change Lines */}
@@ -1054,7 +1070,8 @@ export function StudentBehaviorsOverview({
                           dataKey={`${behavior.name} (sec)`}
                           stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                           strokeWidth={2}
-                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          dot={{ fill: CHART_COLORS[idx % CHART_COLORS.length], r: 4 }}
+                          connectNulls={false}
                         />
                       ))}
                       {/* Phase Change Lines */}
