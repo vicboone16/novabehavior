@@ -370,7 +370,7 @@ export default function ResourceHub() {
       <div className="border-b border-border bg-card/50">
         <div className="container">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="h-11 bg-transparent border-none">
+            <TabsList className="h-11 bg-transparent border-none flex-nowrap overflow-x-auto">
               <TabsTrigger value="team" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <UsersIcon className="w-3.5 h-3.5" />
                 Team Files
@@ -378,6 +378,14 @@ export default function ResourceHub() {
               <TabsTrigger value="personal" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Lock className="w-3.5 h-3.5" />
                 Personal Files
+              </TabsTrigger>
+              <TabsTrigger value="requests" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <ClipboardList className="w-3.5 h-3.5" />
+                Service Requests
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <BookOpen className="w-3.5 h-3.5" />
+                Templates
               </TabsTrigger>
               <TabsTrigger value="upload" className="gap-1.5 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
                 <Upload className="w-3.5 h-3.5" />
