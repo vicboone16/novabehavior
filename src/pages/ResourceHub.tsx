@@ -93,7 +93,8 @@ function formatFileSize(bytes: number): string {
 
 export default function ResourceHub() {
   const { user } = useAuth();
-  const { currentAgency, isAdmin } = useAgencyContext();
+  const { currentAgency, isAgencyAdmin } = useAgencyContext();
+  const isAdmin = isAgencyAdmin || userRole === 'admin' || userRole === 'super_admin';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'team';
