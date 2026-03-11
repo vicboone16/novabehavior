@@ -68,4 +68,8 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
     component: () => <PersonalNotesWidget />,
     icon: <StickyNote className="w-4 h-4 text-amber-500" />,
   },
+  'service-requests': {
+    component: () => <ServiceRequestsWidget />,
+    icon: <ClipboardList className="w-4 h-4 text-primary" />,
+  },
 };
