@@ -15,7 +15,8 @@ import {
   Smartphone,
   Menu,
   Stethoscope,
-  FolderOpen,
+  HardDrive,
+  Briefcase,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -150,9 +151,13 @@ export default function MainLayout() {
                   <BookOpen className="w-4 h-4" />
                   <span>Clinical Library</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate('/shared-library')} className="gap-1">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>Shared Library</span>
+                <Button variant="outline" size="sm" onClick={() => navigate('/resource-hub')} className="gap-1">
+                  <HardDrive className="w-4 h-4" />
+                  <span>Resource Hub</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/operations')} className="gap-1">
+                  <Briefcase className="w-4 h-4" />
+                  <span>Operations</span>
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate('/nova-ai')} className="gap-1">
                   <BrainCircuit className="w-4 h-4" />
@@ -194,9 +199,13 @@ export default function MainLayout() {
                       <BookOpen className="w-4 h-4 mr-2" />
                       Clinical Library
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/shared-library')}>
-                      <FolderOpen className="w-4 h-4 mr-2" />
-                      Shared Library
+                    <DropdownMenuItem onClick={() => navigate('/resource-hub')}>
+                      <HardDrive className="w-4 h-4 mr-2" />
+                      Resource Hub
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/operations')}>
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      Operations
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/nova-ai')}>
                       <BrainCircuit className="w-4 h-4 mr-2" />

@@ -9899,6 +9899,62 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_library_submissions: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          id: string
+          library_scope: string
+          resource_id: string
+          resource_type: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          library_scope?: string
+          resource_id: string
+          resource_type?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          library_scope?: string
+          resource_id?: string
+          resource_type?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_library_submissions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_schedule_events: {
         Row: {
           agency_id: string
@@ -19146,6 +19202,24 @@ export type Database = {
           },
         ]
       }
+      operations_modules: {
+        Row: {
+          id: string
+          module_key: string
+          module_name: string
+        }
+        Insert: {
+          id?: string
+          module_key: string
+          module_name: string
+        }
+        Update: {
+          id?: string
+          module_key?: string
+          module_name?: string
+        }
+        Relationships: []
+      }
       org_coverage_settings: {
         Row: {
           auto_create_tasks_on_auth_renewal: boolean | null
@@ -21332,6 +21406,54 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      personal_files: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          folder: string | null
+          id: string
+          storage_path: string
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size?: number
+          file_type?: string
+          folder?: string | null
+          id?: string
+          storage_path: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          folder?: string | null
+          id?: string
+          storage_path?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       pin_auth_attempts: {
         Row: {
@@ -24235,6 +24357,144 @@ export type Database = {
         }
         Relationships: []
       }
+      resource_files: {
+        Row: {
+          agency_id: string
+          created_at: string
+          delete_restricted_to_admin: boolean
+          file_name: string
+          file_size_bytes: number | null
+          file_url: string
+          folder_id: string | null
+          id: string
+          mime_type: string | null
+          owner_user_id: string | null
+          storage_scope: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          delete_restricted_to_admin?: boolean
+          file_name: string
+          file_size_bytes?: number | null
+          file_url: string
+          folder_id?: string | null
+          id?: string
+          mime_type?: string | null
+          owner_user_id?: string | null
+          storage_scope: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          delete_restricted_to_admin?: boolean
+          file_name?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          folder_id?: string | null
+          id?: string
+          mime_type?: string | null
+          owner_user_id?: string | null
+          storage_scope?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "resource_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_folders: {
+        Row: {
+          agency_id: string
+          created_at: string
+          created_by: string
+          folder_type: string
+          id: string
+          name: string
+          owner_user_id: string | null
+          parent_folder_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          created_by: string
+          folder_type: string
+          id?: string
+          name: string
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          created_by?: string
+          folder_type?: string
+          id?: string
+          name?: string
+          owner_user_id?: string | null
+          parent_folder_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "resource_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_upload_confirmations: {
+        Row: {
+          agency_id: string
+          confirmation_text: string
+          confirmed_at: string
+          file_id: string | null
+          id: string
+          selected_scope: string
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          confirmation_text: string
+          confirmed_at?: string
+          file_id?: string | null
+          id?: string
+          selected_scope: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          confirmation_text?: string
+          confirmed_at?: string
+          file_id?: string | null
+          id?: string
+          selected_scope?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_upload_confirmations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "resource_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_queue: {
         Row: {
           created_at: string
@@ -26128,6 +26388,7 @@ export type Database = {
           file_name: string
           file_size: number
           file_type: string
+          folder: string | null
           id: string
           is_pinned: boolean
           storage_path: string
@@ -26144,6 +26405,7 @@ export type Database = {
           file_name: string
           file_size?: number
           file_type?: string
+          folder?: string | null
           id?: string
           is_pinned?: boolean
           storage_path: string
@@ -26160,6 +26422,7 @@ export type Database = {
           file_name?: string
           file_size?: number
           file_type?: string
+          folder?: string | null
           id?: string
           is_pinned?: boolean
           storage_path?: string

@@ -78,7 +78,8 @@ import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
 import AskNovaAI from "./pages/AskNovaAI";
 import NovaAI from "./pages/NovaAI";
 import GoalOptimization from "./pages/GoalOptimization";
-import SharedLibrary from "./pages/SharedLibrary";
+import ResourceHub from "./pages/ResourceHub";
+import Operations from "./pages/Operations";
 
 const queryClient = new QueryClient();
 
@@ -222,7 +223,25 @@ const App = () => {
               <ProtectedRoute>
                 <ApprovalCheck>
                   <SyncProvider>
-                    <SharedLibrary />
+                    <ResourceHub />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/resource-hub" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <ResourceHub />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/operations" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <Operations />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
