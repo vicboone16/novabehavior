@@ -119,6 +119,36 @@ export function StudentBehaviorsOverview({
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [showPhaseLines, setShowPhaseLines] = useState(true);
+  const [editingMethodsBehaviorId, setEditingMethodsBehaviorId] = useState<string | null>(null);
+  const [editingMethods, setEditingMethods] = useState<DataCollectionMethod[]>([]);
+  const { updateBehaviorMethods } = useDataStore();
+
+  const ALL_METHODS: { value: DataCollectionMethod; label: string }[] = [
+    { value: 'frequency', label: 'Frequency' },
+    { value: 'duration', label: 'Duration' },
+    { value: 'latency', label: 'Latency' },
+    { value: 'abc', label: 'ABC' },
+    { value: 'interval', label: 'Interval' },
+  ];
+
+  const startEditMethods = (behaviorId: string, currentMethods: DataCollectionMethod[]) => {
+    setEditingMethodsBehaviorId(behaviorId);
+    setEditingMethods(currentMethods.length > 0 ? [...currentMethods] : ['frequency']);
+  };
+
+  const saveEditMethods = () => {
+    if (editingMethodsBehaviorId && editingMethods.length > 0) {
+      updateBehaviorMethods(studentId, editingMethodsBehaviorId, editingMethods);
+      setEditingMethodsBehaviorId(null);
+      toast.success('Data collection methods updated');
+    }
+  };
+
+  const toggleEditingMethod = (method: DataCollectionMethod) => {
+    setEditingMethods(prev =>
+      prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]
+    );
+  };
 
   // For the "All Time" preset we still need a concrete range so charts can render.
   // We compute the earliest available timestamp for this student and use "today" as the end.
