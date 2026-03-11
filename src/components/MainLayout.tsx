@@ -150,6 +150,10 @@ export default function MainLayout() {
                   <BookOpen className="w-4 h-4" />
                   <span>Clinical Library</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/shared-library')} className="gap-1">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Shared Library</span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate('/nova-ai')} className="gap-1">
                   <BrainCircuit className="w-4 h-4" />
                   <span>Nova AI</span>
