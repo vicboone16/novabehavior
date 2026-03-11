@@ -546,20 +546,6 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
   }, [assessments, selectedAssessmentId, overlayResults]);
 
 
-
-
-  // ── Handle grid cell click (cycle EMPTY → HALF → FULL → EMPTY) ───────────
-  const handleGridCellClick = useCallback(
-    (itemId: string, currentFill: 'EMPTY' | 'HALF' | 'FULL') => {
-      const nextFill: FillState =
-        currentFill === 'EMPTY' ? 'HALF' :
-        currentFill === 'HALF' ? 'FULL' : 'EMPTY';
-      handleCellUpdate(itemId, { fill_state: nextFill, tested_circle: false });
-    },
-    [handleCellUpdate]
-  );
-
-
   const handleCreateAssessment = async () => {
     setCreatingAssessment(true);
     const { data, error } = await supabase
@@ -607,6 +593,17 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       setPendingSaves(prev => new Set(prev).add(itemId));
     },
     [selectedAssessmentId]
+  );
+
+  // ── Handle grid cell click (cycle EMPTY → HALF → FULL → EMPTY) ───────────
+  const handleGridCellClick = useCallback(
+    (itemId: string, currentFill: 'EMPTY' | 'HALF' | 'FULL') => {
+      const nextFill: FillState =
+        currentFill === 'EMPTY' ? 'HALF' :
+        currentFill === 'HALF' ? 'FULL' : 'EMPTY';
+      handleCellUpdate(itemId, { fill_state: nextFill, tested_circle: false });
+    },
+    [handleCellUpdate]
   );
 
   // ── Flush pending saves ───────────────────────────────────────────────────
