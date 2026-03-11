@@ -9899,6 +9899,107 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_library_items: {
+        Row: {
+          agency_id: string | null
+          content_json: Json
+          created_at: string
+          created_by: string
+          domain: string | null
+          id: string
+          item_type: string
+          library_scope: string
+          owner_user_id: string
+          published_at: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          submitted_for_review_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          content_json?: Json
+          created_at?: string
+          created_by: string
+          domain?: string | null
+          id?: string
+          item_type: string
+          library_scope: string
+          owner_user_id: string
+          published_at?: string | null
+          review_status: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_for_review_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          content_json?: Json
+          created_at?: string
+          created_by?: string
+          domain?: string | null
+          id?: string
+          item_type?: string
+          library_scope?: string
+          owner_user_id?: string
+          published_at?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          submitted_for_review_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      clinical_library_reviews: {
+        Row: {
+          agency_id: string
+          id: string
+          item_id: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewer_id: string | null
+          submitted_at: string
+          submitted_by: string
+        }
+        Insert: {
+          agency_id: string
+          id?: string
+          item_id: string
+          review_notes?: string | null
+          review_status: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          submitted_at?: string
+          submitted_by: string
+        }
+        Update: {
+          agency_id?: string
+          id?: string
+          item_id?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          submitted_at?: string
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_library_reviews_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_library_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_library_submissions: {
         Row: {
           agency_id: string | null
@@ -24655,6 +24756,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_module_permissions: {
+        Row: {
+          agency_id: string
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          id: string
+          module_key: string
+          role_key: string
+        }
+        Insert: {
+          agency_id: string
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module_key: string
+          role_key: string
+        }
+        Update: {
+          agency_id?: string
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module_key?: string
+          role_key?: string
+        }
+        Relationships: []
       }
       schedule_requests: {
         Row: {
