@@ -891,6 +891,8 @@ export default function StudentProfile() {
 
         {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
         <TabsContent value="assessment" className="space-y-4">
+          {/* Goal Suggestion Engine — Reassessment Surface */}
+          <GoalSuggestionEnginePanel studentId={student.id} surface="reassessment" />
           <div className="grid gap-4">
             {/* Active Observation Banner */}
             <ActiveObservationsBanner 
