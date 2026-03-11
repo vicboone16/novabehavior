@@ -230,11 +230,6 @@ export function UserMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <SetupPinDialog
-        open={showPinSetup}
-        onOpenChange={setShowPinSetup}
-        userId={user.id}
-      />
       <AdminPinRedemption
         open={showAdminPin}
         onOpenChange={setShowAdminPin}

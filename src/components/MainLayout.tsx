@@ -199,9 +199,13 @@ export default function MainLayout() {
                       <BookOpen className="w-4 h-4 mr-2" />
                       Clinical Library
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/shared-library')}>
-                      <FolderOpen className="w-4 h-4 mr-2" />
-                      Shared Library
+                    <DropdownMenuItem onClick={() => navigate('/resource-hub')}>
+                      <HardDrive className="w-4 h-4 mr-2" />
+                      Resource Hub
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/operations')}>
+                      <Briefcase className="w-4 h-4 mr-2" />
+                      Operations
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/nova-ai')}>
                       <BrainCircuit className="w-4 h-4 mr-2" />
