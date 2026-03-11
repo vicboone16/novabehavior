@@ -33,7 +33,7 @@ export function InstructorGuideTab({ modules }: Props) {
       <div className="text-center py-16">
         <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
         <h3 className="text-lg font-semibold text-foreground">No Training Modules Yet</h3>
-        <p className="text-muted-foreground mt-1">SDC training modules will appear here once created.</p>
+        <p className="text-muted-foreground mt-1">Training modules will appear here once created.</p>
       </div>
     );
   }

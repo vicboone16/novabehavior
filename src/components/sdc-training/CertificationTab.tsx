@@ -66,7 +66,7 @@ export function CertificationTab({ certRequirements, certProgress, modules, isAd
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground">SDC Behavior Training Certification</h3>
+            <h3 className="font-semibold text-foreground">Team Training Certification</h3>
             <Badge className={cfg.color}>{cfg.label}</Badge>
           </div>
           <div className="flex items-center gap-3 mb-2">

@@ -37,9 +37,9 @@ export function OverviewTab({ modules, downloads, certRequirements, certProgress
       {/* Program description */}
       <Card>
         <CardContent className="p-6">
-          <h2 className="text-lg font-bold text-foreground mb-2">SDC Behavior Training Program</h2>
+          <h2 className="text-lg font-bold text-foreground mb-2">Team Training Program</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            This training program prepares Social Development Class staff — teachers, aides, behavior staff, and supervisors — to understand behavior as communication, use data-driven decision making, apply evidence-based interventions, and support students through structured, compassionate practice. Complete all modules and certification requirements to earn SDC Behavior Training Certification.
+            This training program prepares staff — teachers, aides, behavior staff, and supervisors — to understand behavior as communication, use data-driven decision making, apply evidence-based interventions, and support students through structured, compassionate practice. Complete all modules and certification requirements to earn Team Training Certification.
           </p>
           {totalReqs > 0 && (
             <div className="mt-4 flex items-center gap-3">
