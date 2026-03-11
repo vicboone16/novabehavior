@@ -103,6 +103,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     allowedRoles: [],
     defaultLayout: { w: 6, h: 5, minW: 3, minH: 3 },
   },
+  {
+    id: 'personal-notes',
+    title: 'My Notes & To-Do',
+    description: 'Personal notes and task checklist',
+    icon: 'StickyNote',
+    category: 'core',
+    allowedRoles: [],
+    defaultLayout: { w: 4, h: 5, minW: 3, minH: 3 },
+  },
 ];
 
 /** Role-based default widget presets */
