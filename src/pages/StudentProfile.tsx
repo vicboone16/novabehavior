@@ -63,6 +63,7 @@ import { StudentObservationsTab } from '@/components/observation-requests/Studen
 import { StudentIEPPrepTab } from '@/components/iep/StudentIEPPrepTab';
 import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverTrainingTab';
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
+import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
