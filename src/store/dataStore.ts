@@ -2051,6 +2051,16 @@ export const useDataStore = create<DataState>()(
       getLinkedAppointmentId: () => get().linkedAppointmentId,
 
       resetSession: () => {
+        const state = get();
+        // Clean stale live entries when resetting session
+        const savedSessionIds = new Set(state.sessions.map(s => s.id));
+        const isStale = (e: { sessionId?: string; isHistorical?: boolean }) => {
+          if (e.isHistorical) return false;
+          if (!e.sessionId) return true;
+          if (savedSessionIds.has(e.sessionId)) return false;
+          return true;
+        };
+        
         set({ 
           sessionStartTime: null,
           currentSessionId: null,
@@ -2059,6 +2069,10 @@ export const useDataStore = create<DataState>()(
           studentSessionStatus: [],
           studentIntervalStatus: [],
           syncedIntervalsRunning: false,
+          frequencyEntries: state.frequencyEntries.filter(e => !isStale(e)),
+          durationEntries: state.durationEntries.filter(e => !isStale(e as any)),
+          abcEntries: state.abcEntries.filter(e => !isStale(e as any)),
+          intervalEntries: state.intervalEntries.filter(e => !isStale(e as any)),
         });
       },
 
