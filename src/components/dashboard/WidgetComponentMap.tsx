@@ -1,4 +1,4 @@
-import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar } from 'lucide-react';
+import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar, StickyNote } from 'lucide-react';
 import { NextUpWidgetContent } from './widgets/NextUpWidgetContent';
 import { CaseloadRiskWidget } from './widgets/CaseloadRiskWidget';
 import { AlertsFeedWidget } from './widgets/AlertsFeedWidget';
@@ -10,6 +10,7 @@ import { UtilizationWidget } from './widgets/UtilizationWidget';
 import { RecentSessionNotesWidget } from './widgets/RecentSessionNotesWidget';
 import { ParentCommsWidget } from './widgets/ParentCommsWidget';
 import { ScheduleOverviewWidget } from './widgets/ScheduleOverviewWidget';
+import { PersonalNotesWidget } from './widgets/PersonalNotesWidget';
 import type { ReactNode } from 'react';
 
 interface WidgetComponent {
