@@ -378,6 +378,20 @@ export default function Academy() {
                 </div>
               )}
             </TabsContent>
+
+            {/* TEAM TRAININGS */}
+            <TabsContent value="team-trainings">
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <GraduationCap className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-40" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Team Trainings</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Staff training modules, certification tracking, instructor guides, and downloadable resources.</p>
+                  <Button onClick={() => navigate('/sdc-training')} className="gap-2">
+                    <GraduationCap className="w-4 h-4" /> Open Team Trainings
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         )}
       </main>
