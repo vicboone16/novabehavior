@@ -304,8 +304,8 @@ export function SkillProgressCharts({ targets, dateRange }: SkillProgressChartsP
                       name={target.name}
                       stroke={target.color}
                       strokeWidth={2}
-                      dot={{ fill: target.color }}
-                      connectNulls
+                      dot={{ fill: target.color, r: 4 }}
+                      connectNulls={false}
                     />
                   ))}
                 </LineChart>
