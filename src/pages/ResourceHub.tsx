@@ -397,6 +397,15 @@ export default function ResourceHub() {
       </div>
 
       <div className="container py-6 space-y-4">
+        {/* Service Requests Tab */}
+        {activeTab === 'requests' && <ServiceRequestsPanel />}
+        
+        {/* Templates Tab */}
+        {activeTab === 'templates' && <ProgramTemplatesPanel />}
+        
+        {/* File tabs content */}
+        {(activeTab === 'team' || activeTab === 'personal') && (<>
+
         {/* Search & Filters */}
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[200px]">
