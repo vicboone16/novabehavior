@@ -2332,6 +2332,57 @@ export type Database = {
         }
         Relationships: []
       }
+      app_navigation_structure: {
+        Row: {
+          badge_source: string | null
+          created_at: string | null
+          feature_flag: string | null
+          icon: string | null
+          id: string
+          is_visible: boolean
+          label: string
+          level: number
+          nav_key: string
+          parent_key: string | null
+          required_permission: string | null
+          required_role: string | null
+          route: string
+          sort_order: number
+        }
+        Insert: {
+          badge_source?: string | null
+          created_at?: string | null
+          feature_flag?: string | null
+          icon?: string | null
+          id?: string
+          is_visible?: boolean
+          label: string
+          level?: number
+          nav_key: string
+          parent_key?: string | null
+          required_permission?: string | null
+          required_role?: string | null
+          route: string
+          sort_order?: number
+        }
+        Update: {
+          badge_source?: string | null
+          created_at?: string | null
+          feature_flag?: string | null
+          icon?: string | null
+          id?: string
+          is_visible?: boolean
+          label?: string
+          level?: number
+          nav_key?: string
+          parent_key?: string | null
+          required_permission?: string | null
+          required_role?: string | null
+          route?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       app_notifications: {
         Row: {
           agency_id: string
