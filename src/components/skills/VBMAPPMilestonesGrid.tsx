@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Plus, ChevronDown, Loader2, Info, Calendar, BarChart2, BookOpen, Trash2, Printer, Save, X, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronDown, Loader2, Info, Calendar, BarChart2, BookOpen, Trash2, Printer, Save, X, AlertTriangle, LayoutGrid, List } from 'lucide-react';
+import { VBMAPPCoordinateGrid, type AssessmentOverlay } from './VBMAPPCoordinateGrid';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -430,6 +431,12 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // View toggle: list (domain sections) vs grid (coordinate master grid)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Historical overlay results for non-selected assessments
+  const [overlayResults, setOverlayResults] = useState<Record<string, Record<string, ItemResult>>>({});
+
 
   // ── Load template items (static, load once) ────────────────────────────────
   useEffect(() => {
@@ -489,7 +496,56 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       });
   }, [selectedAssessmentId]);
 
-  // ── Create new assessment ─────────────────────────────────────────────────
+  // ── Load overlay results for historical assessments ───────────────────────
+  useEffect(() => {
+    if (!selectedAssessmentId || assessments.length <= 1) {
+      setOverlayResults({});
+      return;
+    }
+    const otherIds = assessments
+      .filter(a => a.assessment_id !== selectedAssessmentId)
+      .slice(0, 3) // max 3 historical overlays
+      .map(a => a.assessment_id);
+
+    if (otherIds.length === 0) { setOverlayResults({}); return; }
+
+    Promise.all(
+      otherIds.map(id =>
+        supabase
+          .from('vb_mapp_assessment_results')
+          .select('*')
+          .eq('assessment_id', id)
+          .then(({ data }) => {
+            const map: Record<string, ItemResult> = {};
+            (data ?? []).forEach((r: any) => { map[r.item_id] = r as ItemResult; });
+            return { id, map };
+          })
+      )
+    ).then(results => {
+      const combined: Record<string, Record<string, ItemResult>> = {};
+      results.forEach(({ id, map }) => { combined[id] = map; });
+      setOverlayResults(combined);
+    });
+  }, [selectedAssessmentId, assessments]);
+
+  // ── Build overlay objects for coordinate grid ─────────────────────────────
+  const OVERLAY_COLORS = ['#a855f7', '#f97316', '#14b8a6'];
+  const gridOverlays: AssessmentOverlay[] = useMemo(() => {
+    if (!selectedAssessmentId) return [];
+    const otherAssessments = assessments
+      .filter(a => a.assessment_id !== selectedAssessmentId)
+      .slice(0, 3);
+    return otherAssessments
+      .map((a, i) => ({
+        assessmentId: a.assessment_id,
+        assessmentDate: a.assessment_date,
+        color: OVERLAY_COLORS[i] || '#888',
+        label: `${i + 2}${i === 0 ? 'nd' : i === 1 ? 'rd' : 'th'}`,
+        results: overlayResults[a.assessment_id] || {},
+      }));
+  }, [assessments, selectedAssessmentId, overlayResults]);
+
+
   const handleCreateAssessment = async () => {
     setCreatingAssessment(true);
     const { data, error } = await supabase
@@ -537,6 +593,17 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       setPendingSaves(prev => new Set(prev).add(itemId));
     },
     [selectedAssessmentId]
+  );
+
+  // ── Handle grid cell click (cycle EMPTY → HALF → FULL → EMPTY) ───────────
+  const handleGridCellClick = useCallback(
+    (itemId: string, currentFill: 'EMPTY' | 'HALF' | 'FULL') => {
+      const nextFill: FillState =
+        currentFill === 'EMPTY' ? 'HALF' :
+        currentFill === 'HALF' ? 'FULL' : 'EMPTY';
+      handleCellUpdate(itemId, { fill_state: nextFill, tested_circle: false });
+    },
+    [handleCellUpdate]
   );
 
   // ── Flush pending saves ───────────────────────────────────────────────────
@@ -860,6 +927,29 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          {selectedAssessmentId && (
+            <div className="flex border border-border rounded-lg overflow-hidden">
+              <Button
+                size="sm"
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                className="rounded-none h-8 px-3 text-xs"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="w-3.5 h-3.5 mr-1" />
+                Grid
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                className="rounded-none h-8 px-3 text-xs"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-3.5 h-3.5 mr-1" />
+                List
+              </Button>
+            </div>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -934,8 +1024,17 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
             </Button>
           </CardContent>
         </Card>
+      ) : viewMode === 'grid' ? (
+        /* ── Coordinate Grid View ── */
+        <VBMAPPCoordinateGrid
+          items={templateItems}
+          currentAssessmentId={selectedAssessmentId}
+          currentResults={results}
+          overlays={gridOverlays}
+          onCellClick={handleGridCellClick}
+        />
       ) : (
-        /* ── Domain sections ── */
+        /* ── Domain List View ── */
         <div className="space-y-3">
           {domainGroups.map(({ domain, items }) => (
             <DomainSection
