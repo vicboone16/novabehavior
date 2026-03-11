@@ -15,6 +15,8 @@ import { toast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { StudentSessionNotes } from './session/StudentSessionNotes';
+import { AddTimelineEntryButton } from './session/AddTimelineEntryButton';
+import { StudentTimelineEntries } from './session/StudentTimelineEntries';
 
 export function DataSummary() {
   const { 
