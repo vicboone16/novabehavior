@@ -30072,6 +30072,45 @@ export type Database = {
         }
         Relationships: []
       }
+      treatment_bip_draft_items: {
+        Row: {
+          client_id: string | null
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          review_session_id: string | null
+          section_key: string | null
+          source_recommendation_id: string | null
+          student_id: string | null
+          title: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          review_session_id?: string | null
+          section_key?: string | null
+          source_recommendation_id?: string | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          review_session_id?: string | null
+          section_key?: string | null
+          source_recommendation_id?: string | null
+          student_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       treatment_fidelity_checks: {
         Row: {
           check_date: string
@@ -38316,16 +38355,25 @@ export type Database = {
         }
         Returns: string
       }
-      export_treatment_recommendation_to_fba: {
-        Args: {
-          p_created_by: string
-          p_source_object_id: string
-          p_source_section: string
-          p_student_id: string
-          p_text: string
-        }
-        Returns: string
-      }
+      export_treatment_recommendation_to_fba:
+        | {
+            Args: {
+              p_created_by?: string
+              p_recommendation_id: string
+              p_section_key?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_source_object_id: string
+              p_source_section: string
+              p_student_id: string
+              p_text: string
+            }
+            Returns: string
+          }
       export_treatment_recommendation_to_session_note: {
         Args: {
           p_created_by: string
@@ -38896,6 +38944,22 @@ export type Database = {
             }
             Returns: string
           }
+      push_approved_goal_drafts_to_iep_meeting: {
+        Args: {
+          p_created_by?: string
+          p_meeting_session_id: string
+          p_student_id: string
+        }
+        Returns: number
+      }
+      push_school_optimization_to_iep_meeting: {
+        Args: {
+          p_created_by?: string
+          p_meeting_session_id: string
+          p_student_id: string
+        }
+        Returns: number
+      }
       rank_interventions: {
         Args: { _client_id: string; _limit?: number }
         Returns: {
@@ -39505,6 +39569,22 @@ export type Database = {
           domain: string
           goal_title: string
         }[]
+      }
+      seed_iep_meeting_checklist: {
+        Args: { p_meeting_session_id: string }
+        Returns: number
+      }
+      seed_iep_meeting_intelligence_snapshot: {
+        Args: { p_created_by?: string; p_meeting_session_id: string }
+        Returns: string
+      }
+      seed_iep_meeting_talking_points: {
+        Args: {
+          p_created_by?: string
+          p_meeting_session_id: string
+          p_student_id: string
+        }
+        Returns: number
       }
       seed_nova_ai_case_reasoning_output: {
         Args: {
