@@ -74,7 +74,7 @@ export default function SDCCertificationTracker() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <User className="w-5 h-5 text-muted-foreground" />
-                <h2 className="text-lg font-semibold text-foreground">SDC Behavior Training Certification</h2>
+                <h2 className="text-lg font-semibold text-foreground">Team Training Certification</h2>
               </div>
               <Badge className={cfg.color}>{cfg.label}</Badge>
             </div>
