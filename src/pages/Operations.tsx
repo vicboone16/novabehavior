@@ -1,14 +1,34 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, UserPlus, DollarSign, Shield, FileText, ClipboardList, Briefcase } from 'lucide-react';
+import { ArrowLeft, UserPlus, DollarSign, Shield, FileText, ClipboardList, Briefcase, Plus, LayoutGrid, List, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasPermission, PERMISSIONS, type PermissionContext } from '@/lib/permissions';
 
-// Lazy-load sub-pages
-import Referrals from './Referrals';
-import Billing from './Billing';
+// Referral components
+import { ReferralKanban } from '@/components/referrals/ReferralKanban';
+import { WaitlistManager } from '@/components/referrals/WaitlistManager';
+import { ReferralDialog } from '@/components/referrals/ReferralDialog';
+
+// Billing components
+import { BillingDashboard } from '@/components/billing/BillingDashboard';
+import { ClaimGenerator } from '@/components/billing/ClaimGenerator';
+import { DenialTracker } from '@/components/billing/DenialTracker';
+import { ARReadinessDashboard } from '@/components/scheduling/ARReadinessDashboard';
+import { GlobalAuthorizationDashboard } from '@/components/billing/GlobalAuthorizationDashboard';
+import { PatientPaymentPortal, EligibilityChecker, PriorAuthGenerator } from '@/components/payments';
+import { ContractRateManager } from '@/components/billing/ContractRateManager';
+import { TimesheetDashboard } from '@/components/payroll/TimesheetDashboard';
+import { ERAProcessingTab } from '@/components/billing/ERAProcessingTab';
+import { ClearinghouseTab } from '@/components/billing/ClearinghouseTab';
+import { NeedsReviewList } from '@/components/billing/NeedsReviewList';
+import { ReadyForClaimQueue } from '@/components/billing/ReadyForClaimQueue';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { subDays } from 'date-fns';
+import { Building2 } from 'lucide-react';
 
 const OPERATION_TABS = [
   { value: 'referrals', label: 'Referrals', icon: UserPlus, permission: PERMISSIONS.AUTH_VIEW },
