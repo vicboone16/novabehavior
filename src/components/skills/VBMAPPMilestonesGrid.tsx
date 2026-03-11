@@ -431,6 +431,12 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // View toggle: list (domain sections) vs grid (coordinate master grid)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Historical overlay results for non-selected assessments
+  const [overlayResults, setOverlayResults] = useState<Record<string, Record<string, ItemResult>>>({});
+
 
   // ── Load template items (static, load once) ────────────────────────────────
   useEffect(() => {
