@@ -5,6 +5,17 @@ import { Plus, RotateCcw, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { DashboardWidgetShell } from '@/components/dashboard/DashboardWidgetShell';
 import { WIDGET_COMPONENTS } from '@/components/dashboard/WidgetComponentMap';
