@@ -1,0 +1,386 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+  Upload, Search, FolderOpen, FileText, Image, Video, Music, File, 
+  Trash2, Pin, PinOff, Download, Grid, List, Tag, Filter, Plus
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
+import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+interface LibraryItem {
+  id: string;
+  agency_id: string | null;
+  uploaded_by: string;
+  title: string;
+  description: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  category: string;
+  tags: string[];
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+const CATEGORIES = [
+  { value: 'general', label: 'General' },
+  { value: 'protocols', label: 'Protocols & Guides' },
+  { value: 'templates', label: 'Templates' },
+  { value: 'training', label: 'Training Materials' },
+  { value: 'visual-supports', label: 'Visual Supports' },
+  { value: 'data-sheets', label: 'Data Sheets' },
+  { value: 'parent-resources', label: 'Parent Resources' },
+  { value: 'assessments', label: 'Assessments' },
+  { value: 'media', label: 'Media & Videos' },
+];
+
+function getFileIcon(fileType: string) {
+  if (fileType.startsWith('image/')) return <Image className="w-5 h-5 text-blue-500" />;
+  if (fileType.startsWith('video/')) return <Video className="w-5 h-5 text-purple-500" />;
+  if (fileType.startsWith('audio/')) return <Music className="w-5 h-5 text-amber-500" />;
+  if (fileType.includes('pdf')) return <FileText className="w-5 h-5 text-destructive" />;
+  if (fileType.includes('document') || fileType.includes('word')) return <FileText className="w-5 h-5 text-blue-600" />;
+  return <File className="w-5 h-5 text-muted-foreground" />;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function SharedLibrary() {
+  const { user } = useAuth();
+  const { currentAgency } = useAgencyContext();
+  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  // Upload form state
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDesc, setUploadDesc] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('general');
+  const [uploadTags, setUploadTags] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchItems = useCallback(async () => {
+    const { data } = await supabase
+      .from('shared_library_items')
+      .select('*')
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false });
+    setItems((data as LibraryItem[]) || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchItems(); }, [fetchItems]);
+
+  const handleUpload = async () => {
+    if (!uploadFile || !user || !uploadTitle.trim()) return;
+    setUploading(true);
+
+    try {
+      const ext = uploadFile.name.split('.').pop();
+      const path = `${currentAgency?.id || 'shared'}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: storageError } = await supabase.storage
+        .from('shared-library')
+        .upload(path, uploadFile);
+      if (storageError) throw storageError;
+
+      const tags = uploadTags.split(',').map(t => t.trim()).filter(Boolean);
+
+      const { error: dbError } = await supabase.from('shared_library_items').insert({
+        agency_id: currentAgency?.id || null,
+        uploaded_by: user.id,
+        title: uploadTitle.trim(),
+        description: uploadDesc.trim(),
+        file_name: uploadFile.name,
+        file_type: uploadFile.type,
+        file_size: uploadFile.size,
+        storage_path: path,
+        category: uploadCategory,
+        tags,
+      });
+      if (dbError) throw dbError;
+
+      toast({ title: 'File uploaded', description: `"${uploadTitle}" added to shared library` });
+      setUploadOpen(false);
+      resetUploadForm();
+      fetchItems();
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const resetUploadForm = () => {
+    setUploadFile(null);
+    setUploadTitle('');
+    setUploadDesc('');
+    setUploadCategory('general');
+    setUploadTags('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDelete = async (item: LibraryItem) => {
+    if (item.uploaded_by !== user?.id) return;
+    await supabase.storage.from('shared-library').remove([item.storage_path]);
+    await supabase.from('shared_library_items').delete().eq('id', item.id);
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    toast({ title: 'Deleted', description: `"${item.title}" removed` });
+  };
+
+  const handleTogglePin = async (item: LibraryItem) => {
+    const newPinned = !item.is_pinned;
+    await supabase.from('shared_library_items').update({ is_pinned: newPinned }).eq('id', item.id);
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_pinned: newPinned } : i));
+  };
+
+  const getPublicUrl = (path: string) => {
+    const { data } = supabase.storage.from('shared-library').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const filtered = items.filter(item => {
+    const matchesSearch = !search || 
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.description.toLowerCase().includes(search.toLowerCase()) ||
+      item.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <FolderOpen className="w-6 h-6 text-primary" />
+            Shared Library
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Documents, media, and resources shared between staff
+          </p>
+        </div>
+        <Button onClick={() => setUploadOpen(true)} className="gap-2">
+          <Upload className="w-4 h-4" />
+          Upload File
+        </Button>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search files, tags..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[180px] h-9">
+            <Filter className="w-3.5 h-3.5 mr-1.5" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {CATEGORIES.map(c => (
+              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex border rounded-md overflow-hidden">
+          <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className="h-9 rounded-none" onClick={() => setViewMode('grid')}>
+            <Grid className="w-4 h-4" />
+          </Button>
+          <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className="h-9 rounded-none" onClick={() => setViewMode('list')}>
+            <List className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Items */}
+      {loading ? (
+        <p className="text-sm text-muted-foreground text-center py-8">Loading library...</p>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <h3 className="font-semibold mb-1">No files yet</h3>
+            <p className="text-sm text-muted-foreground">Upload documents, visual supports, templates and more to share with your team.</p>
+          </CardContent>
+        </Card>
+      ) : viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {filtered.map(item => (
+            <Card key={item.id} className="group hover:border-primary/30 transition-colors">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  {getFileIcon(item.file_type)}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.file_name}</p>
+                  </div>
+                  {item.is_pinned && <Pin className="w-3.5 h-3.5 text-primary shrink-0" />}
+                </div>
+                {item.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                )}
+                <div className="flex flex-wrap gap-1">
+                  <Badge variant="secondary" className="text-[10px]">
+                    {CATEGORIES.find(c => c.value === item.category)?.label || item.category}
+                  </Badge>
+                  {item.tags.slice(0, 2).map(tag => (
+                    <Badge key={tag} variant="outline" className="text-[10px]">{tag}</Badge>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatFileSize(item.file_size)} · {format(new Date(item.created_at), 'MMM d')}
+                  </span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleTogglePin(item)}>
+                      {item.is_pinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
+                      <a href={getPublicUrl(item.storage_path)} target="_blank" rel="noopener noreferrer" download>
+                        <Download className="w-3 h-3" />
+                      </a>
+                    </Button>
+                    {item.uploaded_by === user?.id && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDelete(item)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {filtered.map(item => (
+            <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-md border hover:border-primary/30 group transition-colors">
+              {getFileIcon(item.file_type)}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm truncate">{item.title}</p>
+                  {item.is_pinned && <Pin className="w-3 h-3 text-primary" />}
+                </div>
+                <p className="text-xs text-muted-foreground truncate">{item.file_name} · {formatFileSize(item.file_size)}</p>
+              </div>
+              <Badge variant="secondary" className="text-[10px] shrink-0">
+                {CATEGORIES.find(c => c.value === item.category)?.label || item.category}
+              </Badge>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {format(new Date(item.created_at), 'MMM d')}
+              </span>
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleTogglePin(item)}>
+                  {item.is_pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                  <a href={getPublicUrl(item.storage_path)} target="_blank" rel="noopener noreferrer" download>
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                </Button>
+                {item.uploaded_by === user?.id && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(item)}>
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadOpen} onOpenChange={(o) => { setUploadOpen(o); if (!o) resetUploadForm(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              Upload to Shared Library
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>File</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploadFile(file);
+                    if (!uploadTitle) setUploadTitle(file.name.replace(/\.[^.]+$/, ''));
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Title</Label>
+              <Input value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="File title" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Textarea value={uploadDesc} onChange={(e) => setUploadDesc(e.target.value)} placeholder="Brief description..." className="min-h-[60px] resize-none" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Category</Label>
+              <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Tags (comma separated)</Label>
+              <Input value={uploadTags} onChange={(e) => setUploadTags(e.target.value)} placeholder="e.g. DTT, token board, social story" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpload} disabled={uploading || !uploadFile || !uploadTitle.trim()}>
+              <Upload className="w-4 h-4 mr-1" />
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
