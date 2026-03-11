@@ -2639,9 +2639,12 @@ export const useDataStore = create<DataState>()(
             sessionNotes: '',
             currentSessionId: null,
             sessionStartTime: null,
+            selectedStudentIds: [],
+            studentSessionStatus: [],
             sessionLengthOverrides: [],
             sessionFocus: DEFAULT_SESSION_FOCUS,
             lastSavedDataHash: null,
+            linkedAppointmentId: null,
             // Keep other sessions' data, clear only current session from UI
             frequencyEntries: otherFrequency,
             durationEntries: otherDuration,
