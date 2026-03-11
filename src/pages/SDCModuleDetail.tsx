@@ -57,7 +57,7 @@ export default function SDCModuleDetail() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-lg text-muted-foreground">Module not found</p>
-        <Button onClick={() => navigate('/sdc-training')}>Back to SDC Training</Button>
+        <Button onClick={() => navigate('/sdc-training')}>Back to Team Trainings</Button>
       </div>
     );
   }
