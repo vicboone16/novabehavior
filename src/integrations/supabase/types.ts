@@ -42609,6 +42609,13 @@ export type Database = {
       }
       get_current_agency_id: { Args: { _user_id: string }; Returns: string }
       get_pending_approval_count: { Args: never; Returns: number }
+      get_security_definer_functions: {
+        Args: never
+        Returns: {
+          function_name: string
+          search_path_set: boolean
+        }[]
+      }
       get_staff_supervisor: {
         Args: { _staff_user_id: string }
         Returns: string
@@ -42616,6 +42623,12 @@ export type Database = {
       get_supervisor_clinician_count: {
         Args: { _user_id: string }
         Returns: number
+      }
+      get_tables_without_rls: {
+        Args: never
+        Returns: {
+          table_name: string
+        }[]
       }
       get_user_app_access: {
         Args: { _user_id: string }
@@ -42756,6 +42769,12 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_views_without_security_invoker: {
+        Args: never
+        Returns: {
+          view_name: string
+        }[]
       }
       has_active_supervisor: {
         Args: { _staff_user_id: string }
