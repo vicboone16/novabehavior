@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !claimsData?.claims) {
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user?.email) {
       return new Response(
         JSON.stringify({ error: "Invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     // Use the authenticated user's email, ignoring any email in the request body
-    const authenticatedEmail = claimsData.claims.email as string;
+    const authenticatedEmail = userData.user.email;
 
     const { app_slug } = await req.json().catch(() => ({ app_slug: undefined }));
     const email = authenticatedEmail;
