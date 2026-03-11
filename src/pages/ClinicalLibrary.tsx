@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2, Heart } from 'lucide-react';
+import { ArrowLeft, BookOpen, Activity, Layers, Target, FileText, Settings2, Heart, User, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import IEPLibrary from './IEPLibrary';
 import BehaviorLibrary from './BehaviorLibrary';
 import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
@@ -10,6 +11,7 @@ import { DomainManager } from '@/components/clinical-library/DomainManager';
 import { GoalTemplateManager } from '@/components/clinical-library/GoalTemplateManager';
 import { CurriculumItemManager } from '@/components/clinical-library/CurriculumItemManager';
 import { CaregiverCurriculumLibrary } from '@/components/clinical-library/CaregiverCurriculumLibrary';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TABS = [
   { value: 'iep', label: 'IEP Supports', icon: BookOpen },
@@ -21,11 +23,19 @@ const TABS = [
   { value: 'templates', label: 'Goal Templates', icon: Target },
 ];
 
+type LibraryScope = 'personal' | 'organization';
+
 export default function ClinicalLibrary() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'iep';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [libraryScope, setLibraryScope] = useState<LibraryScope>(
+    (searchParams.get('scope') as LibraryScope) || 'organization'
+  );
+  const { userRole } = useAuth();
+
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,6 +50,39 @@ export default function ClinicalLibrary() {
                 <h1 className="text-lg font-bold text-foreground">Clinical Library</h1>
                 <p className="text-xs text-muted-foreground">IEP supports, behavior interventions, caregiver curriculum & skill building</p>
               </div>
+            </div>
+            {/* Library Scope Toggle */}
+            <div className="flex items-center gap-2">
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  variant={libraryScope === 'personal' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 rounded-none gap-1.5 text-xs"
+                  onClick={() => setLibraryScope('personal')}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  My Library
+                </Button>
+                <Button
+                  variant={libraryScope === 'organization' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 rounded-none gap-1.5 text-xs"
+                  onClick={() => setLibraryScope('organization')}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  Organization
+                </Button>
+              </div>
+              {libraryScope === 'personal' && !isAdmin && (
+                <Badge variant="secondary" className="text-[10px]">
+                  Submit items for org review
+                </Badge>
+              )}
+              {isAdmin && (
+                <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                  Admin: Direct publish
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -65,6 +108,15 @@ export default function ClinicalLibrary() {
       </div>
 
       <div className="container py-6">
+        {libraryScope === 'personal' && (
+          <div className="mb-4 p-3 rounded-lg border border-border bg-muted/30">
+            <p className="text-xs text-muted-foreground">
+              <strong>Personal Clinical Library</strong> — Items you create here are private to you.
+              {!isAdmin && ' You can submit items for admin review to be published to the Organization Library.'}
+              {isAdmin && ' As an admin, you can also publish items directly to the Organization Library.'}
+            </p>
+          </div>
+        )}
         {activeTab === 'iep' && <IEPLibrary />}
         {activeTab === 'behavior' && <BehaviorLibrary embedded />}
         {activeTab === 'caregiver' && <CaregiverCurriculumLibrary />}
