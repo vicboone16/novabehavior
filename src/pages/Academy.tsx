@@ -227,6 +227,7 @@ export default function Academy() {
               <TabsTrigger value="lessons" className="gap-1"><FileText className="w-3.5 h-3.5" />Lessons ({data.lessons.length})</TabsTrigger>
               <TabsTrigger value="assignments" className="gap-1"><ClipboardList className="w-3.5 h-3.5" />Assignments ({data.myAssignments.length})</TabsTrigger>
               <TabsTrigger value="progress" className="gap-1"><BarChart3 className="w-3.5 h-3.5" />My Progress</TabsTrigger>
+              <TabsTrigger value="team-trainings" className="gap-1"><GraduationCap className="w-3.5 h-3.5" />Team Trainings</TabsTrigger>
             </TabsList>
 
             <div className="relative mb-4">
