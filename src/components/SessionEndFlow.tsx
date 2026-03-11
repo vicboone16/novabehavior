@@ -626,7 +626,7 @@ export function SessionEndFlow({
     if (!isOpen && dbEnded) {
       // User closed dialog after session was ended in DB — must clean up local state
       if (mode === 'all') {
-        resetAllStudentSessionStatuses();
+        resetSessionData();
       }
       onComplete();
     }
