@@ -38355,6 +38355,24 @@ export type Database = {
         }
         Returns: string
       }
+      launch_nova_ai_from_goal_draft: {
+        Args: {
+          p_action_key?: string
+          p_context_session_id: string
+          p_draft_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      launch_nova_ai_from_optimization_recommendation: {
+        Args: {
+          p_action_key?: string
+          p_context_session_id: string
+          p_recommendation_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       launch_nova_ai_from_treatment_intelligence: {
         Args: {
           p_created_by: string
