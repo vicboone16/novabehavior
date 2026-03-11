@@ -112,6 +112,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     allowedRoles: [],
     defaultLayout: { w: 4, h: 5, minW: 3, minH: 3 },
   },
+  {
+    id: 'service-requests',
+    title: 'Service Requests',
+    description: 'Active service requests filtered by role',
+    icon: 'ClipboardList',
+    category: 'admin',
+    allowedRoles: [],
+    defaultLayout: { w: 6, h: 4, minW: 3, minH: 3 },
+  },
 ];
 
 /** Role-based default widget presets */
