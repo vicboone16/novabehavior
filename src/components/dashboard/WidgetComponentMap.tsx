@@ -11,6 +11,7 @@ import { RecentSessionNotesWidget } from './widgets/RecentSessionNotesWidget';
 import { ParentCommsWidget } from './widgets/ParentCommsWidget';
 import { ScheduleOverviewWidget } from './widgets/ScheduleOverviewWidget';
 import { PersonalNotesWidget } from './widgets/PersonalNotesWidget';
+import { ServiceRequestsWidget } from './ServiceRequestsWidget';
 import type { ReactNode } from 'react';
 
 interface WidgetComponent {
