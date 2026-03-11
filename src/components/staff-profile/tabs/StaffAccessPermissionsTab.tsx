@@ -350,10 +350,10 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
           const { error } = await supabase.from('user_app_access').update({ is_active: a.is_active, role: a.role }).eq('id', a.id);
           if (error) throw error;
         } else if (a.is_active) {
-          const { error } = await supabase.from('user_app_access').insert({
+          const { error } = await (supabase.from('user_app_access') as any).upsert({
             user_id: userId, app_slug: a.app_slug, role: a.role,
             agency_id: a.agency_id, is_active: true, email: staffEmail,
-          });
+          }, { onConflict: 'user_id,app_slug,agency_id' });
           if (error) throw error;
         }
       }
