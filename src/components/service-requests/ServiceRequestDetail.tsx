@@ -154,7 +154,7 @@ export function ServiceRequestDetail({ request, onBack, onUpdate, getActivities 
                   <div key={act.id} className="flex gap-2 text-xs">
                     <Clock className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
                     <div>
-                      <p>{act.note_text || act.action}</p>
+                      <p>{(act as any).note_text || act.action}</p>
                       <p className="text-muted-foreground">
                         {format(new Date(act.created_at), 'MMM d, h:mm a')}
                       </p>
