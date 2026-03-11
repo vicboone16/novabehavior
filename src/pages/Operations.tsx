@@ -114,7 +114,7 @@ export default function Operations() {
         {activeTab === 'billing' && <BillingContent />}
         {activeTab === 'authorizations' && <AuthorizationsContent />}
         {activeTab === 'insurance' && <InsuranceContent />}
-        {activeTab === 'service-requests' && <ServiceRequestsContent />}
+        
       </div>
     </div>
   );
