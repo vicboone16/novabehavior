@@ -66,6 +66,7 @@ export function SessionEndFlow({
     selectedStudentIds, 
     endStudentSession,
     resetAllStudentSessionStatuses,
+    resetSessionData,
     currentSessionId,
     sessionStartTime,
     getStudentSessionStatus,
