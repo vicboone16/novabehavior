@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Lightbulb } from 'lucide-react';
 import { IEPMeetingPrepWizard } from './IEPMeetingPrepWizard';
 import { useDataStore } from '@/store/dataStore';
+import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 
 interface StudentIEPPrepTabProps {
   studentId: string;
@@ -16,6 +17,9 @@ export function StudentIEPPrepTab({ studentId }: StudentIEPPrepTabProps) {
 
   return (
     <div className="space-y-4">
+      {/* Goal Suggestion Engine — IEP Prep Surface */}
+      <GoalSuggestionEnginePanel studentId={studentId} surface="iep_prep" />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
