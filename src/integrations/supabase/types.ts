@@ -17245,6 +17245,168 @@ export type Database = {
           },
         ]
       }
+      live_programs: {
+        Row: {
+          agency_id: string
+          assigned_at: string
+          assigned_by: string
+          classroom_id: string | null
+          client_notes: string | null
+          created_at: string
+          custom_baseline: Json | null
+          data_collection_recommendations: string | null
+          deactivated_at: string | null
+          description: string | null
+          domain: string | null
+          id: string
+          implementation_notes: string | null
+          is_active: boolean
+          linked_interventions: Json | null
+          linked_replacement_behaviors: Json | null
+          mastery_criteria: Json | null
+          objectives: Json | null
+          progress_status: string
+          prompt_guidance: string | null
+          reinforcement_guidance: string | null
+          student_id: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          assigned_at?: string
+          assigned_by: string
+          classroom_id?: string | null
+          client_notes?: string | null
+          created_at?: string
+          custom_baseline?: Json | null
+          data_collection_recommendations?: string | null
+          deactivated_at?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          implementation_notes?: string | null
+          is_active?: boolean
+          linked_interventions?: Json | null
+          linked_replacement_behaviors?: Json | null
+          mastery_criteria?: Json | null
+          objectives?: Json | null
+          progress_status?: string
+          prompt_guidance?: string | null
+          reinforcement_guidance?: string | null
+          student_id?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          assigned_at?: string
+          assigned_by?: string
+          classroom_id?: string | null
+          client_notes?: string | null
+          created_at?: string
+          custom_baseline?: Json | null
+          data_collection_recommendations?: string | null
+          deactivated_at?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          implementation_notes?: string | null
+          is_active?: boolean
+          linked_interventions?: Json | null
+          linked_replacement_behaviors?: Json | null
+          mastery_criteria?: Json | null
+          objectives?: Json | null
+          progress_status?: string
+          prompt_guidance?: string | null
+          reinforcement_guidance?: string | null
+          student_id?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_programs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "live_programs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "live_programs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lms_activities: {
         Row: {
           activity_type: string | null
@@ -22645,6 +22807,7 @@ export type Database = {
           data_collection_guidance: string | null
           description: string | null
           domain: string | null
+          goals_objectives: Json | null
           id: string
           implementation_notes: string | null
           mastery_guidance: string | null
@@ -22653,10 +22816,13 @@ export type Database = {
           reinforcement_guidance: string | null
           scope: string
           status: string
+          suggested_strategies: Json | null
+          tags: string[] | null
           target_population: string | null
           title: string
           updated_at: string
           version_no: number
+          visibility: string | null
         }
         Insert: {
           age_range?: string | null
@@ -22667,6 +22833,7 @@ export type Database = {
           data_collection_guidance?: string | null
           description?: string | null
           domain?: string | null
+          goals_objectives?: Json | null
           id?: string
           implementation_notes?: string | null
           mastery_guidance?: string | null
@@ -22675,10 +22842,13 @@ export type Database = {
           reinforcement_guidance?: string | null
           scope: string
           status: string
+          suggested_strategies?: Json | null
+          tags?: string[] | null
           target_population?: string | null
           title: string
           updated_at?: string
           version_no?: number
+          visibility?: string | null
         }
         Update: {
           age_range?: string | null
@@ -22689,6 +22859,7 @@ export type Database = {
           data_collection_guidance?: string | null
           description?: string | null
           domain?: string | null
+          goals_objectives?: Json | null
           id?: string
           implementation_notes?: string | null
           mastery_guidance?: string | null
@@ -22697,10 +22868,13 @@ export type Database = {
           reinforcement_guidance?: string | null
           scope?: string
           status?: string
+          suggested_strategies?: Json | null
+          tags?: string[] | null
           target_population?: string | null
           title?: string
           updated_at?: string
           version_no?: number
+          visibility?: string | null
         }
         Relationships: []
       }
@@ -25830,6 +26004,103 @@ export type Database = {
           },
         ]
       }
+      service_request_notification_prefs: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          notify_on_assignment: boolean
+          notify_on_due_soon: boolean
+          notify_on_escalation: boolean
+          notify_on_overdue: boolean
+          notify_on_status_change: boolean
+          notify_on_urgent: boolean
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          notify_on_assignment?: boolean
+          notify_on_due_soon?: boolean
+          notify_on_escalation?: boolean
+          notify_on_overdue?: boolean
+          notify_on_status_change?: boolean
+          notify_on_urgent?: boolean
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          notify_on_assignment?: boolean
+          notify_on_due_soon?: boolean
+          notify_on_escalation?: boolean
+          notify_on_overdue?: boolean
+          notify_on_status_change?: boolean
+          notify_on_urgent?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_request_notification_prefs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_request_routing_rules: {
+        Row: {
+          agency_id: string
+          auto_priority: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          notify_roles: string[] | null
+          notify_user_ids: string[] | null
+          request_type: string
+          route_to_role: string | null
+          route_to_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          auto_priority?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notify_roles?: string[] | null
+          notify_user_ids?: string[] | null
+          request_type: string
+          route_to_role?: string | null
+          route_to_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          auto_priority?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notify_roles?: string[] | null
+          notify_user_ids?: string[] | null
+          request_type?: string
+          route_to_role?: string | null
+          route_to_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_request_routing_rules_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_request_types: {
         Row: {
           agency_id: string | null
@@ -25912,15 +26183,20 @@ export type Database = {
       }
       service_requests: {
         Row: {
+          acknowledged_at: string | null
           agency_id: string
           assigned_role: string | null
           assigned_to: string | null
           client_id: string | null
           closed_at: string | null
+          completed_at: string | null
           created_at: string
           description: string | null
           due_date: string | null
+          escalated_at: string | null
+          escalated_reason: string | null
           id: string
+          internal_notes: string | null
           priority: string
           related_module: string | null
           request_type: string
@@ -25932,15 +26208,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acknowledged_at?: string | null
           agency_id: string
           assigned_role?: string | null
           assigned_to?: string | null
           client_id?: string | null
           closed_at?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_reason?: string | null
           id?: string
+          internal_notes?: string | null
           priority?: string
           related_module?: string | null
           request_type: string
@@ -25952,15 +26233,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acknowledged_at?: string | null
           agency_id?: string
           assigned_role?: string | null
           assigned_to?: string | null
           client_id?: string | null
           closed_at?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_reason?: string | null
           id?: string
+          internal_notes?: string | null
           priority?: string
           related_module?: string | null
           request_type?: string
@@ -43277,6 +43563,10 @@ export type Database = {
         Returns: boolean
       }
       is_agency_admin_for: { Args: { _agency_id: string }; Returns: boolean }
+      is_agency_member: {
+        Args: { _agency_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_coverage_verification_due: {
         Args: { _client_id: string }
         Returns: boolean
