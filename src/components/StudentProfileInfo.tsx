@@ -259,9 +259,17 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   const ageInfo = student.dateOfBirth ? calculateAge(new Date(student.dateOfBirth)) : null;
   const zodiacSign = student.dateOfBirth ? getZodiacSign(new Date(student.dateOfBirth)) : null;
 
-  // Find supervisor name
-  const supervisorName = supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.display_name || 
-    supervisors.find(s => s.user_id === student.primarySupervisorStaffId)?.first_name || '';
+  // Find supervisor names
+  const getStaffName = (userId: string | undefined) => {
+    if (!userId) return '';
+    const s = allStaff.find(s => s.user_id === userId);
+    if (!s) return '';
+    const name = s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim();
+    const creds = s.credentials?.length ? ` (${s.credentials.join(', ')})` : '';
+    return `${name}${creds}`;
+  };
+  const supervisorName = getStaffName(student.primarySupervisorStaffId);
+  const midTierName = getStaffName(student.midTierSupervisorStaffId);
 
   return (
     <Card>
