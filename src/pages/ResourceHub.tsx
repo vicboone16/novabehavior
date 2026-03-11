@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Upload, Search, FolderOpen, FileText, Image, Video, Music, File, 
   Trash2, Pin, PinOff, Download, Grid, List, Tag, Filter, Plus, 
-  Lock, Users as UsersIcon, FolderPlus, HardDrive, Cloud
+  Lock, Users as UsersIcon, FolderPlus, HardDrive, Cloud,
+  ClipboardList, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
