@@ -66,6 +66,27 @@ export const PERMISSIONS = {
   IEP_MANAGE: 'iep:manage',
   REPORTS_VIEW: 'reports:view',
   REPORTS_DISTRICT: 'reports:district',
+
+  // Resource Hub
+  RESOURCE_HUB_VIEW: 'resource_hub:view',
+  RESOURCE_HUB_UPLOAD: 'resource_hub:upload',
+  RESOURCE_HUB_DELETE_TEAM: 'resource_hub:delete:team',
+  RESOURCE_HUB_MANAGE: 'resource_hub:manage',
+
+  // Operations
+  OPERATIONS_VIEW: 'operations:view',
+  OPERATIONS_REFERRALS: 'operations:referrals',
+  OPERATIONS_BILLING: 'operations:billing',
+  OPERATIONS_AUTHORIZATIONS: 'operations:authorizations',
+  OPERATIONS_INSURANCE: 'operations:insurance',
+  OPERATIONS_SERVICE_REQUESTS: 'operations:service_requests',
+
+  // Clinical Library
+  CLINICAL_LIB_VIEW: 'clinical_lib:view',
+  CLINICAL_LIB_CREATE_PERSONAL: 'clinical_lib:create:personal',
+  CLINICAL_LIB_SUBMIT_FOR_REVIEW: 'clinical_lib:submit:review',
+  CLINICAL_LIB_APPROVE: 'clinical_lib:approve',
+  CLINICAL_LIB_PUBLISH_ORG: 'clinical_lib:publish:org',
 } as const;
 
 type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -111,11 +132,29 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     PERMISSIONS.IEP_MANAGE,
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.REPORTS_DISTRICT,
+    // Resource Hub
+    PERMISSIONS.RESOURCE_HUB_VIEW,
+    PERMISSIONS.RESOURCE_HUB_UPLOAD,
+    PERMISSIONS.RESOURCE_HUB_DELETE_TEAM,
+    PERMISSIONS.RESOURCE_HUB_MANAGE,
+    // Operations
+    PERMISSIONS.OPERATIONS_VIEW,
+    PERMISSIONS.OPERATIONS_REFERRALS,
+    PERMISSIONS.OPERATIONS_BILLING,
+    PERMISSIONS.OPERATIONS_AUTHORIZATIONS,
+    PERMISSIONS.OPERATIONS_INSURANCE,
+    PERMISSIONS.OPERATIONS_SERVICE_REQUESTS,
+    // Clinical Library
+    PERMISSIONS.CLINICAL_LIB_VIEW,
+    PERMISSIONS.CLINICAL_LIB_CREATE_PERSONAL,
+    PERMISSIONS.CLINICAL_LIB_SUBMIT_FOR_REVIEW,
+    PERMISSIONS.CLINICAL_LIB_APPROVE,
+    PERMISSIONS.CLINICAL_LIB_PUBLISH_ORG,
   ],
   
   staff: [
     PERMISSIONS.CLIENT_VIEW,
-    PERMISSIONS.CLIENT_EDIT_BASIC, // Limited to session-relevant fields
+    PERMISSIONS.CLIENT_EDIT_BASIC,
     PERMISSIONS.SESSION_VIEW,
     PERMISSIONS.SESSION_CREATE,
     PERMISSIONS.SESSION_EDIT_OWN,
@@ -130,6 +169,16 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     PERMISSIONS.STAFF_VIEW,
     PERMISSIONS.IEP_VIEW,
     PERMISSIONS.REPORTS_VIEW,
+    // Resource Hub
+    PERMISSIONS.RESOURCE_HUB_VIEW,
+    PERMISSIONS.RESOURCE_HUB_UPLOAD,
+    // Operations (limited)
+    PERMISSIONS.OPERATIONS_VIEW,
+    PERMISSIONS.OPERATIONS_SERVICE_REQUESTS,
+    // Clinical Library
+    PERMISSIONS.CLINICAL_LIB_VIEW,
+    PERMISSIONS.CLINICAL_LIB_CREATE_PERSONAL,
+    PERMISSIONS.CLINICAL_LIB_SUBMIT_FOR_REVIEW,
   ],
   
   viewer: [
@@ -139,6 +188,10 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     PERMISSIONS.SCHEDULE_VIEW,
     PERMISSIONS.DOC_VIEW_PARENT,
     PERMISSIONS.REPORTS_VIEW,
+    // Resource Hub (view only)
+    PERMISSIONS.RESOURCE_HUB_VIEW,
+    // Clinical Library (view only)
+    PERMISSIONS.CLINICAL_LIB_VIEW,
   ],
 };
 
@@ -186,6 +239,16 @@ export function canEditClinical(context: PermissionContext): boolean {
 // Check if user can view district-level reports
 export function canViewDistrictReports(context: PermissionContext): boolean {
   return hasPermission(context, PERMISSIONS.REPORTS_DISTRICT);
+}
+
+// Check if user can access Operations
+export function canViewOperations(context: PermissionContext): boolean {
+  return hasPermission(context, PERMISSIONS.OPERATIONS_VIEW);
+}
+
+// Check if user can publish to org clinical library
+export function canPublishOrgClinicalLib(context: PermissionContext): boolean {
+  return hasPermission(context, PERMISSIONS.CLINICAL_LIB_PUBLISH_ORG);
 }
 
 // Get all permissions for a role
