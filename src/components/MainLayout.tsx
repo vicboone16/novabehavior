@@ -14,7 +14,8 @@ import {
   BookOpen,
   Smartphone,
   Menu,
-  Stethoscope
+  Stethoscope,
+  FolderOpen,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -149,6 +150,10 @@ export default function MainLayout() {
                   <BookOpen className="w-4 h-4" />
                   <span>Clinical Library</span>
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate('/shared-library')} className="gap-1">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Shared Library</span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => navigate('/nova-ai')} className="gap-1">
                   <BrainCircuit className="w-4 h-4" />
                   <span>Nova AI</span>
@@ -188,6 +193,10 @@ export default function MainLayout() {
                     <DropdownMenuItem onClick={() => navigate('/clinical-library')}>
                       <BookOpen className="w-4 h-4 mr-2" />
                       Clinical Library
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/shared-library')}>
+                      <FolderOpen className="w-4 h-4 mr-2" />
+                      Shared Library
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/nova-ai')}>
                       <BrainCircuit className="w-4 h-4 mr-2" />
