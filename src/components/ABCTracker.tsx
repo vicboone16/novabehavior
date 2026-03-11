@@ -323,9 +323,51 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
                     className="border border-border rounded-lg p-3 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(entry.timestamp), 'h:mm a')}
-                      </span>
+                      {editingDateId === entry.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="datetime-local"
+                            value={editDateValue}
+                            onChange={(e) => setEditDateValue(e.target.value)}
+                            className="h-6 text-xs w-auto"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => {
+                              if (editDateValue) {
+                                updateABCEntry(entry.id, { timestamp: new Date(editDateValue) });
+                              }
+                              setEditingDateId(null);
+                            }}
+                          >
+                            <Check className="w-3 h-3 text-primary" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => setEditingDateId(null)}
+                          >
+                            <X className="w-3 h-3 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const d = new Date(entry.timestamp);
+                            setEditDateValue(format(d, "yyyy-MM-dd'T'HH:mm"));
+                            setEditingDateId(entry.id);
+                          }}
+                          title="Click to edit date/time"
+                        >
+                          <CalendarIcon className="w-3 h-3" />
+                          {format(new Date(entry.timestamp), 'MMM d, h:mm a')}
+                        </button>
+                      )}
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
