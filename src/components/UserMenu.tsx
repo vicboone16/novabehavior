@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { SetupPinDialog } from '@/components/PinLogin';
 import { AdminPinRedemption } from '@/components/AdminPinRedemption';
 
 export function UserMenu() {
