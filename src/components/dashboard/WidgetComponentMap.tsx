@@ -1,4 +1,4 @@
-import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar, StickyNote, ClipboardList } from 'lucide-react';
+import { CalendarClock, Shield, AlertTriangle, TrendingUp, Radio, Zap, DollarSign, Activity, FileText, MessageSquare, Calendar, StickyNote, ClipboardList, GraduationCap } from 'lucide-react';
 import { NextUpWidgetContent } from './widgets/NextUpWidgetContent';
 import { CaseloadRiskWidget } from './widgets/CaseloadRiskWidget';
 import { AlertsFeedWidget } from './widgets/AlertsFeedWidget';
