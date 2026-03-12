@@ -10365,7 +10365,7 @@ export type Database = {
           skill_tags: string[] | null
           sort_order: number | null
           title: string | null
-          vbmapp_domain: string
+          vbmapp_domain: string | null
           vbmapp_level: number | null
           younger_examples: string[] | null
         }
@@ -10384,7 +10384,7 @@ export type Database = {
           skill_tags?: string[] | null
           sort_order?: number | null
           title?: string | null
-          vbmapp_domain: string
+          vbmapp_domain?: string | null
           vbmapp_level?: number | null
           younger_examples?: string[] | null
         }
@@ -10403,7 +10403,7 @@ export type Database = {
           skill_tags?: string[] | null
           sort_order?: number | null
           title?: string | null
-          vbmapp_domain?: string
+          vbmapp_domain?: string | null
           vbmapp_level?: number | null
           younger_examples?: string[] | null
         }

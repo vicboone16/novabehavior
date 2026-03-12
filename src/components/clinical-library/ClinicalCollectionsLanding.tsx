@@ -27,17 +27,16 @@ const SECTIONS: SectionDef[] = [
   {
     key: 'goal_banks',
     label: 'Goal Banks',
-    description: 'Goals organized by clinical domain — communication, social, emotional regulation, and more.',
+    description: 'Goals organized by clinical domain — communication, social, emotional regulation, AAC, and more.',
     icon: Target,
-    // All existing non-curriculum collections are effectively goal-bank style content
-    collectionKeys: ['emotional_regulation', 'adhd', 'pda', 'sib', 'sexualized_communication', 'elopement', 'verbal_aggression', 'aggression'],
+    collectionKeys: ['emotional_regulation', 'adhd', 'pda', 'sib', 'sexualized_communication', 'elopement', 'verbal_aggression', 'aggression', 'aac'],
   },
   {
     key: 'intervention_libraries',
     label: 'Intervention Libraries',
-    description: 'Evidence-based protocols — reinforcement, prompting, FCT, antecedent strategies, de-escalation.',
+    description: 'Evidence-based protocols — reinforcement, prompting, FCT, antecedent strategies, AAC supports.',
     icon: Sparkles,
-    placeholder: true,
+    collectionKeys: ['aac_supports'],
   },
   {
     key: 'behavior_reduction',

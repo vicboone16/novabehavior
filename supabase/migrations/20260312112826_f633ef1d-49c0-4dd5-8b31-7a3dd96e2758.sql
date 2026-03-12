@@ -1,0 +1,1 @@
+ALTER TABLE clinical_curricula_goals ALTER COLUMN vbmapp_domain DROP NOT NULL;
