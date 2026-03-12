@@ -500,6 +500,273 @@ export type Database = {
         }
         Relationships: []
       }
+      abas_benchmark_groups: {
+        Row: {
+          age_band: string
+          created_at: string
+          id: string
+          objective_id: string
+          sort_order: number
+        }
+        Insert: {
+          age_band: string
+          created_at?: string
+          id?: string
+          objective_id: string
+          sort_order?: number
+        }
+        Update: {
+          age_band?: string
+          created_at?: string
+          id?: string
+          objective_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_benchmark_groups_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "abas_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_benchmark_steps: {
+        Row: {
+          benchmark_goal: string
+          benchmark_group_id: string
+          created_at: string
+          id: string
+          step_number: number
+        }
+        Insert: {
+          benchmark_goal: string
+          benchmark_group_id: string
+          created_at?: string
+          id?: string
+          step_number: number
+        }
+        Update: {
+          benchmark_goal?: string
+          benchmark_group_id?: string
+          created_at?: string
+          id?: string
+          step_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_benchmark_steps_benchmark_group_id_fkey"
+            columns: ["benchmark_group_id"]
+            isOneToOne: false
+            referencedRelation: "abas_benchmark_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_domains: {
+        Row: {
+          created_at: string
+          domain_code: string | null
+          domain_name: string
+          id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          domain_code?: string | null
+          domain_name: string
+          id?: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          domain_code?: string | null
+          domain_name?: string
+          id?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      abas_objectives: {
+        Row: {
+          created_at: string
+          generalization_notes: string | null
+          id: string
+          maintenance_notes: string | null
+          mastery_criteria: string | null
+          measurement_type: string | null
+          objective_goal: string
+          program_id: string
+          prompting_notes: string | null
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          generalization_notes?: string | null
+          id?: string
+          maintenance_notes?: string | null
+          mastery_criteria?: string | null
+          measurement_type?: string | null
+          objective_goal: string
+          program_id: string
+          prompting_notes?: string | null
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          generalization_notes?: string | null
+          id?: string
+          maintenance_notes?: string | null
+          mastery_criteria?: string | null
+          measurement_type?: string | null
+          objective_goal?: string
+          program_id?: string
+          prompting_notes?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_objectives_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "abas_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_programs: {
+        Row: {
+          abas_item_alignment: string | null
+          age_band_applicability: string[] | null
+          created_at: string
+          id: string
+          program_code: string | null
+          program_description: string | null
+          program_name: string
+          setting_tags: string[] | null
+          skill_area_id: string
+          sort_order: number
+          status: string | null
+        }
+        Insert: {
+          abas_item_alignment?: string | null
+          age_band_applicability?: string[] | null
+          created_at?: string
+          id?: string
+          program_code?: string | null
+          program_description?: string | null
+          program_name: string
+          setting_tags?: string[] | null
+          skill_area_id: string
+          sort_order?: number
+          status?: string | null
+        }
+        Update: {
+          abas_item_alignment?: string | null
+          age_band_applicability?: string[] | null
+          created_at?: string
+          id?: string
+          program_code?: string | null
+          program_description?: string | null
+          program_name?: string
+          setting_tags?: string[] | null
+          skill_area_id?: string
+          sort_order?: number
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_programs_skill_area_id_fkey"
+            columns: ["skill_area_id"]
+            isOneToOne: false
+            referencedRelation: "abas_skill_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_settings: {
+        Row: {
+          id: string
+          setting_name: string
+        }
+        Insert: {
+          id?: string
+          setting_name: string
+        }
+        Update: {
+          id?: string
+          setting_name?: string
+        }
+        Relationships: []
+      }
+      abas_skill_areas: {
+        Row: {
+          created_at: string
+          domain_id: string
+          id: string
+          skill_area_code: string | null
+          skill_area_name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          domain_id: string
+          id?: string
+          skill_area_code?: string | null
+          skill_area_name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          domain_id?: string
+          id?: string
+          skill_area_code?: string | null
+          skill_area_name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_skill_areas_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "abas_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_teaching_strategies: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          strategy_name: string
+          strategy_notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          strategy_name: string
+          strategy_notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          strategy_name?: string
+          strategy_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_teaching_strategies_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "abas_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abas3_assessments: {
         Row: {
           administered_by: string | null
