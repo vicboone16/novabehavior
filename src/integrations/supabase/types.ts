@@ -10417,6 +10417,106 @@ export type Database = {
           },
         ]
       }
+      clinical_goal_benchmarks: {
+        Row: {
+          benchmark_order: number | null
+          benchmark_text: string | null
+          goal_id: string | null
+          id: string
+        }
+        Insert: {
+          benchmark_order?: number | null
+          benchmark_text?: string | null
+          goal_id?: string | null
+          id?: string
+        }
+        Update: {
+          benchmark_order?: number | null
+          benchmark_text?: string | null
+          goal_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_goal_benchmarks_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_goal_targets: {
+        Row: {
+          goal_id: string | null
+          id: string
+          target_text: string | null
+        }
+        Insert: {
+          goal_id?: string | null
+          id?: string
+          target_text?: string | null
+        }
+        Update: {
+          goal_id?: string | null
+          id?: string
+          target_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_goal_targets_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_goals: {
+        Row: {
+          collection_type: string | null
+          created_at: string | null
+          description: string | null
+          domain: string
+          id: string
+          library_section: string | null
+          objective: string | null
+          phase: string | null
+          program_name: string | null
+          status: string | null
+          subdomain: string | null
+          title: string
+        }
+        Insert: {
+          collection_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          domain: string
+          id?: string
+          library_section?: string | null
+          objective?: string | null
+          phase?: string | null
+          program_name?: string | null
+          status?: string | null
+          subdomain?: string | null
+          title: string
+        }
+        Update: {
+          collection_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          domain?: string
+          id?: string
+          library_section?: string | null
+          objective?: string | null
+          phase?: string | null
+          program_name?: string | null
+          status?: string | null
+          subdomain?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       clinical_intelligence_alerts: {
         Row: {
           alert_type: string
@@ -22131,6 +22231,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pecs_library: {
+        Row: {
+          benchmarks_json: Json
+          created_at: string
+          description: string | null
+          domain: string
+          id: string
+          objective: string | null
+          phase: string
+          subdomain: string
+          targets_json: Json
+          title: string
+        }
+        Insert: {
+          benchmarks_json?: Json
+          created_at?: string
+          description?: string | null
+          domain?: string
+          id?: string
+          objective?: string | null
+          phase: string
+          subdomain?: string
+          targets_json?: Json
+          title: string
+        }
+        Update: {
+          benchmarks_json?: Json
+          created_at?: string
+          description?: string | null
+          domain?: string
+          id?: string
+          objective?: string | null
+          phase?: string
+          subdomain?: string
+          targets_json?: Json
+          title?: string
+        }
+        Relationships: []
       }
       pending_student_changes: {
         Row: {
