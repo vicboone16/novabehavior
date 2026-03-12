@@ -743,6 +743,101 @@ export type Database = {
         }
         Relationships: []
       }
+      abas_item_deficit_recommendations: {
+        Row: {
+          assessment_date: string
+          client_id: string
+          created_at: string | null
+          id: string
+          program_id: string
+          recommendation_rank: number | null
+          recommendation_reason: string | null
+          source_item_count: number
+          weighted_score: number
+        }
+        Insert: {
+          assessment_date: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          program_id: string
+          recommendation_rank?: number | null
+          recommendation_reason?: string | null
+          source_item_count?: number
+          weighted_score?: number
+        }
+        Update: {
+          assessment_date?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          program_id?: string
+          recommendation_rank?: number | null
+          recommendation_reason?: string | null
+          source_item_count?: number
+          weighted_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_item_deficit_recommendations_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "abas_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_item_results: {
+        Row: {
+          abas_item_id: string
+          assessment_date: string
+          client_id: string
+          created_at: string | null
+          form_id: string
+          id: string
+          is_deficit: boolean | null
+          notes: string | null
+          raw_rating: number | null
+        }
+        Insert: {
+          abas_item_id: string
+          assessment_date: string
+          client_id: string
+          created_at?: string | null
+          form_id: string
+          id?: string
+          is_deficit?: boolean | null
+          notes?: string | null
+          raw_rating?: number | null
+        }
+        Update: {
+          abas_item_id?: string
+          assessment_date?: string
+          client_id?: string
+          created_at?: string | null
+          form_id?: string
+          id?: string
+          is_deficit?: boolean | null
+          notes?: string | null
+          raw_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_item_results_abas_item_id_fkey"
+            columns: ["abas_item_id"]
+            isOneToOne: false
+            referencedRelation: "abas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abas_item_results_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "abas_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abas_items: {
         Row: {
           abas_domain: string
