@@ -1051,6 +1051,8 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
+          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
+          <TeacherDataHub clientId={student.id} />
         </TabsContent>
 
         {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
