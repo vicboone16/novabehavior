@@ -10251,6 +10251,30 @@ export type Database = {
           },
         ]
       }
+      clinical_crosswalk_tags: {
+        Row: {
+          created_at: string
+          id: string
+          system_name: string
+          tag_category: string
+          tag_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          system_name: string
+          tag_category: string
+          tag_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          system_name?: string
+          tag_category?: string
+          tag_name?: string
+        }
+        Relationships: []
+      }
       clinical_curricula_benchmarks: {
         Row: {
           benchmark_order: number | null
@@ -10446,6 +10470,49 @@ export type Database = {
           },
         ]
       }
+      clinical_goal_crosswalk: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_curricula_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "v_curricula_vbmapp"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "clinical_goal_crosswalk_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_crosswalk_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_goal_targets: {
         Row: {
           goal_id: string | null
@@ -10476,8 +10543,10 @@ export type Database = {
         Row: {
           collection_type: string | null
           created_at: string | null
+          crosswalk_tags: Json | null
           description: string | null
           domain: string
+          goal_category: string | null
           id: string
           library_section: string | null
           objective: string | null
@@ -10490,8 +10559,10 @@ export type Database = {
         Insert: {
           collection_type?: string | null
           created_at?: string | null
+          crosswalk_tags?: Json | null
           description?: string | null
           domain: string
+          goal_category?: string | null
           id?: string
           library_section?: string | null
           objective?: string | null
@@ -10504,8 +10575,10 @@ export type Database = {
         Update: {
           collection_type?: string | null
           created_at?: string | null
+          crosswalk_tags?: Json | null
           description?: string | null
           domain?: string
+          goal_category?: string | null
           id?: string
           library_section?: string | null
           objective?: string | null
