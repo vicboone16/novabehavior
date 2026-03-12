@@ -564,6 +564,38 @@ export type Database = {
           },
         ]
       }
+      abas_benchmarks: {
+        Row: {
+          age_band: string
+          benchmark_text: string
+          id: string
+          program_id: string
+          step_number: number
+        }
+        Insert: {
+          age_band: string
+          benchmark_text: string
+          id?: string
+          program_id: string
+          step_number: number
+        }
+        Update: {
+          age_band?: string
+          benchmark_text?: string
+          id?: string
+          program_id?: string
+          step_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_benchmarks_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "abas_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abas_domains: {
         Row: {
           created_at: string
