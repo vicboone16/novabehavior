@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      aba_goal_library_srs2: {
+        Row: {
+          age_band_default: string
+          age_band_variants_json: Json
+          assessment_framework: string
+          benchmark_1: string
+          benchmark_2: string
+          benchmark_3: string
+          created_at: string
+          domain: string
+          domain_code: string
+          framework_version: string
+          goal_type: string
+          intervention_menu_json: Json
+          library_id: string
+          mastery_criteria_json: Json
+          notes: string | null
+          objective: string
+          objective_code: string
+          setting_json: Json
+          severity_support_level: string
+          status: string
+          subdomain: string
+          subdomain_code: string
+          targets_json: Json
+          updated_at: string
+        }
+        Insert: {
+          age_band_default: string
+          age_band_variants_json?: Json
+          assessment_framework?: string
+          benchmark_1: string
+          benchmark_2: string
+          benchmark_3: string
+          created_at?: string
+          domain: string
+          domain_code: string
+          framework_version?: string
+          goal_type: string
+          intervention_menu_json?: Json
+          library_id?: string
+          mastery_criteria_json?: Json
+          notes?: string | null
+          objective: string
+          objective_code: string
+          setting_json?: Json
+          severity_support_level?: string
+          status?: string
+          subdomain: string
+          subdomain_code: string
+          targets_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          age_band_default?: string
+          age_band_variants_json?: Json
+          assessment_framework?: string
+          benchmark_1?: string
+          benchmark_2?: string
+          benchmark_3?: string
+          created_at?: string
+          domain?: string
+          domain_code?: string
+          framework_version?: string
+          goal_type?: string
+          intervention_menu_json?: Json
+          library_id?: string
+          mastery_criteria_json?: Json
+          notes?: string | null
+          objective?: string
+          objective_code?: string
+          setting_json?: Json
+          severity_support_level?: string
+          status?: string
+          subdomain?: string
+          subdomain_code?: string
+          targets_json?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       aba_legacy_migration_map: {
         Row: {
           created_at: string
