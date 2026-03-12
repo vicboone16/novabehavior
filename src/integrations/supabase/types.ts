@@ -18,21 +18,27 @@ export type Database = {
         Row: {
           age_band_default: string
           age_band_variants_json: Json
+          assessment_alignment_json: Json
           assessment_framework: string
           benchmark_1: string
           benchmark_2: string
           benchmark_3: string
           created_at: string
+          crosswalk_tags_json: Json
           domain: string
           domain_code: string
           framework_version: string
           goal_type: string
+          iep_domain_json: Json
           intervention_menu_json: Json
           library_id: string
           mastery_criteria_json: Json
           notes: string | null
+          nova_collection_json: Json
           objective: string
           objective_code: string
+          primary_construct_tag: string | null
+          secondary_construct_tags_json: Json
           setting_json: Json
           severity_support_level: string
           status: string
@@ -44,21 +50,27 @@ export type Database = {
         Insert: {
           age_band_default: string
           age_band_variants_json?: Json
+          assessment_alignment_json?: Json
           assessment_framework?: string
           benchmark_1: string
           benchmark_2: string
           benchmark_3: string
           created_at?: string
+          crosswalk_tags_json?: Json
           domain: string
           domain_code: string
           framework_version?: string
           goal_type: string
+          iep_domain_json?: Json
           intervention_menu_json?: Json
           library_id?: string
           mastery_criteria_json?: Json
           notes?: string | null
+          nova_collection_json?: Json
           objective: string
           objective_code: string
+          primary_construct_tag?: string | null
+          secondary_construct_tags_json?: Json
           setting_json?: Json
           severity_support_level?: string
           status?: string
@@ -70,21 +82,27 @@ export type Database = {
         Update: {
           age_band_default?: string
           age_band_variants_json?: Json
+          assessment_alignment_json?: Json
           assessment_framework?: string
           benchmark_1?: string
           benchmark_2?: string
           benchmark_3?: string
           created_at?: string
+          crosswalk_tags_json?: Json
           domain?: string
           domain_code?: string
           framework_version?: string
           goal_type?: string
+          iep_domain_json?: Json
           intervention_menu_json?: Json
           library_id?: string
           mastery_criteria_json?: Json
           notes?: string | null
+          nova_collection_json?: Json
           objective?: string
           objective_code?: string
+          primary_construct_tag?: string | null
+          secondary_construct_tags_json?: Json
           setting_json?: Json
           severity_support_level?: string
           status?: string
@@ -701,6 +719,68 @@ export type Database = {
         }
         Relationships: []
       }
+      abas_forms: {
+        Row: {
+          age_range: string | null
+          created_at: string | null
+          form_name: string
+          id: string
+          respondent_type: string | null
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string | null
+          form_name: string
+          id?: string
+          respondent_type?: string | null
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string | null
+          form_name?: string
+          id?: string
+          respondent_type?: string | null
+        }
+        Relationships: []
+      }
+      abas_items: {
+        Row: {
+          abas_domain: string
+          created_at: string | null
+          form_id: string
+          id: string
+          item_number: number
+          item_text: string
+          skill_area_name: string
+        }
+        Insert: {
+          abas_domain: string
+          created_at?: string | null
+          form_id: string
+          id?: string
+          item_number: number
+          item_text: string
+          skill_area_name: string
+        }
+        Update: {
+          abas_domain?: string
+          created_at?: string | null
+          form_id?: string
+          id?: string
+          item_number?: number
+          item_text?: string
+          skill_area_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_items_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "abas_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       abas_objectives: {
         Row: {
           created_at: string
@@ -741,6 +821,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "abas_objectives_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "abas_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      abas_program_item_crosswalk: {
+        Row: {
+          abas_item_id: string
+          confidence: number | null
+          created_at: string | null
+          id: string
+          match_type: string
+          notes: string | null
+          program_id: string
+        }
+        Insert: {
+          abas_item_id: string
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          match_type?: string
+          notes?: string | null
+          program_id: string
+        }
+        Update: {
+          abas_item_id?: string
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          match_type?: string
+          notes?: string | null
+          program_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abas_program_item_crosswalk_abas_item_id_fkey"
+            columns: ["abas_item_id"]
+            isOneToOne: false
+            referencedRelation: "abas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abas_program_item_crosswalk_program_id_fkey"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "abas_programs"
