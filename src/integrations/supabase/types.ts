@@ -10555,6 +10555,7 @@ export type Database = {
           status: string | null
           subdomain: string | null
           title: string
+          updated_at: string
         }
         Insert: {
           collection_type?: string | null
@@ -10571,6 +10572,7 @@ export type Database = {
           status?: string | null
           subdomain?: string | null
           title: string
+          updated_at?: string
         }
         Update: {
           collection_type?: string | null
@@ -10587,6 +10589,7 @@ export type Database = {
           status?: string | null
           subdomain?: string | null
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }
