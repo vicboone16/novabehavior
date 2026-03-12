@@ -10515,18 +10515,24 @@ export type Database = {
       }
       clinical_goal_targets: {
         Row: {
+          created_at: string
           goal_id: string | null
           id: string
+          target_order: number
           target_text: string | null
         }
         Insert: {
+          created_at?: string
           goal_id?: string | null
           id?: string
+          target_order?: number
           target_text?: string | null
         }
         Update: {
+          created_at?: string
           goal_id?: string | null
           id?: string
+          target_order?: number
           target_text?: string | null
         }
         Relationships: [
