@@ -33241,6 +33241,121 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_data_events: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string
+          created_in_app: string | null
+          event_id: string
+          event_label: string
+          event_type: string
+          metadata: Json | null
+          notes: string | null
+          occurred_at: string
+          setting: string | null
+          value_number: number | null
+          value_text: string | null
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by: string
+          created_in_app?: string | null
+          event_id?: string
+          event_label: string
+          event_type?: string
+          metadata?: Json | null
+          notes?: string | null
+          occurred_at?: string
+          setting?: string | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          created_in_app?: string | null
+          event_id?: string
+          event_label?: string
+          event_type?: string
+          metadata?: Json | null
+          notes?: string | null
+          occurred_at?: string
+          setting?: string | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_data_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       teacher_data_points: {
         Row: {
           agency_id: string
@@ -33359,6 +33474,233 @@ export type Database = {
           },
         ]
       }
+      teacher_duration_entries: {
+        Row: {
+          agency_id: string
+          behavior_name: string
+          client_id: string
+          created_at: string
+          created_by: string
+          created_in_app: string | null
+          duration_seconds: number
+          ended_at: string | null
+          entry_id: string
+          notes: string | null
+          session_date: string
+          setting: string | null
+          started_at: string | null
+        }
+        Insert: {
+          agency_id: string
+          behavior_name: string
+          client_id: string
+          created_at?: string
+          created_by: string
+          created_in_app?: string | null
+          duration_seconds?: number
+          ended_at?: string | null
+          entry_id?: string
+          notes?: string | null
+          session_date?: string
+          setting?: string | null
+          started_at?: string | null
+        }
+        Update: {
+          agency_id?: string
+          behavior_name?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          created_in_app?: string | null
+          duration_seconds?: number
+          ended_at?: string | null
+          entry_id?: string
+          notes?: string | null
+          session_date?: string
+          setting?: string | null
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_duration_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      teacher_frequency_entries: {
+        Row: {
+          agency_id: string
+          behavior_name: string
+          client_id: string
+          count: number
+          created_at: string
+          created_by: string
+          created_in_app: string | null
+          ended_at: string | null
+          entry_id: string
+          interval_minutes: number | null
+          notes: string | null
+          session_date: string
+          setting: string | null
+          started_at: string | null
+        }
+        Insert: {
+          agency_id: string
+          behavior_name: string
+          client_id: string
+          count?: number
+          created_at?: string
+          created_by: string
+          created_in_app?: string | null
+          ended_at?: string | null
+          entry_id?: string
+          interval_minutes?: number | null
+          notes?: string | null
+          session_date?: string
+          setting?: string | null
+          started_at?: string | null
+        }
+        Update: {
+          agency_id?: string
+          behavior_name?: string
+          client_id?: string
+          count?: number
+          created_at?: string
+          created_by?: string
+          created_in_app?: string | null
+          ended_at?: string | null
+          entry_id?: string
+          interval_minutes?: number | null
+          notes?: string | null
+          session_date?: string
+          setting?: string | null
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_frequency_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       teacher_interval_data: {
         Row: {
           created_at: string | null
@@ -33427,6 +33769,112 @@ export type Database = {
           student_id?: string | null
         }
         Relationships: []
+      }
+      teacher_interval_settings: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string
+          created_by: string
+          interval_seconds: number
+          interval_type: string
+          is_active: boolean
+          setting_id: string
+          target_behavior: string
+          total_intervals: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string
+          created_by: string
+          interval_seconds?: number
+          interval_type?: string
+          is_active?: boolean
+          setting_id?: string
+          target_behavior: string
+          total_intervals?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          interval_seconds?: number
+          interval_type?: string
+          is_active?: boolean
+          setting_id?: string
+          target_behavior?: string
+          total_intervals?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_interval_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
       }
       teacher_message_attachments: {
         Row: {
@@ -33721,6 +34169,136 @@ export type Database = {
           },
           {
             foreignKeyName: "teacher_targets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      teacher_weekly_summaries: {
+        Row: {
+          agency_id: string
+          behavior_totals: Json | null
+          client_id: string
+          created_at: string
+          created_by: string
+          engagement_pct: number | null
+          notes: string | null
+          prompt_completion_pct: number | null
+          review_comment: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          skill_probe_summary: Json | null
+          status: string
+          summary_data: Json
+          summary_id: string
+          top_antecedents: Json | null
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          agency_id: string
+          behavior_totals?: Json | null
+          client_id: string
+          created_at?: string
+          created_by: string
+          engagement_pct?: number | null
+          notes?: string | null
+          prompt_completion_pct?: number | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skill_probe_summary?: Json | null
+          status?: string
+          summary_data?: Json
+          summary_id?: string
+          top_antecedents?: Json | null
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          agency_id?: string
+          behavior_totals?: Json | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          engagement_pct?: number | null
+          notes?: string | null
+          prompt_completion_pct?: number | null
+          review_comment?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          skill_probe_summary?: Json | null
+          status?: string
+          summary_data?: Json
+          summary_id?: string
+          top_antecedents?: Json | null
+          updated_at?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "teacher_weekly_summaries_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"

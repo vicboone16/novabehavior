@@ -66,6 +66,7 @@ import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssig
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherSummaries } from '@/components/TeacherSummaries';
+import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
 import { ShareWithTeacherButton } from '@/components/messaging/ShareWithTeacherButton';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
@@ -1050,6 +1051,8 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
+          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
+          <TeacherDataHub clientId={student.id} />
         </TabsContent>
 
         {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
