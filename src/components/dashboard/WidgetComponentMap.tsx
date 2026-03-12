@@ -12,6 +12,7 @@ import { ParentCommsWidget } from './widgets/ParentCommsWidget';
 import { ScheduleOverviewWidget } from './widgets/ScheduleOverviewWidget';
 import { PersonalNotesWidget } from './widgets/PersonalNotesWidget';
 import { ServiceRequestsWidget } from './ServiceRequestsWidget';
+import { TeacherDataOverviewWidget } from './widgets/TeacherDataOverviewWidget';
 import type { ReactNode } from 'react';
 
 interface WidgetComponent {
