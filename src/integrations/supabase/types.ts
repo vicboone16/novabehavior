@@ -10494,15 +10494,8 @@ export type Database = {
             foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
-            referencedRelation: "clinical_curricula_goals"
+            referencedRelation: "clinical_goals"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
-            columns: ["goal_id"]
-            isOneToOne: false
-            referencedRelation: "v_curricula_vbmapp"
-            referencedColumns: ["goal_id"]
           },
           {
             foreignKeyName: "clinical_goal_crosswalk_tag_id_fkey"
