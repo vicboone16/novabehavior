@@ -974,6 +974,7 @@ export type Database = {
           age_band_applicability: string[] | null
           created_at: string
           id: string
+          objective_goal: string | null
           program_code: string | null
           program_description: string | null
           program_name: string
@@ -987,6 +988,7 @@ export type Database = {
           age_band_applicability?: string[] | null
           created_at?: string
           id?: string
+          objective_goal?: string | null
           program_code?: string | null
           program_description?: string | null
           program_name: string
@@ -1000,6 +1002,7 @@ export type Database = {
           age_band_applicability?: string[] | null
           created_at?: string
           id?: string
+          objective_goal?: string | null
           program_code?: string | null
           program_description?: string | null
           program_name?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.abas_programs ADD COLUMN IF NOT EXISTS objective_goal text;
