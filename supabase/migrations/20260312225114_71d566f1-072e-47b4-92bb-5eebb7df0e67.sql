@@ -1,0 +1,2 @@
+ALTER TABLE public.clinical_goal_targets ADD COLUMN IF NOT EXISTS target_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.clinical_goal_targets ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();

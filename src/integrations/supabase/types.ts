@@ -10494,15 +10494,8 @@ export type Database = {
             foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
-            referencedRelation: "clinical_curricula_goals"
+            referencedRelation: "clinical_goals"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clinical_goal_crosswalk_goal_id_fkey"
-            columns: ["goal_id"]
-            isOneToOne: false
-            referencedRelation: "v_curricula_vbmapp"
-            referencedColumns: ["goal_id"]
           },
           {
             foreignKeyName: "clinical_goal_crosswalk_tag_id_fkey"
@@ -10515,18 +10508,24 @@ export type Database = {
       }
       clinical_goal_targets: {
         Row: {
+          created_at: string
           goal_id: string | null
           id: string
+          target_order: number
           target_text: string | null
         }
         Insert: {
+          created_at?: string
           goal_id?: string | null
           id?: string
+          target_order?: number
           target_text?: string | null
         }
         Update: {
+          created_at?: string
           goal_id?: string | null
           id?: string
+          target_order?: number
           target_text?: string | null
         }
         Relationships: [
@@ -10555,6 +10554,7 @@ export type Database = {
           status: string | null
           subdomain: string | null
           title: string
+          updated_at: string
         }
         Insert: {
           collection_type?: string | null
@@ -10571,6 +10571,7 @@ export type Database = {
           status?: string | null
           subdomain?: string | null
           title: string
+          updated_at?: string
         }
         Update: {
           collection_type?: string | null
@@ -10587,6 +10588,7 @@ export type Database = {
           status?: string | null
           subdomain?: string | null
           title?: string
+          updated_at?: string
         }
         Relationships: []
       }

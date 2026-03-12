@@ -1,0 +1,2 @@
+ALTER TABLE public.clinical_goal_crosswalk DROP CONSTRAINT IF EXISTS clinical_goal_crosswalk_goal_id_fkey;
+ALTER TABLE public.clinical_goal_crosswalk ADD CONSTRAINT clinical_goal_crosswalk_goal_id_fkey FOREIGN KEY (goal_id) REFERENCES public.clinical_goals(id) ON DELETE CASCADE;
