@@ -73,4 +73,8 @@ export const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
     component: () => <ServiceRequestsWidget />,
     icon: <ClipboardList className="w-4 h-4 text-primary" />,
   },
+  'teacher-data': {
+    component: () => <TeacherDataOverviewWidget />,
+    icon: <GraduationCap className="w-4 h-4 text-primary" />,
+  },
 };
