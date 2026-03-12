@@ -92,3 +92,12 @@ verify_jwt = false
 
 [functions.run-security-scan]
 verify_jwt = false
+
+[functions.process-iep]
+verify_jwt = false
+
+[functions.satellite-gateway]
+verify_jwt = false
+
+[functions.sr-escalation-check]
+verify_jwt = false
