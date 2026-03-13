@@ -79,17 +79,17 @@ export function useGoalBankDomains() {
 }
 
 /** Get goals for a specific domain */
-export function useGoalsByDomain(domain: string | undefined) {
+export function useGoalsByDomain(domainSlug: string | undefined) {
   return useQuery({
-    queryKey: ['clinical-goals', 'by-domain', domain],
-    enabled: !!domain,
+    queryKey: ['clinical-goals', 'by-domain', domainSlug?.toLowerCase()],
+    enabled: !!domainSlug,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clinical_goals')
         .select('*')
         .eq('library_section', 'clinical_collections')
         .eq('collection_type', 'goal_bank')
-        .eq('domain', domain!)
+        .ilike('domain', domainSlug!.replace(/-/g, '_'))
         .order('phase', { ascending: true, nullsFirst: false })
         .order('title', { ascending: true });
 
