@@ -693,7 +693,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 </Button>
                 <Button 
                   onClick={handleSaveNovelBehavior}
-                  disabled={!novelBehaviorName.trim() || (novelRecordingMode === 'frequency' && novelCount === 0)}
+                  disabled={!novelBehaviorName.trim()}
                 >
                   Save & Add to Student
                 </Button>
