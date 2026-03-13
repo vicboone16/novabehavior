@@ -1468,6 +1468,13 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
             studentId={student.id}
             behaviors={student.behaviors}
             skillTargets={student.skillTargets || []}
+            onDraftChange={(draft: ObservationNotes) => {
+              pendingNotesRef.current = {
+                behaviorNotes: draft.behaviorNotes,
+                skillNotes: draft.skillNotes,
+                narrativeNotes: draft.narrativeNotes,
+              };
+            }}
             onSave={(notes: ObservationNotes) => {
               // Save observation notes to student profile
               const noteContent = {
@@ -1495,6 +1502,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: updatedNotes,
               });
+              pendingNotesRef.current = null;
             }}
           />
         </TabsContent>
