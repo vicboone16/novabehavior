@@ -51,7 +51,12 @@ import IEPLibrary from "./pages/IEPLibrary";
 import BehaviorLibraryFull from "./pages/BehaviorLibraryFull";
 import Academy from "./pages/Academy";
 import InterventionBuilder from "./pages/InterventionBuilder";
-import ClinicalLibrary from "./pages/ClinicalLibrary";
+import ClinicalLibraryLayout from "./pages/clinical-library/ClinicalLibraryLayout";
+import ClinicalCollectionsPage from "./pages/clinical-library/ClinicalCollectionsPage";
+import GoalBanksPage from "./pages/clinical-library/GoalBanksPage";
+import GoalBankDomainPage from "./pages/clinical-library/GoalBankDomainPage";
+import GoalDetailPage from "./pages/clinical-library/GoalDetailPage";
+import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPage";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
 import ClientDrilldown from "./pages/ClientDrilldown";
@@ -214,11 +219,17 @@ const App = () => {
               <ProtectedRoute>
                 <ApprovalCheck>
                   <SyncProvider>
-                    <ClinicalLibrary />
+                    <ClinicalLibraryLayout />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
-            } />
+            }>
+              <Route path="curriculum-systems" element={<CurriculumSystemsPage />} />
+              <Route path="clinical-collections" element={<ClinicalCollectionsPage />} />
+              <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
+              <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
+              <Route path="clinical-collections/goal-banks/:domainSlug/:goalId" element={<GoalDetailPage />} />
+            </Route>
             <Route path="/shared-library" element={
               <ProtectedRoute>
                 <ApprovalCheck>

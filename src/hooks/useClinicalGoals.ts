@@ -1,0 +1,217 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+/* ── Types ──────────────────────────────────────────────────────────── */
+
+export interface ClinicalGoal {
+  id: string;
+  title: string;
+  description: string | null;
+  objective: string | null;
+  domain: string;
+  subdomain: string | null;
+  phase: string | null;
+  goal_category: string | null;
+  program_name: string | null;
+  collection_type: string | null;
+  library_section: string | null;
+  status: string | null;
+  crosswalk_tags: any;
+  created_at: string | null;
+  updated_at: string;
+}
+
+export interface ClinicalBenchmark {
+  id: string;
+  goal_id: string | null;
+  benchmark_text: string | null;
+  benchmark_order: number | null;
+}
+
+export interface ClinicalTarget {
+  id: string;
+  goal_id: string | null;
+  target_text: string | null;
+  target_order: number;
+  created_at: string;
+}
+
+export interface CrosswalkTag {
+  id: string;
+  system_name: string;
+  tag_category: string;
+  tag_name: string;
+}
+
+export interface GoalWithRelations extends ClinicalGoal {
+  benchmarks: ClinicalBenchmark[];
+  targets: ClinicalTarget[];
+  crosswalkTags: CrosswalkTag[];
+}
+
+/* ── Hooks ──────────────────────────────────────────────────────────── */
+
+/** Get distinct goal-bank domains */
+export function useGoalBankDomains() {
+  return useQuery({
+    queryKey: ['clinical-goals', 'goal-bank-domains'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clinical_goals')
+        .select('domain')
+        .eq('library_section', 'clinical_collections')
+        .eq('collection_type', 'goal_bank');
+
+      if (error) throw error;
+      if (!data) return [];
+
+      // Dedupe + count
+      const map = new Map<string, number>();
+      data.forEach((row: any) => {
+        map.set(row.domain, (map.get(row.domain) || 0) + 1);
+      });
+
+      return Array.from(map.entries())
+        .map(([domain, count]) => ({ domain, goalCount: count }))
+        .sort((a, b) => a.domain.localeCompare(b.domain));
+    },
+  });
+}
+
+/** Get goals for a specific domain */
+export function useGoalsByDomain(domain: string | undefined) {
+  return useQuery({
+    queryKey: ['clinical-goals', 'by-domain', domain],
+    enabled: !!domain,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clinical_goals')
+        .select('*')
+        .eq('library_section', 'clinical_collections')
+        .eq('collection_type', 'goal_bank')
+        .eq('domain', domain!)
+        .order('phase', { ascending: true, nullsFirst: false })
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as ClinicalGoal[];
+    },
+  });
+}
+
+/** Get a single goal with benchmarks, targets, and crosswalk tags */
+export function useGoalDetail(goalId: string | undefined) {
+  return useQuery({
+    queryKey: ['clinical-goals', 'detail', goalId],
+    enabled: !!goalId,
+    queryFn: async () => {
+      const [goalRes, benchRes, targetRes, crosswalkRes] = await Promise.all([
+        supabase
+          .from('clinical_goals')
+          .select('*')
+          .eq('id', goalId!)
+          .single(),
+        supabase
+          .from('clinical_goal_benchmarks')
+          .select('*')
+          .eq('goal_id', goalId!)
+          .order('benchmark_order', { ascending: true }),
+        supabase
+          .from('clinical_goal_targets')
+          .select('*')
+          .eq('goal_id', goalId!)
+          .order('target_order', { ascending: true }),
+        supabase
+          .from('clinical_goal_crosswalk')
+          .select('id, tag_id, clinical_crosswalk_tags(id, system_name, tag_category, tag_name)')
+          .eq('goal_id', goalId!),
+      ]);
+
+      if (goalRes.error) throw goalRes.error;
+
+      const tags: CrosswalkTag[] = (crosswalkRes.data || [])
+        .map((row: any) => row.clinical_crosswalk_tags)
+        .filter(Boolean);
+
+      return {
+        ...goalRes.data,
+        benchmarks: (benchRes.data || []) as ClinicalBenchmark[],
+        targets: (targetRes.data || []) as ClinicalTarget[],
+        crosswalkTags: tags,
+      } as GoalWithRelations;
+    },
+  });
+}
+
+/** Search goals across all goal banks */
+export function useGoalSearch(query: string, filters?: {
+  domain?: string;
+  subdomain?: string;
+  phase?: string;
+  goal_category?: string;
+  crosswalkTagId?: string;
+}) {
+  return useQuery({
+    queryKey: ['clinical-goals', 'search', query, filters],
+    enabled: query.length >= 2 || !!filters?.crosswalkTagId,
+    queryFn: async () => {
+      let q = supabase
+        .from('clinical_goals')
+        .select('*')
+        .eq('library_section', 'clinical_collections')
+        .eq('collection_type', 'goal_bank');
+
+      if (filters?.domain) q = q.eq('domain', filters.domain);
+      if (filters?.subdomain) q = q.eq('subdomain', filters.subdomain);
+      if (filters?.phase) q = q.eq('phase', filters.phase);
+      if (filters?.goal_category) q = q.eq('goal_category', filters.goal_category);
+
+      if (query.length >= 2) {
+        q = q.or(`title.ilike.%${query}%,description.ilike.%${query}%,objective.ilike.%${query}%`);
+      }
+
+      const { data, error } = await q.order('domain').order('title').limit(100);
+      if (error) throw error;
+
+      // If filtering by crosswalk tag, do a secondary query
+      if (filters?.crosswalkTagId) {
+        const { data: linked } = await supabase
+          .from('clinical_goal_crosswalk')
+          .select('goal_id')
+          .eq('tag_id', filters.crosswalkTagId);
+        const linkedIds = new Set((linked || []).map((r: any) => r.goal_id));
+        return (data || []).filter((g: any) => linkedIds.has(g.id)) as ClinicalGoal[];
+      }
+
+      return (data || []) as ClinicalGoal[];
+    },
+  });
+}
+
+/** Get goals linked to a specific crosswalk tag */
+export function useGoalsByCrosswalkTag(tagId: string | undefined) {
+  return useQuery({
+    queryKey: ['clinical-goals', 'by-crosswalk-tag', tagId],
+    enabled: !!tagId,
+    queryFn: async () => {
+      const { data: links, error: linkError } = await supabase
+        .from('clinical_goal_crosswalk')
+        .select('goal_id')
+        .eq('tag_id', tagId!);
+
+      if (linkError) throw linkError;
+      if (!links || links.length === 0) return [];
+
+      const goalIds = links.map((l: any) => l.goal_id);
+      const { data, error } = await supabase
+        .from('clinical_goals')
+        .select('*')
+        .in('id', goalIds)
+        .order('domain')
+        .order('title');
+
+      if (error) throw error;
+      return (data || []) as ClinicalGoal[];
+    },
+  });
+}
