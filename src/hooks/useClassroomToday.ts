@@ -348,6 +348,44 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
           occurred_at: s.started_at || s.created_at,
         });
       }
+      // Clinical session_data events
+      for (const c of clinicalRows) {
+        allEvents.push({
+          id: c.id,
+          type: 'clinical_session',
+          student_name: nameMap.get(c.student_id) || 'Unknown',
+          student_id: c.student_id,
+          label: `Clinical: ${c.event_type || 'event'}${c.behavior_name ? ` — ${c.behavior_name}` : ''}`,
+          detail: c.duration_seconds ? `Duration: ${c.duration_seconds}s` : null,
+          occurred_at: c.timestamp,
+        });
+      }
+      // CI Signals
+      for (const s of signalRows) {
+        allEvents.push({
+          id: s.id,
+          type: 'signal',
+          student_name: s.client_id ? (nameMap.get(s.client_id) || 'Unknown') : 'Classroom',
+          student_id: s.client_id || '',
+          label: `Signal: ${s.title || s.signal_type}`,
+          detail: s.message,
+          occurred_at: s.created_at,
+          severity: s.severity,
+        });
+      }
+      // Incident logs
+      for (const i of incidentRows) {
+        allEvents.push({
+          id: i.id,
+          type: 'incident',
+          student_name: i.client_id ? (nameMap.get(i.client_id) || 'Unknown') : 'Classroom',
+          student_id: i.client_id || '',
+          label: `Incident: ${i.title || i.incident_type}`,
+          detail: i.description ? i.description.substring(0, 120) : null,
+          occurred_at: i.occurred_at,
+          severity: String(i.severity),
+        });
+      }
       allEvents.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
       setEvents(allEvents);
 
