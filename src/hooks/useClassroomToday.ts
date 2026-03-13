@@ -430,5 +430,13 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
   }, [classroomId]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Auto-poll every 20 seconds
+  useEffect(() => {
+    if (!classroomId) return;
+    const interval = setInterval(fetch, 20_000);
+    return () => clearInterval(interval);
+  }, [classroomId, fetch]);
+
   return { snapshot, students, events, flags, loading, refresh: fetch };
 }
