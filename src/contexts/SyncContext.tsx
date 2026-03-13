@@ -1667,6 +1667,34 @@ export function SyncProvider({ children }: SyncProviderProps) {
       .on(
         'postgres_changes',
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sessions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          try {
+            const session = payload.new as any;
+            const currentState = useDataStore.getState();
+            // If the session was ended/completed on another device, clear local state
+            if (
+              session.status && session.status !== 'active' &&
+              currentState.currentSessionId === session.id &&
+              currentState.sessionStartTime
+            ) {
+              console.log('[Sync] Session ended on another device, clearing local state:', session.id);
+              useDataStore.getState().forceEndAllSessions();
+              lastKnownActiveSessionIdRef.current = null;
+              toast.info('Session was ended on another device');
+            }
+          } catch (e) {
+            console.error('[Sync] Realtime session UPDATE handler error:', e);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'INSERT',
           schema: 'public',
           table: 'sessions',
