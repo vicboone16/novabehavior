@@ -219,11 +219,17 @@ const App = () => {
               <ProtectedRoute>
                 <ApprovalCheck>
                   <SyncProvider>
-                    <ClinicalLibrary />
+                    <ClinicalLibraryLayout />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
-            } />
+            }>
+              <Route path="curriculum-systems" element={<CurriculumSystemsPage />} />
+              <Route path="clinical-collections" element={<ClinicalCollectionsPage />} />
+              <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
+              <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
+              <Route path="clinical-collections/goal-banks/:domainSlug/:goalId" element={<GoalDetailPage />} />
+            </Route>
             <Route path="/shared-library" element={
               <ProtectedRoute>
                 <ApprovalCheck>
