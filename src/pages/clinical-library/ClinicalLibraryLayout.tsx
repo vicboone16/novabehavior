@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Settings2, Layers, User, Building2 } from 'lucide-react';
+import { ArrowLeft, Settings2, Layers, User, Building2, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,8 +18,11 @@ export default function ClinicalLibraryLayout() {
   const isRoot = location.pathname === '/clinical-library';
   const isCollections = location.pathname.startsWith('/clinical-library/clinical-collections');
   const isCurriculum = location.pathname.startsWith('/clinical-library/curriculum-systems');
+  const isBehavior = location.pathname.startsWith('/clinical-library/behavior-reduction');
 
-  const subtitle = isCurriculum
+  const subtitle = isBehavior
+    ? 'Function-based goals, intervention protocols & replacement behaviors'
+    : isCurriculum
     ? 'Standardized curriculum frameworks & formal assessment systems'
     : isCollections
     ? 'Goal banks, interventions, templates & custom programs'
@@ -95,7 +98,7 @@ export default function ClinicalLibraryLayout() {
 
         {/* Root landing shows two cards */}
         {isRoot ? (
-          <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto mt-4">
+          <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto mt-4">
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
               onClick={() => navigate('/clinical-library/curriculum-systems')}
@@ -126,11 +129,31 @@ export default function ClinicalLibraryLayout() {
                 </div>
                 <h2 className="text-lg font-bold mb-1">Clinical Collections</h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Goal banks, intervention libraries, behavior reduction, templates & custom programs.
+                  Goal banks, intervention libraries, templates & custom programs.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {['Goal Banks', 'Interventions', 'Behavior Reduction', 'Skill Acquisition', 'Templates'].map(name => (
+                  {['Goal Banks', 'Interventions', 'Skill Acquisition', 'Templates'].map(name => (
                     <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => navigate('/clinical-library/behavior-reduction')}
+            >
+              <CardContent className="p-6">
+                <div className="p-3 rounded-xl bg-destructive/10 w-fit mb-4">
+                  <Shield className="w-7 h-7 text-destructive" />
+                </div>
+                <h2 className="text-lg font-bold mb-1">Behavior Reduction & Interventions</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Function-based goals, intervention protocols, replacement behaviors & crisis plans.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['FCT', 'DRA/DRO', 'Crisis Plans', 'Strategies'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px] border-destructive/30 text-destructive">{name}</Badge>
                   ))}
                 </div>
               </CardContent>

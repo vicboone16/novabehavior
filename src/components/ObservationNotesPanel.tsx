@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { MessageSquare, Plus, Save, Trash2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ interface ObservationNotesPanelProps {
   behaviors: Behavior[];
   skillTargets: SkillTarget[];
   onSave: (notes: ObservationNotes) => void;
+  onDraftChange?: (notes: ObservationNotes) => void;
   initialNotes?: ObservationNotes;
 }
 
@@ -58,6 +59,7 @@ export function ObservationNotesPanel({
   behaviors,
   skillTargets,
   onSave,
+  onDraftChange,
   initialNotes,
 }: ObservationNotesPanelProps) {
   const { toast } = useToast();
@@ -81,6 +83,21 @@ export function ObservationNotesPanel({
   // Pending notes being edited
   const [pendingBehaviorNotes, setPendingBehaviorNotes] = useState<Record<string, string>>({});
   const [pendingSkillNotes, setPendingSkillNotes] = useState<Record<string, string>>({});
+  const notesIdRef = useRef(initialNotes?.id || crypto.randomUUID());
+
+  // Notify parent of draft changes so it can auto-save when switching tabs
+  useEffect(() => {
+    if (onDraftChange && (behaviorNotes.length > 0 || skillNotes.length > 0 || narrativeNotes.trim())) {
+      onDraftChange({
+        id: notesIdRef.current,
+        studentId,
+        observationDate,
+        behaviorNotes,
+        skillNotes,
+        narrativeNotes,
+      });
+    }
+  }, [behaviorNotes, skillNotes, narrativeNotes, observationDate]);
 
   const addBehaviorNote = (behaviorId: string, behaviorName: string) => {
     const content = pendingBehaviorNotes[behaviorId];

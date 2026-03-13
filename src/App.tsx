@@ -57,6 +57,7 @@ import GoalBanksPage from "./pages/clinical-library/GoalBanksPage";
 import GoalBankDomainPage from "./pages/clinical-library/GoalBankDomainPage";
 import GoalDetailPage from "./pages/clinical-library/GoalDetailPage";
 import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPage";
+import BehaviorReductionPage from "./pages/clinical-library/BehaviorReductionPage";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
 import ClientDrilldown from "./pages/ClientDrilldown";
@@ -226,6 +227,7 @@ const App = () => {
               </ProtectedRoute>
             }>
               <Route path="curriculum-systems" element={<CurriculumSystemsPage />} />
+              <Route path="behavior-reduction" element={<BehaviorReductionPage />} />
               <Route path="clinical-collections" element={<ClinicalCollectionsPage />} />
               <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />

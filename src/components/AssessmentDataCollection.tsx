@@ -34,6 +34,7 @@ import {
   CONSEQUENCE_OPTIONS 
 } from '@/types/behavior';
 import { toast } from 'sonner';
+import { useSessionKeepalive } from '@/hooks/useSessionKeepalive';
 
 interface AssessmentDataCollectionProps {
   student: Student;
@@ -75,6 +76,12 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   
+  // Keep auth session alive during active observations
+  useSessionKeepalive();
+
+  // Track pending observation notes for auto-draft on tab switch
+  const pendingNotesRef = useRef<{ behaviorNotes: any[]; skillNotes: any[]; narrativeNotes: string } | null>(null);
+
   // Novel behavior state
   const [showNovelDialog, setShowNovelDialog] = useState(false);
   const [novelBehaviorName, setNovelBehaviorName] = useState('');
@@ -164,6 +171,39 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const studentEnded = isStudentSessionEnded(student.id);
   const isLiveObservationActive = !!sessionStartTime && isStudentSelected && !studentEnded;
   const canDeleteThisObservation = !!sessionStartTime && isStudentSelected && selectedStudentIds.length === 1;
+
+  // Auto-save observation notes draft when switching away from Notes tab
+  const prevModeRef = useRef<RecordingMode>(activeMode);
+  useEffect(() => {
+    if (prevModeRef.current === 'notes' && activeMode !== 'notes' && pendingNotesRef.current) {
+      const draft = pendingNotesRef.current;
+      if (draft.behaviorNotes.length > 0 || draft.skillNotes.length > 0 || draft.narrativeNotes.trim()) {
+        const noteContent = {
+          type: 'observation-notes-draft',
+          behaviorNotes: draft.behaviorNotes,
+          skillNotes: draft.skillNotes,
+          narrativeNotes: draft.narrativeNotes,
+          observationDate: new Date(),
+        };
+        const draftNote = {
+          id: `draft-${student.id}-${Date.now()}`,
+          studentId: student.id,
+          content: JSON.stringify(noteContent),
+          timestamp: new Date(),
+          tags: ['observation-notes-draft'],
+        };
+        const currentStudent = useDataStore.getState().students.find(s => s.id === student.id);
+        const existingNotes = currentStudent?.narrativeNotes || [];
+        // Remove previous drafts for this student, keep only latest
+        const withoutOldDrafts = existingNotes.filter(n => !n.tags?.includes('observation-notes-draft'));
+        updateStudentProfile(student.id, {
+          narrativeNotes: [...withoutOldDrafts, draftNote],
+        });
+        toast.info('Notes draft saved automatically');
+      }
+    }
+    prevModeRef.current = activeMode;
+  }, [activeMode, student.id, updateStudentProfile]);
 
   // Notify parent of observation state changes (kept for backwards compatibility)
   useEffect(() => {
@@ -693,7 +733,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 </Button>
                 <Button 
                   onClick={handleSaveNovelBehavior}
-                  disabled={!novelBehaviorName.trim() || (novelRecordingMode === 'frequency' && novelCount === 0)}
+                  disabled={!novelBehaviorName.trim()}
                 >
                   Save & Add to Student
                 </Button>
@@ -1461,6 +1501,13 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
             studentId={student.id}
             behaviors={student.behaviors}
             skillTargets={student.skillTargets || []}
+            onDraftChange={(draft: ObservationNotes) => {
+              pendingNotesRef.current = {
+                behaviorNotes: draft.behaviorNotes,
+                skillNotes: draft.skillNotes,
+                narrativeNotes: draft.narrativeNotes,
+              };
+            }}
             onSave={(notes: ObservationNotes) => {
               // Save observation notes to student profile
               const noteContent = {
@@ -1488,6 +1535,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: updatedNotes,
               });
+              pendingNotesRef.current = null;
             }}
           />
         </TabsContent>

@@ -1,64 +1,57 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  Target, Sparkles, BookOpen, ClipboardList,
-  FileText, FolderPlus, ExternalLink
+  Shield, Zap, Target, BookOpen, AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 const SECTIONS = [
   {
-    key: 'goal-banks',
-    label: 'Goal Banks',
-    description: 'Goals organized by clinical domain — PECS, AAC, emotional regulation, and more.',
+    key: 'behavior-reduction-goals',
+    label: 'Behavior Reduction Goals',
+    description: 'Function-based goals for aggression, elopement, SIB, noncompliance, and more.',
+    icon: Shield,
+    route: null,
+  },
+  {
+    key: 'intervention-protocols',
+    label: 'Intervention Protocols',
+    description: 'Evidence-based intervention strategies — FCT, DRA, DRO, antecedent modifications, de-escalation.',
+    icon: Zap,
+    route: null,
+  },
+  {
+    key: 'replacement-behaviors',
+    label: 'Replacement Behaviors',
+    description: 'Functionally equivalent replacement behaviors mapped to maintaining variables.',
     icon: Target,
-    route: '/clinical-library/clinical-collections/goal-banks',
-  },
-  {
-    key: 'intervention-libraries',
-    label: 'Intervention Libraries',
-    description: 'Evidence-based protocols — reinforcement, prompting, antecedent strategies, AAC supports.',
-    icon: Sparkles,
     route: null,
   },
   {
-    key: 'skill-acquisition',
-    label: 'Skill Acquisition',
-    description: 'Manding, tacting, listener responding, echoics, intraverbals, play, social, daily living.',
+    key: 'crisis-protocols',
+    label: 'Crisis Protocols',
+    description: 'Emergency response procedures and safety plans for high-risk behaviors.',
+    icon: AlertTriangle,
+    route: null,
+  },
+  {
+    key: 'strategy-library',
+    label: 'Strategy Library',
+    description: 'Searchable library of 130+ behavior strategies with teacher quick-use guides and fidelity checklists.',
     icon: BookOpen,
-    route: null,
-  },
-  {
-    key: 'assessments',
-    label: 'Assessments',
-    description: 'FBA, preference, and screening templates for clinical assessment.',
-    icon: ClipboardList,
-    route: null,
-  },
-  {
-    key: 'templates',
-    label: 'Templates',
-    description: 'BIP, treatment plan, IEP, and progress report templates.',
-    icon: FileText,
-    route: null,
-  },
-  {
-    key: 'custom-programs',
-    label: 'Custom Programs',
-    description: 'Organization-specific and user-created clinical programs.',
-    icon: FolderPlus,
     route: null,
   },
 ];
 
-export default function ClinicalCollectionsPage() {
+export default function BehaviorReductionPage() {
   const navigate = useNavigate();
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold">Clinical Collections</h2>
-        <p className="text-xs text-muted-foreground">Goal banks, interventions, templates & custom programs</p>
+        <h2 className="text-base font-semibold">Behavior Reduction & Interventions</h2>
+        <p className="text-xs text-muted-foreground">Function-based goals, intervention protocols, replacement behaviors & crisis plans</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
