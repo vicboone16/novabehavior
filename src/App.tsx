@@ -57,6 +57,7 @@ import GoalBanksPage from "./pages/clinical-library/GoalBanksPage";
 import GoalBankDomainPage from "./pages/clinical-library/GoalBankDomainPage";
 import GoalDetailPage from "./pages/clinical-library/GoalDetailPage";
 import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPage";
+import BehaviorReductionPage from "./pages/clinical-library/BehaviorReductionPage";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
 import ClientDrilldown from "./pages/ClientDrilldown";
