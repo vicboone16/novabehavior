@@ -35,12 +35,13 @@ export interface ClassroomTodaySnapshot {
 
 export interface LiveEventItem {
   id: string;
-  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session';
+  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident';
   student_name: string;
   student_id: string;
   label: string;
   detail: string | null;
   occurred_at: string;
+  severity?: string;
 }
 
 export interface ClassroomFlag {
