@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import {
-  Target, Sparkles, Shield, BookOpen, ClipboardList,
+  Target, Sparkles, BookOpen, ClipboardList,
   FileText, FolderPlus, ExternalLink
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
