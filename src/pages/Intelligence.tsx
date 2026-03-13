@@ -318,6 +318,13 @@ export default function Intelligence() {
             BCBA Exports
           </TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="classroom-today">
+            <School className="w-4 h-4 mr-1" />
+            Classroom Today
+            {classroomSummaries.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{classroomSummaries.length}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* Caseload Tab */}
