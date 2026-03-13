@@ -34,6 +34,7 @@ import {
   CONSEQUENCE_OPTIONS 
 } from '@/types/behavior';
 import { toast } from 'sonner';
+import { useSessionKeepalive } from '@/hooks/useSessionKeepalive';
 
 interface AssessmentDataCollectionProps {
   student: Student;
