@@ -209,13 +209,16 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
       }
 
-      // Parallel fetches for today's data
-      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes] = await Promise.all([
+      // Parallel fetches for today's data (teacher + clinical + signals + incidents)
+      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes, clinicalRes, signalsRes, incidentRes] = await Promise.all([
         supabase.from('teacher_frequency_entries').select('*').in('client_id', studentIds).eq('session_date', dateStr),
         supabase.from('teacher_abc_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
         supabase.from('teacher_data_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
         supabase.from('teacher_data_sessions').select('*').in('client_id', studentIds).gte('created_at', start),
         supabase.from('teacher_data_points').select('*').in('client_id', studentIds).gte('created_at', start),
+        supabase.from('session_data').select('id, student_id, behavior_name, event_type, timestamp, duration_seconds, abc_data').in('student_id', studentIds).gte('timestamp', start),
+        (supabase.from as any)('ci_signals').select('id, client_id, signal_type, severity, title, message, created_at').in('client_id', studentIds).gte('created_at', start),
+        supabase.from('incident_logs').select('id, client_id, incident_type, severity, title, description, occurred_at').in('client_id', studentIds).gte('occurred_at', start),
       ]);
 
       const freqRows = (freqRes.data || []) as any[];
@@ -223,6 +226,9 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
       const dataEvRows = (dataEvRes.data || []) as any[];
       const sessionRows = (sessionsRes.data || []) as any[];
       const dataPointRows = (dataPointsRes.data || []) as any[];
+      const clinicalRows = (clinicalRes.data || []) as any[];
+      const signalRows = (signalsRes.data || []) as any[];
+      const incidentRows = (incidentRes.data || []) as any[];
 
       // === Snapshot ===
       const totalBehavior = freqRows.reduce((s, f) => s + (f.count || 1), 0) + abcRows.length;
