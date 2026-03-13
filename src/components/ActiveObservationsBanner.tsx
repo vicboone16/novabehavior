@@ -127,13 +127,14 @@ export function ActiveObservationsBanner({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-8 w-8 min-h-[32px] min-w-[32px]"
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
                             onEndObservation(obs.studentId);
                           }}
                         >
-                          <Square className="w-3 h-3" />
+                          <Square className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
