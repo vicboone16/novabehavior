@@ -17,15 +17,8 @@ const SECTIONS = [
   {
     key: 'intervention-libraries',
     label: 'Intervention Libraries',
-    description: 'Evidence-based protocols — reinforcement, prompting, FCT, antecedent strategies, AAC supports.',
+    description: 'Evidence-based protocols — reinforcement, prompting, antecedent strategies, AAC supports.',
     icon: Sparkles,
-    route: null,
-  },
-  {
-    key: 'behavior-reduction',
-    label: 'Behavior Reduction',
-    description: 'Behavior-specific goal banks and strategies for aggression, elopement, SIB, noncompliance.',
-    icon: Shield,
     route: null,
   },
   {
