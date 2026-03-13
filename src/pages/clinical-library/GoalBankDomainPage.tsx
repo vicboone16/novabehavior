@@ -63,8 +63,8 @@ export default function GoalBankDomainPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
 
-  // Get the actual domain key from location state or derive from slug
-  const domainKey: string = (location.state as any)?.domainKey || domainSlug?.replace(/-/g, '_') || '';
+  // Pass the slug directly — the hook now handles case-insensitive matching
+  const domainKey = domainSlug || '';
   const { data: goals, isLoading } = useGoalsByDomain(domainKey);
 
   const filtered = useMemo(() => {
