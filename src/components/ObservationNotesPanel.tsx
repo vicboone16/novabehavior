@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { MessageSquare, Plus, Save, Trash2, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
