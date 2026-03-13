@@ -139,6 +139,7 @@ export default function Intelligence() {
     ).length;
   }, [alerts]);
   const { signals, loading: signalsLoading, resolveSignal } = useSupervisorSignals(effectiveAgencyId);
+  const { classrooms: classroomSummaries, loading: classroomsLoading } = useClassroomSummaries(effectiveAgencyId);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
