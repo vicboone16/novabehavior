@@ -1798,6 +1798,39 @@ export function SyncProvider({ children }: SyncProviderProps) {
       }
     };
   }, [user, hasFetched.current]);
+
+  // Periodic cross-device session status poll (fallback if realtime misses events)
+  useEffect(() => {
+    if (!user) return;
+    
+    const pollSessionStatus = async () => {
+      const state = useDataStore.getState();
+      if (!state.currentSessionId || !state.sessionStartTime) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('sessions')
+          .select('id, status')
+          .eq('id', state.currentSessionId)
+          .single();
+        
+        if (error) return;
+        
+        if (data && data.status !== 'active') {
+          console.log('[Sync] Poll detected session ended remotely:', data.id);
+          useDataStore.getState().forceEndAllSessions();
+          lastKnownActiveSessionIdRef.current = null;
+          toast.info('Session was ended on another device');
+        }
+      } catch (e) {
+        // Ignore poll errors
+      }
+    };
+    
+    const interval = setInterval(pollSessionStatus, 30_000); // every 30s
+    return () => clearInterval(interval);
+  }, [user]);
+
   useEffect(() => {
     if (!user || !hasFetched.current || isLoading) return;
     
