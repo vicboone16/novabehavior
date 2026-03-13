@@ -76,6 +76,12 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   
+  // Keep auth session alive during active observations
+  useSessionKeepalive();
+
+  // Track pending observation notes for auto-draft on tab switch
+  const pendingNotesRef = useRef<{ behaviorNotes: any[]; skillNotes: any[]; narrativeNotes: string } | null>(null);
+
   // Novel behavior state
   const [showNovelDialog, setShowNovelDialog] = useState(false);
   const [novelBehaviorName, setNovelBehaviorName] = useState('');
