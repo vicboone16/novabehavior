@@ -20,7 +20,9 @@ export default function ClinicalLibraryLayout() {
   const isCurriculum = location.pathname.startsWith('/clinical-library/curriculum-systems');
   const isBehavior = location.pathname.startsWith('/clinical-library/behavior-reduction');
 
-  const subtitle = isCurriculum
+  const subtitle = isBehavior
+    ? 'Function-based goals, intervention protocols & replacement behaviors'
+    : isCurriculum
     ? 'Standardized curriculum frameworks & formal assessment systems'
     : isCollections
     ? 'Goal banks, interventions, templates & custom programs'
