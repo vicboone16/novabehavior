@@ -83,6 +83,21 @@ export function ObservationNotesPanel({
   // Pending notes being edited
   const [pendingBehaviorNotes, setPendingBehaviorNotes] = useState<Record<string, string>>({});
   const [pendingSkillNotes, setPendingSkillNotes] = useState<Record<string, string>>({});
+  const notesIdRef = useRef(initialNotes?.id || crypto.randomUUID());
+
+  // Notify parent of draft changes so it can auto-save when switching tabs
+  useEffect(() => {
+    if (onDraftChange && (behaviorNotes.length > 0 || skillNotes.length > 0 || narrativeNotes.trim())) {
+      onDraftChange({
+        id: notesIdRef.current,
+        studentId,
+        observationDate,
+        behaviorNotes,
+        skillNotes,
+        narrativeNotes,
+      });
+    }
+  }, [behaviorNotes, skillNotes, narrativeNotes, observationDate]);
 
   const addBehaviorNote = (behaviorId: string, behaviorName: string) => {
     const content = pendingBehaviorNotes[behaviorId];
