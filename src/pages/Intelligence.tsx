@@ -726,6 +726,55 @@ export default function Intelligence() {
         <TabsContent value="exports" className="space-y-4">
           <BCBAExportCenter agencyId={effectiveAgencyId} />
         </TabsContent>
+
+        {/* Classroom Today Tab */}
+        <TabsContent value="classroom-today" className="space-y-4">
+          {classroomsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : classroomSummaries.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <School className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No classrooms found for the selected agency.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {classroomSummaries.map(room => (
+                <Card key={room.id} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => navigate(`/intelligence/classroom/${room.id}?from=/intelligence`)}>
+                  <CardContent className="py-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <School className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-sm">{room.name}</span>
+                      </div>
+                      {room.activeSignalCount > 0 && (
+                        <Badge className="bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px]">
+                          {room.activeSignalCount} signal{room.activeSignalCount > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {room.studentCount} students</span>
+                      <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {room.behaviorEventsToday} events</span>
+                    </div>
+                    <p className="text-[11px] italic text-muted-foreground">{room.signalSummary}</p>
+                    <div className="flex gap-2 pt-1">
+                      <Button variant="outline" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); setActiveTab('signals'); }}>
+                        <Eye className="w-3 h-3 mr-1" /> Signals
+                      </Button>
+                      <Button variant="default" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); navigate(`/intelligence/classroom/${room.id}?from=/intelligence`); }}>
+                        <School className="w-3 h-3 mr-1" /> Open Today
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
