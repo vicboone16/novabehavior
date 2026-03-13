@@ -60,6 +60,7 @@ import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPag
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
 import ClientDrilldown from "./pages/ClientDrilldown";
+import ClassroomTodayPage from "./pages/ClassroomToday";
 import { StaffProfilePage } from "./components/staff-profile";
 import StaffAssignments from "./pages/StaffAssignments";
 import IncidentLogs from "./pages/IncidentLogs";
