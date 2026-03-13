@@ -50,6 +50,7 @@ interface ObservationNotesPanelProps {
   behaviors: Behavior[];
   skillTargets: SkillTarget[];
   onSave: (notes: ObservationNotes) => void;
+  onDraftChange?: (notes: ObservationNotes) => void;
   initialNotes?: ObservationNotes;
 }
 
