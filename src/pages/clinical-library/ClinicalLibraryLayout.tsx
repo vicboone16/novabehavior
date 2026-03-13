@@ -18,6 +18,7 @@ export default function ClinicalLibraryLayout() {
   const isRoot = location.pathname === '/clinical-library';
   const isCollections = location.pathname.startsWith('/clinical-library/clinical-collections');
   const isCurriculum = location.pathname.startsWith('/clinical-library/curriculum-systems');
+  const isBehavior = location.pathname.startsWith('/clinical-library/behavior-reduction');
 
   const subtitle = isCurriculum
     ? 'Standardized curriculum frameworks & formal assessment systems'
