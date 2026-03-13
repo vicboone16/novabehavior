@@ -426,6 +426,7 @@ const App = () => {
               <Route path="/intelligence" element={<Intelligence />} />
               <Route path="/intelligence/ops" element={<IntelligenceOps />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
+              <Route path="/intelligence/classroom/:classroomId" element={<ClassroomTodayPage />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
               <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />
