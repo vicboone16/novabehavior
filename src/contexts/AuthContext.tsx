@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
@@ -174,22 +174,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  // Clear session timer state whenever the authenticated user changes (login/logout/switch)
+  // Clear session timer state only on genuine user SWITCH (different user ID),
+  // NOT on token refreshes which briefly cycle user → null → user.
+  const prevUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (user) {
-      // A new user just logged in - always start with a clean timer slate
-      // so one user's active session never bleeds into another's view
+    const currentId = user?.id ?? null;
+    const prevId = prevUserIdRef.current;
+
+    // Skip initial mount (null → user is a login, not a switch)
+    if (prevId !== null && currentId !== null && prevId !== currentId) {
+      // Genuine user switch — clear old user's session state
       try {
         const store = useDataStore.getState();
         if (store.sessionStartTime) {
-          console.log('[Auth] New user login - clearing lingering session timer state');
+          console.log('[Auth] User switch detected — clearing lingering session timer state');
           store.forceEndAllSessions();
         }
       } catch (e) {
-        console.warn('[Auth] Could not clear session state on login:', e);
+        console.warn('[Auth] Could not clear session state on user switch:', e);
       }
     }
-  }, [user?.id]); // only fires when the actual user ID changes
+
+    prevUserIdRef.current = currentId;
+  }, [user?.id]);
 
   return (
     <AuthContext.Provider value={{ user, session, profile, userRole, roleLoading, loading, signUp, signIn, signOut, refreshRole }}>

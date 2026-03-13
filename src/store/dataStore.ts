@@ -2022,14 +2022,19 @@ export const useDataStore = create<DataState>()(
         const state = get();
         
         // Clean stale live entries from previous sessions that were never properly saved/ended.
-        // Preserve: historical entries, entries belonging to saved sessions, entries with no sessionId that are historical.
+        // Preserve: historical entries, entries belonging to saved sessions, entries without sessionId (legacy data).
         const savedSessionIds = new Set(state.sessions.map(s => s.id));
-        const isStale = (e: { sessionId?: string; isHistorical?: boolean }) => {
+        const isStale = (e: { sessionId?: string; isHistorical?: boolean; timestamp?: Date | string }) => {
           if (e.isHistorical) return false; // Never remove historical data
-          if (!e.sessionId) return true; // Orphaned live entry with no session — stale
+          if (!e.sessionId) return false; // Legacy entry without session tracking — preserve
           if (savedSessionIds.has(e.sessionId)) return false; // Belongs to a saved session
           if (e.sessionId === state.currentSessionId) return true; // Old active session being replaced
-          return true; // Entry from an unsaved, non-current session — stale
+          // Entry from an unsaved, non-current session older than 1 hour — stale
+          // Give a grace period so recent entries aren't lost during quick restarts
+          const entryTime = e.timestamp ? new Date(e.timestamp).getTime() : 0;
+          const oneHourAgo = Date.now() - 60 * 60 * 1000;
+          if (entryTime > oneHourAgo) return false; // Recent enough to keep
+          return true;
         };
         
         set({ 
