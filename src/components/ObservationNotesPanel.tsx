@@ -59,6 +59,7 @@ export function ObservationNotesPanel({
   behaviors,
   skillTargets,
   onSave,
+  onDraftChange,
   initialNotes,
 }: ObservationNotesPanelProps) {
   const { toast } = useToast();
