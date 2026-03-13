@@ -35,12 +35,13 @@ export interface ClassroomTodaySnapshot {
 
 export interface LiveEventItem {
   id: string;
-  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session';
+  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident';
   student_name: string;
   student_id: string;
   label: string;
   detail: string | null;
   occurred_at: string;
+  severity?: string;
 }
 
 export interface ClassroomFlag {
@@ -208,13 +209,16 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
       }
 
-      // Parallel fetches for today's data
-      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes] = await Promise.all([
+      // Parallel fetches for today's data (teacher + clinical + signals + incidents)
+      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes, clinicalRes, signalsRes, incidentRes] = await Promise.all([
         supabase.from('teacher_frequency_entries').select('*').in('client_id', studentIds).eq('session_date', dateStr),
         supabase.from('teacher_abc_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
         supabase.from('teacher_data_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
         supabase.from('teacher_data_sessions').select('*').in('client_id', studentIds).gte('created_at', start),
         supabase.from('teacher_data_points').select('*').in('client_id', studentIds).gte('created_at', start),
+        supabase.from('session_data').select('id, student_id, behavior_name, event_type, timestamp, duration_seconds, abc_data').in('student_id', studentIds).gte('timestamp', start),
+        (supabase.from as any)('ci_signals').select('id, client_id, signal_type, severity, title, message, created_at').in('client_id', studentIds).gte('created_at', start),
+        supabase.from('incident_logs').select('id, client_id, incident_type, severity, title, description, occurred_at').in('client_id', studentIds).gte('occurred_at', start),
       ]);
 
       const freqRows = (freqRes.data || []) as any[];
@@ -222,6 +226,9 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
       const dataEvRows = (dataEvRes.data || []) as any[];
       const sessionRows = (sessionsRes.data || []) as any[];
       const dataPointRows = (dataPointsRes.data || []) as any[];
+      const clinicalRows = (clinicalRes.data || []) as any[];
+      const signalRows = (signalsRes.data || []) as any[];
+      const incidentRows = (incidentRes.data || []) as any[];
 
       // === Snapshot ===
       const totalBehavior = freqRows.reduce((s, f) => s + (f.count || 1), 0) + abcRows.length;
@@ -341,6 +348,44 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
           occurred_at: s.started_at || s.created_at,
         });
       }
+      // Clinical session_data events
+      for (const c of clinicalRows) {
+        allEvents.push({
+          id: c.id,
+          type: 'clinical_session',
+          student_name: nameMap.get(c.student_id) || 'Unknown',
+          student_id: c.student_id,
+          label: `Clinical: ${c.event_type || 'event'}${c.behavior_name ? ` — ${c.behavior_name}` : ''}`,
+          detail: c.duration_seconds ? `Duration: ${c.duration_seconds}s` : null,
+          occurred_at: c.timestamp,
+        });
+      }
+      // CI Signals
+      for (const s of signalRows) {
+        allEvents.push({
+          id: s.id,
+          type: 'signal',
+          student_name: s.client_id ? (nameMap.get(s.client_id) || 'Unknown') : 'Classroom',
+          student_id: s.client_id || '',
+          label: `Signal: ${s.title || s.signal_type}`,
+          detail: s.message,
+          occurred_at: s.created_at,
+          severity: s.severity,
+        });
+      }
+      // Incident logs
+      for (const i of incidentRows) {
+        allEvents.push({
+          id: i.id,
+          type: 'incident',
+          student_name: i.client_id ? (nameMap.get(i.client_id) || 'Unknown') : 'Classroom',
+          student_id: i.client_id || '',
+          label: `Incident: ${i.title || i.incident_type}`,
+          detail: i.description ? i.description.substring(0, 120) : null,
+          occurred_at: i.occurred_at,
+          severity: String(i.severity),
+        });
+      }
       allEvents.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
       setEvents(allEvents);
 
@@ -385,5 +430,13 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
   }, [classroomId]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Auto-poll every 20 seconds
+  useEffect(() => {
+    if (!classroomId) return;
+    const interval = setInterval(fetch, 20_000);
+    return () => clearInterval(interval);
+  }, [classroomId, fetch]);
+
   return { snapshot, students, events, flags, loading, refresh: fetch };
 }
