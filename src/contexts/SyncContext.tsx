@@ -1273,6 +1273,27 @@ export function SyncProvider({ children }: SyncProviderProps) {
               } as Json,
             };
           }),
+          ...(session.latencyEntries || []).map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'latency',
+              timestamp: new Date(e.antecedentTime).toISOString(),
+              duration_seconds: Math.round(e.latencySeconds),
+              abc_data: {
+                antecedentTime: new Date(e.antecedentTime).toISOString(),
+                behaviorOnsetTime: new Date(e.behaviorOnsetTime).toISOString(),
+                latencySeconds: e.latencySeconds,
+                notes: e.notes,
+              } as Json,
+            };
+          }),
         ];
 
         // Insert in batches
