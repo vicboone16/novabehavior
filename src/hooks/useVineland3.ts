@@ -498,6 +498,7 @@ export function useVineland3(studentId: string, studentDob?: string) {
     saveItemScore,
     calculateRawScores,
     calculateDerivedScores,
+    scoreFullAssessment,
     updateAssessmentStatus,
     refresh: loadData,
   };
