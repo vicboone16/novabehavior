@@ -88,7 +88,30 @@ export interface Vineland3DerivedScore {
   gsv: number | null;
 }
 
-// Resolve age band from age in months
+export interface Vineland3PairwiseComparison {
+  id: string;
+  comparison_level: string;
+  comparison_label: string;
+  score_1_key: string;
+  score_2_key: string;
+  score_1_value: number | null;
+  score_2_value: number | null;
+  difference_value: number | null;
+  significant_difference: boolean | null;
+  base_rate: string | null;
+}
+
+export interface Vineland3ScoringStatus {
+  overall_scoring_status: string;
+  age_resolution_status: string | null;
+  raw_score_status: string | null;
+  subdomain_lookup_status: string | null;
+  domain_score_status: string | null;
+  composite_score_status: string | null;
+  comparison_status: string | null;
+  status_notes: string | null;
+  last_scored_at: string | null;
+}
 function resolveAgeBand(ageMonths: number): string {
   if (ageMonths < 12) return '0y_0m_to_0y_11m';
   if (ageMonths < 24) return '1y_0m_to_1y_11m';
@@ -299,14 +322,97 @@ export function useVineland3(studentId: string, studentDob?: string) {
   };
 
   /**
-   * Full 7-step derived score pipeline:
-   * 1. Raw scores (already calculated)
-   * 2. Subdomain raw → v-scale via RPC
-   * 3. Sum v-scales per domain
-   * 4. v-scale sum → domain standard score via RPC
-   * 5. Sum domain standard scores → composite lookup
-   * 6. Composite lookup → ABC standard score via RPC
-   * 7. Store all derived scores
+   * Score Full Assessment via server-side RPC orchestrator.
+   * Calls score_vineland_assessment which runs all stages:
+   *   resolve_age_band → raw_scores → subdomain → domain → composite → pairwise → status
+   * Then reloads all results from the DB.
+   */
+  const scoreFullAssessment = async (assessmentId: string): Promise<{
+    status: string;
+    rawScores: Vineland3RawScore[];
+    derivedScores: Vineland3DerivedScore[];
+    pairwise: Vineland3PairwiseComparison[];
+    scoringStatus: Vineland3ScoringStatus | null;
+  }> => {
+    // Call the master orchestrator RPC
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('score_vineland_assessment', {
+      p_student_assessment_id: assessmentId,
+    });
+
+    if (rpcError) {
+      console.error('score_vineland_assessment RPC error:', rpcError);
+      throw rpcError;
+    }
+
+    // Reload all results from DB in parallel
+    const [rawRes, derivedRes, pairwiseRes, statusRes, assessmentRes] = await Promise.all([
+      supabase.from('vineland3_raw_scores').select('*').eq('student_assessment_id', assessmentId),
+      supabase.from('vineland3_derived_scores').select('*').eq('student_assessment_id', assessmentId),
+      supabase.from('vineland3_pairwise_comparisons').select('*').eq('student_assessment_id', assessmentId),
+      supabase.from('vineland3_scoring_status').select('*').eq('student_assessment_id', assessmentId).maybeSingle(),
+      supabase.from('vineland3_student_assessments').select('*').eq('id', assessmentId).single(),
+    ]);
+
+    const rawScores: Vineland3RawScore[] = (rawRes.data || []).map((r: any) => ({
+      domain_key: r.domain_key,
+      subdomain_key: r.subdomain_key,
+      raw_score: r.raw_score,
+      items_scored: r.items_scored,
+      items_missing: r.items_missing,
+      completion_status: r.completion_status,
+    }));
+
+    const derivedScores: Vineland3DerivedScore[] = (derivedRes.data || []).map((d: any) => ({
+      score_level: d.score_level,
+      domain_key: d.domain_key,
+      subdomain_key: d.subdomain_key,
+      composite_key: d.composite_key,
+      raw_score: d.raw_score,
+      v_scale_score: d.v_scale_score,
+      standard_score: d.standard_score,
+      percentile: d.percentile,
+      adaptive_level: d.adaptive_level,
+      age_equivalent: d.age_equivalent,
+      gsv: d.gsv,
+    }));
+
+    const pairwise: Vineland3PairwiseComparison[] = (pairwiseRes.data || []).map((p: any) => ({
+      id: p.id,
+      comparison_level: p.comparison_level,
+      comparison_label: p.comparison_label,
+      score_1_key: p.score_1_key,
+      score_2_key: p.score_2_key,
+      score_1_value: p.score_1_value,
+      score_2_value: p.score_2_value,
+      difference_value: p.difference_value,
+      significant_difference: p.significant_difference,
+      base_rate: p.base_rate,
+    }));
+
+    const scoringStatus: Vineland3ScoringStatus | null = statusRes.data ? {
+      overall_scoring_status: (statusRes.data as any).overall_scoring_status,
+      age_resolution_status: (statusRes.data as any).age_resolution_status,
+      raw_score_status: (statusRes.data as any).raw_score_status,
+      subdomain_lookup_status: (statusRes.data as any).subdomain_lookup_status,
+      domain_score_status: (statusRes.data as any).domain_score_status,
+      composite_score_status: (statusRes.data as any).composite_score_status,
+      comparison_status: (statusRes.data as any).comparison_status,
+      status_notes: (statusRes.data as any).status_notes,
+      last_scored_at: (statusRes.data as any).last_scored_at,
+    } : null;
+
+    // Update the assessment in local state (age band, scored_at, etc.)
+    if (assessmentRes.data) {
+      const updated = assessmentRes.data as unknown as Vineland3Assessment;
+      setAssessments(prev => prev.map(a => a.id === assessmentId ? updated : a));
+    }
+
+    const overallStatus = scoringStatus?.overall_scoring_status || 'unknown';
+    return { status: overallStatus, rawScores, derivedScores, pairwise, scoringStatus };
+  };
+
+  /**
+   * Legacy client-side derived score calculation (kept for fallback).
    */
   const calculateDerivedScores = async (assessmentId: string): Promise<{ status: string; scores: Vineland3DerivedScore[] }> => {
     const assessment = assessments.find(a => a.id === assessmentId);
@@ -317,164 +423,48 @@ export function useVineland3(studentId: string, studentDob?: string) {
     let lookupFound = 0;
     let lookupMissing = 0;
 
-    // Map to hold subdomain v-scale scores for domain summing
     const vScaleMap: Record<string, number> = {};
 
-    // --- Step 2: Subdomain raw → v-scale ---
     for (const raw of rawScores) {
       if (raw.raw_score == null) continue;
-
       const { data: normData } = await supabase.rpc('calculate_vineland_subdomain_vscore', {
         p_form: assessment.form_key,
         p_age_band: assessment.age_band_key || '',
         p_subdomain: raw.subdomain_key,
         p_raw: raw.raw_score,
       });
-
       const norm = normData?.[0] as any;
       if (norm) {
         lookupFound++;
         vScaleMap[raw.subdomain_key] = norm.v_scale;
-
-        const derived: Vineland3DerivedScore = {
-          score_level: 'subdomain',
-          domain_key: raw.domain_key,
-          subdomain_key: raw.subdomain_key,
-          composite_key: '',
-          raw_score: raw.raw_score,
-          v_scale_score: norm.v_scale,
-          standard_score: null,
-          percentile: null,
-          adaptive_level: null,
-          age_equivalent: norm.age_equivalent,
-          gsv: norm.gsv,
-        };
-        derivedScores.push(derived);
-
-        await supabase.from('vineland3_derived_scores').upsert({
-          student_assessment_id: assessmentId,
-          score_level: 'subdomain',
-          domain_key: raw.domain_key,
-          subdomain_key: raw.subdomain_key,
-          composite_key: '',
-          raw_score: raw.raw_score,
-          v_scale_score: norm.v_scale,
-          standard_score: null,
-          percentile: null,
-          adaptive_level: null,
-          age_equivalent: norm.age_equivalent,
-          gsv: norm.gsv,
-          calculated_at: new Date().toISOString(),
-        }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
-      } else {
-        lookupMissing++;
-      }
+        derivedScores.push({ score_level: 'subdomain', domain_key: raw.domain_key, subdomain_key: raw.subdomain_key, composite_key: '', raw_score: raw.raw_score, v_scale_score: norm.v_scale, standard_score: null, percentile: null, adaptive_level: null, age_equivalent: norm.age_equivalent, gsv: norm.gsv });
+        await supabase.from('vineland3_derived_scores').upsert({ student_assessment_id: assessmentId, score_level: 'subdomain', domain_key: raw.domain_key, subdomain_key: raw.subdomain_key, composite_key: '', raw_score: raw.raw_score, v_scale_score: norm.v_scale, standard_score: null, percentile: null, adaptive_level: null, age_equivalent: norm.age_equivalent, gsv: norm.gsv, calculated_at: new Date().toISOString() }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
+      } else { lookupMissing++; }
     }
 
-    // --- Steps 3-4: Sum v-scales per domain → domain standard score ---
     const domainStandardScores: Record<string, number> = {};
-
     for (const [domainKey, subKeys] of Object.entries(DOMAIN_SUBDOMAINS)) {
-      const allPresent = subKeys.every(sk => vScaleMap[sk] != null);
-      if (!allPresent) continue;
-
+      if (!subKeys.every(sk => vScaleMap[sk] != null)) continue;
       const vScaleSum = subKeys.reduce((sum, sk) => sum + (vScaleMap[sk] || 0), 0);
-
-      const { data: domainData } = await supabase.rpc('calculate_vineland_domain_score', {
-        p_form: assessment.form_key,
-        p_age_band: assessment.age_band_key || '',
-        p_domain: domainKey,
-        p_vsum: vScaleSum,
-      });
-
+      const { data: domainData } = await supabase.rpc('calculate_vineland_domain_score', { p_form: assessment.form_key, p_age_band: assessment.age_band_key || '', p_domain: domainKey, p_vsum: vScaleSum });
       const domNorm = domainData?.[0] as any;
       if (domNorm) {
         lookupFound++;
         domainStandardScores[domainKey] = domNorm.standard_score;
-
-        const derived: Vineland3DerivedScore = {
-          score_level: 'domain',
-          domain_key: domainKey,
-          subdomain_key: '',
-          composite_key: '',
-          raw_score: vScaleSum,
-          v_scale_score: vScaleSum,
-          standard_score: domNorm.standard_score,
-          percentile: domNorm.percentile,
-          adaptive_level: domNorm.adaptive_level,
-          age_equivalent: null,
-          gsv: null,
-        };
-        derivedScores.push(derived);
-
-        await supabase.from('vineland3_derived_scores').upsert({
-          student_assessment_id: assessmentId,
-          score_level: 'domain',
-          domain_key: domainKey,
-          subdomain_key: '',
-          composite_key: '',
-          raw_score: vScaleSum,
-          v_scale_score: vScaleSum,
-          standard_score: domNorm.standard_score,
-          percentile: domNorm.percentile,
-          adaptive_level: domNorm.adaptive_level,
-          age_equivalent: null,
-          gsv: null,
-          calculated_at: new Date().toISOString(),
-        }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
-      } else {
-        lookupMissing++;
-      }
+        derivedScores.push({ score_level: 'domain', domain_key: domainKey, subdomain_key: '', composite_key: '', raw_score: vScaleSum, v_scale_score: vScaleSum, standard_score: domNorm.standard_score, percentile: domNorm.percentile, adaptive_level: domNorm.adaptive_level, age_equivalent: null, gsv: null });
+        await supabase.from('vineland3_derived_scores').upsert({ student_assessment_id: assessmentId, score_level: 'domain', domain_key: domainKey, subdomain_key: '', composite_key: '', raw_score: vScaleSum, v_scale_score: vScaleSum, standard_score: domNorm.standard_score, percentile: domNorm.percentile, adaptive_level: domNorm.adaptive_level, age_equivalent: null, gsv: null, calculated_at: new Date().toISOString() }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
+      } else { lookupMissing++; }
     }
 
-    // --- Steps 5-6: Composite (ABC) ---
-    const abcDomainScoresPresent = ABC_DOMAIN_KEYS.every(dk => domainStandardScores[dk] != null);
-    if (abcDomainScoresPresent) {
+    if (ABC_DOMAIN_KEYS.every(dk => domainStandardScores[dk] != null)) {
       const compositeSum = ABC_DOMAIN_KEYS.reduce((sum, dk) => sum + (domainStandardScores[dk] || 0), 0);
-
-      const { data: compData } = await supabase.rpc('calculate_vineland_composite_score', {
-        p_form: assessment.form_key,
-        p_age_band: assessment.age_band_key || '',
-        p_composite: 'adaptive_behavior_composite',
-        p_lookup: compositeSum,
-      });
-
+      const { data: compData } = await supabase.rpc('calculate_vineland_composite_score', { p_form: assessment.form_key, p_age_band: assessment.age_band_key || '', p_composite: 'adaptive_behavior_composite', p_lookup: compositeSum });
       const compNorm = compData?.[0] as any;
       if (compNorm) {
         lookupFound++;
-        const derived: Vineland3DerivedScore = {
-          score_level: 'composite',
-          domain_key: '',
-          subdomain_key: '',
-          composite_key: 'adaptive_behavior_composite',
-          raw_score: compositeSum,
-          v_scale_score: null,
-          standard_score: compNorm.standard_score,
-          percentile: compNorm.percentile,
-          adaptive_level: compNorm.adaptive_level,
-          age_equivalent: null,
-          gsv: null,
-        };
-        derivedScores.push(derived);
-
-        await supabase.from('vineland3_derived_scores').upsert({
-          student_assessment_id: assessmentId,
-          score_level: 'composite',
-          domain_key: '',
-          subdomain_key: '',
-          composite_key: 'adaptive_behavior_composite',
-          raw_score: compositeSum,
-          v_scale_score: null,
-          standard_score: compNorm.standard_score,
-          percentile: compNorm.percentile,
-          adaptive_level: compNorm.adaptive_level,
-          age_equivalent: null,
-          gsv: null,
-          calculated_at: new Date().toISOString(),
-        }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
-      } else {
-        lookupMissing++;
-      }
+        derivedScores.push({ score_level: 'composite', domain_key: '', subdomain_key: '', composite_key: 'adaptive_behavior_composite', raw_score: compositeSum, v_scale_score: null, standard_score: compNorm.standard_score, percentile: compNorm.percentile, adaptive_level: compNorm.adaptive_level, age_equivalent: null, gsv: null });
+        await supabase.from('vineland3_derived_scores').upsert({ student_assessment_id: assessmentId, score_level: 'composite', domain_key: '', subdomain_key: '', composite_key: 'adaptive_behavior_composite', raw_score: compositeSum, v_scale_score: null, standard_score: compNorm.standard_score, percentile: compNorm.percentile, adaptive_level: compNorm.adaptive_level, age_equivalent: null, gsv: null, calculated_at: new Date().toISOString() }, { onConflict: 'student_assessment_id,score_level,domain_key,subdomain_key,composite_key' });
+      } else { lookupMissing++; }
     }
 
     const status = lookupFound === 0 ? 'lookup_missing' : lookupMissing > 0 ? 'partial_lookup' : 'complete';
@@ -508,6 +498,7 @@ export function useVineland3(studentId: string, studentDob?: string) {
     saveItemScore,
     calculateRawScores,
     calculateDerivedScores,
+    scoreFullAssessment,
     updateAssessmentStatus,
     refresh: loadData,
   };

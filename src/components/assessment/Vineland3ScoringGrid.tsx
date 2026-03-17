@@ -16,6 +16,8 @@ import {
   type Vineland3ItemScore,
   type Vineland3RawScore,
   type Vineland3DerivedScore,
+  type Vineland3PairwiseComparison,
+  type Vineland3ScoringStatus,
 } from '@/hooks/useVineland3';
 import { Vineland3Report } from './Vineland3Report';
 import { Vineland3GoalMapping } from './Vineland3GoalMapping';
@@ -36,7 +38,7 @@ export function Vineland3ScoringGrid({
 }: Vineland3ScoringGridProps) {
   const {
     loadItemScores, saveItemScore, calculateRawScores,
-    calculateDerivedScores, updateAssessmentStatus,
+    calculateDerivedScores, scoreFullAssessment, updateAssessmentStatus,
   } = useVineland3(studentId, studentDob);
 
   const [activeTab, setActiveTab] = useState('items');
@@ -44,6 +46,8 @@ export function Vineland3ScoringGrid({
   const [scores, setScores] = useState<Record<string, Vineland3ItemScore>>({});
   const [rawScores, setRawScores] = useState<Vineland3RawScore[]>([]);
   const [derivedScores, setDerivedScores] = useState<Vineland3DerivedScore[]>([]);
+  const [pairwiseComparisons, setPairwiseComparisons] = useState<Vineland3PairwiseComparison[]>([]);
+  const [scoringStatus, setScoringStatus] = useState<Vineland3ScoringStatus | null>(null);
   const [derivedStatus, setDerivedStatus] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -86,6 +90,25 @@ export function Vineland3ScoringGrid({
       toast.error('Failed to save score');
     }
   }, [assessment.id, isLocked, saveItemScore]);
+
+  const handleScoreFullAssessment = async () => {
+    setCalculating(true);
+    try {
+      const result = await scoreFullAssessment(assessment.id);
+      setRawScores(result.rawScores);
+      setDerivedScores(result.derivedScores);
+      setPairwiseComparisons(result.pairwise);
+      setScoringStatus(result.scoringStatus);
+      setDerivedStatus(result.status);
+      toast.success('Full assessment scored');
+      setActiveTab('derived');
+    } catch (err) {
+      console.error('Scoring failed:', err);
+      toast.error('Scoring failed — check scoring diagnostics');
+    } finally {
+      setCalculating(false);
+    }
+  };
 
   const handleCalculate = async () => {
     setCalculating(true);
@@ -159,12 +182,12 @@ export function Vineland3ScoringGrid({
           <Badge variant="outline" className="text-xs">{progress}% scored</Badge>
           {!isLocked && (
             <>
-              <Button size="sm" variant="outline" onClick={handleCalculate} disabled={calculating}>
+              <Button size="sm" onClick={handleScoreFullAssessment} disabled={calculating}>
                 <Calculator className="w-4 h-4 mr-1" />
-                {calculating ? 'Calculating...' : 'Calculate'}
+                {calculating ? 'Scoring...' : 'Score Full Assessment'}
               </Button>
               {assessment.status !== 'completed' && (
-                <Button size="sm" onClick={() => handleStatusChange('completed')}>
+                <Button size="sm" variant="outline" onClick={() => handleStatusChange('completed')}>
                   <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
                 </Button>
               )}
@@ -425,7 +448,49 @@ export function Vineland3ScoringGrid({
             <Card>
               <CardContent className="py-8 text-center">
                 <BarChart3 className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Calculate scores first to view derived results.</p>
+                <p className="text-sm text-muted-foreground">Click "Score Full Assessment" to compute all scores.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Scoring Status Panel */}
+          {scoringStatus && (
+            <Card>
+              <CardHeader className="py-2 px-4">
+                <CardTitle className="text-sm">Scoring Status</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { label: 'Age Resolution', value: scoringStatus.age_resolution_status },
+                    { label: 'Raw Scores', value: scoringStatus.raw_score_status },
+                    { label: 'Subdomain Lookup', value: scoringStatus.subdomain_lookup_status },
+                    { label: 'Domain Scores', value: scoringStatus.domain_score_status },
+                    { label: 'Composite', value: scoringStatus.composite_score_status },
+                    { label: 'Pairwise', value: scoringStatus.comparison_status },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground">{s.label}</span>
+                      <Badge variant={s.value === 'complete' ? 'default' : s.value === 'partial' ? 'secondary' : 'outline'} className="text-[10px]">
+                        {s.value || '—'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                  <span className="text-xs font-medium">Overall</span>
+                  <Badge variant={scoringStatus.overall_scoring_status === 'complete' ? 'default' : 'secondary'}>
+                    {scoringStatus.overall_scoring_status}
+                  </Badge>
+                </div>
+                {scoringStatus.last_scored_at && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Last scored: {format(new Date(scoringStatus.last_scored_at), 'MMM d, yyyy h:mm a')}
+                  </p>
+                )}
+                {scoringStatus.status_notes && (
+                  <p className="text-[10px] text-muted-foreground mt-1">{scoringStatus.status_notes}</p>
+                )}
               </CardContent>
             </Card>
           )}
