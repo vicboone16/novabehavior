@@ -4541,6 +4541,159 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_function_aliases: {
+        Row: {
+          alias: string
+          canonical_function: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          canonical_function: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          canonical_function?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      behavior_function_bip_strategy_map: {
+        Row: {
+          behavior_function: string
+          contraindication_tags: string[] | null
+          created_at: string | null
+          data_collection_json: Json | null
+          fidelity_lookfors_json: Json | null
+          id: string
+          implementation_json: Json | null
+          is_active: boolean | null
+          learner_profile_tags: string[] | null
+          priority: number | null
+          replacement_category: string | null
+          response_class: string | null
+          setting_tags: string[] | null
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          behavior_function: string
+          contraindication_tags?: string[] | null
+          created_at?: string | null
+          data_collection_json?: Json | null
+          fidelity_lookfors_json?: Json | null
+          id?: string
+          implementation_json?: Json | null
+          is_active?: boolean | null
+          learner_profile_tags?: string[] | null
+          priority?: number | null
+          replacement_category?: string | null
+          response_class?: string | null
+          setting_tags?: string[] | null
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          behavior_function?: string
+          contraindication_tags?: string[] | null
+          created_at?: string | null
+          data_collection_json?: Json | null
+          fidelity_lookfors_json?: Json | null
+          id?: string
+          implementation_json?: Json | null
+          is_active?: boolean | null
+          learner_profile_tags?: string[] | null
+          priority?: number | null
+          replacement_category?: string | null
+          response_class?: string | null
+          setting_tags?: string[] | null
+          strategy_code?: string
+          strategy_description?: string
+          strategy_phase?: string
+          strategy_title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      behavior_function_goal_map: {
+        Row: {
+          behavior_function: string
+          behavior_topography: string | null
+          created_at: string | null
+          crosswalk_tags_json: Json | null
+          id: string
+          is_active: boolean | null
+          learner_profile_tags: string[] | null
+          presenting_behavior: string | null
+          rationale: string | null
+          recommendation_priority: number | null
+          recommended_engine_source: string
+          recommended_goal_code: string
+          recommended_goal_title: string | null
+          recommended_source_framework: string | null
+          replacement_category: string | null
+          response_class: string | null
+          setting_tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          behavior_function: string
+          behavior_topography?: string | null
+          created_at?: string | null
+          crosswalk_tags_json?: Json | null
+          id?: string
+          is_active?: boolean | null
+          learner_profile_tags?: string[] | null
+          presenting_behavior?: string | null
+          rationale?: string | null
+          recommendation_priority?: number | null
+          recommended_engine_source: string
+          recommended_goal_code: string
+          recommended_goal_title?: string | null
+          recommended_source_framework?: string | null
+          replacement_category?: string | null
+          response_class?: string | null
+          setting_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          behavior_function?: string
+          behavior_topography?: string | null
+          created_at?: string | null
+          crosswalk_tags_json?: Json | null
+          id?: string
+          is_active?: boolean | null
+          learner_profile_tags?: string[] | null
+          presenting_behavior?: string | null
+          rationale?: string | null
+          recommendation_priority?: number | null
+          recommended_engine_source?: string
+          recommended_goal_code?: string
+          recommended_goal_title?: string | null
+          recommended_source_framework?: string | null
+          replacement_category?: string | null
+          response_class?: string | null
+          setting_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       behavior_knowledge_base: {
         Row: {
           audience: string[] | null
@@ -51932,6 +52085,48 @@ export type Database = {
             }
             Returns: string
           }
+      auto_generate_bip_strategy_set: {
+        Args: {
+          p_behavior_function: string
+          p_learner_profile_tags?: string[]
+          p_setting_tags?: string[]
+        }
+        Returns: {
+          behavior_function: string
+          data_collection_json: Json
+          fidelity_lookfors_json: Json
+          implementation_json: Json
+          priority: number
+          replacement_category: string
+          response_class: string
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+        }[]
+      }
+      auto_generate_f2o_goal_recommendations: {
+        Args: {
+          p_behavior_function: string
+          p_learner_profile_tags?: string[]
+          p_limit?: number
+          p_setting_tags?: string[]
+        }
+        Returns: {
+          behavior_function: string
+          crosswalk_tags_json: Json
+          domain: string
+          engine_source: string
+          primary_goal_text: string
+          rationale: string
+          recommendation_priority: number
+          replacement_category: string
+          response_class: string
+          source_code: string
+          source_framework: string
+          title: string
+        }[]
+      }
       auto_log_behavior_outcome_for_run: {
         Args: {
           p_baseline_days?: number
@@ -53102,6 +53297,10 @@ export type Database = {
       next_phase_for_criteria: {
         Args: { p_type: Database["public"]["Enums"]["criteria_type"] }
         Returns: Database["public"]["Enums"]["target_phase"]
+      }
+      normalize_behavior_function: {
+        Args: { p_function: string }
+        Returns: string
       }
       process_aba_import_staging: {
         Args: { p_staging_id: string }
