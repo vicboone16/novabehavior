@@ -171,6 +171,8 @@ Deno.serve(async (req) => {
       student_connect: "student_connect",
       teacherhub: "teacher_hub",
       teacher_hub: "teacher_hub",
+      novateachers: "teacher_hub",
+      nova_teachers: "teacher_hub",
       novatrack: "novatrack",
     };
     const inputSlug = (app_slug || "behavior_decoded").toLowerCase().replace(/[\s-]/g, "");
