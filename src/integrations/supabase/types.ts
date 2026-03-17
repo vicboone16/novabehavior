@@ -2949,6 +2949,39 @@ export type Database = {
         }
         Relationships: []
       }
+      app_command_registry: {
+        Row: {
+          allowed_commands: string[]
+          app_slug: string
+          created_at: string
+          id: string
+          is_active: boolean
+          repo_name: string
+          repo_owner: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_commands?: string[]
+          app_slug: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          repo_name: string
+          repo_owner: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_commands?: string[]
+          app_slug?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          repo_name?: string
+          repo_owner?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_handshake: {
         Row: {
           app_slug: string
@@ -11583,13 +11616,19 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          error_message: string | null
           github_branch: string | null
+          github_issue_number: number | null
+          github_issue_url: string | null
           github_repo: string | null
           id: string
           output_summary: string | null
           priority: string | null
+          repo_name: string | null
+          repo_owner: string | null
           started_at: string | null
           status: string
+          task_file_path: string | null
         }
         Insert: {
           app_slug: string
@@ -11598,13 +11637,19 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          error_message?: string | null
           github_branch?: string | null
+          github_issue_number?: number | null
+          github_issue_url?: string | null
           github_repo?: string | null
           id?: string
           output_summary?: string | null
           priority?: string | null
+          repo_name?: string | null
+          repo_owner?: string | null
           started_at?: string | null
           status?: string
+          task_file_path?: string | null
         }
         Update: {
           app_slug?: string
@@ -11613,13 +11658,19 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          error_message?: string | null
           github_branch?: string | null
+          github_issue_number?: number | null
+          github_issue_url?: string | null
           github_repo?: string | null
           id?: string
           output_summary?: string | null
           priority?: string | null
+          repo_name?: string | null
+          repo_owner?: string | null
           started_at?: string | null
           status?: string
+          task_file_path?: string | null
         }
         Relationships: []
       }
