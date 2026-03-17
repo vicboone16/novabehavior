@@ -470,6 +470,11 @@ export function Vineland3Report({
         )}
       </Card>
 
+      {/* DOMAIN PROFILE CHART */}
+      {chartToggles.domainProfile && domainChartData.length > 0 && (
+        <VinelandDomainProfileChart scores={domainChartData} chartRef={domainChartRef} />
+      )}
+
       {/* SUBDOMAIN SCORE SUMMARY — Comprehensive only */}
       {isComprehensive && (
         <Card>
