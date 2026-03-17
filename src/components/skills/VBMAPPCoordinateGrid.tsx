@@ -152,8 +152,8 @@ export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateG
     return { domains: sorted, coordMap: map };
   }, [items]);
 
-  const cellW = 46;
-  const cellH = 24;
+  const cellW = 64;
+  const cellH = 32;
   const headerH = 28;
   const rowNumW = 22;
   const levelLabelW = 40;
