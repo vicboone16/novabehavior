@@ -289,7 +289,29 @@ export function NovaAIReviewPanel({
     if (!modifiedAction || !modifiedAction.data.behaviors.length) return;
     setIsSaving(true);
     try {
-      await onSaveApproved(modifiedAction, 'session_data');
+      const success = await onSaveApproved(modifiedAction, 'session_data');
+
+      // Build save receipt
+      const newTargetCount = modifiedAction.data.behaviors.filter(
+        (b: ParsedItem) => b.target_match?.match_status === 'user_confirmed_new_target'
+      ).length;
+      const remappedCount = [...reviewStates.values()].filter(s => s.remappedTargetId).length;
+      const editedCount = [...reviewStates.values()].filter(
+        s => s.decision === 'approved' && Object.keys(s.editedValues).length > 0
+      ).length;
+
+      const parts: string[] = [];
+      parts.push(`${approvedCount} item${approvedCount !== 1 ? 's' : ''} saved`);
+      if (rejectedCount > 0) parts.push(`${rejectedCount} rejected`);
+      if (newTargetCount > 0) parts.push(`${newTargetCount} new target${newTargetCount !== 1 ? 's' : ''} created`);
+      if (remappedCount > 0) parts.push(`${remappedCount} remapped`);
+      if (editedCount > 0) parts.push(`${editedCount} edited`);
+      parts.push('graphs queued for refresh');
+
+      if (success) {
+        toast.success(`Review complete — ${parts.join(' · ')}`, { duration: 5000 });
+      }
+
       onOpenChange(false);
     } finally {
       setIsSaving(false);
