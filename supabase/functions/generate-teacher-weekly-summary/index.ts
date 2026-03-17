@@ -12,11 +12,89 @@ serve(async (req) => {
   }
 
   try {
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: authData, error: claimsErr } = await authSupabase.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !authData?.claims) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = authData.claims.sub as string;
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const { client_id, agency_id, week_start } = await req.json();
+
+    // Verify user belongs to the requested agency
+    if (agency_id) {
+      const { data: membership } = await supabase
+        .from("agency_memberships")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("agency_id", agency_id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: "Access denied" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // If client_id provided, verify user has access to that student
+    if (client_id && !agency_id) {
+      const { data: access } = await supabase
+        .from("user_student_access")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("student_id", client_id)
+        .maybeSingle();
+      if (!access) {
+        // Also check agency membership via student's agency
+        const { data: student } = await supabase
+          .from("students")
+          .select("agency_id")
+          .eq("id", client_id)
+          .maybeSingle();
+        if (student?.agency_id) {
+          const { data: membership } = await supabase
+            .from("agency_memberships")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("agency_id", student.agency_id)
+            .eq("status", "active")
+            .maybeSingle();
+          if (!membership) {
+            return new Response(JSON.stringify({ error: "Access denied" }), {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } else {
+          return new Response(JSON.stringify({ error: "Access denied" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
 
     // Default to current week if not provided
     const now = new Date();
@@ -56,7 +134,6 @@ serve(async (req) => {
     const results = [];
 
     for (const cid of clientIds) {
-      // 1. Frequency entries
       const { data: freqEntries } = await supabase
         .from("teacher_frequency_entries")
         .select("*")
@@ -64,7 +141,6 @@ serve(async (req) => {
         .gte("session_date", wsDate)
         .lte("session_date", weDate);
 
-      // 2. Teacher ABC events
       const { data: abcEvents } = await supabase
         .from("teacher_abc_events")
         .select("*")
@@ -72,7 +148,6 @@ serve(async (req) => {
         .gte("occurred_at", wsISO)
         .lte("occurred_at", weISO);
 
-      // 3. Teacher data events (generic)
       const { data: dataEvents } = await supabase
         .from("teacher_data_events")
         .select("*")
@@ -80,7 +155,6 @@ serve(async (req) => {
         .gte("occurred_at", wsISO)
         .lte("occurred_at", weISO);
 
-      // 4. Duration entries
       const { data: durEntries } = await supabase
         .from("teacher_duration_entries")
         .select("*")
@@ -88,7 +162,6 @@ serve(async (req) => {
         .gte("session_date", wsDate)
         .lte("session_date", weDate);
 
-      // 5. Data sessions + points for skill probes
       const { data: sessions } = await supabase
         .from("teacher_data_sessions")
         .select("*, teacher_data_points(*)")
@@ -96,7 +169,6 @@ serve(async (req) => {
         .gte("started_at", wsISO)
         .lte("started_at", weISO);
 
-      // 6. Interval sessions
       const { data: intervalSessions } = await supabase
         .from("teacher_interval_sessions")
         .select("*")
@@ -104,7 +176,6 @@ serve(async (req) => {
         .gte("started_at", wsISO)
         .lte("started_at", weISO);
 
-      // --- Aggregate behavior totals ---
       const behaviorMap: Record<string, number> = {};
       (freqEntries ?? []).forEach((e: any) => {
         behaviorMap[e.behavior_name] = (behaviorMap[e.behavior_name] || 0) + (e.count || 0);
@@ -112,12 +183,8 @@ serve(async (req) => {
       (abcEvents ?? []).forEach((e: any) => {
         behaviorMap[e.behavior] = (behaviorMap[e.behavior] || 0) + 1;
       });
-      const behavior_totals = Object.entries(behaviorMap).map(([behavior, count]) => ({
-        behavior,
-        count,
-      }));
+      const behavior_totals = Object.entries(behaviorMap).map(([behavior, count]) => ({ behavior, count }));
 
-      // --- Aggregate antecedents ---
       const antecedentMap: Record<string, number> = {};
       (abcEvents ?? []).forEach((e: any) => {
         if (e.antecedent) {
@@ -129,7 +196,6 @@ serve(async (req) => {
         .slice(0, 10)
         .map(([antecedent, count]) => ({ antecedent, count }));
 
-      // --- Engagement from intervals ---
       let engagement_pct: number | null = null;
       const allIntervals = intervalSessions ?? [];
       if (allIntervals.length > 0) {
@@ -138,7 +204,6 @@ serve(async (req) => {
         engagement_pct = totalExpected > 0 ? (totalCompleted / totalExpected) * 100 : null;
       }
 
-      // --- Skill probe summary ---
       const targetMap: Record<string, { correct: number; total: number }> = {};
       (sessions ?? []).forEach((s: any) => {
         const points = s.teacher_data_points ?? [];
@@ -150,12 +215,9 @@ serve(async (req) => {
         });
       });
       const skill_probe_summary = Object.entries(targetMap).map(([target, v]) => ({
-        target,
-        correct: v.correct,
-        total: v.total,
+        target, correct: v.correct, total: v.total,
       }));
 
-      // --- Prompt completion from data events ---
       let prompt_completion_pct: number | null = null;
       const promptEvents = (dataEvents ?? []).filter((e: any) => e.event_type === "prompt");
       if (promptEvents.length > 0) {
@@ -163,13 +225,11 @@ serve(async (req) => {
         prompt_completion_pct = (completed / promptEvents.length) * 100;
       }
 
-      // Determine agency_id
       const resolvedAgencyId = agency_id ||
         (freqEntries?.[0] as any)?.agency_id ||
         (abcEvents?.[0] as any)?.agency_id ||
         "00000000-0000-0000-0000-000000000000";
 
-      // Upsert weekly summary
       const { data: upserted, error } = await supabase
         .from("teacher_weekly_summaries")
         .upsert(
@@ -192,7 +252,7 @@ serve(async (req) => {
               interval_session_count: allIntervals.length,
             },
             status: "draft",
-            created_by: "00000000-0000-0000-0000-000000000000", // system-generated
+            created_by: "00000000-0000-0000-0000-000000000000",
             updated_at: new Date().toISOString(),
           },
           { onConflict: "client_id,week_start" }
