@@ -109,7 +109,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
                     <Badge variant="outline" className="text-[10px]">{a.count}</Badge>
                   </div>
                 ))}
-                {intel.top_trigger_context && intel.top_trigger_context !== 'other' && (
+                {intel?.top_trigger_context && intel.top_trigger_context !== 'other' && (
                   <div className="pt-1 border-t border-border/30 mt-1">
                     <p className="text-[10px] text-muted-foreground">
                       Top trigger: <span className="font-medium text-foreground">{formatTrigger(intel.top_trigger_context)}</span>
