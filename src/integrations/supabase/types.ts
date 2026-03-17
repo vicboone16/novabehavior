@@ -31111,44 +31111,95 @@ export type Database = {
       student_assessments: {
         Row: {
           administered_by: string | null
+          administration_date: string | null
+          age_band_key: string | null
+          assessment_template_id: string | null
+          assessor_name: string | null
+          chronological_age_display: string | null
+          chronological_age_months: number | null
           created_at: string
+          created_by: string | null
           curriculum_system_id: string
           date_administered: string
+          date_completed: string | null
+          date_started: string | null
           domain_scores: Json | null
+          form_key: string | null
           id: string
+          locked_at: string | null
           notes: string | null
           raw_attachment_path: string | null
+          rescored_at: string | null
+          respondent_name: string | null
+          respondent_relationship: string | null
           results_json: Json | null
+          scored_at: string | null
+          scored_by: string | null
           status: string
           student_id: string
+          template_version_snapshot: string | null
           updated_at: string
         }
         Insert: {
           administered_by?: string | null
+          administration_date?: string | null
+          age_band_key?: string | null
+          assessment_template_id?: string | null
+          assessor_name?: string | null
+          chronological_age_display?: string | null
+          chronological_age_months?: number | null
           created_at?: string
+          created_by?: string | null
           curriculum_system_id: string
           date_administered?: string
+          date_completed?: string | null
+          date_started?: string | null
           domain_scores?: Json | null
+          form_key?: string | null
           id?: string
+          locked_at?: string | null
           notes?: string | null
           raw_attachment_path?: string | null
+          rescored_at?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
           results_json?: Json | null
+          scored_at?: string | null
+          scored_by?: string | null
           status?: string
           student_id: string
+          template_version_snapshot?: string | null
           updated_at?: string
         }
         Update: {
           administered_by?: string | null
+          administration_date?: string | null
+          age_band_key?: string | null
+          assessment_template_id?: string | null
+          assessor_name?: string | null
+          chronological_age_display?: string | null
+          chronological_age_months?: number | null
           created_at?: string
+          created_by?: string | null
           curriculum_system_id?: string
           date_administered?: string
+          date_completed?: string | null
+          date_started?: string | null
           domain_scores?: Json | null
+          form_key?: string | null
           id?: string
+          locked_at?: string | null
           notes?: string | null
           raw_attachment_path?: string | null
+          rescored_at?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
           results_json?: Json | null
+          scored_at?: string | null
+          scored_by?: string | null
           status?: string
           student_id?: string
+          template_version_snapshot?: string | null
           updated_at?: string
         }
         Relationships: [

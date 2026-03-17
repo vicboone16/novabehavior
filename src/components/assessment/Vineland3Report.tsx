@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   FileText, Loader2, Lock, CheckCircle2,
   ChevronDown, ChevronUp, Printer, Edit3, Copy,
-  BookOpen, ClipboardList, AlertTriangle, TrendingUp
+  BookOpen, ClipboardList, AlertTriangle, TrendingUp, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { VinelandDomainProfileChart } from './charts/VinelandDomainProfileChart';
+import { VinelandSubdomainProfileChart } from './charts/VinelandSubdomainProfileChart';
+import { VinelandLongitudinalChart } from './charts/VinelandLongitudinalChart';
+import { Checkbox } from '@/components/ui/checkbox';
 import type {
   Vineland3Assessment,
   Vineland3Domain,
@@ -68,6 +72,14 @@ export function Vineland3Report({
   const [reportType, setReportType] = useState<'domain_level' | 'comprehensive'>('comprehensive');
   const [autoWriterOutputs, setAutoWriterOutputs] = useState<AutoWriterOutput[]>([]);
   const [generatingContext, setGeneratingContext] = useState<string | null>(null);
+  const [chartToggles, setChartToggles] = useState({
+    domainProfile: true,
+    subdomainProfile: true,
+    longitudinal: true,
+  });
+  const domainChartRef = useRef<HTMLDivElement>(null);
+  const subdomainChartRef = useRef<HTMLDivElement>(null);
+  const longitudinalChartRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     examinee: true, summary: true, scores: true, subdomains: true,
     pairwise: true, narratives: true, recommendations: true,
@@ -76,6 +88,49 @@ export function Vineland3Report({
   const compositeScore = useMemo(() => derivedScores.find(d => d.score_level === 'composite'), [derivedScores]);
   const domainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'domain'), [derivedScores]);
   const subdomainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'subdomain'), [derivedScores]);
+
+  // Chart data
+  const domainChartData = useMemo(() => {
+    const items: Array<{ label: string; score: number | null; isComposite?: boolean }> = [];
+    if (compositeScore?.standard_score != null) {
+      items.push({ label: 'ABC', score: compositeScore.standard_score, isComposite: true });
+    }
+    DOMAIN_ORDER.forEach(dk => {
+      const ds = domainScores.find(d => d.domain_key === dk);
+      if (ds?.standard_score != null) {
+        items.push({ label: DOMAIN_LABELS[dk], score: ds.standard_score });
+      }
+    });
+    return items;
+  }, [compositeScore, domainScores]);
+
+  const subdomainChartData = useMemo(() => {
+    return DOMAIN_ORDER.flatMap(dk => {
+      return subdomainScores
+        .filter(s => s.domain_key === dk && s.v_scale_score != null)
+        .map(ss => {
+          const dom = domains.find(d => d.domain_key === ss.domain_key);
+          const sub = dom?.subdomains.find(s => s.subdomain_key === ss.subdomain_key);
+          return {
+            subdomain_name: sub?.subdomain_name || ss.subdomain_key,
+            domain_name: dom?.domain_name || ss.domain_key,
+            v_scale_score: ss.v_scale_score,
+          };
+        });
+    });
+  }, [subdomainScores, domains]);
+
+  // Placeholder for longitudinal data - will query prior assessments
+  const longitudinalData = useMemo(() => {
+    // Current assessment data point
+    const current: any = { administration_date: assessment.administration_date };
+    if (compositeScore?.standard_score != null) current.abc_score = compositeScore.standard_score;
+    domainScores.forEach(ds => {
+      if (ds.standard_score != null) current[ds.domain_key] = ds.standard_score;
+    });
+    // For now, single point (trend chart will show "no prior" message)
+    return [current];
+  }, [assessment, compositeScore, domainScores]);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -312,7 +367,29 @@ export function Vineland3Report({
         </div>
       </div>
 
-      {/* EXAMINEE INFORMATION */}
+      {/* Chart Toggles */}
+      <Card className="print:hidden">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1"><BarChart3 className="w-3 h-3" /> Charts:</span>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={chartToggles.domainProfile} onCheckedChange={(v) => setChartToggles(p => ({ ...p, domainProfile: !!v }))} />
+              Domain Profile
+            </label>
+            {isComprehensive && (
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                <Checkbox checked={chartToggles.subdomainProfile} onCheckedChange={(v) => setChartToggles(p => ({ ...p, subdomainProfile: !!v }))} />
+                Subdomain Profile
+              </label>
+            )}
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={chartToggles.longitudinal} onCheckedChange={(v) => setChartToggles(p => ({ ...p, longitudinal: !!v }))} />
+              Longitudinal Trend
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="py-2 px-4"><SectionHeader id="examinee" title="EXAMINEE INFORMATION" /></CardHeader>
         {expandedSections.examinee && (
@@ -393,6 +470,11 @@ export function Vineland3Report({
         )}
       </Card>
 
+      {/* DOMAIN PROFILE CHART */}
+      {chartToggles.domainProfile && domainChartData.length > 0 && (
+        <VinelandDomainProfileChart scores={domainChartData} chartRef={domainChartRef} />
+      )}
+
       {/* SUBDOMAIN SCORE SUMMARY — Comprehensive only */}
       {isComprehensive && (
         <Card>
@@ -445,6 +527,11 @@ export function Vineland3Report({
         </Card>
       )}
 
+      {/* SUBDOMAIN V-SCALE PROFILE CHART — Comprehensive only */}
+      {isComprehensive && chartToggles.subdomainProfile && subdomainChartData.length > 0 && (
+        <VinelandSubdomainProfileChart scores={subdomainChartData} chartRef={subdomainChartRef} />
+      )}
+
       {/* PAIRWISE DIFFERENCE COMPARISONS — Comprehensive only */}
       {isComprehensive && (
         <Card>
@@ -480,6 +567,11 @@ export function Vineland3Report({
             </CardContent>
           )}
         </Card>
+      )}
+
+      {/* LONGITUDINAL TREND CHART */}
+      {chartToggles.longitudinal && (
+        <VinelandLongitudinalChart data={longitudinalData} chartRef={longitudinalChartRef} />
       )}
 
       {/* DOMAIN INTERPRETATION */}
