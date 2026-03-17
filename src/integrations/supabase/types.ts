@@ -47123,14 +47123,28 @@ export type Database = {
         Args: { p_student_id: string }
         Returns: number
       }
-      calculate_vineland_composite_score: {
-        Args: { p_age_band: string; p_form: string; p_lookup: number }
-        Returns: {
-          adaptive_level: string
-          percentile: number
-          standard_score: number
-        }[]
-      }
+      calculate_vineland_composite_score:
+        | {
+            Args: {
+              p_age_band: string
+              p_composite: string
+              p_form: string
+              p_lookup: number
+            }
+            Returns: {
+              adaptive_level: string
+              percentile: number
+              standard_score: number
+            }[]
+          }
+        | {
+            Args: { p_age_band: string; p_form: string; p_lookup: number }
+            Returns: {
+              adaptive_level: string
+              percentile: number
+              standard_score: number
+            }[]
+          }
       calculate_vineland_domain_score: {
         Args: {
           p_age_band: string
