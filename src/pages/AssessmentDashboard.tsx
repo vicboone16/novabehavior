@@ -32,6 +32,7 @@ import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEnt
 import { AFLSCurriculumBrowser } from '@/components/clinical-library/AFLSCurriculumBrowser';
 import { SRS2GoalBrowser } from '@/components/clinical-library/SRS2GoalBrowser';
 import { PECSGoalBrowser } from '@/components/clinical-library/PECSGoalBrowser';
+import { EFLGoalBrowser } from '@/components/clinical-library/EFLGoalBrowser';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
