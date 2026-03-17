@@ -600,32 +600,18 @@ export function NovaAIReviewPanel({
                             Target Assignment
                           </p>
                           <div className="space-y-2">
-                            <Select
-                              value={state.remappedTargetId || item.target_match?.target_id || ''}
-                              onValueChange={val => {
-                                const target = availableTargets.find(t => t.id === val);
+                            <SearchableTargetDropdown
+                              targets={availableTargets}
+                              selectedId={state.remappedTargetId || item.target_match?.target_id || ''}
+                              onSelect={(id, name) => {
                                 updateState(item.item_id, {
-                                  remappedTargetId: val,
-                                  remappedTargetName: target?.title,
+                                  remappedTargetId: id,
+                                  remappedTargetName: name,
                                   createNewTarget: false,
                                   newTargetName: undefined,
                                 });
                               }}
-                            >
-                              <SelectTrigger className="h-7 text-xs">
-                                <SelectValue placeholder="Select a target..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableTargets.map(t => (
-                                  <SelectItem key={t.id} value={t.id} className="text-xs">
-                                    {t.title}
-                                    {t.data_collection_type && (
-                                      <span className="ml-1 text-muted-foreground">({t.data_collection_type})</span>
-                                    )}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            />
 
                             {/* Alternate matches from AI */}
                             {item.target_match?.alternate_matches?.length ? (
