@@ -109,7 +109,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
                     <Badge variant="outline" className="text-[10px]">{a.count}</Badge>
                   </div>
                 ))}
-                {intel.top_trigger_context && intel.top_trigger_context !== 'other' && (
+                {intel?.top_trigger_context && intel.top_trigger_context !== 'other' && (
                   <div className="pt-1 border-t border-border/30 mt-1">
                     <p className="text-[10px] text-muted-foreground">
                       Top trigger: <span className="font-medium text-foreground">{formatTrigger(intel.top_trigger_context)}</span>
@@ -137,7 +137,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
                     <Badge variant="outline" className="text-[10px]">{c.count}</Badge>
                   </div>
                 ))}
-                {intel.primary_function_hypothesis && intel.primary_function_hypothesis !== 'undetermined' && (
+                {intel?.primary_function_hypothesis && intel.primary_function_hypothesis !== 'undetermined' && (
                   <div className="pt-1 border-t border-border/30 mt-1">
                     <p className="text-[10px] text-muted-foreground">
                       Primary function: <span className="font-medium text-foreground">{formatFunction(intel.primary_function_hypothesis)}</span>
@@ -162,11 +162,11 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <ContextStat label="Peak Time" value={intel.peak_risk_time_block ? formatTimeBlock(intel.peak_risk_time_block).split(' ')[0] : '—'} count={intel.peak_risk_time_block_count} />
-              <ContextStat label="Transitions" value={intel.transition_events} flag={intel.transition_risk_flag} />
-              <ContextStat label="Unstructured" value={intel.unstructured_events} flag={intel.unstructured_risk_flag} />
-              <ContextStat label="Lunch/Recess" value={intel.lunch_recess_events} flag={intel.lunch_recess_risk_flag} />
-              <ContextStat label="Demands" value={intel.demand_events} />
+              <ContextStat label="Peak Time" value={intel?.peak_risk_time_block ? formatTimeBlock(intel.peak_risk_time_block).split(' ')[0] : '—'} count={intel?.peak_risk_time_block_count} />
+              <ContextStat label="Transitions" value={intel?.transition_events ?? 0} flag={intel?.transition_risk_flag} />
+              <ContextStat label="Unstructured" value={intel?.unstructured_events ?? 0} flag={intel?.unstructured_risk_flag} />
+              <ContextStat label="Lunch/Recess" value={intel?.lunch_recess_events ?? 0} flag={intel?.lunch_recess_risk_flag} />
+              <ContextStat label="Demands" value={intel?.demand_events ?? 0} />
             </div>
           </CardContent>
         </Card>
