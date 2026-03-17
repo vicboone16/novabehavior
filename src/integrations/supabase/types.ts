@@ -2954,8 +2954,10 @@ export type Database = {
           allowed_commands: string[]
           app_slug: string
           created_at: string
+          default_branch: string
           id: string
           is_active: boolean
+          project_label: string | null
           repo_name: string
           repo_owner: string
           updated_at: string
@@ -2964,8 +2966,10 @@ export type Database = {
           allowed_commands?: string[]
           app_slug: string
           created_at?: string
+          default_branch?: string
           id?: string
           is_active?: boolean
+          project_label?: string | null
           repo_name: string
           repo_owner: string
           updated_at?: string
@@ -2974,8 +2978,10 @@ export type Database = {
           allowed_commands?: string[]
           app_slug?: string
           created_at?: string
+          default_branch?: string
           id?: string
           is_active?: boolean
+          project_label?: string | null
           repo_name?: string
           repo_owner?: string
           updated_at?: string
