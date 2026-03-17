@@ -3,18 +3,27 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useLibraryGoalObjectives, type LibraryGoal } from '@/hooks/useLibraryRegistry';
+import { useCreateGoalDraft } from '@/hooks/useClientLibrary';
 
 interface Props {
   goal: LibraryGoal;
   libraryName: string;
   onBack: () => void;
+  clientId?: string;
 }
 
-export function LibraryGoalDetail({ goal, libraryName, onBack }: Props) {
+export function LibraryGoalDetail({ goal, libraryName, onBack, clientId }: Props) {
   const { data: objectives = [] } = useLibraryGoalObjectives(goal.id);
   const [copied, setCopied] = useState(false);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+  const [draftNotes, setDraftNotes] = useState('');
+  const [draftClientId, setDraftClientId] = useState(clientId ?? '');
+  const createDraft = useCreateGoalDraft();
 
   const copyGoalText = () => {
     const text = [
@@ -27,6 +36,26 @@ export function LibraryGoalDetail({ goal, libraryName, onBack }: Props) {
     setCopied(true);
     toast.success('Goal copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCreateDraft = () => {
+    if (!draftClientId) {
+      toast.error('Client ID is required to create a draft goal');
+      return;
+    }
+    createDraft.mutate({
+      clientId: draftClientId,
+      sourceLibraryKey: goal.library_key,
+      sourceGoalId: goal.id,
+      domainKey: goal.domain_key,
+      subdomainKey: goal.subdomain_key ?? undefined,
+      draftGoalTitle: goal.goal_title,
+      draftGoalText: goal.goal_description ?? undefined,
+      draftObjectives: objectives.map(o => ({ key: o.objective_key, text: o.objective_text })),
+      draftNotes: draftNotes || undefined,
+    });
+    setShowDraftDialog(false);
+    setDraftNotes('');
   };
 
   return (
@@ -48,9 +77,9 @@ export function LibraryGoalDetail({ goal, libraryName, onBack }: Props) {
       <Card>
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap gap-1.5">
-            <Badge variant="outline" className="text-[10px]">{goal.domain_key}</Badge>
-            {goal.subdomain_key && <Badge variant="secondary" className="text-[10px]">{goal.subdomain_key}</Badge>}
-            {goal.goal_type && <Badge variant="secondary" className="text-[10px]">{goal.goal_type}</Badge>}
+            <Badge variant="outline" className="text-[10px]">{goal.domain_key?.replace(/_/g, ' ')}</Badge>
+            {goal.subdomain_key && <Badge variant="secondary" className="text-[10px]">{goal.subdomain_key.replace(/_/g, ' ')}</Badge>}
+            {goal.goal_type && <Badge variant="secondary" className="text-[10px]">{goal.goal_type.replace(/_/g, ' ')}</Badge>}
             {goal.age_band_key && <Badge variant="outline" className="text-[10px]">{goal.age_band_key}</Badge>}
             {goal.benchmark_level && <Badge variant="outline" className="text-[10px]">{goal.benchmark_level}</Badge>}
           </div>
@@ -99,13 +128,63 @@ export function LibraryGoalDetail({ goal, libraryName, onBack }: Props) {
       )}
 
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs"
+          onClick={() => setShowDraftDialog(true)}
+        >
           <Plus className="w-3.5 h-3.5" /> Add to Draft Goals
         </Button>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={copyGoalText}>
           <FileText className="w-3.5 h-3.5" /> Copy to IEP
         </Button>
       </div>
+
+      {/* Draft Goal Dialog */}
+      <Dialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Create Draft Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium mb-1">Goal</p>
+              <p className="text-sm text-muted-foreground">{goal.goal_title}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium mb-1">Source</p>
+              <Badge variant="outline" className="text-[10px]">{libraryName}</Badge>
+            </div>
+            {!clientId && (
+              <div>
+                <p className="text-xs font-medium mb-1">Client ID</p>
+                <Input
+                  placeholder="Enter client UUID..."
+                  value={draftClientId}
+                  onChange={e => setDraftClientId(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-medium mb-1">Notes (optional)</p>
+              <Textarea
+                placeholder="Add clinical notes for this draft..."
+                value={draftNotes}
+                onChange={e => setDraftNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowDraftDialog(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleCreateDraft} disabled={createDraft.isPending}>
+              {createDraft.isPending ? 'Creating...' : 'Create Draft'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
