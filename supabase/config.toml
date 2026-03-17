@@ -101,3 +101,9 @@ verify_jwt = false
 
 [functions.sr-escalation-check]
 verify_jwt = false
+
+[functions.create-command-task]
+verify_jwt = false
+
+[functions.push-task-file]
+verify_jwt = false
