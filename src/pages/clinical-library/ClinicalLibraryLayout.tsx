@@ -101,7 +101,7 @@ export default function ClinicalLibraryLayout() {
 
         {/* Root landing shows two cards */}
         {isRoot ? (
-          <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto mt-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto mt-4">
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
               onClick={() => navigate('/clinical-library/curriculum-systems')}
