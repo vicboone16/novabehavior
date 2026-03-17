@@ -448,7 +448,49 @@ export function Vineland3ScoringGrid({
             <Card>
               <CardContent className="py-8 text-center">
                 <BarChart3 className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Calculate scores first to view derived results.</p>
+                <p className="text-sm text-muted-foreground">Click "Score Full Assessment" to compute all scores.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Scoring Status Panel */}
+          {scoringStatus && (
+            <Card>
+              <CardHeader className="py-2 px-4">
+                <CardTitle className="text-sm">Scoring Status</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { label: 'Age Resolution', value: scoringStatus.age_resolution_status },
+                    { label: 'Raw Scores', value: scoringStatus.raw_score_status },
+                    { label: 'Subdomain Lookup', value: scoringStatus.subdomain_lookup_status },
+                    { label: 'Domain Scores', value: scoringStatus.domain_score_status },
+                    { label: 'Composite', value: scoringStatus.composite_score_status },
+                    { label: 'Pairwise', value: scoringStatus.comparison_status },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground">{s.label}</span>
+                      <Badge variant={s.value === 'complete' ? 'default' : s.value === 'partial' ? 'secondary' : 'outline'} className="text-[10px]">
+                        {s.value || '—'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                  <span className="text-xs font-medium">Overall</span>
+                  <Badge variant={scoringStatus.overall_scoring_status === 'complete' ? 'default' : 'secondary'}>
+                    {scoringStatus.overall_scoring_status}
+                  </Badge>
+                </div>
+                {scoringStatus.last_scored_at && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Last scored: {format(new Date(scoringStatus.last_scored_at), 'MMM d, yyyy h:mm a')}
+                  </p>
+                )}
+                {scoringStatus.status_notes && (
+                  <p className="text-[10px] text-muted-foreground mt-1">{scoringStatus.status_notes}</p>
+                )}
               </CardContent>
             </Card>
           )}
