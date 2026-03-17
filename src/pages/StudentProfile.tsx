@@ -496,7 +496,7 @@ export default function StudentProfile() {
         </div>
         
         {/* Archive/Delete Actions */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-sm:w-full max-sm:justify-end">
           {student.isArchived ? (
             <>
               <Button
