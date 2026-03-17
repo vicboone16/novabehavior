@@ -176,6 +176,10 @@ export function useDashboardLayout() {
     persistToDb(defaults, defaultLayouts);
   }, [role, persistToDb]);
 
+  const markInteraction = useCallback(() => {
+    userHasInteracted.current = true;
+  }, []);
+
   return {
     activeWidgets,
     layouts,
@@ -184,5 +188,6 @@ export function useDashboardLayout() {
     addWidget,
     removeWidget,
     resetToDefaults,
+    markInteraction,
   };
 }
