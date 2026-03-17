@@ -723,63 +723,116 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
 
     const selectedA = assessments.find(a => a.assessment_id === selectedAssessmentId);
     const dateStr = selectedA ? format(new Date(selectedA.assessment_date), 'MMMM d, yyyy') : '';
+    const safeName = studentName?.replace(/\s+/g, '-') || 'student';
 
-    // Build an off-screen container with the grid HTML
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1100px;background:#fff;padding:24px;font-family:Arial,sans-serif;font-size:13px;color:#222';
-
-    const domainRows = domainGroups.map(({ domain, items }) => {
-      const cells = items.map(item => {
-        const r = results[item.item_id];
-        const fill = r?.fill_state ?? 'EMPTY';
-        const circle = r?.tested_circle ?? false;
-        const fillLabel = fill === 'FULL' ? '●' : fill === 'HALF' ? '◑' : circle ? '○' : '—';
-        const status = fill === 'FULL' ? 'Mastered' : fill === 'HALF' ? 'Emerging' : circle ? 'Not Met' : '';
-        return `<tr>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee;font-weight:500">${item.code}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee">${item.label_short}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee;text-align:center;font-size:18px">${fillLabel}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#666;font-size:12px">${status}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#555;font-size:11px">${item.label_full || ''}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #eee;color:#666;font-size:11px">${r?.notes_item || ''}</td>
-        </tr>`;
-      }).join('');
-      return `<tr style="background:#f0f4f8"><td colspan="6" style="padding:6px 8px;font-weight:700;font-size:13px">${domain}</td></tr>${cells}`;
-    }).join('');
-
-    container.innerHTML = `
-      <h1 style="font-size:18px;margin-bottom:4px">VB-MAPP Milestones Grid</h1>
-      <p style="color:#555;margin:0 0 12px">Student: <strong>${studentName}</strong> &nbsp;|&nbsp; Assessment date: <strong>${dateStr}</strong></p>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Code</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Milestone</th><th style="background:#e8edf2;padding:6px 8px;text-align:center;font-size:12px">Score</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Status</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Criteria / Prompt</th><th style="background:#e8edf2;padding:6px 8px;text-align:left;font-size:12px">Notes</th></tr></thead>
-        <tbody>${domainRows}</tbody>
-      </table>`;
-
-    document.body.appendChild(container);
+    toast.info('Generating PDF…');
 
     try {
-      toast.info('Generating PDF…');
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      document.body.removeChild(container);
+      const pdf = new jsPDF('l', 'mm', 'a4'); // landscape for the grid
+      const pageW = 297;
+      const pageH = 210;
 
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let position = 0;
+      // ── Page 1: The colored milestones grid ──
+      if (gridRef.current) {
+        // Temporarily remove overflow clipping for full capture
+        const scrollParent = gridRef.current;
+        const prevOverflow = scrollParent.style.overflow;
+        scrollParent.style.overflow = 'visible';
 
-      // Multi-page support
-      while (position < imgHeight) {
-        if (position > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -position, imgWidth, imgHeight);
-        position += pageHeight;
+        const canvas = await html2canvas(scrollParent, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: scrollParent.scrollWidth + 40,
+        });
+
+        scrollParent.style.overflow = prevOverflow;
+
+        // Add header text
+        pdf.setFontSize(16);
+        pdf.text('VB-MAPP Milestones Assessment', 14, 14);
+        pdf.setFontSize(10);
+        pdf.setTextColor(100);
+        pdf.text(`Student: ${studentName}    |    Date: ${dateStr}`, 14, 21);
+        pdf.setTextColor(0);
+
+        // Scale grid image to fit page width with margins
+        const marginX = 10;
+        const startY = 26;
+        const availW = pageW - marginX * 2;
+        const availH = pageH - startY - 10;
+        const imgAspect = canvas.width / canvas.height;
+        let imgW = availW;
+        let imgH = imgW / imgAspect;
+        if (imgH > availH) {
+          imgH = availH;
+          imgW = imgH * imgAspect;
+        }
+
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginX, startY, imgW, imgH);
       }
 
-      const safeName = studentName?.replace(/\s+/g, '-') || 'student';
+      // ── Page 2: Score summary table ──
+      pdf.addPage('a4', 'p');
+      pdf.setFontSize(14);
+      pdf.text('VB-MAPP Score Summary', 14, 16);
+      pdf.setFontSize(9);
+      pdf.setTextColor(100);
+      pdf.text(`Student: ${studentName}    |    Date: ${dateStr}`, 14, 22);
+      pdf.setTextColor(0);
+
+      let y = 30;
+      const colX = [14, 50, 140, 164, 188];
+      // Header
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Domain', colX[0], y);
+      pdf.text('Milestone', colX[1], y);
+      pdf.text('Score', colX[2], y);
+      pdf.text('Status', colX[3], y);
+      pdf.setFont('helvetica', 'normal');
+      y += 2;
+      pdf.setDrawColor(200);
+      pdf.line(14, y, 200, y);
+      y += 4;
+
+      for (const { domain, items } of domainGroups) {
+        // Domain header
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFillColor(240, 244, 248);
+        pdf.rect(14, y - 3, 186, 5, 'F');
+        pdf.text(domain, colX[0], y);
+        pdf.setFont('helvetica', 'normal');
+        y += 5;
+
+        for (const item of items) {
+          if (y > 280) {
+            pdf.addPage('a4', 'p');
+            y = 16;
+          }
+          const r = results[item.item_id];
+          const fill = r?.fill_state ?? 'EMPTY';
+          const circle = r?.tested_circle ?? false;
+          const fillLabel = fill === 'FULL' ? '●' : fill === 'HALF' ? '◑' : circle ? '○' : '—';
+          const status = fill === 'FULL' ? 'Mastered' : fill === 'HALF' ? 'Emerging' : circle ? 'Not Met' : '';
+
+          pdf.setFontSize(7);
+          pdf.text(item.code, colX[0], y);
+          // Truncate label to fit
+          const labelText = item.label_short.length > 50 ? item.label_short.slice(0, 48) + '…' : item.label_short;
+          pdf.text(labelText, colX[1], y);
+          pdf.text(fillLabel, colX[2], y);
+          pdf.text(status, colX[3], y);
+          y += 3.5;
+        }
+        y += 2;
+      }
+
       pdf.save(`vbmapp-milestones-${safeName}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      toast.success('PDF downloaded');
+      toast.success('PDF downloaded — Grid on page 1, score summary on page 2');
     } catch (err) {
-      document.body.removeChild(container);
       console.error('PDF export error:', err);
       toast.error('Failed to generate PDF');
     }
