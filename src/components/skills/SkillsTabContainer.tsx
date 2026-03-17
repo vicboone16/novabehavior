@@ -34,7 +34,7 @@ export function SkillsTabContainer({ studentId, studentName, isAdmin = false }: 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ExtendedSkillsTab)}>
-        <TabsList className="flex w-full max-w-3xl flex-wrap gap-1">
+        <TabsList className="flex w-full max-w-4xl flex-wrap gap-1 h-auto p-1">
           <TabsTrigger value="targets" className="flex items-center gap-1.5">
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Targets</span>

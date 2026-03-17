@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +46,7 @@ import { StudentFileManager } from '@/components/StudentFileManager';
 import { HistoricalIntervalEntry } from '@/components/HistoricalIntervalEntry';
 import { HistoricalSessionEditor } from '@/components/HistoricalSessionEditor';
 import { StudentProfileInfo } from '@/components/StudentProfileInfo';
-import { NarrativeNotesManager } from '@/components/NarrativeNotesManager';
+import { NotesHub } from '@/components/notes/NotesHub';
 import { FBAModeTools } from '@/components/FBAModeTools';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
 import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
@@ -56,7 +56,7 @@ import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
-import { SessionNotesTab } from '@/components/session-notes';
+
 import { FidelityDashboard } from '@/components/fidelity';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { StudentObservationsTab } from '@/components/observation-requests/StudentObservationsTab';
@@ -65,10 +65,7 @@ import { CaregiverTrainingTab } from '@/components/caregiver-training/CaregiverT
 import { ProtocolAssignmentManager } from '@/components/curriculum/ProtocolAssignmentManager';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { ObservationHistory } from '@/components/ObservationHistory';
-import { TeacherSummaries } from '@/components/TeacherSummaries';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
-import { StaffMessageThread } from '@/components/messaging/StaffMessageThread';
-import { ShareWithTeacherButton } from '@/components/messaging/ShareWithTeacherButton';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
@@ -574,11 +571,7 @@ export default function StudentProfile() {
 
           <TabsTrigger value="notes" className="gap-1 text-xs">
             <StickyNote className="w-3 h-3" />
-            Narrative
-          </TabsTrigger>
-          <TabsTrigger value="session-notes" className="gap-1 text-xs">
-            <FileText className="w-3 h-3" />
-            Session Notes
+            Notes
           </TabsTrigger>
           <TabsTrigger value="files" className="gap-1 text-xs">
             <FolderOpen className="w-3 h-3" />
@@ -615,10 +608,6 @@ export default function StudentProfile() {
           <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
             <Heart className="w-3 h-3" />
             Caregiver Training
-          </TabsTrigger>
-          <TabsTrigger value="protocols" className="gap-1 text-xs">
-            <BookOpen className="w-3 h-3" />
-            Protocols
           </TabsTrigger>
           {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
           <TabsTrigger value="documents" className="gap-1 text-xs">
@@ -830,37 +819,15 @@ export default function StudentProfile() {
 
 
 
-        {/* Notes Tab */}
+        {/* Consolidated Notes Tab */}
         <TabsContent value="notes" className="space-y-4">
-          <NarrativeNotesManager
-            studentId={student.id}
-            notes={student.narrativeNotes || []}
-            behaviors={student.behaviors}
-            onAddNote={(note) => addNarrativeNote(student.id, note)}
-            onUpdateNote={(noteId, updates) => updateNarrativeNote(student.id, noteId, updates)}
-            onDeleteNote={(noteId) => deleteNarrativeNote(student.id, noteId)}
-            canViewNotes={studentAccess.canViewNotes}
+          <NotesHub
+            student={student}
+            studentAccess={studentAccess}
+            addNarrativeNote={addNarrativeNote}
+            updateNarrativeNote={updateNarrativeNote}
+            deleteNarrativeNote={deleteNarrativeNote}
           />
-        </TabsContent>
-
-        {/* Session Notes Tab */}
-        <TabsContent value="session-notes" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Session Notes</h3>
-            <ShareWithTeacherButton
-              studentId={student.id}
-              studentName={student.name}
-              variant="button"
-              messageType="data_share"
-              prefillSubject={`Session notes for ${student.name}`}
-            />
-          </div>
-          <SessionNotesTab
-            studentId={student.id}
-            studentName={student.name}
-          />
-          <TeacherSummaries clientId={student.id} />
-          <StaffMessageThread studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* Files Tab */}
@@ -1103,10 +1070,7 @@ export default function StudentProfile() {
           <CaregiverTrainingTab studentId={student.id} />
         </TabsContent>
 
-        {/* Protocols Tab */}
-        <TabsContent value="protocols" className="space-y-4">
-          <ProtocolAssignmentManager studentId={student.id} />
-        </TabsContent>
+        {/* Protocols moved into Programming */}
       </Tabs>
 
       {/* Add Behavior Dialog */}

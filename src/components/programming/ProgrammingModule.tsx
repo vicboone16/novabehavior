@@ -18,7 +18,7 @@ export function ProgrammingModule({
   studentId, 
   studentName, 
   isAdmin = false,
-  defaultMode = 'skills' 
+  defaultMode = 'both' 
 }: ProgrammingModuleProps) {
   const [mode, setMode] = useState<ProgrammingMode>(defaultMode);
 
