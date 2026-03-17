@@ -30,6 +30,8 @@ import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
+import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
+import { useAuth } from '@/contexts/AuthContext';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
@@ -81,6 +83,7 @@ const FBA_WORKFLOW_STEPS = [
 
 export default function AssessmentDashboard() {
   const { students, abcEntries, frequencyEntries, sessions, updateStudentProfile, selectedStudentIds: activeSessionStudentIds, sessionStartTime, isStudentSessionEnded } = useDataStore();
+  const { userRole } = useAuth();
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -895,7 +898,12 @@ export default function AssessmentDashboard() {
                   studentName={selectedStudent.name}
                   studentDob={selectedStudent.dateOfBirth ? selectedStudent.dateOfBirth.toISOString().split('T')[0] : undefined}
                 />
-                
+
+                {/* Vineland-3 Norm Import (Admin Only) */}
+                {(userRole === 'admin' || userRole === 'super_admin') && (
+                  <Vineland3NormImport />
+                )}
+
                 {/* Questionnaire Manager - Sent out forms */}
                 <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
               </>
