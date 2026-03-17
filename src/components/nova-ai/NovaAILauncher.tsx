@@ -30,10 +30,13 @@ export function NovaAILauncher({
   actions,
   variant = 'dropdown',
   size = 'sm',
+  onBeforeNavigate,
 }: NovaAILauncherProps) {
   const navigate = useNavigate();
 
   const launchNovaAI = (prompt?: string, mode?: string) => {
+    // Persist any draft state before navigating away
+    onBeforeNavigate?.();
     const params = new URLSearchParams();
     if (clientId) params.set('clientId', clientId);
     if (prompt) params.set('prompt', prompt);
