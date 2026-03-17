@@ -38078,6 +38078,741 @@ export type Database = {
         }
         Relationships: []
       }
+      vineland3_derived_scores: {
+        Row: {
+          adaptive_level: string | null
+          age_equivalent: string | null
+          calculated_at: string | null
+          composite_key: string
+          domain_key: string
+          gsv: number | null
+          id: string
+          percentile: number | null
+          raw_score: number | null
+          score_level: string
+          standard_score: number | null
+          student_assessment_id: string
+          subdomain_key: string
+          v_scale_score: number | null
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_equivalent?: string | null
+          calculated_at?: string | null
+          composite_key?: string
+          domain_key?: string
+          gsv?: number | null
+          id?: string
+          percentile?: number | null
+          raw_score?: number | null
+          score_level: string
+          standard_score?: number | null
+          student_assessment_id: string
+          subdomain_key?: string
+          v_scale_score?: number | null
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_equivalent?: string | null
+          calculated_at?: string | null
+          composite_key?: string
+          domain_key?: string
+          gsv?: number | null
+          id?: string
+          percentile?: number | null
+          raw_score?: number | null
+          score_level?: string
+          standard_score?: number | null
+          student_assessment_id?: string
+          subdomain_key?: string
+          v_scale_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_derived_scores_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_domains: {
+        Row: {
+          created_at: string
+          display_order: number
+          domain_key: string
+          domain_name: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          domain_key: string
+          domain_name: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          domain_key?: string
+          domain_name?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      vineland3_exports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          export_status: string
+          export_type: string
+          file_url: string | null
+          id: string
+          student_assessment_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          export_status?: string
+          export_type?: string
+          file_url?: string | null
+          id?: string
+          student_assessment_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          export_status?: string
+          export_type?: string
+          file_url?: string | null
+          id?: string
+          student_assessment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_exports_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_form_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          form_key: string
+          form_name: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          form_key: string
+          form_name: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          form_key?: string
+          form_name?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      vineland3_goal_crosswalks: {
+        Row: {
+          created_at: string
+          domain_key: string
+          id: string
+          is_active: boolean
+          priority_level: number | null
+          recommendation_text: string | null
+          recommendation_type: string | null
+          recommended_library: string | null
+          recommended_program_area: string | null
+          recommended_tags: string[] | null
+          score_band: string
+          subdomain_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain_key: string
+          id?: string
+          is_active?: boolean
+          priority_level?: number | null
+          recommendation_text?: string | null
+          recommendation_type?: string | null
+          recommended_library?: string | null
+          recommended_program_area?: string | null
+          recommended_tags?: string[] | null
+          score_band: string
+          subdomain_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain_key?: string
+          id?: string
+          is_active?: boolean
+          priority_level?: number | null
+          recommendation_text?: string | null
+          recommendation_type?: string | null
+          recommended_library?: string | null
+          recommended_program_area?: string | null
+          recommended_tags?: string[] | null
+          score_band?: string
+          subdomain_key?: string | null
+        }
+        Relationships: []
+      }
+      vineland3_item_scores: {
+        Row: {
+          display_label_snapshot: string
+          domain_key_snapshot: string
+          entered_at: string | null
+          entered_by: string | null
+          entered_score: number | null
+          id: string
+          item_code_snapshot: string
+          item_id: string
+          item_number_snapshot: number
+          response_note: string | null
+          student_assessment_id: string
+          subdomain_key_snapshot: string
+          updated_at: string
+        }
+        Insert: {
+          display_label_snapshot: string
+          domain_key_snapshot: string
+          entered_at?: string | null
+          entered_by?: string | null
+          entered_score?: number | null
+          id?: string
+          item_code_snapshot: string
+          item_id: string
+          item_number_snapshot: number
+          response_note?: string | null
+          student_assessment_id: string
+          subdomain_key_snapshot: string
+          updated_at?: string
+        }
+        Update: {
+          display_label_snapshot?: string
+          domain_key_snapshot?: string
+          entered_at?: string | null
+          entered_by?: string | null
+          entered_score?: number | null
+          id?: string
+          item_code_snapshot?: string
+          item_id?: string
+          item_number_snapshot?: number
+          response_note?: string | null
+          student_assessment_id?: string
+          subdomain_key_snapshot?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_item_scores_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vineland3_item_scores_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_items: {
+        Row: {
+          applies_to_forms: string[] | null
+          created_at: string
+          display_label: string
+          display_order: number
+          domain_id: string
+          id: string
+          internal_label: string | null
+          is_active: boolean
+          item_code: string
+          item_number: number
+          prompt_draft: string | null
+          response_type: string
+          score_max: number
+          score_min: number
+          subdomain_id: string
+          updated_at: string
+          version_tag: string
+        }
+        Insert: {
+          applies_to_forms?: string[] | null
+          created_at?: string
+          display_label: string
+          display_order?: number
+          domain_id: string
+          id?: string
+          internal_label?: string | null
+          is_active?: boolean
+          item_code: string
+          item_number: number
+          prompt_draft?: string | null
+          response_type?: string
+          score_max?: number
+          score_min?: number
+          subdomain_id: string
+          updated_at?: string
+          version_tag?: string
+        }
+        Update: {
+          applies_to_forms?: string[] | null
+          created_at?: string
+          display_label?: string
+          display_order?: number
+          domain_id?: string
+          id?: string
+          internal_label?: string | null
+          is_active?: boolean
+          item_code?: string
+          item_number?: number
+          prompt_draft?: string | null
+          response_type?: string
+          score_max?: number
+          score_min?: number
+          subdomain_id?: string
+          updated_at?: string
+          version_tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_items_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vineland3_items_subdomain_id_fkey"
+            columns: ["subdomain_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_subdomains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_norm_lookup_composites: {
+        Row: {
+          adaptive_level: string | null
+          age_band_key: string
+          composite_key: string
+          created_at: string
+          form_key: string
+          id: string
+          is_active: boolean
+          lookup_key: number
+          percentile: number | null
+          source_version: string | null
+          standard_score: number | null
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_band_key: string
+          composite_key?: string
+          created_at?: string
+          form_key: string
+          id?: string
+          is_active?: boolean
+          lookup_key: number
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_band_key?: string
+          composite_key?: string
+          created_at?: string
+          form_key?: string
+          id?: string
+          is_active?: boolean
+          lookup_key?: number
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+        }
+        Relationships: []
+      }
+      vineland3_norm_lookup_domains: {
+        Row: {
+          adaptive_level: string | null
+          age_band_key: string
+          created_at: string
+          domain_key: string
+          form_key: string
+          id: string
+          is_active: boolean
+          percentile: number | null
+          source_version: string | null
+          standard_score: number | null
+          vscale_sum: number
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_band_key: string
+          created_at?: string
+          domain_key: string
+          form_key: string
+          id?: string
+          is_active?: boolean
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+          vscale_sum: number
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_band_key?: string
+          created_at?: string
+          domain_key?: string
+          form_key?: string
+          id?: string
+          is_active?: boolean
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+          vscale_sum?: number
+        }
+        Relationships: []
+      }
+      vineland3_norm_lookup_subdomains: {
+        Row: {
+          adaptive_level: string | null
+          age_band_key: string
+          age_equivalent: string | null
+          created_at: string
+          form_key: string
+          gsv: number | null
+          id: string
+          is_active: boolean
+          raw_score: number
+          source_version: string | null
+          subdomain_key: string
+          v_scale_score: number | null
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_band_key: string
+          age_equivalent?: string | null
+          created_at?: string
+          form_key: string
+          gsv?: number | null
+          id?: string
+          is_active?: boolean
+          raw_score: number
+          source_version?: string | null
+          subdomain_key: string
+          v_scale_score?: number | null
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_band_key?: string
+          age_equivalent?: string | null
+          created_at?: string
+          form_key?: string
+          gsv?: number | null
+          id?: string
+          is_active?: boolean
+          raw_score?: number
+          source_version?: string | null
+          subdomain_key?: string
+          v_scale_score?: number | null
+        }
+        Relationships: []
+      }
+      vineland3_raw_scores: {
+        Row: {
+          calculated_at: string | null
+          completion_status: string
+          domain_key: string
+          id: string
+          items_missing: number
+          items_scored: number
+          raw_score: number | null
+          student_assessment_id: string
+          subdomain_key: string
+        }
+        Insert: {
+          calculated_at?: string | null
+          completion_status?: string
+          domain_key: string
+          id?: string
+          items_missing?: number
+          items_scored?: number
+          raw_score?: number | null
+          student_assessment_id: string
+          subdomain_key: string
+        }
+        Update: {
+          calculated_at?: string | null
+          completion_status?: string
+          domain_key?: string
+          id?: string
+          items_missing?: number
+          items_scored?: number
+          raw_score?: number | null
+          student_assessment_id?: string
+          subdomain_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_raw_scores_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_report_outputs: {
+        Row: {
+          functional_implications_text: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          needs_text: string | null
+          recommendations_text: string | null
+          report_type: string
+          score_summary_json: Json | null
+          strengths_text: string | null
+          student_assessment_id: string
+          summary_text: string | null
+        }
+        Insert: {
+          functional_implications_text?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          needs_text?: string | null
+          recommendations_text?: string | null
+          report_type?: string
+          score_summary_json?: Json | null
+          strengths_text?: string | null
+          student_assessment_id: string
+          summary_text?: string | null
+        }
+        Update: {
+          functional_implications_text?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          needs_text?: string | null
+          recommendations_text?: string | null
+          report_type?: string
+          score_summary_json?: Json | null
+          strengths_text?: string | null
+          student_assessment_id?: string
+          summary_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_report_outputs_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_student_assessments: {
+        Row: {
+          administration_date: string
+          age_band_key: string | null
+          assessor_name: string | null
+          assessor_user_id: string | null
+          chronological_age_display: string | null
+          chronological_age_months: number | null
+          created_at: string
+          created_by: string | null
+          date_completed: string | null
+          date_started: string | null
+          form_key: string
+          id: string
+          locked_at: string | null
+          notes: string | null
+          respondent_name: string | null
+          respondent_relationship: string | null
+          status: string
+          student_id: string
+          template_version_snapshot: string
+          updated_at: string
+        }
+        Insert: {
+          administration_date?: string
+          age_band_key?: string | null
+          assessor_name?: string | null
+          assessor_user_id?: string | null
+          chronological_age_display?: string | null
+          chronological_age_months?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_completed?: string | null
+          date_started?: string | null
+          form_key: string
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          status?: string
+          student_id: string
+          template_version_snapshot?: string
+          updated_at?: string
+        }
+        Update: {
+          administration_date?: string
+          age_band_key?: string | null
+          assessor_name?: string | null
+          assessor_user_id?: string | null
+          chronological_age_display?: string | null
+          chronological_age_months?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_completed?: string | null
+          date_started?: string | null
+          form_key?: string
+          id?: string
+          locked_at?: string | null
+          notes?: string | null
+          respondent_name?: string | null
+          respondent_relationship?: string | null
+          status?: string
+          student_id?: string
+          template_version_snapshot?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_student_assessments_form_key_fkey"
+            columns: ["form_key"]
+            isOneToOne: false
+            referencedRelation: "vineland3_form_types"
+            referencedColumns: ["form_key"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "vineland3_student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      vineland3_subdomains: {
+        Row: {
+          created_at: string
+          display_order: number
+          domain_id: string
+          id: string
+          is_active: boolean
+          subdomain_key: string
+          subdomain_name: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          domain_id: string
+          id?: string
+          is_active?: boolean
+          subdomain_key: string
+          subdomain_name: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          domain_id?: string
+          id?: string
+          is_active?: boolean
+          subdomain_key?: string
+          subdomain_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_subdomains_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       abas_item_deficit_candidate_v: {

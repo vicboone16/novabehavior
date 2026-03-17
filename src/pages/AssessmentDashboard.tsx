@@ -29,6 +29,7 @@ import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireMa
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
+import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 
@@ -886,6 +887,13 @@ export default function AssessmentDashboard() {
                   studentId={selectedStudent.id}
                   studentName={selectedStudent.name}
                   trackerType="ablls-r"
+                />
+
+                {/* Vineland-3 Internal Assessment */}
+                <Vineland3Entry
+                  studentId={selectedStudent.id}
+                  studentName={selectedStudent.name}
+                  studentDob={selectedStudent.dateOfBirth ? selectedStudent.dateOfBirth.toISOString().split('T')[0] : undefined}
                 />
                 
                 {/* Questionnaire Manager - Sent out forms */}
