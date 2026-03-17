@@ -174,7 +174,6 @@ export default function NovaAI() {
       setIsLoading(false);
       sendLockRef.current = false;
     }
-    }
   };
 
   const handleQuickPrompt = (qp: QuickPrompt) => {
