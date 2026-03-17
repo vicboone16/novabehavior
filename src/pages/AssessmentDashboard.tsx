@@ -37,6 +37,8 @@ import { PEAKGoalBrowser } from '@/components/clinical-library/PEAKGoalBrowser';
 import { ESDMGoalBrowser } from '@/components/clinical-library/ESDMGoalBrowser';
 import { ABAS3GoalBrowser } from '@/components/clinical-library/ABAS3GoalBrowser';
 import { DAYC2GoalBrowser } from '@/components/clinical-library/DAYC2GoalBrowser';
+import { ClientLibraryPanel } from '@/components/clinical-library/ClientLibraryPanel';
+import { ClientRecommendationsPanel } from '@/components/clinical-library/ClientRecommendationsPanel';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
@@ -482,7 +484,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-9 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -506,6 +508,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="documents" className="gap-1 text-xs">
               <FileUp className="w-3 h-3" />
               Documents
+            </TabsTrigger>
+            <TabsTrigger value="libraries" className="gap-1 text-xs">
+              <BookOpen className="w-3 h-3" />
+              Libraries
             </TabsTrigger>
             <TabsTrigger value="questionnaires" className="gap-1 text-xs">
               <ClipboardCheck className="w-3 h-3" />
@@ -873,6 +879,16 @@ export default function AssessmentDashboard() {
                   });
                 }}
               />
+            )}
+          </TabsContent>
+
+          {/* Libraries Tab — Assignments, Draft Goals, Recommendations */}
+          <TabsContent value="libraries" className="space-y-6">
+            {selectedStudent && (
+              <>
+                <ClientLibraryPanel clientId={selectedStudent.id} />
+                <ClientRecommendationsPanel clientId={selectedStudent.id} />
+              </>
             )}
           </TabsContent>
 
