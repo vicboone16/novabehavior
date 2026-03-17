@@ -268,7 +268,12 @@ export default function AskNovaAI() {
       sendMessage(answer);
       return;
     }
-    // Show confirmation dialog
+    // Review destination opens the full review panel
+    if (destination === 'review') {
+      setReviewAction(action);
+      return;
+    }
+    // Show confirmation dialog for other destinations
     setConfirmAction({ action, destination });
   };
 
