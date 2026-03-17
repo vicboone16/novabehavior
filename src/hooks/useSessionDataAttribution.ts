@@ -64,6 +64,16 @@ interface SkillPayload {
   trialNumber?: number;
 }
 
+interface LatencyPayload {
+  entryId: string;
+  studentId: string;
+  behaviorId: string;
+  latencySeconds: number;
+  antecedentTime: string;
+  behaviorOnsetTime: string;
+  timestamp: string;
+}
+
 export function useSessionDataAttribution(sessionId: string | null) {
   const { publishEntry } = useSharedSessionSync(sessionId);
   const { currentSessionId } = useDataStore();
