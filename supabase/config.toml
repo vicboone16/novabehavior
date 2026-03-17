@@ -107,3 +107,7 @@ verify_jwt = false
 
 [functions.push-task-file]
 verify_jwt = false
+
+[functions.voice-capture-process]
+verify_jwt = false
+

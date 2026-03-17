@@ -4,14 +4,15 @@
  * Drafts, Ask AI, Save/Post, Audit.
  */
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, BarChart3, Brain, PenTool, MessageSquare, Save, ClipboardList, Loader2, Play, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, FileText, BarChart3, Brain, PenTool, MessageSquare, Save, ClipboardList, Loader2, Play, RefreshCw, AlertTriangle, CheckCircle2, Clock, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { ENCOUNTER_TYPE_LABELS, CONSENT_LABELS, PRIVACY_LABELS } from '@/types/voiceCapture';
 import { format } from 'date-fns';
@@ -22,55 +23,115 @@ interface RecordingReviewWorkspaceProps {
   onBack: () => void;
 }
 
+const EXTRACTION_LABELS: Record<string, { label: string; icon: string }> = {
+  one_line_summary: { label: 'One-Line Summary', icon: '📝' },
+  concise_summary: { label: 'Concise Summary', icon: '📋' },
+  detailed_clinical_summary: { label: 'Detailed Clinical Summary', icon: '📄' },
+  parent_friendly_summary: { label: 'Parent-Friendly Summary', icon: '👨‍👩‍👧' },
+  participants: { label: 'Participants', icon: '👥' },
+  setting: { label: 'Setting', icon: '📍' },
+  reason_for_contact: { label: 'Reason for Contact', icon: '📞' },
+  caregiver_concerns: { label: 'Caregiver Concerns', icon: '💬' },
+  teacher_concerns: { label: 'Teacher Concerns', icon: '🏫' },
+  observed_behaviors: { label: 'Observed Behaviors', icon: '👁️' },
+  antecedents: { label: 'Antecedents', icon: '⬅️' },
+  consequences: { label: 'Consequences', icon: '➡️' },
+  replacement_behaviors_discussed: { label: 'Replacement Behaviors', icon: '🔄' },
+  possible_function_clues: { label: 'Possible Function Clues', icon: '🧠' },
+  medication_health_mentions: { label: 'Medication / Health', icon: '💊' },
+  environmental_variables: { label: 'Environmental Variables', icon: '🌍' },
+  barriers_to_treatment: { label: 'Barriers to Treatment', icon: '🚧' },
+  safety_concerns: { label: 'Safety Concerns', icon: '⚠️' },
+  follow_up_steps: { label: 'Follow-Up Steps', icon: '📋' },
+  action_items: { label: 'Action Items', icon: '✅' },
+  missing_information: { label: 'Missing Information', icon: '❓' },
+  risk_flags: { label: 'Risk Flags', icon: '🔴' },
+};
+
+const DRAFT_TYPE_LABELS: Record<string, string> = {
+  narrative_note: 'Narrative Note',
+  session_note: 'Session Note',
+  soap_note: 'SOAP Note',
+  supervision_note: 'Supervision Note',
+  parent_training_note: 'Parent Training Note',
+  teacher_consult_note: 'Teacher Consult Note',
+  fba_parent_interview_paragraph: 'FBA Parent Interview Paragraph',
+  fba_observation_paragraph: 'FBA Observation Paragraph',
+  team_meeting_summary: 'Team Meeting Summary',
+  crisis_debrief_note: 'Crisis Debrief Note',
+  private_note: 'Private Note',
+  clinical_summary: 'Clinical Summary',
+};
+
 export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingReviewWorkspaceProps) {
   const [recording, setRecording] = useState<any>(null);
   const [transcript, setTranscript] = useState<any>(null);
+  const [segments, setSegments] = useState<any[]>([]);
   const [drafts, setDrafts] = useState<any[]>([]);
   const [extractions, setExtractions] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('transcript');
   const [processing, setProcessing] = useState(false);
+  const [transcriptView, setTranscriptView] = useState<'full' | 'speakers' | 'timestamps'>('full');
 
   // AI Q&A state
   const [aiQuestion, setAiQuestion] = useState('');
-  const [aiAnswers, setAiAnswers] = useState<Array<{ question: string; answer: string }>>([]);
+  const [aiAnswers, setAiAnswers] = useState<Array<{ question: string; answer: string; loading?: boolean }>>([]);
+  const [askingAi, setAskingAi] = useState(false);
 
-  useEffect(() => {
-    loadRecordingData();
-  }, [recordingId]);
-
-  const loadRecordingData = async () => {
+  const loadRecordingData = useCallback(async () => {
     setLoading(true);
-    const [recRes, transRes, draftsRes, extRes, auditRes] = await Promise.all([
+    const [recRes, transRes, draftsRes, extRes, tasksRes, auditRes] = await Promise.all([
       supabase.from('voice_recordings' as any).select('*').eq('id', recordingId).single(),
       supabase.from('voice_transcripts' as any).select('*').eq('recording_id', recordingId).order('version_number', { ascending: false }).limit(1),
       supabase.from('voice_ai_drafts' as any).select('*').eq('recording_id', recordingId).order('created_at', { ascending: true }),
       supabase.from('voice_ai_extractions' as any).select('*').eq('recording_id', recordingId),
+      supabase.from('voice_tasks' as any).select('*').eq('recording_id', recordingId),
       supabase.from('voice_audit_log' as any).select('*').eq('recording_id', recordingId).order('created_at', { ascending: true }),
     ]);
 
     if (recRes.data) setRecording(recRes.data);
-    if (transRes.data?.[0]) setTranscript(transRes.data[0]);
+    if (transRes.data?.[0]) {
+      setTranscript(transRes.data[0]);
+      // Load segments
+      const { data: segs } = await supabase
+        .from('voice_transcript_segments' as any)
+        .select('*')
+        .eq('transcript_id', (transRes.data[0] as any).id)
+        .order('segment_index', { ascending: true });
+      if (segs) setSegments(segs);
+    }
     if (draftsRes.data) setDrafts(draftsRes.data);
     if (extRes.data) setExtractions(extRes.data);
+    if (tasksRes.data) setTasks(tasksRes.data);
     if (auditRes.data) setAuditLog(auditRes.data);
     setLoading(false);
-  };
+  }, [recordingId]);
+
+  useEffect(() => {
+    loadRecordingData();
+  }, [loadRecordingData]);
+
+  // Polling while processing
+  useEffect(() => {
+    if (recording?.status === 'processing') {
+      const interval = setInterval(loadRecordingData, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [recording?.status, loadRecordingData]);
 
   const handleProcessTranscript = async () => {
     setProcessing(true);
     try {
-      // Trigger backend processing via edge function
       const { data, error } = await supabase.functions.invoke('voice-capture-process', {
         body: { recording_id: recordingId, action: 'transcribe_and_extract' },
       });
 
       if (error) throw error;
-      toast.success('Processing started — transcript and AI outputs will appear shortly');
-
-      // Refresh after a delay
-      setTimeout(() => loadRecordingData(), 5000);
+      toast.success('Processing started — results will appear automatically');
+      setTimeout(() => loadRecordingData(), 3000);
     } catch (err: any) {
       toast.error('Processing failed: ' + (err?.message || 'Unknown error'));
     } finally {
@@ -78,27 +139,65 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     }
   };
 
-  const handleSavePrivately = async () => {
-    try {
-      await supabase.from('voice_recordings' as any).update({
-        status: 'saved_draft',
-      }).eq('id', recordingId);
+  const handleAskAI = async () => {
+    if (!aiQuestion.trim() || !transcript?.full_text) return;
+    const q = aiQuestion.trim();
+    setAiQuestion('');
+    setAiAnswers(prev => [...prev, { question: q, answer: '', loading: true }]);
+    setAskingAi(true);
 
+    try {
+      const { data, error } = await supabase.functions.invoke('voice-capture-process', {
+        body: {
+          recording_id: recordingId,
+          action: 'ask_ai',
+          question: q,
+        },
+      });
+
+      // For now, provide a placeholder - the ask_ai action would need to be implemented
+      setAiAnswers(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          question: q,
+          answer: data?.answer || 'AI Q&A will be available after the transcript is processed. Use the suggested prompts as a starting point.',
+          loading: false,
+        };
+        return updated;
+      });
+    } catch {
+      setAiAnswers(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { question: q, answer: 'Failed to get AI response. Please try again.', loading: false };
+        return updated;
+      });
+    } finally {
+      setAskingAi(false);
+    }
+  };
+
+  const handleSaveAction = async (actionType: string) => {
+    try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('voice_save_actions' as any).insert({
-          recording_id: recordingId,
-          action_type: 'save_private',
-          performed_by: user.id,
-        });
-        await supabase.from('voice_audit_log' as any).insert({
-          recording_id: recordingId,
-          user_id: user.id,
-          action_type: 'saved_privately',
-        });
+      if (!user) return;
+
+      await supabase.from('voice_save_actions' as any).insert({
+        recording_id: recordingId,
+        action_type: actionType,
+        performed_by: user.id,
+      });
+
+      if (actionType === 'save_private') {
+        await supabase.from('voice_recordings' as any).update({ status: 'saved_draft' }).eq('id', recordingId);
       }
 
-      toast.success('Saved privately');
+      await supabase.from('voice_audit_log' as any).insert({
+        recording_id: recordingId,
+        user_id: user.id,
+        action_type: actionType,
+      });
+
+      toast.success('Saved successfully');
       loadRecordingData();
     } catch {
       toast.error('Save failed');
@@ -122,6 +221,10 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     );
   }
 
+  const isProcessing = recording.status === 'processing';
+  const summaryExtractions = extractions.filter(e => e.extraction_type?.includes('summary'));
+  const structuredExtractions = extractions.filter(e => !e.extraction_type?.includes('summary'));
+
   const SUGGESTED_PROMPTS = [
     'Summarize main concerns',
     'What possible functions were mentioned?',
@@ -135,6 +238,27 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     'Create a caregiver training summary',
   ];
 
+  const renderExtractionValue = (ext: any) => {
+    const payload = ext.json_payload;
+    if (payload?.text) return <p className="text-sm whitespace-pre-wrap">{payload.text}</p>;
+    if (payload?.value) return <p className="text-sm">{payload.value}</p>;
+    if (payload?.items) {
+      if (Array.isArray(payload.items)) {
+        return (
+          <ul className="space-y-1">
+            {payload.items.map((item: any, i: number) => (
+              <li key={i} className="text-sm flex items-start gap-2">
+                <span className="text-muted-foreground mt-0.5">•</span>
+                <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+              </li>
+            ))}
+          </ul>
+        );
+      }
+    }
+    return <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -146,26 +270,69 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
           <h2 className="text-lg font-semibold flex items-center gap-2">
             {ENCOUNTER_TYPE_LABELS[recording.encounter_type as keyof typeof ENCOUNTER_TYPE_LABELS] || recording.encounter_type}
             <Badge variant={recording.privacy_mode === 'private' ? 'secondary' : 'outline'} className="text-[10px]">
+              <Shield className="w-2.5 h-2.5 mr-0.5" />
               {PRIVACY_LABELS[recording.privacy_mode as keyof typeof PRIVACY_LABELS] || recording.privacy_mode}
             </Badge>
+            {isProcessing && <Badge variant="default" className="text-[10px] animate-pulse">Processing...</Badge>}
           </h2>
           <p className="text-xs text-muted-foreground">
             {format(new Date(recording.created_at), 'MMMM d, yyyy h:mm a')}
             {recording.duration_seconds && ` · ${Math.floor(recording.duration_seconds / 60)}m ${recording.duration_seconds % 60}s`}
+            {' · '}{CONSENT_LABELS[recording.consent_status as keyof typeof CONSENT_LABELS] || recording.consent_status}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {recording.status === 'audio_secured' && (
+          {(recording.status === 'audio_secured' || recording.status === 'transcript_failed_retryable' || recording.status === 'ai_failed_retryable') && (
             <Button onClick={handleProcessTranscript} disabled={processing} size="sm">
               {processing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Play className="w-4 h-4 mr-1" />}
               Process
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => loadRecordingData()}>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => loadRecordingData()}>
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
+
+      {/* Processing Progress */}
+      {isProcessing && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span className="text-sm font-medium">Processing pipeline running...</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                {recording.transcript_status === 'completed' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                ) : recording.transcript_status === 'processing' ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+                Transcript
+              </div>
+              <div className="flex items-center gap-1.5">
+                {extractions.length > 0 ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+                Extraction
+              </div>
+              <div className="flex items-center gap-1.5">
+                {drafts.length > 0 ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+                Drafts
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -175,12 +342,15 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
           </TabsTrigger>
           <TabsTrigger value="summary" className="gap-1.5 text-xs">
             <BarChart3 className="w-3.5 h-3.5" /> Summary
+            {summaryExtractions.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{summaryExtractions.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="extract" className="gap-1.5 text-xs">
             <Brain className="w-3.5 h-3.5" /> ABA Extract
+            {structuredExtractions.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{structuredExtractions.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="drafts" className="gap-1.5 text-xs">
             <PenTool className="w-3.5 h-3.5" /> Drafts
+            {drafts.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{drafts.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="ask-ai" className="gap-1.5 text-xs">
             <MessageSquare className="w-3.5 h-3.5" /> Ask AI
@@ -193,22 +363,72 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
           </TabsTrigger>
         </TabsList>
 
-        {/* Transcript Tab */}
+        {/* ── Transcript Tab ── */}
         <TabsContent value="transcript" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">Transcript</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Transcript</CardTitle>
+                {transcript && (
+                  <div className="flex gap-1">
+                    {(['full', 'speakers', 'timestamps'] as const).map(view => (
+                      <Button
+                        key={view}
+                        variant={transcriptView === view ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={() => setTranscriptView(view)}
+                      >
+                        {view === 'full' ? 'Full' : view === 'speakers' ? 'Speakers' : 'Timestamps'}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {transcript && (
+                <CardDescription className="text-xs">
+                  {transcript.speaker_count} speaker(s) · Model: {transcript.created_by_model}
+                </CardDescription>
+              )}
+            </CardHeader>
             <CardContent>
               {transcript?.full_text ? (
-                <div className="prose prose-sm max-w-none">
+                transcriptView === 'full' ? (
+                  <div className="prose prose-sm max-w-none">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript.full_text}</p>
+                  </div>
+                ) : transcriptView === 'speakers' && segments.length > 0 ? (
+                  <div className="space-y-3">
+                    {segments.map((seg, i) => (
+                      <div key={seg.id || i} className="flex gap-3">
+                        <Badge variant="outline" className="shrink-0 h-5 text-[10px]">
+                          {seg.speaker_id ? `Speaker ${seg.segment_index + 1}` : `Seg ${seg.segment_index + 1}`}
+                        </Badge>
+                        <p className="text-sm">{seg.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : transcriptView === 'timestamps' && segments.length > 0 ? (
+                  <div className="space-y-2">
+                    {segments.map((seg, i) => (
+                      <div key={seg.id || i} className="flex gap-3">
+                        <span className="text-xs text-muted-foreground font-mono shrink-0 w-16">
+                          {seg.start_ms != null ? `${Math.floor(seg.start_ms / 60000)}:${String(Math.floor((seg.start_ms % 60000) / 1000)).padStart(2, '0')}` : '--:--'}
+                        </span>
+                        <p className="text-sm">{seg.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                   <p className="whitespace-pre-wrap text-sm">{transcript.full_text}</p>
-                </div>
+                )
               ) : (
                 <div className="text-center py-8">
                   <FileText className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">
                     {recording.status === 'audio_secured'
                       ? 'Audio secured. Click "Process" to generate transcript.'
-                      : recording.transcript_status === 'processing'
+                      : isProcessing
                         ? 'Transcript is being generated...'
                         : 'No transcript available yet.'}
                   </p>
@@ -218,68 +438,102 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
           </Card>
         </TabsContent>
 
-        {/* Summary Tab */}
+        {/* ── Summary Tab ── */}
         <TabsContent value="summary" className="mt-4">
           <div className="grid gap-3">
-            {extractions.filter(e => e.extraction_type?.includes('summary')).length > 0 ? (
-              extractions.filter(e => e.extraction_type?.includes('summary')).map(ext => (
-                <Card key={ext.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm capitalize">{ext.extraction_type?.replace(/_/g, ' ')}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm whitespace-pre-wrap">{ext.json_payload?.text || JSON.stringify(ext.json_payload)}</p>
-                  </CardContent>
-                </Card>
-              ))
+            {summaryExtractions.length > 0 ? (
+              summaryExtractions.map(ext => {
+                const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📝' };
+                return (
+                  <Card key={ext.id}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">{meta.icon} {meta.label}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {renderExtractionValue(ext)}
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  Summaries will appear after processing is complete.
+                  {isProcessing ? 'Summaries are being generated...' : 'Summaries will appear after processing.'}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Tasks */}
+            {tasks.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">✅ Action Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-1.5">
+                    {tasks.map(t => (
+                      <li key={t.id} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                        <span>{t.task_text}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             )}
           </div>
         </TabsContent>
 
-        {/* ABA Extract Tab */}
+        {/* ── ABA Extract Tab ── */}
         <TabsContent value="extract" className="mt-4">
           <div className="grid gap-3">
-            {extractions.filter(e => !e.extraction_type?.includes('summary')).length > 0 ? (
-              extractions.filter(e => !e.extraction_type?.includes('summary')).map(ext => (
-                <Card key={ext.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm capitalize">{ext.extraction_type?.replace(/_/g, ' ')}</CardTitle>
-                      {ext.confidence_score && (
-                        <Badge variant="outline" className="text-[10px]">
-                          {Math.round(ext.confidence_score * 100)}% confidence
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                      {JSON.stringify(ext.json_payload, null, 2)}
-                    </pre>
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="text-xs">Approve</Button>
-                      <Button size="sm" variant="ghost" className="text-xs text-muted-foreground">Ignore</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+            {structuredExtractions.length > 0 ? (
+              structuredExtractions.map(ext => {
+                const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📊' };
+                const isRisk = ext.extraction_type === 'safety_concerns' || ext.extraction_type === 'risk_flags';
+                return (
+                  <Card key={ext.id} className={isRisk ? 'border-destructive/30 bg-destructive/5' : ''}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm flex items-center gap-1.5">
+                          <span>{meta.icon}</span> {meta.label}
+                          {isRisk && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
+                        </CardTitle>
+                        {ext.confidence_score && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {Math.round(ext.confidence_score * 100)}%
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {renderExtractionValue(ext)}
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" variant="outline" className="text-xs h-7">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground">
+                          Ignore
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground">
+                          Save to Profile
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  ABA-specific extractions will appear after processing.
+                  {isProcessing ? 'ABA extractions are being generated...' : 'ABA-specific extractions will appear after processing.'}
                 </CardContent>
               </Card>
             )}
           </div>
         </TabsContent>
 
-        {/* Drafts Tab */}
+        {/* ── Drafts Tab ── */}
         <TabsContent value="drafts" className="mt-4">
           <div className="grid gap-3">
             {drafts.length > 0 ? (
@@ -287,24 +541,31 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                 <Card key={draft.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm capitalize">{draft.draft_type?.replace(/_/g, ' ')}</CardTitle>
+                      <CardTitle className="text-sm">
+                        {DRAFT_TYPE_LABELS[draft.draft_type] || draft.draft_type?.replace(/_/g, ' ')}
+                      </CardTitle>
                       <div className="flex items-center gap-1">
                         <Badge variant="outline" className="text-[10px]">{draft.tone}</Badge>
-                        {draft.approved_at && <Badge className="text-[10px]">Approved</Badge>}
+                        <Badge variant="outline" className="text-[10px]">{draft.output_language}</Badge>
+                        {draft.approved_at && <Badge className="text-[10px] bg-green-500">Approved</Badge>}
                       </div>
                     </div>
+                    <CardDescription className="text-xs">
+                      Model: {draft.model_name} · {draft.is_user_edited ? 'Edited' : 'AI Generated'}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Textarea
-                      value={draft.content || ''}
-                      className="min-h-[120px] text-sm"
-                      readOnly
+                      defaultValue={draft.content || ''}
+                      className="min-h-[150px] text-sm leading-relaxed"
                     />
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      <Button size="sm" variant="outline" className="text-xs">Shorter</Button>
-                      <Button size="sm" variant="outline" className="text-xs">More Objective</Button>
-                      <Button size="sm" variant="outline" className="text-xs">Parent-Friendly</Button>
-                      <Button size="sm" variant="outline" className="text-xs">Translate</Button>
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      <Button size="sm" variant="outline" className="text-xs h-7">Shorter</Button>
+                      <Button size="sm" variant="outline" className="text-xs h-7">More Objective</Button>
+                      <Button size="sm" variant="outline" className="text-xs h-7">School-Safe Wording</Button>
+                      <Button size="sm" variant="outline" className="text-xs h-7">Parent-Friendly</Button>
+                      <Button size="sm" variant="outline" className="text-xs h-7">Translate</Button>
+                      <Button size="sm" variant="outline" className="text-xs h-7">Rebuild from Excerpts</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -312,27 +573,28 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
             ) : (
               <Card>
                 <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  Draft notes will appear after processing.
+                  {isProcessing ? 'Draft notes are being generated...' : 'Draft notes will appear after processing.'}
                 </CardContent>
               </Card>
             )}
           </div>
         </TabsContent>
 
-        {/* Ask AI Tab */}
+        {/* ── Ask AI Tab ── */}
         <TabsContent value="ask-ai" className="mt-4">
           <Card>
             <CardHeader><CardTitle className="text-base">Ask AI about this recording</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {/* Suggested prompts */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <Button
                     key={i}
                     variant="outline"
                     size="sm"
-                    className="text-xs"
+                    className="text-xs h-7"
                     onClick={() => setAiQuestion(prompt)}
+                    disabled={!transcript?.full_text}
                   >
                     {prompt}
                   </Button>
@@ -342,93 +604,108 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
               <Separator />
 
               {/* Q&A history */}
-              {aiAnswers.map((qa, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="text-sm font-medium">Q: {qa.question}</div>
-                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded">{qa.answer}</div>
-                </div>
-              ))}
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {aiAnswers.map((qa, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="text-sm font-medium text-primary">Q: {qa.question}</div>
+                    {qa.loading ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking...
+                      </div>
+                    ) : (
+                      <div className="text-sm bg-muted p-3 rounded whitespace-pre-wrap">{qa.answer}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
 
               {/* Input */}
               <div className="flex gap-2">
                 <Textarea
                   value={aiQuestion}
                   onChange={(e) => setAiQuestion(e.target.value)}
-                  placeholder="Ask a question about this recording..."
+                  placeholder={transcript?.full_text ? 'Ask a question about this recording...' : 'Process the recording first to enable AI Q&A'}
                   className="min-h-[60px] text-sm"
+                  disabled={!transcript?.full_text}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAskAI(); } }}
                 />
                 <Button
-                  onClick={() => {
-                    if (aiQuestion.trim()) {
-                      setAiAnswers(prev => [...prev, { question: aiQuestion, answer: 'AI processing will be available after the processing pipeline is connected.' }]);
-                      setAiQuestion('');
-                    }
-                  }}
+                  onClick={handleAskAI}
+                  disabled={!aiQuestion.trim() || !transcript?.full_text || askingAi}
                   className="self-end"
                 >
-                  Ask
+                  {askingAi ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ask'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Save / Post Tab */}
+        {/* ── Save / Post Tab ── */}
         <TabsContent value="save" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">Save & Post Actions</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Save & Post Actions</CardTitle>
+              <CardDescription className="text-xs">Nothing posts to the chart automatically. All outputs require explicit approval.</CardDescription>
+            </CardHeader>
             <CardContent>
               <div className="grid gap-2">
-                <Button variant="outline" className="justify-start" onClick={handleSavePrivately}>
-                  <Save className="w-4 h-4 mr-2" /> Save Transcript Privately
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mt-2">Private Saves</h3>
+                <Button variant="outline" className="justify-start text-sm h-9" onClick={() => handleSaveAction('save_private')}>
+                  <Save className="w-4 h-4 mr-2" /> Save Everything Privately
                 </Button>
-                <Button variant="outline" className="justify-start" onClick={handleSavePrivately}>
-                  <Save className="w-4 h-4 mr-2" /> Save Summary Privately
+
+                <Separator className="my-2" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Draft Saves</h3>
+                {[
+                  { action: 'save_narrative_draft', label: 'Save as Narrative Note Draft', icon: PenTool },
+                  { action: 'save_session_draft', label: 'Save as Session Note Draft', icon: PenTool },
+                  { action: 'save_supervision_draft', label: 'Save as Supervision Draft', icon: PenTool },
+                  { action: 'save_fba_draft', label: 'Save as FBA Draft', icon: PenTool },
+                  { action: 'save_consult_draft', label: 'Save as Consult Note', icon: PenTool },
+                ].map(({ action, label, icon: Icon }) => (
+                  <Button
+                    key={action}
+                    variant="outline"
+                    className="justify-start text-sm h-9"
+                    disabled={drafts.length === 0}
+                    onClick={() => handleSaveAction(action)}
+                  >
+                    <Icon className="w-4 h-4 mr-2" /> {label}
+                  </Button>
+                ))}
+
+                <Separator className="my-2" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Other</h3>
+                <Button variant="outline" className="justify-start text-sm h-9" disabled={tasks.length === 0} onClick={() => handleSaveAction('save_tasks')}>
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Save Tasks ({tasks.length})
                 </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Save as Narrative Note Draft
-                </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Save as Session Note Draft
-                </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Save as Supervision Draft
-                </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Save as FBA Draft
-                </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Save Tasks
-                </Button>
-                <Button variant="outline" className="justify-start" disabled>
-                  <PenTool className="w-4 h-4 mr-2" /> Propose Profile Updates
+                <Button variant="outline" className="justify-start text-sm h-9" disabled onClick={() => handleSaveAction('propose_profile_updates')}>
+                  <AlertTriangle className="w-4 h-4 mr-2" /> Propose Profile Updates
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Chart posting requires an approved draft. Nothing is auto-posted.
-              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Audit Tab */}
+        {/* ── Audit Tab ── */}
         <TabsContent value="audit" className="mt-4">
           <Card>
             <CardHeader><CardTitle className="text-base">Audit Trail</CardTitle></CardHeader>
             <CardContent>
               {auditLog.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {auditLog.map(entry => (
-                    <div key={entry.id} className="flex items-center gap-3 text-sm py-1.5 border-b last:border-0">
-                      <span className="text-xs text-muted-foreground w-32 shrink-0">
-                        {format(new Date(entry.created_at), 'MMM d h:mm a')}
+                    <div key={entry.id} className="flex items-center gap-3 text-sm py-2 border-b last:border-0">
+                      <span className="text-xs text-muted-foreground font-mono w-36 shrink-0">
+                        {format(new Date(entry.created_at), 'MMM d h:mm:ss a')}
                       </span>
                       <Badge variant="outline" className="text-[10px] shrink-0">
                         {entry.action_type?.replace(/_/g, ' ')}
                       </Badge>
                       {entry.metadata_json && Object.keys(entry.metadata_json).length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">
-                          {JSON.stringify(entry.metadata_json)}
+                          {Object.entries(entry.metadata_json).map(([k, v]) => `${k}: ${v}`).join(', ')}
                         </span>
                       )}
                     </div>
