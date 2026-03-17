@@ -299,11 +299,12 @@ export function StudentBehaviorsOverview({
       const abcCount = behaviorABC.length;
       const filteredAbcCount = filteredABC.length;
 
-      // Interval stats
+      // Interval stats — exclude voided intervals from both numerator and denominator
       const behaviorIntervals = intervalEntries.filter(e => e.studentId === studentId && e.behaviorId === behavior.id);
       const filteredIntervals = filterByDateRange(behaviorIntervals);
-      const intervalOccurred = filteredIntervals.filter(e => e.occurred).length;
-      const intervalTotal = filteredIntervals.length;
+      const validIntervals = filteredIntervals.filter(e => !e.voided);
+      const intervalOccurred = validIntervals.filter(e => e.occurred).length;
+      const intervalTotal = validIntervals.length;
 
       // Calculate trend from frequency over time
       let recentTrend: 'up' | 'flat' | 'down' | null = null;

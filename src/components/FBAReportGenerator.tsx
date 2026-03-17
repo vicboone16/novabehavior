@@ -251,19 +251,49 @@ const AGE_RANGE_OPTIONS = [
   { value: 'high-school', label: 'High School (14-18+)', grades: ['9', '10', '11', '12'] },
 ];
 
+const FBA_DRAFT_KEY = 'fba-report-draft';
+
+function saveFBADraft(data: Record<string, any>) {
+  try {
+    localStorage.setItem(FBA_DRAFT_KEY, JSON.stringify({ ...data, savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+function loadFBADraft(): Record<string, any> | null {
+  try {
+    const raw = localStorage.getItem(FBA_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Only restore drafts less than 24 hours old
+    if (Date.now() - (parsed.savedAt || 0) > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(FBA_DRAFT_KEY);
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+
+function clearFBADraft() {
+  try { localStorage.removeItem(FBA_DRAFT_KEY); } catch { /* ignore */ }
+}
+
 export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportGeneratorProps) {
   const { students, abcEntries, frequencyEntries, sessions, behaviorGoals, updateStudentProfile } = useDataStore();
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(propStudent?.id || '');
-  const [reportType, setReportType] = useState<'comprehensive' | 'simplified'>('comprehensive');
-  const [reportFormat, setReportFormat] = useState<'school' | 'insurance' | null>(null);
-  const [ageRange, setAgeRange] = useState<string>('elementary');
-  const [assessorName, setAssessorName] = useState('');
-  const [assessorTitle, setAssessorTitle] = useState('');
-  const [assessmentDates, setAssessmentDates] = useState('');
-  const [additionalNotes, setAdditionalNotes] = useState('');
-  const [allowPartialExport, setAllowPartialExport] = useState(true);
-  const [showDraftIndicators, setShowDraftIndicators] = useState(true);
-  const [includeStrategySections, setIncludeStrategySections] = useState(true);
+  
+  // Restore draft on mount
+  const draft = useMemo(() => loadFBADraft(), []);
+  
+  const [selectedStudentId, setSelectedStudentId] = useState<string>(draft?.selectedStudentId || propStudent?.id || '');
+  const [reportType, setReportType] = useState<'comprehensive' | 'simplified'>(draft?.reportType || 'comprehensive');
+  const [reportFormat, setReportFormat] = useState<'school' | 'insurance' | null>(draft?.reportFormat || null);
+  const [ageRange, setAgeRange] = useState<string>(draft?.ageRange || 'elementary');
+  const [assessorName, setAssessorName] = useState(draft?.assessorName || '');
+  const [assessorTitle, setAssessorTitle] = useState(draft?.assessorTitle || '');
+  const [assessmentDates, setAssessmentDates] = useState(draft?.assessmentDates || '');
+  const [additionalNotes, setAdditionalNotes] = useState(draft?.additionalNotes || '');
+  const [allowPartialExport, setAllowPartialExport] = useState(draft?.allowPartialExport ?? true);
+  const [showDraftIndicators, setShowDraftIndicators] = useState(draft?.showDraftIndicators ?? true);
+  const [includeStrategySections, setIncludeStrategySections] = useState(draft?.includeStrategySections ?? true);
   const [strategyExportPayload, setStrategyExportPayload] = useState<StrategyExportPayload | null>(null);
 
   // School FBA editable fields
