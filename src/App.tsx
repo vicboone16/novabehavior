@@ -209,6 +209,15 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <NotificationSettings />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/iep-library" element={
               <ProtectedRoute>
                 <ApprovalCheck>

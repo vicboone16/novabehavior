@@ -364,6 +364,9 @@ export default function UserProfile() {
 
         {/* Push Notifications */}
         <NotificationPreferences />
+
+        {/* Admin Debug */}
+        <AdminDebugPanel />
       </main>
 
       {user && (
