@@ -19,8 +19,7 @@ import { NovaAIActionButtons, type NovaAction } from '@/components/nova-ai/NovaA
 import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
 import { NovaAIReviewPanel } from '@/components/nova-ai/NovaAIReviewPanel';
 import { useNovaAIActions } from '@/hooks/useNovaAIActions';
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Ask a Behavior Question': <HelpCircle className="w-3.5 h-3.5" />,
