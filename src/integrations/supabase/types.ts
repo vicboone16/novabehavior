@@ -23,21 +23,30 @@ export type Database = {
           benchmark_1: string
           benchmark_2: string
           benchmark_3: string
+          caregiver_supports_json: Json | null
           created_at: string
           crosswalk_tags_json: Json
           domain: string
           domain_code: string
+          example_replacements_json: Json | null
           framework_version: string
+          generalization_supports_json: Json | null
           goal_type: string
           iep_domain_json: Json
           intervention_menu_json: Json
           library_id: string
           mastery_criteria_json: Json
+          mastery_criteria_text: string | null
           notes: string | null
+          notes_json: Json | null
           nova_collection_json: Json
           objective: string
           objective_code: string
+          observable_indicators_json: Json | null
           primary_construct_tag: string | null
+          progress_monitoring_json: Json | null
+          prompting_hierarchy_json: Json | null
+          reinforcement_strategies_json: Json | null
           secondary_construct_tags_json: Json
           setting_json: Json
           severity_support_level: string
@@ -45,6 +54,7 @@ export type Database = {
           subdomain: string
           subdomain_code: string
           targets_json: Json
+          teaching_strategies_json: Json | null
           updated_at: string
         }
         Insert: {
@@ -55,21 +65,30 @@ export type Database = {
           benchmark_1: string
           benchmark_2: string
           benchmark_3: string
+          caregiver_supports_json?: Json | null
           created_at?: string
           crosswalk_tags_json?: Json
           domain: string
           domain_code: string
+          example_replacements_json?: Json | null
           framework_version?: string
+          generalization_supports_json?: Json | null
           goal_type: string
           iep_domain_json?: Json
           intervention_menu_json?: Json
           library_id?: string
           mastery_criteria_json?: Json
+          mastery_criteria_text?: string | null
           notes?: string | null
+          notes_json?: Json | null
           nova_collection_json?: Json
           objective: string
           objective_code: string
+          observable_indicators_json?: Json | null
           primary_construct_tag?: string | null
+          progress_monitoring_json?: Json | null
+          prompting_hierarchy_json?: Json | null
+          reinforcement_strategies_json?: Json | null
           secondary_construct_tags_json?: Json
           setting_json?: Json
           severity_support_level?: string
@@ -77,6 +96,7 @@ export type Database = {
           subdomain: string
           subdomain_code: string
           targets_json?: Json
+          teaching_strategies_json?: Json | null
           updated_at?: string
         }
         Update: {
@@ -87,21 +107,30 @@ export type Database = {
           benchmark_1?: string
           benchmark_2?: string
           benchmark_3?: string
+          caregiver_supports_json?: Json | null
           created_at?: string
           crosswalk_tags_json?: Json
           domain?: string
           domain_code?: string
+          example_replacements_json?: Json | null
           framework_version?: string
+          generalization_supports_json?: Json | null
           goal_type?: string
           iep_domain_json?: Json
           intervention_menu_json?: Json
           library_id?: string
           mastery_criteria_json?: Json
+          mastery_criteria_text?: string | null
           notes?: string | null
+          notes_json?: Json | null
           nova_collection_json?: Json
           objective?: string
           objective_code?: string
+          observable_indicators_json?: Json | null
           primary_construct_tag?: string | null
+          progress_monitoring_json?: Json | null
+          prompting_hierarchy_json?: Json | null
+          reinforcement_strategies_json?: Json | null
           secondary_construct_tags_json?: Json
           setting_json?: Json
           severity_support_level?: string
@@ -109,6 +138,7 @@ export type Database = {
           subdomain?: string
           subdomain_code?: string
           targets_json?: Json
+          teaching_strategies_json?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -38078,6 +38108,213 @@ export type Database = {
         }
         Relationships: []
       }
+      vineland_age_bands: {
+        Row: {
+          age_band_key: string
+          display_label: string | null
+          id: string
+          is_active: boolean | null
+          max_age_months: number
+          min_age_months: number
+        }
+        Insert: {
+          age_band_key: string
+          display_label?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_age_months: number
+          min_age_months: number
+        }
+        Update: {
+          age_band_key?: string
+          display_label?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_age_months?: number
+          min_age_months?: number
+        }
+        Relationships: []
+      }
+      vineland_domains: {
+        Row: {
+          domain_key: string
+          domain_name: string
+          id: string
+        }
+        Insert: {
+          domain_key: string
+          domain_name: string
+          id?: string
+        }
+        Update: {
+          domain_key?: string
+          domain_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      vineland_forms: {
+        Row: {
+          form_key: string
+          form_name: string
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          form_key: string
+          form_name: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          form_key?: string
+          form_name?: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
+      vineland_norm_lookup_composites: {
+        Row: {
+          adaptive_level: string | null
+          age_band_key: string
+          composite_key: string
+          form_key: string
+          id: string
+          is_active: boolean | null
+          lookup_key: number
+          percentile: number | null
+          source_version: string | null
+          standard_score: number | null
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_band_key: string
+          composite_key: string
+          form_key: string
+          id?: string
+          is_active?: boolean | null
+          lookup_key: number
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_band_key?: string
+          composite_key?: string
+          form_key?: string
+          id?: string
+          is_active?: boolean | null
+          lookup_key?: number
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+        }
+        Relationships: []
+      }
+      vineland_norm_lookup_domains: {
+        Row: {
+          adaptive_level: string | null
+          age_band_key: string
+          domain_key: string
+          form_key: string
+          id: string
+          is_active: boolean | null
+          percentile: number | null
+          source_version: string | null
+          standard_score: number | null
+          vscale_sum: number
+        }
+        Insert: {
+          adaptive_level?: string | null
+          age_band_key: string
+          domain_key: string
+          form_key: string
+          id?: string
+          is_active?: boolean | null
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+          vscale_sum: number
+        }
+        Update: {
+          adaptive_level?: string | null
+          age_band_key?: string
+          domain_key?: string
+          form_key?: string
+          id?: string
+          is_active?: boolean | null
+          percentile?: number | null
+          source_version?: string | null
+          standard_score?: number | null
+          vscale_sum?: number
+        }
+        Relationships: []
+      }
+      vineland_norm_lookup_subdomains: {
+        Row: {
+          age_band_key: string
+          age_equivalent: string | null
+          domain_key: string
+          form_key: string
+          gsv: number | null
+          id: string
+          is_active: boolean | null
+          raw_score: number
+          source_version: string | null
+          subdomain_key: string
+          v_scale_score: number | null
+        }
+        Insert: {
+          age_band_key: string
+          age_equivalent?: string | null
+          domain_key: string
+          form_key: string
+          gsv?: number | null
+          id?: string
+          is_active?: boolean | null
+          raw_score: number
+          source_version?: string | null
+          subdomain_key: string
+          v_scale_score?: number | null
+        }
+        Update: {
+          age_band_key?: string
+          age_equivalent?: string | null
+          domain_key?: string
+          form_key?: string
+          gsv?: number | null
+          id?: string
+          is_active?: boolean | null
+          raw_score?: number
+          source_version?: string | null
+          subdomain_key?: string
+          v_scale_score?: number | null
+        }
+        Relationships: []
+      }
+      vineland_subdomains: {
+        Row: {
+          domain_key: string
+          id: string
+          subdomain_key: string
+          subdomain_name: string
+        }
+        Insert: {
+          domain_key: string
+          id?: string
+          subdomain_key: string
+          subdomain_name: string
+        }
+        Update: {
+          domain_key?: string
+          id?: string
+          subdomain_key?: string
+          subdomain_name?: string
+        }
+        Relationships: []
+      }
       vineland3_age_bands: {
         Row: {
           age_band_key: string
@@ -46885,6 +47122,54 @@ export type Database = {
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
+      }
+      calculate_vineland_composite_score:
+        | {
+            Args: {
+              p_age_band: string
+              p_composite: string
+              p_form: string
+              p_lookup: number
+            }
+            Returns: {
+              adaptive_level: string
+              percentile: number
+              standard_score: number
+            }[]
+          }
+        | {
+            Args: { p_age_band: string; p_form: string; p_lookup: number }
+            Returns: {
+              adaptive_level: string
+              percentile: number
+              standard_score: number
+            }[]
+          }
+      calculate_vineland_domain_score: {
+        Args: {
+          p_age_band: string
+          p_domain: string
+          p_form: string
+          p_vsum: number
+        }
+        Returns: {
+          adaptive_level: string
+          percentile: number
+          standard_score: number
+        }[]
+      }
+      calculate_vineland_subdomain_vscore: {
+        Args: {
+          p_age_band: string
+          p_form: string
+          p_raw: number
+          p_subdomain: string
+        }
+        Returns: {
+          age_equivalent: string
+          gsv: number
+          v_scale: number
+        }[]
       }
       can_collect_data: { Args: { p_client_id: string }; Returns: boolean }
       can_generate_reports: { Args: { p_client_id: string }; Returns: boolean }

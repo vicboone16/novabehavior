@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
   useVineland3,
@@ -46,12 +44,16 @@ export function Vineland3ScoringGrid({
   const [derivedScores, setDerivedScores] = useState<Vineland3DerivedScore[]>([]);
   const [derivedStatus, setDerivedStatus] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
 
   const isLocked = assessment.status === 'locked';
-  const activeDomain = domains.filter(d => d.domain_key !== 'maladaptive_behavior')[activeDomainIdx] || domains[0];
   const scorableDomains = useMemo(() => domains.filter(d => d.domain_key !== 'maladaptive_behavior'), [domains]);
+  const activeDomain = scorableDomains[activeDomainIdx] || scorableDomains[0];
+
+  // Derived score helpers
+  const subdomainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'subdomain'), [derivedScores]);
+  const domainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'domain'), [derivedScores]);
+  const compositeScore = useMemo(() => derivedScores.find(d => d.score_level === 'composite'), [derivedScores]);
 
   useEffect(() => {
     loadItemScores(assessment.id).then(s => { setScores(s); setLoading(false); });
@@ -64,7 +66,6 @@ export function Vineland3ScoringGrid({
     score: number | null
   ) => {
     if (isLocked) return;
-    // Optimistic update
     setScores(prev => ({
       ...prev,
       [item.id]: {
@@ -110,7 +111,6 @@ export function Vineland3ScoringGrid({
     }
   };
 
-  // Count scored items
   const totalItems = items.filter(i => {
     const dom = domains.find(d => d.id === i.domain_id);
     return dom && dom.domain_key !== 'maladaptive_behavior';
@@ -125,6 +125,16 @@ export function Vineland3ScoringGrid({
       </div>
     );
   }
+
+  const adaptiveLevelColor = (level: string | null) => {
+    if (!level) return 'secondary';
+    const l = level.toLowerCase();
+    if (l.includes('high')) return 'default';
+    if (l === 'adequate') return 'default';
+    if (l.includes('moderately low')) return 'secondary';
+    if (l === 'low') return 'destructive';
+    return 'secondary';
+  };
 
   return (
     <div className="space-y-4">
@@ -186,7 +196,6 @@ export function Vineland3ScoringGrid({
 
         {/* Item Entry Tab */}
         <TabsContent value="items" className="space-y-3">
-          {/* Domain selector */}
           <div className="flex gap-1 overflow-x-auto pb-1">
             {scorableDomains.map((d, idx) => {
               const domainItems = items.filter(i => i.domain_id === d.id);
@@ -208,7 +217,6 @@ export function Vineland3ScoringGrid({
             })}
           </div>
 
-          {/* Items by subdomain */}
           {activeDomain && activeDomain.subdomains.map(sub => {
             const subItems = items
               .filter(i => i.subdomain_id === sub.id)
@@ -316,28 +324,101 @@ export function Vineland3ScoringGrid({
               </CardContent>
             </Card>
           )}
+
           {derivedScores.length > 0 ? (
-            <Card>
-              <CardContent className="py-3">
-                <div className="space-y-2">
-                  {derivedScores.map((ds, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
-                      <div>
-                        <span className="text-sm font-medium">{ds.subdomain_key || ds.domain_key || ds.composite_key}</span>
-                        <span className="text-xs text-muted-foreground ml-2">({ds.score_level})</span>
+            <div className="space-y-3">
+              {/* Composite (ABC) */}
+              {compositeScore && (
+                <Card className="border-primary/30">
+                  <CardHeader className="py-2 px-4">
+                    <CardTitle className="text-sm">Adaptive Behavior Composite</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl font-bold">{compositeScore.standard_score ?? '—'}</span>
+                        <div className="text-xs text-muted-foreground">
+                          <div>Standard Score</div>
+                          <div>Mean=100, SD=15</div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
-                        {ds.v_scale_score != null && <Badge variant="outline">v={ds.v_scale_score}</Badge>}
-                        {ds.standard_score != null && <Badge>SS={ds.standard_score}</Badge>}
-                        {ds.percentile != null && <Badge variant="secondary">{ds.percentile}%ile</Badge>}
-                        {ds.adaptive_level && <span className="text-muted-foreground">{ds.adaptive_level}</span>}
-                        {ds.age_equivalent && <span className="text-muted-foreground">AE: {ds.age_equivalent}</span>}
+                        {compositeScore.percentile != null && (
+                          <Badge variant="secondary">{compositeScore.percentile}%ile</Badge>
+                        )}
+                        {compositeScore.adaptive_level && (
+                          <Badge variant={adaptiveLevelColor(compositeScore.adaptive_level)}>
+                            {compositeScore.adaptive_level}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Domain Scores */}
+              {domainScores.length > 0 && (
+                <Card>
+                  <CardHeader className="py-2 px-4">
+                    <CardTitle className="text-sm">Domain Standard Scores</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-3">
+                    <div className="space-y-2">
+                      {domainScores.map((ds) => {
+                        const dom = scorableDomains.find(d => d.domain_key === ds.domain_key);
+                        return (
+                          <div key={ds.domain_key} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+                            <span className="text-sm font-medium">{dom?.domain_name || ds.domain_key}</span>
+                            <div className="flex items-center gap-2 text-xs">
+                              <Badge variant="outline">v-sum={ds.v_scale_score}</Badge>
+                              <Badge>SS={ds.standard_score}</Badge>
+                              {ds.percentile != null && <Badge variant="secondary">{ds.percentile}%ile</Badge>}
+                              {ds.adaptive_level && (
+                                <Badge variant={adaptiveLevelColor(ds.adaptive_level)}>
+                                  {ds.adaptive_level}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Subdomain v-Scale Scores */}
+              {subdomainScores.length > 0 && (
+                <Card>
+                  <CardHeader className="py-2 px-4">
+                    <CardTitle className="text-sm">Subdomain v-Scale Scores</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-3">
+                    <div className="space-y-2">
+                      {subdomainScores.map((ds) => {
+                        const dom = scorableDomains.find(d => d.domain_key === ds.domain_key);
+                        const sub = dom?.subdomains.find(s => s.subdomain_key === ds.subdomain_key);
+                        return (
+                          <div key={`${ds.domain_key}-${ds.subdomain_key}`} className="flex items-center justify-between py-1 border-b border-border/50 last:border-0">
+                            <div>
+                              <span className="text-sm">{sub?.subdomain_name || ds.subdomain_key}</span>
+                              <span className="text-xs text-muted-foreground ml-2">({dom?.domain_name})</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <Badge variant="outline">raw={ds.raw_score}</Badge>
+                              <Badge>v={ds.v_scale_score}</Badge>
+                              {ds.age_equivalent && <span className="text-muted-foreground">AE: {ds.age_equivalent}</span>}
+                              {ds.gsv != null && <span className="text-muted-foreground">GSV: {ds.gsv}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           ) : derivedStatus !== 'lookup_missing' && (
             <Card>
               <CardContent className="py-8 text-center">
