@@ -17,6 +17,7 @@ import ReactMarkdown from 'react-markdown';
 import { NovaAIClientSelector } from '@/components/nova-ai/NovaAIClientSelector';
 import { NovaAIActionButtons, type NovaAction } from '@/components/nova-ai/NovaAIActionButtons';
 import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
+import { NovaAIReviewPanel } from '@/components/nova-ai/NovaAIReviewPanel';
 import { useNovaAIActions } from '@/hooks/useNovaAIActions';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
@@ -83,6 +84,7 @@ export default function AskNovaAI() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
   const [confirmAction, setConfirmAction] = useState<{ action: NovaAction; destination: string } | null>(null);
+  const [reviewAction, setReviewAction] = useState<NovaAction | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastUserInputRef = useRef('');
@@ -266,7 +268,12 @@ export default function AskNovaAI() {
       sendMessage(answer);
       return;
     }
-    // Show confirmation dialog
+    // Review destination opens the full review panel
+    if (destination === 'review') {
+      setReviewAction(action);
+      return;
+    }
+    // Show confirmation dialog for other destinations
     setConfirmAction({ action, destination });
   };
 
@@ -437,6 +444,17 @@ export default function AskNovaAI() {
         action={confirmAction?.action || null}
         destination={confirmAction?.destination || ''}
         onConfirm={handleConfirmAction}
+      />
+
+      {/* Item-Level Review Panel */}
+      <NovaAIReviewPanel
+        open={!!reviewAction}
+        onOpenChange={(open) => { if (!open) setReviewAction(null); }}
+        action={reviewAction}
+        clientId={selectedClientId}
+        onSaveApproved={async (modifiedAction, destination) => {
+          return executeAction(modifiedAction, destination, lastUserInputRef.current);
+        }}
       />
     </div>
   );
