@@ -1074,10 +1074,7 @@ export default function StudentProfile() {
           <CaregiverTrainingTab studentId={student.id} />
         </TabsContent>
 
-        {/* Protocols Tab */}
-        <TabsContent value="protocols" className="space-y-4">
-          <ProtocolAssignmentManager studentId={student.id} />
-        </TabsContent>
+        {/* Protocols moved into Programming */}
       </Tabs>
 
       {/* Add Behavior Dialog */}
