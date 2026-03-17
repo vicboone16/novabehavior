@@ -91,6 +91,25 @@ export function Vineland3ScoringGrid({
     }
   }, [assessment.id, isLocked, saveItemScore]);
 
+  const handleScoreFullAssessment = async () => {
+    setCalculating(true);
+    try {
+      const result = await scoreFullAssessment(assessment.id);
+      setRawScores(result.rawScores);
+      setDerivedScores(result.derivedScores);
+      setPairwiseComparisons(result.pairwise);
+      setScoringStatus(result.scoringStatus);
+      setDerivedStatus(result.status);
+      toast.success('Full assessment scored');
+      setActiveTab('derived');
+    } catch (err) {
+      console.error('Scoring failed:', err);
+      toast.error('Scoring failed — check scoring diagnostics');
+    } finally {
+      setCalculating(false);
+    }
+  };
+
   const handleCalculate = async () => {
     setCalculating(true);
     try {
