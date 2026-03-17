@@ -720,6 +720,15 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
         ) : (
           /* Display Mode */
           <div className="space-y-3">
+            {/* Client ID Number */}
+            {student.clientExternalId && (
+              <div className="flex items-center gap-3 text-sm">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Client ID:</span>
+                <Badge variant="outline" className="font-mono text-xs">{student.clientExternalId}</Badge>
+              </div>
+            )}
+
             {/* Name Info */}
             {(student.firstName || student.lastName) && (
               <div className="flex items-center gap-3 text-sm flex-wrap">
