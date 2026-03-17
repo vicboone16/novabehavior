@@ -712,6 +712,7 @@ export interface Session {
   frequencyEntries: FrequencyEntry[];
   durationEntries: DurationEntry[];
   intervalEntries: IntervalEntry[];
+  latencyEntries?: LatencyEntry[];
 }
 
 export interface TrackerOrder {

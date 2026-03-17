@@ -158,11 +158,24 @@ export function useSessionDataAttribution(sessionId: string | null) {
     [publish]
   );
 
+  const publishLatency = useCallback(
+    (p: LatencyPayload) =>
+      publish('latency', p.entryId, p.studentId, p.behaviorId, {
+        latencySeconds: p.latencySeconds,
+        antecedentTime: p.antecedentTime,
+        behaviorOnsetTime: p.behaviorOnsetTime,
+        timestamp: p.timestamp,
+        behaviorId: p.behaviorId,
+      }),
+    [publish]
+  );
+
   return {
     publishFrequency,
     publishABC,
     publishDuration,
     publishInterval,
     publishSkill,
+    publishLatency,
   };
 }
