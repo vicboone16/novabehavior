@@ -317,11 +317,10 @@ export function useSDCTraining() {
     if (!user) return [];
     const { data, error } = await supabase
       .from('sdc_certification_progress')
-      .select('*')
-      .eq('user_id', user.id);
+      .select('*');
     if (!error && data) {
-      setSdcCertProgress(data as SDCCertProgress[]);
-      return data as SDCCertProgress[];
+      setSdcCertProgress(data as unknown as SDCCertProgress[]);
+      return data as unknown as SDCCertProgress[];
     }
     return [];
   }, [user]);
