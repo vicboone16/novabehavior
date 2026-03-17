@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { ENCOUNTER_TYPE_LABELS, CONSENT_LABELS, PRIVACY_LABELS } from '@/types/voiceCapture';
 import { format } from 'date-fns';
@@ -75,6 +74,7 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
   const [activeTab, setActiveTab] = useState('transcript');
   const [processing, setProcessing] = useState(false);
   const [transcriptView, setTranscriptView] = useState<'full' | 'speakers' | 'timestamps'>('full');
+  const [transformingDraft, setTransformingDraft] = useState<string | null>(null);
 
   // AI Q&A state
   const [aiQuestion, setAiQuestion] = useState('');
@@ -95,7 +95,6 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     if (recRes.data) setRecording(recRes.data);
     if (transRes.data?.[0]) {
       setTranscript(transRes.data[0]);
-      // Load segments
       const { data: segs } = await supabase
         .from('voice_transcript_segments' as any)
         .select('*')
@@ -125,10 +124,9 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
   const handleProcessTranscript = async () => {
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('voice-capture-process', {
+      const { error } = await supabase.functions.invoke('voice-capture-process', {
         body: { recording_id: recordingId, action: 'transcribe_and_extract' },
       });
-
       if (error) throw error;
       toast.success('Processing started — results will appear automatically');
       setTimeout(() => loadRecordingData(), 3000);
@@ -139,6 +137,7 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     }
   };
 
+  // ── Ask AI (wired to edge function) ──
   const handleAskAI = async () => {
     if (!aiQuestion.trim() || !transcript?.full_text) return;
     const q = aiQuestion.trim();
@@ -148,21 +147,12 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
 
     try {
       const { data, error } = await supabase.functions.invoke('voice-capture-process', {
-        body: {
-          recording_id: recordingId,
-          action: 'ask_ai',
-          question: q,
-        },
+        body: { recording_id: recordingId, action: 'ask_ai', question: q },
       });
-
-      // For now, provide a placeholder - the ask_ai action would need to be implemented
+      if (error) throw error;
       setAiAnswers(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
-          question: q,
-          answer: data?.answer || 'AI Q&A will be available after the transcript is processed. Use the suggested prompts as a starting point.',
-          loading: false,
-        };
+        updated[updated.length - 1] = { question: q, answer: data?.answer || 'No response generated.', loading: false };
         return updated;
       });
     } catch {
@@ -176,10 +166,92 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     }
   };
 
+  // ── Draft Approval ──
+  const handleApproveDraft = async (draftId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('voice_ai_drafts' as any).update({
+        approved_by: user.id,
+        approved_at: new Date().toISOString(),
+      }).eq('id', draftId);
+      toast.success('Draft approved');
+      loadRecordingData();
+    } catch { toast.error('Failed to approve draft'); }
+  };
+
+  // ── Draft Transform ──
+  const handleTransformDraft = async (draftId: string, transformType: string) => {
+    setTransformingDraft(draftId);
+    try {
+      const { data, error } = await supabase.functions.invoke('voice-capture-process', {
+        body: { recording_id: recordingId, action: 'transform_draft', draft_id: draftId, transform_type: transformType },
+      });
+      if (error) throw error;
+      toast.success('Draft transformed');
+      loadRecordingData();
+    } catch {
+      toast.error('Transform failed');
+    } finally {
+      setTransformingDraft(null);
+    }
+  };
+
+  // ── Draft Content Save ──
+  const handleSaveDraftContent = async (draftId: string, content: string) => {
+    await supabase.from('voice_ai_drafts' as any).update({
+      content,
+      is_user_edited: true,
+    }).eq('id', draftId);
+    toast.success('Draft saved');
+  };
+
+  // ── Extraction Approve/Ignore ──
+  const handleExtractionAction = async (extractionId: string, action: 'approve' | 'ignore') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      if (action === 'approve') {
+        await supabase.from('voice_ai_extractions' as any).update({
+          approved_by: user.id,
+          approved_at: new Date().toISOString(),
+        }).eq('id', extractionId);
+        toast.success('Extraction approved');
+      } else {
+        // Mark as ignored by setting confidence to 0
+        await supabase.from('voice_ai_extractions' as any).update({
+          confidence_score: 0,
+        }).eq('id', extractionId);
+        toast.success('Extraction ignored');
+      }
+      loadRecordingData();
+    } catch { toast.error('Action failed'); }
+  };
+
+  // ── Save Actions ──
   const handleSaveAction = async (actionType: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Validate posting rules
+      const postingActions = ['save_narrative_draft', 'save_session_draft', 'save_supervision_draft', 'save_fba_draft', 'save_consult_draft'];
+      if (postingActions.includes(actionType)) {
+        const blockedStatuses = ['offline_buffering', 'upload_degraded', 'transcript_failed_retryable', 'ai_failed_retryable'];
+        if (blockedStatuses.includes(recording?.status)) {
+          toast.error('Cannot post — recording is still processing or in a degraded state.');
+          return;
+        }
+        if (drafts.length === 0) {
+          toast.error('No drafts available to post.');
+          return;
+        }
+        const hasApproved = drafts.some((d: any) => d.approved_at);
+        if (!hasApproved) {
+          toast.error('Please approve at least one draft before posting to chart.');
+          return;
+        }
+      }
 
       await supabase.from('voice_save_actions' as any).insert({
         recording_id: recordingId,
@@ -222,8 +294,8 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
   }
 
   const isProcessing = recording.status === 'processing';
-  const summaryExtractions = extractions.filter(e => e.extraction_type?.includes('summary'));
-  const structuredExtractions = extractions.filter(e => !e.extraction_type?.includes('summary'));
+  const summaryExtractions = extractions.filter((e: any) => e.extraction_type?.includes('summary'));
+  const structuredExtractions = extractions.filter((e: any) => !e.extraction_type?.includes('summary') && (e.confidence_score === null || e.confidence_score > 0));
 
   const SUGGESTED_PROMPTS = [
     'Summarize main concerns',
@@ -242,19 +314,17 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
     const payload = ext.json_payload;
     if (payload?.text) return <p className="text-sm whitespace-pre-wrap">{payload.text}</p>;
     if (payload?.value) return <p className="text-sm">{payload.value}</p>;
-    if (payload?.items) {
-      if (Array.isArray(payload.items)) {
-        return (
-          <ul className="space-y-1">
-            {payload.items.map((item: any, i: number) => (
-              <li key={i} className="text-sm flex items-start gap-2">
-                <span className="text-muted-foreground mt-0.5">•</span>
-                <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
-              </li>
-            ))}
-          </ul>
-        );
-      }
+    if (payload?.items && Array.isArray(payload.items)) {
+      return (
+        <ul className="space-y-1">
+          {payload.items.map((item: any, i: number) => (
+            <li key={i} className="text-sm flex items-start gap-2">
+              <span className="text-muted-foreground mt-0.5">•</span>
+              <span>{typeof item === 'string' ? item : JSON.stringify(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
     }
     return <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{JSON.stringify(payload, null, 2)}</pre>;
   };
@@ -303,32 +373,18 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
               <span className="text-sm font-medium">Processing pipeline running...</span>
             </div>
             <div className="grid grid-cols-3 gap-3 text-xs">
-              <div className="flex items-center gap-1.5">
-                {recording.transcript_status === 'completed' ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                ) : recording.transcript_status === 'processing' ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-                Transcript
-              </div>
-              <div className="flex items-center gap-1.5">
-                {extractions.length > 0 ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-                Extraction
-              </div>
-              <div className="flex items-center gap-1.5">
-                {drafts.length > 0 ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-                Drafts
-              </div>
+              {[
+                { label: 'Transcript', done: recording.transcript_status === 'completed', active: recording.transcript_status === 'processing' },
+                { label: 'Extraction', done: extractions.length > 0, active: false },
+                { label: 'Drafts', done: drafts.length > 0, active: false },
+              ].map(step => (
+                <div key={step.label} className="flex items-center gap-1.5">
+                  {step.done ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> :
+                   step.active ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> :
+                   <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+                  {step.label}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -337,30 +393,16 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="transcript" className="gap-1.5 text-xs">
-            <FileText className="w-3.5 h-3.5" /> Transcript
-          </TabsTrigger>
-          <TabsTrigger value="summary" className="gap-1.5 text-xs">
-            <BarChart3 className="w-3.5 h-3.5" /> Summary
-            {summaryExtractions.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{summaryExtractions.length}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="extract" className="gap-1.5 text-xs">
-            <Brain className="w-3.5 h-3.5" /> ABA Extract
-            {structuredExtractions.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{structuredExtractions.length}</Badge>}
-          </TabsTrigger>
+          <TabsTrigger value="transcript" className="gap-1.5 text-xs"><FileText className="w-3.5 h-3.5" /> Transcript</TabsTrigger>
+          <TabsTrigger value="summary" className="gap-1.5 text-xs"><BarChart3 className="w-3.5 h-3.5" /> Summary</TabsTrigger>
+          <TabsTrigger value="extract" className="gap-1.5 text-xs"><Brain className="w-3.5 h-3.5" /> ABA Extract</TabsTrigger>
           <TabsTrigger value="drafts" className="gap-1.5 text-xs">
             <PenTool className="w-3.5 h-3.5" /> Drafts
             {drafts.length > 0 && <Badge variant="secondary" className="text-[9px] ml-1 h-4 min-w-4 px-1">{drafts.length}</Badge>}
           </TabsTrigger>
-          <TabsTrigger value="ask-ai" className="gap-1.5 text-xs">
-            <MessageSquare className="w-3.5 h-3.5" /> Ask AI
-          </TabsTrigger>
-          <TabsTrigger value="save" className="gap-1.5 text-xs">
-            <Save className="w-3.5 h-3.5" /> Save / Post
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-xs">
-            <ClipboardList className="w-3.5 h-3.5" /> Audit
-          </TabsTrigger>
+          <TabsTrigger value="ask-ai" className="gap-1.5 text-xs"><MessageSquare className="w-3.5 h-3.5" /> Ask AI</TabsTrigger>
+          <TabsTrigger value="save" className="gap-1.5 text-xs"><Save className="w-3.5 h-3.5" /> Save / Post</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5 text-xs"><ClipboardList className="w-3.5 h-3.5" /> Audit</TabsTrigger>
         </TabsList>
 
         {/* ── Transcript Tab ── */}
@@ -372,34 +414,22 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                 {transcript && (
                   <div className="flex gap-1">
                     {(['full', 'speakers', 'timestamps'] as const).map(view => (
-                      <Button
-                        key={view}
-                        variant={transcriptView === view ? 'default' : 'outline'}
-                        size="sm"
-                        className="text-xs h-7"
-                        onClick={() => setTranscriptView(view)}
-                      >
+                      <Button key={view} variant={transcriptView === view ? 'default' : 'outline'} size="sm" className="text-xs h-7" onClick={() => setTranscriptView(view)}>
                         {view === 'full' ? 'Full' : view === 'speakers' ? 'Speakers' : 'Timestamps'}
                       </Button>
                     ))}
                   </div>
                 )}
               </div>
-              {transcript && (
-                <CardDescription className="text-xs">
-                  {transcript.speaker_count} speaker(s) · Model: {transcript.created_by_model}
-                </CardDescription>
-              )}
+              {transcript && <CardDescription className="text-xs">{transcript.speaker_count} speaker(s) · Model: {transcript.created_by_model}</CardDescription>}
             </CardHeader>
             <CardContent>
               {transcript?.full_text ? (
                 transcriptView === 'full' ? (
-                  <div className="prose prose-sm max-w-none">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript.full_text}</p>
-                  </div>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{transcript.full_text}</p>
                 ) : transcriptView === 'speakers' && segments.length > 0 ? (
                   <div className="space-y-3">
-                    {segments.map((seg, i) => (
+                    {segments.map((seg: any, i: number) => (
                       <div key={seg.id || i} className="flex gap-3">
                         <Badge variant="outline" className="shrink-0 h-5 text-[10px]">
                           {seg.speaker_id ? `Speaker ${seg.segment_index + 1}` : `Seg ${seg.segment_index + 1}`}
@@ -410,7 +440,7 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                   </div>
                 ) : transcriptView === 'timestamps' && segments.length > 0 ? (
                   <div className="space-y-2">
-                    {segments.map((seg, i) => (
+                    {segments.map((seg: any, i: number) => (
                       <div key={seg.id || i} className="flex gap-3">
                         <span className="text-xs text-muted-foreground font-mono shrink-0 w-16">
                           {seg.start_ms != null ? `${Math.floor(seg.start_ms / 60000)}:${String(Math.floor((seg.start_ms % 60000) / 1000)).padStart(2, '0')}` : '--:--'}
@@ -426,11 +456,9 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                 <div className="text-center py-8">
                   <FileText className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    {recording.status === 'audio_secured'
-                      ? 'Audio secured. Click "Process" to generate transcript.'
-                      : isProcessing
-                        ? 'Transcript is being generated...'
-                        : 'No transcript available yet.'}
+                    {recording.status === 'audio_secured' ? 'Audio secured. Click "Process" to generate transcript.'
+                      : isProcessing ? 'Transcript is being generated...'
+                      : 'No transcript available yet.'}
                   </p>
                 </div>
               )}
@@ -441,37 +469,25 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
         {/* ── Summary Tab ── */}
         <TabsContent value="summary" className="mt-4">
           <div className="grid gap-3">
-            {summaryExtractions.length > 0 ? (
-              summaryExtractions.map(ext => {
-                const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📝' };
-                return (
-                  <Card key={ext.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">{meta.icon} {meta.label}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {renderExtractionValue(ext)}
-                    </CardContent>
-                  </Card>
-                );
-              })
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  {isProcessing ? 'Summaries are being generated...' : 'Summaries will appear after processing.'}
-                </CardContent>
-              </Card>
+            {summaryExtractions.length > 0 ? summaryExtractions.map((ext: any) => {
+              const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📝' };
+              return (
+                <Card key={ext.id}>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">{meta.icon} {meta.label}</CardTitle></CardHeader>
+                  <CardContent>{renderExtractionValue(ext)}</CardContent>
+                </Card>
+              );
+            }) : (
+              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
+                {isProcessing ? 'Summaries are being generated...' : 'Summaries will appear after processing.'}
+              </CardContent></Card>
             )}
-
-            {/* Tasks */}
             {tasks.length > 0 && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">✅ Action Items</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">✅ Action Items</CardTitle></CardHeader>
                 <CardContent>
                   <ul className="space-y-1.5">
-                    {tasks.map(t => (
+                    {tasks.map((t: any) => (
                       <li key={t.id} className="flex items-start gap-2 text-sm">
                         <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-muted-foreground shrink-0" />
                         <span>{t.task_text}</span>
@@ -487,48 +503,43 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
         {/* ── ABA Extract Tab ── */}
         <TabsContent value="extract" className="mt-4">
           <div className="grid gap-3">
-            {structuredExtractions.length > 0 ? (
-              structuredExtractions.map(ext => {
-                const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📊' };
-                const isRisk = ext.extraction_type === 'safety_concerns' || ext.extraction_type === 'risk_flags';
-                return (
-                  <Card key={ext.id} className={isRisk ? 'border-destructive/30 bg-destructive/5' : ''}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm flex items-center gap-1.5">
-                          <span>{meta.icon}</span> {meta.label}
-                          {isRisk && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
-                        </CardTitle>
-                        {ext.confidence_score && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {Math.round(ext.confidence_score * 100)}%
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {renderExtractionValue(ext)}
+            {structuredExtractions.length > 0 ? structuredExtractions.map((ext: any) => {
+              const meta = EXTRACTION_LABELS[ext.extraction_type] || { label: ext.extraction_type, icon: '📊' };
+              const isRisk = ext.extraction_type === 'safety_concerns' || ext.extraction_type === 'risk_flags';
+              const isApproved = !!ext.approved_at;
+              return (
+                <Card key={ext.id} className={isRisk ? 'border-destructive/30 bg-destructive/5' : isApproved ? 'border-green-500/30 bg-green-500/5' : ''}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-1.5">
+                        <span>{meta.icon}</span> {meta.label}
+                        {isRisk && <AlertTriangle className="w-3.5 h-3.5 text-destructive" />}
+                        {isApproved && <Badge className="text-[10px] bg-green-500">Approved</Badge>}
+                      </CardTitle>
+                      {ext.confidence_score != null && ext.confidence_score > 0 && (
+                        <Badge variant="outline" className="text-[10px]">{Math.round(ext.confidence_score * 100)}%</Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {renderExtractionValue(ext)}
+                    {!isApproved && (
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" variant="outline" className="text-xs h-7">
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleExtractionAction(ext.id, 'approve')}>
                           <CheckCircle2 className="w-3 h-3 mr-1" /> Approve
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground">
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground" onClick={() => handleExtractionAction(ext.id, 'ignore')}>
                           Ignore
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-muted-foreground">
-                          Save to Profile
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  {isProcessing ? 'ABA extractions are being generated...' : 'ABA-specific extractions will appear after processing.'}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            }) : (
+              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
+                {isProcessing ? 'ABA extractions are being generated...' : 'ABA-specific extractions will appear after processing.'}
+              </CardContent></Card>
             )}
           </div>
         </TabsContent>
@@ -536,14 +547,13 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
         {/* ── Drafts Tab ── */}
         <TabsContent value="drafts" className="mt-4">
           <div className="grid gap-3">
-            {drafts.length > 0 ? (
-              drafts.map(draft => (
-                <Card key={draft.id}>
+            {drafts.length > 0 ? drafts.map((draft: any) => {
+              const isTransforming = transformingDraft === draft.id;
+              return (
+                <Card key={draft.id} className={draft.approved_at ? 'border-green-500/30' : ''}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">
-                        {DRAFT_TYPE_LABELS[draft.draft_type] || draft.draft_type?.replace(/_/g, ' ')}
-                      </CardTitle>
+                      <CardTitle className="text-sm">{DRAFT_TYPE_LABELS[draft.draft_type] || draft.draft_type?.replace(/_/g, ' ')}</CardTitle>
                       <div className="flex items-center gap-1">
                         <Badge variant="outline" className="text-[10px]">{draft.tone}</Badge>
                         <Badge variant="outline" className="text-[10px]">{draft.output_language}</Badge>
@@ -558,24 +568,47 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                     <Textarea
                       defaultValue={draft.content || ''}
                       className="min-h-[150px] text-sm leading-relaxed"
+                      onBlur={(e) => {
+                        if (e.target.value !== draft.content) {
+                          handleSaveDraftContent(draft.id, e.target.value);
+                        }
+                      }}
                     />
                     <div className="flex gap-2 mt-3 flex-wrap">
-                      <Button size="sm" variant="outline" className="text-xs h-7">Shorter</Button>
-                      <Button size="sm" variant="outline" className="text-xs h-7">More Objective</Button>
-                      <Button size="sm" variant="outline" className="text-xs h-7">School-Safe Wording</Button>
-                      <Button size="sm" variant="outline" className="text-xs h-7">Parent-Friendly</Button>
-                      <Button size="sm" variant="outline" className="text-xs h-7">Translate</Button>
-                      <Button size="sm" variant="outline" className="text-xs h-7">Rebuild from Excerpts</Button>
+                      {[
+                        { key: 'shorter', label: 'Shorter' },
+                        { key: 'more_objective', label: 'More Objective' },
+                        { key: 'school_safe', label: 'School-Safe' },
+                        { key: 'parent_friendly', label: 'Parent-Friendly' },
+                        { key: 'translate_spanish', label: 'Translate to Spanish' },
+                      ].map(tf => (
+                        <Button
+                          key={tf.key}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-7"
+                          disabled={isTransforming}
+                          onClick={() => handleTransformDraft(draft.id, tf.key)}
+                        >
+                          {isTransforming ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                          {tf.label}
+                        </Button>
+                      ))}
                     </div>
+                    {!draft.approved_at && (
+                      <div className="mt-3 pt-3 border-t">
+                        <Button size="sm" onClick={() => handleApproveDraft(draft.id)} className="text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Approve Draft
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  {isProcessing ? 'Draft notes are being generated...' : 'Draft notes will appear after processing.'}
-                </CardContent>
-              </Card>
+              );
+            }) : (
+              <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
+                {isProcessing ? 'Draft notes are being generated...' : 'Draft notes will appear after processing.'}
+              </CardContent></Card>
             )}
           </div>
         </TabsContent>
@@ -585,25 +618,14 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
           <Card>
             <CardHeader><CardTitle className="text-base">Ask AI about this recording</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {/* Suggested prompts */}
               <div className="flex flex-wrap gap-1.5">
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => setAiQuestion(prompt)}
-                    disabled={!transcript?.full_text}
-                  >
+                  <Button key={i} variant="outline" size="sm" className="text-xs h-7" onClick={() => setAiQuestion(prompt)} disabled={!transcript?.full_text}>
                     {prompt}
                   </Button>
                 ))}
               </div>
-
               <Separator />
-
-              {/* Q&A history */}
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {aiAnswers.map((qa, i) => (
                   <div key={i} className="space-y-1.5">
@@ -618,8 +640,6 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                   </div>
                 ))}
               </div>
-
-              {/* Input */}
               <div className="flex gap-2">
                 <Textarea
                   value={aiQuestion}
@@ -629,11 +649,7 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                   disabled={!transcript?.full_text}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAskAI(); } }}
                 />
-                <Button
-                  onClick={handleAskAI}
-                  disabled={!aiQuestion.trim() || !transcript?.full_text || askingAi}
-                  className="self-end"
-                >
+                <Button onClick={handleAskAI} disabled={!aiQuestion.trim() || !transcript?.full_text || askingAi} className="self-end">
                   {askingAi ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ask'}
                 </Button>
               </div>
@@ -654,27 +670,20 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
                 <Button variant="outline" className="justify-start text-sm h-9" onClick={() => handleSaveAction('save_private')}>
                   <Save className="w-4 h-4 mr-2" /> Save Everything Privately
                 </Button>
-
                 <Separator className="my-2" />
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Draft Saves</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Chart Draft Saves</h3>
+                <p className="text-xs text-muted-foreground mb-1">Requires at least one approved draft before posting.</p>
                 {[
-                  { action: 'save_narrative_draft', label: 'Save as Narrative Note Draft', icon: PenTool },
-                  { action: 'save_session_draft', label: 'Save as Session Note Draft', icon: PenTool },
-                  { action: 'save_supervision_draft', label: 'Save as Supervision Draft', icon: PenTool },
-                  { action: 'save_fba_draft', label: 'Save as FBA Draft', icon: PenTool },
-                  { action: 'save_consult_draft', label: 'Save as Consult Note', icon: PenTool },
-                ].map(({ action, label, icon: Icon }) => (
-                  <Button
-                    key={action}
-                    variant="outline"
-                    className="justify-start text-sm h-9"
-                    disabled={drafts.length === 0}
-                    onClick={() => handleSaveAction(action)}
-                  >
-                    <Icon className="w-4 h-4 mr-2" /> {label}
+                  { action: 'save_narrative_draft', label: 'Save as Narrative Note Draft' },
+                  { action: 'save_session_draft', label: 'Save as Session Note Draft' },
+                  { action: 'save_supervision_draft', label: 'Save as Supervision Draft' },
+                  { action: 'save_fba_draft', label: 'Save as FBA Draft' },
+                  { action: 'save_consult_draft', label: 'Save as Consult Note' },
+                ].map(({ action, label }) => (
+                  <Button key={action} variant="outline" className="justify-start text-sm h-9" disabled={drafts.length === 0} onClick={() => handleSaveAction(action)}>
+                    <PenTool className="w-4 h-4 mr-2" /> {label}
                   </Button>
                 ))}
-
                 <Separator className="my-2" />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Other</h3>
                 <Button variant="outline" className="justify-start text-sm h-9" disabled={tasks.length === 0} onClick={() => handleSaveAction('save_tasks')}>
@@ -695,14 +704,12 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
             <CardContent>
               {auditLog.length > 0 ? (
                 <div className="space-y-1.5">
-                  {auditLog.map(entry => (
+                  {auditLog.map((entry: any) => (
                     <div key={entry.id} className="flex items-center gap-3 text-sm py-2 border-b last:border-0">
                       <span className="text-xs text-muted-foreground font-mono w-36 shrink-0">
                         {format(new Date(entry.created_at), 'MMM d h:mm:ss a')}
                       </span>
-                      <Badge variant="outline" className="text-[10px] shrink-0">
-                        {entry.action_type?.replace(/_/g, ' ')}
-                      </Badge>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{entry.action_type?.replace(/_/g, ' ')}</Badge>
                       {entry.metadata_json && Object.keys(entry.metadata_json).length > 0 && (
                         <span className="text-xs text-muted-foreground truncate">
                           {Object.entries(entry.metadata_json).map(([k, v]) => `${k}: ${v}`).join(', ')}
