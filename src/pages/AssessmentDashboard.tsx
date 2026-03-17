@@ -909,6 +909,13 @@ export default function AssessmentDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* PECS Communication Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <PECSGoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 {/* Vineland-3 Internal Assessment */}
                 <Vineland3Entry
                   studentId={selectedStudent.id}
