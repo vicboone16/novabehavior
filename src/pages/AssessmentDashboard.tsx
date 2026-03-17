@@ -83,6 +83,7 @@ const FBA_WORKFLOW_STEPS = [
 
 export default function AssessmentDashboard() {
   const { students, abcEntries, frequencyEntries, sessions, updateStudentProfile, selectedStudentIds: activeSessionStudentIds, sessionStartTime, isStudentSessionEnded } = useDataStore();
+  const { userRole } = useAuth();
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
