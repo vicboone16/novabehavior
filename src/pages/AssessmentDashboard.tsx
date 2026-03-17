@@ -30,6 +30,7 @@ import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
 import { AFLSCurriculumBrowser } from '@/components/clinical-library/AFLSCurriculumBrowser';
+import { SRS2GoalBrowser } from '@/components/clinical-library/SRS2GoalBrowser';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
@@ -899,6 +900,13 @@ export default function AssessmentDashboard() {
                   studentName={selectedStudent.name}
                   trackerType="ablls-r"
                 />
+
+                {/* SRS-2 Goal Bank */}
+                <Card>
+                  <CardContent className="p-4">
+                    <SRS2GoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
 
                 {/* Vineland-3 Internal Assessment */}
                 <Vineland3Entry
