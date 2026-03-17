@@ -25,6 +25,7 @@ import {
   itemsNeedReview,
   itemsNeedSession,
   buildCompletionSummary,
+  buildChatSummary,
   verifyNovaActionComplete,
   type PipelineResult,
   type PipelineStepResult,
@@ -98,7 +99,7 @@ export default function AskNovaAI() {
   // In-flight send lock to prevent duplicate messages
   const sendLockRef = useRef(false);
 
-  const { executeAction, logToAudit } = useNovaAIActions(selectedClientId);
+  const { executeAction, logToAudit, updateRequestStatus } = useNovaAIActions(selectedClientId);
 
   useEffect(() => {
     const load = async () => {
@@ -236,18 +237,42 @@ export default function AskNovaAI() {
     result.summary = buildCompletionSummary(result);
 
     // Verify completion
-    const expectedSteps = ['staging'];
-    if (!needsReview && !needsSession) {
-      expectedSteps.push('clinical_routing');
+    const expectedSteps: string[] = [];
+    if (mode === 'structured_data' || mode === 'mixed') {
+      if (needsReview) {
+        expectedSteps.push('review_check');
+      } else if (needsSession) {
+        expectedSteps.push('session_check', 'staging');
+      } else {
+        expectedSteps.push('clinical_routing');
+      }
     }
+    if (mode === 'note_generation' || mode === 'mixed') {
+      expectedSteps.push('note_save');
+    }
+
     const failedSteps = verifyNovaActionComplete(result, expectedSteps);
 
-    if (failedSteps.length > 0 && !needsReview) {
+    if (failedSteps.length > 0 && !needsReview && !needsSession) {
       console.error('[NovaAI Pipeline] Failed steps:', failedSteps);
-      // Only show error if not already handled by needsReview/needsSession toasts
-      if (!needsSession) {
-        toast.error(`Pipeline incomplete: ${failedSteps.join(', ')} did not complete`);
+      toast.error(`Pipeline incomplete: ${failedSteps.join(', ')} did not complete`);
+    } else if (needsSession) {
+      toast.warning('Parsed items staged — select a session to complete saving.', { duration: 6000 });
+    } else if (needsReview) {
+      toast.info('Nova AI parsed your data — some items need review.', { duration: 5000 });
+    } else if (result.completed) {
+      // Show success toast only when truly complete
+      const savedCount = steps.filter(s => s.step === 'clinical_routing' && s.success)
+        .reduce((n, s) => n + (parseInt(s.detail) || 1), 0);
+      if (savedCount > 0) {
+        toast.success(`Pipeline complete — data saved to clinical tables`);
       }
+    }
+
+    // Append pipeline summary as a follow-up assistant message in the chat
+    const chatSummary = buildChatSummary(result);
+    if (chatSummary) {
+      setMessages(prev => [...prev, { role: 'assistant', content: chatSummary }]);
     }
 
     // Log pipeline result

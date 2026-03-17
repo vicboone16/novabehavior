@@ -373,11 +373,16 @@ export function useNovaAIActions(clientId: string | null) {
     try {
       // Create staging request for audit trail
       const intent = action.type.replace('generate_', '').replace('extract_', '');
-      const requestId = await createStagingRequest(
-        rawInput || 'Action executed from UI',
-        intent,
-        action.data?.intent_confidence || 0.9
-      );
+      let requestId: string | null = null;
+      try {
+        requestId = await createStagingRequest(
+          rawInput || 'Action executed from UI',
+          intent,
+          action.data?.intent_confidence || 0.9
+        );
+      } catch (err) {
+        console.error('[NovaAI] Failed to create staging request:', err);
+      }
 
       switch (action.type) {
         case 'generate_soap_note': {
@@ -648,12 +653,15 @@ export function useNovaAIActions(clientId: string | null) {
           toast.info('Action not yet supported');
           return false;
       }
-    } catch (e) {
-      console.error('NovaAI action error:', e);
-      toast.error('Failed to save. Please try again.');
+    } catch (e: any) {
+      console.error('[NovaAI] Action error:', e);
+      const errorMsg = e?.message || 'Unknown error';
+      toast.error(`Failed to save: ${errorMsg}`);
+      // Update staging request status to failed if we have a requestId
+      // (requestId is scoped inside try — this is a fallback log)
       return false;
     }
-  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates, routeToClinicialTables]);
+  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates, routeToClinicialTables, createNewTarget]);
 
   // ── Log to audit ────────────────────────────────────────────────────────
   const logToAudit = useCallback(async (
@@ -680,5 +688,36 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [user, clientId]);
 
-  return { executeAction, logToAudit };
+  // ── Update staging request status ────────────────────────────────────────
+  const updateRequestStatus = useCallback(async (
+    requestId: string,
+    status: 'completed' | 'failed' | 'pending_review' | 'pending_session',
+    errorDetail?: string
+  ) => {
+    try {
+      const update: any = { status };
+      if (errorDetail) update.error_detail = errorDetail;
+      await (supabase as any)
+        .from('nova_ai_requests')
+        .update(update)
+        .eq('id', requestId);
+    } catch (err) {
+      console.error('Failed to update request status:', err);
+    }
+  }, []);
+
+  return {
+    executeAction,
+    logToAudit,
+    // Expose sub-functions for pipeline orchestration
+    createStagingRequest,
+    stageParsedItems,
+    stageGeneratedNote,
+    addTimelineEntry,
+    enqueueGraphUpdates,
+    routeToClinicialTables,
+    createNewTarget,
+    checkForDuplicates,
+    updateRequestStatus,
+  };
 }

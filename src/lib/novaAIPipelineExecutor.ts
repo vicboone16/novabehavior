@@ -97,6 +97,53 @@ export function buildCompletionSummary(result: PipelineResult): string {
 }
 
 /**
+ * Build a detailed markdown summary for display in the chat.
+ */
+export function buildChatSummary(result: PipelineResult): string {
+  const lines: string[] = [];
+  
+  if (result.mode === 'structured_data' || result.mode === 'mixed') {
+    lines.push('**📊 Smart Data Pipeline Results**');
+  } else if (result.mode === 'note_generation') {
+    lines.push('**📝 Note Generation Results**');
+  }
+
+  const successSteps = result.steps.filter(s => s.success);
+  const failedSteps = result.steps.filter(s => !s.success);
+
+  if (successSteps.length > 0) {
+    for (const step of successSteps) {
+      lines.push(`✅ ${step.detail}`);
+    }
+  }
+
+  if (result.needsReview) {
+    lines.push(`⚠️ Some items need your review — check the Review Panel`);
+  }
+  if (result.needsSession) {
+    lines.push(`⏳ Items staged as pending — select or start a session to complete saving`);
+  }
+
+  if (failedSteps.length > 0) {
+    for (const step of failedSteps) {
+      lines.push(`❌ ${step.step}: ${step.detail}`);
+    }
+  }
+
+  if (result.errors.length > 0) {
+    for (const err of result.errors) {
+      lines.push(`🔴 ${err}`);
+    }
+  }
+
+  if (result.completed && !result.needsReview && !result.needsSession) {
+    lines.push(`\n✅ **Pipeline completed successfully**`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
  * Verify that all required pipeline steps completed.
  * Returns list of failed steps.
  */
