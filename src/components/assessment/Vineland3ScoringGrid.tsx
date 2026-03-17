@@ -304,9 +304,9 @@ export function Vineland3ScoringGrid({
         {/* Derived Scores Tab */}
         <TabsContent value="derived" className="space-y-3">
           {derivedStatus === 'lookup_missing' && (
-            <Card className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <Card className="border-destructive/30 bg-accent/50">
               <CardContent className="py-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">Norm tables not yet populated</p>
                   <p className="text-xs text-muted-foreground">
