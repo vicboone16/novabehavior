@@ -3566,10 +3566,17 @@ export type Database = {
           library_key: string
           library_name: string
           library_type: string
+          notes: string | null
+          supports_age_bands: boolean | null
+          supports_benchmarks: boolean | null
+          supports_domains: boolean | null
           supports_exports: boolean | null
+          supports_goal_bank: boolean | null
           supports_goal_mapping: boolean | null
           supports_item_scoring: boolean | null
+          supports_progress_tracking: boolean | null
           supports_reports: boolean | null
+          supports_subdomains: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -3579,10 +3586,17 @@ export type Database = {
           library_key: string
           library_name: string
           library_type: string
+          notes?: string | null
+          supports_age_bands?: boolean | null
+          supports_benchmarks?: boolean | null
+          supports_domains?: boolean | null
           supports_exports?: boolean | null
+          supports_goal_bank?: boolean | null
           supports_goal_mapping?: boolean | null
           supports_item_scoring?: boolean | null
+          supports_progress_tracking?: boolean | null
           supports_reports?: boolean | null
+          supports_subdomains?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -3592,10 +3606,17 @@ export type Database = {
           library_key?: string
           library_name?: string
           library_type?: string
+          notes?: string | null
+          supports_age_bands?: boolean | null
+          supports_benchmarks?: boolean | null
+          supports_domains?: boolean | null
           supports_exports?: boolean | null
+          supports_goal_bank?: boolean | null
           supports_goal_mapping?: boolean | null
           supports_item_scoring?: boolean | null
+          supports_progress_tracking?: boolean | null
           supports_reports?: boolean | null
+          supports_subdomains?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -19817,6 +19838,53 @@ export type Database = {
           },
         ]
       }
+      library_benchmark_variants: {
+        Row: {
+          age_band_key: string | null
+          benchmark_key: string
+          benchmark_label: string | null
+          benchmark_text: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          library_goal_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          age_band_key?: string | null
+          benchmark_key: string
+          benchmark_label?: string | null
+          benchmark_text: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          library_goal_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          age_band_key?: string | null
+          benchmark_key?: string
+          benchmark_label?: string | null
+          benchmark_text?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          library_goal_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_benchmark_variants_library_goal_id_fkey"
+            columns: ["library_goal_id"]
+            isOneToOne: false
+            referencedRelation: "library_goal_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_crosswalk_rules: {
         Row: {
           created_at: string | null
@@ -19828,8 +19896,10 @@ export type Database = {
           source_domain_key: string | null
           source_library_key: string
           source_subdomain_key: string | null
+          target_domain_key: string | null
           target_library_key: string
           target_program_area: string | null
+          target_subdomain_key: string | null
           target_tags: string[] | null
           updated_at: string | null
         }
@@ -19843,8 +19913,10 @@ export type Database = {
           source_domain_key?: string | null
           source_library_key: string
           source_subdomain_key?: string | null
+          target_domain_key?: string | null
           target_library_key: string
           target_program_area?: string | null
+          target_subdomain_key?: string | null
           target_tags?: string[] | null
           updated_at?: string | null
         }
@@ -19858,8 +19930,10 @@ export type Database = {
           source_domain_key?: string | null
           source_library_key?: string
           source_subdomain_key?: string | null
+          target_domain_key?: string | null
           target_library_key?: string
           target_program_area?: string | null
+          target_subdomain_key?: string | null
           target_tags?: string[] | null
           updated_at?: string | null
         }
