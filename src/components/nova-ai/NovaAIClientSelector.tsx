@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useDataStore } from '@/stores/dataStore';
+import { useDataStore } from '@/store/dataStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
