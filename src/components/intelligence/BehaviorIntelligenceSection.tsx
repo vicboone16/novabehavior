@@ -162,11 +162,11 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <ContextStat label="Peak Time" value={intel.peak_risk_time_block ? formatTimeBlock(intel.peak_risk_time_block).split(' ')[0] : '—'} count={intel.peak_risk_time_block_count} />
-              <ContextStat label="Transitions" value={intel.transition_events} flag={intel.transition_risk_flag} />
-              <ContextStat label="Unstructured" value={intel.unstructured_events} flag={intel.unstructured_risk_flag} />
-              <ContextStat label="Lunch/Recess" value={intel.lunch_recess_events} flag={intel.lunch_recess_risk_flag} />
-              <ContextStat label="Demands" value={intel.demand_events} />
+              <ContextStat label="Peak Time" value={intel?.peak_risk_time_block ? formatTimeBlock(intel.peak_risk_time_block).split(' ')[0] : '—'} count={intel?.peak_risk_time_block_count} />
+              <ContextStat label="Transitions" value={intel?.transition_events ?? 0} flag={intel?.transition_risk_flag} />
+              <ContextStat label="Unstructured" value={intel?.unstructured_events ?? 0} flag={intel?.unstructured_risk_flag} />
+              <ContextStat label="Lunch/Recess" value={intel?.lunch_recess_events ?? 0} flag={intel?.lunch_recess_risk_flag} />
+              <ContextStat label="Demands" value={intel?.demand_events ?? 0} />
             </div>
           </CardContent>
         </Card>
