@@ -13,6 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { VinelandDomainProfileChart } from './charts/VinelandDomainProfileChart';
+import { VinelandSubdomainProfileChart } from './charts/VinelandSubdomainProfileChart';
+import { VinelandLongitudinalChart } from './charts/VinelandLongitudinalChart';
+import { Checkbox } from '@/components/ui/checkbox';
 import type {
   Vineland3Assessment,
   Vineland3Domain,
