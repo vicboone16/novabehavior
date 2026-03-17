@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { CaseQuickActions, type QuickAction } from './CaseQuickActions';
 import { ResponseExportActions } from './ResponseExportActions';
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
 
 type CaseMode = 'case_behavior_analysis' | 'case_skill_analysis' | 'case_caregiver_analysis' | 'full_clinical_review' | 'case_report_language' | string;
