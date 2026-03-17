@@ -155,21 +155,34 @@ export function useNovaAIActions(clientId: string | null) {
 
       // Check behavior_session_data for similar entries
       if (item.item_type === 'behavior_event' || item.item_type === 'skill_or_behavior_measure') {
-        const { data } = await supabase
+        let query = supabase
           .from('behavior_session_data')
-          .select('id, frequency, duration_seconds')
+          .select('id, frequency, duration_seconds, session_id')
           .eq('student_id', clientId)
-          .eq('behavior_id', targetId)
-          .limit(1);
+          .eq('behavior_id', targetId);
+
+        // Primary filter: session_id when available (most precise)
+        if (sessionId) {
+          query = query.eq('session_id', sessionId);
+        } else {
+          // Fallback: filter by event date to avoid cross-session false positives
+          const eventDate = item.event_date || new Date().toISOString().split('T')[0];
+          query = query.gte('created_at', `${eventDate}T00:00:00`)
+                       .lte('created_at', `${eventDate}T23:59:59`);
+        }
+
+        const { data } = await query.limit(5);
 
         if (data?.length) {
-          const existing = data[0] as any;
-          // Check if values are very similar
-          if (item.measurement?.frequency_count != null && existing.frequency === item.measurement.frequency_count) {
-            return true;
-          }
-          if (item.measurement?.duration_seconds != null && existing.duration_seconds === item.measurement.duration_seconds) {
-            return true;
+          for (const existing of data) {
+            const ex = existing as any;
+            // Check if values match closely
+            if (item.measurement?.frequency_count != null && ex.frequency === item.measurement.frequency_count) {
+              return true;
+            }
+            if (item.measurement?.duration_seconds != null && ex.duration_seconds === item.measurement.duration_seconds) {
+              return true;
+            }
           }
         }
       }
