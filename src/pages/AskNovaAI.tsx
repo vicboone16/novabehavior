@@ -99,7 +99,7 @@ export default function AskNovaAI() {
   // In-flight send lock to prevent duplicate messages
   const sendLockRef = useRef(false);
 
-  const { executeAction, logToAudit } = useNovaAIActions(selectedClientId);
+  const { executeAction, logToAudit, updateRequestStatus } = useNovaAIActions(selectedClientId);
 
   useEffect(() => {
     const load = async () => {
