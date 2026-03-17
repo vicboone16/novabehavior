@@ -208,8 +208,8 @@ export default function Dashboard() {
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={60}
             onLayoutChange={onLayoutChange}
-            onDragStart={() => { /* mark user interaction for layout persistence gate */ }}
-            onResizeStart={() => { /* mark user interaction for layout persistence gate */ }}
+            onDragStart={() => markInteraction()}
+            onResizeStart={() => markInteraction()}
             draggableHandle=".drag-handle"
             compactType="vertical"
             margin={[12, 12]}
