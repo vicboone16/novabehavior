@@ -49,6 +49,7 @@ import { StudentProfileInfo } from '@/components/StudentProfileInfo';
 import { NarrativeNotesManager } from '@/components/NarrativeNotesManager';
 import { FBAModeTools } from '@/components/FBAModeTools';
 import { TeacherFriendlyView } from '@/components/TeacherFriendlyView';
+import { VoiceNoteRecorder } from '@/components/mobile/VoiceNoteRecorder';
 import { EnhancedGoalBuilder } from '@/components/EnhancedGoalBuilder';
 import { FBAFindingsDisplay } from '@/components/FBAFindingsDisplay';
 import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
