@@ -1,25 +1,50 @@
 /**
  * Nova AI Clinical Capture - Global Floating Mic Button
  * Visible on all pages. Shows recording state when active.
+ * Includes safety guards for route-leave, timeout suppression, and recovery.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Mic, Square, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { CaptureSetupSheet } from './CaptureSetupSheet';
-import { useVoiceCaptureEngine, type VoiceCaptureEngineState } from '@/hooks/useVoiceCaptureEngine';
+import { useVoiceCaptureEngine } from '@/hooks/useVoiceCaptureEngine';
+import { useRecordingSafetyGuards } from '@/hooks/useRecordingSafetyGuards';
 import { LiveRecordingBar } from './LiveRecordingBar';
 import type { VoiceCaptureConfig } from '@/types/voiceCapture';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export function FloatingCaptureButton() {
   const [showSetup, setShowSetup] = useState(false);
   const [showLiveBar, setShowLiveBar] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const engine = useVoiceCaptureEngine();
   const { state } = engine;
+
+  const { getRecoveryState, clearRecovery } = useRecordingSafetyGuards({
+    isRecording: state.isRecording,
+    recordingId: state.recordingId,
+  });
+
+  // Check for crashed recording on mount
+  useEffect(() => {
+    const recovery = getRecoveryState();
+    if (recovery && !state.isRecording) {
+      toast.info('A previous recording session was interrupted.', {
+        action: {
+          label: 'View Recording',
+          onClick: () => {
+            clearRecovery();
+            navigate(`/capture`);
+          },
+        },
+        duration: 10000,
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect if on a learner page
   const studentMatch = location.pathname.match(/\/students\/([^/]+)/);
