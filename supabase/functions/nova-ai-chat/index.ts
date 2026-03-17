@@ -616,13 +616,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+
+    // Validate JWT via getClaims (works with signing-keys)
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("[nova-ai-chat] Auth failed:", claimsErr?.message || "missing sub claim");
+      return new Response(JSON.stringify({ error: "Session expired or invalid. Please sign in again." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub;
 
     const { messages, evidence_mode, client_id, system_suffix } = await req.json();
 
