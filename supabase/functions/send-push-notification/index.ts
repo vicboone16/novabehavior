@@ -316,7 +316,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in send-push-notification:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
