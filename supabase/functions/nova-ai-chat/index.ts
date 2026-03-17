@@ -555,7 +555,7 @@ async function loadClientContext(supabase: any, clientId: string): Promise<strin
     for (const d of recentData.slice(0, 15)) {
       const metrics = [];
       if (d.frequency != null) metrics.push(`freq=${d.frequency}`);
-      if (d.duration_total != null) metrics.push(`dur=${d.duration_total}s`);
+      if (d.duration_seconds != null) metrics.push(`dur=${d.duration_seconds}s`);
       if (d.observation_minutes) metrics.push(`obs=${d.observation_minutes}min`);
       parts.push(`- behavior_id:${d.behavior_id} ${metrics.join(", ")} state=${d.data_state} date=${d.created_at?.slice(0, 10)}`);
     }
