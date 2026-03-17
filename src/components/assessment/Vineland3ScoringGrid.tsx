@@ -431,18 +431,13 @@ export function Vineland3ScoringGrid({
 
         {/* Report Tab */}
         <TabsContent value="report" className="space-y-3">
-          <Card>
-            <CardContent className="py-8 text-center">
-              <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-              <p className="text-sm font-medium mb-1">Report Generation</p>
-              <p className="text-xs text-muted-foreground mb-4">
-                Complete scoring and calculate derived scores to generate a clinical report.
-              </p>
-              <Button variant="outline" disabled={rawScores.length === 0}>
-                Generate Report
-              </Button>
-            </CardContent>
-          </Card>
+          <Vineland3Report
+            assessment={assessment}
+            studentName={studentName}
+            studentDob={studentDob}
+            domains={domains}
+            derivedScores={derivedScores}
+          />
         </TabsContent>
 
         {/* Goal Mapping Tab */}
