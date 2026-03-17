@@ -280,16 +280,16 @@ export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateG
                         onMouseEnter={() => setHoveredItemId(item.item_id)}
                         onMouseLeave={() => setHoveredItemId(null)}
                       >
-                        {/* Item label text */}
+                        {/* Item number only */}
                         <span
-                          className="leading-none truncate w-full text-center px-0.5"
+                          className="leading-none text-center"
                           style={{
-                            fontSize: 7,
-                            color: fill === 'FULL' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.55)',
-                            fontWeight: 500,
+                            fontSize: 8,
+                            color: fill === 'FULL' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.45)',
+                            fontWeight: 600,
                           }}
                         >
-                          {item.label_short.length > 8 ? item.label_short.slice(0, 8) + '…' : item.label_short}
+                          {item.sort_order}
                         </span>
                         {/* Overlay dots for historical assessments */}
                         {overlayScores.length > 0 && (
