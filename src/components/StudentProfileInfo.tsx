@@ -118,6 +118,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   // Contact
   const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
   const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
+  const [clientExternalId, setClientExternalId] = useState(student.clientExternalId || '');
 
   // Load staff with credentials from staff_credentials table
   useEffect(() => {
