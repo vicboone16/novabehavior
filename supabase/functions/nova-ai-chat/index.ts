@@ -711,6 +711,11 @@ serve(async (req) => {
       });
     }
 
+    const responseBody = response.body;
+    if (!responseBody) {
+      throw new Error("No response body from AI gateway");
+    }
+
     // Stream response to client, buffering tool calls for appending as action markers
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
