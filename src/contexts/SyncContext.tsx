@@ -49,6 +49,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const durationEntries = useDataStore((state) => state.durationEntries);
   const intervalEntries = useDataStore((state) => state.intervalEntries);
   const abcEntries = useDataStore((state) => state.abcEntries);
+  const latencyEntries = useDataStore((state) => state.latencyEntries);
   const currentSessionId = useDataStore((state) => state.currentSessionId);
   const sessionStartTime = useDataStore((state) => state.sessionStartTime);
   const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
