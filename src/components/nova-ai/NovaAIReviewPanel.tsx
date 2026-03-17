@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   CheckCircle2,
   XCircle,
   Pencil,
@@ -35,6 +40,8 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Search,
+  Check,
 } from 'lucide-react';
 import type { NovaAction } from './NovaAIActionButtons';
 
