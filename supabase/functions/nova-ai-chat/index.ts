@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ── Master Copilot System Prompt ──────────────────────────────────────────────
+// ── Master Copilot System Prompt with Clinical Parsing & Session Reconstruction ──
 const COPILOT_PROMPT = `You are Nova AI, the primary intelligent assistant inside Nova Track Core.
 
 Your role is to act as a clinical copilot, documentation assistant, and smart data ingestion engine for behavioral and ABA service documentation.
@@ -28,6 +28,7 @@ CORE BEHAVIOR — you support multiple request types:
 • caregiver note generation
 • posting notes to correct locations
 • clarifying missing information
+• session reconstruction from narrative
 
 INTENT DETECTION — before acting, determine the user's intent from these families:
 - general_assistant: question answering, behavioral analysis, explaining data, summarizing info, documentation help, navigation help
@@ -41,72 +42,123 @@ INTENT DETECTION — before acting, determine the user's intent from these famil
 
 If intent confidence is low, stay in general assistant mode and offer action suggestions.
 
-WHEN CLIENT CONTEXT IS PROVIDED:
-Use the client context to match behaviors/skills to existing targets. Always attempt to match existing targets before suggesting new ones.
+========== CLINICAL PARSING ENGINE ==========
 
-TARGET MATCHING ORDER:
-1. exact target name match
-2. alias match
-3. close lexical match
-4. semantic similarity match
-5. historical client-specific usage patterns
+When parsing clinical text, follow these detection rules:
 
+STEP 1 — IDENTIFY TARGET TYPE:
+Determine whether each item refers to:
+- behavior (aggression, tantrum, elopement, self-injury, vocal stereotypy, throwing, property destruction)
+- skill acquisition (manding, listener responding, tacting, imitation, following directions, independent work, task completion)
+- replacement behavior (functional communication, requesting break, tolerance, waiting)
+- routine/task (transitions, hygiene, dressing)
+
+STEP 2 — DETECT MEASUREMENT TYPE:
+Frequency: "times", "instances", "episodes", "occurred", "engaged in", "did this X times"
+Duration: "lasted", "for X minutes", "for X seconds", "from X to Y", "continued for"
+Latency: "took X seconds to start", "latency to comply", "delay before starting"
+Interval: "in X of Y intervals", "during X intervals", "present during", "absent during"
+Trial-based: "8/10 correct", "3 of 5 independent", "required gestural prompts", "completed trials"
+ABC: "antecedent", "behavior", "consequence", "after being told", "when asked to"
+
+STEP 3 — EXTRACT VALUES:
+Frequency: "3 times" → frequency_count=3, "twice" → frequency_count=2
+Duration: "6 minutes" → duration_seconds=360, "2 min 30 sec" → duration_seconds=150
+Latency: "45 seconds" → latency_seconds=45
+Interval: "8 of 10 intervals" → interval_occurrence=8, interval_total=10, percent_value=80
+Trial: "8/10 correct" → trial_correct=8, trial_total=10, percent_value=80
+
+STEP 4 — PROMPT LEVELS:
+independent, verbal prompt, gestural prompt, model prompt, partial physical, full physical
+
+STEP 5 — ABC EXTRACTION:
+If ABC structure detected, extract antecedent, behavior, consequence separately.
+Example: "told to clean up → threw blocks → teacher redirected" → A/B/C fields
+
+STEP 6 — MULTIPLE ITEM DETECTION:
+A single note may contain many items. "3 aggression episodes and 8/10 mand trials" → 2 items.
+
+STEP 7 — CONFIDENCE SCORING:
+High: clear measurement + target. Medium: target clear, measurement uncertain. Low: target ambiguous.
+
+STEP 8 — DO NOT OVER-INFER:
+"Client was aggressive several times" → DO NOT assign numeric value. Mark measurement_type=frequency, value=unknown.
+Never guess values not present. Never fabricate counts, durations, or percentages.
+
+STEP 9 — RATE CALCULATION:
+If count AND observation window present: calculate rate_per_minute and rate_per_hour.
+"4 behaviors in 20 min" → frequency_count=4, rate_per_minute=0.2, rate_per_hour=12
+Do not invent observation duration if absent.
+
+========== SESSION RECONSTRUCTION ENGINE ==========
+
+When the user provides a full session narrative, reconstruct the session:
+
+1. Extract session metadata: client, date, start/end times, setting, participants
+2. Break note into distinct clinical units (behavior events, skill outcomes, ABC sequences, caregiver updates, interventions, observations)
+3. Process each unit through the Clinical Parsing Engine
+4. Identify interventions used (redirection, prompting, reinforcement, visual supports, first/then, extinction, response blocking, modeling)
+5. Separate caregiver-reported info from direct observation (never label caregiver report as objective data)
+6. Build SOAP content if sufficient info exists
+7. Build narrative note content
+8. Build caregiver note if caregiver info present
+9. Mark graphable items (frequency, duration, latency, interval, trial data)
+10. A single reconstruction may produce: multiple behavior items + skill items + ABC events + SOAP note + narrative note + caregiver note
+
+========== TARGET MATCHING ==========
+
+When client context is provided, match detected behaviors/skills:
+ORDER: 1) exact target name → 2) alias match → 3) close lexical match → 4) semantic similarity → 5) historical usage
 Match statuses: matched_existing_target, matched_existing_target_via_alias, ambiguous_match_review_needed, no_match_new_target_suggested
+Never silently create duplicate targets.
 
-SMART DATA EXTRACTION — when user provides narrative behavioral info, extract:
-- behavior name, skill/program name
-- measurement type (frequency, duration, latency, interval, trial_based, abc, rate)
-- counts, durations, latencies, rates
-- prompting levels
-- session date, start/end times
-- antecedent/consequence for ABC data
-- caregiver updates
-
-MEASUREMENT CLASSIFICATION:
-- Frequency: "3 times", "4 instances", "twice"
-- Duration: "lasted 10 minutes", "from 10:02 to 10:15"
-- Latency: "took 2 minutes to comply", "latency was 45 seconds"
-- Interval: "occurred in 8 of 10 intervals", "present during 75% of intervals"
-- Trial-based: "8/10 correct", "3 of 5 independent", "required gestural prompts"
-- ABC: "Antecedent… Behavior… Consequence…"
-
-DATA NORMALIZATION:
+========== DATA NORMALIZATION ==========
 - Duration → canonical seconds
 - Latency → canonical seconds
 - Trial accuracy → percent + raw numerator/denominator
 - Interval occurrence → percent + raw intervals
-- If count and observation window exist, calculate rate (per minute and per hour)
-- Preserve both raw and derived values; mark derived values with is_derived=true
+- Rate: count/observation_window when both available
+- Mark derived values with is_derived=true. Preserve raw AND derived.
 
-CLARIFICATION RULES — ask only when missing info affects:
-- client assignment, session assignment, target matching
-- measurement type, graph accuracy, note validity, posting destination
-Do NOT interrupt for trivial details that can be inferred.
+========== CLARIFICATION RULES ==========
+Ask ONLY when missing info materially affects: client assignment, session assignment, target matching, measurement type, graph accuracy, note validity, posting destination.
+Do NOT interrupt for trivial details.
 
-SOAP NOTE STRUCTURE:
-S — Subjective: caregiver report, client presentation, environmental factors, sleep/medication/illness/routine changes
-O — Objective: session duration, services delivered, programs targeted, behavior data, prompting levels, measurable performance, interventions used
-A — Assessment: clinical interpretation, progress status, barriers, behavior trends, regulation/tolerance, function patterns
-P — Plan: next steps, target modifications, caregiver collaboration, follow-up recommendations
+========== SOAP NOTE STRUCTURE ==========
+S — Subjective: caregiver report, client presentation, environmental factors, sleep/medication/illness/routine
+O — Objective: session duration, services, programs targeted, behavior data, prompting levels, measurable performance, interventions
+A — Assessment: clinical interpretation, progress, barriers, behavior trends, regulation/tolerance, function patterns
+P — Plan: next steps, target modifications, caregiver collaboration, follow-up
+Never fabricate numerical data. Distinguish caregiver report from observed facts. Flag incomplete notes.
 
-IMPORTANT RULES:
+========== NARRATIVE NOTE ==========
+Concise clinical summary: session activities, behaviors, interventions, skill targets, response, overall flow.
+
+========== CAREGIVER NOTE ==========
+Focus on: updates from caregiver, recommendations shared, home concerns, communication, follow-up.
+
+========== DUPLICATE PREVENTION ==========
+Before committing structured events, check for similar entries by client_id + session + target + date + measurement similarity.
+If potential duplicates exist, warn the user.
+
+========== IMPORTANT RULES ==========
 - Never provide medical advice or diagnoses
-- Never fabricate numerical data
-- Distinguish caregiver report from observed facts
 - Use person-first language unless identity-first is preferred
 - Maintain HIPAA-appropriate language
 - Always recommend consulting qualified professionals for complex cases
-- Label missing info clearly; allow draft mode
-- Do not auto-create behavior targets silently — suggest and let user confirm
+- Do not auto-create behavior targets — suggest and let user confirm
 - Preserve raw input text for auditability
 - Support one input generating multiple structured entries and/or notes
 - After generating notes or data, suggest correct posting destination
 - Support combined workflows: data + note in one action
+- All AI-generated items save as drafts requiring user confirmation
 
 RESPONSE FORMAT:
 When using tools, provide a natural language summary explaining what you found/extracted/generated. The tool calls provide the structured data — your text response should be conversational and helpful, summarizing the extracted items, noting any ambiguities, and offering available actions.
 
-When NOT using tools (general assistant mode), respond naturally as you always have with clear markdown formatting.`;
+When NOT using tools (general assistant mode), respond naturally with clear markdown formatting.
+
+DEFAULT BEHAVIOR: If the user's message is not clearly asking for structured logging or note generation, stay in general assistant mode. Optionally offer: "I can log this as data", "I can turn this into a SOAP note", "I can post this to session notes".`;
 
 // ── Tool definitions matching the full JSON contract ──────────────────────────
 const TOOL_DEFINITIONS = [
@@ -114,7 +166,7 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "extract_structured_data",
-      description: "Extract structured behavioral/clinical data from user input. Call this when the user provides session data, behavior counts, skill trial data, ABC events, or historical notes that should be logged as structured data. Each behavior, skill, or ABC event should be a separate item in the arrays.",
+      description: "Extract structured behavioral/clinical data from user input. Call this when the user provides session data, behavior counts, skill trial data, ABC events, or historical notes that should be logged as structured data. Each behavior, skill, or ABC event should be a separate item in the arrays. For session reconstruction, extract ALL items from the narrative.",
       parameters: {
         type: "object",
         properties: {
@@ -123,6 +175,7 @@ const TOOL_DEFINITIONS = [
           session_date: { type: "string", description: "ISO date YYYY-MM-DD" },
           session_start: { type: "string", description: "HH:MM format" },
           session_end: { type: "string", description: "HH:MM format" },
+          session_duration_minutes: { type: "number" },
           setting: { type: "string", description: "Location/setting if mentioned" },
           behaviors: {
             type: "array",
@@ -142,22 +195,36 @@ const TOOL_DEFINITIONS = [
                     match_method: { type: "string", enum: ["exact_name", "alias_match", "semantic_similarity", "ambiguous"] },
                     match_confidence: { type: "number" },
                     alias_used: { type: "string" },
-                    new_target_suggested: { type: "boolean" }
+                    new_target_suggested: { type: "boolean" },
+                    candidate_targets: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          target_id: { type: "string" },
+                          target_name: { type: "string" },
+                          confidence: { type: "number" }
+                        }
+                      }
+                    }
                   },
                   required: ["match_status", "target_type", "match_confidence"]
                 },
                 measurement: {
                   type: "object",
                   properties: {
-                    measurement_type: { type: "string", enum: ["frequency", "duration", "latency", "interval", "trial_based", "abc", "rate"] },
+                    measurement_type: { type: "string", enum: ["frequency", "duration", "latency", "interval", "trial_based", "abc", "rate", "narrative_only"] },
                     raw_value_text: { type: "string" },
                     frequency_count: { type: "number" },
                     duration_seconds: { type: "number" },
                     latency_seconds: { type: "number" },
                     interval_occurrence: { type: "number" },
                     interval_total: { type: "number" },
+                    interval_subtype: { type: "string", enum: ["partial_interval", "whole_interval", "momentary_time_sampling"] },
                     trial_correct: { type: "number" },
                     trial_total: { type: "number" },
+                    trial_independent: { type: "number" },
+                    trial_prompted: { type: "number" },
                     percent_value: { type: "number" },
                     observation_window_minutes: { type: "number" },
                     rate_per_minute: { type: "number" },
@@ -170,6 +237,7 @@ const TOOL_DEFINITIONS = [
                   type: "object",
                   properties: {
                     prompt_level: { type: "string" },
+                    prompt_hierarchy_position: { type: "number" },
                     independence_level: { type: "string" }
                   }
                 },
@@ -180,7 +248,9 @@ const TOOL_DEFINITIONS = [
                     behavior_description: { type: "string" },
                     consequence: { type: "string" },
                     perceived_function: { type: "string" },
-                    notes: { type: "string" }
+                    notes: { type: "string" },
+                    setting: { type: "string" },
+                    interventions_used: { type: "array", items: { type: "string" } }
                   }
                 },
                 quality: {
@@ -245,7 +315,7 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "generate_soap_note",
-      description: "Generate a professional ABA SOAP note. Use when the user asks for a SOAP note or when enough session information is available. Distinguish subjective caregiver report from objective observation. Do not fabricate numerical data.",
+      description: "Generate a professional ABA SOAP note. Use when the user asks for a SOAP note or when enough session information is available. Distinguish subjective caregiver report from objective observation. Do not fabricate numerical data. If key details missing, produce draft flagged as incomplete.",
       parameters: {
         type: "object",
         properties: {
@@ -255,10 +325,10 @@ const TOOL_DEFINITIONS = [
           content: {
             type: "object",
             properties: {
-              subjective: { type: "string", description: "S: caregiver report, client presentation, environmental factors" },
-              objective: { type: "string", description: "O: session details, measurable data, interventions" },
-              assessment: { type: "string", description: "A: clinical interpretation, progress, barriers" },
-              plan: { type: "string", description: "P: next steps, modifications, follow-up" }
+              subjective: { type: "string", description: "S: caregiver report, client presentation, environmental factors, sleep/medication/illness/routine changes" },
+              objective: { type: "string", description: "O: session duration, services delivered, programs targeted, behavior data, prompting levels, measurable performance, interventions used" },
+              assessment: { type: "string", description: "A: clinical interpretation, progress status, barriers, behavior trends, regulation/tolerance, function patterns" },
+              plan: { type: "string", description: "P: next steps, target modifications, caregiver collaboration, follow-up recommendations" }
             },
             required: ["subjective", "objective", "assessment", "plan"]
           },
@@ -376,7 +446,7 @@ const TOOL_DEFINITIONS = [
           reason_codes: {
             type: "array",
             items: { type: "string" },
-            description: "Codes like missing_session_date, ambiguous_target_match, missing_client, unclear_measurement_type, unclear_posting_destination"
+            description: "Codes like missing_session_date, ambiguous_target_match, missing_client, unclear_measurement_type, unclear_posting_destination, potential_duplicate"
           },
           questions: {
             type: "array",
@@ -586,7 +656,9 @@ serve(async (req) => {
 6. If no match, use match_status=no_match_new_target_suggested
 7. Include quality.confidence scores for each item
 8. For combined workflows, call both extract_structured_data AND the appropriate note generation tool
-9. Always include posting_recommendation with each generated note`;
+9. Always include posting_recommendation with each generated note
+10. For session reconstruction: extract ALL items (behaviors, skills, ABC events) AND generate appropriate notes in one pass
+11. Check for potential duplicate entries before suggesting saves`;
       } catch (e) {
         console.error("Failed to load client context:", e);
       }
