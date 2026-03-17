@@ -371,6 +371,13 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     behaviorDetails: [] as Array<{ antecedents: string; consequences: string; hypothesizedFunction: string }>,
   });
 
+  // Restore schoolFields from draft on mount
+  useEffect(() => {
+    if (draft?.schoolFields) {
+      setSchoolFields(prev => ({ ...prev, ...draft.schoolFields }));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Insurance template state
   const [insuranceTemplates, setInsuranceTemplates] = useState<PayerReportTemplate[]>([]);
   const [selectedInsuranceTemplateId, setSelectedInsuranceTemplateId] = useState('');
