@@ -34,6 +34,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'Log Session Data': <Database className="w-3.5 h-3.5" />,
   'Write Caregiver Note': <MessageSquare className="w-3.5 h-3.5" />,
   'Parse Old Notes': <FileText className="w-3.5 h-3.5" />,
+  'Reconstruct Session': <RotateCcw className="w-3.5 h-3.5" />,
 };
 
 // Built-in quick prompts for new capabilities (shown alongside DB prompts)
