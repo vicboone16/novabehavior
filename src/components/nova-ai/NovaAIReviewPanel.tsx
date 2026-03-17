@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   CheckCircle2,
   XCircle,
   Pencil,
@@ -35,6 +40,8 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Search,
+  Check,
 } from 'lucide-react';
 import type { NovaAction } from './NovaAIActionButtons';
 
@@ -131,6 +138,98 @@ const MEASUREMENT_LABELS: Record<string, string> = {
   rate: 'Rate',
   narrative_only: 'Narrative',
 };
+
+// ── Searchable Target Dropdown ──
+
+function SearchableTargetDropdown({
+  targets,
+  selectedId,
+  onSelect,
+}: {
+  targets: AvailableTarget[];
+  selectedId: string;
+  onSelect: (id: string, name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(
+    () =>
+      targets.filter(
+        (t) =>
+          t.title.toLowerCase().includes(search.toLowerCase()) ||
+          (t.data_collection_type || '').toLowerCase().includes(search.toLowerCase())
+      ),
+    [targets, search]
+  );
+
+  const selectedTarget = targets.find((t) => t.id === selectedId);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 w-full justify-between text-xs font-normal"
+        >
+          <span className="truncate">
+            {selectedTarget ? selectedTarget.title : 'Select a target...'}
+          </span>
+          <ChevronDown className="w-3 h-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <div className="flex items-center gap-2 px-2.5 py-2 border-b border-border">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            placeholder="Search targets..."
+            className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <ScrollArea className="max-h-48">
+          {filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground px-3 py-4 text-center">
+              No targets found
+            </p>
+          ) : (
+            <div className="p-1">
+              {filtered.map((t) => (
+                <button
+                  key={t.id}
+                  className={`w-full text-left flex items-center gap-2 px-2 py-1.5 text-xs rounded-sm hover:bg-accent transition-colors ${
+                    t.id === selectedId ? 'bg-accent font-medium' : ''
+                  }`}
+                  onClick={() => {
+                    onSelect(t.id, t.title);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                >
+                  <Check
+                    className={`w-3 h-3 shrink-0 ${
+                      t.id === selectedId ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                  <span className="truncate">{t.title}</span>
+                  {t.data_collection_type && (
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 ml-auto shrink-0">
+                      {t.data_collection_type}
+                    </Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ── Component ──
 
@@ -593,32 +692,18 @@ export function NovaAIReviewPanel({
                             Target Assignment
                           </p>
                           <div className="space-y-2">
-                            <Select
-                              value={state.remappedTargetId || item.target_match?.target_id || ''}
-                              onValueChange={val => {
-                                const target = availableTargets.find(t => t.id === val);
+                            <SearchableTargetDropdown
+                              targets={availableTargets}
+                              selectedId={state.remappedTargetId || item.target_match?.target_id || ''}
+                              onSelect={(id, name) => {
                                 updateState(item.item_id, {
-                                  remappedTargetId: val,
-                                  remappedTargetName: target?.title,
+                                  remappedTargetId: id,
+                                  remappedTargetName: name,
                                   createNewTarget: false,
                                   newTargetName: undefined,
                                 });
                               }}
-                            >
-                              <SelectTrigger className="h-7 text-xs">
-                                <SelectValue placeholder="Select a target..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableTargets.map(t => (
-                                  <SelectItem key={t.id} value={t.id} className="text-xs">
-                                    {t.title}
-                                    {t.data_collection_type && (
-                                      <span className="ml-1 text-muted-foreground">({t.data_collection_type})</span>
-                                    )}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            />
 
                             {/* Alternate matches from AI */}
                             {item.target_match?.alternate_matches?.length ? (
