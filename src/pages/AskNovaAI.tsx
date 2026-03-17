@@ -122,24 +122,15 @@ export default function AskNovaAI() {
     let assistantContent = '';
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
+      const resp = await novaAIFetch({
+        body: {
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           evidence_mode: evidenceMode,
           client_id: selectedClientId,
-        }),
+        },
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        if (resp.status === 429) toast.error('Rate limit exceeded. Please wait and try again.');
-        else if (resp.status === 402) toast.error('AI credits depleted. Add credits in workspace settings.');
-        else toast.error(err.error || 'AI service error');
+      if (!resp) {
         setIsLoading(false);
         return;
       }
