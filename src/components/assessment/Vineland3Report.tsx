@@ -465,7 +465,7 @@ export function Vineland3Report({
                             <td className="text-center">{ss.gsv ?? '—'}</td>
                             <td className="text-center">{diff != null ? (diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) : '—'}</td>
                             <td className="text-center font-medium">
-                              {sw === 'S' ? <span className="text-green-600">S</span> : sw === 'W' ? <span className="text-destructive">W</span> : '—'}
+                              {sw === 'S' ? <span className="text-primary">S</span> : sw === 'W' ? <span className="text-destructive">W</span> : '—'}
                             </td>
                           </tr>
                         );
