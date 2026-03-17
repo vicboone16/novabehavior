@@ -11575,6 +11575,54 @@ export type Database = {
           },
         ]
       }
+      command_tasks: {
+        Row: {
+          app_slug: string
+          command_name: string
+          command_payload: Json
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          github_branch: string | null
+          github_repo: string | null
+          id: string
+          output_summary: string | null
+          priority: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          app_slug: string
+          command_name: string
+          command_payload?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          github_branch?: string | null
+          github_repo?: string | null
+          id?: string
+          output_summary?: string | null
+          priority?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          app_slug?: string
+          command_name?: string
+          command_payload?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          github_branch?: string | null
+          github_repo?: string | null
+          id?: string
+          output_summary?: string | null
+          priority?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       consent_form_submissions: {
         Row: {
           access_token: string
