@@ -1101,6 +1101,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             // Contact info
             contact_email: student.contactEmail || null,
             contact_phone: student.contactPhone || null,
+            client_external_id: student.clientExternalId || null,
             // FBA/Assessment data
             fba_workflow_progress: student.fbaWorkflowProgress ? {
               ...student.fbaWorkflowProgress,
