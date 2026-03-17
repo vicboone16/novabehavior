@@ -527,6 +527,11 @@ export function Vineland3Report({
         </Card>
       )}
 
+      {/* SUBDOMAIN V-SCALE PROFILE CHART — Comprehensive only */}
+      {isComprehensive && chartToggles.subdomainProfile && subdomainChartData.length > 0 && (
+        <VinelandSubdomainProfileChart scores={subdomainChartData} chartRef={subdomainChartRef} />
+      )}
+
       {/* PAIRWISE DIFFERENCE COMPARISONS — Comprehensive only */}
       {isComprehensive && (
         <Card>
