@@ -168,7 +168,7 @@ export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateG
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="overflow-x-auto pb-4">
+      <div className="overflow-x-auto pb-4" ref={ref}>
         <div
           style={{ minWidth: levelLabelW + rowNumW + domains.length * cellW }}
           className="text-[10px] select-none font-mono"
