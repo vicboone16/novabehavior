@@ -38351,48 +38351,69 @@ export type Database = {
           age_equivalent: string | null
           calculated_at: string | null
           composite_key: string
+          confidence_interval_high: number | null
+          confidence_interval_low: number | null
           domain_key: string
           gsv: number | null
           id: string
+          lookup_status: string | null
+          percent_estimated: number | null
           percentile: number | null
           raw_score: number | null
+          relative_strength_flag: boolean | null
+          relative_weakness_flag: boolean | null
           score_level: string
           standard_score: number | null
           student_assessment_id: string
           subdomain_key: string
           v_scale_score: number | null
+          vscale_sum_lookup: number | null
         }
         Insert: {
           adaptive_level?: string | null
           age_equivalent?: string | null
           calculated_at?: string | null
           composite_key?: string
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
           domain_key?: string
           gsv?: number | null
           id?: string
+          lookup_status?: string | null
+          percent_estimated?: number | null
           percentile?: number | null
           raw_score?: number | null
+          relative_strength_flag?: boolean | null
+          relative_weakness_flag?: boolean | null
           score_level: string
           standard_score?: number | null
           student_assessment_id: string
           subdomain_key?: string
           v_scale_score?: number | null
+          vscale_sum_lookup?: number | null
         }
         Update: {
           adaptive_level?: string | null
           age_equivalent?: string | null
           calculated_at?: string | null
           composite_key?: string
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
           domain_key?: string
           gsv?: number | null
           id?: string
+          lookup_status?: string | null
+          percent_estimated?: number | null
           percentile?: number | null
           raw_score?: number | null
+          relative_strength_flag?: boolean | null
+          relative_weakness_flag?: boolean | null
           score_level?: string
           standard_score?: number | null
           student_assessment_id?: string
           subdomain_key?: string
           v_scale_score?: number | null
+          vscale_sum_lookup?: number | null
         }
         Relationships: [
           {
@@ -38841,6 +38862,62 @@ export type Database = {
         }
         Relationships: []
       }
+      vineland3_pairwise_comparisons: {
+        Row: {
+          base_rate: string | null
+          comparison_label: string
+          comparison_level: string
+          created_at: string | null
+          difference_value: number | null
+          domain_key: string | null
+          id: string
+          score_1_key: string
+          score_1_value: number | null
+          score_2_key: string
+          score_2_value: number | null
+          significant_difference: boolean | null
+          student_assessment_id: string
+        }
+        Insert: {
+          base_rate?: string | null
+          comparison_label: string
+          comparison_level: string
+          created_at?: string | null
+          difference_value?: number | null
+          domain_key?: string | null
+          id?: string
+          score_1_key: string
+          score_1_value?: number | null
+          score_2_key: string
+          score_2_value?: number | null
+          significant_difference?: boolean | null
+          student_assessment_id: string
+        }
+        Update: {
+          base_rate?: string | null
+          comparison_label?: string
+          comparison_level?: string
+          created_at?: string | null
+          difference_value?: number | null
+          domain_key?: string | null
+          id?: string
+          score_1_key?: string
+          score_1_value?: number | null
+          score_2_key?: string
+          score_2_value?: number | null
+          significant_difference?: boolean | null
+          student_assessment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_pairwise_comparisons_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vineland3_raw_scores: {
         Row: {
           calculated_at: string | null
@@ -38930,6 +39007,68 @@ export type Database = {
             foreignKeyName: "vineland3_report_outputs_student_assessment_id_fkey"
             columns: ["student_assessment_id"]
             isOneToOne: false
+            referencedRelation: "vineland3_student_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vineland3_scoring_status: {
+        Row: {
+          age_resolution_status: string | null
+          comparison_status: string | null
+          composite_score_status: string | null
+          created_at: string | null
+          domain_score_status: string | null
+          id: string
+          last_scored_at: string | null
+          overall_scoring_status: string | null
+          raw_score_status: string | null
+          rescored_at: string | null
+          scored_by: string | null
+          status_notes: string | null
+          student_assessment_id: string
+          subdomain_lookup_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          age_resolution_status?: string | null
+          comparison_status?: string | null
+          composite_score_status?: string | null
+          created_at?: string | null
+          domain_score_status?: string | null
+          id?: string
+          last_scored_at?: string | null
+          overall_scoring_status?: string | null
+          raw_score_status?: string | null
+          rescored_at?: string | null
+          scored_by?: string | null
+          status_notes?: string | null
+          student_assessment_id: string
+          subdomain_lookup_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          age_resolution_status?: string | null
+          comparison_status?: string | null
+          composite_score_status?: string | null
+          created_at?: string | null
+          domain_score_status?: string | null
+          id?: string
+          last_scored_at?: string | null
+          overall_scoring_status?: string | null
+          raw_score_status?: string | null
+          rescored_at?: string | null
+          scored_by?: string | null
+          status_notes?: string | null
+          student_assessment_id?: string
+          subdomain_lookup_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vineland3_scoring_status_student_assessment_id_fkey"
+            columns: ["student_assessment_id"]
+            isOneToOne: true
             referencedRelation: "vineland3_student_assessments"
             referencedColumns: ["id"]
           },
