@@ -38,7 +38,7 @@ export function Vineland3ScoringGrid({
 }: Vineland3ScoringGridProps) {
   const {
     loadItemScores, saveItemScore, calculateRawScores,
-    calculateDerivedScores, updateAssessmentStatus,
+    calculateDerivedScores, scoreFullAssessment, updateAssessmentStatus,
   } = useVineland3(studentId, studentDob);
 
   const [activeTab, setActiveTab] = useState('items');
