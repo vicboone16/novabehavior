@@ -203,6 +203,47 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [clientId]);
 
+  // ── Create a new student target from review panel data ────────────────
+  const createNewTarget = useCallback(async (
+    targetName: string,
+    targetType?: string,
+    measurementType?: string
+  ): Promise<string | null> => {
+    if (!user || !clientId) return null;
+    try {
+      // Check for existing target with same name to prevent duplicates
+      const { data: existing } = await supabase
+        .from('student_targets')
+        .select('id')
+        .eq('student_id', clientId)
+        .ilike('title', targetName)
+        .limit(1);
+
+      if (existing?.length) {
+        return existing[0].id;
+      }
+
+      const { data, error } = await supabase
+        .from('student_targets')
+        .insert({
+          student_id: clientId,
+          title: targetName,
+          status: 'active',
+          source_type: targetType || 'curriculum',
+          data_collection_type: measurementType || 'frequency',
+          added_by: user.id,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
+    } catch (err) {
+      console.error('Failed to create new target:', err);
+      return null;
+    }
+  }, [user, clientId]);
+
   // ── Route structured items to clinical tables ───────────────────────────
   const routeToClinicialTables = useCallback(async (
     items: any[],
@@ -215,13 +256,28 @@ export function useNovaAIActions(clientId: string | null) {
 
     for (const item of items) {
       try {
-        // Skip items that need review
+        // Skip items that need review (unless user already reviewed them)
         if (item.quality?.needs_review || item.target_match?.match_status === 'ambiguous_match_review_needed') {
           result.skipped++;
           continue;
         }
 
-        const targetId = item.target_match?.target_id;
+        let targetId = item.target_match?.target_id;
+
+        // Handle user_confirmed_new_target: create the target first
+        if (item.target_match?.match_status === 'user_confirmed_new_target' && !targetId) {
+          const newTargetId = await createNewTarget(
+            item.target_match.target_name,
+            item.target_match.target_type,
+            item.measurement?.measurement_type
+          );
+          if (!newTargetId) {
+            result.errors.push(`Failed to create target "${item.target_match.target_name}"`);
+            result.skipped++;
+            continue;
+          }
+          targetId = newTargetId;
+        }
 
         if (item.item_type === 'abc_event') {
           // Route to abc_logs
