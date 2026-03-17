@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, forwardRef } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 
@@ -122,13 +122,13 @@ function abbrev(domain: string): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function VBMAPPCoordinateGrid({
+export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateGridProps>(function VBMAPPCoordinateGrid({
   items,
   currentAssessmentId,
   currentResults,
   overlays = [],
   onCellClick,
-}: VBMAPPCoordinateGridProps) {
+}, ref) {
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   // Build coordinate map: `${domain}__${level}__${position}` → MilestoneItem
@@ -152,8 +152,8 @@ export function VBMAPPCoordinateGrid({
     return { domains: sorted, coordMap: map };
   }, [items]);
 
-  const cellW = 46;
-  const cellH = 24;
+  const cellW = 64;
+  const cellH = 32;
   const headerH = 28;
   const rowNumW = 22;
   const levelLabelW = 40;
@@ -168,7 +168,7 @@ export function VBMAPPCoordinateGrid({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="overflow-x-auto pb-4">
+      <div className="overflow-x-auto pb-4" ref={ref}>
         <div
           style={{ minWidth: levelLabelW + rowNumW + domains.length * cellW }}
           className="text-[10px] select-none font-mono"
@@ -275,11 +275,22 @@ export function VBMAPPCoordinateGrid({
                           outline: isHovered ? `2px solid ${levelCfg.headerColor}` : undefined,
                           outlineOffset: isHovered ? -2 : undefined,
                         }}
-                        className="border-l border-b border-border/30 flex items-center justify-center"
+                        className="border-l border-b border-border/30 flex flex-col items-center justify-center"
                         onClick={() => onCellClick(item.item_id, fill)}
                         onMouseEnter={() => setHoveredItemId(item.item_id)}
                         onMouseLeave={() => setHoveredItemId(null)}
                       >
+                        {/* Item label text */}
+                        <span
+                          className="leading-none truncate w-full text-center px-0.5"
+                          style={{
+                            fontSize: 7,
+                            color: fill === 'FULL' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.55)',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {item.label_short.length > 8 ? item.label_short.slice(0, 8) + '…' : item.label_short}
+                        </span>
                         {/* Overlay dots for historical assessments */}
                         {overlayScores.length > 0 && (
                           <div className="absolute bottom-0.5 left-0.5 flex gap-px">
@@ -421,4 +432,4 @@ export function VBMAPPCoordinateGrid({
       </div>
     </TooltipProvider>
   );
-}
+});
