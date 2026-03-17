@@ -331,43 +331,6 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </div>
 
         <div className="flex gap-2">
-          {/* View Toggle */}
-          <div className="flex border rounded-lg overflow-hidden">
-            <Button 
-              variant={activeView === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-none"
-              onClick={() => setActiveView('grid')}
-            >
-              <BarChart3 className="w-4 h-4 mr-1" />
-              Grid
-            </Button>
-            <Button 
-              variant={activeView === 'milestones' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-none"
-              onClick={() => setActiveView('milestones')}
-            >
-              List
-            </Button>
-            <Button 
-              variant={activeView === 'report' ? 'default' : 'ghost'}
-              size="sm"
-              className="rounded-none"
-              onClick={() => setActiveView('report')}
-            >
-              Report
-            </Button>
-          </div>
-
-          <Button variant="outline" onClick={() => setShowReportExport(true)}>
-            <FileDown className="w-4 h-4 mr-2" />
-            Generate Report
-          </Button>
-          <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
-            <Printer className="w-4 h-4 mr-2" />
-            Print
-          </Button>
           <Button variant="outline" onClick={() => setShowUploadMapper(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Upload
@@ -383,64 +346,45 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
         </div>
       </div>
 
-      {/* Subtest Tabs */}
-      <div className="flex border rounded-lg overflow-hidden w-fit">
-        {(['milestones', 'barriers', 'transition', 'eesa'] as const).map(subtest => (
-          <Button
-            key={subtest}
-            variant={activeSubtest === subtest ? 'default' : 'ghost'}
-            size="sm"
-            className="rounded-none capitalize"
-            onClick={() => {
-              setActiveSubtest(subtest);
-              if (subtest !== 'milestones') setActiveView('milestones');
-            }}
-          >
-            {subtest === 'eesa' ? 'EESA' : subtest.charAt(0).toUpperCase() + subtest.slice(1)}
-          </Button>
-        ))}
+      {/* Main Tab Navigation */}
+      <div className="border-b">
+        <div className="flex gap-1 overflow-x-auto pb-px">
+          {([
+            { key: 'overview' as const, label: 'Overview' },
+            { key: 'milestones' as const, label: 'Milestones' },
+            { key: 'grid' as const, label: 'Grid' },
+            { key: 'charts' as const, label: 'Charts' },
+            { key: 'recommendations' as const, label: 'Recommendations' },
+            { key: 'goals' as const, label: 'Draft Goals' },
+            { key: 'export' as const, label: 'Report Export' },
+          ]).map(tab => (
+            <Button
+              key={tab.key}
+              variant="ghost"
+              size="sm"
+              className={`rounded-b-none border-b-2 ${activeView === tab.key ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+              onClick={() => { setActiveView(tab.key); if (tab.key !== 'milestones') setActiveSubtest('milestones'); }}
+            >
+              {tab.label}
+            </Button>
+          ))}
+          <div className="border-l mx-1 my-1" />
+          {(['barriers', 'transition', 'eesa'] as const).map(subtest => (
+            <Button
+              key={subtest}
+              variant="ghost"
+              size="sm"
+              className={`rounded-b-none border-b-2 ${activeSubtest === subtest && activeView === 'milestones' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+              onClick={() => { setActiveSubtest(subtest); setActiveView('milestones'); }}
+            >
+              {subtest === 'eesa' ? 'EESA' : subtest.charAt(0).toUpperCase() + subtest.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* Barriers Subtest */}
-      {activeSubtest === 'barriers' && (
-        <EmbeddedBarriersGrid
-          curriculumSystemId={BARRIERS_SYSTEM_ID}
-          scores={scores}
-          onScoreChange={handleScoreChange}
-        />
-      )}
-
-      {/* Transition Subtest */}
-      {activeSubtest === 'transition' && (
-        <EmbeddedTransitionGrid
-          curriculumSystemId={TRANSITION_SYSTEM_ID}
-          scores={scores}
-          onScoreChange={handleScoreChange}
-        />
-      )}
-
-      {/* EESA Subtest */}
-      {activeSubtest === 'eesa' && (
-        <EmbeddedEESAGrid
-          curriculumSystemId={EESA_SYSTEM_ID}
-          scores={scores}
-          onScoreChange={handleScoreChange}
-        />
-      )}
-
-      {/* Master Grid View (official VB-MAPP scoring form visual) */}
-      {activeSubtest === 'milestones' && activeView === 'grid' && (
-        <VBMAPPMasterGrid
-          items={allItems}
-          scores={scores}
-          historicalEntries={masterGridHistoricalEntries}
-          showHistorical={showHistoricalOverlay}
-          onCellClick={handleCellCycleScore}
-        />
-      )}
-
-      {/* Report View (only for milestones subtest) */}
-      {activeSubtest === 'milestones' && activeView === 'report' && (
+      {/* Overview Tab */}
+      {activeView === 'overview' && (
         <VBMAPPReport
           assessment={assessment}
           items={allItems}
@@ -456,6 +400,106 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
               });
             });
           }}
+        />
+      )}
+
+      {/* Charts Tab — reuses report charts section */}
+      {activeView === 'charts' && (
+        <VBMAPPReport
+          assessment={assessment}
+          items={allItems}
+          scores={scores}
+          studentName={studentName}
+        />
+      )}
+
+      {/* Recommendations Tab */}
+      {activeView === 'recommendations' && (
+        <VBMAPPReport
+          assessment={assessment}
+          items={allItems}
+          scores={scores}
+          studentName={studentName}
+        />
+      )}
+
+      {/* Draft Goals Tab */}
+      {activeView === 'goals' && (
+        <VBMAPPReport
+          assessment={assessment}
+          items={allItems}
+          scores={scores}
+          studentName={studentName}
+          onAddGoals={(goals) => {
+            goals.forEach(async (goal) => {
+              await addTarget({
+                title: goal.title,
+                mastery_criteria: goal.masteryCriteria,
+                data_collection_type: goal.measurement === 'percent correct' ? 'discrete_trial' : 'probe',
+                source_type: 'custom',
+              });
+            });
+          }}
+        />
+      )}
+
+      {/* Report Export Tab */}
+      {activeView === 'export' && (
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="font-semibold">Export VB-MAPP Report</h3>
+              <p className="text-sm text-muted-foreground">Generate a professional report document for clinical use, IEP meetings, or parent review.</p>
+              <div className="flex gap-3">
+                <Button onClick={() => setShowReportExport(true)}>
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Generate .docx Report
+                </Button>
+                <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print Grid
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Barriers Subtest */}
+      {activeSubtest === 'barriers' && activeView === 'milestones' && (
+        <EmbeddedBarriersGrid
+          curriculumSystemId={BARRIERS_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* Transition Subtest */}
+      {activeSubtest === 'transition' && activeView === 'milestones' && (
+        <EmbeddedTransitionGrid
+          curriculumSystemId={TRANSITION_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* EESA Subtest */}
+      {activeSubtest === 'eesa' && activeView === 'milestones' && (
+        <EmbeddedEESAGrid
+          curriculumSystemId={EESA_SYSTEM_ID}
+          scores={scores}
+          onScoreChange={handleScoreChange}
+        />
+      )}
+
+      {/* Master Grid View */}
+      {activeSubtest === 'milestones' && activeView === 'grid' && (
+        <VBMAPPMasterGrid
+          items={allItems}
+          scores={scores}
+          historicalEntries={masterGridHistoricalEntries}
+          showHistorical={showHistoricalOverlay}
+          onCellClick={handleCellCycleScore}
         />
       )}
 
