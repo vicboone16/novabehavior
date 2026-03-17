@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Route, Layers, FileText, ClipboardList, BarChart3, Search, ChevronRight, CheckCircle2, Clock, Play, X, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
