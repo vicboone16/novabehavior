@@ -1311,11 +1311,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
       const liveDurationEntries = durationEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
       const liveIntervalEntries = intervalEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
       const liveAbcEntries = abcEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
+      const liveLatencyEntries = latencyEntries.filter(e => e.sessionId === currentSessionId);
       
       const hasLiveData = liveFrequencyEntries.some(e => e.count > 0) || 
                           liveDurationEntries.length > 0 || 
                           liveIntervalEntries.length > 0 ||
-                          liveAbcEntries.length > 0;
+                          liveAbcEntries.length > 0 ||
+                          liveLatencyEntries.length > 0;
 
       if (hasLiveData && selectedStudentIds.length > 0 && currentSessionId && sessionStartTime) {
         console.log('[Sync] Syncing live session data...');
