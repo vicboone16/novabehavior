@@ -42,6 +42,7 @@ const BUILT_IN_PROMPTS = [
   { id: 'builtin-data', title: 'Log Session Data', prompt: 'I need to log session data. Here\'s what happened:', category: 'data' },
   { id: 'builtin-caregiver', title: 'Write Caregiver Note', prompt: 'Write a caregiver communication note based on this update:', category: 'clinical' },
   { id: 'builtin-parse', title: 'Parse Old Notes', prompt: 'Parse the following old session notes into structured data:', category: 'data' },
+  { id: 'builtin-reconstruct', title: 'Reconstruct Session', prompt: 'Reconstruct this entire session from the following narrative. Extract all behaviors, skills, ABC events, and generate appropriate notes:', category: 'data' },
 ];
 
 interface Msg {
