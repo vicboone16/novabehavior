@@ -182,12 +182,12 @@ export function Vineland3ScoringGrid({
           <Badge variant="outline" className="text-xs">{progress}% scored</Badge>
           {!isLocked && (
             <>
-              <Button size="sm" variant="outline" onClick={handleCalculate} disabled={calculating}>
+              <Button size="sm" onClick={handleScoreFullAssessment} disabled={calculating}>
                 <Calculator className="w-4 h-4 mr-1" />
-                {calculating ? 'Calculating...' : 'Calculate'}
+                {calculating ? 'Scoring...' : 'Score Full Assessment'}
               </Button>
               {assessment.status !== 'completed' && (
-                <Button size="sm" onClick={() => handleStatusChange('completed')}>
+                <Button size="sm" variant="outline" onClick={() => handleStatusChange('completed')}>
                   <CheckCircle2 className="w-4 h-4 mr-1" /> Complete
                 </Button>
               )}
