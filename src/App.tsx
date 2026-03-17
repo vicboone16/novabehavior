@@ -89,6 +89,8 @@ import GoalOptimization from "./pages/GoalOptimization";
 import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
 import NotificationSettings from "./pages/NotificationSettings";
+import CaptureCenter from "./pages/CaptureCenter";
+import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 
 const queryClient = new QueryClient();
 
@@ -154,6 +156,7 @@ const App = () => {
         <Sonner />
         <SessionTimeoutWarning />
         <BrowserRouter>
+        <FloatingCaptureButton />
         <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -450,6 +453,7 @@ const App = () => {
               <Route path="/ask-nova" element={<AskNovaAI />} />
               <Route path="/nova-ai" element={<NovaAI />} />
               <Route path="/optimization" element={<GoalOptimization />} />
+              <Route path="/capture" element={<CaptureCenter />} />
             </Route>
             <Route path="/behavior-library" element={
               <ProtectedRoute>
