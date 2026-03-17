@@ -90,6 +90,9 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
             dataCollectionStartDate={student.dataCollectionStartDate}
             behaviorGoals={studentGoals}
           />
+          
+          {/* Goal Suggestion Engine — below graphs, above behavior details */}
+          <GoalSuggestionEnginePanel studentId={studentId} surface="programming" />
         </TabsContent>
 
         <TabsContent value="interventions" className="mt-4 space-y-4">

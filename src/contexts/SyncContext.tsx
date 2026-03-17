@@ -1066,7 +1066,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
             preferred_name: student.preferredName || null,
             pronouns: student.pronouns || null,
             color: student.color,
-            behaviors: student.behaviors as any,
+            // PROTECT: Never overwrite a non-empty behaviors array with an empty one
+            // This prevents behavior deletion during sync race conditions
+            behaviors: (student.behaviors && student.behaviors.length > 0 ? student.behaviors : undefined) as any,
             custom_antecedents: student.customAntecedents as any,
             custom_consequences: student.customConsequences as any,
             goals: studentGoals as any,

@@ -1429,6 +1429,22 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                 clientId={selectedStudentId}
                 clientName={selectedStudent?.name}
                 context="fba_builder"
+                onBeforeNavigate={() => {
+                  saveFBADraft({
+                    selectedStudentId,
+                    reportType,
+                    reportFormat,
+                    ageRange,
+                    assessorName,
+                    assessorTitle,
+                    assessmentDates,
+                    additionalNotes,
+                    allowPartialExport,
+                    showDraftIndicators,
+                    includeStrategySections,
+                    schoolFields,
+                  });
+                }}
                 actions={[
                   { label: 'Draft FBA Hypothesis', prompt: 'Draft an FBA hypothesis statement based on this student\'s behavior data', mode: 'case_report_language' },
                   { label: 'Explain Behavior Patterns', prompt: 'Explain the behavior patterns observed for this student', mode: 'case_behavior_analysis' },
