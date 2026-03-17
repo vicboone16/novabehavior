@@ -89,6 +89,8 @@ import GoalOptimization from "./pages/GoalOptimization";
 import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
 import NotificationSettings from "./pages/NotificationSettings";
+import CaptureCenter from "./pages/CaptureCenter";
+import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 
 const queryClient = new QueryClient();
 
