@@ -498,8 +498,23 @@ export function useNovaAIActions(clientId: string | null) {
           // Try to get current session_id from the action data or context
           const sessionId = action.data.session_id || null;
 
-          if (readyItems.length > 0) {
+          // Check if structured items need a session but none is available
+          const itemsNeedingSession = readyItems.filter((b: any) =>
+            b.item_type !== 'abc_event' && b.target_match?.target_id
+          );
+          const hasSessionDependentItems = itemsNeedingSession.length > 0;
+          const missingSession = hasSessionDependentItems && !sessionId;
+
+          if (readyItems.length > 0 && !missingSession) {
             routingResult = await routeToClinicialTables(readyItems, sessionId, requestId);
+          } else if (missingSession) {
+            // Only route ABC events (they don't need session_id)
+            const abcItems = readyItems.filter((b: any) => b.item_type === 'abc_event');
+            if (abcItems.length > 0) {
+              routingResult = await routeToClinicialTables(abcItems, null, requestId);
+            }
+            // Mark session-dependent items as skipped
+            routingResult.skipped += itemsNeedingSession.length;
           }
 
           // Also save as extraction note for reference
@@ -508,7 +523,8 @@ export function useNovaAIActions(clientId: string | null) {
             items_ready: readyItems.length,
             items_need_review: reviewItems.length,
             items_routed_to_clinical: routingResult.saved,
-            items_pending_session: routingResult.skipped,
+            items_pending_session: missingSession ? itemsNeedingSession.length : 0,
+            missing_session_id: missingSession,
             source: 'nova_ai',
             audit: {
               created_by: 'nova_ai',
@@ -532,7 +548,7 @@ export function useNovaAIActions(clientId: string | null) {
               subtype: 'ai_parsed',
               author_user_id: user.id,
               note_content: extractionContent,
-              status: 'draft',
+              status: missingSession ? 'pending_session' : 'draft',
               start_time: action.data.session_date
                 ? new Date(action.data.session_date).toISOString()
                 : new Date().toISOString(),
@@ -542,7 +558,7 @@ export function useNovaAIActions(clientId: string | null) {
 
           if (error) throw error;
 
-          // Enqueue graph updates
+          // Enqueue graph updates only for items that were actually saved
           if (action.data.graph_updates?.length && routingResult.saved > 0) {
             await enqueueGraphUpdates(action.data.graph_updates, requestId || undefined);
           }
@@ -560,9 +576,15 @@ export function useNovaAIActions(clientId: string | null) {
           if (routingResult.saved > 0) summaryParts.push(`${routingResult.saved} saved to clinical data`);
           if (routingResult.skipped > 0) summaryParts.push(`${routingResult.skipped} staged for review`);
           if (reviewItems.length > 0) summaryParts.push(`${reviewItems.length} need review`);
-          if (!sessionId && readyItems.length > 0) summaryParts.push('select a session to route data');
 
-          toast.success(`Structured data processed — ${summaryParts.join(', ')}`);
+          if (missingSession) {
+            toast.warning(
+              `${itemsNeedingSession.length} item(s) need a session to save. Please select or start a session, then re-run.`,
+              { duration: 6000 }
+            );
+          } else {
+            toast.success(`Structured data processed — ${summaryParts.join(', ')}`);
+          }
           return true;
         }
 
