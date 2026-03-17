@@ -62,14 +62,13 @@ export interface SDCCertRequirement {
 
 export interface SDCCertProgress {
   id: string;
-  user_id: string;
+  certification_id: string;
   requirement_id: string;
-  status: string;
+  completed: boolean;
   completed_at?: string | null;
-  approved_by?: string | null;
+  score?: number | null;
   notes?: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 export interface SDCStaffProgress {
