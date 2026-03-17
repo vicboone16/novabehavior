@@ -16,6 +16,8 @@ import {
   type Vineland3ItemScore,
   type Vineland3RawScore,
   type Vineland3DerivedScore,
+  type Vineland3PairwiseComparison,
+  type Vineland3ScoringStatus,
 } from '@/hooks/useVineland3';
 import { Vineland3Report } from './Vineland3Report';
 import { Vineland3GoalMapping } from './Vineland3GoalMapping';
