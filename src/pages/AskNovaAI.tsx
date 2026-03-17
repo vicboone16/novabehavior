@@ -84,6 +84,7 @@ export default function AskNovaAI() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
   const [confirmAction, setConfirmAction] = useState<{ action: NovaAction; destination: string } | null>(null);
+  const [reviewAction, setReviewAction] = useState<NovaAction | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastUserInputRef = useRef('');
