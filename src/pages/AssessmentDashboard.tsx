@@ -901,6 +901,13 @@ export default function AssessmentDashboard() {
                   trackerType="ablls-r"
                 />
 
+                {/* SRS-2 Goal Bank */}
+                <Card>
+                  <CardContent className="p-4">
+                    <SRS2GoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 {/* Vineland-3 Internal Assessment */}
                 <Vineland3Entry
                   studentId={selectedStudent.id}
