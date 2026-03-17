@@ -111,6 +111,7 @@ export default function NovaAI() {
 
       if (!resp) {
         setIsLoading(false);
+        sendLockRef.current = false;
         return;
       }
 
