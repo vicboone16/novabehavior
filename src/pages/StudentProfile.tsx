@@ -613,10 +613,6 @@ export default function StudentProfile() {
             <Heart className="w-3 h-3" />
             Caregiver Training
           </TabsTrigger>
-          <TabsTrigger value="protocols" className="gap-1 text-xs">
-            <BookOpen className="w-3 h-3" />
-            Protocols
-          </TabsTrigger>
           {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
           <TabsTrigger value="documents" className="gap-1 text-xs">
             <FolderOpen className="w-3 h-3" />
