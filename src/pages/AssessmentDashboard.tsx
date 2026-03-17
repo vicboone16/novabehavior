@@ -886,6 +886,13 @@ export default function AssessmentDashboard() {
                   trackerType="afls"
                 />
 
+                {/* AFLS Curriculum Goals Browser */}
+                <Card>
+                  <CardContent className="p-4">
+                    <AFLSCurriculumBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 {/* ABLLS-R Internal Tracker */}
                 <InternalTrackerEntry
                   studentId={selectedStudent.id}
