@@ -433,6 +433,7 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
 
   // View toggle: list (domain sections) vs grid (coordinate master grid)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Historical overlay results for non-selected assessments
   const [overlayResults, setOverlayResults] = useState<Record<string, Record<string, ItemResult>>>({});
