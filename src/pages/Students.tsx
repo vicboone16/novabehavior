@@ -130,7 +130,7 @@ export default function Students() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center">
         {/* Search bar */}
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
