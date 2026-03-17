@@ -545,7 +545,7 @@ async function loadClientContext(supabase: any, clientId: string): Promise<strin
   // Recent behavior session data (last 5 sessions worth)
   const { data: recentData } = await supabase
     .from("behavior_session_data")
-    .select("session_id, behavior_id, frequency, duration_total, observation_minutes, data_state, created_at")
+    .select("session_id, behavior_id, frequency, duration_seconds, observation_minutes, data_state, created_at")
     .eq("student_id", clientId)
     .order("created_at", { ascending: false })
     .limit(25);
