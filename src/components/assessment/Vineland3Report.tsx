@@ -367,7 +367,29 @@ export function Vineland3Report({
         </div>
       </div>
 
-      {/* EXAMINEE INFORMATION */}
+      {/* Chart Toggles */}
+      <Card className="print:hidden">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1"><BarChart3 className="w-3 h-3" /> Charts:</span>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={chartToggles.domainProfile} onCheckedChange={(v) => setChartToggles(p => ({ ...p, domainProfile: !!v }))} />
+              Domain Profile
+            </label>
+            {isComprehensive && (
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                <Checkbox checked={chartToggles.subdomainProfile} onCheckedChange={(v) => setChartToggles(p => ({ ...p, subdomainProfile: !!v }))} />
+                Subdomain Profile
+              </label>
+            )}
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+              <Checkbox checked={chartToggles.longitudinal} onCheckedChange={(v) => setChartToggles(p => ({ ...p, longitudinal: !!v }))} />
+              Longitudinal Trend
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="py-2 px-4"><SectionHeader id="examinee" title="EXAMINEE INFORMATION" /></CardHeader>
         {expandedSections.examinee && (
