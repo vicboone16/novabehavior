@@ -17,6 +17,7 @@ import ReactMarkdown from 'react-markdown';
 import { NovaAIClientSelector } from '@/components/nova-ai/NovaAIClientSelector';
 import { NovaAIActionButtons, type NovaAction } from '@/components/nova-ai/NovaAIActionButtons';
 import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
+import { NovaAIReviewPanel } from '@/components/nova-ai/NovaAIReviewPanel';
 import { useNovaAIActions } from '@/hooks/useNovaAIActions';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
