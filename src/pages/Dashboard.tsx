@@ -47,7 +47,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const {
     activeWidgets, layouts, initialized,
-    onLayoutChange, addWidget, removeWidget, resetToDefaults,
+    onLayoutChange, addWidget, removeWidget, resetToDefaults, markInteraction,
   } = useDashboardLayout();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
 
@@ -58,7 +58,7 @@ export default function Dashboard() {
   // Mobile: render stacked cards without grid drag
   if (isMobile) {
     return (
-      <div className="space-y-3 px-1">
+      <div className="space-y-3 px-1 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground">Dashboard</h1>
           <div className="flex items-center gap-1.5">
@@ -208,6 +208,8 @@ export default function Dashboard() {
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={60}
             onLayoutChange={onLayoutChange}
+            onDragStart={() => markInteraction()}
+            onResizeStart={() => markInteraction()}
             draggableHandle=".drag-handle"
             compactType="vertical"
             margin={[12, 12]}

@@ -45,6 +45,15 @@ export function useDashboardLayout() {
   const [layouts, setLayouts] = useState<Record<string, GridLayoutItem[]>>({});
   const [initialized, setInitialized] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Gate: only persist layout changes AFTER the user has actually interacted with the grid.
+  // react-grid-layout fires onLayoutChange during initial render / compact, which causes
+  // widget positions to drift on every sign-in.
+  const userHasInteracted = useRef(false);
+
+  // Reset interaction gate when user changes (sign-out/sign-in)
+  useEffect(() => {
+    userHasInteracted.current = false;
+  }, [user]);
 
   // Load from DB first, fallback to localStorage, then defaults
   useEffect(() => {
@@ -129,7 +138,11 @@ export function useDashboardLayout() {
 
   const onLayoutChange = useCallback((_layout: GridLayoutItem[], allLayouts: Record<string, GridLayoutItem[]>) => {
     setLayouts(allLayouts);
-    persistToDb(activeWidgets, allLayouts);
+    // Only persist if the user has manually dragged/resized a widget.
+    // This prevents the initial RGL compaction from overwriting stored positions.
+    if (userHasInteracted.current) {
+      persistToDb(activeWidgets, allLayouts);
+    }
   }, [activeWidgets, persistToDb]);
 
   const addWidget = useCallback((widgetId: string) => {
@@ -168,6 +181,10 @@ export function useDashboardLayout() {
     persistToDb(defaults, defaultLayouts);
   }, [role, persistToDb]);
 
+  const markInteraction = useCallback(() => {
+    userHasInteracted.current = true;
+  }, []);
+
   return {
     activeWidgets,
     layouts,
@@ -176,5 +193,6 @@ export function useDashboardLayout() {
     addWidget,
     removeWidget,
     resetToDefaults,
+    markInteraction,
   };
 }

@@ -13,7 +13,7 @@ interface DashboardWidgetShellProps {
 
 export function DashboardWidgetShell({ title, icon, onRemove, children, className }: DashboardWidgetShellProps) {
   return (
-    <Card className={`h-full flex flex-col overflow-hidden ${className || ''}`}>
+    <Card className={`h-full flex flex-col overflow-hidden touch-manipulation ${className || ''}`}>
       <CardHeader className="py-2 px-3 flex-row items-center justify-between space-y-0 gap-2 border-b border-border/50 cursor-grab active:cursor-grabbing drag-handle">
         <div className="flex items-center gap-2 min-w-0">
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -31,7 +31,7 @@ export function DashboardWidgetShell({ title, icon, onRemove, children, classNam
           </Button>
         )}
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto p-3">
+      <CardContent className="flex-1 overflow-auto p-3 overscroll-contain">
         {children}
       </CardContent>
     </Card>

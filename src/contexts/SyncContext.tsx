@@ -1155,17 +1155,37 @@ export function SyncProvider({ children }: SyncProviderProps) {
           } as any, { onConflict: 'id' });
       }
 
-      // Sync sessions
+      // Sync sessions — only set start_time on INSERT, never overwrite an existing start_time
+      // to prevent stale/historical dates from corrupting session records.
       for (const session of sessions) {
-        await supabase.from('sessions').upsert({
-          id: session.id,
-          user_id: user.id,
-          name: session.notes || 'Session',
-          start_time: new Date(session.date).toISOString(),
-          session_length_minutes: session.sessionLengthMinutes,
-          interval_length_seconds: 15,
-          student_ids: session.studentIds,
-        }, { onConflict: 'id' });
+        const sessionDateStr = new Date(session.date).toISOString();
+
+        // Check if the session already exists in the DB
+        const { data: existingSession } = await supabase
+          .from('sessions')
+          .select('id, start_time')
+          .eq('id', session.id)
+          .maybeSingle();
+
+        if (existingSession) {
+          // UPDATE: do NOT overwrite start_time
+          await supabase.from('sessions').update({
+            name: session.notes || 'Session',
+            session_length_minutes: session.sessionLengthMinutes,
+            student_ids: session.studentIds,
+          }).eq('id', session.id);
+        } else {
+          // INSERT: set start_time to now (the moment the session is actually created)
+          await supabase.from('sessions').insert({
+            id: session.id,
+            user_id: user.id,
+            name: session.notes || 'Session',
+            start_time: sessionDateStr,
+            session_length_minutes: session.sessionLengthMinutes,
+            interval_length_seconds: 15,
+            student_ids: session.studentIds,
+          });
+        }
 
         // Sync session data entries
         const allEntries = [
