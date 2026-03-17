@@ -122,13 +122,13 @@ function abbrev(domain: string): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function VBMAPPCoordinateGrid({
+export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateGridProps>(function VBMAPPCoordinateGrid({
   items,
   currentAssessmentId,
   currentResults,
   overlays = [],
   onCellClick,
-}: VBMAPPCoordinateGridProps) {
+}, ref) {
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   // Build coordinate map: `${domain}__${level}__${position}` → MilestoneItem
