@@ -47,7 +47,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const {
     activeWidgets, layouts, initialized,
-    onLayoutChange, addWidget, removeWidget, resetToDefaults,
+    onLayoutChange, addWidget, removeWidget, resetToDefaults, markInteraction,
   } = useDashboardLayout();
   const [addPanelOpen, setAddPanelOpen] = useState(false);
 
