@@ -942,6 +942,20 @@ export default function AssessmentDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* ABAS-3 Adaptive Behavior Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <ABAS3GoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
+                {/* DAYC-2 Developmental Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <DAYC2GoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 <Vineland3Entry
                   studentId={selectedStudent.id}
                   studentName={selectedStudent.name}
