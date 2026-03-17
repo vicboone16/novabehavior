@@ -482,7 +482,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-9 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -506,6 +506,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="documents" className="gap-1 text-xs">
               <FileUp className="w-3 h-3" />
               Documents
+            </TabsTrigger>
+            <TabsTrigger value="libraries" className="gap-1 text-xs">
+              <BookOpen className="w-3 h-3" />
+              Libraries
             </TabsTrigger>
             <TabsTrigger value="questionnaires" className="gap-1 text-xs">
               <ClipboardCheck className="w-3 h-3" />
