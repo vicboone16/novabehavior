@@ -106,7 +106,7 @@ export default function Academy() {
                     ) : typeof selectedLesson.content === 'object' && selectedLesson.content !== null ? (
                       <div>
                         {(selectedLesson.content as any).text && <p>{(selectedLesson.content as any).text}</p>}
-                        {(selectedLesson.content as any).html && <div dangerouslySetInnerHTML={{ __html: (selectedLesson.content as any).html }} />}
+                        {(selectedLesson.content as any).html && <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((selectedLesson.content as any).html) }} />}
                         {(selectedLesson.content as any).video_url && (
                           <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                             <a href={(selectedLesson.content as any).video_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary">
