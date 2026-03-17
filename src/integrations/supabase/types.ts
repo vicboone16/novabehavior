@@ -3558,6 +3558,48 @@ export type Database = {
           },
         ]
       }
+      assessment_library_registry: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          library_key: string
+          library_name: string
+          library_type: string
+          supports_exports: boolean | null
+          supports_goal_mapping: boolean | null
+          supports_item_scoring: boolean | null
+          supports_reports: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          library_key: string
+          library_name: string
+          library_type: string
+          supports_exports?: boolean | null
+          supports_goal_mapping?: boolean | null
+          supports_item_scoring?: boolean | null
+          supports_reports?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          library_key?: string
+          library_name?: string
+          library_type?: string
+          supports_exports?: boolean | null
+          supports_goal_mapping?: boolean | null
+          supports_item_scoring?: boolean | null
+          supports_reports?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       attendance_logs: {
         Row: {
           appointment_id: string | null
@@ -9612,6 +9654,71 @@ export type Database = {
           },
         ]
       }
+      client_goal_drafts: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string | null
+          domain_key: string | null
+          draft_goal_text: string | null
+          draft_goal_title: string
+          draft_notes: string | null
+          draft_objectives: Json | null
+          id: string
+          recommendation_source: string | null
+          source_assessment_id: string | null
+          source_goal_id: string | null
+          source_library_key: string | null
+          status: string | null
+          subdomain_key: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by?: string | null
+          domain_key?: string | null
+          draft_goal_text?: string | null
+          draft_goal_title: string
+          draft_notes?: string | null
+          draft_objectives?: Json | null
+          id?: string
+          recommendation_source?: string | null
+          source_assessment_id?: string | null
+          source_goal_id?: string | null
+          source_library_key?: string | null
+          status?: string | null
+          subdomain_key?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          domain_key?: string | null
+          draft_goal_text?: string | null
+          draft_goal_title?: string
+          draft_notes?: string | null
+          draft_objectives?: Json | null
+          id?: string
+          recommendation_source?: string | null
+          source_assessment_id?: string | null
+          source_goal_id?: string | null
+          source_library_key?: string | null
+          status?: string | null
+          subdomain_key?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_goal_drafts_source_goal_id_fkey"
+            columns: ["source_goal_id"]
+            isOneToOne: false
+            referencedRelation: "library_goal_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_intervention_outcomes: {
         Row: {
           agency_id: string
@@ -9907,6 +10014,42 @@ export type Database = {
             referencedColumns: ["plan_item_id"]
           },
         ]
+      }
+      client_library_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          client_id: string
+          created_at: string | null
+          id: string
+          library_key: string
+          notes: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          library_key: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          library_key?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       client_locations: {
         Row: {
@@ -19673,6 +19816,230 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      library_crosswalk_rules: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          priority_level: number | null
+          recommendation_text: string | null
+          score_band: string | null
+          source_domain_key: string | null
+          source_library_key: string
+          source_subdomain_key: string | null
+          target_library_key: string
+          target_program_area: string | null
+          target_tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority_level?: number | null
+          recommendation_text?: string | null
+          score_band?: string | null
+          source_domain_key?: string | null
+          source_library_key: string
+          source_subdomain_key?: string | null
+          target_library_key: string
+          target_program_area?: string | null
+          target_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority_level?: number | null
+          recommendation_text?: string | null
+          score_band?: string | null
+          source_domain_key?: string | null
+          source_library_key?: string
+          source_subdomain_key?: string | null
+          target_library_key?: string
+          target_program_area?: string | null
+          target_tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      library_domains: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          domain_key: string
+          domain_name: string
+          id: string
+          is_active: boolean | null
+          library_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          domain_key: string
+          domain_name: string
+          id?: string
+          is_active?: boolean | null
+          library_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          domain_key?: string
+          domain_name?: string
+          id?: string
+          is_active?: boolean | null
+          library_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      library_goal_bank: {
+        Row: {
+          age_band_key: string | null
+          benchmark_level: string | null
+          created_at: string | null
+          data_collection_notes: string | null
+          domain_key: string | null
+          goal_description: string | null
+          goal_key: string
+          goal_title: string
+          goal_type: string | null
+          id: string
+          is_active: boolean | null
+          library_key: string
+          parent_training_notes: string | null
+          prompt_level_notes: string | null
+          subdomain_key: string | null
+          suggested_mastery_criteria: string | null
+          tags: string[] | null
+          teaching_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          age_band_key?: string | null
+          benchmark_level?: string | null
+          created_at?: string | null
+          data_collection_notes?: string | null
+          domain_key?: string | null
+          goal_description?: string | null
+          goal_key: string
+          goal_title: string
+          goal_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          library_key: string
+          parent_training_notes?: string | null
+          prompt_level_notes?: string | null
+          subdomain_key?: string | null
+          suggested_mastery_criteria?: string | null
+          tags?: string[] | null
+          teaching_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          age_band_key?: string | null
+          benchmark_level?: string | null
+          created_at?: string | null
+          data_collection_notes?: string | null
+          domain_key?: string | null
+          goal_description?: string | null
+          goal_key?: string
+          goal_title?: string
+          goal_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          library_key?: string
+          parent_training_notes?: string | null
+          prompt_level_notes?: string | null
+          subdomain_key?: string | null
+          suggested_mastery_criteria?: string | null
+          tags?: string[] | null
+          teaching_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      library_goal_objectives: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          library_goal_id: string
+          objective_key: string
+          objective_text: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          library_goal_id: string
+          objective_key: string
+          objective_text: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          library_goal_id?: string
+          objective_key?: string
+          objective_text?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_goal_objectives_library_goal_id_fkey"
+            columns: ["library_goal_id"]
+            isOneToOne: false
+            referencedRelation: "library_goal_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_subdomains: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          domain_key: string
+          id: string
+          is_active: boolean | null
+          library_key: string
+          subdomain_key: string
+          subdomain_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          domain_key: string
+          id?: string
+          is_active?: boolean | null
+          library_key: string
+          subdomain_key: string
+          subdomain_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          domain_key?: string
+          id?: string
+          is_active?: boolean | null
+          library_key?: string
+          subdomain_key?: string
+          subdomain_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       live_programs: {
         Row: {
