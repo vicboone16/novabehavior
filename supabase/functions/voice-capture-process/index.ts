@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    const { recording_id, action } = await req.json();
+    const { recording_id, action, question, draft_id, transform_type } = await req.json();
     if (!recording_id) {
       return new Response(JSON.stringify({ error: "recording_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -200,7 +200,152 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update status
+    // ── Ask AI action ──
+    if (action === "ask_ai" && question) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "AI not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Get transcript
+      const { data: trans } = await supabase
+        .from("voice_transcripts")
+        .select("full_text")
+        .eq("recording_id", recording_id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!trans?.full_text) {
+        return new Response(JSON.stringify({ answer: "No transcript available yet. Process the recording first." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Save question
+      const { data: savedQ } = await supabase.from("voice_ai_questions").insert({
+        recording_id,
+        asked_by: userId,
+        question_text: question,
+      }).select().single();
+
+      const qaRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content: `You are Nova AI Clinical Capture, an ABA-specific clinical assistant. Answer questions grounded in the provided transcript.
+
+RULES:
+- Only reference information present in the transcript
+- Distinguish between directly stated, observed, and inferred
+- Mark uncertain conclusions with qualifying language like "possibly", "appears to"
+- If information is not in the transcript, say so clearly
+- Use clinical, professional language
+- Be concise but thorough`,
+            },
+            {
+              role: "user",
+              content: `TRANSCRIPT:\n---\n${trans.full_text}\n---\n\nQUESTION: ${question}`,
+            },
+          ],
+        }),
+      });
+
+      let answer = "Unable to generate response.";
+      if (qaRes.ok) {
+        const qaData = await qaRes.json();
+        answer = qaData.choices?.[0]?.message?.content || answer;
+      }
+
+      // Save answer
+      if (savedQ) {
+        await supabase.from("voice_ai_answers").insert({
+          question_id: savedQ.id,
+          answer_text: answer,
+          model_name: "google/gemini-3-flash-preview",
+        });
+      }
+
+      return new Response(JSON.stringify({ answer }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // ── Transform Draft action ──
+    if (action === "transform_draft" && draft_id && transform_type) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: "AI not configured" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const { data: draft } = await supabase
+        .from("voice_ai_drafts")
+        .select("*")
+        .eq("id", draft_id)
+        .single();
+
+      if (!draft?.content) {
+        return new Response(JSON.stringify({ error: "Draft not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const transformPrompts: Record<string, string> = {
+        shorter: "Rewrite this clinical note to be significantly shorter and more concise while preserving all essential clinical information.",
+        more_objective: "Rewrite this clinical note using more objective, neutral, and observable language. Remove subjective interpretations.",
+        school_safe: "Rewrite this clinical note using school-appropriate, educator-friendly wording. Avoid clinical jargon where possible.",
+        parent_friendly: "Rewrite this clinical note in parent-friendly language. Make it accessible and supportive while preserving key information.",
+        translate_spanish: "Translate this clinical note into Spanish, maintaining clinical accuracy and professional tone.",
+      };
+
+      const prompt = transformPrompts[transform_type] || `Transform this note: ${transform_type}`;
+
+      const tfRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: "You are an expert ABA clinical documentation writer. Transform the provided note as instructed. Output only the transformed note, no preamble." },
+            { role: "user", content: `${prompt}\n\nORIGINAL NOTE:\n---\n${draft.content}\n---` },
+          ],
+        }),
+      });
+
+      let transformed = draft.content;
+      if (tfRes.ok) {
+        const tfData = await tfRes.json();
+        transformed = tfData.choices?.[0]?.message?.content || transformed;
+      }
+
+      // Update draft with transformed content
+      await supabase.from("voice_ai_drafts").update({
+        content: transformed,
+        tone: transform_type === "translate_spanish" ? "clinical" : transform_type,
+        output_language: transform_type === "translate_spanish" ? "es" : draft.output_language,
+        is_user_edited: true,
+      }).eq("id", draft_id);
+
+      return new Response(JSON.stringify({ content: transformed }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Update status for full pipeline
     await supabase.from("voice_recordings").update({
       status: "processing",
       transcript_status: "processing",
