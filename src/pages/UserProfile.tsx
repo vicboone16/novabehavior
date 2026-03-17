@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { SetupPinDialog } from '@/components/PinLogin';
 import { NotificationPreferences } from '@/components/settings/NotificationPreferences';
+import { AdminDebugPanel } from '@/components/settings/AdminDebugPanel';
 
 interface ProfileData {
   display_name: string | null;
@@ -363,6 +364,9 @@ export default function UserProfile() {
 
         {/* Push Notifications */}
         <NotificationPreferences />
+
+        {/* Admin Debug */}
+        <AdminDebugPanel />
       </main>
 
       {user && (

@@ -87,6 +87,7 @@ import NovaAI from "./pages/NovaAI";
 import GoalOptimization from "./pages/GoalOptimization";
 import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
+import NotificationSettings from "./pages/NotificationSettings";
 
 const queryClient = new QueryClient();
 
@@ -204,6 +205,15 @@ const App = () => {
                 <ApprovalCheck>
                   <SyncProvider>
                     <UserProfile />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <NotificationSettings />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
