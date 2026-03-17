@@ -38078,6 +38078,36 @@ export type Database = {
         }
         Relationships: []
       }
+      vineland3_age_bands: {
+        Row: {
+          age_band_key: string
+          created_at: string
+          display_label: string
+          id: string
+          is_active: boolean
+          max_age_months: number
+          min_age_months: number
+        }
+        Insert: {
+          age_band_key: string
+          created_at?: string
+          display_label: string
+          id?: string
+          is_active?: boolean
+          max_age_months: number
+          min_age_months: number
+        }
+        Update: {
+          age_band_key?: string
+          created_at?: string
+          display_label?: string
+          id?: string
+          is_active?: boolean
+          max_age_months?: number
+          min_age_months?: number
+        }
+        Relationships: []
+      }
       vineland3_derived_scores: {
         Row: {
           adaptive_level: string | null
@@ -38411,6 +38441,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vineland3_norm_import_history: {
+        Row: {
+          id: string
+          import_type: string
+          imported_at: string
+          imported_by: string | null
+          notes: string | null
+          row_count: number
+          source_version: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          import_type: string
+          imported_at?: string
+          imported_by?: string | null
+          notes?: string | null
+          row_count?: number
+          source_version: string
+          status?: string
+        }
+        Update: {
+          id?: string
+          import_type?: string
+          imported_at?: string
+          imported_by?: string | null
+          notes?: string | null
+          row_count?: number
+          source_version?: string
+          status?: string
+        }
+        Relationships: []
       }
       vineland3_norm_lookup_composites: {
         Row: {
