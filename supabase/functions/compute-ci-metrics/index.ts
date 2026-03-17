@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     if (error) {
       console.error("[CIE] Compute error:", error);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: "Computation failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
