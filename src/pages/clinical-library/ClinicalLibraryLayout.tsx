@@ -161,6 +161,26 @@ export default function ClinicalLibraryLayout() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => navigate('/clinical-library/library-registry')}
+            >
+              <CardContent className="p-6">
+                <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+                  <BookOpen className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-lg font-bold mb-1">Library Registry</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Browse all assessments, curricula, intervention libraries & crosswalk rules.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Vineland-3', 'SRS-2', 'AFLS', 'VB-MAPP', 'PECS'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <Outlet />
