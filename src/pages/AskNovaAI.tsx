@@ -445,6 +445,17 @@ export default function AskNovaAI() {
         destination={confirmAction?.destination || ''}
         onConfirm={handleConfirmAction}
       />
+
+      {/* Item-Level Review Panel */}
+      <NovaAIReviewPanel
+        open={!!reviewAction}
+        onOpenChange={(open) => { if (!open) setReviewAction(null); }}
+        action={reviewAction}
+        clientId={selectedClientId}
+        onSaveApproved={async (modifiedAction, destination) => {
+          return executeAction(modifiedAction, destination, lastUserInputRef.current);
+        }}
+      />
     </div>
   );
 }
