@@ -90,7 +90,7 @@ export function VBMAPPGrid({ studentId, studentName, assessment, allAssessments 
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const [activeLevel, setActiveLevel] = useState('Level 1');
   const [showHistoricalOverlay, setShowHistoricalOverlay] = useState(true);
-  const [activeView, setActiveView] = useState<'milestones' | 'grid' | 'report'>('grid');
+  const [activeView, setActiveView] = useState<'overview' | 'milestones' | 'grid' | 'charts' | 'recommendations' | 'goals' | 'export'>('overview');
   const [activeSubtest, setActiveSubtest] = useState<'milestones' | 'barriers' | 'transition' | 'eesa'>('milestones');
   const [clearDomainConfirm, setClearDomainConfirm] = useState<{ domain: string; level: string } | null>(null);
   const [showReportExport, setShowReportExport] = useState(false);
