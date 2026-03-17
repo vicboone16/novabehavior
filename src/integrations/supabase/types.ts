@@ -13230,6 +13230,93 @@ export type Database = {
           },
         ]
       }
+      default_reminder_schedules: {
+        Row: {
+          allow_user_override: boolean
+          app_environment: string
+          classroom_id: string | null
+          created_at: string
+          created_by: string | null
+          days_of_week: number[]
+          end_time: string
+          grace_period_minutes: number | null
+          id: string
+          interval_minutes: number
+          is_active: boolean
+          local_enabled: boolean
+          message_body: string | null
+          message_title: string | null
+          name: string
+          organization_id: string | null
+          owner_user_id: string | null
+          reminder_key: string
+          reminder_type: string
+          remote_enabled: boolean
+          role_scope: string | null
+          school_id: string | null
+          scope_type: string
+          start_time: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          allow_user_override?: boolean
+          app_environment?: string
+          classroom_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_of_week?: number[]
+          end_time?: string
+          grace_period_minutes?: number | null
+          id?: string
+          interval_minutes?: number
+          is_active?: boolean
+          local_enabled?: boolean
+          message_body?: string | null
+          message_title?: string | null
+          name: string
+          organization_id?: string | null
+          owner_user_id?: string | null
+          reminder_key: string
+          reminder_type?: string
+          remote_enabled?: boolean
+          role_scope?: string | null
+          school_id?: string | null
+          scope_type?: string
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_user_override?: boolean
+          app_environment?: string
+          classroom_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          days_of_week?: number[]
+          end_time?: string
+          grace_period_minutes?: number | null
+          id?: string
+          interval_minutes?: number
+          is_active?: boolean
+          local_enabled?: boolean
+          message_body?: string | null
+          message_title?: string | null
+          name?: string
+          organization_id?: string | null
+          owner_user_id?: string | null
+          reminder_key?: string
+          reminder_type?: string
+          remote_enabled?: boolean
+          role_scope?: string | null
+          school_id?: string | null
+          scope_type?: string
+          start_time?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       delivered_minutes_log: {
         Row: {
           client_id: string
@@ -19390,6 +19477,60 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          admin_alerts: boolean
+          caregiver_messages: boolean
+          created_at: string
+          data_log_reminders: boolean
+          escalation_alerts: boolean
+          id: string
+          local_reminders_enabled: boolean
+          push_enabled: boolean
+          quiet_hours_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          session_note_reminders: boolean
+          supervision_reminders: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_alerts?: boolean
+          caregiver_messages?: boolean
+          created_at?: string
+          data_log_reminders?: boolean
+          escalation_alerts?: boolean
+          id?: string
+          local_reminders_enabled?: boolean
+          push_enabled?: boolean
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          session_note_reminders?: boolean
+          supervision_reminders?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_alerts?: boolean
+          caregiver_messages?: boolean
+          created_at?: string
+          data_log_reminders?: boolean
+          escalation_alerts?: boolean
+          id?: string
+          local_reminders_enabled?: boolean
+          push_enabled?: boolean
+          quiet_hours_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          session_note_reminders?: boolean
+          supervision_reminders?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -24880,6 +25021,48 @@ export type Database = {
           is_active?: boolean | null
           subscription?: Json
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          app_environment: string
+          created_at: string
+          device_name: string | null
+          device_token: string
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          platform: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_environment?: string
+          created_at?: string
+          device_name?: string | null
+          device_token: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          platform?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_environment?: string
+          created_at?: string
+          device_name?: string | null
+          device_token?: string
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          platform?: string
+          timezone?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -36159,6 +36342,78 @@ export type Database = {
         }
         Relationships: []
       }
+      user_reminder_overrides: {
+        Row: {
+          created_at: string
+          custom_days_of_week: number[] | null
+          custom_end_time: string | null
+          custom_interval_minutes: number | null
+          custom_name: string | null
+          custom_start_time: string | null
+          custom_timezone: string | null
+          default_schedule_id: string
+          id: string
+          is_active: boolean
+          local_enabled: boolean | null
+          notifications_enabled: boolean
+          override_enabled: boolean
+          remote_enabled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_days_of_week?: number[] | null
+          custom_end_time?: string | null
+          custom_interval_minutes?: number | null
+          custom_name?: string | null
+          custom_start_time?: string | null
+          custom_timezone?: string | null
+          default_schedule_id: string
+          id?: string
+          is_active?: boolean
+          local_enabled?: boolean | null
+          notifications_enabled?: boolean
+          override_enabled?: boolean
+          remote_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_days_of_week?: number[] | null
+          custom_end_time?: string | null
+          custom_interval_minutes?: number | null
+          custom_name?: string | null
+          custom_start_time?: string | null
+          custom_timezone?: string | null
+          default_schedule_id?: string
+          id?: string
+          is_active?: boolean
+          local_enabled?: boolean | null
+          notifications_enabled?: boolean
+          override_enabled?: boolean
+          remote_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reminder_overrides_default_schedule_id_fkey"
+            columns: ["default_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "default_reminder_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reminder_overrides_default_schedule_id_fkey"
+            columns: ["default_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "default_reminder_scope_rank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -37416,6 +37671,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      default_reminder_scope_rank: {
+        Row: {
+          allow_user_override: boolean | null
+          app_environment: string | null
+          classroom_id: string | null
+          created_at: string | null
+          created_by: string | null
+          days_of_week: number[] | null
+          end_time: string | null
+          grace_period_minutes: number | null
+          id: string | null
+          interval_minutes: number | null
+          is_active: boolean | null
+          local_enabled: boolean | null
+          message_body: string | null
+          message_title: string | null
+          name: string | null
+          organization_id: string | null
+          owner_user_id: string | null
+          reminder_key: string | null
+          reminder_type: string | null
+          remote_enabled: boolean | null
+          role_scope: string | null
+          school_id: string | null
+          scope_rank: number | null
+          scope_type: string | null
+          start_time: string | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_user_override?: boolean | null
+          app_environment?: string | null
+          classroom_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_of_week?: number[] | null
+          end_time?: string | null
+          grace_period_minutes?: number | null
+          id?: string | null
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          local_enabled?: boolean | null
+          message_body?: string | null
+          message_title?: string | null
+          name?: string | null
+          organization_id?: string | null
+          owner_user_id?: string | null
+          reminder_key?: string | null
+          reminder_type?: string | null
+          remote_enabled?: boolean | null
+          role_scope?: string | null
+          school_id?: string | null
+          scope_rank?: never
+          scope_type?: string | null
+          start_time?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_user_override?: boolean | null
+          app_environment?: string | null
+          classroom_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          days_of_week?: number[] | null
+          end_time?: string | null
+          grace_period_minutes?: number | null
+          id?: string | null
+          interval_minutes?: number | null
+          is_active?: boolean | null
+          local_enabled?: boolean | null
+          message_body?: string | null
+          message_title?: string | null
+          name?: string | null
+          organization_id?: string | null
+          owner_user_id?: string | null
+          reminder_key?: string | null
+          reminder_type?: string | null
+          remote_enabled?: boolean | null
+          role_scope?: string | null
+          school_id?: string | null
+          scope_rank?: never
+          scope_type?: string | null
+          start_time?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       fidelity_checks: {
         Row: {
@@ -43934,13 +44279,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -43950,7 +44288,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -43964,8 +44302,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -43978,6 +44316,20 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -43985,7 +44337,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -43999,20 +44351,6 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -44020,7 +44358,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -44034,7 +44372,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -44047,13 +44385,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
