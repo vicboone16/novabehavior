@@ -34,6 +34,7 @@ import { SRS2GoalBrowser } from '@/components/clinical-library/SRS2GoalBrowser';
 import { PECSGoalBrowser } from '@/components/clinical-library/PECSGoalBrowser';
 import { EFLGoalBrowser } from '@/components/clinical-library/EFLGoalBrowser';
 import { PEAKGoalBrowser } from '@/components/clinical-library/PEAKGoalBrowser';
+import { ESDMGoalBrowser } from '@/components/clinical-library/ESDMGoalBrowser';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
@@ -932,7 +933,13 @@ export default function AssessmentDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Vineland-3 Internal Assessment */}
+                {/* ESDM Developmental Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <ESDMGoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 <Vineland3Entry
                   studentId={selectedStudent.id}
                   studentName={selectedStudent.name}
