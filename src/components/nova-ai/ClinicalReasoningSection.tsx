@@ -14,8 +14,8 @@ import {
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { ResponseExportActions } from './ResponseExportActions';
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
 
 type ReasoningMode = 'clinical_decision_support' | 'replacement_behavior' | 'behavior_pattern' | 'report_writing';
@@ -103,25 +103,16 @@ export function ClinicalReasoningSection() {
     let fullResponse = '';
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
+      const resp = await novaAIFetch({
+        body: {
           messages: [{ role: 'user', content: prompt }],
           evidence_mode: true,
           reasoning_mode: selectedMode,
           system_suffix: getSystemSuffix(),
-        }),
+        },
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        if (resp.status === 429) toast.error('Rate limit exceeded.');
-        else if (resp.status === 402) toast.error('AI credits depleted.');
-        else toast.error(err.error || 'AI service error');
+      if (!resp) {
         setIsLoading(false);
         return;
       }

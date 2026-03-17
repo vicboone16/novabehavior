@@ -19,8 +19,7 @@ import { NovaAIActionButtons, type NovaAction } from '@/components/nova-ai/NovaA
 import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
 import { NovaAIReviewPanel } from '@/components/nova-ai/NovaAIReviewPanel';
 import { useNovaAIActions } from '@/hooks/useNovaAIActions';
-
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Ask a Behavior Question': <HelpCircle className="w-3.5 h-3.5" />,
@@ -123,24 +122,15 @@ export default function AskNovaAI() {
     let assistantContent = '';
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
+      const resp = await novaAIFetch({
+        body: {
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           evidence_mode: evidenceMode,
           client_id: selectedClientId,
-        }),
+        },
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        if (resp.status === 429) toast.error('Rate limit exceeded. Please wait and try again.');
-        else if (resp.status === 402) toast.error('AI credits depleted. Add credits in workspace settings.');
-        else toast.error(err.error || 'AI service error');
+      if (!resp) {
         setIsLoading(false);
         return;
       }

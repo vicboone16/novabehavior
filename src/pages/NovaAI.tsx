@@ -19,8 +19,8 @@ import ReactMarkdown from 'react-markdown';
 import { ClinicalReasoningSection } from '@/components/nova-ai/ClinicalReasoningSection';
 import { CaseAwareReasoningSection } from '@/components/nova-ai/CaseAwareReasoningSection';
 import { NovaAIOptimizationActions } from '@/components/nova-ai/NovaAIOptimizationActions';
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -103,20 +103,11 @@ export default function NovaAI() {
       const convId = await ensureConversation(text.trim());
       await persistMessage(convId, 'user', text.trim());
 
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ messages: allMessages, evidence_mode: evidenceMode }),
+      const resp = await novaAIFetch({
+        body: { messages: allMessages, evidence_mode: evidenceMode },
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        if (resp.status === 429) toast.error('Rate limit exceeded. Please wait and try again.');
-        else if (resp.status === 402) toast.error('AI credits depleted. Add credits in workspace settings.');
-        else toast.error(err.error || 'AI service error');
+      if (!resp) {
         setIsLoading(false);
         return;
       }
