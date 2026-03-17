@@ -20,6 +20,15 @@ import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
 import { NovaAIReviewPanel } from '@/components/nova-ai/NovaAIReviewPanel';
 import { useNovaAIActions } from '@/hooks/useNovaAIActions';
 import { novaAIFetch } from '@/lib/novaAIFetch';
+import {
+  classifyMode,
+  itemsNeedReview,
+  itemsNeedSession,
+  buildCompletionSummary,
+  verifyNovaActionComplete,
+  type PipelineResult,
+  type PipelineStepResult,
+} from '@/lib/novaAIPipelineExecutor';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Ask a Behavior Question': <HelpCircle className="w-3.5 h-3.5" />,
@@ -37,7 +46,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'Reconstruct Session': <RotateCcw className="w-3.5 h-3.5" />,
 };
 
-// Built-in quick prompts for new capabilities (shown alongside DB prompts)
 const BUILT_IN_PROMPTS = [
   { id: 'builtin-soap', title: 'Write SOAP Note', prompt: 'Write a SOAP note for today\'s session. I\'ll provide the details:', category: 'clinical' },
   { id: 'builtin-data', title: 'Log Session Data', prompt: 'I need to log session data. Here\'s what happened:', category: 'data' },
@@ -87,6 +95,8 @@ export default function AskNovaAI() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastUserInputRef = useRef('');
+  // In-flight send lock to prevent duplicate messages
+  const sendLockRef = useRef(false);
 
   const { executeAction, logToAudit } = useNovaAIActions(selectedClientId);
 
@@ -109,8 +119,151 @@ export default function AskNovaAI() {
 
   const allQuickPrompts = [...quickPrompts, ...BUILT_IN_PROMPTS];
 
+  /**
+   * Auto-execute the structured data pipeline after actions are parsed.
+   * This is the core of the Smart Data Engine — it runs automatically
+   * instead of waiting for user to click action buttons.
+   */
+  const autoExecutePipeline = useCallback(async (
+    actions: NovaAction[],
+    rawInput: string
+  ) => {
+    const mode = classifyMode(actions);
+    if (mode === 'assistant') return; // No pipeline needed
+
+    const steps: PipelineStepResult[] = [];
+    const errors: string[] = [];
+    let needsReview = false;
+    let needsSession = false;
+
+    for (const action of actions) {
+      try {
+        if (action.type === 'extract_structured_data') {
+          const behaviors = action.data?.behaviors || [];
+          if (!behaviors.length) continue;
+
+          // Check if items need review
+          if (itemsNeedReview(action)) {
+            needsReview = true;
+            steps.push({ step: 'review_check', success: true, detail: `${behaviors.length} item(s) parsed, some need review` });
+
+            // Auto-open review panel
+            setReviewAction(action);
+            
+            // Also auto-execute staging via executeAction so items are persisted
+            // even while review panel is open
+            try {
+              await executeAction(action, 'session_data', rawInput);
+              steps.push({ step: 'staging', success: true, detail: 'Items staged for review' });
+            } catch (err: any) {
+              steps.push({ step: 'staging', success: false, detail: err.message });
+              errors.push(`Staging failed: ${err.message}`);
+            }
+            continue;
+          }
+
+          // Check if items need a session
+          if (itemsNeedSession(action)) {
+            needsSession = true;
+            steps.push({ step: 'session_check', success: true, detail: 'Items staged — session required' });
+            
+            // Execute action which will handle pending_session path
+            try {
+              await executeAction(action, 'session_data', rawInput);
+              steps.push({ step: 'staging', success: true, detail: 'Items staged as pending_session' });
+            } catch (err: any) {
+              steps.push({ step: 'staging', success: false, detail: err.message });
+              errors.push(`Staging failed: ${err.message}`);
+            }
+            continue;
+          }
+
+          // All items are clean — auto-route to clinical tables
+          try {
+            const success = await executeAction(action, 'session_data', rawInput);
+            if (success) {
+              steps.push({ step: 'clinical_routing', success: true, detail: `${behaviors.length} item(s) saved to clinical tables` });
+              steps.push({ step: 'graph_queue', success: true, detail: 'Graph updates queued' });
+              steps.push({ step: 'timeline', success: true, detail: 'Timeline entry created' });
+            } else {
+              steps.push({ step: 'clinical_routing', success: false, detail: 'Save returned false' });
+              errors.push('Clinical routing did not complete');
+            }
+          } catch (err: any) {
+            steps.push({ step: 'clinical_routing', success: false, detail: err.message });
+            errors.push(`Save failed: ${err.message}`);
+          }
+        } else if (
+          action.type === 'generate_soap_note' ||
+          action.type === 'generate_narrative_note' ||
+          action.type === 'generate_caregiver_note'
+        ) {
+          // Auto-execute note generation — save as draft
+          const destination = action.type === 'generate_soap_note' ? 'session_notes'
+            : action.type === 'generate_narrative_note' ? 'narrative_notes'
+            : 'caregiver_notes';
+          
+          try {
+            const success = await executeAction(action, destination, rawInput);
+            if (success) {
+              steps.push({ step: 'note_save', success: true, detail: `${action.type.replace('generate_', '').replace(/_/g, ' ')} saved as draft` });
+            } else {
+              steps.push({ step: 'note_save', success: false, detail: 'Note save failed' });
+              errors.push('Note save did not complete');
+            }
+          } catch (err: any) {
+            steps.push({ step: 'note_save', success: false, detail: err.message });
+            errors.push(`Note save failed: ${err.message}`);
+          }
+        }
+        // request_clarification actions are NOT auto-executed — they show buttons
+      } catch (err: any) {
+        console.error('[NovaAI Pipeline] Action execution error:', err);
+        errors.push(`Action ${action.type} failed: ${err.message}`);
+      }
+    }
+
+    // Build pipeline result
+    const result: PipelineResult = {
+      completed: errors.length === 0,
+      mode,
+      steps,
+      summary: '',
+      needsReview,
+      needsSession,
+      errors,
+    };
+    result.summary = buildCompletionSummary(result);
+
+    // Verify completion
+    const expectedSteps = ['staging'];
+    if (!needsReview && !needsSession) {
+      expectedSteps.push('clinical_routing');
+    }
+    const failedSteps = verifyNovaActionComplete(result, expectedSteps);
+
+    if (failedSteps.length > 0 && !needsReview) {
+      console.error('[NovaAI Pipeline] Failed steps:', failedSteps);
+      // Only show error if not already handled by needsReview/needsSession toasts
+      if (!needsSession) {
+        toast.error(`Pipeline incomplete: ${failedSteps.join(', ')} did not complete`);
+      }
+    }
+
+    // Log pipeline result
+    console.log('[NovaAI Pipeline] Result:', {
+      mode: result.mode,
+      completed: result.completed,
+      steps: result.steps.map(s => `${s.step}: ${s.success ? '✓' : '✗'} ${s.detail}`),
+      errors: result.errors,
+    });
+  }, [executeAction]);
+
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || sendLockRef.current) return;
+
+    // Acquire send lock
+    sendLockRef.current = true;
 
     const userMsg: Msg = { role: 'user', content: text.trim() };
     const allMessages = [...messages, userMsg];
@@ -132,6 +285,7 @@ export default function AskNovaAI() {
 
       if (!resp) {
         setIsLoading(false);
+        sendLockRef.current = false;
         return;
       }
 
@@ -172,7 +326,6 @@ export default function AskNovaAI() {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
-              // Show content without action markers while streaming
               const { cleanContent } = parseNovaActions(assistantContent);
               updateAssistant(cleanContent);
             }
@@ -229,11 +382,26 @@ export default function AskNovaAI() {
           actions.length > 0 ? actions.map(a => a.data) : null
         );
       }
+
+      // ═══════════════════════════════════════════════════════════
+      // AUTO-EXECUTE PIPELINE: This is the key change.
+      // Instead of waiting for user to click buttons, we automatically
+      // run the structured data pipeline for extract_structured_data
+      // and note generation actions.
+      // ═══════════════════════════════════════════════════════════
+      if (actions.length > 0 && selectedClientId) {
+        // Filter out clarification actions — those still need user interaction
+        const executableActions = actions.filter(a => a.type !== 'request_clarification');
+        if (executableActions.length > 0) {
+          await autoExecutePipeline(executableActions, text.trim());
+        }
+      }
     } catch (e) {
       console.error('Chat error:', e);
       toast.error('Failed to get AI response');
     } finally {
       setIsLoading(false);
+      sendLockRef.current = false;
     }
   };
 
@@ -355,7 +523,7 @@ export default function AskNovaAI() {
                 key={i}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
+                <div className={`max-w-[85%]`}>
                   <div
                     className={`rounded-xl px-4 py-3 ${
                       msg.role === 'user'
@@ -371,7 +539,7 @@ export default function AskNovaAI() {
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     )}
                   </div>
-                  {/* Action buttons for assistant messages */}
+                  {/* Action buttons for assistant messages — still shown as manual fallback */}
                   {msg.role === 'assistant' && msg.actions && msg.actions.length > 0 && (
                     <NovaAIActionButtons
                       actions={msg.actions}
@@ -409,7 +577,7 @@ export default function AskNovaAI() {
               />
               <Button
                 onClick={() => sendMessage(input)}
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || sendLockRef.current}
                 size="icon"
                 className="shrink-0 h-11 w-11"
               >

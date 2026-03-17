@@ -49,6 +49,7 @@ export default function NovaAI() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendLockRef = useRef(false);
 
   // Handle contextual launch from other pages
   useEffect(() => {
@@ -91,7 +92,8 @@ export default function NovaAI() {
   }, []);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || sendLockRef.current) return;
+    sendLockRef.current = true;
     const userMsg: Msg = { role: 'user', content: text.trim() };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
@@ -109,6 +111,7 @@ export default function NovaAI() {
 
       if (!resp) {
         setIsLoading(false);
+        sendLockRef.current = false;
         return;
       }
 
@@ -169,6 +172,7 @@ export default function NovaAI() {
       toast.error('Failed to get AI response');
     } finally {
       setIsLoading(false);
+      sendLockRef.current = false;
     }
   };
 
