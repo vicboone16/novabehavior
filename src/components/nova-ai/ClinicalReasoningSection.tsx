@@ -14,8 +14,8 @@ import {
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { ResponseExportActions } from './ResponseExportActions';
+import { novaAIFetch } from '@/lib/novaAIFetch';
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 const db = supabase as any;
 
 type ReasoningMode = 'clinical_decision_support' | 'replacement_behavior' | 'behavior_pattern' | 'report_writing';
