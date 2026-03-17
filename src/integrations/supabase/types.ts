@@ -1335,11 +1335,15 @@ export type Database = {
           client_id: string
           consequence: string
           created_at: string
+          created_by_ai: boolean
           duration_seconds: number | null
           id: string
           intensity: number | null
           logged_at: string
           notes: string | null
+          raw_source_text: string | null
+          session_id: string | null
+          source_request_id: string | null
           user_id: string
         }
         Insert: {
@@ -1349,11 +1353,15 @@ export type Database = {
           client_id: string
           consequence: string
           created_at?: string
+          created_by_ai?: boolean
           duration_seconds?: number | null
           id?: string
           intensity?: number | null
           logged_at?: string
           notes?: string | null
+          raw_source_text?: string | null
+          session_id?: string | null
+          source_request_id?: string | null
           user_id: string
         }
         Update: {
@@ -1363,11 +1371,15 @@ export type Database = {
           client_id?: string
           consequence?: string
           created_at?: string
+          created_by_ai?: boolean
           duration_seconds?: number | null
           id?: string
           intensity?: number | null
           logged_at?: string
           notes?: string | null
+          raw_source_text?: string | null
+          session_id?: string | null
+          source_request_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -4806,6 +4818,7 @@ export type Database = {
         Row: {
           behavior_id: string
           created_at: string | null
+          created_by_ai: boolean
           data_state: Database["public"]["Enums"]["data_state"]
           duration_seconds: number | null
           frequency: number | null
@@ -4813,13 +4826,16 @@ export type Database = {
           latency_seconds: number | null
           notes: string | null
           observation_minutes: number | null
+          raw_source_text: string | null
           session_id: string
+          source_request_id: string | null
           student_id: string
           updated_at: string | null
         }
         Insert: {
           behavior_id: string
           created_at?: string | null
+          created_by_ai?: boolean
           data_state?: Database["public"]["Enums"]["data_state"]
           duration_seconds?: number | null
           frequency?: number | null
@@ -4827,13 +4843,16 @@ export type Database = {
           latency_seconds?: number | null
           notes?: string | null
           observation_minutes?: number | null
+          raw_source_text?: string | null
           session_id: string
+          source_request_id?: string | null
           student_id: string
           updated_at?: string | null
         }
         Update: {
           behavior_id?: string
           created_at?: string | null
+          created_by_ai?: boolean
           data_state?: Database["public"]["Enums"]["data_state"]
           duration_seconds?: number | null
           frequency?: number | null
@@ -4841,7 +4860,9 @@ export type Database = {
           latency_seconds?: number | null
           notes?: string | null
           observation_minutes?: number | null
+          raw_source_text?: string | null
           session_id?: string
+          source_request_id?: string | null
           student_id?: string
           updated_at?: string | null
         }
