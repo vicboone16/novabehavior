@@ -137,7 +137,7 @@ export function BehaviorIntelligenceSection({ studentId }: Props) {
                     <Badge variant="outline" className="text-[10px]">{c.count}</Badge>
                   </div>
                 ))}
-                {intel.primary_function_hypothesis && intel.primary_function_hypothesis !== 'undetermined' && (
+                {intel?.primary_function_hypothesis && intel.primary_function_hypothesis !== 'undetermined' && (
                   <div className="pt-1 border-t border-border/30 mt-1">
                     <p className="text-[10px] text-muted-foreground">
                       Primary function: <span className="font-medium text-foreground">{formatFunction(intel.primary_function_hypothesis)}</span>
