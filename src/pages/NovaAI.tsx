@@ -92,7 +92,8 @@ export default function NovaAI() {
   }, []);
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || sendLockRef.current) return;
+    sendLockRef.current = true;
     const userMsg: Msg = { role: 'user', content: text.trim() };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
