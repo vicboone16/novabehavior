@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   FileText, Loader2, Lock, CheckCircle2,
   ChevronDown, ChevronUp, Printer, Edit3, Copy,
-  BookOpen, ClipboardList, AlertTriangle, TrendingUp
+  BookOpen, ClipboardList, AlertTriangle, TrendingUp, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
