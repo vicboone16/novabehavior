@@ -220,6 +220,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       activationStatus: activationStatus as Student['activationStatus'] || undefined,
       contactEmail: contactEmail || undefined,
       contactPhone: contactPhone || undefined,
+      clientExternalId: clientExternalId || undefined,
     });
     setIsEditing(false);
     toast.success('Profile saved');
