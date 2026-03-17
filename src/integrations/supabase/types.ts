@@ -42292,6 +42292,739 @@ export type Database = {
           },
         ]
       }
+      voice_ai_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          grounding_json: Json | null
+          id: string
+          model_name: string | null
+          model_version: string | null
+          question_id: string
+        }
+        Insert: {
+          answer_text: string
+          created_at?: string
+          grounding_json?: Json | null
+          id?: string
+          model_name?: string | null
+          model_version?: string | null
+          question_id: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          grounding_json?: Json | null
+          id?: string
+          model_name?: string | null
+          model_version?: string | null
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ai_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "voice_ai_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_ai_drafts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          content: string | null
+          created_at: string
+          draft_type: string
+          id: string
+          is_user_edited: boolean | null
+          model_name: string | null
+          model_version: string | null
+          output_language: string | null
+          recording_id: string
+          structured_json: Json | null
+          tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          draft_type: string
+          id?: string
+          is_user_edited?: boolean | null
+          model_name?: string | null
+          model_version?: string | null
+          output_language?: string | null
+          recording_id: string
+          structured_json?: Json | null
+          tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          draft_type?: string
+          id?: string
+          is_user_edited?: boolean | null
+          model_name?: string | null
+          model_version?: string | null
+          output_language?: string | null
+          recording_id?: string
+          structured_json?: Json | null
+          tone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ai_drafts_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_ai_extractions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confidence_score: number | null
+          created_at: string
+          extraction_type: string
+          id: string
+          json_payload: Json
+          recording_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          extraction_type: string
+          id?: string
+          json_payload?: Json
+          recording_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          extraction_type?: string
+          id?: string
+          json_payload?: Json
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ai_extractions_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_ai_questions: {
+        Row: {
+          asked_by: string
+          created_at: string
+          id: string
+          question_text: string
+          recording_id: string
+        }
+        Insert: {
+          asked_by: string
+          created_at?: string
+          id?: string
+          question_text: string
+          recording_id: string
+        }
+        Update: {
+          asked_by?: string
+          created_at?: string
+          id?: string
+          question_text?: string
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ai_questions_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_ai_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          model_name: string | null
+          model_version: string | null
+          recording_id: string
+          run_type: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_name?: string | null
+          model_version?: string | null
+          recording_id: string
+          run_type: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          model_name?: string | null
+          model_version?: string | null
+          recording_id?: string
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ai_runs_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_audit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          metadata_json: Json | null
+          recording_id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          metadata_json?: Json | null
+          recording_id: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          metadata_json?: Json | null
+          recording_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_audit_log_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_consents: {
+        Row: {
+          captured_at: string
+          captured_by: string
+          consent_method: string | null
+          consent_status: Database["public"]["Enums"]["voice_consent_status"]
+          id: string
+          notes: string | null
+          recording_id: string
+        }
+        Insert: {
+          captured_at?: string
+          captured_by: string
+          consent_method?: string | null
+          consent_status: Database["public"]["Enums"]["voice_consent_status"]
+          id?: string
+          notes?: string | null
+          recording_id: string
+        }
+        Update: {
+          captured_at?: string
+          captured_by?: string
+          consent_method?: string | null
+          consent_status?: Database["public"]["Enums"]["voice_consent_status"]
+          id?: string
+          notes?: string | null
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_consents_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_links: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          recording_id: string
+          relationship_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          recording_id: string
+          relationship_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          recording_id?: string
+          relationship_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_links_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_posted_artifacts: {
+        Row: {
+          draft_id: string | null
+          id: string
+          posted_at: string
+          posted_by: string
+          posted_module: string
+          posted_record_id: string | null
+          recording_id: string
+        }
+        Insert: {
+          draft_id?: string | null
+          id?: string
+          posted_at?: string
+          posted_by: string
+          posted_module: string
+          posted_record_id?: string | null
+          recording_id: string
+        }
+        Update: {
+          draft_id?: string | null
+          id?: string
+          posted_at?: string
+          posted_by?: string
+          posted_module?: string
+          posted_record_id?: string | null
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_posted_artifacts_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "voice_ai_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_posted_artifacts_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_recording_chunks: {
+        Row: {
+          checksum: string | null
+          chunk_index: number
+          created_at: string
+          duration_ms: number | null
+          ended_at: string | null
+          id: string
+          recording_id: string
+          started_at: string | null
+          storage_path: string | null
+          upload_status: string | null
+        }
+        Insert: {
+          checksum?: string | null
+          chunk_index: number
+          created_at?: string
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_id: string
+          started_at?: string | null
+          storage_path?: string | null
+          upload_status?: string | null
+        }
+        Update: {
+          checksum?: string | null
+          chunk_index?: number
+          created_at?: string
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_id?: string
+          started_at?: string | null
+          storage_path?: string | null
+          upload_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_recording_chunks_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_recordings: {
+        Row: {
+          ai_status: string | null
+          archived_at: string | null
+          capture_mode: Database["public"]["Enums"]["voice_capture_mode"]
+          client_id: string | null
+          consent_method: string | null
+          consent_status: Database["public"]["Enums"]["voice_consent_status"]
+          created_at: string
+          created_by: string
+          detected_languages: string[] | null
+          duration_seconds: number | null
+          encounter_type: Database["public"]["Enums"]["voice_encounter_type"]
+          ended_at: string | null
+          finalized_at: string | null
+          id: string
+          language_mode: string | null
+          org_id: string | null
+          privacy_mode: Database["public"]["Enums"]["voice_privacy_mode"]
+          save_intent: string | null
+          secure_storage_path: string | null
+          source_entity_id: string | null
+          source_page: string | null
+          speaker_mode: string | null
+          staff_id: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["voice_recording_status"]
+          supervisor_id: string | null
+          transcript_status: string | null
+          updated_at: string
+          upload_status: string | null
+        }
+        Insert: {
+          ai_status?: string | null
+          archived_at?: string | null
+          capture_mode?: Database["public"]["Enums"]["voice_capture_mode"]
+          client_id?: string | null
+          consent_method?: string | null
+          consent_status?: Database["public"]["Enums"]["voice_consent_status"]
+          created_at?: string
+          created_by: string
+          detected_languages?: string[] | null
+          duration_seconds?: number | null
+          encounter_type?: Database["public"]["Enums"]["voice_encounter_type"]
+          ended_at?: string | null
+          finalized_at?: string | null
+          id?: string
+          language_mode?: string | null
+          org_id?: string | null
+          privacy_mode?: Database["public"]["Enums"]["voice_privacy_mode"]
+          save_intent?: string | null
+          secure_storage_path?: string | null
+          source_entity_id?: string | null
+          source_page?: string | null
+          speaker_mode?: string | null
+          staff_id?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["voice_recording_status"]
+          supervisor_id?: string | null
+          transcript_status?: string | null
+          updated_at?: string
+          upload_status?: string | null
+        }
+        Update: {
+          ai_status?: string | null
+          archived_at?: string | null
+          capture_mode?: Database["public"]["Enums"]["voice_capture_mode"]
+          client_id?: string | null
+          consent_method?: string | null
+          consent_status?: Database["public"]["Enums"]["voice_consent_status"]
+          created_at?: string
+          created_by?: string
+          detected_languages?: string[] | null
+          duration_seconds?: number | null
+          encounter_type?: Database["public"]["Enums"]["voice_encounter_type"]
+          ended_at?: string | null
+          finalized_at?: string | null
+          id?: string
+          language_mode?: string | null
+          org_id?: string | null
+          privacy_mode?: Database["public"]["Enums"]["voice_privacy_mode"]
+          save_intent?: string | null
+          secure_storage_path?: string | null
+          source_entity_id?: string | null
+          source_page?: string | null
+          speaker_mode?: string | null
+          staff_id?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["voice_recording_status"]
+          supervisor_id?: string | null
+          transcript_status?: string | null
+          updated_at?: string
+          upload_status?: string | null
+        }
+        Relationships: []
+      }
+      voice_save_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          destination_id: string | null
+          destination_module: string | null
+          id: string
+          performed_by: string
+          recording_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          destination_id?: string | null
+          destination_module?: string | null
+          id?: string
+          performed_by: string
+          recording_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          destination_id?: string | null
+          destination_module?: string | null
+          id?: string
+          performed_by?: string
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_save_actions_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_speakers: {
+        Row: {
+          created_at: string
+          id: string
+          is_user_confirmed: boolean | null
+          linked_client_id: string | null
+          linked_user_id: string | null
+          recording_id: string
+          speaker_label: string
+          speaker_role: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_user_confirmed?: boolean | null
+          linked_client_id?: string | null
+          linked_user_id?: string | null
+          recording_id: string
+          speaker_label: string
+          speaker_role?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_user_confirmed?: boolean | null
+          linked_client_id?: string | null
+          linked_user_id?: string | null
+          recording_id?: string
+          speaker_label?: string
+          speaker_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_speakers_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          recording_id: string
+          status: string | null
+          task_text: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          recording_id: string
+          status?: string | null
+          task_text: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          recording_id?: string
+          status?: string | null
+          task_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_tasks_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_transcript_segments: {
+        Row: {
+          confidence: number | null
+          end_ms: number | null
+          id: string
+          is_user_edited: boolean | null
+          language_code: string | null
+          segment_index: number
+          speaker_id: string | null
+          start_ms: number | null
+          text: string
+          transcript_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          end_ms?: number | null
+          id?: string
+          is_user_edited?: boolean | null
+          language_code?: string | null
+          segment_index: number
+          speaker_id?: string | null
+          start_ms?: number | null
+          text: string
+          transcript_id: string
+        }
+        Update: {
+          confidence?: number | null
+          end_ms?: number | null
+          id?: string
+          is_user_edited?: boolean | null
+          language_code?: string | null
+          segment_index?: number
+          speaker_id?: string | null
+          start_ms?: number | null
+          text?: string
+          transcript_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_transcript_segments_transcript_id_fkey"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "voice_transcripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_transcripts: {
+        Row: {
+          confidence_summary: Json | null
+          created_at: string
+          created_by_model: string | null
+          full_text: string | null
+          id: string
+          is_bilingual: boolean | null
+          recording_id: string
+          source_language: string | null
+          speaker_count: number | null
+          status: string | null
+          target_language: string | null
+          version_number: number
+        }
+        Insert: {
+          confidence_summary?: Json | null
+          created_at?: string
+          created_by_model?: string | null
+          full_text?: string | null
+          id?: string
+          is_bilingual?: boolean | null
+          recording_id: string
+          source_language?: string | null
+          speaker_count?: number | null
+          status?: string | null
+          target_language?: string | null
+          version_number?: number
+        }
+        Update: {
+          confidence_summary?: Json | null
+          created_at?: string
+          created_by_model?: string | null
+          full_text?: string | null
+          id?: string
+          is_bilingual?: boolean | null
+          recording_id?: string
+          source_language?: string | null
+          speaker_count?: number | null
+          status?: string | null
+          target_language?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_transcripts_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "voice_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       abas_item_deficit_candidate_v: {
@@ -54480,6 +55213,50 @@ export type Database = {
         | "target_closed"
         | "any_criteria_met"
       vb_mapp_fill_state: "EMPTY" | "HALF" | "FULL"
+      voice_capture_mode: "quick_note" | "full_clinical" | "upload_audio"
+      voice_consent_status:
+        | "verbal_consent"
+        | "written_consent"
+        | "private_dictation_only"
+        | "no_recording_dictation_only"
+        | "not_set"
+      voice_encounter_type:
+        | "quick_note"
+        | "direct_session_debrief"
+        | "parent_training"
+        | "parent_interview"
+        | "teacher_consult"
+        | "classroom_observation"
+        | "fba_interview"
+        | "fba_observation"
+        | "rbt_supervision"
+        | "bcba_supervision"
+        | "team_meeting"
+        | "crisis_debrief"
+        | "record_review_dictation"
+        | "private_dictation"
+        | "personal_admin_note"
+      voice_privacy_mode:
+        | "private"
+        | "chart_linked_draft"
+        | "team_visible_draft"
+      voice_recording_status:
+        | "draft_created"
+        | "ready_to_record"
+        | "recording_active"
+        | "paused"
+        | "stopping"
+        | "audio_secured"
+        | "processing"
+        | "review_ready"
+        | "saved_draft"
+        | "posted"
+        | "archived"
+        | "upload_degraded"
+        | "offline_buffering"
+        | "transcript_failed_retryable"
+        | "ai_failed_retryable"
+        | "finalization_failed_manual_review"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -54714,6 +55491,54 @@ export const Constants = {
         "any_criteria_met",
       ],
       vb_mapp_fill_state: ["EMPTY", "HALF", "FULL"],
+      voice_capture_mode: ["quick_note", "full_clinical", "upload_audio"],
+      voice_consent_status: [
+        "verbal_consent",
+        "written_consent",
+        "private_dictation_only",
+        "no_recording_dictation_only",
+        "not_set",
+      ],
+      voice_encounter_type: [
+        "quick_note",
+        "direct_session_debrief",
+        "parent_training",
+        "parent_interview",
+        "teacher_consult",
+        "classroom_observation",
+        "fba_interview",
+        "fba_observation",
+        "rbt_supervision",
+        "bcba_supervision",
+        "team_meeting",
+        "crisis_debrief",
+        "record_review_dictation",
+        "private_dictation",
+        "personal_admin_note",
+      ],
+      voice_privacy_mode: [
+        "private",
+        "chart_linked_draft",
+        "team_visible_draft",
+      ],
+      voice_recording_status: [
+        "draft_created",
+        "ready_to_record",
+        "recording_active",
+        "paused",
+        "stopping",
+        "audio_secured",
+        "processing",
+        "review_ready",
+        "saved_draft",
+        "posted",
+        "archived",
+        "upload_degraded",
+        "offline_buffering",
+        "transcript_failed_retryable",
+        "ai_failed_retryable",
+        "finalization_failed_manual_review",
+      ],
     },
   },
 } as const
