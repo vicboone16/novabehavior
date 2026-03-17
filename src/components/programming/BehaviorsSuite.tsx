@@ -9,6 +9,7 @@ import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
+import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 
 type BehaviorTab = 'behaviors' | 'interventions' | 'data' | 'review' | 'context';
 
