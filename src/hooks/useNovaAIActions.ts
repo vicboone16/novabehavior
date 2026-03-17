@@ -373,7 +373,16 @@ export function useNovaAIActions(clientId: string | null) {
     try {
       // Create staging request for audit trail
       const intent = action.type.replace('generate_', '').replace('extract_', '');
-      const requestId = await createStagingRequest(
+      let requestId: string | null = null;
+      try {
+        requestId = await createStagingRequest(
+          rawInput || 'Action executed from UI',
+          intent,
+          action.data?.intent_confidence || 0.9
+        );
+      } catch (err) {
+        console.error('[NovaAI] Failed to create staging request:', err);
+      }
         rawInput || 'Action executed from UI',
         intent,
         action.data?.intent_confidence || 0.9
