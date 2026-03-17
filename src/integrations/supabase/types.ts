@@ -29959,6 +29959,74 @@ export type Database = {
           },
         ]
       }
+      sdc_training_staff_progress: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          current_section: string | null
+          due_date: string | null
+          id: string
+          last_activity_at: string | null
+          module_id: string | null
+          notes: string | null
+          score: number | null
+          started_at: string | null
+          status: string
+          time_spent_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          current_section?: string | null
+          due_date?: string | null
+          id?: string
+          last_activity_at?: string | null
+          module_id?: string | null
+          notes?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          current_section?: string | null
+          due_date?: string | null
+          id?: string
+          last_activity_at?: string | null
+          module_id?: string | null
+          notes?: string | null
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdc_training_staff_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "sdc_training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_scan_results: {
         Row: {
           completed_at: string | null
