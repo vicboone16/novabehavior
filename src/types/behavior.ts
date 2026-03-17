@@ -430,6 +430,7 @@ export function calculateAge(dob: Date): { years: number; months: number; totalM
 export interface Student {
   id: string;
   name: string;
+  clientExternalId?: string; // Human-facing Client ID Number (case number, school ID, etc.)
   // Separate name fields
   firstName?: string;
   lastName?: string;
