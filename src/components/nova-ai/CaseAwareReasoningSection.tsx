@@ -176,24 +176,15 @@ export function CaseAwareReasoningSection() {
     let fullResponse = '';
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
+      const resp = await novaAIFetch({
+        body: {
           messages: [{ role: 'user', content: prompt }],
           evidence_mode: true,
           system_suffix: getSystemSuffix(mode),
-        }),
+        },
       });
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        if (resp.status === 429) toast.error('Rate limit exceeded.');
-        else if (resp.status === 402) toast.error('AI credits depleted.');
-        else toast.error(err.error || 'AI service error');
+      if (!resp) {
         setIsLoading(false);
         return;
       }
