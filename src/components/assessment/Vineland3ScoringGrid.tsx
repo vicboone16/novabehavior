@@ -18,6 +18,7 @@ import {
   type Vineland3DerivedScore,
 } from '@/hooks/useVineland3';
 import { Vineland3Report } from './Vineland3Report';
+import { Vineland3GoalMapping } from './Vineland3GoalMapping';
 import { format } from 'date-fns';
 
 interface Vineland3ScoringGridProps {
@@ -443,15 +444,11 @@ export function Vineland3ScoringGrid({
 
         {/* Goal Mapping Tab */}
         <TabsContent value="goals" className="space-y-3">
-          <Card>
-            <CardContent className="py-8 text-center">
-              <Target className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-              <p className="text-sm font-medium mb-1">Goal Recommendations</p>
-              <p className="text-xs text-muted-foreground">
-                Score patterns will generate curriculum and programming recommendations based on adaptive behavior profiles.
-              </p>
-            </CardContent>
-          </Card>
+          <Vineland3GoalMapping
+            assessmentId={assessment.id}
+            domains={domains}
+            derivedScores={derivedScores}
+          />
         </TabsContent>
 
         {/* History Tab */}
