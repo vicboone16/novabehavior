@@ -40418,6 +40418,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_org_roles: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_personal_notes: {
         Row: {
           content: string
