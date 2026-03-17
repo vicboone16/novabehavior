@@ -653,12 +653,15 @@ export function useNovaAIActions(clientId: string | null) {
           toast.info('Action not yet supported');
           return false;
       }
-    } catch (e) {
-      console.error('NovaAI action error:', e);
-      toast.error('Failed to save. Please try again.');
+    } catch (e: any) {
+      console.error('[NovaAI] Action error:', e);
+      const errorMsg = e?.message || 'Unknown error';
+      toast.error(`Failed to save: ${errorMsg}`);
+      // Update staging request status to failed if we have a requestId
+      // (requestId is scoped inside try — this is a fallback log)
       return false;
     }
-  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates, routeToClinicialTables]);
+  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates, routeToClinicialTables, createNewTarget]);
 
   // ── Log to audit ────────────────────────────────────────────────────────
   const logToAudit = useCallback(async (
