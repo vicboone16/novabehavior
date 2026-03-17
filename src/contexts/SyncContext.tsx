@@ -219,6 +219,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
           // Contact info
           contactEmail: s.contact_email || undefined,
           contactPhone: s.contact_phone || undefined,
+          clientExternalId: s.client_external_id || undefined,
           // FBA/Assessment data
           fbaWorkflowProgress: s.fba_workflow_progress ? {
             ...s.fba_workflow_progress,
