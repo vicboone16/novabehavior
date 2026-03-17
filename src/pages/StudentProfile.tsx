@@ -823,37 +823,15 @@ export default function StudentProfile() {
 
 
 
-        {/* Notes Tab */}
+        {/* Consolidated Notes Tab */}
         <TabsContent value="notes" className="space-y-4">
-          <NarrativeNotesManager
-            studentId={student.id}
-            notes={student.narrativeNotes || []}
-            behaviors={student.behaviors}
-            onAddNote={(note) => addNarrativeNote(student.id, note)}
-            onUpdateNote={(noteId, updates) => updateNarrativeNote(student.id, noteId, updates)}
-            onDeleteNote={(noteId) => deleteNarrativeNote(student.id, noteId)}
-            canViewNotes={studentAccess.canViewNotes}
+          <NotesHub
+            student={student}
+            studentAccess={studentAccess}
+            addNarrativeNote={addNarrativeNote}
+            updateNarrativeNote={updateNarrativeNote}
+            deleteNarrativeNote={deleteNarrativeNote}
           />
-        </TabsContent>
-
-        {/* Session Notes Tab */}
-        <TabsContent value="session-notes" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Session Notes</h3>
-            <ShareWithTeacherButton
-              studentId={student.id}
-              studentName={student.name}
-              variant="button"
-              messageType="data_share"
-              prefillSubject={`Session notes for ${student.name}`}
-            />
-          </div>
-          <SessionNotesTab
-            studentId={student.id}
-            studentName={student.name}
-          />
-          <TeacherSummaries clientId={student.id} />
-          <StaffMessageThread studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* Files Tab */}
