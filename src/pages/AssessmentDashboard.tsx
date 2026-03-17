@@ -35,6 +35,8 @@ import { PECSGoalBrowser } from '@/components/clinical-library/PECSGoalBrowser';
 import { EFLGoalBrowser } from '@/components/clinical-library/EFLGoalBrowser';
 import { PEAKGoalBrowser } from '@/components/clinical-library/PEAKGoalBrowser';
 import { ESDMGoalBrowser } from '@/components/clinical-library/ESDMGoalBrowser';
+import { ABAS3GoalBrowser } from '@/components/clinical-library/ABAS3GoalBrowser';
+import { DAYC2GoalBrowser } from '@/components/clinical-library/DAYC2GoalBrowser';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
@@ -937,6 +939,20 @@ export default function AssessmentDashboard() {
                 <Card>
                   <CardContent className="p-4">
                     <ESDMGoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
+                {/* ABAS-3 Adaptive Behavior Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <ABAS3GoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
+                {/* DAYC-2 Developmental Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <DAYC2GoalBrowser clientId={selectedStudent.id} />
                   </CardContent>
                 </Card>
 
