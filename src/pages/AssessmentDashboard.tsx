@@ -898,7 +898,12 @@ export default function AssessmentDashboard() {
                   studentName={selectedStudent.name}
                   studentDob={selectedStudent.dateOfBirth ? selectedStudent.dateOfBirth.toISOString().split('T')[0] : undefined}
                 />
-                
+
+                {/* Vineland-3 Norm Import (Admin Only) */}
+                {(userRole === 'admin' || userRole === 'super_admin') && (
+                  <Vineland3NormImport />
+                )}
+
                 {/* Questionnaire Manager - Sent out forms */}
                 <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
               </>
