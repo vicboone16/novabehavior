@@ -29,6 +29,7 @@ import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireMa
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
+import { AFLSCurriculumBrowser } from '@/components/clinical-library/AFLSCurriculumBrowser';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
@@ -884,6 +885,13 @@ export default function AssessmentDashboard() {
                   studentName={selectedStudent.name}
                   trackerType="afls"
                 />
+
+                {/* AFLS Curriculum Goals Browser */}
+                <Card>
+                  <CardContent className="p-4">
+                    <AFLSCurriculumBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
 
                 {/* ABLLS-R Internal Tracker */}
                 <InternalTrackerEntry
