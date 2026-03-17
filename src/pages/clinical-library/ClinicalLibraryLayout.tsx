@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Settings2, Layers, User, Building2, Shield } from 'lucide-react';
+import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +19,11 @@ export default function ClinicalLibraryLayout() {
   const isCollections = location.pathname.startsWith('/clinical-library/clinical-collections');
   const isCurriculum = location.pathname.startsWith('/clinical-library/curriculum-systems');
   const isBehavior = location.pathname.startsWith('/clinical-library/behavior-reduction');
+  const isRegistry = location.pathname.startsWith('/clinical-library/library-registry');
 
-  const subtitle = isBehavior
+  const subtitle = isRegistry
+    ? 'Assessments, curricula, intervention libraries & crosswalk rules'
+    : isBehavior
     ? 'Function-based goals, intervention protocols & replacement behaviors'
     : isCurriculum
     ? 'Standardized curriculum frameworks & formal assessment systems'
@@ -98,7 +101,7 @@ export default function ClinicalLibraryLayout() {
 
         {/* Root landing shows two cards */}
         {isRoot ? (
-          <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto mt-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto mt-4">
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
               onClick={() => navigate('/clinical-library/curriculum-systems')}
@@ -154,6 +157,26 @@ export default function ClinicalLibraryLayout() {
                 <div className="flex flex-wrap gap-1.5">
                   {['FCT', 'DRA/DRO', 'Crisis Plans', 'Strategies'].map(name => (
                     <Badge key={name} variant="outline" className="text-[10px] border-destructive/30 text-destructive">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => navigate('/clinical-library/library-registry')}
+            >
+              <CardContent className="p-6">
+                <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+                  <BookOpen className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-lg font-bold mb-1">Library Registry</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Browse all assessments, curricula, intervention libraries & crosswalk rules.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Vineland-3', 'SRS-2', 'AFLS', 'VB-MAPP', 'PECS'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
                   ))}
                 </div>
               </CardContent>
