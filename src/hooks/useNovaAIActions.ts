@@ -298,8 +298,42 @@ export function useNovaAIActions(clientId: string | null) {
             raw_source_text: item.raw_text,
           });
           result.saved++;
+        } else if (item.item_type === 'skill_trial' && targetId && sessionId) {
+          // Route skill trials to target_trials table
+          const trialTotal = item.measurement?.trial_total || 1;
+          const trialCorrect = item.measurement?.trial_correct || 0;
+
+          // Insert individual trial rows for accurate skill tracking
+          const trialRows = [];
+          for (let t = 0; t < trialTotal; t++) {
+            const isCorrect = t < trialCorrect;
+            trialRows.push({
+              target_id: targetId,
+              session_id: sessionId,
+              trial_index: t + 1,
+              outcome: isCorrect ? 'correct' : 'incorrect',
+              session_type: 'session',
+              data_state: 'final',
+              recorded_by: user.id,
+              recorded_at: new Date().toISOString(),
+              notes: t === 0 ? (item.context?.notes || item.raw_text || null) : null,
+            });
+          }
+
+          const { error } = await (supabase as any)
+            .from('target_trials')
+            .insert(trialRows);
+
+          if (error) {
+            if (error.code === '23505') {
+              result.skipped++;
+              continue;
+            }
+            throw error;
+          }
+          result.saved++;
         } else if (
-          (item.item_type === 'behavior_event' || item.item_type === 'skill_trial' || item.item_type === 'skill_or_behavior_measure') &&
+          (item.item_type === 'behavior_event' || item.item_type === 'skill_or_behavior_measure') &&
           targetId && sessionId
         ) {
           // Route to behavior_session_data
@@ -335,7 +369,6 @@ export function useNovaAIActions(clientId: string | null) {
             .upsert(insertData, { onConflict: 'session_id,behavior_id' });
 
           if (error) {
-            // If unique constraint violation, try insert without conflict
             if (error.code === '23505') {
               result.skipped++;
               continue;
