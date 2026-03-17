@@ -680,5 +680,36 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [user, clientId]);
 
-  return { executeAction, logToAudit };
+  // ── Update staging request status ────────────────────────────────────────
+  const updateRequestStatus = useCallback(async (
+    requestId: string,
+    status: 'completed' | 'failed' | 'pending_review' | 'pending_session',
+    errorDetail?: string
+  ) => {
+    try {
+      const update: any = { status };
+      if (errorDetail) update.error_detail = errorDetail;
+      await (supabase as any)
+        .from('nova_ai_requests')
+        .update(update)
+        .eq('id', requestId);
+    } catch (err) {
+      console.error('Failed to update request status:', err);
+    }
+  }, []);
+
+  return {
+    executeAction,
+    logToAudit,
+    // Expose sub-functions for pipeline orchestration
+    createStagingRequest,
+    stageParsedItems,
+    stageGeneratedNote,
+    addTimelineEntry,
+    enqueueGraphUpdates,
+    routeToClinicialTables,
+    createNewTarget,
+    checkForDuplicates,
+    updateRequestStatus,
+  };
 }
