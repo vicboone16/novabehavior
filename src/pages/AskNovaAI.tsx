@@ -217,6 +217,9 @@ export default function AskNovaAI() {
           }
         }
         // request_clarification actions are NOT auto-executed — they show buttons
+      } catch (err: any) {
+        console.error('[NovaAI Pipeline] Action execution error:', err);
+        errors.push(`Action ${action.type} failed: ${err.message}`);
       }
     }
 
