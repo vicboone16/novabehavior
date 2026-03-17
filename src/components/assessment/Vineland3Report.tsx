@@ -89,6 +89,49 @@ export function Vineland3Report({
   const domainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'domain'), [derivedScores]);
   const subdomainScores = useMemo(() => derivedScores.filter(d => d.score_level === 'subdomain'), [derivedScores]);
 
+  // Chart data
+  const domainChartData = useMemo(() => {
+    const items: Array<{ label: string; score: number | null; isComposite?: boolean }> = [];
+    if (compositeScore?.standard_score != null) {
+      items.push({ label: 'ABC', score: compositeScore.standard_score, isComposite: true });
+    }
+    DOMAIN_ORDER.forEach(dk => {
+      const ds = domainScores.find(d => d.domain_key === dk);
+      if (ds?.standard_score != null) {
+        items.push({ label: DOMAIN_LABELS[dk], score: ds.standard_score });
+      }
+    });
+    return items;
+  }, [compositeScore, domainScores]);
+
+  const subdomainChartData = useMemo(() => {
+    return DOMAIN_ORDER.flatMap(dk => {
+      return subdomainScores
+        .filter(s => s.domain_key === dk && s.v_scale_score != null)
+        .map(ss => {
+          const dom = domains.find(d => d.domain_key === ss.domain_key);
+          const sub = dom?.subdomains.find(s => s.subdomain_key === ss.subdomain_key);
+          return {
+            subdomain_name: sub?.subdomain_name || ss.subdomain_key,
+            domain_name: dom?.domain_name || ss.domain_key,
+            v_scale_score: ss.v_scale_score,
+          };
+        });
+    });
+  }, [subdomainScores, domains]);
+
+  // Placeholder for longitudinal data - will query prior assessments
+  const longitudinalData = useMemo(() => {
+    // Current assessment data point
+    const current: any = { administration_date: assessment.administration_date };
+    if (compositeScore?.standard_score != null) current.abc_score = compositeScore.standard_score;
+    domainScores.forEach(ds => {
+      if (ds.standard_score != null) current[ds.domain_key] = ds.standard_score;
+    });
+    // For now, single point (trend chart will show "no prior" message)
+    return [current];
+  }, [assessment, compositeScore, domainScores]);
+
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
