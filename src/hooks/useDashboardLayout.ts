@@ -45,6 +45,10 @@ export function useDashboardLayout() {
   const [layouts, setLayouts] = useState<Record<string, GridLayoutItem[]>>({});
   const [initialized, setInitialized] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Gate: only persist layout changes AFTER the user has actually interacted with the grid.
+  // react-grid-layout fires onLayoutChange during initial render / compact, which causes
+  // widget positions to drift on every sign-in.
+  const userHasInteracted = useRef(false);
 
   // Load from DB first, fallback to localStorage, then defaults
   useEffect(() => {
