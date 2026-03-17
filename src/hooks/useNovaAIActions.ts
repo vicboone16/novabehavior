@@ -143,6 +143,142 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [clientId]);
 
+  // ── Check for duplicate entries ─────────────────────────────────────────
+  const checkForDuplicates = useCallback(async (
+    item: any,
+    sessionId?: string
+  ): Promise<boolean> => {
+    if (!clientId) return false;
+    try {
+      const targetId = item.target_match?.target_id;
+      if (!targetId) return false;
+
+      // Check behavior_session_data for similar entries
+      if (item.item_type === 'behavior_event' || item.item_type === 'skill_or_behavior_measure') {
+        const { data } = await supabase
+          .from('behavior_session_data')
+          .select('id, frequency, duration_seconds')
+          .eq('student_id', clientId)
+          .eq('behavior_id', targetId)
+          .limit(1);
+
+        if (data?.length) {
+          const existing = data[0] as any;
+          // Check if values are very similar
+          if (item.measurement?.frequency_count != null && existing.frequency === item.measurement.frequency_count) {
+            return true;
+          }
+          if (item.measurement?.duration_seconds != null && existing.duration_seconds === item.measurement.duration_seconds) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
+  }, [clientId]);
+
+  // ── Route structured items to clinical tables ───────────────────────────
+  const routeToClinicialTables = useCallback(async (
+    items: any[],
+    sessionId: string | null,
+    requestId: string | null
+  ): Promise<{ saved: number; skipped: number; errors: string[] }> => {
+    if (!user || !clientId) return { saved: 0, skipped: 0, errors: ['No user or client'] };
+
+    const result = { saved: 0, skipped: 0, errors: [] as string[] };
+
+    for (const item of items) {
+      try {
+        // Skip items that need review
+        if (item.quality?.needs_review || item.target_match?.match_status === 'ambiguous_match_review_needed') {
+          result.skipped++;
+          continue;
+        }
+
+        const targetId = item.target_match?.target_id;
+
+        if (item.item_type === 'abc_event') {
+          // Route to abc_logs
+          await (supabase as any).from('abc_logs').insert({
+            client_id: clientId,
+            user_id: user.id,
+            session_id: sessionId || null,
+            antecedent: item.context?.antecedent || '',
+            behavior: item.context?.behavior_description || item.raw_text || '',
+            consequence: item.context?.consequence || '',
+            behavior_category: item.target_match?.target_name || null,
+            intensity: null,
+            duration_seconds: item.measurement?.duration_seconds || null,
+            notes: item.context?.notes || null,
+            logged_at: new Date().toISOString(),
+            source_request_id: requestId,
+            created_by_ai: true,
+            raw_source_text: item.raw_text,
+          });
+          result.saved++;
+        } else if (
+          (item.item_type === 'behavior_event' || item.item_type === 'skill_trial' || item.item_type === 'skill_or_behavior_measure') &&
+          targetId && sessionId
+        ) {
+          // Route to behavior_session_data
+          const insertData: any = {
+            session_id: sessionId,
+            student_id: clientId,
+            behavior_id: targetId,
+            data_state: 'final',
+            source_request_id: requestId,
+            created_by_ai: true,
+            raw_source_text: item.raw_text,
+          };
+
+          if (item.measurement?.frequency_count != null) {
+            insertData.frequency = item.measurement.frequency_count;
+          }
+          if (item.measurement?.duration_seconds != null) {
+            insertData.duration_seconds = item.measurement.duration_seconds;
+          }
+          if (item.measurement?.latency_seconds != null) {
+            insertData.latency_seconds = item.measurement.latency_seconds;
+          }
+          if (item.measurement?.observation_window_minutes != null) {
+            insertData.observation_minutes = item.measurement.observation_window_minutes;
+          }
+          if (item.context?.notes) {
+            insertData.notes = item.context.notes;
+          }
+
+          // Use upsert to handle potential duplicates
+          const { error } = await (supabase as any)
+            .from('behavior_session_data')
+            .upsert(insertData, { onConflict: 'session_id,behavior_id' });
+
+          if (error) {
+            // If unique constraint violation, try insert without conflict
+            if (error.code === '23505') {
+              result.skipped++;
+              continue;
+            }
+            throw error;
+          }
+          result.saved++;
+        } else if (!sessionId && targetId) {
+          // No session — save as extraction note for later routing
+          result.skipped++;
+        } else {
+          result.skipped++;
+        }
+      } catch (err: any) {
+        console.error('Failed to route item:', err);
+        result.errors.push(err.message || 'Unknown error');
+      }
+    }
+
+    return result;
+  }, [user, clientId]);
+
   // ── Execute action (save to final tables) ───────────────────────────────
   const executeAction = useCallback(async (action: NovaAction, destination: string, rawInput?: string) => {
     if (!user) {
@@ -213,10 +349,8 @@ export function useNovaAIActions(clientId: string | null) {
 
           if (error) throw error;
 
-          // Stage the note for audit
           if (requestId) await stageGeneratedNote(requestId, action);
 
-          // Add timeline entry
           await addTimelineEntry(
             'soap_note_created',
             'AI-generated SOAP note saved as draft',
@@ -322,7 +456,7 @@ export function useNovaAIActions(clientId: string | null) {
             return false;
           }
 
-          // Stage all parsed items
+          // Stage all parsed items for audit
           if (requestId) await stageParsedItems(requestId, behaviors);
 
           // Separate items by review status
@@ -335,13 +469,24 @@ export function useNovaAIActions(clientId: string | null) {
             b.target_match?.match_status === 'ambiguous_match_review_needed'
           );
 
-          // Save extraction as a structured extraction note
+          // Route ready items to clinical tables if a session context exists
+          let routingResult = { saved: 0, skipped: 0, errors: [] as string[] };
+
+          // Try to get current session_id from the action data or context
+          const sessionId = action.data.session_id || null;
+
+          if (readyItems.length > 0) {
+            routingResult = await routeToClinicialTables(readyItems, sessionId, requestId);
+          }
+
+          // Also save as extraction note for reference
           const extractionContent = {
             extracted_data: action.data,
             items_ready: readyItems.length,
             items_need_review: reviewItems.length,
+            items_routed_to_clinical: routingResult.saved,
+            items_pending_session: routingResult.skipped,
             source: 'nova_ai',
-            requires_session_mapping: true,
             audit: {
               created_by: 'nova_ai',
               created_at: new Date().toISOString(),
@@ -375,23 +520,26 @@ export function useNovaAIActions(clientId: string | null) {
           if (error) throw error;
 
           // Enqueue graph updates
-          if (action.data.graph_updates?.length) {
+          if (action.data.graph_updates?.length && routingResult.saved > 0) {
             await enqueueGraphUpdates(action.data.graph_updates, requestId || undefined);
           }
 
           // Add timeline entry
           await addTimelineEntry(
             'structured_data_extracted',
-            `AI extracted ${readyItems.length} ready item(s), ${reviewItems.length} need review`,
+            `AI extracted ${behaviors.length} item(s): ${routingResult.saved} saved to clinical tables, ${reviewItems.length} need review`,
             'enhanced_session_notes',
             noteData?.id,
             requestId || undefined
           );
 
-          const summary = [];
-          summary.push(`${readyItems.length} item(s) ready`);
-          if (reviewItems.length > 0) summary.push(`${reviewItems.length} need review`);
-          toast.success(`Structured data saved as draft — ${summary.join(', ')}`);
+          const summaryParts = [];
+          if (routingResult.saved > 0) summaryParts.push(`${routingResult.saved} saved to clinical data`);
+          if (routingResult.skipped > 0) summaryParts.push(`${routingResult.skipped} staged for review`);
+          if (reviewItems.length > 0) summaryParts.push(`${reviewItems.length} need review`);
+          if (!sessionId && readyItems.length > 0) summaryParts.push('select a session to route data');
+
+          toast.success(`Structured data processed — ${summaryParts.join(', ')}`);
           return true;
         }
 
@@ -404,7 +552,7 @@ export function useNovaAIActions(clientId: string | null) {
       toast.error('Failed to save. Please try again.');
       return false;
     }
-  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates]);
+  }, [user, clientId, createStagingRequest, stageGeneratedNote, stageParsedItems, addTimelineEntry, enqueueGraphUpdates, routeToClinicialTables]);
 
   // ── Log to audit ────────────────────────────────────────────────────────
   const logToAudit = useCallback(async (
