@@ -383,10 +383,6 @@ export function useNovaAIActions(clientId: string | null) {
       } catch (err) {
         console.error('[NovaAI] Failed to create staging request:', err);
       }
-        rawInput || 'Action executed from UI',
-        intent,
-        action.data?.intent_confidence || 0.9
-      );
 
       switch (action.type) {
         case 'generate_soap_note': {
