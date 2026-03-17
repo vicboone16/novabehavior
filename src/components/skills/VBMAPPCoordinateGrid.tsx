@@ -421,4 +421,4 @@ export const VBMAPPCoordinateGrid = forwardRef<HTMLDivElement, VBMAPPCoordinateG
       </div>
     </TooltipProvider>
   );
-}
+});
