@@ -72,6 +72,14 @@ export function Vineland3Report({
   const [reportType, setReportType] = useState<'domain_level' | 'comprehensive'>('comprehensive');
   const [autoWriterOutputs, setAutoWriterOutputs] = useState<AutoWriterOutput[]>([]);
   const [generatingContext, setGeneratingContext] = useState<string | null>(null);
+  const [chartToggles, setChartToggles] = useState({
+    domainProfile: true,
+    subdomainProfile: true,
+    longitudinal: true,
+  });
+  const domainChartRef = useRef<HTMLDivElement>(null);
+  const subdomainChartRef = useRef<HTMLDivElement>(null);
+  const longitudinalChartRef = useRef<HTMLDivElement>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     examinee: true, summary: true, scores: true, subdomains: true,
     pairwise: true, narratives: true, recommendations: true,
