@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -616,8 +616,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !data?.claims) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -716,76 +716,93 @@ serve(async (req) => {
       throw new Error("No response body from AI gateway");
     }
 
-    // Collect streamed response and detect tool calls
-    const reader = responseBody.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullContent = "";
-    let toolCalls: any[] = [];
-    let hasToolCalls = false;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (line.startsWith(":") || line.trim() === "") continue;
-        if (!line.startsWith("data: ")) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") continue;
+    // Stream response to client, buffering tool calls for appending as action markers
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = responseBody.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let toolCalls: any[] = [];
+        let hasToolCalls = false;
 
         try {
-          const parsed = JSON.parse(jsonStr);
-          const choice = parsed.choices?.[0];
-          if (choice?.delta?.content) {
-            fullContent += choice.delta.content;
-          }
-          if (choice?.delta?.tool_calls) {
-            hasToolCalls = true;
-            for (const tc of choice.delta.tool_calls) {
-              const idx = tc.index ?? 0;
-              if (!toolCalls[idx]) {
-                toolCalls[idx] = { id: tc.id || "", function: { name: "", arguments: "" } };
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            let newlineIndex: number;
+            while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+              let line = buffer.slice(0, newlineIndex);
+              buffer = buffer.slice(newlineIndex + 1);
+              if (line.endsWith("\r")) line = line.slice(0, -1);
+              if (line.startsWith(":") || line.trim() === "") continue;
+              if (!line.startsWith("data: ")) continue;
+
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const choice = parsed.choices?.[0];
+
+                // Stream content tokens immediately
+                if (choice?.delta?.content) {
+                  const sseChunk = `data: ${JSON.stringify({
+                    choices: [{ delta: { content: choice.delta.content }, index: 0 }]
+                  })}\n\n`;
+                  controller.enqueue(encoder.encode(sseChunk));
+                }
+
+                // Buffer tool calls
+                if (choice?.delta?.tool_calls) {
+                  hasToolCalls = true;
+                  for (const tc of choice.delta.tool_calls) {
+                    const idx = tc.index ?? 0;
+                    if (!toolCalls[idx]) {
+                      toolCalls[idx] = { id: tc.id || "", function: { name: "", arguments: "" } };
+                    }
+                    if (tc.function?.name) toolCalls[idx].function.name = tc.function.name;
+                    if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
+                    if (tc.id) toolCalls[idx].id = tc.id;
+                  }
+                }
+              } catch {
+                // partial JSON, skip
               }
-              if (tc.function?.name) toolCalls[idx].function.name = tc.function.name;
-              if (tc.function?.arguments) toolCalls[idx].function.arguments += tc.function.arguments;
-              if (tc.id) toolCalls[idx].id = tc.id;
             }
           }
-        } catch {
-          // partial JSON, skip
-        }
-      }
-    }
 
-    // Build final response with embedded tool call data as action markers
-    let finalContent = fullContent;
+          // After streaming completes, append tool call action markers
+          if (hasToolCalls && toolCalls.length > 0) {
+            let actionContent = "";
+            for (const tc of toolCalls) {
+              try {
+                const args = JSON.parse(tc.function.arguments);
+                actionContent += `\n\n<!--NOVA_ACTION:${JSON.stringify({ type: tc.function.name, data: args })}-->`;
+              } catch (e) {
+                console.error("Failed to parse tool call arguments:", e);
+              }
+            }
+            if (actionContent) {
+              const sseChunk = `data: ${JSON.stringify({
+                choices: [{ delta: { content: actionContent }, index: 0 }]
+              })}\n\n`;
+              controller.enqueue(encoder.encode(sseChunk));
+            }
+          }
 
-    if (hasToolCalls && toolCalls.length > 0) {
-      for (const tc of toolCalls) {
-        try {
-          const args = JSON.parse(tc.function.arguments);
-          const marker = `\n\n<!--NOVA_ACTION:${JSON.stringify({ type: tc.function.name, data: args })}-->`;
-          finalContent += marker;
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
         } catch (e) {
-          console.error("Failed to parse tool call arguments:", e);
+          console.error("Stream processing error:", e);
+          controller.error(e);
         }
       }
-    }
+    });
 
-    // Create SSE stream with final content
-    const encoder = new TextEncoder();
-    const sseData = `data: ${JSON.stringify({
-      choices: [{ delta: { content: finalContent }, index: 0, finish_reason: "stop" }]
-    })}\n\ndata: [DONE]\n\n`;
-
-    return new Response(encoder.encode(sseData), {
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
