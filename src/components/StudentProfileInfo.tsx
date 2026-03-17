@@ -254,6 +254,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setActivationStatus(student.activationStatus || '');
     setContactEmail(student.contactEmail || '');
     setContactPhone(student.contactPhone || '');
+    setClientExternalId(student.clientExternalId || '');
     setIsEditing(false);
   };
 
