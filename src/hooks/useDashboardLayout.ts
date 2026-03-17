@@ -133,7 +133,11 @@ export function useDashboardLayout() {
 
   const onLayoutChange = useCallback((_layout: GridLayoutItem[], allLayouts: Record<string, GridLayoutItem[]>) => {
     setLayouts(allLayouts);
-    persistToDb(activeWidgets, allLayouts);
+    // Only persist if the user has manually dragged/resized a widget.
+    // This prevents the initial RGL compaction from overwriting stored positions.
+    if (userHasInteracted.current) {
+      persistToDb(activeWidgets, allLayouts);
+    }
   }, [activeWidgets, persistToDb]);
 
   const addWidget = useCallback((widgetId: string) => {
