@@ -575,11 +575,7 @@ export default function StudentProfile() {
 
           <TabsTrigger value="notes" className="gap-1 text-xs">
             <StickyNote className="w-3 h-3" />
-            Narrative
-          </TabsTrigger>
-          <TabsTrigger value="session-notes" className="gap-1 text-xs">
-            <FileText className="w-3 h-3" />
-            Session Notes
+            Notes
           </TabsTrigger>
           <TabsTrigger value="files" className="gap-1 text-xs">
             <FolderOpen className="w-3 h-3" />
