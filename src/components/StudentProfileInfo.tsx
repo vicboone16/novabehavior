@@ -322,6 +322,20 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Personal Information</h4>
               
+              {/* Client ID Number */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Client ID Number
+                  <span className="text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  value={clientExternalId}
+                  onChange={(e) => setClientExternalId(e.target.value)}
+                  placeholder="e.g., school case #, clinic ID, Medicaid #"
+                />
+              </div>
+
               {/* First Name / Last Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
