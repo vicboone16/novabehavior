@@ -557,7 +557,7 @@ export default function StudentProfile() {
       />
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-5xl">
+        <TabsList className="flex gap-1 h-auto p-1 w-full max-w-5xl overflow-x-auto scrollbar-hide flex-nowrap max-sm:flex-nowrap">
           <TabsTrigger value="profile" className="gap-1 text-xs">
             <Info className="w-3 h-3" />
             Profile
