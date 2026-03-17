@@ -99,7 +99,7 @@ export function RecordingReviewWorkspace({ recordingId, onBack }: RecordingRevie
       const { data: segs } = await supabase
         .from('voice_transcript_segments' as any)
         .select('*')
-        .eq('transcript_id', transRes.data[0].id)
+        .eq('transcript_id', (transRes.data[0] as any).id)
         .order('segment_index', { ascending: true });
       if (segs) setSegments(segs);
     }
