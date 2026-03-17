@@ -1107,6 +1107,7 @@ export function VBMAPPMilestonesGrid({ studentId, studentName }: VBMAPPMilestone
       ) : viewMode === 'grid' ? (
         /* ── Coordinate Grid View ── */
         <VBMAPPCoordinateGrid
+          ref={gridRef}
           items={templateItems}
           currentAssessmentId={selectedAssessmentId}
           currentResults={results}
