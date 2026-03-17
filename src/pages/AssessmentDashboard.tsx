@@ -933,7 +933,13 @@ export default function AssessmentDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* Vineland-3 Internal Assessment */}
+                {/* ESDM Developmental Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <ESDMGoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 <Vineland3Entry
                   studentId={selectedStudent.id}
                   studentName={selectedStudent.name}
