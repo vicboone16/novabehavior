@@ -88,7 +88,30 @@ export interface Vineland3DerivedScore {
   gsv: number | null;
 }
 
-// Resolve age band from age in months
+export interface Vineland3PairwiseComparison {
+  id: string;
+  comparison_level: string;
+  comparison_label: string;
+  score_1_key: string;
+  score_2_key: string;
+  score_1_value: number | null;
+  score_2_value: number | null;
+  difference_value: number | null;
+  significant_difference: boolean | null;
+  base_rate: string | null;
+}
+
+export interface Vineland3ScoringStatus {
+  overall_scoring_status: string;
+  age_resolution_status: string | null;
+  raw_score_status: string | null;
+  subdomain_lookup_status: string | null;
+  domain_score_status: string | null;
+  composite_score_status: string | null;
+  comparison_status: string | null;
+  status_notes: string | null;
+  last_scored_at: string | null;
+}
 function resolveAgeBand(ageMonths: number): string {
   if (ageMonths < 12) return '0y_0m_to_0y_11m';
   if (ageMonths < 24) return '1y_0m_to_1y_11m';
