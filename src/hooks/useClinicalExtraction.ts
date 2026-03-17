@@ -27,22 +27,16 @@ export function useClinicalExtraction() {
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-extract`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-        }
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke('clinical-extract', {
+        body: request,
+      });
 
-      const data = await response.json();
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Extraction failed');
+      }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Extraction failed');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Extraction failed');
       }
 
       setExtractionResult(data.result);
