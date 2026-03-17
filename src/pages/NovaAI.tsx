@@ -49,6 +49,7 @@ export default function NovaAI() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendLockRef = useRef(false);
 
   // Handle contextual launch from other pages
   useEffect(() => {
