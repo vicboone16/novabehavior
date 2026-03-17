@@ -243,6 +243,7 @@ const App = () => {
               <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug/:goalId" element={<GoalDetailPage />} />
+              <Route path="library-registry" element={<LibraryRegistryPage />} />
             </Route>
             <Route path="/shared-library" element={
               <ProtectedRoute>
