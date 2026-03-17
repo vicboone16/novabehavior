@@ -56,7 +56,7 @@ import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
-import { SessionNotesTab } from '@/components/session-notes';
+
 import { FidelityDashboard } from '@/components/fidelity';
 import { ActiveObservationsBanner } from '@/components/ActiveObservationsBanner';
 import { StudentObservationsTab } from '@/components/observation-requests/StudentObservationsTab';
