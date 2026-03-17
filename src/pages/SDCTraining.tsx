@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen, Users, GraduationCap, Layers, ShieldCheck, Download, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, BookOpen, Users, GraduationCap, Layers, ShieldCheck, Download, LayoutDashboard, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSDCTraining } from '@/hooks/useSDCTraining';
 import { OverviewTab } from '@/components/sdc-training/OverviewTab';
@@ -11,11 +11,14 @@ import { CoursesTab } from '@/components/sdc-training/CoursesTab';
 import { ModulesTab } from '@/components/sdc-training/ModulesTab';
 import { CertificationTab } from '@/components/sdc-training/CertificationTab';
 import { DownloadsTab } from '@/components/sdc-training/DownloadsTab';
+import { AdminTab } from '@/components/sdc-training/AdminTab';
 
 export default function SDCTraining() {
   const navigate = useNavigate();
   const {
     trainingModules, workbookItems, downloads, certRequirements, certProgress, assignments,
+    sdcModules, sdcResources, allStaffProgress,
+    createModule, updateModule, deleteModule, assignModuleToStaff, createResource,
     isLoading, isAdmin, fetchAll,
   } = useSDCTraining();
   const [activeTab, setActiveTab] = useState('overview');
@@ -44,10 +47,10 @@ export default function SDCTraining() {
           {/* Stats */}
           <div className="flex items-center gap-6 text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Layers className="w-4 h-4" /> {trainingModules.length} Modules
+              <Layers className="w-4 h-4" /> {sdcModules.length || trainingModules.length} Modules
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Download className="w-4 h-4" /> {downloads.length} Resources
+              <Download className="w-4 h-4" /> {sdcResources.length || downloads.length} Resources
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground">
               <ShieldCheck className="w-4 h-4" /> {completedCerts}/{certRequirements.length} Cert Requirements
@@ -68,6 +71,11 @@ export default function SDCTraining() {
               <TabsTrigger value="overview" className="flex items-center gap-1.5">
                 <LayoutDashboard className="w-4 h-4" /> Overview
               </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="admin" className="flex items-center gap-1.5">
+                  <Settings className="w-4 h-4" /> Admin
+                </TabsTrigger>
+              )}
               {isAdmin && (
                 <TabsTrigger value="instructor" className="flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4" /> Instructor Guide
@@ -100,6 +108,21 @@ export default function SDCTraining() {
                 onNavigate={setActiveTab}
               />
             </TabsContent>
+            {isAdmin && (
+              <TabsContent value="admin">
+                <AdminTab
+                  modules={sdcModules}
+                  resources={sdcResources}
+                  allStaffProgress={allStaffProgress}
+                  onCreateModule={createModule}
+                  onUpdateModule={updateModule}
+                  onDeleteModule={deleteModule}
+                  onAssignModule={assignModuleToStaff}
+                  onCreateResource={createResource}
+                  onRefresh={fetchAll}
+                />
+              </TabsContent>
+            )}
             {isAdmin && (
               <TabsContent value="instructor">
                 <InstructorGuideTab modules={trainingModules} />
