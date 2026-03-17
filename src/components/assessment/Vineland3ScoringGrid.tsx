@@ -17,6 +17,7 @@ import {
   type Vineland3RawScore,
   type Vineland3DerivedScore,
 } from '@/hooks/useVineland3';
+import { Vineland3Report } from './Vineland3Report';
 import { format } from 'date-fns';
 
 interface Vineland3ScoringGridProps {
