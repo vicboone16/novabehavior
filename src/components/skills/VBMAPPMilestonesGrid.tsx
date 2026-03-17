@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { Plus, ChevronDown, Loader2, Info, Calendar, BarChart2, BookOpen, Trash2, Download, Save, X, AlertTriangle, LayoutGrid, List } from 'lucide-react';
 import { VBMAPPCoordinateGrid, type AssessmentOverlay } from './VBMAPPCoordinateGrid';
