@@ -118,6 +118,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
   // Contact
   const [contactEmail, setContactEmail] = useState(student.contactEmail || '');
   const [contactPhone, setContactPhone] = useState(student.contactPhone || '');
+  const [clientExternalId, setClientExternalId] = useState(student.clientExternalId || '');
 
   // Load staff with credentials from staff_credentials table
   useEffect(() => {
@@ -219,6 +220,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
       activationStatus: activationStatus as Student['activationStatus'] || undefined,
       contactEmail: contactEmail || undefined,
       contactPhone: contactPhone || undefined,
+      clientExternalId: clientExternalId || undefined,
     });
     setIsEditing(false);
     toast.success('Profile saved');
@@ -252,6 +254,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
     setActivationStatus(student.activationStatus || '');
     setContactEmail(student.contactEmail || '');
     setContactPhone(student.contactPhone || '');
+    setClientExternalId(student.clientExternalId || '');
     setIsEditing(false);
   };
 
@@ -319,6 +322,20 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-muted-foreground border-b pb-1">Personal Information</h4>
               
+              {/* Client ID Number */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Client ID Number
+                  <span className="text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  value={clientExternalId}
+                  onChange={(e) => setClientExternalId(e.target.value)}
+                  placeholder="e.g., school case #, clinic ID, Medicaid #"
+                />
+              </div>
+
               {/* First Name / Last Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -703,6 +720,15 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
         ) : (
           /* Display Mode */
           <div className="space-y-3">
+            {/* Client ID Number */}
+            {student.clientExternalId && (
+              <div className="flex items-center gap-3 text-sm">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Client ID:</span>
+                <Badge variant="outline" className="font-mono text-xs">{student.clientExternalId}</Badge>
+              </div>
+            )}
+
             {/* Name Info */}
             {(student.firstName || student.lastName) && (
               <div className="flex items-center gap-3 text-sm flex-wrap">

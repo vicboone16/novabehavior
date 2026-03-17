@@ -36184,6 +36184,7 @@ export type Database = {
           case_opened_date: string | null
           case_types: Json | null
           classroom_id: string | null
+          client_external_id: string | null
           color: string
           communication_level: string | null
           contact_email: string | null
@@ -36253,6 +36254,7 @@ export type Database = {
           case_opened_date?: string | null
           case_types?: Json | null
           classroom_id?: string | null
+          client_external_id?: string | null
           color?: string
           communication_level?: string | null
           contact_email?: string | null
@@ -36322,6 +36324,7 @@ export type Database = {
           case_opened_date?: string | null
           case_types?: Json | null
           classroom_id?: string | null
+          client_external_id?: string | null
           color?: string
           communication_level?: string | null
           contact_email?: string | null

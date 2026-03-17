@@ -219,6 +219,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
           // Contact info
           contactEmail: s.contact_email || undefined,
           contactPhone: s.contact_phone || undefined,
+          clientExternalId: s.client_external_id || undefined,
           // FBA/Assessment data
           fbaWorkflowProgress: s.fba_workflow_progress ? {
             ...s.fba_workflow_progress,
@@ -1100,6 +1101,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
             // Contact info
             contact_email: student.contactEmail || null,
             contact_phone: student.contactPhone || null,
+            client_external_id: student.clientExternalId || null,
             // FBA/Assessment data
             fba_workflow_progress: student.fbaWorkflowProgress ? {
               ...student.fbaWorkflowProgress,
@@ -1577,6 +1579,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 // Contact info
                 contactEmail: s.contact_email || undefined,
                 contactPhone: s.contact_phone || undefined,
+                clientExternalId: s.client_external_id || undefined,
                 // FBA/Assessment data
                 fbaWorkflowProgress: s.fba_workflow_progress ? {
                   ...s.fba_workflow_progress,
