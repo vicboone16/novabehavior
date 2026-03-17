@@ -882,6 +882,16 @@ export default function AssessmentDashboard() {
             )}
           </TabsContent>
 
+          {/* Libraries Tab — Assignments, Draft Goals, Recommendations */}
+          <TabsContent value="libraries" className="space-y-6">
+            {selectedStudent && (
+              <>
+                <ClientLibraryPanel clientId={selectedStudent.id} />
+                <ClientRecommendationsPanel clientId={selectedStudent.id} />
+              </>
+            )}
+          </TabsContent>
+
           {/* Questionnaires Tab */}
           <TabsContent value="questionnaires" className="space-y-6">
             {selectedStudent && (
