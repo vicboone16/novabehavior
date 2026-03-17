@@ -71,6 +71,18 @@ serve(async (req) => {
       );
     }
 
+    // Authorization: check billing access or student access
+    const { data: hasBilling } = await supabase.rpc('has_billing_access', { check_user_id: user.id });
+    if (!hasBilling) {
+      const { data: hasStudentAccess } = await supabase.rpc('has_student_access', { _student_id: studentId, _user_id: user.id });
+      if (!hasStudentAccess) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized: billing or student access required" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Get or create Stripe customer
     let stripeCustomerId: string | null = null;
     
