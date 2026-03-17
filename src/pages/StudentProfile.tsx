@@ -412,9 +412,9 @@ export default function StudentProfile() {
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-sm:space-y-3">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => navigate('/students')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
