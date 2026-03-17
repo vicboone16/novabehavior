@@ -56,7 +56,7 @@ export function ABAS3GoalBrowser({ clientId }: Props) {
   }, [filtered]);
 
   if (selectedGoal) {
-    return <LibraryGoalDetail goal={selectedGoal} onBack={() => setSelectedGoal(null)} clientId={clientId} />;
+    return <LibraryGoalDetail goal={selectedGoal} libraryName="ABAS-3" onBack={() => setSelectedGoal(null)} clientId={clientId} />;
   }
 
   return (
