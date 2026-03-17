@@ -29,22 +29,33 @@ CORE BEHAVIOR — you support multiple request types:
 • posting notes to correct locations
 • clarifying missing information
 
-INTENT DETECTION — before acting, determine the user's intent:
-- GENERAL: question answering, behavioral analysis, explaining data, summarizing info
-- DATA_ENTRY: logging behavior/skill data, ingesting historical notes, converting narrative to structured data
-- SOAP_NOTE: writing an ABA SOAP note
-- NARRATIVE_NOTE: writing a narrative session note
-- CAREGIVER_NOTE: writing a caregiver communication note
-- COMBINED: note generation AND data logging together
+INTENT DETECTION — before acting, determine the user's intent from these families:
+- general_assistant: question answering, behavioral analysis, explaining data, summarizing info, documentation help, navigation help
+- structured_data_ingestion: logging behavior/skill data, converting narrative to structured data
+- historical_data_ingestion: ingesting historical or back-entered notes
+- soap_note_generation: writing an ABA SOAP note
+- narrative_note_generation: writing a narrative session note
+- caregiver_note_generation: writing a caregiver communication note
+- note_posting: routing a note to session/narrative/caregiver pages
+- combined_workflow: note generation AND data logging together
 
-If intent is unclear or confidence is low, stay in general assistant mode and offer actions.
+If intent confidence is low, stay in general assistant mode and offer action suggestions.
 
 WHEN CLIENT CONTEXT IS PROVIDED:
 Use the client context to match behaviors/skills to existing targets. Always attempt to match existing targets before suggesting new ones.
 
+TARGET MATCHING ORDER:
+1. exact target name match
+2. alias match
+3. close lexical match
+4. semantic similarity match
+5. historical client-specific usage patterns
+
+Match statuses: matched_existing_target, matched_existing_target_via_alias, ambiguous_match_review_needed, no_match_new_target_suggested
+
 SMART DATA EXTRACTION — when user provides narrative behavioral info, extract:
 - behavior name, skill/program name
-- measurement type (frequency, duration, latency, interval, trial-based, ABC)
+- measurement type (frequency, duration, latency, interval, trial_based, abc, rate)
 - counts, durations, latencies, rates
 - prompting levels
 - session date, start/end times
@@ -52,23 +63,31 @@ SMART DATA EXTRACTION — when user provides narrative behavioral info, extract:
 - caregiver updates
 
 MEASUREMENT CLASSIFICATION:
-- Frequency: "3 times", "4 instances"
-- Duration: "lasted 10 minutes"
-- Latency: "took 2 minutes to begin"
-- Interval: "occurred in 8 of 10 intervals"
-- Trial-based: "8/10 correct"
+- Frequency: "3 times", "4 instances", "twice"
+- Duration: "lasted 10 minutes", "from 10:02 to 10:15"
+- Latency: "took 2 minutes to comply", "latency was 45 seconds"
+- Interval: "occurred in 8 of 10 intervals", "present during 75% of intervals"
+- Trial-based: "8/10 correct", "3 of 5 independent", "required gestural prompts"
 - ABC: "Antecedent… Behavior… Consequence…"
 
+DATA NORMALIZATION:
+- Duration → canonical seconds
+- Latency → canonical seconds
+- Trial accuracy → percent + raw numerator/denominator
+- Interval occurrence → percent + raw intervals
+- If count and observation window exist, calculate rate (per minute and per hour)
+- Preserve both raw and derived values; mark derived values with is_derived=true
+
 CLARIFICATION RULES — ask only when missing info affects:
-- data accuracy, graph accuracy, target matching
-- note validity, posting destination, client linkage
+- client assignment, session assignment, target matching
+- measurement type, graph accuracy, note validity, posting destination
 Do NOT interrupt for trivial details that can be inferred.
 
 SOAP NOTE STRUCTURE:
-S — Subjective: caregiver report, client presentation, environmental factors
-O — Objective: services delivered, session duration, programs targeted, behavior data, prompting, measurable performance
-A — Assessment: clinical interpretation, progress status, barriers, behavior trends
-P — Plan: next steps, target modifications, caregiver collaboration, follow-up
+S — Subjective: caregiver report, client presentation, environmental factors, sleep/medication/illness/routine changes
+O — Objective: session duration, services delivered, programs targeted, behavior data, prompting levels, measurable performance, interventions used
+A — Assessment: clinical interpretation, progress status, barriers, behavior trends, regulation/tolerance, function patterns
+P — Plan: next steps, target modifications, caregiver collaboration, follow-up recommendations
 
 IMPORTANT RULES:
 - Never provide medical advice or diagnoses
@@ -78,66 +97,144 @@ IMPORTANT RULES:
 - Maintain HIPAA-appropriate language
 - Always recommend consulting qualified professionals for complex cases
 - Label missing info clearly; allow draft mode
-- Do not auto-create behavior targets silently`;
+- Do not auto-create behavior targets silently — suggest and let user confirm
+- Preserve raw input text for auditability
+- Support one input generating multiple structured entries and/or notes
+- After generating notes or data, suggest correct posting destination
+- Support combined workflows: data + note in one action
 
-// ── Tool definitions for structured output ────────────────────────────────────
+RESPONSE FORMAT:
+When using tools, provide a natural language summary explaining what you found/extracted/generated. The tool calls provide the structured data — your text response should be conversational and helpful, summarizing the extracted items, noting any ambiguities, and offering available actions.
+
+When NOT using tools (general assistant mode), respond naturally as you always have with clear markdown formatting.`;
+
+// ── Tool definitions matching the full JSON contract ──────────────────────────
 const TOOL_DEFINITIONS = [
   {
     type: "function",
     function: {
       name: "extract_structured_data",
-      description: "Extract structured behavioral/clinical data from user input. Call this when the user provides session data, behavior counts, skill trial data, or historical notes that should be logged as structured data.",
+      description: "Extract structured behavioral/clinical data from user input. Call this when the user provides session data, behavior counts, skill trial data, ABC events, or historical notes that should be logged as structured data. Each behavior, skill, or ABC event should be a separate item in the arrays.",
       parameters: {
         type: "object",
         properties: {
-          session_date: { type: "string", description: "ISO date string (YYYY-MM-DD)" },
+          intent: { type: "string", enum: ["structured_data_ingestion", "historical_data_ingestion", "combined_workflow"] },
+          intent_confidence: { type: "number", description: "0-1 confidence in intent classification" },
+          session_date: { type: "string", description: "ISO date YYYY-MM-DD" },
           session_start: { type: "string", description: "HH:MM format" },
           session_end: { type: "string", description: "HH:MM format" },
+          setting: { type: "string", description: "Location/setting if mentioned" },
           behaviors: {
             type: "array",
             items: {
               type: "object",
               properties: {
-                name: { type: "string" },
-                matched_target_id: { type: "string", description: "ID of matched existing target, or null" },
-                measurement_type: { type: "string", enum: ["frequency", "duration", "latency", "interval", "rate"] },
-                value: { type: "number" },
-                unit: { type: "string" },
-                confidence: { type: "number", description: "0-1 confidence in target match" }
+                item_id: { type: "string", description: "Temporary ID like temp-item-1" },
+                item_type: { type: "string", enum: ["behavior_event", "skill_trial", "abc_event", "skill_or_behavior_measure"] },
+                raw_text: { type: "string", description: "Original text describing this item" },
+                target_match: {
+                  type: "object",
+                  properties: {
+                    match_status: { type: "string", enum: ["matched_existing_target", "matched_existing_target_via_alias", "ambiguous_match_review_needed", "no_match_new_target_suggested"] },
+                    target_id: { type: "string", description: "ID of matched existing target, or null" },
+                    target_name: { type: "string" },
+                    target_type: { type: "string", enum: ["behavior", "skill", "replacement_behavior", "routine", "other"] },
+                    match_method: { type: "string", enum: ["exact_name", "alias_match", "semantic_similarity", "ambiguous"] },
+                    match_confidence: { type: "number" },
+                    alias_used: { type: "string" },
+                    new_target_suggested: { type: "boolean" }
+                  },
+                  required: ["match_status", "target_type", "match_confidence"]
+                },
+                measurement: {
+                  type: "object",
+                  properties: {
+                    measurement_type: { type: "string", enum: ["frequency", "duration", "latency", "interval", "trial_based", "abc", "rate"] },
+                    raw_value_text: { type: "string" },
+                    frequency_count: { type: "number" },
+                    duration_seconds: { type: "number" },
+                    latency_seconds: { type: "number" },
+                    interval_occurrence: { type: "number" },
+                    interval_total: { type: "number" },
+                    trial_correct: { type: "number" },
+                    trial_total: { type: "number" },
+                    percent_value: { type: "number" },
+                    observation_window_minutes: { type: "number" },
+                    rate_per_minute: { type: "number" },
+                    rate_per_hour: { type: "number" },
+                    is_derived: { type: "boolean" }
+                  },
+                  required: ["measurement_type"]
+                },
+                prompting: {
+                  type: "object",
+                  properties: {
+                    prompt_level: { type: "string" },
+                    independence_level: { type: "string" }
+                  }
+                },
+                context: {
+                  type: "object",
+                  properties: {
+                    antecedent: { type: "string" },
+                    behavior_description: { type: "string" },
+                    consequence: { type: "string" },
+                    perceived_function: { type: "string" },
+                    notes: { type: "string" }
+                  }
+                },
+                quality: {
+                  type: "object",
+                  properties: {
+                    confidence: { type: "number" },
+                    is_inferred: { type: "boolean" },
+                    needs_review: { type: "boolean" },
+                    warning_codes: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["confidence"]
+                }
               },
-              required: ["name", "measurement_type", "value"]
-            }
-          },
-          skills: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                matched_target_id: { type: "string", description: "ID of matched existing target, or null" },
-                trials_correct: { type: "number" },
-                trials_total: { type: "number" },
-                prompt_level: { type: "string" },
-                confidence: { type: "number" }
-              },
-              required: ["name"]
-            }
-          },
-          abc_events: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                antecedent: { type: "string" },
-                behavior: { type: "string" },
-                consequence: { type: "string" }
-              },
-              required: ["antecedent", "behavior", "consequence"]
+              required: ["item_id", "item_type", "raw_text", "target_match", "measurement", "quality"]
             }
           },
           caregiver_updates: {
             type: "array",
-            items: { type: "string" }
+            items: {
+              type: "object",
+              properties: {
+                raw_text: { type: "string" },
+                topic: { type: "string" },
+                summary: { type: "string" },
+                confidence: { type: "number" }
+              },
+              required: ["raw_text", "summary"]
+            }
+          },
+          suggested_new_targets: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                proposed_name: { type: "string" },
+                proposed_type: { type: "string", enum: ["behavior", "skill", "replacement_behavior"] },
+                proposed_measurement_type: { type: "string" },
+                operational_definition_draft: { type: "string" },
+                source_phrase: { type: "string" },
+                confidence: { type: "number" }
+              },
+              required: ["proposed_name", "proposed_type"]
+            }
+          },
+          graph_updates: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                target_id: { type: "string" },
+                graph_type: { type: "string", enum: ["frequency", "duration", "latency", "interval", "trial_based", "abc_timeline", "rate"] },
+                trigger_recalculation: { type: "boolean" }
+              }
+            }
           }
         },
         required: ["behaviors"]
@@ -148,19 +245,43 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "generate_soap_note",
-      description: "Generate a professional ABA SOAP note from the session information provided.",
+      description: "Generate a professional ABA SOAP note. Use when the user asks for a SOAP note or when enough session information is available. Distinguish subjective caregiver report from objective observation. Do not fabricate numerical data.",
       parameters: {
         type: "object",
         properties: {
-          subjective: { type: "string", description: "S section: caregiver report, client presentation" },
-          objective: { type: "string", description: "O section: session details, measurable data" },
-          assessment: { type: "string", description: "A section: clinical interpretation" },
-          plan: { type: "string", description: "P section: next steps" },
+          note_id: { type: "string", description: "Temporary ID like temp-note-1" },
           session_date: { type: "string" },
           session_duration_minutes: { type: "number" },
-          missing_info: { type: "array", items: { type: "string" }, description: "Info that was missing and inferred or omitted" }
+          content: {
+            type: "object",
+            properties: {
+              subjective: { type: "string", description: "S: caregiver report, client presentation, environmental factors" },
+              objective: { type: "string", description: "O: session details, measurable data, interventions" },
+              assessment: { type: "string", description: "A: clinical interpretation, progress, barriers" },
+              plan: { type: "string", description: "P: next steps, modifications, follow-up" }
+            },
+            required: ["subjective", "objective", "assessment", "plan"]
+          },
+          quality: {
+            type: "object",
+            properties: {
+              confidence: { type: "number" },
+              needs_review: { type: "boolean" },
+              is_incomplete: { type: "boolean" },
+              missing_info: { type: "array", items: { type: "string" } },
+              warning_codes: { type: "array", items: { type: "string" } }
+            }
+          },
+          posting_recommendation: {
+            type: "object",
+            properties: {
+              recommended_destination: { type: "string", enum: ["session_notes", "narrative_notes", "caregiver_notes", "client_timeline"] },
+              confidence: { type: "number" },
+              reason: { type: "string" }
+            }
+          }
         },
-        required: ["subjective", "objective", "assessment", "plan"]
+        required: ["content"]
       }
     }
   },
@@ -168,13 +289,37 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "generate_narrative_note",
-      description: "Generate a narrative session note (less formal than SOAP).",
+      description: "Generate a narrative session note (less formal than SOAP). Use for session summaries, incident summaries, service summaries, or historical reconstruction notes.",
       parameters: {
         type: "object",
         properties: {
-          content: { type: "string", description: "Full narrative note content" },
+          note_id: { type: "string" },
           session_date: { type: "string" },
-          note_type: { type: "string", enum: ["session_summary", "incident_summary", "service_summary", "historical_reconstruction"] }
+          note_subtype: { type: "string", enum: ["session_summary", "incident_summary", "service_summary", "historical_reconstruction"] },
+          content: {
+            type: "object",
+            properties: {
+              body: { type: "string", description: "Full narrative note content" }
+            },
+            required: ["body"]
+          },
+          quality: {
+            type: "object",
+            properties: {
+              confidence: { type: "number" },
+              needs_review: { type: "boolean" },
+              is_incomplete: { type: "boolean" },
+              warning_codes: { type: "array", items: { type: "string" } }
+            }
+          },
+          posting_recommendation: {
+            type: "object",
+            properties: {
+              recommended_destination: { type: "string", enum: ["session_notes", "narrative_notes", "client_timeline"] },
+              confidence: { type: "number" },
+              reason: { type: "string" }
+            }
+          }
         },
         required: ["content"]
       }
@@ -184,13 +329,37 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "generate_caregiver_note",
-      description: "Generate a caregiver communication note.",
+      description: "Generate a caregiver communication note focused on updates received from or shared with caregivers, home concerns, recommendations, and follow-up points.",
       parameters: {
         type: "object",
         properties: {
-          content: { type: "string", description: "Full caregiver note content" },
+          note_id: { type: "string" },
           note_date: { type: "string" },
-          tags: { type: "array", items: { type: "string" }, description: "Tags like 'parent_update', 'home_concern', 'recommendation'" }
+          content: {
+            type: "object",
+            properties: {
+              body: { type: "string", description: "Full caregiver note content" }
+            },
+            required: ["body"]
+          },
+          tags: { type: "array", items: { type: "string" }, description: "Tags like parent_update, home_concern, recommendation, sleep, medication" },
+          quality: {
+            type: "object",
+            properties: {
+              confidence: { type: "number" },
+              needs_review: { type: "boolean" },
+              is_incomplete: { type: "boolean" },
+              warning_codes: { type: "array", items: { type: "string" } }
+            }
+          },
+          posting_recommendation: {
+            type: "object",
+            properties: {
+              recommended_destination: { type: "string", enum: ["caregiver_notes", "session_notes", "client_timeline"] },
+              confidence: { type: "number" },
+              reason: { type: "string" }
+            }
+          }
         },
         required: ["content"]
       }
@@ -200,19 +369,38 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "request_clarification",
-      description: "Ask the user targeted clarifying questions when critical information is missing or ambiguous. Only use when the missing info materially affects data accuracy, note validity, target matching, or posting destination.",
+      description: "Ask the user targeted clarifying questions when critical information is missing or ambiguous. Only use when the missing info materially affects client assignment, session assignment, target matching, measurement type, graph accuracy, note validity, or posting destination.",
       parameters: {
         type: "object",
         properties: {
+          reason_codes: {
+            type: "array",
+            items: { type: "string" },
+            description: "Codes like missing_session_date, ambiguous_target_match, missing_client, unclear_measurement_type, unclear_posting_destination"
+          },
           questions: {
             type: "array",
             items: {
               type: "object",
               properties: {
-                question: { type: "string" },
-                options: { type: "array", items: { type: "string" }, description: "Suggested answers if applicable" }
+                question_id: { type: "string" },
+                question_text: { type: "string" },
+                question_type: { type: "string", enum: ["date", "target_choice", "measurement_type", "destination", "yes_no", "free_text"] },
+                required: { type: "boolean" },
+                options: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      label: { type: "string" },
+                      target_id: { type: "string" }
+                    },
+                    required: ["label"]
+                  }
+                },
+                applies_to_item_ids: { type: "array", items: { type: "string" } }
               },
-              required: ["question"]
+              required: ["question_id", "question_text", "question_type"]
             }
           }
         },
@@ -235,7 +423,7 @@ async function loadClientContext(supabase: any, clientId: string): Promise<strin
 
   if (!student) return "\n\n[CLIENT CONTEXT: Student not found]";
 
-  parts.push(`CLIENT: ${student.name}`);
+  parts.push(`CLIENT: ${student.name} (ID: ${student.id})`);
   if (student.date_of_birth) parts.push(`DOB: ${student.date_of_birth}`);
   if (student.grade) parts.push(`Grade: ${student.grade}`);
   if (student.school) parts.push(`School: ${student.school}`);
@@ -243,46 +431,63 @@ async function loadClientContext(supabase: any, clientId: string): Promise<strin
   // Active behavior targets
   const { data: targets } = await supabase
     .from("student_targets")
-    .select("id, title, description, data_collection_type, status, mastery_status")
+    .select("id, title, description, data_collection_type, status, mastery_status, target_id")
     .eq("student_id", clientId)
-    .eq("status", "active")
-    .limit(30);
+    .in("status", ["active", "archived"])
+    .limit(50);
 
   if (targets?.length) {
-    parts.push("\nACTIVE TARGETS:");
-    for (const t of targets) {
-      parts.push(`- [${t.id}] ${t.title} (${t.data_collection_type || "unspecified"}) — mastery: ${t.mastery_status || "in_progress"}`);
+    const active = targets.filter((t: any) => t.status === "active");
+    const archived = targets.filter((t: any) => t.status === "archived");
+
+    if (active.length) {
+      parts.push("\nACTIVE TARGETS (use these for matching first):");
+      for (const t of active) {
+        parts.push(`- [ID:${t.id}] "${t.title}" type=${t.data_collection_type || "unspecified"} mastery=${t.mastery_status || "in_progress"}`);
+        if (t.description) parts.push(`  Description: ${t.description.slice(0, 100)}`);
+      }
+    }
+    if (archived.length) {
+      parts.push("\nARCHIVED TARGETS (can match if reactivation needed):");
+      for (const t of archived.slice(0, 10)) {
+        parts.push(`- [ID:${t.id}] "${t.title}" type=${t.data_collection_type || "unspecified"}`);
+      }
     }
   }
 
-  // Existing behaviors from student JSON
+  // Existing behaviors from student JSON (includes aliases)
   if (student.behaviors && Array.isArray(student.behaviors)) {
-    const behaviorNames = student.behaviors
+    const behaviorList = student.behaviors
       .filter((b: any) => b && b.name)
-      .map((b: any) => `${b.name}${b.aliases ? ` (aliases: ${b.aliases.join(", ")})` : ""}`)
-      .slice(0, 20);
-    if (behaviorNames.length) {
-      parts.push("\nBEHAVIOR DEFINITIONS:");
-      parts.push(behaviorNames.join("; "));
+      .map((b: any) => {
+        let entry = `"${b.name}"`;
+        if (b.aliases?.length) entry += ` (aliases: ${b.aliases.join(", ")})`;
+        if (b.id) entry += ` [behaviorId:${b.id}]`;
+        return entry;
+      })
+      .slice(0, 30);
+    if (behaviorList.length) {
+      parts.push("\nBEHAVIOR DEFINITIONS (with aliases for matching):");
+      parts.push(behaviorList.join("\n"));
     }
   }
 
-  // Recent behavior session data (last 5 sessions)
+  // Recent behavior session data (last 5 sessions worth)
   const { data: recentData } = await supabase
     .from("behavior_session_data")
     .select("session_id, behavior_id, frequency, duration_total, observation_minutes, data_state, created_at")
     .eq("student_id", clientId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(25);
 
   if (recentData?.length) {
-    parts.push("\nRECENT SESSION DATA (latest):");
-    for (const d of recentData.slice(0, 10)) {
+    parts.push("\nRECENT SESSION DATA (for trend context):");
+    for (const d of recentData.slice(0, 15)) {
       const metrics = [];
       if (d.frequency != null) metrics.push(`freq=${d.frequency}`);
       if (d.duration_total != null) metrics.push(`dur=${d.duration_total}s`);
       if (d.observation_minutes) metrics.push(`obs=${d.observation_minutes}min`);
-      parts.push(`- behavior_id:${d.behavior_id} ${metrics.join(", ")} (${d.data_state})`);
+      parts.push(`- behavior_id:${d.behavior_id} ${metrics.join(", ")} state=${d.data_state} date=${d.created_at?.slice(0, 10)}`);
     }
   }
 
@@ -298,7 +503,22 @@ async function loadClientContext(supabase: any, clientId: string): Promise<strin
     parts.push("\nRECENT SESSION NOTES:");
     for (const n of recentNotes) {
       const content = typeof n.note_content === "object" ? JSON.stringify(n.note_content).slice(0, 200) : String(n.note_content).slice(0, 200);
-      parts.push(`- [${n.note_type}/${n.subtype}] ${content}...`);
+      parts.push(`- [${n.note_type}/${n.subtype}] status=${n.status} ${content}...`);
+    }
+  }
+
+  // Recent caregiver notes
+  const { data: caregiverNotes } = await supabase
+    .from("caregiver_notes")
+    .select("content, note_date, tags")
+    .eq("student_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  if (caregiverNotes?.length) {
+    parts.push("\nRECENT CAREGIVER NOTES:");
+    for (const cn of caregiverNotes) {
+      parts.push(`- [${cn.note_date}] tags=${(cn.tags || []).join(",")} ${cn.content?.slice(0, 150)}...`);
     }
   }
 
@@ -357,12 +577,21 @@ serve(async (req) => {
       try {
         const contextBlock = await loadClientContext(supabase, client_id);
         systemContent += contextBlock;
-        systemContent += "\n\nIMPORTANT: A client is selected. When the user's request involves clinical data, notes, or documentation, use the available tools to provide structured output that can be saved. Match behaviors/skills to the ACTIVE TARGETS listed above.";
+        systemContent += `\n\nIMPORTANT: A client is selected (ID: ${client_id}). When the user's request involves clinical data, notes, or documentation:
+1. Use the available tools to provide structured output
+2. Match behaviors/skills to the ACTIVE TARGETS listed above using target IDs
+3. For each extracted item, include a target_match with the matched target's ID and name
+4. If a behavior name matches an alias, use match_status=matched_existing_target_via_alias
+5. If ambiguous, use match_status=ambiguous_match_review_needed and explain in your response
+6. If no match, use match_status=no_match_new_target_suggested
+7. Include quality.confidence scores for each item
+8. For combined workflows, call both extract_structured_data AND the appropriate note generation tool
+9. Always include posting_recommendation with each generated note`;
       } catch (e) {
         console.error("Failed to load client context:", e);
       }
     } else {
-      systemContent += "\n\nNo client is currently selected. If the user asks you to log data, write a session note, or perform client-specific actions, remind them to select a client first.";
+      systemContent += "\n\nNo client is currently selected. If the user asks you to log data, write a session note, or perform client-specific actions, remind them to select a client first. You can still answer general behavior science questions, provide clinical guidance, and assist with documentation.";
     }
 
     // Build request body — include tools only when client is selected
@@ -410,25 +639,18 @@ serve(async (req) => {
       });
     }
 
-    // For streaming with tool calls, we need to collect tool calls then process them
-    // The gateway streams SSE — we pass through but also intercept tool_calls
-    // Strategy: collect the full response, check for tool_calls, then either:
-    //   a) stream content directly (no tool calls)
-    //   b) process tool calls and create a combined response
-
     const responseBody = response.body;
     if (!responseBody) {
       throw new Error("No response body from AI gateway");
     }
 
-    // We'll collect streamed chunks to detect tool calls
+    // Collect streamed response and detect tool calls
     const reader = responseBody.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let fullContent = "";
     let toolCalls: any[] = [];
     let hasToolCalls = false;
-    const allChunks: string[] = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -464,18 +686,16 @@ serve(async (req) => {
               if (tc.id) toolCalls[idx].id = tc.id;
             }
           }
-          allChunks.push(line + "\n");
         } catch {
           // partial JSON, skip
         }
       }
     }
 
-    // Build final response with embedded tool call data
+    // Build final response with embedded tool call data as action markers
     let finalContent = fullContent;
 
     if (hasToolCalls && toolCalls.length > 0) {
-      // Embed tool call results as parseable markers in the response
       for (const tc of toolCalls) {
         try {
           const args = JSON.parse(tc.function.arguments);
@@ -487,7 +707,7 @@ serve(async (req) => {
       }
     }
 
-    // Create a new SSE stream with the final content
+    // Create SSE stream with final content
     const encoder = new TextEncoder();
     const sseData = `data: ${JSON.stringify({
       choices: [{ delta: { content: finalContent }, index: 0, finish_reason: "stop" }]
