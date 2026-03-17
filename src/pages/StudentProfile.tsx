@@ -412,9 +412,9 @@ export default function StudentProfile() {
   const allConsequences = [...CONSEQUENCE_OPTIONS, ...(student.customConsequences || [])];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-sm:space-y-3">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => navigate('/students')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -496,7 +496,7 @@ export default function StudentProfile() {
         </div>
         
         {/* Archive/Delete Actions */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-sm:w-full max-sm:justify-end">
           {student.isArchived ? (
             <>
               <Button
@@ -557,7 +557,7 @@ export default function StudentProfile() {
       />
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-5xl">
+        <TabsList className="flex gap-1 h-auto p-1 w-full max-w-5xl overflow-x-auto scrollbar-hide flex-nowrap max-sm:flex-nowrap">
           <TabsTrigger value="profile" className="gap-1 text-xs">
             <Info className="w-3 h-3" />
             Profile

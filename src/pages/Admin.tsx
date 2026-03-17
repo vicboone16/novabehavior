@@ -620,7 +620,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-6xl grid-cols-12">
+          <TabsList className="grid w-full max-w-6xl grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12">
             <TabsTrigger value="pending" className="gap-2 relative">
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Pending</span>
