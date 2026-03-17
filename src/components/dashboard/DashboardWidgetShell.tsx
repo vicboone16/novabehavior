@@ -31,7 +31,7 @@ export function DashboardWidgetShell({ title, icon, onRemove, children, classNam
           </Button>
         )}
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto p-3">
+      <CardContent className="flex-1 overflow-auto p-3 overscroll-contain">
         {children}
       </CardContent>
     </Card>

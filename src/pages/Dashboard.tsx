@@ -58,7 +58,7 @@ export default function Dashboard() {
   // Mobile: render stacked cards without grid drag
   if (isMobile) {
     return (
-      <div className="space-y-3 px-1">
+      <div className="space-y-3 px-1 pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-foreground">Dashboard</h1>
           <div className="flex items-center gap-1.5">
