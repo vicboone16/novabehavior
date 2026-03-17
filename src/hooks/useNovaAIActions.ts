@@ -98,7 +98,7 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [user, clientId]);
 
-  // ── Post to client timeline ─────────────────────────────────────────────
+  // ── Post to client timeline (dual-write for visibility) ──────────────────
   const addTimelineEntry = useCallback(async (
     eventType: string,
     summary: string,
@@ -108,6 +108,7 @@ export function useNovaAIActions(clientId: string | null) {
   ) => {
     if (!user || !clientId) return;
     try {
+      // Write to client_timeline (AI audit trail)
       await (supabase as any).from('client_timeline').insert({
         client_id: clientId,
         event_type: eventType,
@@ -117,6 +118,15 @@ export function useNovaAIActions(clientId: string | null) {
         source: 'nova_ai',
         source_request_id: requestId || null,
         created_by: user.id,
+      });
+
+      // Also write to student_timeline_entries so the existing UI reader surfaces it
+      await supabase.from('student_timeline_entries').insert({
+        student_id: clientId,
+        user_id: user.id,
+        entry_time: new Date().toISOString(),
+        content: `[Nova AI] ${summary}`,
+        entry_type: eventType,
       });
     } catch (err) {
       console.error('Failed to add timeline entry:', err);
