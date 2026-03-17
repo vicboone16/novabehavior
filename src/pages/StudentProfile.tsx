@@ -67,7 +67,6 @@ import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggest
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
-import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
