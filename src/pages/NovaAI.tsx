@@ -172,6 +172,8 @@ export default function NovaAI() {
       toast.error('Failed to get AI response');
     } finally {
       setIsLoading(false);
+      sendLockRef.current = false;
+    }
     }
   };
 
