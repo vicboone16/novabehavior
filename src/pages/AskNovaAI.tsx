@@ -7,13 +7,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   BrainCircuit, Send, Loader2, BookOpen, Lightbulb, Users, 
-  GraduationCap, Search, Target, HelpCircle, PenTool, Sparkles 
+  GraduationCap, Search, Target, HelpCircle, PenTool, Sparkles,
+  ClipboardList, Database, MessageSquare, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { NovaAIClientSelector } from '@/components/nova-ai/NovaAIClientSelector';
+import { NovaAIActionButtons, type NovaAction } from '@/components/nova-ai/NovaAIActionButtons';
+import { NovaAIConfirmDialog } from '@/components/nova-ai/NovaAIConfirmDialog';
+import { useNovaAIActions } from '@/hooks/useNovaAIActions';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat`;
 
@@ -26,11 +30,24 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'Write a Measurable Goal': <Target className="w-3.5 h-3.5" />,
   'Explain an ABA Concept': <BookOpen className="w-3.5 h-3.5" />,
   'Help Write Clinical Language': <PenTool className="w-3.5 h-3.5" />,
+  'Write SOAP Note': <ClipboardList className="w-3.5 h-3.5" />,
+  'Log Session Data': <Database className="w-3.5 h-3.5" />,
+  'Write Caregiver Note': <MessageSquare className="w-3.5 h-3.5" />,
+  'Parse Old Notes': <FileText className="w-3.5 h-3.5" />,
 };
+
+// Built-in quick prompts for new capabilities (shown alongside DB prompts)
+const BUILT_IN_PROMPTS = [
+  { id: 'builtin-soap', title: 'Write SOAP Note', prompt: 'Write a SOAP note for today\'s session. I\'ll provide the details:', category: 'clinical' },
+  { id: 'builtin-data', title: 'Log Session Data', prompt: 'I need to log session data. Here\'s what happened:', category: 'data' },
+  { id: 'builtin-caregiver', title: 'Write Caregiver Note', prompt: 'Write a caregiver communication note based on this update:', category: 'clinical' },
+  { id: 'builtin-parse', title: 'Parse Old Notes', prompt: 'Parse the following old session notes into structured data:', category: 'data' },
+];
 
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
+  actions?: NovaAction[];
 }
 
 interface QuickPrompt {
@@ -40,15 +57,35 @@ interface QuickPrompt {
   category: string | null;
 }
 
+// Parse <!--NOVA_ACTION:...--> markers from AI response
+function parseNovaActions(content: string): { cleanContent: string; actions: NovaAction[] } {
+  const actions: NovaAction[] = [];
+  const regex = /<!--NOVA_ACTION:(.*?)-->/gs;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      actions.push({ type: parsed.type, data: parsed.data });
+    } catch { /* skip malformed markers */ }
+  }
+  const cleanContent = content.replace(regex, '').trim();
+  return { cleanContent, actions };
+}
+
 export default function AskNovaAI() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [evidenceMode, setEvidenceMode] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
+  const [confirmAction, setConfirmAction] = useState<{ action: NovaAction; destination: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastUserInputRef = useRef('');
+
+  const { executeAction, logToAudit } = useNovaAIActions(selectedClientId);
 
   useEffect(() => {
     const load = async () => {
@@ -67,19 +104,7 @@ export default function AskNovaAI() {
     }
   }, [messages]);
 
-  const logChat = useCallback(async (question: string, response: string) => {
-    if (!user) return;
-    try {
-      await (supabase as any).from('ai_chat_logs').insert({
-        user_id: user.id,
-        question,
-        response,
-        category: evidenceMode ? 'evidence' : 'standard',
-      });
-    } catch (err) {
-      console.error('Failed to log chat:', err);
-    }
-  }, [user, evidenceMode]);
+  const allQuickPrompts = [...quickPrompts, ...BUILT_IN_PROMPTS];
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -88,6 +113,7 @@ export default function AskNovaAI() {
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput('');
+    lastUserInputRef.current = text.trim();
     setIsLoading(true);
 
     let assistantContent = '';
@@ -100,8 +126,9 @@ export default function AskNovaAI() {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: allMessages,
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           evidence_mode: evidenceMode,
+          client_id: selectedClientId,
         }),
       });
 
@@ -151,7 +178,9 @@ export default function AskNovaAI() {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
-              updateAssistant(assistantContent);
+              // Show content without action markers while streaming
+              const { cleanContent } = parseNovaActions(assistantContent);
+              updateAssistant(cleanContent);
             }
           } catch {
             buffer = line + '\n' + buffer;
@@ -174,15 +203,37 @@ export default function AskNovaAI() {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
-              updateAssistant(assistantContent);
             }
           } catch { /* ignore */ }
         }
       }
 
+      // Parse actions from final content
+      const { cleanContent, actions } = parseNovaActions(assistantContent);
+
+      // Update final message with actions
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'assistant') {
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanContent, actions } : m);
+        }
+        return [...prev, { role: 'assistant', content: cleanContent, actions }];
+      });
+
+      // Detect intent from actions for logging
+      const detectedIntent = actions.length > 0 
+        ? actions.map(a => a.type).join(',') 
+        : 'general';
+
       // Log to DB
       if (assistantContent) {
-        await logChat(text.trim(), assistantContent);
+        await logToAudit(
+          text.trim(),
+          cleanContent,
+          detectedIntent,
+          actions.map(a => ({ type: a.type })),
+          actions.length > 0 ? actions.map(a => a.data) : null
+        );
       }
     } catch (e) {
       console.error('Chat error:', e);
@@ -206,10 +257,29 @@ export default function AskNovaAI() {
     }
   };
 
+  const handleAction = (action: NovaAction, destination: string) => {
+    // Clarification responses get sent as messages
+    if (destination.startsWith('clarify:')) {
+      const answer = destination.split(':').slice(2).join(':');
+      sendMessage(answer);
+      return;
+    }
+    // Show confirmation dialog
+    setConfirmAction({ action, destination });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    const success = await executeAction(confirmAction.action, confirmAction.destination, lastUserInputRef.current);
+    if (success) {
+      setConfirmAction(null);
+    }
+  };
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10">
             <BrainCircuit className="w-7 h-7 text-primary" />
@@ -217,30 +287,36 @@ export default function AskNovaAI() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Ask Nova AI</h1>
             <p className="text-sm text-muted-foreground">
-              Behavior Science & Clinical Intelligence Assistant
+              Clinical Copilot & Smart Data Engine
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            id="evidence-mode"
-            checked={evidenceMode}
-            onCheckedChange={setEvidenceMode}
+        <div className="flex items-center gap-3 flex-wrap">
+          <NovaAIClientSelector
+            selectedClientId={selectedClientId}
+            onClientChange={setSelectedClientId}
           />
-          <Label htmlFor="evidence-mode" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
-            <BookOpen className="w-3.5 h-3.5" />
-            Evidence Mode
-          </Label>
-          {evidenceMode && (
-            <Badge variant="default" className="text-[10px]">ON</Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="evidence-mode"
+              checked={evidenceMode}
+              onCheckedChange={setEvidenceMode}
+            />
+            <Label htmlFor="evidence-mode" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+              <BookOpen className="w-3.5 h-3.5" />
+              Evidence Mode
+            </Label>
+            {evidenceMode && (
+              <Badge variant="default" className="text-[10px]">ON</Badge>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Quick Prompts */}
       {messages.length === 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {quickPrompts.map((qp) => (
+          {allQuickPrompts.map((qp) => (
             <Button
               key={qp.id}
               variant="outline"
@@ -267,7 +343,11 @@ export default function AskNovaAI() {
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <BrainCircuit className="w-12 h-12 mb-3 opacity-20" />
                 <p className="text-sm font-medium">Ask me anything about behavior science</p>
-                <p className="text-xs">Select a quick prompt above or type your question below</p>
+                <p className="text-xs">
+                  {selectedClientId 
+                    ? 'Case-aware mode active — I can write notes, log data, and analyze this client'
+                    : 'Select a client above to enable smart data logging and note writing'}
+                </p>
               </div>
             )}
 
@@ -276,19 +356,29 @@ export default function AskNovaAI() {
                 key={i}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[85%] rounded-xl px-4 py-3 ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/70 text-foreground'
-                  }`}
-                >
-                  {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:mt-3 [&>h2]:mb-1 [&>ul]:text-sm [&>p]:text-sm [&>ol]:text-sm">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
+                  <div
+                    className={`rounded-xl px-4 py-3 ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/70 text-foreground'
+                    }`}
+                  >
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:mt-3 [&>h2]:mb-1 [&>ul]:text-sm [&>p]:text-sm [&>ol]:text-sm">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    )}
+                  </div>
+                  {/* Action buttons for assistant messages */}
+                  {msg.role === 'assistant' && msg.actions && msg.actions.length > 0 && (
+                    <NovaAIActionButtons
+                      actions={msg.actions}
+                      onAction={handleAction}
+                      disabled={isLoading}
+                    />
                   )}
                 </div>
               </div>
@@ -311,7 +401,10 @@ export default function AskNovaAI() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask a behavior science question..."
+                placeholder={selectedClientId 
+                  ? "Ask a question, paste session notes, or describe what happened..."
+                  : "Ask a behavior science question..."
+                }
                 className="resize-none min-h-[44px] max-h-32"
                 rows={1}
               />
@@ -334,6 +427,15 @@ export default function AskNovaAI() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <NovaAIConfirmDialog
+        open={!!confirmAction}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+        action={confirmAction?.action || null}
+        destination={confirmAction?.destination || ''}
+        onConfirm={handleConfirmAction}
+      />
     </div>
   );
 }
