@@ -569,6 +569,11 @@ export function Vineland3Report({
         </Card>
       )}
 
+      {/* LONGITUDINAL TREND CHART */}
+      {chartToggles.longitudinal && (
+        <VinelandLongitudinalChart data={longitudinalData} chartRef={longitudinalChartRef} />
+      )}
+
       {/* DOMAIN INTERPRETATION */}
       <Card>
         <CardHeader className="py-2 px-4"><SectionHeader id="narratives" title={isComprehensive ? "INTERPRETATION" : "DOMAIN INTERPRETATION"} /></CardHeader>
