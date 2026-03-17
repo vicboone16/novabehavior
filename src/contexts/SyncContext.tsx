@@ -394,17 +394,16 @@ export function SyncProvider({ children }: SyncProviderProps) {
         const mappedSessions: Session[] = sessionsData.map((session) => {
           const entries = sessionDataEntries?.filter(e => e.session_id === session.id) || [];
           
-          // Use the earliest data entry timestamp as the session date (collection date),
-          // falling back to the session start_time if no data entries exist
-          const earliestEntryTimestamp = entries.length > 0
-            ? entries.reduce((earliest, e) => {
-                const t = new Date(e.timestamp).getTime();
-                return t < earliest ? t : earliest;
-              }, Infinity)
-            : null;
-          const sessionDate = earliestEntryTimestamp 
-            ? new Date(earliestEntryTimestamp) 
-            : new Date(session.start_time);
+          // Use session.start_time as the canonical date (set when the session was started).
+          // This prevents dates from shifting to unrelated entry timestamps.
+          const sessionDate = session.start_time 
+            ? new Date(session.start_time) 
+            : (entries.length > 0
+              ? new Date(entries.reduce((earliest: number, e: any) => {
+                  const t = new Date(e.timestamp).getTime();
+                  return t < earliest ? t : earliest;
+                }, Infinity))
+              : new Date());
           
           // Back-fill studentIds in-memory if the DB array is empty but entries exist.
           // This fixes sessions where student_ids = [] due to a failed presence-sync.
@@ -471,9 +470,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 studentId: e.student_id,
                 behaviorId: e.behavior_id,
                 intervalNumber: e.interval_index || 0,
-                occurred: (e.abc_data as any)?.occurred || false,
+                occurred: (e.abc_data as any)?.occurred ?? false,
                 timestamp: new Date(e.timestamp),
-                voided: (e.abc_data as any)?.voided,
+                voided: (e.abc_data as any)?.voided ?? false,
                 voidReason: (e.abc_data as any)?.voidReason,
                 sessionId: e.session_id,
               })),
@@ -515,9 +514,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
               studentId: e.student_id,
               behaviorId: e.behavior_id,
               intervalNumber: e.interval_index || 0,
-              occurred: (e.abc_data as any)?.occurred || false,
+              occurred: (e.abc_data as any)?.occurred ?? false,
               timestamp: new Date(e.timestamp),
-              voided: (e.abc_data as any)?.voided,
+              voided: (e.abc_data as any)?.voided ?? false,
               voidReason: (e.abc_data as any)?.voidReason,
               sessionId: e.session_id,
             }));
@@ -614,9 +613,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
             studentId: e.student_id,
             behaviorId: e.behavior_id,
             intervalNumber: e.interval_index || 0,
-            occurred: (e.abc_data as any)?.occurred || false,
+            occurred: (e.abc_data as any)?.occurred ?? false,
             timestamp: new Date(e.timestamp),
-            voided: (e.abc_data as any)?.voided,
+            voided: (e.abc_data as any)?.voided ?? false,
             voidReason: (e.abc_data as any)?.voidReason,
             sessionId: e.session_id,
           }));
@@ -787,9 +786,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
               studentId: e.student_id,
               behaviorId: e.behavior_id,
               intervalNumber: e.interval_index || 0,
-              occurred: (e.abc_data as any)?.occurred || false,
+              occurred: (e.abc_data as any)?.occurred ?? false,
               timestamp: new Date(e.timestamp),
-              voided: (e.abc_data as any)?.voided,
+              voided: (e.abc_data as any)?.voided ?? false,
               voidReason: (e.abc_data as any)?.voidReason,
               sessionId: e.session_id,
             }));
@@ -1066,7 +1065,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
             preferred_name: student.preferredName || null,
             pronouns: student.pronouns || null,
             color: student.color,
-            behaviors: student.behaviors as any,
+            // PROTECT: Never overwrite a non-empty behaviors array with an empty one
+            // This prevents behavior deletion during sync race conditions
+            behaviors: (student.behaviors && student.behaviors.length > 0 ? student.behaviors : undefined) as any,
             custom_antecedents: student.customAntecedents as any,
             custom_consequences: student.customConsequences as any,
             goals: studentGoals as any,
@@ -1768,9 +1769,9 @@ export function SyncProvider({ children }: SyncProviderProps) {
                     studentId: e.student_id,
                     behaviorId: e.behavior_id,
                     intervalNumber: e.interval_index || 0,
-                    occurred: (e.abc_data as any)?.occurred || false,
+                    occurred: (e.abc_data as any)?.occurred ?? false,
                     timestamp: new Date(e.timestamp),
-                    voided: (e.abc_data as any)?.voided,
+                    voided: (e.abc_data as any)?.voided ?? false,
                     voidReason: (e.abc_data as any)?.voidReason,
                     sessionId: e.session_id,
                   })),

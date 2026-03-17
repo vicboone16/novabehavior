@@ -9,6 +9,7 @@ import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
+import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 
 type BehaviorTab = 'behaviors' | 'interventions' | 'data' | 'review' | 'context';
 
@@ -89,6 +90,9 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
             dataCollectionStartDate={student.dataCollectionStartDate}
             behaviorGoals={studentGoals}
           />
+          
+          {/* Goal Suggestion Engine — below graphs, above behavior details */}
+          <GoalSuggestionEnginePanel studentId={studentId} surface="programming" />
         </TabsContent>
 
         <TabsContent value="interventions" className="mt-4 space-y-4">
