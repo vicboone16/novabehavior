@@ -87,6 +87,7 @@ import NovaAI from "./pages/NovaAI";
 import GoalOptimization from "./pages/GoalOptimization";
 import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
+import NotificationSettings from "./pages/NotificationSettings";
 
 const queryClient = new QueryClient();
 
