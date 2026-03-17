@@ -25,6 +25,7 @@ import {
   itemsNeedReview,
   itemsNeedSession,
   buildCompletionSummary,
+  buildChatSummary,
   verifyNovaActionComplete,
   type PipelineResult,
   type PipelineStepResult,
