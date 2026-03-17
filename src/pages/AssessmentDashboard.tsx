@@ -888,6 +888,13 @@ export default function AssessmentDashboard() {
                   studentName={selectedStudent.name}
                   trackerType="ablls-r"
                 />
+
+                {/* Vineland-3 Internal Assessment */}
+                <Vineland3Entry
+                  studentId={selectedStudent.id}
+                  studentName={selectedStudent.name}
+                  studentDob={selectedStudent.dateOfBirth ? selectedStudent.dateOfBirth.toISOString().split('T')[0] : undefined}
+                />
                 
                 {/* Questionnaire Manager - Sent out forms */}
                 <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
