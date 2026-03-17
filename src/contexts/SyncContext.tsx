@@ -49,6 +49,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const durationEntries = useDataStore((state) => state.durationEntries);
   const intervalEntries = useDataStore((state) => state.intervalEntries);
   const abcEntries = useDataStore((state) => state.abcEntries);
+  const latencyEntries = useDataStore((state) => state.latencyEntries);
   const currentSessionId = useDataStore((state) => state.currentSessionId);
   const sessionStartTime = useDataStore((state) => state.sessionStartTime);
   const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
@@ -1272,6 +1273,27 @@ export function SyncProvider({ children }: SyncProviderProps) {
               } as Json,
             };
           }),
+          ...(session.latencyEntries || []).map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: session.id,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'latency',
+              timestamp: new Date(e.antecedentTime).toISOString(),
+              duration_seconds: Math.round(e.latencySeconds),
+              abc_data: {
+                antecedentTime: new Date(e.antecedentTime).toISOString(),
+                behaviorOnsetTime: new Date(e.behaviorOnsetTime).toISOString(),
+                latencySeconds: e.latencySeconds,
+                notes: e.notes,
+              } as Json,
+            };
+          }),
         ];
 
         // Insert in batches
@@ -1289,11 +1311,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
       const liveDurationEntries = durationEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
       const liveIntervalEntries = intervalEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
       const liveAbcEntries = abcEntries.filter(e => !(e as any).isHistorical && e.sessionId === currentSessionId);
+      const liveLatencyEntries = latencyEntries.filter(e => e.sessionId === currentSessionId);
       
       const hasLiveData = liveFrequencyEntries.some(e => e.count > 0) || 
                           liveDurationEntries.length > 0 || 
                           liveIntervalEntries.length > 0 ||
-                          liveAbcEntries.length > 0;
+                          liveAbcEntries.length > 0 ||
+                          liveLatencyEntries.length > 0;
 
       if (hasLiveData && selectedStudentIds.length > 0 && currentSessionId && sessionStartTime) {
         console.log('[Sync] Syncing live session data...');
@@ -1399,6 +1423,27 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 voided: e.voided,
                 voidReason: e.voidReason,
                 markedAt: e.markedAt ? new Date(e.markedAt).toISOString() : undefined,
+              } as Json,
+            };
+          }),
+          ...liveLatencyEntries.map(e => {
+            const student = students.find(s => s.id === e.studentId);
+            const bName = student?.behaviors.find(b => b.id === e.behaviorId)?.name;
+            return {
+              id: e.id,
+              user_id: user.id,
+              session_id: liveSessionId,
+              student_id: e.studentId,
+              behavior_id: e.behaviorId,
+              behavior_name: bName || null,
+              event_type: 'latency',
+              timestamp: new Date(e.antecedentTime).toISOString(),
+              duration_seconds: Math.round(e.latencySeconds),
+              abc_data: {
+                antecedentTime: new Date(e.antecedentTime).toISOString(),
+                behaviorOnsetTime: new Date(e.behaviorOnsetTime).toISOString(),
+                latencySeconds: e.latencySeconds,
+                notes: e.notes,
               } as Json,
             };
           }),
