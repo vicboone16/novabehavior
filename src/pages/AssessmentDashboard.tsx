@@ -917,6 +917,13 @@ export default function AssessmentDashboard() {
                   </CardContent>
                 </Card>
 
+                {/* EFL Curriculum Goals */}
+                <Card>
+                  <CardContent className="p-4">
+                    <EFLGoalBrowser clientId={selectedStudent.id} />
+                  </CardContent>
+                </Card>
+
                 {/* Vineland-3 Internal Assessment */}
                 <Vineland3Entry
                   studentId={selectedStudent.id}
