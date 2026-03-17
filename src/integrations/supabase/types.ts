@@ -10671,6 +10671,171 @@ export type Database = {
           },
         ]
       }
+      client_timeline: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          event_date: string
+          event_type: string
+          id: string
+          reference_id: string | null
+          reference_table: string | null
+          session_id: string | null
+          source: string
+          source_request_id: string | null
+          summary: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          event_date?: string
+          event_type: string
+          id?: string
+          reference_id?: string | null
+          reference_table?: string | null
+          session_id?: string | null
+          source?: string
+          source_request_id?: string | null
+          summary: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          reference_id?: string | null
+          reference_table?: string | null
+          session_id?: string | null
+          source?: string
+          source_request_id?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "client_timeline_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "nova_ai_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinical_authorizations: {
         Row: {
           agency_id: string
@@ -16372,6 +16537,113 @@ export type Database = {
         }
         Relationships: []
       }
+      graph_update_queue: {
+        Row: {
+          client_id: string
+          created_at: string
+          event_date: string
+          graph_type: string
+          id: string
+          processed: boolean
+          processed_at: string | null
+          source_request_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          event_date?: string
+          graph_type: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          source_request_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          event_date?: string
+          graph_type?: string
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          source_request_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "graph_update_queue_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "nova_ai_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       iep_documents: {
         Row: {
           agency_id: string | null
@@ -20220,6 +20492,192 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_ai_generated_notes: {
+        Row: {
+          client_id: string | null
+          confidence: number | null
+          created_at: string
+          id: string
+          is_incomplete: boolean
+          missing_info: string[] | null
+          note_content: Json
+          note_subtype: string | null
+          note_type: string
+          posted_at: string | null
+          posted_by: string | null
+          posted_record_id: string | null
+          posted_to_table: string | null
+          recommended_destination: string | null
+          request_id: string
+          session_id: string | null
+          status: string
+          title: string | null
+          warning_codes: string[] | null
+        }
+        Insert: {
+          client_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_incomplete?: boolean
+          missing_info?: string[] | null
+          note_content?: Json
+          note_subtype?: string | null
+          note_type: string
+          posted_at?: string | null
+          posted_by?: string | null
+          posted_record_id?: string | null
+          posted_to_table?: string | null
+          recommended_destination?: string | null
+          request_id: string
+          session_id?: string | null
+          status?: string
+          title?: string | null
+          warning_codes?: string[] | null
+        }
+        Update: {
+          client_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          is_incomplete?: boolean
+          missing_info?: string[] | null
+          note_content?: Json
+          note_subtype?: string | null
+          note_type?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          posted_record_id?: string | null
+          posted_to_table?: string | null
+          recommended_destination?: string | null
+          request_id?: string
+          session_id?: string | null
+          status?: string
+          title?: string | null
+          warning_codes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "nova_ai_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_generated_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
       nova_ai_goal_templates: {
         Row: {
           goal_type: string | null
@@ -20366,6 +20824,198 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      nova_ai_parsed_items: {
+        Row: {
+          client_id: string | null
+          confidence: number | null
+          context: Json | null
+          created_at: string
+          destination_record_id: string | null
+          destination_table: string | null
+          id: string
+          is_inferred: boolean
+          item_type: string
+          measurement_type: string | null
+          measurement_values: Json | null
+          parsed_data: Json
+          prompting: Json | null
+          raw_text: string
+          request_id: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string | null
+          target_match: Json | null
+          warning_codes: string[] | null
+        }
+        Insert: {
+          client_id?: string | null
+          confidence?: number | null
+          context?: Json | null
+          created_at?: string
+          destination_record_id?: string | null
+          destination_table?: string | null
+          id?: string
+          is_inferred?: boolean
+          item_type: string
+          measurement_type?: string | null
+          measurement_values?: Json | null
+          parsed_data?: Json
+          prompting?: Json | null
+          raw_text: string
+          request_id: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          target_match?: Json | null
+          warning_codes?: string[] | null
+        }
+        Update: {
+          client_id?: string | null
+          confidence?: number | null
+          context?: Json | null
+          created_at?: string
+          destination_record_id?: string | null
+          destination_table?: string | null
+          id?: string
+          is_inferred?: boolean
+          item_type?: string
+          measurement_type?: string | null
+          measurement_values?: Json | null
+          parsed_data?: Json
+          prompting?: Json | null
+          raw_text?: string
+          request_id?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          target_match?: Json | null
+          warning_codes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "nova_ai_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_parsed_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+        ]
       }
       nova_ai_quick_prompts: {
         Row: {
@@ -20579,6 +21229,173 @@ export type Database = {
           preset_name?: string
         }
         Relationships: []
+      }
+      nova_ai_requests: {
+        Row: {
+          clarification_needed: boolean
+          clarification_questions: Json | null
+          client_id: string | null
+          created_at: string
+          id: string
+          intent: string
+          intent_confidence: number | null
+          raw_input_text: string
+          review_required: boolean
+          session_id: string | null
+          source_timestamp: string
+          source_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clarification_needed?: boolean
+          clarification_questions?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          intent?: string
+          intent_confidence?: number | null
+          raw_input_text: string
+          review_required?: boolean
+          session_id?: string | null
+          source_timestamp?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clarification_needed?: boolean
+          clarification_questions?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          intent?: string
+          intent_confidence?: number | null
+          raw_input_text?: string
+          review_required?: boolean
+          session_id?: string | null
+          source_timestamp?: string
+          source_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_behavior_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v2"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "nova_ai_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "v_skill_target_session_metrics_v3"
+            referencedColumns: ["session_id"]
+          },
+        ]
       }
       nova_ai_research_sources: {
         Row: {

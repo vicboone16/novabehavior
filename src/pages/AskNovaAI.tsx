@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BrainCircuit, Send, Loader2, BookOpen, Lightbulb, Users, 
   GraduationCap, Search, Target, HelpCircle, PenTool, Sparkles,
-  ClipboardList, Database, MessageSquare, FileText
+  ClipboardList, Database, MessageSquare, FileText, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -34,6 +34,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   'Log Session Data': <Database className="w-3.5 h-3.5" />,
   'Write Caregiver Note': <MessageSquare className="w-3.5 h-3.5" />,
   'Parse Old Notes': <FileText className="w-3.5 h-3.5" />,
+  'Reconstruct Session': <RotateCcw className="w-3.5 h-3.5" />,
 };
 
 // Built-in quick prompts for new capabilities (shown alongside DB prompts)
@@ -42,6 +43,7 @@ const BUILT_IN_PROMPTS = [
   { id: 'builtin-data', title: 'Log Session Data', prompt: 'I need to log session data. Here\'s what happened:', category: 'data' },
   { id: 'builtin-caregiver', title: 'Write Caregiver Note', prompt: 'Write a caregiver communication note based on this update:', category: 'clinical' },
   { id: 'builtin-parse', title: 'Parse Old Notes', prompt: 'Parse the following old session notes into structured data:', category: 'data' },
+  { id: 'builtin-reconstruct', title: 'Reconstruct Session', prompt: 'Reconstruct this entire session from the following narrative. Extract all behaviors, skills, ABC events, and generate appropriate notes:', category: 'data' },
 ];
 
 interface Msg {
