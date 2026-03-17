@@ -37,6 +37,8 @@ import { PEAKGoalBrowser } from '@/components/clinical-library/PEAKGoalBrowser';
 import { ESDMGoalBrowser } from '@/components/clinical-library/ESDMGoalBrowser';
 import { ABAS3GoalBrowser } from '@/components/clinical-library/ABAS3GoalBrowser';
 import { DAYC2GoalBrowser } from '@/components/clinical-library/DAYC2GoalBrowser';
+import { ClientLibraryPanel } from '@/components/clinical-library/ClientLibraryPanel';
+import { ClientRecommendationsPanel } from '@/components/clinical-library/ClientRecommendationsPanel';
 import { Vineland3Entry } from '@/components/assessment/Vineland3Entry';
 import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport';
 import { useAuth } from '@/contexts/AuthContext';
