@@ -19,6 +19,8 @@ interface NovaAILauncherProps {
   actions?: NovaAIAction[];
   variant?: 'button' | 'dropdown';
   size?: 'sm' | 'default' | 'icon';
+  /** Called before navigating away — use to persist draft state */
+  onBeforeNavigate?: () => void;
 }
 
 export function NovaAILauncher({
