@@ -356,7 +356,7 @@ export function useNovaAIActions(clientId: string | null) {
     }
 
     return result;
-  }, [user, clientId]);
+  }, [user, clientId, createNewTarget]);
 
   // ── Execute action (save to final tables) ───────────────────────────────
   const executeAction = useCallback(async (action: NovaAction, destination: string, rawInput?: string) => {
