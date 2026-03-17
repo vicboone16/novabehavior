@@ -46,6 +46,8 @@ export function Vineland3ScoringGrid({
   const [scores, setScores] = useState<Record<string, Vineland3ItemScore>>({});
   const [rawScores, setRawScores] = useState<Vineland3RawScore[]>([]);
   const [derivedScores, setDerivedScores] = useState<Vineland3DerivedScore[]>([]);
+  const [pairwiseComparisons, setPairwiseComparisons] = useState<Vineland3PairwiseComparison[]>([]);
+  const [scoringStatus, setScoringStatus] = useState<Vineland3ScoringStatus | null>(null);
   const [derivedStatus, setDerivedStatus] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
