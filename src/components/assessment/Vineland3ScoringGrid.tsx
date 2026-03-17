@@ -18,6 +18,7 @@ import {
   type Vineland3DerivedScore,
 } from '@/hooks/useVineland3';
 import { Vineland3Report } from './Vineland3Report';
+import { Vineland3GoalMapping } from './Vineland3GoalMapping';
 import { format } from 'date-fns';
 
 interface Vineland3ScoringGridProps {
