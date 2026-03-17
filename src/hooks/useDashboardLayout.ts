@@ -50,6 +50,11 @@ export function useDashboardLayout() {
   // widget positions to drift on every sign-in.
   const userHasInteracted = useRef(false);
 
+  // Reset interaction gate when user changes (sign-out/sign-in)
+  useEffect(() => {
+    userHasInteracted.current = false;
+  }, [user]);
+
   // Load from DB first, fallback to localStorage, then defaults
   useEffect(() => {
     let cancelled = false;
