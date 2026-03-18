@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowLeft, Activity, Users, Target, Clock, AlertTriangle,
   Loader2, RefreshCw, Zap, BarChart3, Radio, Shield, AlertOctagon,
-  Stethoscope
+  Stethoscope, Star, Gift, Siren, UserCheck
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
