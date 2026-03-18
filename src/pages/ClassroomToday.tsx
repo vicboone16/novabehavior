@@ -23,6 +23,10 @@ const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   clinical_session: { bg: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400', icon: <Stethoscope className="w-3 h-3" /> },
   signal: { bg: 'bg-destructive/15 text-destructive', icon: <Zap className="w-3 h-3" /> },
   incident: { bg: 'bg-red-500/15 text-red-700 dark:text-red-400', icon: <AlertOctagon className="w-3 h-3" /> },
+  points: { bg: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400', icon: <Star className="w-3 h-3" /> },
+  reward: { bg: 'bg-pink-500/15 text-pink-700 dark:text-pink-400', icon: <Gift className="w-3 h-3" /> },
+  mayday: { bg: 'bg-red-600/20 text-red-700 dark:text-red-400', icon: <Siren className="w-3 h-3" /> },
+  presence: { bg: 'bg-teal-500/15 text-teal-700 dark:text-teal-400', icon: <UserCheck className="w-3 h-3" /> },
 };
 
 function EventTypeBadge({ type }: { type: LiveEventItem['type'] }) {
