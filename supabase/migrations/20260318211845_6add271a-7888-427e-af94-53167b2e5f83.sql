@@ -1,0 +1,1 @@
+ALTER TABLE public.training_modules ALTER COLUMN created_by DROP NOT NULL;

@@ -4330,6 +4330,122 @@ export type Database = {
         }
         Relationships: []
       }
+      beacon_points_ledger: {
+        Row: {
+          classroom_id: string | null
+          created_at: string
+          id: string
+          points_delta: number
+          reason: string | null
+          source: string
+          source_ref_id: string | null
+          staff_id: string | null
+          student_id: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          points_delta: number
+          reason?: string | null
+          source?: string
+          source_ref_id?: string | null
+          staff_id?: string | null
+          student_id: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          points_delta?: number
+          reason?: string | null
+          source?: string
+          source_ref_id?: string | null
+          staff_id?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
+      beacon_reward_redemptions: {
+        Row: {
+          id: string
+          points_spent: number
+          redeemed_at: string
+          reward_id: string
+          staff_id: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          id?: string
+          points_spent: number
+          redeemed_at?: string
+          reward_id: string
+          staff_id?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          id?: string
+          points_spent?: number
+          redeemed_at?: string
+          reward_id?: string
+          staff_id?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beacon_reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beacon_rewards: {
+        Row: {
+          active: boolean
+          cost: number
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          scope_id: string | null
+          scope_type: string
+          stock_count: number | null
+          time_sensitive_until: string | null
+        }
+        Insert: {
+          active?: boolean
+          cost: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          scope_id?: string | null
+          scope_type?: string
+          stock_count?: number | null
+          time_sensitive_until?: string | null
+        }
+        Update: {
+          active?: boolean
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          scope_id?: string | null
+          scope_type?: string
+          stock_count?: number | null
+          time_sensitive_until?: string | null
+        }
+        Relationships: []
+      }
       behavior_bank_entries: {
         Row: {
           agency_id: string | null
@@ -9053,6 +9169,39 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      classroom_presence_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          classroom_id: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          classroom_id?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          notes?: string | null
+          status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          classroom_id?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       classrooms: {
         Row: {
@@ -14715,6 +14864,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_student_snapshots: {
+        Row: {
+          detail_level: string
+          generated_at: string
+          id: string
+          snapshot_date: string
+          student_id: string
+          summary_json: Json
+        }
+        Insert: {
+          detail_level?: string
+          generated_at?: string
+          id?: string
+          snapshot_date: string
+          student_id: string
+          summary_json?: Json
+        }
+        Update: {
+          detail_level?: string
+          generated_at?: string
+          id?: string
+          snapshot_date?: string
+          student_id?: string
+          summary_json?: Json
+        }
+        Relationships: []
       }
       daily_summaries: {
         Row: {
@@ -21727,6 +21903,45 @@ export type Database = {
           },
         ]
       }
+      mayday_alerts: {
+        Row: {
+          classroom_id: string | null
+          created_at: string
+          id: string
+          location: string | null
+          notes: string | null
+          resolved_at: string | null
+          status: string
+          student_id: string | null
+          triggered_by: string
+          urgency: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          student_id?: string | null
+          triggered_by: string
+          urgency?: string
+        }
+        Update: {
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          student_id?: string | null
+          triggered_by?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
       mentor_assignments: {
         Row: {
           agency_id: string | null
@@ -24099,6 +24314,39 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          opt_in_email: boolean
+          opt_in_sms: boolean
+          phone: string | null
+          preferred_contact_method: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          opt_in_email?: boolean
+          opt_in_sms?: boolean
+          phone?: string | null
+          preferred_contact_method?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          opt_in_email?: boolean
+          opt_in_sms?: boolean
+          phone?: string | null
+          preferred_contact_method?: string
+        }
+        Relationships: []
+      }
       parent_invite_codes: {
         Row: {
           agency_id: string | null
@@ -24138,6 +24386,151 @@ export type Database = {
           student_id?: string
           updated_at?: string
           uses_count?: number
+        }
+        Relationships: []
+      }
+      parent_notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          notification_type: string
+          parent_contact_id: string
+          payload_json: Json
+          scheduled_at: string
+          sent_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          notification_type: string
+          parent_contact_id: string
+          payload_json?: Json
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          notification_type?: string
+          parent_contact_id?: string
+          payload_json?: Json
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_notifications_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_report_profile_rules: {
+        Row: {
+          allow_reply: boolean
+          id: string
+          include_abc_detail: boolean
+          include_behavior_counts: boolean
+          include_charts: boolean
+          include_engagement: boolean
+          include_photos: boolean
+          include_points: boolean
+          include_positive_highlight: boolean
+          include_replacement_behavior_progress: boolean
+          include_rewards: boolean
+          include_teacher_note: boolean
+          include_weekly_graphs: boolean
+          profile_id: string
+        }
+        Insert: {
+          allow_reply?: boolean
+          id?: string
+          include_abc_detail?: boolean
+          include_behavior_counts?: boolean
+          include_charts?: boolean
+          include_engagement?: boolean
+          include_photos?: boolean
+          include_points?: boolean
+          include_positive_highlight?: boolean
+          include_replacement_behavior_progress?: boolean
+          include_rewards?: boolean
+          include_teacher_note?: boolean
+          include_weekly_graphs?: boolean
+          profile_id: string
+        }
+        Update: {
+          allow_reply?: boolean
+          id?: string
+          include_abc_detail?: boolean
+          include_behavior_counts?: boolean
+          include_charts?: boolean
+          include_engagement?: boolean
+          include_photos?: boolean
+          include_points?: boolean
+          include_positive_highlight?: boolean
+          include_replacement_behavior_progress?: boolean
+          include_rewards?: boolean
+          include_teacher_note?: boolean
+          include_weekly_graphs?: boolean
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_report_profile_rules_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "parent_report_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_report_profiles: {
+        Row: {
+          active: boolean
+          cadence: string
+          created_at: string
+          delivery_mode: string
+          detail_level: string
+          id: string
+          name: string
+          scope_id: string
+          scope_type: string
+          tone: string
+        }
+        Insert: {
+          active?: boolean
+          cadence?: string
+          created_at?: string
+          delivery_mode?: string
+          detail_level?: string
+          id?: string
+          name: string
+          scope_id: string
+          scope_type: string
+          tone?: string
+        }
+        Update: {
+          active?: boolean
+          cadence?: string
+          created_at?: string
+          delivery_mode?: string
+          detail_level?: string
+          id?: string
+          name?: string
+          scope_id?: string
+          scope_type?: string
+          tone?: string
         }
         Relationships: []
       }
@@ -28978,6 +29371,36 @@ export type Database = {
           },
         ]
       }
+      reinforcement_templates: {
+        Row: {
+          active: boolean
+          age_band: string | null
+          created_at: string
+          id: string
+          name: string
+          settings_json: Json
+          template_type: string
+        }
+        Insert: {
+          active?: boolean
+          age_band?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          settings_json?: Json
+          template_type: string
+        }
+        Update: {
+          active?: boolean
+          age_band?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          settings_json?: Json
+          template_type?: string
+        }
+        Relationships: []
+      }
       report_branding: {
         Row: {
           agency_id: string | null
@@ -32613,6 +33036,39 @@ export type Database = {
           },
         ]
       }
+      snapshot_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          secure_token: string
+          snapshot_type: string
+          source_id: string
+          student_id: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          secure_token: string
+          snapshot_type: string
+          source_id: string
+          student_id: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          secure_token?: string
+          snapshot_type?: string
+          source_id?: string
+          student_id?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       socially_savvy_assessments: {
         Row: {
           administered_by: string | null
@@ -33285,6 +33741,33 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      staff_presence_status: {
+        Row: {
+          classroom_id: string | null
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          classroom_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       staff_timesheet_entries: {
         Row: {
@@ -34211,6 +34694,36 @@ export type Database = {
           },
         ]
       }
+      student_attendance_status: {
+        Row: {
+          classroom_id: string | null
+          id: string
+          notes: string | null
+          status: string
+          student_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          classroom_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          classroom_id?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       student_behavior_plan_strategies: {
         Row: {
           created_at: string
@@ -34962,6 +35475,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      student_guardians: {
+        Row: {
+          can_receive_behavior_reports: boolean
+          can_reply: boolean
+          created_at: string
+          id: string
+          is_primary: boolean
+          parent_contact_id: string
+          relationship_type: string | null
+          student_id: string
+        }
+        Insert: {
+          can_receive_behavior_reports?: boolean
+          can_reply?: boolean
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          parent_contact_id: string
+          relationship_type?: string | null
+          student_id: string
+        }
+        Update: {
+          can_receive_behavior_reports?: boolean
+          can_reply?: boolean
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          parent_contact_id?: string
+          relationship_type?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_guardians_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -35822,6 +36376,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      student_reinforcement_plans: {
+        Row: {
+          active: boolean
+          classroom_id: string | null
+          created_at: string
+          id: string
+          override_json: Json
+          student_id: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          override_json?: Json
+          student_id: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          classroom_id?: string | null
+          created_at?: string
+          id?: string
+          override_json?: Json
+          student_id?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_reinforcement_plans_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "reinforcement_templates"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -39677,6 +40272,45 @@ export type Database = {
           },
         ]
       }
+      token_boards: {
+        Row: {
+          classroom_id: string | null
+          current_tokens: number
+          display_mode: string
+          id: string
+          reset_on_redeem: boolean
+          reward_name: string | null
+          settings_json: Json
+          student_id: string
+          target_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          classroom_id?: string | null
+          current_tokens?: number
+          display_mode?: string
+          id?: string
+          reset_on_redeem?: boolean
+          reward_name?: string | null
+          settings_json?: Json
+          student_id: string
+          target_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string | null
+          current_tokens?: number
+          display_mode?: string
+          id?: string
+          reset_on_redeem?: boolean
+          reward_name?: string | null
+          settings_json?: Json
+          student_id?: string
+          target_tokens?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       training_assignments: {
         Row: {
           assigned_by: string | null
@@ -40000,7 +40634,7 @@ export type Database = {
           content_type: string
           content_url: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           duration_estimate_minutes: number | null
           id: string
@@ -40018,7 +40652,7 @@ export type Database = {
           content_type?: string
           content_url?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           duration_estimate_minutes?: number | null
           id?: string
@@ -40036,7 +40670,7 @@ export type Database = {
           content_type?: string
           content_url?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           duration_estimate_minutes?: number | null
           id?: string
@@ -43610,6 +44244,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weekly_student_reports: {
+        Row: {
+          detail_level: string
+          generated_at: string
+          id: string
+          report_json: Json
+          student_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          detail_level?: string
+          generated_at?: string
+          id?: string
+          report_json?: Json
+          student_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          detail_level?: string
+          generated_at?: string
+          id?: string
+          report_json?: Json
+          student_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
       }
     }
     Views: {
