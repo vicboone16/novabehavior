@@ -1,14 +1,14 @@
 /**
  * Demo Center — Entry point for the master demo tenant ecosystem.
- * Explore by role, learner, workflow, or payer type.
+ * Explore by role, learner, workflow, payer, walkthrough, or progress.
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { DemoCenterHeader } from '@/components/demo-center/DemoCenterHeader';
 import { DemoBanner } from '@/components/demo-center/DemoBanner';
 import { DemoCenterTabs } from '@/components/demo-center/DemoCenterTabs';
+import { DemoOnboardingModal } from '@/components/demo-center/DemoOnboardingModal';
 
 export interface DemoLearner {
   id: string;
@@ -56,6 +56,7 @@ export default function DemoCenter() {
 
   return (
     <div className="space-y-6">
+      <DemoOnboardingModal onAction={setTab} />
       <DemoCenterHeader />
       <DemoBanner />
       <DemoCenterTabs

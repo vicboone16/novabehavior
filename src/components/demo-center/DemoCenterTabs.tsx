@@ -1,8 +1,10 @@
-import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe } from 'lucide-react';
+import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe, Trophy } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DEMO_BADGE } from './DemoCenterHeader';
+import { DemoWalkthroughs } from './DemoWalkthroughs';
+import { DemoOnboarding } from './DemoOnboarding';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
 const ICON_MAP: Record<string, any> = {
@@ -39,6 +41,8 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
         <TabsTrigger value="learners" className="text-xs">By Learner</TabsTrigger>
         <TabsTrigger value="workflows" className="text-xs">By Workflow</TabsTrigger>
         <TabsTrigger value="payers" className="text-xs">By Payer</TabsTrigger>
+        <TabsTrigger value="walkthroughs" className="text-xs">Walkthroughs</TabsTrigger>
+        <TabsTrigger value="progress" className="text-xs gap-1"><Trophy className="w-3 h-3" /> Progress</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-4 mt-4">
@@ -46,7 +50,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
           {[
             { label: 'Explore by Role', desc: `${staff.length} staff personas across supervisor, billing, school, RBT, and more`, icon: Users, tab: 'roles' },
             { label: 'Explore by Learner', desc: `${learners.length} distinct learner scenarios across settings and payers`, icon: GraduationCap, tab: 'learners' },
-            { label: 'Explore by Workflow', desc: `${WORKFLOW_SHORTCUTS.length} guided shortcuts into specific demo scenarios`, icon: Play, tab: 'workflows' },
+            { label: 'Guided Walkthroughs', desc: `Flexible scenario-based explorations of key workflows`, icon: Play, tab: 'walkthroughs' },
           ].map(c => (
             <Card key={c.label} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setTab(c.tab)}>
               <CardHeader className="pb-2">
@@ -64,7 +68,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
             { val: staff.length, label: 'Demo Staff' },
             { val: 4, label: 'Payer Types' },
             { val: 3, label: 'Connected Apps' },
-            { val: WORKFLOW_SHORTCUTS.length, label: 'Workflow Shortcuts' },
+            { val: 7, label: 'Walkthroughs' },
           ].map(s => (
             <Card key={s.label}><CardContent className="pt-4 pb-3"><div className="text-2xl font-bold">{s.val}</div><p className="text-xs text-muted-foreground">{s.label}</p></CardContent></Card>
           ))}
@@ -141,7 +145,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
                       {trainingPurpose && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {trainingPurpose.map(t => (
-                            <Badge key={t} variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200">{t}</Badge>
+                            <Badge key={t} variant="outline" className="text-[9px] bg-accent text-accent-foreground">{t}</Badge>
                           ))}
                         </div>
                       )}
@@ -175,10 +179,10 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
       <TabsContent value="payers" className="mt-4">
         <div className="grid sm:grid-cols-2 gap-3">
           {[
-            { label: 'Insurance', desc: learners.filter(l => l.funding_source.toLowerCase().includes('insurance')).map(l => l.learner_name).join(', '), icon: CreditCard, color: 'text-blue-600' },
-            { label: 'Regional Center', desc: learners.filter(l => l.funding_source.toLowerCase().includes('regional')).map(l => l.learner_name).join(', '), icon: FileText, color: 'text-green-600' },
-            { label: 'Private Pay', desc: learners.filter(l => l.funding_source.toLowerCase().includes('private')).map(l => l.learner_name).join(', '), icon: Briefcase, color: 'text-purple-600' },
-            { label: 'School Contracts', desc: learners.filter(l => l.funding_source.toLowerCase().includes('school')).map(l => l.learner_name).join(', '), icon: School, color: 'text-amber-600' },
+            { label: 'Insurance', desc: learners.filter(l => l.funding_source.toLowerCase().includes('insurance')).map(l => l.learner_name).join(', '), icon: CreditCard, color: 'text-primary' },
+            { label: 'Regional Center', desc: learners.filter(l => l.funding_source.toLowerCase().includes('regional')).map(l => l.learner_name).join(', '), icon: FileText, color: 'text-primary' },
+            { label: 'Private Pay', desc: learners.filter(l => l.funding_source.toLowerCase().includes('private')).map(l => l.learner_name).join(', '), icon: Briefcase, color: 'text-primary' },
+            { label: 'School Contracts', desc: learners.filter(l => l.funding_source.toLowerCase().includes('school')).map(l => l.learner_name).join(', '), icon: School, color: 'text-primary' },
           ].map(p => (
             <Card key={p.label} className="hover:border-primary/50 transition-colors cursor-pointer">
               <CardContent className="py-4 flex items-start gap-3">
@@ -196,6 +200,14 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
             </Card>
           ))}
         </div>
+      </TabsContent>
+
+      <TabsContent value="walkthroughs" className="mt-4">
+        <DemoWalkthroughs />
+      </TabsContent>
+
+      <TabsContent value="progress" className="mt-4">
+        <DemoOnboarding />
       </TabsContent>
     </Tabs>
   );
