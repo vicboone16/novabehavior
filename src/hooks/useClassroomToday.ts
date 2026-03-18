@@ -31,11 +31,17 @@ export interface ClassroomTodaySnapshot {
   snoozedPrompts: number;
   activeProbes: number;
   finishedProbes: number;
+  // Beacon extensions
+  pointsAwardedToday: number;
+  pointsRedeemedToday: number;
+  maydayEventsToday: number;
+  rewardRedemptionsToday: number;
+  staffPresent: number;
 }
 
 export interface LiveEventItem {
   id: string;
-  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident';
+  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident' | 'points' | 'reward' | 'mayday' | 'presence';
   student_name: string;
   student_id: string;
   label: string;
