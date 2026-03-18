@@ -459,7 +459,25 @@ const App = () => {
               <Route path="/nova-ai" element={<NovaAI />} />
               <Route path="/optimization" element={<GoalOptimization />} />
               <Route path="/capture" element={<CaptureCenter />} />
+              <Route path="/demo-center" element={<DemoCenter />} />
+              <Route path="/help-center" element={<HelpCenter />} />
+              <Route path="/training-academy" element={<TrainingAcademy />} />
             </Route>
+            {/* Capture Live & Review - outside MainLayout for full-screen experience */}
+            <Route path="/capture/live/:recordingId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <CaptureLive />
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/capture/review/:recordingId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <CaptureReview />
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/behavior-library" element={
               <ProtectedRoute>
                 <ApprovalCheck>
