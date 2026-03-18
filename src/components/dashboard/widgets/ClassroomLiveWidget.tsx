@@ -53,6 +53,12 @@ export function ClassroomLiveWidget() {
                 {room.engagementPctToday != null && (
                   <span className="flex items-center gap-1"><BarChart3 className="w-3 h-3" />{room.engagementPctToday}%</span>
                 )}
+                {(room as any).pointsAwardedToday > 0 && (
+                  <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" />{(room as any).pointsAwardedToday} pts</span>
+                )}
+                {(room as any).maydayEventsToday > 0 && (
+                  <span className="flex items-center gap-1 text-destructive"><Siren className="w-3 h-3" />{(room as any).maydayEventsToday} mayday</span>
+                )}
                 <span className="text-[10px] italic">{room.signalSummary}</span>
               </div>
               <div className="flex gap-1.5">
