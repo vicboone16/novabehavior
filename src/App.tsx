@@ -90,6 +90,11 @@ import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
 import NotificationSettings from "./pages/NotificationSettings";
 import CaptureCenter from "./pages/CaptureCenter";
+import CaptureLive from "./pages/CaptureLive";
+import CaptureReview from "./pages/CaptureReview";
+import DemoCenter from "./pages/DemoCenter";
+import HelpCenter from "./pages/HelpCenter";
+import TrainingAcademy from "./pages/TrainingAcademy";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 
 const queryClient = new QueryClient();
@@ -454,7 +459,25 @@ const App = () => {
               <Route path="/nova-ai" element={<NovaAI />} />
               <Route path="/optimization" element={<GoalOptimization />} />
               <Route path="/capture" element={<CaptureCenter />} />
+              <Route path="/demo-center" element={<DemoCenter />} />
+              <Route path="/help-center" element={<HelpCenter />} />
+              <Route path="/training-academy" element={<TrainingAcademy />} />
             </Route>
+            {/* Capture Live & Review - outside MainLayout for full-screen experience */}
+            <Route path="/capture/live/:recordingId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <CaptureLive />
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
+            <Route path="/capture/review/:recordingId" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <CaptureReview />
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/behavior-library" element={
               <ProtectedRoute>
                 <ApprovalCheck>
