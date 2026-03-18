@@ -16,10 +16,12 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // User-facing: validate JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -29,6 +31,9 @@ Deno.serve(async (req) => {
     if (!recording_id || !org_id) {
       return new Response(JSON.stringify({ error: "recording_id and org_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Service client for privileged ops
+    const supabase = createClient(supabaseUrl, serviceKey);
 
     // Validate recording exists and belongs to org
     const { data: recording, error: recErr } = await supabase
@@ -44,11 +49,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Access denied" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Finalize recording
+    // Finalize recording — status must be a valid voice_recording_status enum value
     const updatePayload: Record<string, unknown> = {
       status: "audio_secured",
       finalized_at: new Date().toISOString(),
-      upload_status: "completed",
+      upload_status: "uploaded",
     };
     if (duration_seconds != null) updatePayload.duration_seconds = duration_seconds;
     if (merged_audio_storage_path) updatePayload.secure_storage_path = merged_audio_storage_path;
@@ -67,24 +72,21 @@ Deno.serve(async (req) => {
     await supabase.from("voice_audit_log").insert({
       recording_id,
       user_id: userId,
-      action_type: "recording_finalized",
+      action_type: "finalized",
       metadata_json: { duration_seconds, merged_audio_storage_path },
     });
 
-    // Trigger processing (fire-and-forget)
+    // Fire-and-forget: trigger cc-process-recording with service key (internal orchestration)
     try {
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      if (serviceKey) {
-        fetch(`${supabaseUrl}/functions/v1/cc-process-recording`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-          },
-          body: JSON.stringify({ recording_id, org_id }),
-        }).catch((e) => console.error("Failed to trigger processing:", e));
-      }
+      fetch(`${supabaseUrl}/functions/v1/cc-process-recording`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          apikey: supabaseAnonKey,
+        },
+        body: JSON.stringify({ recording_id, org_id }),
+      }).catch((e) => console.error("Failed to trigger processing:", e));
     } catch (e) {
       console.error("Trigger error:", e);
     }

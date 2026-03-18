@@ -84,6 +84,13 @@ const DEFAULT_DRAFTS = [
   { key: "task_list", label: "Task List" },
 ];
 
+/**
+ * Internal stage function — called by cc-process-recording with service-role key.
+ * Does NOT call auth.getClaims.
+ * 
+ * DRAFT VERSIONING: Never deletes user-edited or approved drafts.
+ * Only replaces system-generated, unapproved drafts.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -154,12 +161,33 @@ Deno.serve(async (req) => {
         draftTypes = ENCOUNTER_DRAFT_MAP[encounter_type] || DEFAULT_DRAFTS;
       }
 
-      // Delete existing drafts for idempotency
-      await supabase.from("voice_ai_drafts").delete().eq("recording_id", recording_id);
+      // SAFE CLEANUP: Only delete system-generated, non-edited, non-approved drafts
+      // Preserve user-edited and approved drafts
+      await supabase.from("voice_ai_drafts")
+        .delete()
+        .eq("recording_id", recording_id)
+        .eq("is_user_edited", false)
+        .is("approved_at", null);
 
       const createdDrafts: Array<{ id: string; draft_type: string }> = [];
 
+      // Determine output language from language_mode
+      const langMode = (recording.language_mode || "auto").toLowerCase();
+      const outputLang = (langMode === "spanish" || langMode === "es") ? "es" : "en";
+
       for (const dt of draftTypes) {
+        // Skip if a user-edited or approved draft of this type already exists
+        const { data: existingEdited } = await supabase.from("voice_ai_drafts")
+          .select("id")
+          .eq("recording_id", recording_id)
+          .eq("draft_type", dt.key)
+          .or("is_user_edited.eq.true,approved_at.not.is.null")
+          .limit(1);
+
+        if (existingEdited && existingEdited.length > 0) {
+          continue; // Don't overwrite user work
+        }
+
         const draftRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -199,9 +227,10 @@ RULES:
               recording_id,
               draft_type: dt.key,
               tone: "clinical",
-              output_language: recording.language_mode === "es" ? "es" : "en",
+              output_language: outputLang,
               content,
               model_name: "google/gemini-3-flash-preview",
+              is_user_edited: false,
             }).select("id, draft_type").single();
             if (saved) createdDrafts.push(saved);
           }
@@ -225,7 +254,10 @@ RULES:
       if (aiRun) {
         await supabase.from("voice_ai_runs").update({ status: "failed", error_message: errMsg, completed_at: new Date().toISOString() }).eq("id", aiRun.id);
       }
-      await supabase.from("voice_recordings").update({ status: "ai_failed_retryable", ai_status: "failed" }).eq("id", recording_id);
+      await supabase.from("voice_recordings").update({
+        status: "ai_failed_retryable",
+        ai_status: "failed",
+      }).eq("id", recording_id);
       return new Response(JSON.stringify({ error: errMsg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
   } catch (error) {

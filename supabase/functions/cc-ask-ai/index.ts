@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * User-facing function — validates JWT via getClaims.
+ * Uses service-role client for DB writes to bypass RLS for question/answer storage.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -16,10 +20,12 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Validate user JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -34,6 +40,9 @@ Deno.serve(async (req) => {
     if (!recording_id || !org_id || !question) {
       return new Response(JSON.stringify({ error: "recording_id, org_id, and question required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Service-role client for DB ops
+    const supabase = createClient(supabaseUrl, serviceKey);
 
     // Validate access
     const { data: recording, error: recErr } = await supabase
@@ -135,6 +144,7 @@ RULES:
             supporting_quotes: parsed.supporting_quotes,
             confidence: parsed.confidence,
             missing_info: parsed.missing_info,
+            recording_id,
           };
         } catch {
           answer = qaData.choices?.[0]?.message?.content || answer;
@@ -144,6 +154,7 @@ RULES:
       }
     } else {
       const status = qaRes.status;
+      await qaRes.text(); // consume body
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }

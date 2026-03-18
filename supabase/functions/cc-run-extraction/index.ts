@@ -48,11 +48,17 @@ ALWAYS extract these structured fields (return null if not present):
 - environmental_variables: array of strings
 - barriers_to_treatment: array of strings
 - safety_concerns: array of strings
-- follow_up_steps: array of strings
+- next_steps: array of strings
+- profile_update_suggestions: array of strings
+
+ALSO generate these summaries:
+- one_line_summary: single sentence
+- concise_summary: 2-3 sentence clinical summary
+- detailed_clinical_summary: comprehensive clinical narrative
+- parent_friendly_summary: plain-language summary for caregivers
 - action_items: array of {task, assigned_to, due_date}
-- missing_information: array of strings
-- risk_flags: array of strings
-- profile_update_suggestions: array of strings`;
+- missing_information: array of strings (gaps in data)
+- risk_flags: array of strings`;
 
 const EXTRACTION_TOOL = {
   type: "function" as const,
@@ -80,7 +86,7 @@ const EXTRACTION_TOOL = {
         environmental_variables: { type: "array", items: { type: "string" } },
         barriers_to_treatment: { type: "array", items: { type: "string" } },
         safety_concerns: { type: "array", items: { type: "string" } },
-        follow_up_steps: { type: "array", items: { type: "string" } },
+        next_steps: { type: "array", items: { type: "string" } },
         action_items: { type: "array", items: { type: "object", properties: { task: { type: "string" }, assigned_to: { type: "string" }, due_date: { type: "string" } } } },
         missing_information: { type: "array", items: { type: "string" } },
         risk_flags: { type: "array", items: { type: "string" } },
@@ -92,6 +98,10 @@ const EXTRACTION_TOOL = {
   },
 };
 
+/**
+ * Internal stage function — called by cc-process-recording with service-role key.
+ * Does NOT call auth.getClaims.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -189,47 +199,54 @@ Deno.serve(async (req) => {
 
       let extractionCount = 0;
 
-      // Save summaries
-      for (const st of ["one_line_summary", "concise_summary", "detailed_clinical_summary", "parent_friendly_summary"]) {
-        if (extracted[st]) {
-          await supabase.from("voice_ai_extractions").insert({ recording_id, extraction_type: st, json_payload: { text: extracted[st] }, confidence_score: 0.9 });
-          extractionCount++;
-        }
-      }
-
-      // Save structured fields
-      const structuredFields = [
-        "participants", "caregiver_concerns", "teacher_concerns", "observed_behaviors",
-        "antecedents", "consequences", "replacement_behaviors_discussed", "possible_function_clues",
-        "medication_health_mentions", "environmental_variables", "barriers_to_treatment",
-        "safety_concerns", "follow_up_steps", "action_items", "missing_information", "risk_flags",
-        "profile_update_suggestions",
+      // All fields stored as extraction_type TEXT — no enum constraint
+      // Summaries stored alongside structured fields in voice_ai_extractions
+      const allFields = [
+        // Summary fields
+        "one_line_summary", "concise_summary", "detailed_clinical_summary", "parent_friendly_summary",
+        // Structured extraction fields
+        "participants", "setting", "reason_for_contact",
+        "caregiver_concerns", "teacher_concerns", "observed_behaviors",
+        "antecedents", "consequences", "replacement_behaviors_discussed",
+        "possible_function_clues", "medication_health_mentions", "environmental_variables",
+        "barriers_to_treatment", "safety_concerns", "next_steps",
+        "action_items", "missing_information", "risk_flags", "profile_update_suggestions",
       ];
-      for (const field of structuredFields) {
-        if (extracted[field] && (Array.isArray(extracted[field]) ? extracted[field].length > 0 : true)) {
-          await supabase.from("voice_ai_extractions").insert({ recording_id, extraction_type: field, json_payload: { items: extracted[field] }, confidence_score: 0.85 });
-          extractionCount++;
+
+      for (const field of allFields) {
+        const val = extracted[field];
+        if (val == null) continue;
+        if (Array.isArray(val) && val.length === 0) continue;
+        if (typeof val === "string" && val.trim() === "") continue;
+
+        let payload: Record<string, any>;
+        if (typeof val === "string") {
+          payload = { text: val };
+        } else if (Array.isArray(val)) {
+          payload = { items: val };
+        } else {
+          payload = { value: val };
         }
+
+        await supabase.from("voice_ai_extractions").insert({
+          recording_id,
+          extraction_type: field,
+          json_payload: payload,
+          confidence_score: 0.85,
+        });
+        extractionCount++;
       }
 
-      // Scalar fields
-      for (const field of ["setting", "reason_for_contact"]) {
-        if (extracted[field]) {
-          await supabase.from("voice_ai_extractions").insert({ recording_id, extraction_type: field, json_payload: { value: extracted[field] } });
-          extractionCount++;
-        }
-      }
-
-      // Save tasks
+      // Save tasks (voice_tasks.status is TEXT — use "open" for consistency)
       if (extracted.action_items?.length > 0) {
-        // Idempotent: delete old tasks
+        // Delete old auto-generated tasks for idempotency
         await supabase.from("voice_tasks").delete().eq("recording_id", recording_id);
         for (const item of extracted.action_items) {
           await supabase.from("voice_tasks").insert({
             recording_id,
             client_id: recording.client_id || null,
             task_text: item.task,
-            status: "pending",
+            status: "open",
           });
         }
       }
@@ -251,7 +268,10 @@ Deno.serve(async (req) => {
       for (const runId of runIds) {
         await supabase.from("voice_ai_runs").update({ status: "failed", error_message: errMsg, completed_at: new Date().toISOString() }).eq("id", runId);
       }
-      await supabase.from("voice_recordings").update({ status: "ai_failed_retryable", ai_status: "failed" }).eq("id", recording_id);
+      await supabase.from("voice_recordings").update({
+        status: "ai_failed_retryable",
+        ai_status: "failed",
+      }).eq("id", recording_id);
       return new Response(JSON.stringify({ error: errMsg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
   } catch (error) {

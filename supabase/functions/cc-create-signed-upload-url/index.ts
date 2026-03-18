@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * User-facing function — validates JWT via getClaims.
+ * Uses service-role client to create signed upload URLs in the voice-recordings bucket.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -18,7 +22,7 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate user
+    // Validate user JWT
     const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
@@ -31,8 +35,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "recording_id, org_id, and chunk_index required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Service-role client for privileged storage ops
+    const supabase = createClient(supabaseUrl, serviceKey);
+
     // Validate recording exists and belongs to org
-    const { data: recording, error: recErr } = await userClient
+    const { data: recording, error: recErr } = await supabase
       .from("voice_recordings")
       .select("id, org_id")
       .eq("id", recording_id)
@@ -44,13 +51,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Access denied" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Generate path
+    // Generate path within voice-recordings bucket
     const ext = mime_type === "audio/mp4" ? "mp4" : "webm";
     const path = `org/${org_id}/recording/${recording_id}/chunks/${chunk_index}.${ext}`;
 
-    // Use service role to create signed upload URL
-    const serviceClient = createClient(supabaseUrl, serviceKey);
-    const { data: signedData, error: signErr } = await serviceClient.storage
+    // Create signed upload URL with service-role
+    const { data: signedData, error: signErr } = await supabase.storage
       .from("voice-recordings")
       .createSignedUploadUrl(path);
 
@@ -63,7 +69,6 @@ Deno.serve(async (req) => {
       path,
       signed_url: signedData.signedUrl,
       token: signedData.token,
-      expires_in: 3600,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("cc-create-signed-upload-url error:", error);
