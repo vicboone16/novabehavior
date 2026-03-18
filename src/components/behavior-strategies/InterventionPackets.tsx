@@ -66,7 +66,8 @@ async function copyText(text: string) {
 function printContent(title: string, body: string) {
   const win = window.open('', '_blank');
   if (!win) return;
-  win.document.write(`<html><head><title>${title}</title>
+  const sanitizedBody = DOMPurify.sanitize(body, { ALLOWED_TAGS: ['h1','h2','h3','p','ul','ol','li','div','span','table','thead','tbody','tr','th','td','br','strong','em','b','i'], ALLOWED_ATTR: ['class'] });
+  win.document.write(`<html><head><title>${DOMPurify.sanitize(title)}</title>
     <style>
       body{font-family:system-ui,sans-serif;padding:32px;line-height:1.6;font-size:13px;max-width:800px;margin:0 auto}
       h1{font-size:18px;border-bottom:2px solid #333;padding-bottom:8px}
@@ -82,7 +83,7 @@ function printContent(title: string, body: string) {
       th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;font-size:12px}
       th{background:#f5f5f5}
     </style>
-  </head><body>${body}</body></html>`);
+  </head><body>${sanitizedBody}</body></html>`);
   win.document.close();
   win.print();
 }
