@@ -39,7 +39,7 @@ function EventTypeBadge({ type }: { type: LiveEventItem['type'] }) {
   );
 }
 
-const ALL_TYPES = ['frequency', 'abc', 'data_event', 'session', 'clinical_session', 'signal', 'incident'] as const;
+const ALL_TYPES = ['frequency', 'abc', 'data_event', 'session', 'clinical_session', 'signal', 'incident', 'points', 'reward', 'mayday', 'presence'] as const;
 
 export default function ClassroomToday() {
   const { classroomId } = useParams<{ classroomId: string }>();
