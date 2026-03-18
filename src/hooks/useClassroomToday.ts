@@ -31,11 +31,17 @@ export interface ClassroomTodaySnapshot {
   snoozedPrompts: number;
   activeProbes: number;
   finishedProbes: number;
+  // Beacon extensions
+  pointsAwardedToday: number;
+  pointsRedeemedToday: number;
+  maydayEventsToday: number;
+  rewardRedemptionsToday: number;
+  staffPresent: number;
 }
 
 export interface LiveEventItem {
   id: string;
-  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident';
+  type: 'frequency' | 'abc' | 'data_event' | 'data_point' | 'session' | 'clinical_session' | 'signal' | 'incident' | 'points' | 'reward' | 'mayday' | 'presence';
   student_name: string;
   student_id: string;
   label: string;
@@ -191,7 +197,7 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
 
       const studentIds = (membersData || []).map((m: any) => m.student_id);
       if (studentIds.length === 0) {
-        setSnapshot({ totalBehaviorEvents: 0, engagementPct: null, completedPrompts: 0, expectedPrompts: 0, snoozedPrompts: 0, activeProbes: 0, finishedProbes: 0 });
+        setSnapshot({ totalBehaviorEvents: 0, engagementPct: null, completedPrompts: 0, expectedPrompts: 0, snoozedPrompts: 0, activeProbes: 0, finishedProbes: 0, pointsAwardedToday: 0, pointsRedeemedToday: 0, maydayEventsToday: 0, rewardRedemptionsToday: 0, staffPresent: 0 });
         setStudents([]);
         setEvents([]);
         setFlags([]);
@@ -209,8 +215,8 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
       }
 
-      // Parallel fetches for today's data (teacher + clinical + signals + incidents)
-      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes, clinicalRes, signalsRes, incidentRes] = await Promise.all([
+      // Parallel fetches for today's data (teacher + clinical + signals + incidents + beacon)
+      const [freqRes, abcRes, dataEvRes, sessionsRes, dataPointsRes, clinicalRes, signalsRes, incidentRes, pointsRes, redemptionsRes, maydayRes, presenceRes] = await Promise.all([
         supabase.from('teacher_frequency_entries').select('*').in('client_id', studentIds).eq('session_date', dateStr),
         supabase.from('teacher_abc_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
         supabase.from('teacher_data_events').select('*').in('client_id', studentIds).gte('occurred_at', start),
@@ -219,6 +225,11 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         supabase.from('session_data').select('id, student_id, behavior_name, event_type, timestamp, duration_seconds, abc_data').in('student_id', studentIds).gte('timestamp', start),
         (supabase.from as any)('ci_signals').select('id, client_id, signal_type, severity, title, message, created_at').in('client_id', studentIds).gte('created_at', start),
         supabase.from('incident_logs').select('id, client_id, incident_type, severity, title, description, occurred_at').in('client_id', studentIds).gte('occurred_at', start),
+        // Beacon data
+        (supabase.from as any)('beacon_points_ledger').select('id, student_id, points_delta, reason, source, created_at').eq('classroom_id', classroomId).gte('created_at', start),
+        (supabase.from as any)('beacon_reward_redemptions').select('id, student_id, points_spent, status, redeemed_at, reward_id').in('student_id', studentIds).gte('redeemed_at', start),
+        (supabase.from as any)('mayday_alerts').select('id, classroom_id, triggered_by, student_id, location, urgency, notes, status, created_at, resolved_at').eq('classroom_id', classroomId).gte('created_at', start),
+        (supabase.from as any)('staff_presence_status').select('id, user_id, status, notes, updated_at').eq('classroom_id', classroomId),
       ]);
 
       const freqRows = (freqRes.data || []) as any[];
@@ -229,6 +240,10 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
       const clinicalRows = (clinicalRes.data || []) as any[];
       const signalRows = (signalsRes.data || []) as any[];
       const incidentRows = (incidentRes.data || []) as any[];
+      const pointsRows = (pointsRes.data || []) as any[];
+      const redemptionRows = (redemptionsRes.data || []) as any[];
+      const maydayRows = (maydayRes.data || []) as any[];
+      const presenceRows = (presenceRes.data || []) as any[];
 
       // === Snapshot ===
       const totalBehavior = freqRows.reduce((s, f) => s + (f.count || 1), 0) + abcRows.length;
@@ -244,6 +259,13 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         ? Math.round(engagementEvents.reduce((s: number, e: any) => s + (e.value_number || 0), 0) / engagementEvents.length)
         : null;
 
+      // Beacon snapshot metrics
+      const pointsAwardedToday = pointsRows.filter((p: any) => p.points_delta > 0).reduce((s: number, p: any) => s + p.points_delta, 0);
+      const pointsRedeemedToday = redemptionRows.reduce((s: number, r: any) => s + r.points_spent, 0);
+      const maydayEventsToday = maydayRows.length;
+      const rewardRedemptionsToday = redemptionRows.length;
+      const staffPresent = presenceRows.filter((p: any) => p.status === 'present' || p.status === 'active').length;
+
       setSnapshot({
         totalBehaviorEvents: totalBehavior,
         engagementPct,
@@ -252,6 +274,11 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
         snoozedPrompts,
         activeProbes,
         finishedProbes,
+        pointsAwardedToday,
+        pointsRedeemedToday,
+        maydayEventsToday,
+        rewardRedemptionsToday,
+        staffPresent,
       });
 
       // === Student Cards ===
@@ -384,6 +411,55 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
           detail: i.description ? i.description.substring(0, 120) : null,
           occurred_at: i.occurred_at,
           severity: String(i.severity),
+        });
+      }
+      // Beacon Points events
+      for (const p of pointsRows) {
+        allEvents.push({
+          id: p.id,
+          type: 'points',
+          student_name: p.student_id ? (nameMap.get(p.student_id) || 'Unknown') : 'Classroom',
+          student_id: p.student_id || '',
+          label: `Points: ${p.points_delta > 0 ? '+' : ''}${p.points_delta}`,
+          detail: p.reason || p.source,
+          occurred_at: p.created_at,
+        });
+      }
+      // Reward redemptions
+      for (const r of redemptionRows) {
+        allEvents.push({
+          id: r.id,
+          type: 'reward',
+          student_name: r.student_id ? (nameMap.get(r.student_id) || 'Unknown') : 'Unknown',
+          student_id: r.student_id || '',
+          label: `Reward Redeemed`,
+          detail: `${r.points_spent} points spent`,
+          occurred_at: r.redeemed_at,
+        });
+      }
+      // Mayday alerts
+      for (const m of maydayRows) {
+        allEvents.push({
+          id: m.id,
+          type: 'mayday',
+          student_name: m.student_id ? (nameMap.get(m.student_id) || 'Unknown') : 'Classroom',
+          student_id: m.student_id || '',
+          label: `🚨 Mayday: ${m.urgency}`,
+          detail: m.notes || m.location || null,
+          occurred_at: m.created_at,
+          severity: m.urgency,
+        });
+      }
+      // Staff presence changes
+      for (const sp of presenceRows) {
+        allEvents.push({
+          id: sp.id,
+          type: 'presence',
+          student_name: 'Staff',
+          student_id: '',
+          label: `Staff ${sp.status}`,
+          detail: sp.notes || null,
+          occurred_at: sp.updated_at,
         });
       }
       allEvents.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());

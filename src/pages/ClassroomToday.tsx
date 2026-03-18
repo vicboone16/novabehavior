@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ArrowLeft, Activity, Users, Target, Clock, AlertTriangle,
   Loader2, RefreshCw, Zap, BarChart3, Radio, Shield, AlertOctagon,
-  Stethoscope
+  Stethoscope, Star, Gift, Siren, UserCheck
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -23,6 +23,10 @@ const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   clinical_session: { bg: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-400', icon: <Stethoscope className="w-3 h-3" /> },
   signal: { bg: 'bg-destructive/15 text-destructive', icon: <Zap className="w-3 h-3" /> },
   incident: { bg: 'bg-red-500/15 text-red-700 dark:text-red-400', icon: <AlertOctagon className="w-3 h-3" /> },
+  points: { bg: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400', icon: <Star className="w-3 h-3" /> },
+  reward: { bg: 'bg-pink-500/15 text-pink-700 dark:text-pink-400', icon: <Gift className="w-3 h-3" /> },
+  mayday: { bg: 'bg-red-600/20 text-red-700 dark:text-red-400', icon: <Siren className="w-3 h-3" /> },
+  presence: { bg: 'bg-teal-500/15 text-teal-700 dark:text-teal-400', icon: <UserCheck className="w-3 h-3" /> },
 };
 
 function EventTypeBadge({ type }: { type: LiveEventItem['type'] }) {
@@ -35,7 +39,7 @@ function EventTypeBadge({ type }: { type: LiveEventItem['type'] }) {
   );
 }
 
-const ALL_TYPES = ['frequency', 'abc', 'data_event', 'session', 'clinical_session', 'signal', 'incident'] as const;
+const ALL_TYPES = ['frequency', 'abc', 'data_event', 'session', 'clinical_session', 'signal', 'incident', 'points', 'reward', 'mayday', 'presence'] as const;
 
 export default function ClassroomToday() {
   const { classroomId } = useParams<{ classroomId: string }>();
@@ -106,7 +110,7 @@ export default function ClassroomToday() {
 
       {/* Today Snapshot KPIs */}
       {snapshot && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-3">
           <SnapshotCard icon={<Activity className="w-4 h-4" />} label="Behavior Events" value={snapshot.totalBehaviorEvents} />
           <SnapshotCard icon={<BarChart3 className="w-4 h-4" />} label="Engagement" value={snapshot.engagementPct != null ? `${snapshot.engagementPct}%` : '—'} />
           <SnapshotCard icon={<Target className="w-4 h-4" />} label="Prompts Done" value={`${snapshot.completedPrompts}/${snapshot.expectedPrompts}`} sub={
@@ -115,6 +119,10 @@ export default function ClassroomToday() {
           <SnapshotCard icon={<Clock className="w-4 h-4" />} label="Snoozed" value={snapshot.snoozedPrompts} />
           <SnapshotCard icon={<Radio className="w-4 h-4" />} label="Active Probes" value={snapshot.activeProbes} />
           <SnapshotCard icon={<Target className="w-4 h-4" />} label="Finished Probes" value={snapshot.finishedProbes} />
+          <SnapshotCard icon={<Star className="w-4 h-4" />} label="Points Awarded" value={snapshot.pointsAwardedToday} />
+          <SnapshotCard icon={<Gift className="w-4 h-4" />} label="Points Redeemed" value={snapshot.pointsRedeemedToday} />
+          <SnapshotCard icon={<Siren className="w-4 h-4" />} label="Mayday Alerts" value={snapshot.maydayEventsToday} />
+          <SnapshotCard icon={<UserCheck className="w-4 h-4" />} label="Staff Present" value={snapshot.staffPresent} />
         </div>
       )}
 
