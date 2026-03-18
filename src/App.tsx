@@ -90,6 +90,11 @@ import ResourceHub from "./pages/ResourceHub";
 import Operations from "./pages/Operations";
 import NotificationSettings from "./pages/NotificationSettings";
 import CaptureCenter from "./pages/CaptureCenter";
+import CaptureLive from "./pages/CaptureLive";
+import CaptureReview from "./pages/CaptureReview";
+import DemoCenter from "./pages/DemoCenter";
+import HelpCenter from "./pages/HelpCenter";
+import TrainingAcademy from "./pages/TrainingAcademy";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 
 const queryClient = new QueryClient();
