@@ -15178,6 +15178,148 @@ export type Database = {
           },
         ]
       }
+      demo_learner_scenarios: {
+        Row: {
+          age: number | null
+          assigned_bcba: string | null
+          assigned_rbt: string | null
+          caregiver_name: string | null
+          created_at: string
+          demo_org_id: string
+          diagnosis: string | null
+          funding_source: string | null
+          grade: string | null
+          id: string
+          learner_name: string
+          purpose: string | null
+          scenario_data: Json | null
+          setting: string | null
+          sort_order: number
+          teacher_name: string | null
+        }
+        Insert: {
+          age?: number | null
+          assigned_bcba?: string | null
+          assigned_rbt?: string | null
+          caregiver_name?: string | null
+          created_at?: string
+          demo_org_id: string
+          diagnosis?: string | null
+          funding_source?: string | null
+          grade?: string | null
+          id?: string
+          learner_name: string
+          purpose?: string | null
+          scenario_data?: Json | null
+          setting?: string | null
+          sort_order?: number
+          teacher_name?: string | null
+        }
+        Update: {
+          age?: number | null
+          assigned_bcba?: string | null
+          assigned_rbt?: string | null
+          caregiver_name?: string | null
+          created_at?: string
+          demo_org_id?: string
+          diagnosis?: string | null
+          funding_source?: string | null
+          grade?: string | null
+          id?: string
+          learner_name?: string
+          purpose?: string | null
+          scenario_data?: Json | null
+          setting?: string | null
+          sort_order?: number
+          teacher_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_learner_scenarios_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_organizations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          settings: Json | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          settings?: Json | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          settings?: Json | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      demo_staff_personas: {
+        Row: {
+          created_at: string
+          credential: string | null
+          demo_org_id: string
+          display_name: string
+          id: string
+          persona_type: string
+          profile_data: Json | null
+          role_label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          credential?: string | null
+          demo_org_id: string
+          display_name: string
+          id?: string
+          persona_type?: string
+          profile_data?: Json | null
+          role_label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          credential?: string | null
+          demo_org_id?: string
+          display_name?: string
+          id?: string
+          persona_type?: string
+          profile_data?: Json | null
+          role_label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_staff_personas_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       districts: {
         Row: {
           created_at: string | null
