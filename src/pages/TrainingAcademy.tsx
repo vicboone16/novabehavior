@@ -3,12 +3,23 @@
  */
 
 import { useState } from 'react';
-import { GraduationCap, BookOpen, CheckCircle2, Circle, Clock, Users, CreditCard, School, Heart, Shield, Briefcase, Play, ChevronRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { GraduationCap, BookOpen, CheckCircle2, Circle, Clock, Users, CreditCard, School, Heart, Shield, Briefcase, Play, ChevronRight, Target, FileText } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+
+interface TrainingModule {
+  id: string;
+  title: string;
+  description: string;
+  estimatedMinutes: number;
+  lessons: { title: string; demoPath?: string }[];
+  demoLearners: string[];
+  status: 'not_started' | 'in_progress' | 'completed';
+  learningObjective: string;
+}
 
 interface TrainingTrack {
   id: string;
@@ -18,234 +29,324 @@ interface TrainingTrack {
   modules: TrainingModule[];
 }
 
-interface TrainingModule {
-  id: string;
-  title: string;
-  description: string;
-  estimatedMinutes: number;
-  lessons: string[];
-  demoLearners: string[];
-  status: 'not_started' | 'in_progress' | 'completed';
-}
-
 const TRAINING_TRACKS: TrainingTrack[] = [
   {
-    id: 'supervisor',
-    label: 'Supervisor / BCBA',
-    icon: Users,
+    id: 'supervisor', label: 'Supervisor / BCBA', icon: Users,
     audience: 'BCBAs, Clinical Directors, Supervisors',
     modules: [
       {
-        id: 'sup-nav',
-        title: 'Core Navigation & Demo Overview',
+        id: 'sup-nav', title: 'Core Navigation & Demo Overview',
         description: 'Learn the app layout, dashboard, and demo workspace navigation',
+        learningObjective: 'Navigate the platform confidently and understand the demo tenant structure',
         estimatedMinutes: 10,
-        lessons: ['App layout tour', 'Dashboard widgets', 'Demo tenant overview', 'Role-specific views'],
-        demoLearners: ['All learners'],
-        status: 'not_started',
+        lessons: [
+          { title: 'App layout tour', demoPath: '/dashboard' },
+          { title: 'Dashboard widgets overview' },
+          { title: 'Demo tenant structure and learners', demoPath: '/demo-center' },
+          { title: 'Role-specific views and filtering' },
+        ],
+        demoLearners: ['All learners'], status: 'not_started',
       },
       {
-        id: 'sup-profile',
-        title: 'Learner Profile & Data Review',
-        description: 'Navigate learner charts, view clinical history, and review data',
+        id: 'sup-profile', title: 'Learner Profile & Data Review',
+        description: 'Navigate learner charts, view clinical history, and review cross-app data',
+        learningObjective: 'Access and interpret learner profiles with data from multiple apps',
         estimatedMinutes: 15,
-        lessons: ['Profile overview', 'Clinical tabs', 'Behavior trends', 'Assessment history'],
-        demoLearners: ['Daniel Foster', 'Ava Thompson'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Profile overview and tabs' },
+          { title: 'Clinical history review' },
+          { title: 'Behavior trends and data visualization' },
+          { title: 'Cross-app data sources (teacher + parent)' },
+        ],
+        demoLearners: ['Daniel Foster', 'Ava Thompson'], status: 'not_started',
       },
       {
-        id: 'sup-notes',
-        title: 'Session, Narrative & Supervision Notes',
-        description: 'Create, review, and approve clinical documentation',
+        id: 'sup-notes', title: 'Clinical Documentation Workflows',
+        description: 'Create, review, and approve session, narrative, and supervision notes',
+        learningObjective: 'Complete the full note lifecycle from creation through supervisor approval',
         estimatedMinutes: 20,
-        lessons: ['Session note workflow', 'Narrative notes', 'Supervision notes', 'Review/approval queue', 'AI-generated drafts'],
-        demoLearners: ['Ava Thompson', 'Isabella Martinez'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Session note creation and data entry' },
+          { title: 'Narrative notes and clinical summaries' },
+          { title: 'Supervision note workflow' },
+          { title: 'Review and approval queue' },
+          { title: 'AI-generated draft review' },
+        ],
+        demoLearners: ['Ava Thompson', 'Isabella Martinez'], status: 'not_started',
       },
       {
-        id: 'sup-assess',
-        title: 'Assessment Dashboard & Review',
-        description: 'Send, track, and review assessments across sources',
+        id: 'sup-assess', title: 'Assessment Dashboard & Review',
+        description: 'Send, track, and review assessments across teacher and caregiver sources',
+        learningObjective: 'Manage the full assessment lifecycle and interpret results',
         estimatedMinutes: 15,
-        lessons: ['Assessment dashboard', 'Send assessments', 'Review teacher/caregiver forms', 'Score summaries', 'Recommendations'],
-        demoLearners: ['Lila Johnson', 'Mason Rivera'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Assessment dashboard overview' },
+          { title: 'Sending assessments to teachers/caregivers' },
+          { title: 'Reviewing completed forms and scores' },
+          { title: 'Generating and reviewing recommendations' },
+        ],
+        demoLearners: ['Lila Johnson', 'Mason Rivera'], status: 'not_started',
       },
       {
-        id: 'sup-fba',
-        title: 'FBA/BIP Workflows',
-        description: 'Full functional behavior assessment workflow from referral to BIP',
+        id: 'sup-fba', title: 'FBA/BIP Workflows',
+        description: 'Full functional behavior assessment from referral to BIP recommendations',
+        learningObjective: 'Complete an FBA workflow using multi-source data including teacher and caregiver interviews',
         estimatedMinutes: 25,
-        lessons: ['FBA referral', 'Record review', 'Teacher/caregiver interviews', 'ABC data', 'Function hypothesis', 'Recommendations', 'BIP linkage'],
-        demoLearners: ['Jayden Kim', 'Mason Rivera'],
-        status: 'not_started',
+        lessons: [
+          { title: 'FBA referral and record review' },
+          { title: 'Teacher and caregiver interviews' },
+          { title: 'ABC data collection and analysis' },
+          { title: 'Function hypothesis generation' },
+          { title: 'Recommendations and BIP linkage' },
+        ],
+        demoLearners: ['Jayden Kim', 'Mason Rivera'], status: 'not_started',
       },
       {
-        id: 'sup-teacher-parent',
-        title: 'Teacher & Caregiver Data Integration',
-        description: 'Review external inputs from teacher and parent apps',
+        id: 'sup-crossapp', title: 'Cross-App Data Integration',
+        description: 'Review and use teacher app and Behavior Decoded data in clinical workflows',
+        learningObjective: 'Trace data from external apps into clinical decisions',
         estimatedMinutes: 15,
-        lessons: ['Teacher Data Hub', 'Caregiver summaries', 'Cross-app data sources', 'Data in FBA/assessments'],
-        demoLearners: ['Mason Rivera', 'Elijah Brooks', 'Noah Greene'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Teacher Data Hub and source labels' },
+          { title: 'Caregiver summaries from Behavior Decoded' },
+          { title: 'Using caregiver data in parent training' },
+          { title: 'Teacher data in FBA and school consults' },
+        ],
+        demoLearners: ['Mason Rivera', 'Elijah Brooks', 'Noah Greene'], status: 'not_started',
       },
       {
-        id: 'sup-alerts',
-        title: 'Alerts, Tasks & Oversight',
-        description: 'Manage tasks, alerts, and compliance monitoring',
+        id: 'sup-alerts', title: 'Alerts, Tasks & Oversight',
+        description: 'Manage clinical and operational alerts, tasks, and compliance',
+        learningObjective: 'Identify and resolve alerts, manage task queues',
         estimatedMinutes: 10,
-        lessons: ['Alert types', 'Task management', 'Overdue documentation', 'Auth warnings'],
-        demoLearners: ['Noah Greene', 'Isabella Martinez'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Alert types and severity' },
+          { title: 'Task management and assignment' },
+          { title: 'Overdue documentation tracking' },
+          { title: 'Authorization expiration warnings' },
+        ],
+        demoLearners: ['Noah Greene', 'Isabella Martinez'], status: 'not_started',
+      },
+      {
+        id: 'sup-billing', title: 'Billing Awareness for Supervisors',
+        description: 'Understand how clinical documentation impacts billing',
+        learningObjective: 'Recognize documentation blockers and auth impacts on revenue',
+        estimatedMinutes: 10,
+        lessons: [
+          { title: 'How notes affect billing' },
+          { title: 'Authorization impact on services' },
+          { title: 'Documentation blockers and denied claims' },
+        ],
+        demoLearners: ['Noah Greene', 'Isabella Martinez', 'Ava Thompson'], status: 'not_started',
       },
     ],
   },
   {
-    id: 'billing',
-    label: 'Billing',
-    icon: CreditCard,
+    id: 'billing', label: 'Billing', icon: CreditCard,
     audience: 'Billing Specialists, Admin',
     modules: [
       {
-        id: 'bill-dash',
-        title: 'Billing Dashboard Overview',
+        id: 'bill-dash', title: 'Billing Dashboard Overview',
         description: 'Navigate the billing dashboard and understand key metrics',
+        learningObjective: 'Read and interpret billing dashboard data across payer types',
         estimatedMinutes: 10,
-        lessons: ['Dashboard layout', 'Payer filters', 'Status indicators', 'Quick actions'],
-        demoLearners: ['All payer types'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Dashboard layout and filters' },
+          { title: 'Payer type indicators' },
+          { title: 'Status colors and quick actions' },
+        ],
+        demoLearners: ['All payer types'], status: 'not_started',
       },
       {
-        id: 'bill-payers',
-        title: 'Understanding Payer Types',
-        description: 'Compare insurance, regional center, private pay, and school contracts',
-        estimatedMinutes: 15,
-        lessons: ['Insurance auths', 'Regional center allocations', 'Private pay invoices', 'School contracts'],
-        demoLearners: ['Ava Thompson', 'Elijah Brooks', 'Chloe Patel', 'Mason Rivera'],
-        status: 'not_started',
+        id: 'bill-payers', title: 'Payer Type Comparison',
+        description: 'Compare insurance, regional center, private pay, and school contract workflows side by side',
+        learningObjective: 'Identify and manage the four payer workflow differences',
+        estimatedMinutes: 20,
+        lessons: [
+          { title: 'Insurance authorizations and unit tracking' },
+          { title: 'Regional center allocations and utilization' },
+          { title: 'Private pay invoicing and payments' },
+          { title: 'School contract billing and summaries' },
+        ],
+        demoLearners: ['Ava Thompson', 'Elijah Brooks', 'Chloe Patel', 'Mason Rivera'], status: 'not_started',
       },
       {
-        id: 'bill-claims',
-        title: 'Claims, Denials & Blockers',
-        description: 'Handle claims lifecycle including denials and documentation blockers',
+        id: 'bill-claims', title: 'Claims, Denials & Blockers',
+        description: 'Handle the claims lifecycle including denials and documentation blockers',
+        learningObjective: 'Resolve denied claims and documentation-related billing blockers',
         estimatedMinutes: 15,
-        lessons: ['Claim submission', 'Denied claims', 'Documentation blockers', 'Resolving issues'],
-        demoLearners: ['Noah Greene', 'Isabella Martinez'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Claim submission workflow' },
+          { title: 'Denied claims — reasons and resolution' },
+          { title: 'Documentation blockers' },
+          { title: 'Working with supervisors on missing notes' },
+        ],
+        demoLearners: ['Noah Greene', 'Isabella Martinez'], status: 'not_started',
+      },
+      {
+        id: 'bill-auth', title: 'Authorization Management',
+        description: 'Track, renew, and manage service authorizations',
+        learningObjective: 'Proactively manage authorization lifecycles across payers',
+        estimatedMinutes: 15,
+        lessons: [
+          { title: 'Auth periods and unit calculations' },
+          { title: 'Expiration alerts and renewal workflow' },
+          { title: 'Unit exhaustion handling' },
+        ],
+        demoLearners: ['Ava Thompson', 'Noah Greene'], status: 'not_started',
       },
     ],
   },
   {
-    id: 'school',
-    label: 'School / Teacher Support',
-    icon: School,
+    id: 'school', label: 'School Support', icon: School,
     audience: 'School-Based BCBAs, Consultants',
     modules: [
       {
-        id: 'sch-learners',
-        title: 'School Learner Workflows',
-        description: 'Manage school-based learners and teacher collaboration',
+        id: 'sch-learners', title: 'School Learner Workflows',
+        description: 'Manage school-based caseloads with teacher collaboration',
+        learningObjective: 'Navigate school caseload, review teacher data, and create consult notes',
         estimatedMinutes: 15,
-        lessons: ['School caseload', 'Teacher summaries', 'Classroom observations', 'Consult notes'],
-        demoLearners: ['Mason Rivera', 'Jayden Kim'],
-        status: 'not_started',
+        lessons: [
+          { title: 'School caseload view' },
+          { title: 'Teacher summaries and review' },
+          { title: 'Classroom observation documentation' },
+          { title: 'School consult note creation' },
+        ],
+        demoLearners: ['Mason Rivera', 'Jayden Kim'], status: 'not_started',
       },
       {
-        id: 'sch-fba',
-        title: 'FBA Support in School Contexts',
-        description: 'Run FBA workflows with school-specific data sources',
+        id: 'sch-fba', title: 'FBA in School Contexts',
+        description: 'Run FBA workflows using school-specific data sources including teacher interviews',
+        learningObjective: 'Complete a school-based FBA using teacher app data and classroom observations',
         estimatedMinutes: 20,
-        lessons: ['School FBA referral', 'Teacher interviews', 'Classroom observation', 'IEP support context'],
-        demoLearners: ['Jayden Kim', 'Mason Rivera'],
-        status: 'not_started',
+        lessons: [
+          { title: 'School FBA referral process' },
+          { title: 'Teacher interviews from Teacher App' },
+          { title: 'Classroom observation data' },
+          { title: 'IEP support context' },
+          { title: 'School-specific recommendations' },
+        ],
+        demoLearners: ['Jayden Kim', 'Mason Rivera'], status: 'not_started',
       },
     ],
   },
   {
-    id: 'parent',
-    label: 'Caregiver Support',
-    icon: Heart,
+    id: 'parent', label: 'Caregiver Support', icon: Heart,
     audience: 'Staff managing caregiver workflows',
     modules: [
       {
-        id: 'par-decoded',
-        title: 'Behavior Decoded Overview',
-        description: 'Understand how caregiver data flows into the clinical system',
+        id: 'par-decoded', title: 'Behavior Decoded Overview',
+        description: 'How caregiver data flows from Behavior Decoded into clinical workflows',
+        learningObjective: 'Trace caregiver input from home logs to clinical use in Core',
         estimatedMinutes: 10,
-        lessons: ['Caregiver data flow', 'Home behavior logs', 'Concern tracking', 'Recommendation feedback'],
-        demoLearners: ['Ava Thompson', 'Elijah Brooks', 'Chloe Patel'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Caregiver data flow architecture' },
+          { title: 'Home behavior logs and summaries' },
+          { title: 'Concern tracking over time' },
+          { title: 'Recommendation feedback loop' },
+        ],
+        demoLearners: ['Ava Thompson', 'Elijah Brooks', 'Chloe Patel'], status: 'not_started',
       },
       {
-        id: 'par-training',
-        title: 'Parent Training Conversion',
-        description: 'Use caregiver data in parent training workflows',
+        id: 'par-training', title: 'Parent Training Conversion',
+        description: 'Convert caregiver observations into parent training plans and notes',
+        learningObjective: 'Use Behavior Decoded data to create effective parent training sessions',
         estimatedMinutes: 15,
-        lessons: ['Caregiver summaries review', 'Training focus selection', 'Parent training notes', 'Progress tracking'],
-        demoLearners: ['Ava Thompson', 'Elijah Brooks'],
-        status: 'not_started',
+        lessons: [
+          { title: 'Reviewing caregiver summaries' },
+          { title: 'Selecting training focus from patterns' },
+          { title: 'Parent training note creation' },
+          { title: 'Tracking training progress' },
+        ],
+        demoLearners: ['Ava Thompson', 'Elijah Brooks'], status: 'not_started',
       },
     ],
   },
   {
-    id: 'rbt',
-    label: 'RBT',
-    icon: Briefcase,
+    id: 'rbt', label: 'RBT', icon: Briefcase,
     audience: 'Behavior Technicians',
     modules: [
       {
-        id: 'rbt-basics',
-        title: 'Assigned Learner Workflows',
-        description: 'Navigate assigned learners, sessions, and data entry',
+        id: 'rbt-basics', title: 'Assigned Learner Workflows',
+        description: 'Navigate assigned learners, sessions, data entry, and task management',
+        learningObjective: 'Complete a typical RBT session workflow from data entry to note submission',
         estimatedMinutes: 15,
-        lessons: ['My caseload', 'Session data entry', 'Notes due', 'Task management', 'Progress review'],
-        demoLearners: ['Ava Thompson', 'Elijah Brooks'],
-        status: 'not_started',
+        lessons: [
+          { title: 'My caseload and assigned learners' },
+          { title: 'Session data entry' },
+          { title: 'Notes due and submission' },
+          { title: 'Task management' },
+          { title: 'Progress review basics' },
+        ],
+        demoLearners: ['Ava Thompson', 'Elijah Brooks'], status: 'not_started',
+      },
+      {
+        id: 'rbt-escalation', title: 'Escalation & Follow-up',
+        description: 'When and how to escalate concerns and follow up on supervisor feedback',
+        learningObjective: 'Appropriately escalate concerns and respond to supervisor notes',
+        estimatedMinutes: 10,
+        lessons: [
+          { title: 'Identifying escalation triggers' },
+          { title: 'Documenting concerns' },
+          { title: 'Following up on supervisor feedback' },
+        ],
+        demoLearners: ['Noah Greene'], status: 'not_started',
       },
     ],
   },
   {
-    id: 'admin',
-    label: 'Admin / Operations',
-    icon: Shield,
+    id: 'admin', label: 'Admin / Operations', icon: Shield,
     audience: 'Administrators, Operations Coordinators',
     modules: [
       {
-        id: 'adm-overview',
-        title: 'Admin Dashboard & Settings',
-        description: 'Manage users, permissions, and organizational settings',
+        id: 'adm-overview', title: 'Admin Dashboard & Settings',
+        description: 'Manage users, permissions, compliance, and organizational settings',
+        learningObjective: 'Configure and manage the organizational environment',
         estimatedMinutes: 15,
-        lessons: ['User management', 'Permissions', 'Agency settings', 'Compliance alerts', 'Operational metrics'],
-        demoLearners: ['All staff'],
-        status: 'not_started',
+        lessons: [
+          { title: 'User management and permissions' },
+          { title: 'Agency settings configuration' },
+          { title: 'Compliance alerts and documentation tracking' },
+          { title: 'Operational metrics and reporting' },
+        ],
+        demoLearners: ['All staff'], status: 'not_started',
+      },
+      {
+        id: 'adm-scheduling', title: 'Scheduling & Staffing',
+        description: 'Manage staff assignments, scheduling, and documentation compliance',
+        learningObjective: 'Coordinate staffing changes and track documentation compliance',
+        estimatedMinutes: 10,
+        lessons: [
+          { title: 'Staff roster and assignments' },
+          { title: 'Schedule management' },
+          { title: 'Missing documentation alerts' },
+        ],
+        demoLearners: ['All staff'], status: 'not_started',
       },
     ],
   },
 ];
 
 export default function TrainingAcademy() {
-  const [selectedTrack, setSelectedTrack] = useState<string>('supervisor');
+  const [selectedTrack, setSelectedTrack] = useState('supervisor');
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
 
   const activeTrack = TRAINING_TRACKS.find(t => t.id === selectedTrack)!;
   const totalModules = activeTrack.modules.length;
   const completedModules = activeTrack.modules.filter(m => m.status === 'completed').length;
   const progressPct = totalModules > 0 ? (completedModules / totalModules) * 100 : 0;
+  const totalMinutes = activeTrack.modules.reduce((sum, m) => sum + m.estimatedMinutes, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <GraduationCap className="w-6 h-6 text-primary" />
           Training Academy
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Role-based training modules connected to demo learner scenarios
-        </p>
+        <p className="text-sm text-muted-foreground">Role-based training modules connected to demo learner scenarios</p>
       </div>
 
-      {/* Track Selector */}
       <Tabs value={selectedTrack} onValueChange={setSelectedTrack}>
         <TabsList className="flex flex-wrap h-auto p-1 gap-1">
           {TRAINING_TRACKS.map(track => (
@@ -257,7 +358,6 @@ export default function TrainingAcademy() {
         </TabsList>
       </Tabs>
 
-      {/* Track Overview */}
       <Card>
         <CardContent className="py-4">
           <div className="flex items-center justify-between mb-2">
@@ -266,17 +366,14 @@ export default function TrainingAcademy() {
                 <activeTrack.icon className="w-4 h-4 text-primary" />
                 {activeTrack.label} Track
               </h2>
-              <p className="text-xs text-muted-foreground">{activeTrack.audience}</p>
+              <p className="text-xs text-muted-foreground">{activeTrack.audience} · ~{totalMinutes} min total</p>
             </div>
-            <Badge variant="outline" className="text-xs">
-              {completedModules}/{totalModules} completed
-            </Badge>
+            <Badge variant="outline" className="text-xs">{completedModules}/{totalModules} completed</Badge>
           </div>
           <Progress value={progressPct} className="h-2" />
         </CardContent>
       </Card>
 
-      {/* Modules */}
       <div className="space-y-3">
         {activeTrack.modules.map((mod, idx) => {
           const isExpanded = expandedModule === mod.id;
@@ -285,10 +382,7 @@ export default function TrainingAcademy() {
 
           return (
             <Card key={mod.id} className={`transition-colors ${isExpanded ? 'border-primary/50' : ''}`}>
-              <button
-                className="w-full text-left"
-                onClick={() => setExpandedModule(isExpanded ? null : mod.id)}
-              >
+              <button className="w-full text-left" onClick={() => setExpandedModule(isExpanded ? null : mod.id)}>
                 <CardContent className="py-4 flex items-start gap-3">
                   <div className="flex items-center gap-2 shrink-0 mt-0.5">
                     <span className="text-xs font-bold text-muted-foreground w-5">{idx + 1}</span>
@@ -311,22 +405,29 @@ export default function TrainingAcademy() {
               </button>
               {isExpanded && (
                 <div className="px-6 pb-4 border-t pt-3 space-y-3">
+                  <div className="flex items-start gap-2 bg-muted/30 rounded-lg p-2.5">
+                    <Target className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                    <p className="text-xs text-muted-foreground"><strong>Objective:</strong> {mod.learningObjective}</p>
+                  </div>
                   <div>
-                    <h4 className="text-xs font-semibold text-muted-foreground mb-1">LESSONS</h4>
-                    <div className="space-y-1">
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">LESSONS</h4>
+                    <div className="space-y-1.5">
                       {mod.lessons.map((lesson, li) => (
                         <div key={li} className="flex items-center gap-2 text-sm">
-                          <Circle className="w-3 h-3 text-muted-foreground" />
-                          {lesson}
+                          <Circle className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <span>{lesson.title}</span>
+                          {lesson.demoPath && (
+                            <Badge variant="outline" className="text-[9px] ml-auto">Demo link</Badge>
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-xs font-semibold text-muted-foreground mb-1">DEMO LEARNERS</h4>
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">DEMO LEARNERS</h4>
                     <div className="flex flex-wrap gap-1">
                       {mod.demoLearners.map(name => (
-                        <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                        <Badge key={name} variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">{name}</Badge>
                       ))}
                     </div>
                   </div>
