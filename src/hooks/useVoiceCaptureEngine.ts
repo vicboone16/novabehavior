@@ -3,11 +3,13 @@
  * 
  * Handles chunked audio capture, wake lock, timeout suppression,
  * crash recovery, and server-side chunk persistence.
+ * Uses org_id from agency context for all DB/storage operations.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCaptureStore } from '@/stores/captureStore';
 import type { VoiceCaptureConfig, VoiceRecordingStatus } from '@/types/voiceCapture';
 
 const CHUNK_INTERVAL_MS = 7000; // ~7s chunks
@@ -41,6 +43,8 @@ export function useVoiceCaptureEngine() {
     audioLevel: 0,
   });
 
+  const captureStore = useCaptureStore();
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<ChunkRecord[]>([]);
@@ -50,6 +54,7 @@ export function useVoiceCaptureEngine() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const recordingIdRef = useRef<string | null>(null);
+  const orgIdRef = useRef<string | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -73,18 +78,19 @@ export function useVoiceCaptureEngine() {
     wakeLockRef.current = null;
   };
 
-  const uploadChunk = async (recordingId: string, chunk: ChunkRecord, userId: string) => {
+  const uploadChunk = async (recordingId: string, orgId: string, chunk: ChunkRecord) => {
     try {
-      const path = `${userId}/${recordingId}/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
+      const path = `org/${orgId}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
       const { error: uploadError } = await supabase.storage
         .from('voice-recordings')
         .upload(path, chunk.blob, { contentType: 'audio/webm', upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Record chunk in DB
+      // Record chunk in DB with org_id
       await supabase.from('voice_recording_chunks' as any).insert({
         recording_id: recordingId,
+        org_id: orgId,
         chunk_index: chunk.index,
         duration_ms: CHUNK_INTERVAL_MS,
         storage_path: path,
@@ -93,8 +99,13 @@ export function useVoiceCaptureEngine() {
 
       chunk.uploaded = true;
       setState(prev => ({ ...prev, uploadedChunks: prev.uploadedChunks + 1 }));
+      captureStore.updateChunks(
+        chunksRef.current.filter(c => c.uploaded).length,
+        chunksRef.current.filter(c => !c.uploaded).length
+      );
     } catch (err) {
       console.error('Chunk upload failed:', err);
+      captureStore.updateConnection('reconnecting');
       // Will retry later - chunk stays in queue
     }
   };
@@ -126,10 +137,23 @@ export function useVoiceCaptureEngine() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Create recording row FIRST
+      // Get org_id from agency membership
+      const { data: membership } = await supabase
+        .from('agency_members' as any)
+        .select('agency_id')
+        .eq('user_id', user.id)
+        .eq('is_primary', true)
+        .limit(1)
+        .single();
+
+      const orgId = membership?.agency_id || null;
+      orgIdRef.current = orgId;
+
+      // Create recording row with org_id
       const { data: recording, error: insertError } = await supabase
         .from('voice_recordings' as any)
         .insert({
+          org_id: orgId,
           created_by: user.id,
           client_id: config.clientId || null,
           staff_id: config.staffId || null,
@@ -145,6 +169,7 @@ export function useVoiceCaptureEngine() {
           language_mode: config.languageMode,
           speaker_mode: config.speakerMode,
           started_at: new Date().toISOString(),
+          upload_status: 'uploading',
         })
         .select()
         .single();
@@ -154,17 +179,29 @@ export function useVoiceCaptureEngine() {
       const recId = (recording as any).id;
       recordingIdRef.current = recId;
 
-      // Log consent
+      // Update global store
+      captureStore.startSession({
+        recordingId: recId,
+        orgId: orgId || '',
+        learnerId: config.clientId,
+        learnerName: config.clientName,
+        encounterType: config.encounterType,
+        privacyMode: config.privacyMode,
+      });
+
+      // Log consent with org_id
       await supabase.from('voice_consents' as any).insert({
         recording_id: recId,
+        org_id: orgId,
         consent_status: config.consentStatus,
         consent_method: config.consentStatus === 'verbal_consent' ? 'verbal' : config.consentStatus === 'written_consent' ? 'written' : 'private',
         captured_by: user.id,
       });
 
-      // Audit log
+      // Audit log with org_id
       await supabase.from('voice_audit_log' as any).insert({
         recording_id: recId,
+        org_id: orgId,
         user_id: user.id,
         action_type: 'recording_started',
         metadata_json: { encounter_type: config.encounterType, capture_mode: config.captureMode },
@@ -199,14 +236,18 @@ export function useVoiceCaptureEngine() {
           const chunk: ChunkRecord = { index: chunkIndexRef.current++, blob, uploaded: false };
           chunksRef.current.push(chunk);
           setState(prev => ({ ...prev, totalChunks: prev.totalChunks + 1 }));
-          uploadChunk(recId, chunk, user.id);
+          uploadChunk(recId, orgId || '', chunk);
           currentChunkBlobs = [];
         }
-      }, CHUNK_INTERVAL_MS + 500); // slightly after ondataavailable fires
+      }, CHUNK_INTERVAL_MS + 500);
 
       // Elapsed timer
       timerRef.current = setInterval(() => {
-        setState(prev => ({ ...prev, elapsedSeconds: prev.elapsedSeconds + 1 }));
+        setState(prev => {
+          const next = prev.elapsedSeconds + 1;
+          captureStore.updateElapsed(next);
+          return { ...prev, elapsedSeconds: next };
+        });
       }, 1000);
 
       // Wake lock
@@ -241,6 +282,7 @@ export function useVoiceCaptureEngine() {
   const stopRecording = useCallback(async () => {
     const recorder = mediaRecorderRef.current;
     const recId = recordingIdRef.current;
+    const orgId = orgIdRef.current;
     if (!recorder || !recId) return;
 
     // Clear timers
@@ -261,6 +303,7 @@ export function useVoiceCaptureEngine() {
           status: 'audio_secured',
           ended_at: new Date().toISOString(),
           duration_seconds: state.elapsedSeconds,
+          upload_status: 'uploaded',
         }).eq('id', recId);
 
         // Audit
@@ -268,11 +311,14 @@ export function useVoiceCaptureEngine() {
         if (user) {
           await supabase.from('voice_audit_log' as any).insert({
             recording_id: recId,
+            org_id: orgId,
             user_id: user.id,
             action_type: 'recording_stopped',
             metadata_json: { duration_seconds: state.elapsedSeconds },
           });
         }
+
+        captureStore.updateStatus('audio_secured');
 
         setState(prev => ({
           ...prev,
@@ -294,6 +340,7 @@ export function useVoiceCaptureEngine() {
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.pause();
       setState(prev => ({ ...prev, isPaused: true, status: 'paused' }));
+      captureStore.updateStatus('paused');
     }
   }, []);
 
@@ -301,6 +348,7 @@ export function useVoiceCaptureEngine() {
     if (mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.resume();
       setState(prev => ({ ...prev, isPaused: false, status: 'recording_active' }));
+      captureStore.updateStatus('recording_active');
     }
   }, []);
 
