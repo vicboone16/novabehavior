@@ -42393,6 +42393,7 @@ export type Database = {
           id: string
           model_name: string | null
           model_version: string | null
+          org_id: string | null
           question_id: string
         }
         Insert: {
@@ -42402,6 +42403,7 @@ export type Database = {
           id?: string
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           question_id: string
         }
         Update: {
@@ -42411,6 +42413,7 @@ export type Database = {
           id?: string
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           question_id?: string
         }
         Relationships: [
@@ -42430,13 +42433,17 @@ export type Database = {
           content: string | null
           created_at: string
           draft_type: string
+          generation_version: number
           id: string
+          is_system_generated: boolean
           is_user_edited: boolean | null
           model_name: string | null
           model_version: string | null
+          org_id: string | null
           output_language: string | null
           recording_id: string
           structured_json: Json | null
+          superseded_at: string | null
           tone: string | null
           updated_at: string
         }
@@ -42446,13 +42453,17 @@ export type Database = {
           content?: string | null
           created_at?: string
           draft_type: string
+          generation_version?: number
           id?: string
+          is_system_generated?: boolean
           is_user_edited?: boolean | null
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           output_language?: string | null
           recording_id: string
           structured_json?: Json | null
+          superseded_at?: string | null
           tone?: string | null
           updated_at?: string
         }
@@ -42462,13 +42473,17 @@ export type Database = {
           content?: string | null
           created_at?: string
           draft_type?: string
+          generation_version?: number
           id?: string
+          is_system_generated?: boolean
           is_user_edited?: boolean | null
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           output_language?: string | null
           recording_id?: string
           structured_json?: Json | null
+          superseded_at?: string | null
           tone?: string | null
           updated_at?: string
         }
@@ -42489,8 +42504,11 @@ export type Database = {
           confidence_score: number | null
           created_at: string
           extraction_type: string
+          generation_version: number
           id: string
+          is_current: boolean
           json_payload: Json
+          org_id: string | null
           recording_id: string
         }
         Insert: {
@@ -42499,8 +42517,11 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string
           extraction_type: string
+          generation_version?: number
           id?: string
+          is_current?: boolean
           json_payload?: Json
+          org_id?: string | null
           recording_id: string
         }
         Update: {
@@ -42509,8 +42530,11 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string
           extraction_type?: string
+          generation_version?: number
           id?: string
+          is_current?: boolean
           json_payload?: Json
+          org_id?: string | null
           recording_id?: string
         }
         Relationships: [
@@ -42528,6 +42552,7 @@ export type Database = {
           asked_by: string
           created_at: string
           id: string
+          org_id: string | null
           question_text: string
           recording_id: string
         }
@@ -42535,6 +42560,7 @@ export type Database = {
           asked_by: string
           created_at?: string
           id?: string
+          org_id?: string | null
           question_text: string
           recording_id: string
         }
@@ -42542,6 +42568,7 @@ export type Database = {
           asked_by?: string
           created_at?: string
           id?: string
+          org_id?: string | null
           question_text?: string
           recording_id?: string
         }
@@ -42563,6 +42590,7 @@ export type Database = {
           id: string
           model_name: string | null
           model_version: string | null
+          org_id: string | null
           recording_id: string
           run_type: string
           started_at: string | null
@@ -42575,6 +42603,7 @@ export type Database = {
           id?: string
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           recording_id: string
           run_type: string
           started_at?: string | null
@@ -42587,6 +42616,7 @@ export type Database = {
           id?: string
           model_name?: string | null
           model_version?: string | null
+          org_id?: string | null
           recording_id?: string
           run_type?: string
           started_at?: string | null
@@ -42608,6 +42638,7 @@ export type Database = {
           created_at: string
           id: string
           metadata_json: Json | null
+          org_id: string | null
           recording_id: string
           user_id: string
         }
@@ -42616,6 +42647,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata_json?: Json | null
+          org_id?: string | null
           recording_id: string
           user_id: string
         }
@@ -42624,6 +42656,7 @@ export type Database = {
           created_at?: string
           id?: string
           metadata_json?: Json | null
+          org_id?: string | null
           recording_id?: string
           user_id?: string
         }
@@ -42645,6 +42678,7 @@ export type Database = {
           consent_status: Database["public"]["Enums"]["voice_consent_status"]
           id: string
           notes: string | null
+          org_id: string | null
           recording_id: string
         }
         Insert: {
@@ -42654,6 +42688,7 @@ export type Database = {
           consent_status: Database["public"]["Enums"]["voice_consent_status"]
           id?: string
           notes?: string | null
+          org_id?: string | null
           recording_id: string
         }
         Update: {
@@ -42663,6 +42698,7 @@ export type Database = {
           consent_status?: Database["public"]["Enums"]["voice_consent_status"]
           id?: string
           notes?: string | null
+          org_id?: string | null
           recording_id?: string
         }
         Relationships: [
@@ -42943,6 +42979,7 @@ export type Database = {
           is_user_confirmed: boolean | null
           linked_client_id: string | null
           linked_user_id: string | null
+          org_id: string | null
           recording_id: string
           speaker_label: string
           speaker_role: string | null
@@ -42953,6 +42990,7 @@ export type Database = {
           is_user_confirmed?: boolean | null
           linked_client_id?: string | null
           linked_user_id?: string | null
+          org_id?: string | null
           recording_id: string
           speaker_label: string
           speaker_role?: string | null
@@ -42963,6 +43001,7 @@ export type Database = {
           is_user_confirmed?: boolean | null
           linked_client_id?: string | null
           linked_user_id?: string | null
+          org_id?: string | null
           recording_id?: string
           speaker_label?: string
           speaker_role?: string | null
@@ -42984,6 +43023,7 @@ export type Database = {
           created_at: string
           due_date: string | null
           id: string
+          org_id: string | null
           recording_id: string
           status: string | null
           task_text: string
@@ -42994,6 +43034,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          org_id?: string | null
           recording_id: string
           status?: string | null
           task_text: string
@@ -43004,6 +43045,7 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          org_id?: string | null
           recording_id?: string
           status?: string | null
           task_text?: string
@@ -43025,6 +43067,7 @@ export type Database = {
           id: string
           is_user_edited: boolean | null
           language_code: string | null
+          org_id: string | null
           segment_index: number
           speaker_id: string | null
           start_ms: number | null
@@ -43037,6 +43080,7 @@ export type Database = {
           id?: string
           is_user_edited?: boolean | null
           language_code?: string | null
+          org_id?: string | null
           segment_index: number
           speaker_id?: string | null
           start_ms?: number | null
@@ -43049,6 +43093,7 @@ export type Database = {
           id?: string
           is_user_edited?: boolean | null
           language_code?: string | null
+          org_id?: string | null
           segment_index?: number
           speaker_id?: string | null
           start_ms?: number | null
@@ -43073,6 +43118,7 @@ export type Database = {
           full_text: string | null
           id: string
           is_bilingual: boolean | null
+          org_id: string | null
           recording_id: string
           source_language: string | null
           speaker_count: number | null
@@ -43087,6 +43133,7 @@ export type Database = {
           full_text?: string | null
           id?: string
           is_bilingual?: boolean | null
+          org_id?: string | null
           recording_id: string
           source_language?: string | null
           speaker_count?: number | null
@@ -43101,6 +43148,7 @@ export type Database = {
           full_text?: string | null
           id?: string
           is_bilingual?: boolean | null
+          org_id?: string | null
           recording_id?: string
           source_language?: string | null
           speaker_count?: number | null
