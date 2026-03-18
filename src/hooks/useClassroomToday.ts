@@ -197,7 +197,7 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
 
       const studentIds = (membersData || []).map((m: any) => m.student_id);
       if (studentIds.length === 0) {
-        setSnapshot({ totalBehaviorEvents: 0, engagementPct: null, completedPrompts: 0, expectedPrompts: 0, snoozedPrompts: 0, activeProbes: 0, finishedProbes: 0 });
+        setSnapshot({ totalBehaviorEvents: 0, engagementPct: null, completedPrompts: 0, expectedPrompts: 0, snoozedPrompts: 0, activeProbes: 0, finishedProbes: 0, pointsAwardedToday: 0, pointsRedeemedToday: 0, maydayEventsToday: 0, rewardRedemptionsToday: 0, staffPresent: 0 });
         setStudents([]);
         setEvents([]);
         setFlags([]);
