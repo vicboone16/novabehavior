@@ -5666,6 +5666,99 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_topography_aliases: {
+        Row: {
+          alias: string
+          canonical_topography: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          canonical_topography: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          canonical_topography?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      behavior_topography_strategy_map: {
+        Row: {
+          behavior_function: string
+          behavior_topography: string
+          created_at: string
+          data_collection_json: Json
+          fidelity_lookfors_json: Json
+          id: string
+          implementation_json: Json
+          is_active: boolean
+          learner_profile_tags: string[]
+          priority: number
+          replacement_category: string | null
+          response_class: string | null
+          safety_level: string | null
+          setting_tags: string[]
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at: string
+        }
+        Insert: {
+          behavior_function: string
+          behavior_topography: string
+          created_at?: string
+          data_collection_json?: Json
+          fidelity_lookfors_json?: Json
+          id?: string
+          implementation_json?: Json
+          is_active?: boolean
+          learner_profile_tags?: string[]
+          priority?: number
+          replacement_category?: string | null
+          response_class?: string | null
+          safety_level?: string | null
+          setting_tags?: string[]
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at?: string
+        }
+        Update: {
+          behavior_function?: string
+          behavior_topography?: string
+          created_at?: string
+          data_collection_json?: Json
+          fidelity_lookfors_json?: Json
+          id?: string
+          implementation_json?: Json
+          is_active?: boolean
+          learner_profile_tags?: string[]
+          priority?: number
+          replacement_category?: string | null
+          response_class?: string | null
+          safety_level?: string | null
+          setting_tags?: string[]
+          strategy_code?: string
+          strategy_description?: string
+          strategy_phase?: string
+          strategy_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behaviors: {
         Row: {
           created_at: string | null
@@ -52916,6 +53009,19 @@ export type Database = {
             }
             Returns: string
           }
+      auto_generate_bip_starter_v2: {
+        Args: {
+          p_behavior_topography?: string
+          p_client_id?: string
+          p_created_by?: string
+          p_learner_profile_tags?: string[]
+          p_primary_function: string
+          p_secondary_function?: string
+          p_setting_tags?: string[]
+          p_student_id?: string
+        }
+        Returns: string
+      }
       auto_generate_bip_strategy_set: {
         Args: {
           p_behavior_function: string
@@ -52933,6 +53039,29 @@ export type Database = {
           strategy_code: string
           strategy_description: string
           strategy_phase: string
+          strategy_title: string
+        }[]
+      }
+      auto_generate_bip_strategy_set_v2: {
+        Args: {
+          p_behavior_function: string
+          p_behavior_topography?: string
+          p_learner_profile_tags?: string[]
+          p_setting_tags?: string[]
+        }
+        Returns: {
+          behavior_function: string
+          behavior_topography: string
+          data_collection_json: Json
+          fidelity_lookfors_json: Json
+          implementation_json: Json
+          priority: number
+          replacement_category: string
+          response_class: string
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_source: string
           strategy_title: string
         }[]
       }
@@ -54131,6 +54260,10 @@ export type Database = {
       }
       normalize_behavior_function: {
         Args: { p_function: string }
+        Returns: string
+      }
+      normalize_behavior_topography: {
+        Args: { p_topography: string }
         Returns: string
       }
       process_aba_import_staging: {
