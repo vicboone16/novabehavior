@@ -111,3 +111,30 @@ verify_jwt = false
 [functions.voice-capture-process]
 verify_jwt = false
 
+[functions.cc-finalize-recording]
+verify_jwt = false
+
+[functions.cc-process-recording]
+verify_jwt = false
+
+[functions.cc-run-transcription]
+verify_jwt = false
+
+[functions.cc-run-extraction]
+verify_jwt = false
+
+[functions.cc-run-drafts]
+verify_jwt = false
+
+[functions.cc-ask-ai]
+verify_jwt = false
+
+[functions.cc-retry-processing]
+verify_jwt = false
+
+[functions.cc-create-signed-upload-url]
+verify_jwt = false
+
+[functions.cc-export-transcript]
+verify_jwt = false
+
