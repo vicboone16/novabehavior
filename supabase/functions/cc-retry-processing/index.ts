@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * User-facing function — validates JWT via getClaims.
+ * Retries a specific failed stage, then checks if all stages are complete.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -17,10 +21,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
 
+    // Validate user JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -34,6 +39,9 @@ Deno.serve(async (req) => {
     if (!validStages.includes(failed_stage)) {
       return new Response(JSON.stringify({ error: `Invalid stage. Must be one of: ${validStages.join(", ")}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Service-role client for all DB/orchestration
+    const supabase = createClient(supabaseUrl, serviceKey);
 
     // Validate recording
     const { data: recording, error: recErr } = await supabase
@@ -61,14 +69,18 @@ Deno.serve(async (req) => {
       payload.audio_storage_path = recording.secure_storage_path;
     } else {
       // Get transcript_id for extraction/drafts
-      const serviceClient = createClient(supabaseUrl, serviceKey);
-      const { data: trans } = await serviceClient.from("voice_transcripts").select("id").eq("recording_id", recording_id).order("version_number", { ascending: false }).limit(1).single();
+      const { data: trans } = await supabase.from("voice_transcripts")
+        .select("id")
+        .eq("recording_id", recording_id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .single();
       if (trans) payload.transcript_id = trans.id;
       payload.encounter_type = recording.encounter_type;
       if (failed_stage === "extraction") payload.save_intent = recording.save_intent;
     }
 
-    // Invoke the specific stage
+    // Invoke the specific stage using service-role key (internal orchestration)
     const res = await fetch(`${supabaseUrl}/functions/v1/${fnMap[failed_stage]}`, {
       method: "POST",
       headers: {
@@ -80,19 +92,38 @@ Deno.serve(async (req) => {
     });
     const result = await res.json();
 
-    // Check if all stages are now complete
-    const serviceClient = createClient(supabaseUrl, serviceKey);
-    const { data: rec } = await serviceClient.from("voice_recordings").select("transcript_status, ai_status").eq("id", recording_id).single();
+    if (!res.ok) {
+      return new Response(JSON.stringify({
+        retried_stage: failed_stage,
+        stage_result: result,
+        current_status: "retry_failed",
+      }), { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    // Check for transcript + extractions + drafts
-    const { count: transcriptCount } = await serviceClient.from("voice_transcripts").select("id", { count: "exact", head: true }).eq("recording_id", recording_id).eq("status", "completed");
-    const { count: extractionCount } = await serviceClient.from("voice_ai_extractions").select("id", { count: "exact", head: true }).eq("recording_id", recording_id);
-    const { count: draftCount } = await serviceClient.from("voice_ai_drafts").select("id", { count: "exact", head: true }).eq("recording_id", recording_id);
+    // Verify all stages are truly complete by checking latest AI run statuses
+    const { data: latestRuns } = await supabase.from("voice_ai_runs")
+      .select("run_type, status, completed_at")
+      .eq("recording_id", recording_id)
+      .in("run_type", ["transcription", "summary_generation", "structured_extraction", "draft_generation"])
+      .order("created_at", { ascending: false });
 
-    const allComplete = (transcriptCount || 0) > 0 && (extractionCount || 0) > 0 && (draftCount || 0) > 0;
+    // Group by run_type and check latest status
+    const latestByType: Record<string, string> = {};
+    if (latestRuns) {
+      for (const run of latestRuns) {
+        if (!latestByType[run.run_type]) {
+          latestByType[run.run_type] = run.status;
+        }
+      }
+    }
+
+    const transcriptionOk = latestByType["transcription"] === "completed";
+    const extractionOk = (latestByType["summary_generation"] === "completed" || latestByType["structured_extraction"] === "completed");
+    const draftsOk = latestByType["draft_generation"] === "completed";
+    const allComplete = transcriptionOk && extractionOk && draftsOk;
 
     if (allComplete) {
-      await serviceClient.from("voice_recordings").update({
+      await supabase.from("voice_recordings").update({
         status: "review_ready",
         ai_status: "completed",
         transcript_status: "completed",
@@ -102,7 +133,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       retried_stage: failed_stage,
       stage_result: result,
-      current_status: allComplete ? "review_ready" : (rec?.transcript_status === "completed" ? "partially_complete" : "retrying"),
+      current_status: allComplete ? "review_ready" : "partially_complete",
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("cc-retry-processing error:", error);

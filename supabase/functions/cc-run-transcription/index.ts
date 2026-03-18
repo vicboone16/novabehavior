@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Internal stage function — called by cc-process-recording with service-role key.
+ * Does NOT call auth.getClaims. Validates recording via service-role DB access.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -51,59 +55,42 @@ Deno.serve(async (req) => {
       started_at: new Date().toISOString(),
     }).select().single();
 
-    await supabase.from("voice_recordings").update({ transcript_status: "processing" }).eq("id", recording_id);
+    await supabase.from("voice_recordings").update({ transcript_status: "running" }).eq("id", recording_id);
 
     try {
-      // Get audio — either from merged path or chunks
-      let audioBlob: Uint8Array | null = null;
+      // Get merged audio file — do NOT concatenate raw chunks (invalid for media containers)
       const storagePath = audio_storage_path || recording.secure_storage_path;
-
-      if (storagePath) {
-        const { data: fileData } = await supabase.storage.from("voice-recordings").download(storagePath);
-        if (fileData) {
-          audioBlob = new Uint8Array(await fileData.arrayBuffer());
-        }
+      if (!storagePath) {
+        throw new Error("No merged audio file available. Ensure audio is finalized before transcription.");
       }
 
-      // Fallback: concatenate chunks
-      if (!audioBlob) {
-        const { data: chunks } = await supabase
-          .from("voice_recording_chunks")
-          .select("storage_path")
-          .eq("recording_id", recording_id)
-          .order("chunk_index", { ascending: true });
-
-        if (chunks && chunks.length > 0) {
-          const blobs: Uint8Array[] = [];
-          for (const chunk of chunks) {
-            if (chunk.storage_path) {
-              const { data: fd } = await supabase.storage.from("voice-recordings").download(chunk.storage_path);
-              if (fd) blobs.push(new Uint8Array(await fd.arrayBuffer()));
-            }
-          }
-          if (blobs.length > 0) {
-            const totalLen = blobs.reduce((a, b) => a + b.length, 0);
-            audioBlob = new Uint8Array(totalLen);
-            let offset = 0;
-            for (const b of blobs) { audioBlob.set(b, offset); offset += b.length; }
-          }
-        }
+      const { data: fileData, error: dlErr } = await supabase.storage.from("voice-recordings").download(storagePath);
+      if (dlErr || !fileData) {
+        throw new Error(`Failed to download audio: ${dlErr?.message || "file not found"}`);
       }
 
-      if (!audioBlob || audioBlob.length === 0) {
-        throw new Error("No audio data available for transcription");
+      const audioBlob = new Uint8Array(await fileData.arrayBuffer());
+      if (audioBlob.length === 0) {
+        throw new Error("Audio file is empty");
       }
 
-      // Call ElevenLabs Scribe
+      // Call ElevenLabs Scribe v2
       const formData = new FormData();
       formData.append("file", new Blob([audioBlob], { type: "audio/webm" }), "recording.webm");
       formData.append("model_id", "scribe_v2");
       formData.append("diarize", "true");
       formData.append("tag_audio_events", "false");
 
-      if (recording.language_mode && recording.language_mode !== "auto") {
-        const langMap: Record<string, string> = { en: "eng", es: "spa" };
-        const langCode = langMap[recording.language_mode];
+      // Language handling — language_mode is free TEXT (e.g., "auto", "english", "spanish", "en", "es")
+      const langMode = (recording.language_mode || "auto").toLowerCase();
+      if (langMode !== "auto") {
+        const langMap: Record<string, string> = {
+          en: "eng", english: "eng",
+          es: "spa", spanish: "spa",
+          fr: "fra", french: "fra",
+          pt: "por", portuguese: "por",
+        };
+        const langCode = langMap[langMode];
         if (langCode) formData.append("language_code", langCode);
       }
 
@@ -155,7 +142,22 @@ Deno.serve(async (req) => {
         savedTranscript = data;
       }
 
-      // Upsert segments
+      // Upsert speakers first so we can map speaker_id to segments
+      const speakerIdMap: Record<string, string> = {};
+      if (speakerLabels.length > 0) {
+        // Delete old for idempotency
+        await supabase.from("voice_speakers").delete().eq("recording_id", recording_id);
+        for (const label of speakerLabels) {
+          const { data: spk } = await supabase.from("voice_speakers").insert({
+            recording_id,
+            speaker_label: label as string,
+            speaker_role: "unknown",
+          }).select("id").single();
+          if (spk) speakerIdMap[label as string] = spk.id;
+        }
+      }
+
+      // Upsert segments with speaker_id mapping
       if (transcription.words && savedTranscript) {
         // Delete old segments for idempotency
         await supabase.from("voice_transcript_segments").delete().eq("transcript_id", savedTranscript.id);
@@ -174,7 +176,8 @@ Deno.serve(async (req) => {
               text: currentText.trim(),
               start_ms: Math.round(segStart * 1000),
               end_ms: Math.round(word.start * 1000),
-              language_code: recording.language_mode,
+              speaker_id: speakerIdMap[currentSpeaker] || null,
+              language_code: recording.language_mode || "auto",
             });
             currentText = "";
             segStart = word.start;
@@ -189,23 +192,11 @@ Deno.serve(async (req) => {
             text: currentText.trim(),
             start_ms: Math.round(segStart * 1000),
             end_ms: null,
-            language_code: recording.language_mode,
+            speaker_id: speakerIdMap[currentSpeaker] || null,
+            language_code: recording.language_mode || "auto",
           });
         }
         if (segments.length > 0) await supabase.from("voice_transcript_segments").insert(segments);
-      }
-
-      // Upsert speakers
-      if (speakerLabels.length > 0) {
-        // Delete old for idempotency
-        await supabase.from("voice_speakers").delete().eq("recording_id", recording_id);
-        for (const label of speakerLabels) {
-          await supabase.from("voice_speakers").insert({
-            recording_id,
-            speaker_label: label as string,
-            speaker_role: "unknown",
-          });
-        }
       }
 
       // Mark success

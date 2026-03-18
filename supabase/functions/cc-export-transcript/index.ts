@@ -5,6 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * User-facing function — validates JWT via getClaims.
+ * Exports transcript, drafts (approved only for approved_draft mode), and extractions.
+ */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -16,10 +20,12 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+    // Validate user JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -29,6 +35,9 @@ Deno.serve(async (req) => {
     if (!recording_id || !org_id) {
       return new Response(JSON.stringify({ error: "recording_id and org_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Service-role client for DB reads
+    const supabase = createClient(supabaseUrl, serviceKey);
 
     // Validate
     const { data: recording, error: recErr } = await supabase
@@ -63,7 +72,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (export_type === "approved_draft" || export_type === "full_export") {
+    if (export_type === "approved_draft") {
+      // Only export approved drafts
+      const { data: drafts } = await supabase.from("voice_ai_drafts")
+        .select("id, draft_type, content, tone, approved_at, approved_by, is_user_edited")
+        .eq("recording_id", recording_id)
+        .not("approved_at", "is", null);
+      exportPayload.drafts = drafts || [];
+    } else if (export_type === "full_export") {
+      // Full export includes all drafts
       const { data: drafts } = await supabase.from("voice_ai_drafts").select("id, draft_type, content, tone, approved_at, approved_by, is_user_edited").eq("recording_id", recording_id);
       exportPayload.drafts = drafts || [];
     }
@@ -80,7 +97,7 @@ Deno.serve(async (req) => {
     await supabase.from("voice_audit_log").insert({
       recording_id,
       user_id: userId,
-      action_type: "export",
+      action_type: "exported",
       metadata_json: { export_type },
     });
 
