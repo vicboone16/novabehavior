@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useSupervisorSignals } from '@/hooks/useSupervisorSignals';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
-import { Loader2, Radio, Activity, BarChart3, Eye, School } from 'lucide-react';
+import { Loader2, Radio, Activity, BarChart3, Eye, School, Star, Siren } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
