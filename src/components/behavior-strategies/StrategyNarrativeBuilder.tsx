@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -406,10 +407,16 @@ function NarrativeActions({
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<html><head><title>${label} Summary</title>
+    win.document.write(`<html><head><title>${DOMPurify.sanitize(label)} Summary</title>
       <style>body{font-family:sans-serif;padding:24px;white-space:pre-wrap;line-height:1.6;font-size:14px;}</style>
-      </head><body>${text.replace(/\n/g, '<br>')}</body></html>`);
+      </head><body></body></html>`);
     win.document.close();
+    const container = win.document.body;
+    text.split('\n').forEach(line => {
+      const p = win.document.createElement('p');
+      p.textContent = line;
+      container.appendChild(p);
+    });
     win.print();
   };
 
