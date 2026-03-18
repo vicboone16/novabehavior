@@ -5539,6 +5539,66 @@ export type Database = {
           },
         ]
       }
+      behavior_risk_response_map: {
+        Row: {
+          behavior_function: string | null
+          behavior_topography: string | null
+          created_at: string
+          data_collection_json: Json
+          fidelity_lookfors_json: Json
+          id: string
+          implementation_json: Json
+          is_active: boolean
+          priority: number
+          risk_level: string
+          safety_level: string | null
+          severity_level: string
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at: string
+        }
+        Insert: {
+          behavior_function?: string | null
+          behavior_topography?: string | null
+          created_at?: string
+          data_collection_json?: Json
+          fidelity_lookfors_json?: Json
+          id?: string
+          implementation_json?: Json
+          is_active?: boolean
+          priority?: number
+          risk_level: string
+          safety_level?: string | null
+          severity_level: string
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_title: string
+          updated_at?: string
+        }
+        Update: {
+          behavior_function?: string | null
+          behavior_topography?: string | null
+          created_at?: string
+          data_collection_json?: Json
+          fidelity_lookfors_json?: Json
+          id?: string
+          implementation_json?: Json
+          is_active?: boolean
+          priority?: number
+          risk_level?: string
+          safety_level?: string | null
+          severity_level?: string
+          strategy_code?: string
+          strategy_description?: string
+          strategy_phase?: string
+          strategy_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behavior_session_data: {
         Row: {
           behavior_id: string
@@ -5649,6 +5709,42 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
         ]
+      }
+      behavior_severity_profiles: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_label: string
+          id: string
+          is_active: boolean
+          risk_level: string
+          severity_level: string
+          severity_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_label: string
+          id?: string
+          is_active?: boolean
+          risk_level: string
+          severity_level: string
+          severity_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_label?: string
+          id?: string
+          is_active?: boolean
+          risk_level?: string
+          severity_level?: string
+          severity_score?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       behavior_strategies: {
         Row: {
@@ -9536,6 +9632,42 @@ export type Database = {
           id?: string
           notes?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      classroom_wishlists: {
+        Row: {
+          classroom_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          item_json: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          item_json?: Json
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          item_json?: Json
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -15999,6 +16131,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      district_visibility_settings: {
+        Row: {
+          allow_classroom_leaderboards: boolean
+          allow_cross_classroom_threads: boolean
+          allow_parent_replies: boolean
+          allow_school_leaderboards: boolean
+          allow_sponsor_rewards: boolean
+          allow_student_portal: boolean
+          id: string
+          scope_id: string
+          scope_type: string
+          updated_at: string
+        }
+        Insert: {
+          allow_classroom_leaderboards?: boolean
+          allow_cross_classroom_threads?: boolean
+          allow_parent_replies?: boolean
+          allow_school_leaderboards?: boolean
+          allow_sponsor_rewards?: boolean
+          allow_student_portal?: boolean
+          id?: string
+          scope_id: string
+          scope_type?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_classroom_leaderboards?: boolean
+          allow_cross_classroom_threads?: boolean
+          allow_parent_replies?: boolean
+          allow_school_leaderboards?: boolean
+          allow_sponsor_rewards?: boolean
+          allow_student_portal?: boolean
+          id?: string
+          scope_id?: string
+          scope_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       districts: {
         Row: {
@@ -22717,6 +22888,13 @@ export type Database = {
             referencedRelation: "threads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "v_thread_summary"
+            referencedColumns: ["thread_id"]
+          },
         ]
       }
       mts_definitions: {
@@ -25244,6 +25422,130 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "parent_notifications_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_question_replies: {
+        Row: {
+          created_at: string
+          id: string
+          parent_question_id: string
+          reply_text: string
+          responder_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_question_id: string
+          reply_text: string
+          responder_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_question_id?: string
+          reply_text?: string
+          responder_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_question_replies_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "parent_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_question_replies_parent_question_id_fkey"
+            columns: ["parent_question_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_questions_open"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_questions: {
+        Row: {
+          answered_at: string | null
+          answered_by: string | null
+          created_at: string
+          id: string
+          parent_contact_id: string
+          question_text: string
+          source_id: string | null
+          source_type: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          id?: string
+          parent_contact_id: string
+          question_text: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          id?: string
+          parent_contact_id?: string
+          question_text?: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_questions_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          parent_contact_id: string
+          reaction: string
+          source_id: string
+          source_type: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_contact_id: string
+          reaction: string
+          source_id: string
+          source_type: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_contact_id?: string
+          reaction?: string
+          source_id?: string
+          source_type?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_reactions_parent_contact_id_fkey"
             columns: ["parent_contact_id"]
             isOneToOne: false
             referencedRelation: "parent_contacts"
@@ -34351,6 +34653,134 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsor_contributions: {
+        Row: {
+          contribution_json: Json
+          contribution_type: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          sponsor_id: string
+          status: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          contribution_json?: Json
+          contribution_type: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          sponsor_id: string
+          status?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          contribution_json?: Json
+          contribution_type?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          sponsor_id?: string
+          status?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_contributions_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsored_rewards: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          reward_id: string
+          sponsor_id: string
+          sponsor_message: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reward_id: string
+          sponsor_id: string
+          sponsor_message?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reward_id?: string
+          sponsor_id?: string
+          sponsor_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsored_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_rewards_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsors: {
+        Row: {
+          active: boolean
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          notes: string | null
+          sponsor_type: string | null
+          website_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          notes?: string | null
+          sponsor_type?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          notes?: string | null
+          sponsor_type?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       staff_assignments: {
         Row: {
           agency_id: string | null
@@ -37438,6 +37868,63 @@ export type Database = {
           },
         ]
       }
+      student_portal_accounts: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_mode: string
+          id: string
+          login_mode: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_mode?: string
+          id?: string
+          login_mode?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_mode?: string
+          id?: string
+          login_mode?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_portal_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          secure_token: string
+          student_id: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          secure_token: string
+          student_id: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          secure_token?: string
+          student_id?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       student_programs: {
         Row: {
           completed_at: string | null
@@ -37645,6 +38132,41 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "reinforcement_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_reward_goals: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          reward_id: string | null
+          student_id: string
+          target_points: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reward_id?: string | null
+          student_id: string
+          target_points: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          reward_id?: string | null
+          student_id?: string
+          target_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_reward_goals_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "beacon_rewards"
             referencedColumns: ["id"]
           },
         ]
@@ -39248,6 +39770,39 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      supervisor_visibility_rules: {
+        Row: {
+          access_mode: string
+          active: boolean
+          created_at: string
+          id: string
+          scope_id: string
+          scope_type: string
+          supervisor_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_mode?: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          scope_id: string
+          scope_type: string
+          supervisor_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_mode?: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          scope_id?: string
+          scope_type?: string
+          supervisor_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tags: {
         Row: {
@@ -41208,6 +41763,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "threads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thread_members_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "v_thread_summary"
+            referencedColumns: ["thread_id"]
           },
         ]
       }
@@ -51519,6 +52081,47 @@ export type Database = {
         }
         Relationships: []
       }
+      v_parent_questions_open: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          parent_contact_id: string | null
+          question_text: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          student_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          parent_contact_id?: string | null
+          question_text?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          parent_contact_id?: string | null
+          question_text?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_questions_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_parent_training_assignment_intelligence_summary: {
         Row: {
           assigned_at: string | null
@@ -53364,6 +53967,34 @@ export type Database = {
           },
         ]
       }
+      v_sponsored_rewards: {
+        Row: {
+          active: boolean | null
+          cost: number | null
+          id: string | null
+          reward_id: string | null
+          reward_name: string | null
+          sponsor_id: string | null
+          sponsor_message: string | null
+          sponsor_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsored_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_rewards_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_staff_assignments: {
         Row: {
           agency_id: string | null
@@ -53549,6 +54180,25 @@ export type Database = {
           student_id: string | null
         }
         Relationships: []
+      }
+      v_student_reward_progress: {
+        Row: {
+          current_balance: number | null
+          points_remaining: number | null
+          reward_id: string | null
+          reward_name: string | null
+          student_id: string | null
+          target_points: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_reward_goals_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_student_risk_inputs: {
         Row: {
@@ -54031,6 +54681,30 @@ export type Database = {
           },
         ]
       }
+      v_supervisor_visibility_active: {
+        Row: {
+          access_mode: string | null
+          active: boolean | null
+          scope_id: string | null
+          scope_type: string | null
+          supervisor_user_id: string | null
+        }
+        Insert: {
+          access_mode?: string | null
+          active?: boolean | null
+          scope_id?: string | null
+          scope_type?: string | null
+          supervisor_user_id?: string | null
+        }
+        Update: {
+          access_mode?: string | null
+          active?: boolean | null
+          scope_id?: string | null
+          scope_type?: string | null
+          supervisor_user_id?: string | null
+        }
+        Relationships: []
+      }
       v_task_analysis_progress_summary: {
         Row: {
           client_id: string | null
@@ -54172,6 +54846,19 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_thread_summary: {
+        Row: {
+          is_private: boolean | null
+          last_message_at: string | null
+          name: string | null
+          scope_id: string | null
+          scope_type: string | null
+          thread_id: string | null
+          thread_type: string | null
+          total_messages: number | null
+        }
+        Relationships: []
       }
       v_training_certification_summary: {
         Row: {
@@ -54577,13 +55264,6 @@ export type Database = {
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -54593,7 +55273,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -54607,7 +55287,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -54616,6 +55296,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54628,8 +55322,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54642,8 +55336,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54656,7 +55350,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -54670,20 +55364,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -54691,7 +55371,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -54705,7 +55385,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -54719,7 +55399,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -54732,13 +55412,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -54764,13 +55451,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -54780,7 +55460,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -54794,7 +55474,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -54803,6 +55483,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54815,8 +55509,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54829,8 +55523,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -54843,7 +55537,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -54857,20 +55551,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -54878,7 +55558,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -54892,7 +55572,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -54906,7 +55586,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -54919,13 +55599,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -54987,13 +55674,6 @@ export type Database = {
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -55003,7 +55683,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55017,7 +55697,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55026,6 +55706,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55038,8 +55732,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55052,8 +55746,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55066,7 +55760,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -55080,20 +55774,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -55101,7 +55781,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -55115,7 +55795,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -55129,7 +55809,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -55142,13 +55822,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -55206,13 +55893,6 @@ export type Database = {
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -55222,7 +55902,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55236,7 +55916,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55245,6 +55925,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55257,8 +55951,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55271,8 +55965,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -55285,7 +55979,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -55299,20 +55993,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -55320,7 +56000,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -55334,7 +56014,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -55348,7 +56028,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -55361,13 +56041,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -55663,13 +56350,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -55679,7 +56359,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55693,7 +56373,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -55702,6 +56382,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -55714,8 +56408,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -55728,8 +56422,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -55742,7 +56436,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -55756,20 +56450,6 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -55777,7 +56457,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -55791,7 +56471,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -55805,7 +56485,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -55818,13 +56498,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -56091,6 +56778,21 @@ export type Database = {
         }
         Returns: string
       }
+      auto_generate_bip_starter_v3: {
+        Args: {
+          p_behavior_topography?: string
+          p_client_id?: string
+          p_created_by?: string
+          p_learner_profile_tags?: string[]
+          p_primary_function: string
+          p_risk_level?: string
+          p_secondary_function?: string
+          p_setting_tags?: string[]
+          p_severity_level?: string
+          p_student_id?: string
+        }
+        Returns: string
+      }
       auto_generate_bip_strategy_set: {
         Args: {
           p_behavior_function: string
@@ -56127,6 +56829,31 @@ export type Database = {
           priority: number
           replacement_category: string
           response_class: string
+          strategy_code: string
+          strategy_description: string
+          strategy_phase: string
+          strategy_source: string
+          strategy_title: string
+        }[]
+      }
+      auto_generate_bip_strategy_set_v3: {
+        Args: {
+          p_behavior_function: string
+          p_behavior_topography?: string
+          p_learner_profile_tags?: string[]
+          p_risk_level?: string
+          p_setting_tags?: string[]
+          p_severity_level?: string
+        }
+        Returns: {
+          behavior_function: string
+          behavior_topography: string
+          data_collection_json: Json
+          fidelity_lookfors_json: Json
+          implementation_json: Json
+          priority: number
+          risk_level: string
+          severity_level: string
           strategy_code: string
           strategy_description: string
           strategy_phase: string
