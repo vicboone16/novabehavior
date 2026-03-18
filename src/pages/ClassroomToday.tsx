@@ -110,7 +110,7 @@ export default function ClassroomToday() {
 
       {/* Today Snapshot KPIs */}
       {snapshot && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-3">
           <SnapshotCard icon={<Activity className="w-4 h-4" />} label="Behavior Events" value={snapshot.totalBehaviorEvents} />
           <SnapshotCard icon={<BarChart3 className="w-4 h-4" />} label="Engagement" value={snapshot.engagementPct != null ? `${snapshot.engagementPct}%` : '—'} />
           <SnapshotCard icon={<Target className="w-4 h-4" />} label="Prompts Done" value={`${snapshot.completedPrompts}/${snapshot.expectedPrompts}`} sub={
@@ -119,6 +119,10 @@ export default function ClassroomToday() {
           <SnapshotCard icon={<Clock className="w-4 h-4" />} label="Snoozed" value={snapshot.snoozedPrompts} />
           <SnapshotCard icon={<Radio className="w-4 h-4" />} label="Active Probes" value={snapshot.activeProbes} />
           <SnapshotCard icon={<Target className="w-4 h-4" />} label="Finished Probes" value={snapshot.finishedProbes} />
+          <SnapshotCard icon={<Star className="w-4 h-4" />} label="Points Awarded" value={snapshot.pointsAwardedToday} />
+          <SnapshotCard icon={<Gift className="w-4 h-4" />} label="Points Redeemed" value={snapshot.pointsRedeemedToday} />
+          <SnapshotCard icon={<Siren className="w-4 h-4" />} label="Mayday Alerts" value={snapshot.maydayEventsToday} />
+          <SnapshotCard icon={<UserCheck className="w-4 h-4" />} label="Staff Present" value={snapshot.staffPresent} />
         </div>
       )}
 
