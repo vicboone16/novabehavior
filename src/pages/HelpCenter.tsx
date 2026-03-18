@@ -1,9 +1,9 @@
 /**
- * Help Center — Searchable FAQ, feature guides, troubleshooting, and release notes.
+ * Help Center — Searchable FAQ, feature glossary, guides, troubleshooting, and release notes.
  */
 
 import { useState, useEffect } from 'react';
-import { Search, BookOpen, HelpCircle, AlertTriangle, Sparkles, ChevronRight, FileText, Zap, CreditCard, GraduationCap, Shield, Users } from 'lucide-react';
+import { Search, BookOpen, HelpCircle, AlertTriangle, Sparkles, ChevronRight, FileText, Zap, CreditCard, GraduationCap, Shield, Users, Book } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,18 @@ interface HelpArticle {
   sort_order: number;
 }
 
+interface GlossaryItem {
+  id: string;
+  feature_name: string;
+  feature_slug: string;
+  description: string;
+  why_it_matters: string;
+  where_it_lives: string;
+  category: string;
+  role_audience: string[];
+  sort_order: number;
+}
+
 const HELP_CATEGORIES = [
   { slug: 'getting_started', label: 'Getting Started', icon: Sparkles },
   { slug: 'documentation', label: 'Clinical Documentation', icon: FileText },
@@ -39,22 +51,34 @@ const HELP_CATEGORIES = [
   { slug: 'troubleshooting', label: 'Troubleshooting', icon: AlertTriangle },
 ];
 
+const GLOSSARY_CATEGORY_LABELS: Record<string, string> = {
+  getting_started: 'General',
+  documentation: 'Documentation',
+  assessments_fba: 'Assessments & FBA',
+  billing: 'Billing',
+  teacher_parent: 'Teacher / Parent',
+};
+
 export default function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tab, setTab] = useState('faq');
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [articles, setArticles] = useState<HelpArticle[]>([]);
+  const [glossary, setGlossary] = useState<GlossaryItem[]>([]);
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
+  const [expandedGlossary, setExpandedGlossary] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: faqData }, { data: articleData }] = await Promise.all([
+      const [{ data: faqData }, { data: articleData }, { data: glossaryData }] = await Promise.all([
         supabase.from('help_faq_items' as any).select('*').eq('is_active', true).order('sort_order'),
         supabase.from('help_articles' as any).select('*').eq('is_published', true).order('sort_order'),
+        supabase.from('feature_inventory' as any).select('*').eq('status', 'active').order('sort_order'),
       ]);
       if (faqData) setFaqs(faqData as unknown as FAQItem[]);
       if (articleData) setArticles(articleData as unknown as HelpArticle[]);
+      if (glossaryData) setGlossary(glossaryData as unknown as GlossaryItem[]);
     };
     load();
   }, []);
@@ -62,6 +86,7 @@ export default function HelpCenter() {
   const q = searchQuery.toLowerCase();
   const filteredFaqs = faqs.filter(f => !q || f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q));
   const filteredArticles = articles.filter(a => !q || a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q));
+  const filteredGlossary = glossary.filter(g => !q || g.feature_name.toLowerCase().includes(q) || g.description.toLowerCase().includes(q));
 
   const faqsByCategory = HELP_CATEGORIES.map(cat => ({
     ...cat,
@@ -70,6 +95,15 @@ export default function HelpCenter() {
 
   const guides = filteredArticles.filter(a => a.article_type === 'guide');
   const troubleshooting = filteredArticles.filter(a => a.article_type === 'troubleshooting');
+
+  const glossaryByCategory = Object.entries(
+    filteredGlossary.reduce<Record<string, GlossaryItem[]>>((acc, item) => {
+      const cat = item.category || 'general';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {})
+  );
 
   if (selectedArticle) {
     return (
@@ -98,7 +132,7 @@ export default function HelpCenter() {
           <BookOpen className="w-6 h-6 text-primary" />
           Help Center
         </h1>
-        <p className="text-sm text-muted-foreground">Search FAQs, feature guides, and troubleshooting articles</p>
+        <p className="text-sm text-muted-foreground">Search FAQs, feature glossary, guides, and troubleshooting articles</p>
       </div>
 
       <div className="relative max-w-lg">
@@ -124,6 +158,7 @@ export default function HelpCenter() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="h-auto p-1 flex flex-wrap gap-1">
           <TabsTrigger value="faq" className="text-xs">FAQ ({faqs.length})</TabsTrigger>
+          <TabsTrigger value="glossary" className="text-xs">Glossary ({glossary.length})</TabsTrigger>
           <TabsTrigger value="guides" className="text-xs">Feature Guides ({guides.length})</TabsTrigger>
           <TabsTrigger value="troubleshooting" className="text-xs">Troubleshooting ({troubleshooting.length})</TabsTrigger>
           <TabsTrigger value="updates" className="text-xs">What's New</TabsTrigger>
@@ -151,6 +186,49 @@ export default function HelpCenter() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="px-9 pb-3 pt-1">
                         <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="glossary" className="mt-4 space-y-4">
+          {filteredGlossary.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Book className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">No matching glossary terms found</p>
+            </div>
+          ) : (
+            glossaryByCategory.map(([cat, items]) => (
+              <div key={cat}>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                  {GLOSSARY_CATEGORY_LABELS[cat] || cat}
+                </h3>
+                <div className="space-y-1">
+                  {items.map(item => (
+                    <Collapsible key={item.id} open={expandedGlossary === item.id} onOpenChange={() => setExpandedGlossary(expandedGlossary === item.id ? null : item.id)}>
+                      <CollapsibleTrigger className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors flex items-center gap-2">
+                        <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedGlossary === item.id ? 'rotate-90' : ''}`} />
+                        <span className="text-sm font-medium">{item.feature_name}</span>
+                        <Badge variant="outline" className="text-[9px] ml-auto">{item.where_it_lives}</Badge>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="px-9 pb-3 pt-1 space-y-1.5">
+                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                        {item.why_it_matters && (
+                          <p className="text-xs text-primary/80">
+                            <span className="font-semibold">Why it matters:</span> {item.why_it_matters}
+                          </p>
+                        )}
+                        {item.role_audience?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.role_audience.map(r => (
+                              <Badge key={r} variant="secondary" className="text-[9px]">{r}</Badge>
+                            ))}
+                          </div>
+                        )}
                       </CollapsibleContent>
                     </Collapsible>
                   ))}
