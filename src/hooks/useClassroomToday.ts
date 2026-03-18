@@ -413,6 +413,55 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
           severity: String(i.severity),
         });
       }
+      // Beacon Points events
+      for (const p of pointsRows) {
+        allEvents.push({
+          id: p.id,
+          type: 'points',
+          student_name: p.student_id ? (nameMap.get(p.student_id) || 'Unknown') : 'Classroom',
+          student_id: p.student_id || '',
+          label: `Points: ${p.points_delta > 0 ? '+' : ''}${p.points_delta}`,
+          detail: p.reason || p.source,
+          occurred_at: p.created_at,
+        });
+      }
+      // Reward redemptions
+      for (const r of redemptionRows) {
+        allEvents.push({
+          id: r.id,
+          type: 'reward',
+          student_name: r.student_id ? (nameMap.get(r.student_id) || 'Unknown') : 'Unknown',
+          student_id: r.student_id || '',
+          label: `Reward Redeemed`,
+          detail: `${r.points_spent} points spent`,
+          occurred_at: r.redeemed_at,
+        });
+      }
+      // Mayday alerts
+      for (const m of maydayRows) {
+        allEvents.push({
+          id: m.id,
+          type: 'mayday',
+          student_name: m.student_id ? (nameMap.get(m.student_id) || 'Unknown') : 'Classroom',
+          student_id: m.student_id || '',
+          label: `🚨 Mayday: ${m.urgency}`,
+          detail: m.notes || m.location || null,
+          occurred_at: m.created_at,
+          severity: m.urgency,
+        });
+      }
+      // Staff presence changes
+      for (const sp of presenceRows) {
+        allEvents.push({
+          id: sp.id,
+          type: 'presence',
+          student_name: 'Staff',
+          student_id: '',
+          label: `Staff ${sp.status}`,
+          detail: sp.notes || null,
+          occurred_at: sp.updated_at,
+        });
+      }
       allEvents.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
       setEvents(allEvents);
 
