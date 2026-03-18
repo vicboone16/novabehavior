@@ -146,9 +146,9 @@ export default function CaptureLive() {
           <Card>
             <CardContent className="py-3 flex items-center gap-2">
               {captureState.connectionState === 'connected' ? (
-                <Wifi className="w-4 h-4 text-green-500" />
+                <Wifi className="w-4 h-4 text-primary" />
               ) : (
-                <WifiOff className="w-4 h-4 text-orange-500" />
+                <WifiOff className="w-4 h-4 text-destructive" />
               )}
               <div>
                 <p className="text-sm font-medium capitalize">{captureState.connectionState}</p>

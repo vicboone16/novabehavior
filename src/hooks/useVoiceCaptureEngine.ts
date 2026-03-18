@@ -146,7 +146,7 @@ export function useVoiceCaptureEngine() {
         .limit(1)
         .single();
 
-      const orgId = membership?.agency_id || null;
+      const orgId = (membership as any)?.agency_id || null;
       orgIdRef.current = orgId;
 
       // Create recording row with org_id
