@@ -5,6 +5,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DEMO_BADGE } from './DemoCenterHeader';
 import { DemoWalkthroughs } from './DemoWalkthroughs';
 import { DemoOnboarding } from './DemoOnboarding';
+import { DemoEcosystemViewer } from './DemoEcosystemViewer';
+import { DemoDashboardPanel } from './DemoDashboardPanel';
+import { DemoClinicalViewer } from './DemoClinicalViewer';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
 const ICON_MAP: Record<string, any> = {
@@ -24,19 +27,34 @@ const WORKFLOW_SHORTCUTS = [
   { label: 'Cross-App Complex Case', icon: Globe, desc: 'Daniel Foster → months of teacher + parent + clinic data', learner: 'Daniel Foster' },
 ];
 
+interface EcosystemData {
+  crossAppInputs: any[];
+  sessionNotes: any[];
+  assessments: any[];
+  billingRecords: any[];
+  fbaBips: any[];
+  alerts: any[];
+  metrics: any[];
+  loading: boolean;
+}
+
 interface Props {
   tab: string;
   setTab: (t: string) => void;
   learners: DemoLearner[];
   staff: DemoStaff[];
   loading: boolean;
+  ecosystem: EcosystemData;
 }
 
-export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props) {
+export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosystem }: Props) {
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className="flex flex-wrap h-auto p-1 gap-1">
         <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+        <TabsTrigger value="dashboard" className="text-xs gap-1"><BarChart3 className="w-3 h-3" /> Dashboard</TabsTrigger>
+        <TabsTrigger value="ecosystem" className="text-xs gap-1"><Globe className="w-3 h-3" /> Cross-App</TabsTrigger>
+        <TabsTrigger value="clinical" className="text-xs gap-1"><Activity className="w-3 h-3" /> Clinical</TabsTrigger>
         <TabsTrigger value="roles" className="text-xs">By Role</TabsTrigger>
         <TabsTrigger value="learners" className="text-xs">By Learner</TabsTrigger>
         <TabsTrigger value="workflows" className="text-xs">By Workflow</TabsTrigger>
@@ -48,6 +66,9 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
       <TabsContent value="overview" className="space-y-4 mt-4">
         <div className="grid md:grid-cols-3 gap-4">
           {[
+            { label: 'Cross-App Ecosystem', desc: `${ecosystem.crossAppInputs.length} inputs from teacher apps, parent apps, and clinician entries`, icon: Globe, tab: 'ecosystem' },
+            { label: 'Live Dashboard', desc: `${ecosystem.metrics.length} metrics · ${ecosystem.alerts.filter((a: any) => a.status === 'active').length} active alerts`, icon: BarChart3, tab: 'dashboard' },
+            { label: 'Clinical Records', desc: `${ecosystem.sessionNotes.length} notes · ${ecosystem.assessments.length} assessments · ${ecosystem.fbaBips.length} FBA/BIPs`, icon: Activity, tab: 'clinical' },
             { label: 'Explore by Role', desc: `${staff.length} staff personas across supervisor, billing, school, RBT, and more`, icon: Users, tab: 'roles' },
             { label: 'Explore by Learner', desc: `${learners.length} distinct learner scenarios across settings and payers`, icon: GraduationCap, tab: 'learners' },
             { label: 'Guided Walkthroughs', desc: `Flexible scenario-based explorations of key workflows`, icon: Play, tab: 'walkthroughs' },
@@ -62,18 +83,40 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading }: Props)
             </Card>
           ))}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           {[
             { val: learners.length, label: 'Demo Learners' },
             { val: staff.length, label: 'Demo Staff' },
-            { val: 4, label: 'Payer Types' },
-            { val: 3, label: 'Connected Apps' },
-            { val: 7, label: 'Walkthroughs' },
+            { val: ecosystem.crossAppInputs.length, label: 'Cross-App Inputs' },
+            { val: ecosystem.sessionNotes.length, label: 'Session Notes' },
+            { val: ecosystem.billingRecords.length, label: 'Billing Records' },
+            { val: ecosystem.alerts.filter((a: any) => a.status === 'active').length, label: 'Active Alerts' },
           ].map(s => (
             <Card key={s.label}><CardContent className="pt-4 pb-3"><div className="text-2xl font-bold">{s.val}</div><p className="text-xs text-muted-foreground">{s.label}</p></CardContent></Card>
           ))}
         </div>
       </TabsContent>
+
+      <TabsContent value="dashboard" className="mt-4">
+        <DemoDashboardPanel metrics={ecosystem.metrics} alerts={ecosystem.alerts} />
+      </TabsContent>
+
+      <TabsContent value="ecosystem" className="mt-4">
+        <DemoEcosystemViewer inputs={ecosystem.crossAppInputs} learners={learners} />
+      </TabsContent>
+
+      <TabsContent value="clinical" className="mt-4">
+        <DemoClinicalViewer
+          sessionNotes={ecosystem.sessionNotes}
+          assessments={ecosystem.assessments}
+          fbaBips={ecosystem.fbaBips}
+          billingRecords={ecosystem.billingRecords}
+          learners={learners}
+          staff={staff}
+        />
+      </TabsContent>
+
+      {/* ── Existing tabs preserved ────────────────────────── */}
 
       <TabsContent value="roles" className="mt-4">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
