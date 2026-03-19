@@ -131,11 +131,11 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
               <Badge variant="outline">{instance?.status}</Badge>
               {lastSaved && (
                 <span className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-emerald-500" />
+                  <CheckCircle className="h-3 w-3 text-primary" />
                   Saved {lastSaved.toLocaleTimeString()}
                 </span>
               )}
-              {isDirty && <span className="text-amber-500">• Unsaved changes</span>}
+              {isDirty && <span className="text-destructive">• Unsaved changes</span>}
             </div>
           </div>
         </div>
