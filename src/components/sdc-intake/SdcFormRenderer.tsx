@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Send, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, CheckCircle2, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSdcIntake, type FormDefinition, type FormResponse } from '@/hooks/useSdcIntake';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -18,6 +18,8 @@ interface Props {
   formDefinition?: FormDefinition;
   studentName: string;
   onBack: () => void;
+  /** Allow BCBA/admin to edit after submission */
+  allowEditOverride?: boolean;
 }
 
 // Scoring categories for the prioritization form
@@ -32,8 +34,7 @@ function computeBehaviorTotals(responses: Record<string, any>): Record<string, n
   for (let i = 1; i <= 4; i++) {
     let sum = 0;
     for (const suffix of SCORE_SUFFIXES) {
-      const v = responses[`behavior_${i}_${suffix}`];
-      sum += Number(v) || 0;
+      sum += Number(responses[`behavior_${i}_${suffix}`]) || 0;
     }
     totals[`behavior_${i}_total`] = sum;
   }
@@ -56,20 +57,7 @@ function suggestPriorityOrder(
   return suggestion;
 }
 
-/** Resolve a display label for a stored value using the field's options list */
-function resolveLabel(field: any, value: any): string {
-  if (!field?.options || !value) return String(value ?? '');
-  if (Array.isArray(value)) {
-    return value.map(v => {
-      const opt = field.options.find((o: any) => String(o.value) === String(v));
-      return opt ? opt.label : String(v);
-    }).join(', ');
-  }
-  const opt = field.options.find((o: any) => String(o.value) === String(value));
-  return opt ? opt.label : String(value);
-}
-
-export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, onBack }: Props) {
+export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, onBack, allowEditOverride = true }: Props) {
   const intake = useSdcIntake();
   const [formDef, setFormDef] = useState<FormDefinition | null>(formDefinition || null);
   const [responses, setResponses] = useState<Record<string, any>>({});
@@ -78,17 +66,19 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [prioritySuggestionApplied, setPrioritySuggestionApplied] = useState(false);
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   const isPrioritizationForm = formDef?.slug === 'sdc_prioritizing_target_behaviors';
   const behaviorTotals = useMemo(() => isPrioritizationForm ? computeBehaviorTotals(responses) : {}, [responses, isPrioritizationForm]);
 
-  useEffect(() => {
-    loadFormData();
-  }, [formInstanceId]);
+  // Fields are disabled when submitted AND not in edit-override mode
+  const fieldsDisabled = isSubmitted && !isEditMode;
 
-  // Auto-apply priority suggestion when totals change (if user hasn't manually edited)
+  useEffect(() => { loadFormData(); }, [formInstanceId]);
+
+  // Auto-apply priority suggestion
   useEffect(() => {
     if (!isPrioritizationForm || prioritySuggestionApplied) return;
     const hasAnyBehavior = [1, 2, 3, 4].some(i => (responses[`behavior_${i}_name`] || '').trim());
@@ -105,15 +95,18 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
     try {
       const resp = await intake.fetchFormResponse(formInstanceId);
       setExistingResponse(resp);
-      if (resp?.response_json) {
-        setResponses(resp.response_json as Record<string, any>);
-      }
-      if (resp?.is_final) {
-        setIsSubmitted(true);
-      }
+      if (resp?.response_json) setResponses(resp.response_json as Record<string, any>);
+      if (resp?.is_final) setIsSubmitted(true);
       if (!formDefinition) {
-        const defs = await intake.fetchFormDefinitions();
-        if (defs.length > 0) setFormDef(defs[0]);
+        // Fetch the specific form definition for this instance
+        const { data } = await (await import('@/integrations/supabase/client')).supabase
+          .from('form_instances')
+          .select('form_definition_id, form_definitions(*)')
+          .eq('id', formInstanceId)
+          .single();
+        if (data?.form_definitions) {
+          setFormDef(data.form_definitions as unknown as FormDefinition);
+        }
       }
     } catch (err: any) {
       toast.error('Failed to load form: ' + err.message);
@@ -125,15 +118,15 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       const next = { ...prev, [key]: value };
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
       autosaveTimer.current = setTimeout(() => {
-        intake.saveDraftResponse(formInstanceId, next).catch(() => {});
+        const saveData = isPrioritizationForm ? { ...next, ...computeBehaviorTotals(next) } : next;
+        intake.saveDraftResponse(formInstanceId, saveData).catch(() => {});
       }, 3000);
       return next;
     });
-    // If user manually edits a priority field, mark as applied so auto-suggestion stops
     if (key.startsWith('priority_') && key.endsWith('_behavior')) {
       setPrioritySuggestionApplied(true);
     }
-  }, [formInstanceId, intake]);
+  }, [formInstanceId, intake, isPrioritizationForm]);
 
   const handleMultiselectToggle = useCallback((key: string, value: string) => {
     setResponses(prev => {
@@ -153,14 +146,11 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
-      // Include computed totals in saved data for prioritization form
       const saveData = isPrioritizationForm ? { ...responses, ...behaviorTotals } : responses;
       await intake.saveDraftResponse(formInstanceId, saveData);
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const handleApplyPrioritySuggestion = () => {
@@ -181,12 +171,23 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         responses.respondent_role,
       );
       setIsSubmitted(true);
+      setIsEditMode(false);
       setShowSubmitConfirm(false);
     } catch (err: any) {
       toast.error('Failed to submit: ' + err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
+  };
+
+  const handleEditOverrideSave = async () => {
+    setIsSaving(true);
+    try {
+      const saveData = isPrioritizationForm ? { ...responses, ...behaviorTotals } : responses;
+      await intake.submitFinalResponse(formInstanceId, saveData);
+      setIsEditMode(false);
+      toast.success('Edits saved');
+    } catch (err: any) {
+      toast.error('Failed to save edits: ' + err.message);
+    } finally { setIsSaving(false); }
   };
 
   const schema = formDef?.schema_json;
@@ -202,51 +203,34 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
     if (!shouldShowField(field)) return null;
     const key = field.key;
     const val = responses[key] ?? '';
-    const disabled = isSubmitted;
 
     switch (field.type) {
       case 'text':
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
-            <Input
-              value={val}
-              onChange={e => handleFieldChange(key, e.target.value)}
-              placeholder={field.placeholder || ''}
-              disabled={disabled}
-            />
+            <Input value={val} onChange={e => handleFieldChange(key, e.target.value)} placeholder={field.placeholder || ''} disabled={fieldsDisabled} />
           </div>
         );
       case 'textarea':
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
-            <Textarea
-              value={val}
-              onChange={e => handleFieldChange(key, e.target.value)}
-              placeholder={field.placeholder || ''}
-              disabled={disabled}
-              rows={3}
-            />
+            <Textarea value={val} onChange={e => handleFieldChange(key, e.target.value)} placeholder={field.placeholder || ''} disabled={fieldsDisabled} rows={3} />
           </div>
         );
       case 'date':
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}</Label>
-            <Input
-              type="date"
-              value={val}
-              onChange={e => handleFieldChange(key, e.target.value)}
-              disabled={disabled}
-            />
+            <Input type="date" value={val} onChange={e => handleFieldChange(key, e.target.value)} disabled={fieldsDisabled} />
           </div>
         );
       case 'select':
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
-            <Select value={String(val)} onValueChange={v => handleFieldChange(key, v)} disabled={disabled}>
+            <Select value={String(val)} onValueChange={v => handleFieldChange(key, v)} disabled={fieldsDisabled}>
               <SelectTrigger>
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
@@ -267,11 +251,7 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
                 const checked = Array.isArray(responses[key]) && responses[key].includes(opt.value);
                 return (
                   <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer p-1.5 rounded hover:bg-muted/50">
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => handleMultiselectToggle(key, opt.value)}
-                      disabled={disabled}
-                    />
+                    <Checkbox checked={checked} onCheckedChange={() => handleMultiselectToggle(key, opt.value)} disabled={fieldsDisabled} />
                     <span>{opt.label}</span>
                   </label>
                 );
@@ -283,7 +263,7 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         return (
           <div key={key} className="space-y-2">
             <Label className="text-sm">{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
-            <RadioGroup value={val} onValueChange={v => handleFieldChange(key, v)} disabled={disabled}>
+            <RadioGroup value={val} onValueChange={v => handleFieldChange(key, v)} disabled={fieldsDisabled}>
               {(field.options || []).map((opt: any) => (
                 <div key={opt.value} className="flex items-center gap-2">
                   <RadioGroupItem value={opt.value} id={`${key}-${opt.value}`} />
@@ -302,13 +282,10 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
                 <Button
                   key={String(opt.value)}
                   variant={String(val) === String(opt.value) ? 'default' : 'outline'}
-                  size="sm"
-                  className="min-w-[36px]"
+                  size="sm" className="min-w-[36px]"
                   onClick={() => handleFieldChange(key, String(opt.value))}
-                  disabled={disabled}
-                >
-                  {opt.label}
-                </Button>
+                  disabled={fieldsDisabled}
+                >{opt.label}</Button>
               ))}
             </div>
           </div>
@@ -318,12 +295,7 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}</Label>
             <div className="flex items-center gap-2">
-              <Input
-                value={behaviorTotals[key] ?? responses[key] ?? 0}
-                disabled
-                className="w-24 font-semibold text-center bg-muted/50"
-              />
-              {/* Show behavior name next to total for context */}
+              <Input value={behaviorTotals[key] ?? responses[key] ?? 0} disabled className="w-24 font-semibold text-center bg-muted/50" />
               {key.match(/behavior_(\d+)_total/) && (
                 <span className="text-xs text-muted-foreground">
                   {responses[`behavior_${key.match(/behavior_(\d+)_total/)?.[1]}_name`] || '—'}
@@ -336,20 +308,15 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}</Label>
-            <Input
-              value={val}
-              onChange={e => handleFieldChange(key, e.target.value)}
-              disabled={disabled}
-            />
+            <Input value={val} onChange={e => handleFieldChange(key, e.target.value)} disabled={fieldsDisabled} />
           </div>
         );
     }
   };
 
-  // Group scoring fields by behavior number for the prioritization form
+  // Custom scoring grid for prioritization form
   const renderScoringSection = (section: any) => {
     if (section.key !== 'scoring' || !isPrioritizationForm) return null;
-
     const behaviors = [1, 2, 3, 4];
     const categories = [
       { suffix: 'danger_score', label: 'Danger' },
@@ -367,7 +334,6 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           <CardTitle className="text-base">{section.label}</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Table-style grid */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -395,13 +361,10 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
                               <Button
                                 key={String(opt.value)}
                                 variant={String(val) === String(opt.value) ? 'default' : 'outline'}
-                                size="sm"
-                                className="h-7 w-7 p-0 text-xs"
+                                size="sm" className="h-7 w-7 p-0 text-xs"
                                 onClick={() => handleFieldChange(fieldKey, String(opt.value))}
-                                disabled={isSubmitted}
-                              >
-                                {opt.label}
-                              </Button>
+                                disabled={fieldsDisabled}
+                              >{opt.label}</Button>
                             ))}
                           </div>
                         </td>
@@ -409,7 +372,6 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
                     })}
                   </tr>
                 ))}
-                {/* Totals row */}
                 <tr className="border-t-2 border-primary/30 font-semibold">
                   <td className="py-2 pr-3 text-xs">TOTAL</td>
                   {behaviors.map(i => (
@@ -430,13 +392,12 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
 
   const renderPrioritySection = (section: any) => {
     if (section.key !== 'priority_order' || !isPrioritizationForm) return null;
-
     return (
       <Card key={section.key}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">{section.label}</CardTitle>
-            {!isSubmitted && (
+            {!fieldsDisabled && (
               <Button variant="outline" size="sm" onClick={handleApplyPrioritySuggestion}>
                 Auto-Rank from Scores
               </Button>
@@ -444,7 +405,6 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Show totals summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[1, 2, 3, 4].map(i => {
               const name = responses[`behavior_${i}_name`];
@@ -457,7 +417,6 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
               );
             })}
           </div>
-          {/* Priority fields */}
           {section.fields
             .filter((f: any) => f.key.startsWith('priority_'))
             .map((field: any) => (
@@ -466,7 +425,7 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
                 <Input
                   value={responses[field.key] ?? ''}
                   onChange={e => handleFieldChange(field.key, e.target.value)}
-                  disabled={isSubmitted}
+                  disabled={fieldsDisabled}
                   placeholder="Enter behavior name..."
                 />
               </div>
@@ -485,11 +444,29 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           Back to Package
         </Button>
         <div className="flex items-center gap-2">
-          {isSubmitted && (
-            <Badge className="bg-green-500/15 text-green-700 border-green-200">
-              <CheckCircle2 className="w-3 h-3 mr-1" />
-              Submitted
-            </Badge>
+          {isSubmitted && !isEditMode && (
+            <>
+              <Badge className="bg-green-500/15 text-green-700 border-green-200">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Submitted
+              </Badge>
+              {allowEditOverride && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditMode(true)}>
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              )}
+            </>
+          )}
+          {isSubmitted && isEditMode && (
+            <>
+              <Badge variant="outline" className="text-xs">Editing</Badge>
+              <Button variant="outline" size="sm" onClick={() => setIsEditMode(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleEditOverrideSave} disabled={isSaving}>
+                <Save className="w-3 h-3 mr-1" />
+                {isSaving ? 'Saving...' : 'Save Edits'}
+              </Button>
+            </>
           )}
           {!isSubmitted && (
             <>
@@ -517,13 +494,8 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
 
       {/* Sections */}
       {sections.map((section: any) => {
-        // Custom rendering for scoring and priority sections of prioritization form
-        if (isPrioritizationForm && section.key === 'scoring') {
-          return renderScoringSection(section);
-        }
-        if (isPrioritizationForm && section.key === 'priority_order') {
-          return renderPrioritySection(section);
-        }
+        if (isPrioritizationForm && section.key === 'scoring') return renderScoringSection(section);
+        if (isPrioritizationForm && section.key === 'priority_order') return renderPrioritySection(section);
 
         return (
           <Card key={section.key}>
@@ -543,7 +515,7 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           <DialogHeader>
             <DialogTitle>Submit Form?</DialogTitle>
             <DialogDescription>
-              This will mark the form as final. You can still edit it as a BCBA/admin after submission.
+              This will mark the form as final. A BCBA/admin can still edit it after submission.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
