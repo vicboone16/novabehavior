@@ -218,28 +218,7 @@ export default function GoalBankDomainPage() {
           ))}
         </Accordion>
       ) : (
-        <div className="space-y-4">
-          {Array.from(grouped.groups.entries()).map(([modality, categories]) => (
-            <div key={modality}>
-              <h3 className="font-semibold text-sm mb-2 text-primary">{modality}</h3>
-              <Accordion type="multiple" defaultValue={Array.from(categories.keys())} className="space-y-1.5 ml-2">
-                {Array.from(categories.entries()).map(([cat, items]) => (
-                  <AccordionItem key={cat} value={cat} className="border rounded-lg px-4">
-                    <AccordionTrigger className="py-2 hover:no-underline">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{cat}</span>
-                        <Badge variant="outline" className="text-[10px]">{items.length}</Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <GoalList goals={items} basePath={basePath} navigate={navigate} />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          ))}
-        </div>
+        <NestedGroups groups={(grouped as { type: 'nested'; groups: Map<string, Map<string, ClinicalGoal[]>> }).groups} basePath={basePath} navigate={navigate} />
       )}
     </div>
   );
