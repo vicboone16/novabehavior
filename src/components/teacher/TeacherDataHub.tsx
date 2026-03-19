@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, AlertTriangle, Target, FileText, GraduationCap, Star, Camera } from "lucide-react";
+import { BarChart3, AlertTriangle, Target, FileText, GraduationCap, Star, Camera, Settings2 } from "lucide-react";
 import { TeacherWeeklySummaryPanel } from "./TeacherWeeklySummaryPanel";
 import { TeacherABCLogsPanel } from "./TeacherABCLogsPanel";
 import { TeacherDataSessionsPanel } from "./TeacherDataSessionsPanel";
@@ -8,6 +8,7 @@ import { TeacherIEPDraftsPanel } from "./TeacherIEPDraftsPanel";
 import { TeacherSummaries } from "@/components/TeacherSummaries";
 import { BeaconPointsPanel } from "./BeaconPointsPanel";
 import { ParentSnapshotPanel } from "./ParentSnapshotPanel";
+import { ParentReportConfigPanel } from "@/components/parent-comms/ParentReportConfigPanel";
 
 interface TeacherDataHubProps {
   clientId: string;
@@ -56,6 +57,10 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
               <GraduationCap className="w-3 h-3" />
               BCBA Summaries
             </TabsTrigger>
+            <TabsTrigger value="parent-config" className="gap-1 text-xs">
+              <Settings2 className="w-3 h-3" />
+              Parent Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly">
@@ -78,6 +83,9 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
           </TabsContent>
           <TabsContent value="shared">
             <TeacherSummaries clientId={clientId} />
+          </TabsContent>
+          <TabsContent value="parent-config">
+            <ParentReportConfigPanel studentId={clientId} />
           </TabsContent>
         </Tabs>
       </CardContent>
