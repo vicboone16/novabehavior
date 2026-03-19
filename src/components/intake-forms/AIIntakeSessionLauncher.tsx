@@ -299,9 +299,9 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
 
               {/* Issues */}
               {result.issues.length > 0 && (
-                <Card className="border-amber-200">
+                <Card className="border-destructive/30">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
+                    <CardTitle className="text-sm flex items-center gap-2 text-destructive">
                       <AlertTriangle className="h-4 w-4" /> Issues ({result.issues.length})
                     </CardTitle>
                   </CardHeader>
