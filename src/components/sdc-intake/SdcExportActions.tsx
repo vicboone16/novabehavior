@@ -138,11 +138,13 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       }
       children.push(new Paragraph({ children: [] }));
 
+      const fieldMapDocx = buildFieldMap(fi);
       for (const [key, val] of Object.entries(responseData)) {
-        const fv = formatValue(val);
+        const field = fieldMapDocx[key];
+        const fv = resolveDisplayValue(val, field);
         if (!fv) continue;
         children.push(new Paragraph({
-          children: [new TextRun({ text: formatLabel(key), bold: true, size: 22 })],
+          children: [new TextRun({ text: field?.label || formatLabel(key), bold: true, size: 22 })],
         }));
         children.push(new Paragraph({
           children: [new TextRun({ text: fv, size: 22 })],
