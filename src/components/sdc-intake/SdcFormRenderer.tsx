@@ -487,8 +487,13 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">{formDef?.name || 'Form'}</CardTitle>
-          <p className="text-sm text-muted-foreground">{formDef?.description}</p>
-          <p className="text-xs text-muted-foreground">Student: {studentName}</p>
+          <p className="text-sm text-muted-foreground">
+            Complete this questionnaire to document staff observations, behavior patterns, triggers, and related supports.
+          </p>
+          <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+            <span>Student: {studentName}</span>
+            {existingResponse && <span>Status: {isSubmitted ? 'Submitted' : 'Draft'}</span>}
+          </div>
         </CardHeader>
       </Card>
 
@@ -513,9 +518,9 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Submit Form?</DialogTitle>
+            <DialogTitle>Submit this form as final?</DialogTitle>
             <DialogDescription>
-              This will mark the form as final. A BCBA/admin can still edit it after submission.
+              You can still allow admin edits later, but this will mark the form as submitted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

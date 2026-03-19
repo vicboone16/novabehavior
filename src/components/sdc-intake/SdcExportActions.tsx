@@ -331,7 +331,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_${fi.form_definition?.slug || 'form'}.pdf`;
       doc.save(fileName);
       await intake.logFormExport({ formInstanceId: fi.id, exportScope: 'individual', exportFormat: 'pdf', fileName });
-      toast.success('PDF exported');
+      toast.success('PDF export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -351,7 +351,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_${fi.form_definition?.slug || 'form'}.docx`;
       saveAs(buf, fileName);
       await intake.logFormExport({ formInstanceId: fi.id, exportScope: 'individual', exportFormat: 'docx', fileName });
-      toast.success('Word document exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -382,7 +382,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Forms_Bundle.pdf`;
       doc.save(fileName);
       await intake.logFormExport({ packageInstanceId, exportScope: 'package_bundle', exportFormat: 'pdf', fileName });
-      toast.success('Forms bundle PDF exported');
+      toast.success('PDF export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -416,7 +416,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Forms_Bundle.docx`;
       saveAs(buf, fileName);
       await intake.logFormExport({ packageInstanceId, exportScope: 'package_bundle', exportFormat: 'docx', fileName });
-      toast.success('Forms bundle Word exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -467,7 +467,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.pdf`;
       doc.save(fileName);
       await intake.logReportExport({ reportDraftId: latestDraft.id, exportFormat: 'pdf', fileName });
-      toast.success('Snapshot PDF exported');
+      toast.success('PDF export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -489,7 +489,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.docx`;
       saveAs(buf, fileName);
       await intake.logReportExport({ reportDraftId: latestDraft.id, exportFormat: 'docx', fileName });
-      toast.success('Snapshot Word exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -526,7 +526,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Full_Packet.pdf`;
       doc.save(fileName);
       await intake.logFormExport({ packageInstanceId, exportScope: 'full_packet', exportFormat: 'pdf', fileName });
-      toast.success('Full packet PDF exported');
+      toast.success('Full intake packet export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
@@ -565,7 +565,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Full_Packet.docx`;
       saveAs(buf, fileName);
       await intake.logFormExport({ packageInstanceId, exportScope: 'full_packet', exportFormat: 'docx', fileName });
-      toast.success('Full packet Word exported');
+      toast.success('Full intake packet export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }

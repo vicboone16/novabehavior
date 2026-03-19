@@ -212,12 +212,12 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left panel: Source data with categorized summaries */}
+        {/* Left panel: Source Responses */}
         <div className="lg:col-span-1 space-y-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Source Data Summary</CardTitle>
-              <CardDescription className="text-xs">Key data extracted from completed forms</CardDescription>
+              <CardTitle className="text-sm">Source Responses</CardTitle>
+              <CardDescription className="text-xs">Key data extracted from completed intake forms</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="max-h-[70vh]">
@@ -319,8 +319,9 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
           </Card>
         </div>
 
-        {/* Right panel: Editable snapshot */}
+        {/* Right panel: Snapshot Draft */}
         <div className="lg:col-span-2 space-y-3">
+          <p className="text-xs text-muted-foreground px-1">Snapshot Draft — edit sections below before exporting.</p>
           {isGenerating && (
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="py-6 text-center">
@@ -366,12 +367,17 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
               Regenerate Snapshot?
             </DialogTitle>
             <DialogDescription>
-              You have manual edits. Regenerating will replace all generated content and clear your edits. This cannot be undone.
+              Regenerating may replace newly generated content. If manual edits exist, confirm whether you want to keep or replace them.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmRegenerate}>Replace & Regenerate</Button>
+            <Button variant="outline" onClick={() => { setShowRegenerateConfirm(false); generateSnapshot(); }}>
+              Regenerate and Keep My Edits
+            </Button>
+            <Button variant="destructive" onClick={confirmRegenerate}>
+              Regenerate and Replace Edits
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
