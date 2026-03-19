@@ -89,7 +89,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsList>
 
         <TabsContent value="notes" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(sessionNotes).map(n => (
+          {filterByLearner(sessionNotes).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.sessionNotes}</p>
+          ) : filterByLearner(sessionNotes).map(n => (
             <Card key={n.id}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
