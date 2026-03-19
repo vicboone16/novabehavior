@@ -557,85 +557,54 @@ export default function StudentProfile() {
       />
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="flex gap-1 h-auto p-1 w-full max-w-5xl overflow-x-auto scrollbar-hide flex-nowrap max-sm:flex-nowrap">
-          <TabsTrigger value="profile" className="gap-1 text-xs">
+        <TabsList className="flex gap-1 h-auto p-1 w-full overflow-x-auto scrollbar-hide flex-nowrap">
+          <TabsTrigger value="profile" className="gap-1 text-xs whitespace-nowrap">
             <Info className="w-3 h-3" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="intelligence" className="gap-1 text-xs">
+          <TabsTrigger value="intelligence" className="gap-1 text-xs whitespace-nowrap">
             <Zap className="w-3 h-3" />
             Intelligence
           </TabsTrigger>
-          <TabsTrigger value="programming" className="gap-1 text-xs">
+          <TabsTrigger value="programming" className="gap-1 text-xs whitespace-nowrap">
             <Layers className="w-3 h-3" />
             Programming
           </TabsTrigger>
-
-
-          <TabsTrigger value="notes" className="gap-1 text-xs">
+          <TabsTrigger value="notes" className="gap-1 text-xs whitespace-nowrap">
             <StickyNote className="w-3 h-3" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="files" className="gap-1 text-xs">
-            <FolderOpen className="w-3 h-3" />
-            Files
+          <TabsTrigger value="assessment" className="gap-1 text-xs whitespace-nowrap">
+            <Brain className="w-3 h-3" />
+            Assessment
           </TabsTrigger>
           {student.assessmentModeEnabled && (
-            <TabsTrigger value="fba" className="gap-1 text-xs">
+            <TabsTrigger value="fba" className="gap-1 text-xs whitespace-nowrap">
               <ClipboardCheck className="w-3 h-3" />
               FBA Tools
             </TabsTrigger>
           )}
-          <TabsTrigger value="assessment" className="gap-1 text-xs">
-            <Brain className="w-3 h-3" />
-            Assessment
-          </TabsTrigger>
-          <TabsTrigger value="sdc-intake" className="gap-1 text-xs">
-            <Package className="w-3 h-3" />
-            SDC Intake
-          </TabsTrigger>
-
-
-          <TabsTrigger value="appointments" className="gap-1 text-xs">
-            <Calendar className="w-3 h-3" />
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="teacher" className="gap-1 text-xs">
+          <TabsTrigger value="data-sources" className="gap-1 text-xs whitespace-nowrap">
             <UserCheck className="w-3 h-3" />
-            Teacher View
+            Data Sources
           </TabsTrigger>
-          <TabsTrigger value="observations" className="gap-1 text-xs">
-            <ClipboardCheck className="w-3 h-3" />
-            Observations
-          </TabsTrigger>
-          <TabsTrigger value="iep-prep" className="gap-1 text-xs">
-            <BrainCircuit className="w-3 h-3" />
-            IEP Engine
-          </TabsTrigger>
-          <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
-            <Heart className="w-3 h-3" />
-            Caregiver Training
-          </TabsTrigger>
-          {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
-          <TabsTrigger value="documents" className="gap-1 text-xs">
+          <TabsTrigger value="documents" className="gap-1 text-xs whitespace-nowrap">
             <FolderOpen className="w-3 h-3" />
             Documents
           </TabsTrigger>
-          <TabsTrigger value="tags" className="gap-1 text-xs">
-            <Tag className="w-3 h-3" />
-            Tags
+          <TabsTrigger value="appointments" className="gap-1 text-xs whitespace-nowrap">
+            <Calendar className="w-3 h-3" />
+            Schedule
+          </TabsTrigger>
+          <TabsTrigger value="caregiver-training" className="gap-1 text-xs whitespace-nowrap">
+            <Heart className="w-3 h-3" />
+            Caregiver
           </TabsTrigger>
           {fundingMode === 'insurance' && (
-            <>
-              <TabsTrigger value="payers" className="gap-1 text-xs">
-                <Shield className="w-3 h-3" />
-                Payers & Auth
-              </TabsTrigger>
-              <TabsTrigger value="usage" className="gap-1 text-xs">
-                <Clock className="w-3 h-3" />
-                Auth Usage
-              </TabsTrigger>
-            </>
+            <TabsTrigger value="payers" className="gap-1 text-xs whitespace-nowrap">
+              <Shield className="w-3 h-3" />
+              Payers & Auth
+            </TabsTrigger>
           )}
         </TabsList>
 
@@ -813,7 +782,7 @@ export default function StudentProfile() {
           <BehaviorDecodedPanel studentId={student.id} />
         </TabsContent>
 
-        {/* Programming Tab (unified Skills + Behaviors) */}
+        {/* Programming Tab (unified Skills + Behaviors + Protocols) */}
         <TabsContent value="programming" className="space-y-4">
           {/* Intelligence cards at top of Programming */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -827,6 +796,8 @@ export default function StudentProfile() {
             studentName={student.name}
             isAdmin={studentAccess.isAdmin || studentAccess.canEditProfile}
           />
+          {/* Protocol Assignments — Library-based program assignment */}
+          <ProtocolAssignmentManager studentId={student.id} />
         </TabsContent>
 
 
@@ -843,10 +814,7 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-        {/* Files Tab */}
-        <TabsContent value="files" className="space-y-4">
-          <StudentFileManager studentId={student.id} studentName={student.name} />
-        </TabsContent>
+        {/* Files tab merged into Documents */}
 
         {/* FBA Tools Tab - Only visible when Assessment Mode is ON */}
         {student.assessmentModeEnabled && (
@@ -995,18 +963,13 @@ export default function StudentProfile() {
               </Card>
             )}
           </div>
-        </TabsContent>
-
-
-        {/* SDC Intake Tab */}
-        <TabsContent value="sdc-intake" className="space-y-4">
+          {/* SDC Intake — merged into Assessment tab */}
           <SdcIntakeManager
             studentId={student.id}
             studentName={student.name}
             studentGrade={student.grade || ''}
           />
         </TabsContent>
-
 
 
         {/* Appointments Tab */}
@@ -1022,13 +985,15 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-        {/* Teacher-Friendly View Tab */}
-        <TabsContent value="teacher" className="space-y-4">
+        {/* Data Sources Tab — consolidates Teacher, Observations, IEP */}
+        <TabsContent value="data-sources" className="space-y-4">
+          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
+          <TeacherDataHub clientId={student.id} />
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-primary" />
-                Teacher-Friendly View
+                Teacher Data Entry
               </CardTitle>
               <CardDescription>
                 Simplified interface with large touch targets for quick data entry
@@ -1038,26 +1003,22 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
-          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
-          <TeacherDataHub clientId={student.id} />
+          {/* Observations */}
+          <StudentObservationsTab studentId={student.id} studentName={student.name} />
+          {/* IEP Engine */}
+          <StudentIEPPrepTab studentId={student.id} />
           {/* Parent Snapshot Generator */}
           <ParentSnapshotGenerator studentId={student.id} studentName={student.name} />
         </TabsContent>
 
-        {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
-            consolidated into the Profile tab as collapsible sections */}
-
-        {/* Profile 2.0 Tabs - Documents */}
+        {/* Documents Tab — includes files, e-signatures, tags */}
         <TabsContent value="documents" className="space-y-4">
           <DocumentsTab
             clientId={student.id}
             documents={clientProfile.documents}
             onRefetch={clientProfile.refetch}
           />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Tags & Case Attributes */}
-        <TabsContent value="tags" className="space-y-4">
+          <StudentFileManager studentId={student.id} studentName={student.name} />
           <TagsCaseAttributesTab
             clientId={student.id}
             caseAttributes={clientProfile.caseAttributes}
@@ -1069,32 +1030,15 @@ export default function StudentProfile() {
         {fundingMode === 'insurance' && (
           <TabsContent value="payers" className="space-y-4">
             <PayersAuthorizationsTab studentId={student.id} />
-          </TabsContent>
-        )}
-
-        {/* Authorization Usage Tab (Insurance mode only) */}
-        {fundingMode === 'insurance' && (
-          <TabsContent value="usage" className="space-y-4">
             <AuthorizationUsagePage studentId={student.id} />
           </TabsContent>
         )}
-
-        {/* Observation Requests Tab */}
-        <TabsContent value="observations" className="space-y-4">
-          <StudentObservationsTab studentId={student.id} studentName={student.name} />
-        </TabsContent>
-
-        {/* IEP Meeting Prep Tab */}
-        <TabsContent value="iep-prep" className="space-y-4">
-          <StudentIEPPrepTab studentId={student.id} />
-        </TabsContent>
 
         {/* Caregiver Training Tab */}
         <TabsContent value="caregiver-training" className="space-y-4">
           <CaregiverTrainingTab studentId={student.id} />
         </TabsContent>
 
-        {/* Protocols moved into Programming */}
       </Tabs>
 
       {/* Add Behavior Dialog */}

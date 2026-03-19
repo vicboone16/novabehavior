@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Activity, Lightbulb, BarChart3, ClipboardCheck, Clock, Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
@@ -52,26 +53,26 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as BehaviorTab)}>
-        <TabsList className="flex w-full max-w-3xl flex-wrap gap-1">
-          <TabsTrigger value="behaviors" className="flex items-center gap-1.5">
-            <Activity className="w-4 h-4" />
-            <span className="hidden sm:inline">Behaviors</span>
+        <TabsList className="flex w-full gap-1 h-auto p-1 overflow-x-auto scrollbar-hide">
+          <TabsTrigger value="behaviors" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Activity className="w-3.5 h-3.5" />
+            Behaviors & Goals
           </TabsTrigger>
-          <TabsTrigger value="interventions" className="flex items-center gap-1.5">
-            <Lightbulb className="w-4 h-4" />
-            <span className="hidden sm:inline">Interventions</span>
+          <TabsTrigger value="interventions" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Lightbulb className="w-3.5 h-3.5" />
+            Interventions
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Data</span>
+          <TabsTrigger value="data" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Data Entry
           </TabsTrigger>
-          <TabsTrigger value="review" className="flex items-center gap-1.5">
-            <ClipboardCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Review</span>
+          <TabsTrigger value="review" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            Progress Review
           </TabsTrigger>
-          <TabsTrigger value="context" className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Context</span>
+          <TabsTrigger value="context" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Clock className="w-3.5 h-3.5" />
+            Context Log
           </TabsTrigger>
         </TabsList>
 
@@ -157,35 +158,50 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
         <TabsContent value="review" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Behavior Review</CardTitle>
+              <CardTitle className="text-base">Goals & Linked Interventions</CardTitle>
               <CardDescription>
-                Review behavior goals, mastery criteria, and progress toward targets
+                Behavior goals linked to their replacement behaviors and intervention strategies
               </CardDescription>
             </CardHeader>
             <CardContent>
               {studentGoals.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No behavior goals configured. Add goals from the Behaviors tab to track progress.
+                  No behavior goals configured yet. Add goals from the Behaviors & Goals tab to track progress.
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {studentGoals.map((goal) => {
                     const behavior = student.behaviors.find(b => b.id === goal.behaviorId);
                     return (
-                      <div key={goal.id} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{behavior?.name || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {goal.direction === 'increase' ? '↑' : goal.direction === 'decrease' ? '↓' : '→'}{' '}
-                              {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
-                            </p>
+                      <Card key={goal.id} className="border-l-4 border-l-primary/40">
+                        <CardContent className="py-3 px-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{behavior?.name || 'Unknown Behavior'}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Goal: {goal.direction === 'increase' ? '↑ Increase' : goal.direction === 'decrease' ? '↓ Decrease' : '→ Maintain'}{' '}
+                                {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
+                                {goal.baseline !== undefined ? ` (baseline: ${goal.baseline})` : ''}
+                              </p>
+                            </div>
+                            {goal.isMastered ? (
+                              <Badge className="bg-emerald-100 text-emerald-800 text-xs">✓ Mastered</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Active</Badge>
+                            )}
                           </div>
-                          {goal.isMastered && (
-                            <span className="text-xs font-medium text-primary">✓ Mastered</span>
+                          {behavior?.operationalDefinition && (
+                            <p className="text-xs text-muted-foreground mt-2 italic border-t pt-2">
+                              Definition: {behavior.operationalDefinition}
+                            </p>
                           )}
-                        </div>
-                      </div>
+                          {goal.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Notes: {goal.notes}
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>

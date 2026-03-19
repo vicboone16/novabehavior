@@ -177,92 +177,90 @@ export function NarrativeNotesManager({
               No narrative notes yet. Add notes to document observations outside of sessions.
             </p>
           ) : (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
               {sortedNotes.map((note) => {
                 const behavior = behaviors.find(b => b.id === note.behaviorId);
                 return (
-                  <div
-                    key={note.id}
-                    className="p-3 bg-secondary/30 rounded-lg space-y-2"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                  <Card key={note.id} className="border-l-4 border-l-primary/30 shadow-sm">
+                    <CardContent className="py-4 px-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap font-[system-ui]">{note.content}</p>
+                        </div>
+                        <div className="flex gap-0.5 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => openEditNote(note)}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => onDeleteNote(note.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => openEditNote(note)}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => onDeleteNote(note.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(note.timestamp), 'MMM d, yyyy h:mm a')}
-                      </span>
-                      {note.createdByName && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <UserIcon className="w-3 h-3" />
-                          {note.createdByName}
+                      <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-border/50">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {format(new Date(note.timestamp), 'MMM d, yyyy · h:mm a')}
                         </span>
+                        {note.createdByName && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <UserIcon className="w-3 h-3" />
+                            {note.createdByName}
+                          </span>
+                        )}
+                        {behavior && (
+                          <Badge variant="outline" className="text-xs font-medium">
+                            {behavior.name}
+                          </Badge>
+                        )}
+                        {note.tags?.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            <Tag className="w-2.5 h-2.5 mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      {/* Edit tracking info */}
+                      {note.modifiedByName && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground/60 cursor-help mt-2">
+                                <Clock className="w-3 h-3" />
+                                <span>
+                                  Edited by {note.modifiedByName} · {note.modifiedAt ? format(new Date(note.modifiedAt), 'MMM d, h:mm a') : ''}
+                                </span>
+                                {note.editHistory && note.editHistory.length > 0 && (
+                                  <Badge variant="outline" className="text-[10px] ml-1 px-1 py-0">
+                                    {note.editHistory.length} edit{note.editHistory.length > 1 ? 's' : ''}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="max-w-sm">
+                              <div className="space-y-1">
+                                <p className="font-medium text-xs">Edit History</p>
+                                {note.editHistory?.map((edit, idx) => (
+                                  <div key={idx} className="text-xs border-t pt-1">
+                                    <p className="font-medium">{edit.editedByName} — {format(new Date(edit.editedAt), 'MMM d, h:mm a')}</p>
+                                    <p className="text-muted-foreground truncate max-w-[280px]">Previous: "{edit.previousContent.slice(0, 100)}{edit.previousContent.length > 100 ? '...' : ''}"</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
-                      {behavior && (
-                        <Badge variant="outline" className="text-xs">
-                          {behavior.name}
-                        </Badge>
-                      )}
-                      {note.tags?.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          <Tag className="w-2 h-2 mr-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    {/* Edit tracking info */}
-                    {note.modifiedByName && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground/70 cursor-help">
-                              <Clock className="w-3 h-3" />
-                              <span>
-                                Modified by {note.modifiedByName} on{' '}
-                                {note.modifiedAt ? format(new Date(note.modifiedAt), 'MMM d, yyyy h:mm a') : 'unknown'}
-                              </span>
-                              {note.editHistory && note.editHistory.length > 0 && (
-                                <Badge variant="outline" className="text-[10px] ml-1 px-1 py-0">
-                                  {note.editHistory.length} edit{note.editHistory.length > 1 ? 's' : ''}
-                                </Badge>
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-sm">
-                            <div className="space-y-1">
-                              <p className="font-medium text-xs">Edit History</p>
-                              {note.editHistory?.map((edit, idx) => (
-                                <div key={idx} className="text-xs border-t pt-1">
-                                  <p className="font-medium">{edit.editedByName} — {format(new Date(edit.editedAt), 'MMM d, h:mm a')}</p>
-                                  <p className="text-muted-foreground truncate max-w-[280px]">Previous: "{edit.previousContent.slice(0, 100)}{edit.previousContent.length > 100 ? '...' : ''}"</p>
-                                </div>
-                              ))}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
