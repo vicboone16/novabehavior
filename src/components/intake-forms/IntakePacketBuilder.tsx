@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,41 +7,53 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Package, Plus, FileText, Loader2, Send, Clock } from 'lucide-react';
-import type { FormTemplate, FormPacket } from '@/hooks/useIntakeFormsEngine';
+import { useIntakeFormsEngine, type FormTemplate, type FormPacket } from '@/hooks/useIntakeFormsEngine';
+import { toast } from 'sonner';
 
 interface Props {
   packets: (FormPacket & { form_packet_items: any[] })[];
   templates: FormTemplate[];
-  onCreatePacket: (params: any) => Promise<any>;
   isLoading: boolean;
+  linkedEntityId?: string;
+  linkedEntityType?: string;
 }
 
-export function IntakePacketBuilder({ packets, templates, onCreatePacket, isLoading }: Props) {
+export function IntakePacketBuilder({ packets, templates, isLoading, linkedEntityId, linkedEntityType }: Props) {
+  const engine = useIntakeFormsEngine();
   const [isOpen, setIsOpen] = useState(false);
   const [packetName, setPacketName] = useState('');
-  const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+  const [selectedTemplateCodes, setSelectedTemplateCodes] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
-    if (!packetName.trim() || selectedTemplates.length === 0) return;
+    if (!packetName.trim() || selectedTemplateCodes.length === 0 || !linkedEntityId) return;
     setIsCreating(true);
     try {
-      await onCreatePacket({
+      await engine.createPacket.mutateAsync({
         packetName,
-        linkedEntityId: 'placeholder', // Will be assigned when sent
-        templateIds: selectedTemplates,
+        linkedEntityId,
+        linkedEntityType: linkedEntityType || 'student',
+        templateCodes: selectedTemplateCodes,
       });
       setIsOpen(false);
       setPacketName('');
-      setSelectedTemplates([]);
+      setSelectedTemplateCodes([]);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const toggleTemplate = (id: string) => {
-    setSelectedTemplates(prev =>
-      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+  const handleSend = async (packetId: string) => {
+    try {
+      await engine.markPacketSent.mutateAsync({ packetId });
+    } catch {
+      // error handled by mutation
+    }
+  };
+
+  const toggleTemplate = (code: string) => {
+    setSelectedTemplateCodes(prev =>
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
     );
   };
 
@@ -78,8 +90,8 @@ export function IntakePacketBuilder({ packets, templates, onCreatePacket, isLoad
                       className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer"
                     >
                       <Checkbox
-                        checked={selectedTemplates.includes(t.id)}
-                        onCheckedChange={() => toggleTemplate(t.id)}
+                        checked={selectedTemplateCodes.includes(t.code)}
+                        onCheckedChange={() => toggleTemplate(t.code)}
                       />
                       <span className="text-sm">{t.name}</span>
                       <Badge variant="outline" className="ml-auto text-xs">{t.category}</Badge>
@@ -93,7 +105,7 @@ export function IntakePacketBuilder({ packets, templates, onCreatePacket, isLoad
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={isCreating || !packetName.trim() || selectedTemplates.length === 0}>
+              <Button onClick={handleCreate} disabled={isCreating || !packetName.trim() || selectedTemplateCodes.length === 0}>
                 {isCreating && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                 Create Packet
               </Button>
@@ -145,7 +157,7 @@ export function IntakePacketBuilder({ packets, templates, onCreatePacket, isLoad
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1">View</Button>
                   {packet.status === 'draft' && (
-                    <Button size="sm" className="flex-1">
+                    <Button size="sm" className="flex-1" onClick={() => handleSend(packet.id)}>
                       <Send className="h-3.5 w-3.5 mr-1" />
                       Send
                     </Button>

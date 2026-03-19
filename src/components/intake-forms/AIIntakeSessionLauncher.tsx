@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Bot, Loader2, Mic, FileText, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Bot, Loader2, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -23,8 +23,8 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
+  const [selectedTemplateCode, setSelectedTemplateCode] = useState('');
+  const [templates, setTemplates] = useState<{ id: string; name: string; code: string }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<IntakeAIExtractionResult | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -35,14 +35,14 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
     setStep('input');
     setResult(null);
     setTranscript('');
-    setSelectedTemplate('');
+    setSelectedTemplateCode('');
 
-    const { data } = await supabase.from('form_templates').select('id, name').eq('is_active', true).order('name');
+    const { data } = await supabase.from('form_templates').select('id, name, code').eq('is_active', true).order('name');
     setTemplates((data || []) as any[]);
   };
 
   const processTranscript = async () => {
-    if (!transcript.trim() || !selectedTemplate) return;
+    if (!transcript.trim() || !selectedTemplateCode) return;
     setIsProcessing(true);
     setStep('processing');
 
@@ -70,10 +70,12 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
       } as any);
 
       // 3. Load template fields for context
+      const selectedTemplate = templates.find(t => t.code === selectedTemplateCode);
+      const templateId = selectedTemplate?.id;
       const { data: secs } = await supabase
         .from('form_template_sections')
         .select('section_key, title, form_template_fields(field_key, field_label, field_type, options_json)')
-        .eq('template_id', selectedTemplate)
+        .eq('template_id', templateId!)
         .order('display_order');
 
       const fieldContext = (secs || []).map((s: any) => ({
@@ -86,7 +88,7 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
         })),
       }));
 
-      // 4. Call AI via edge function
+      // 4. Call AI
       const aiResponse = await novaAIFetch({
         body: {
           message: `Student: ${studentName}\n\nForm fields available:\n${JSON.stringify(fieldContext, null, 2)}\n\nTranscript:\n${transcript}`,
@@ -127,65 +129,46 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
   };
 
   const applyToForm = async () => {
-    if (!result || !selectedTemplate) return;
+    if (!result || !selectedTemplateCode) return;
     setIsProcessing(true);
 
     try {
-      // Create form instance
-      const { data: defData } = await supabase.from('form_definitions').select('id').eq('is_active', true).limit(1).single();
-      const { data: inst, error: instErr } = await supabase
-        .from('form_instances')
-        .insert({
-          template_id: selectedTemplate,
-          student_id: studentId,
-          form_definition_id: defData?.id || selectedTemplate,
-          completion_mode: 'ai_prefill',
-          linked_entity_type: 'student',
-          linked_entity_id: studentId,
-          status: 'in_progress',
-          source_type: 'ai_intake',
-          created_by: user?.id,
-          owner_user_id: user?.id,
-          started_at: new Date().toISOString(),
-        } as any)
-        .select('id')
-        .single();
+      // Create form instance via RPC
+      const { data: instanceId, error: instErr } = await supabase.rpc('create_form_instance', {
+        p_template_code: selectedTemplateCode,
+        p_linked_entity_type: 'student',
+        p_linked_entity_id: studentId,
+        p_completion_mode: 'ai_prefill',
+        p_created_by: user?.id || null,
+        p_source_type: 'ai_intake',
+      });
       if (instErr) throw instErr;
 
       // Link to session
       if (sessionId) {
-        await supabase.from('intake_sessions').update({ form_instance_id: inst.id } as any).eq('id', sessionId);
+        await supabase.from('intake_sessions').update({ form_instance_id: instanceId } as any).eq('id', sessionId);
       }
 
-      // Insert extracted answers
-      for (const extraction of result.field_extractions) {
-        // Find field section
-        const { data: fieldData } = await supabase
-          .from('form_template_fields')
-          .select('id, section_id, field_label, form_template_sections(section_key)')
-          .eq('template_id', selectedTemplate)
-          .eq('field_key', extraction.field_key)
-          .limit(1)
-          .maybeSingle();
+      // Bulk save extracted answers via RPC
+      const answersArray = result.field_extractions.map(f => ({
+        field_key: f.field_key,
+        value_raw: f.value_raw,
+        repeat_index: 0,
+      }));
 
-        if (fieldData) {
-          await supabase.from('form_answers').insert({
-            form_instance_id: inst.id,
-            section_key: (fieldData as any).form_template_sections?.section_key || 'unknown',
-            field_key: extraction.field_key,
-            field_label: (fieldData as any).field_label || extraction.field_key,
-            value_raw: extraction.value_raw,
-            value_normalized: extraction.value_normalized,
-            source_type: 'ai_transcript',
-            ai_generated: true,
-            confidence_score: extraction.confidence_score,
-          } as any);
-        }
+      if (answersArray.length > 0) {
+        await supabase.rpc('save_form_answers_bulk', {
+          p_form_instance_id: instanceId as string,
+          p_answers: answersArray,
+          p_source_type: 'ai_transcript',
+          p_ai_generated: true,
+          p_manually_edited: false,
+        });
       }
 
       toast.success('AI-prefilled form created. Review and edit as needed.');
       setIsOpen(false);
-      onComplete?.(inst.id);
+      onComplete?.(instanceId as string);
     } catch (err: any) {
       toast.error('Failed to create form: ' + err.message);
     } finally {
@@ -216,10 +199,10 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
             <div className="space-y-4">
               <div>
                 <Label>Target Form Template</Label>
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <Select value={selectedTemplateCode} onValueChange={setSelectedTemplateCode}>
                   <SelectTrigger><SelectValue placeholder="Select template to prefill..." /></SelectTrigger>
                   <SelectContent>
-                    {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    {templates.map(t => <SelectItem key={t.id} value={t.code}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -238,7 +221,7 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                <Button onClick={processTranscript} disabled={!transcript.trim() || !selectedTemplate}>
+                <Button onClick={processTranscript} disabled={!transcript.trim() || !selectedTemplateCode}>
                   <Sparkles className="h-4 w-4 mr-1" /> Extract & Prefill
                 </Button>
               </DialogFooter>
@@ -255,7 +238,6 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
 
           {step === 'review' && result && (
             <div className="space-y-4">
-              {/* Summary */}
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Summary</CardTitle></CardHeader>
                 <CardContent className="text-xs space-y-1">
@@ -269,7 +251,6 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
                 </CardContent>
               </Card>
 
-              {/* Extractions */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
@@ -297,7 +278,6 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
                 </CardContent>
               </Card>
 
-              {/* Issues */}
               {result.issues.length > 0 && (
                 <Card className="border-destructive/30">
                   <CardHeader className="pb-2">
@@ -316,7 +296,6 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
                 </Card>
               )}
 
-              {/* Missing */}
               {result.missing_information.length > 0 && (
                 <Card>
                   <CardHeader className="pb-2">

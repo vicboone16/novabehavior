@@ -77,11 +77,11 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
     }).catch(console.error);
   }, [instanceId, engine.loadAnswers]);
 
-  // Autosave interval
+  // Autosave interval – bulk save answers then call autosave RPC
   useEffect(() => {
     const interval = setInterval(() => {
       if (isDirtyRef.current) {
-        performSave(false, true);
+        performAutosave();
       }
     }, AUTOSAVE_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -96,46 +96,75 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  const performSave = useCallback(async (isFinal: boolean, silent = false) => {
+  const performAutosave = useCallback(async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      // Bulk save all answers
+      await engine.saveAllAnswers.mutateAsync({
+        instanceId,
+        answers: responsesRef.current,
+      });
+      // Create autosave version snapshot
+      await engine.autosaveInstance.mutateAsync({ instanceId });
+      setIsDirty(false);
+      setLastSaved(new Date());
+    } catch (err: any) {
+      console.error('Autosave failed:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [instanceId, engine.saveAllAnswers, engine.autosaveInstance, isSaving]);
+
+  const performSaveDraft = useCallback(async () => {
     if (isSaving) return;
     setIsSaving(true);
     try {
       await engine.saveAllAnswers.mutateAsync({
         instanceId,
         answers: responsesRef.current,
-        sections,
-        isFinal,
       });
+      await engine.autosaveInstance.mutateAsync({ instanceId });
       setIsDirty(false);
       setLastSaved(new Date());
-      if (isFinal) {
-        toast.success('Form submitted successfully');
-        onBack();
-      } else if (!silent) {
-        toast.success('Draft saved');
-      }
+      toast.success('Draft saved');
     } catch (err: any) {
-      console.error('Save failed:', err);
       toast.error('Save failed: ' + err.message);
     } finally {
       setIsSaving(false);
     }
-  }, [instanceId, sections, engine.saveAllAnswers, isSaving, onBack]);
+  }, [instanceId, engine.saveAllAnswers, engine.autosaveInstance, isSaving]);
+
+  const performSubmit = useCallback(async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      // Save answers first
+      await engine.saveAllAnswers.mutateAsync({
+        instanceId,
+        answers: responsesRef.current,
+      });
+      // Submit via RPC
+      await engine.submitInstance.mutateAsync({ instanceId });
+      setIsDirty(false);
+      onBack();
+    } catch (err: any) {
+      toast.error('Submit failed: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [instanceId, engine.saveAllAnswers, engine.submitInstance, isSaving, onBack]);
 
   const handleFinalize = async () => {
     setShowFinalizeDialog(false);
     try {
-      // Save any pending changes first
       if (isDirtyRef.current) {
         await engine.saveAllAnswers.mutateAsync({
           instanceId,
           answers: responsesRef.current,
-          sections,
-          isFinal: false,
         });
       }
-      await engine.updateStatus.mutateAsync({ instanceId, status: 'finalized' });
-      toast.success('Form finalized and locked');
+      await engine.finalizeInstance.mutateAsync({ instanceId });
       onBack();
     } catch (err: any) {
       toast.error('Finalize failed: ' + err.message);
@@ -228,7 +257,7 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
           <div className="flex items-center gap-3 min-w-0">
             <Button variant="ghost" size="icon" onClick={() => {
               if (isDirty && confirm('You have unsaved changes. Save before leaving?')) {
-                performSave(false);
+                performSaveDraft();
               }
               onBack();
             }}>
@@ -257,12 +286,12 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => performSave(false)} disabled={isSaving || !isDirty || isLocked}>
+            <Button variant="outline" size="sm" onClick={performSaveDraft} disabled={isSaving || !isDirty || isLocked}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
               Save Draft
             </Button>
             {!isSubmitted && !isLocked && (
-              <Button size="sm" onClick={() => performSave(true)} disabled={isSaving}>
+              <Button size="sm" onClick={performSubmit} disabled={isSaving}>
                 <Send className="h-4 w-4 mr-1" /> Submit
               </Button>
             )}

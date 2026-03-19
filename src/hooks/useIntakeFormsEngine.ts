@@ -233,7 +233,6 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
       .eq('form_instance_id', instanceId)
       .order('created_at');
     if (error) throw error;
-    // Convert to a map: { fieldKey: valueRaw }
     const map: Record<string, any> = {};
     for (const row of (data || [])) {
       map[(row as any).field_key] = (row as any).value_raw;
@@ -241,42 +240,32 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     return { answers: (data || []) as unknown as FormAnswer[], map };
   }, []);
 
-  // ─── Create Instance ──────────────────────────────────────
+  // ─── Create Instance (via RPC) ────────────────────────────
   const createInstance = useMutation({
     mutationFn: async (params: {
-      templateId: string;
+      templateCode: string;
       studentId: string;
       completionMode?: string;
-      assignedTo?: string;
       linkedEntityType?: string;
       linkedEntityId?: string;
+      assignedContactId?: string;
+      packetId?: string;
+      titleOverride?: string;
+      sourceType?: string;
     }) => {
-      // Get form_definition_id
-      const { data: defData } = await supabase
-        .from('form_definitions')
-        .select('id')
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-
-      const { data, error } = await supabase
-        .from('form_instances')
-        .insert({
-          template_id: params.templateId,
-          student_id: params.studentId,
-          form_definition_id: defData?.id || params.templateId,
-          completion_mode: params.completionMode || 'internal',
-          assigned_to: params.assignedTo || null,
-          linked_entity_type: params.linkedEntityType || 'student',
-          linked_entity_id: params.linkedEntityId || params.studentId,
-          status: 'draft',
-          created_by: user?.id,
-          owner_user_id: user?.id,
-        } as any)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc('create_form_instance', {
+        p_template_code: params.templateCode,
+        p_linked_entity_type: params.linkedEntityType || 'student',
+        p_linked_entity_id: params.linkedEntityId || params.studentId,
+        p_completion_mode: params.completionMode || 'internal',
+        p_created_by: user?.id || null,
+        p_assigned_contact_id: params.assignedContactId || null,
+        p_packet_id: params.packetId || null,
+        p_title_override: params.titleOverride || null,
+        p_source_type: params.sourceType || 'manual',
+      });
       if (error) throw error;
-      return data;
+      return data as string; // returns UUID
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['intake-instances'] });
@@ -285,152 +274,113 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     onError: (err: any) => toast.error('Failed to create form: ' + err.message),
   });
 
-  // ─── Save Individual Answer (field-level) ─────────────────
+  // ─── Save Individual Answer (via RPC) ─────────────────────
   const saveAnswer = useCallback(async (params: {
     instanceId: string;
-    sectionKey: string;
     fieldKey: string;
-    fieldLabel: string;
     value: any;
     repeatIndex?: number;
     sourceType?: string;
-    aiGenerated?: boolean;
+    sourceReference?: string;
     confidenceScore?: number;
+    aiGenerated?: boolean;
+    manuallyEdited?: boolean;
   }) => {
-    const { data: existing } = await supabase
-      .from('form_answers')
-      .select('id')
-      .eq('form_instance_id', params.instanceId)
-      .eq('field_key', params.fieldKey)
-      .eq('repeat_index', params.repeatIndex || 0)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await supabase
-        .from('form_answers')
-        .update({
-          value_raw: params.value,
-          manually_edited: params.sourceType !== 'ai',
-          ai_generated: params.aiGenerated || false,
-          confidence_score: params.confidenceScore || null,
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq('id', (existing as any).id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('form_answers')
-        .insert({
-          form_instance_id: params.instanceId,
-          section_key: params.sectionKey,
-          field_key: params.fieldKey,
-          field_label: params.fieldLabel,
-          repeat_index: params.repeatIndex || 0,
-          value_raw: params.value,
-          source_type: params.sourceType || 'manual',
-          ai_generated: params.aiGenerated || false,
-          confidence_score: params.confidenceScore || null,
-        } as any);
-      if (error) throw error;
-    }
+    const { data, error } = await supabase.rpc('save_form_answer', {
+      p_form_instance_id: params.instanceId,
+      p_field_key: params.fieldKey,
+      p_value_raw: params.value,
+      p_repeat_index: params.repeatIndex ?? 0,
+      p_source_type: params.sourceType || 'manual',
+      p_source_reference: params.sourceReference || null,
+      p_confidence_score: params.confidenceScore ?? null,
+      p_ai_generated: params.aiGenerated ?? false,
+      p_manually_edited: params.manuallyEdited ?? false,
+    });
+    if (error) throw error;
+    return data;
   }, []);
 
-  // ─── Batch Save All Answers (autosave / submit) ───────────
+  // ─── Batch Save All Answers (via RPC) ─────────────────────
   const saveAllAnswers = useMutation({
     mutationFn: async (params: {
       instanceId: string;
       answers: Record<string, any>;
-      sections: FormTemplateSection[];
-      isFinal?: boolean;
+      sections?: FormTemplateSection[];
+      sourceType?: string;
+      aiGenerated?: boolean;
     }) => {
-      // Build a field lookup for section_key + label
-      const fieldLookup: Record<string, { sectionKey: string; label: string }> = {};
-      for (const section of params.sections) {
-        for (const field of (section.fields || [])) {
-          fieldLookup[field.field_key] = { sectionKey: section.section_key, label: field.field_label };
-        }
-      }
+      // Build answers array for bulk RPC
+      const answersArray = Object.entries(params.answers)
+        .filter(([_, v]) => v !== undefined && v !== '')
+        .map(([fieldKey, value]) => ({
+          field_key: fieldKey,
+          value_raw: value,
+          repeat_index: 0,
+        }));
 
-      // Upsert each answer
-      const entries = Object.entries(params.answers).filter(([_, v]) => v !== undefined && v !== '');
-      for (const [fieldKey, value] of entries) {
-        const lookup = fieldLookup[fieldKey];
-        if (!lookup) continue;
-        await saveAnswer({
-          instanceId: params.instanceId,
-          sectionKey: lookup.sectionKey,
-          fieldKey,
-          fieldLabel: lookup.label,
-          value,
-        });
-      }
+      if (answersArray.length === 0) return 0;
 
-      // Update instance timestamp + status
-      const updates: any = {
-        last_saved_at: new Date().toISOString(),
-        status: params.isFinal ? 'submitted' : 'in_progress',
-      };
-      if (params.isFinal) {
-        updates.submitted_at = new Date().toISOString();
-      }
-      if (!params.isFinal) {
-        // Update started_at on first save
-        updates.started_at = new Date().toISOString();
-      }
-
-      await supabase
-        .from('form_instances')
-        .update(updates)
-        .eq('id', params.instanceId);
-
-      // Create version snapshot on submit/finalize
-      if (params.isFinal) {
-        const { data: versionCount } = await supabase
-          .from('form_versions')
-          .select('version_no')
-          .eq('form_instance_id', params.instanceId)
-          .order('version_no', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const nextVersion = ((versionCount as any)?.version_no || 0) + 1;
-        await supabase.from('form_versions').insert({
-          form_instance_id: params.instanceId,
-          version_no: nextVersion,
-          snapshot_type: 'submit',
-          snapshot_json: params.answers,
-          created_by: user?.id,
-        } as any);
-      }
+      const { data, error } = await supabase.rpc('save_form_answers_bulk', {
+        p_form_instance_id: params.instanceId,
+        p_answers: answersArray,
+        p_source_type: params.sourceType || 'manual',
+        p_ai_generated: params.aiGenerated ?? false,
+        p_manually_edited: !(params.aiGenerated ?? false),
+      });
+      if (error) throw error;
+      return data as number;
     },
-    onSuccess: (_, vars) => {
-      if (vars.isFinal) {
-        queryClient.invalidateQueries({ queryKey: ['intake-instances'] });
-        toast.success('Form submitted');
-      }
+    onError: (err: any) => toast.error('Save failed: ' + err.message),
+  });
+
+  // ─── Autosave (via RPC) ───────────────────────────────────
+  const autosaveInstance = useMutation({
+    mutationFn: async (params: { instanceId: string }) => {
+      const { data, error } = await supabase.rpc('autosave_form_instance', {
+        p_form_instance_id: params.instanceId,
+        p_created_by: user?.id || null,
+      });
+      if (error) throw error;
+      return data as string;
     },
   });
 
-  // ─── Update Status ─────────────────────────────────────────
-  const updateStatus = useMutation({
-    mutationFn: async (params: { instanceId: string; status: string }) => {
-      const updates: any = { status: params.status };
-      if (params.status === 'finalized') updates.finalized_at = new Date().toISOString();
-      if (params.status === 'staff_review') updates.reviewed_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('form_instances')
-        .update(updates)
-        .eq('id', params.instanceId);
+  // ─── Submit (via RPC) ─────────────────────────────────────
+  const submitInstance = useMutation({
+    mutationFn: async (params: { instanceId: string }) => {
+      const { data, error } = await supabase.rpc('submit_form_instance', {
+        p_form_instance_id: params.instanceId,
+        p_created_by: user?.id || null,
+      });
       if (error) throw error;
+      return data as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['intake-instances'] });
-      toast.success('Status updated');
+      toast.success('Form submitted');
     },
+    onError: (err: any) => toast.error('Submit failed: ' + err.message),
   });
 
-  // ─── Create Packet ─────────────────────────────────────────
+  // ─── Finalize (via RPC) ───────────────────────────────────
+  const finalizeInstance = useMutation({
+    mutationFn: async (params: { instanceId: string }) => {
+      const { data, error } = await supabase.rpc('finalize_form_instance', {
+        p_form_instance_id: params.instanceId,
+        p_created_by: user?.id || null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intake-instances'] });
+      toast.success('Form finalized and locked');
+    },
+    onError: (err: any) => toast.error('Finalize failed: ' + err.message),
+  });
+
+  // ─── Create Packet (via RPC) ──────────────────────────────
   const createPacket = useMutation({
     mutationFn: async (params: {
       packetName: string;
@@ -438,41 +388,57 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
       linkedEntityType?: string;
       deliveryMethod?: string;
       dueAt?: string;
-      templateIds: string[];
+      recipientContactId?: string;
+      templateCodes?: string[];
     }) => {
-      const { data: packet, error } = await supabase
-        .from('form_packets')
-        .insert({
-          packet_name: params.packetName,
-          linked_entity_id: params.linkedEntityId,
-          linked_entity_type: params.linkedEntityType || 'student',
-          delivery_method: params.deliveryMethod || 'magic_link',
-          due_at: params.dueAt || null,
-          sent_by: user?.id,
-          status: 'draft',
-        } as any)
-        .select()
-        .single();
+      // 1. Create the packet
+      const { data: packetId, error } = await supabase.rpc('create_form_packet', {
+        p_packet_name: params.packetName,
+        p_linked_entity_type: params.linkedEntityType || 'student',
+        p_linked_entity_id: params.linkedEntityId,
+        p_recipient_contact_id: params.recipientContactId || null,
+        p_sent_by: user?.id || null,
+        p_due_at: params.dueAt || null,
+        p_delivery_method: params.deliveryMethod || 'portal_link',
+      });
       if (error) throw error;
 
-      if (params.templateIds.length > 0) {
-        const items = params.templateIds.map((tid, idx) => ({
-          packet_id: packet.id,
-          template_id: tid,
-          display_order: idx,
-          assignment_mode: 'parent',
-          required: true,
-        }));
-        const { error: itemsErr } = await supabase.from('form_packet_items').insert(items as any);
-        if (itemsErr) throw itemsErr;
+      // 2. Add templates to packet
+      if (params.templateCodes && params.templateCodes.length > 0) {
+        for (let i = 0; i < params.templateCodes.length; i++) {
+          const { error: addErr } = await supabase.rpc('add_template_to_packet', {
+            p_packet_id: packetId as string,
+            p_template_code: params.templateCodes[i],
+            p_display_order: i + 1,
+            p_created_by: user?.id || null,
+          });
+          if (addErr) throw addErr;
+        }
       }
 
-      return packet;
+      return packetId as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['intake-packets'] });
       toast.success('Packet created');
     },
+    onError: (err: any) => toast.error('Failed to create packet: ' + err.message),
+  });
+
+  // ─── Mark Packet Sent (via RPC) ───────────────────────────
+  const markPacketSent = useMutation({
+    mutationFn: async (params: { packetId: string }) => {
+      const { data, error } = await supabase.rpc('mark_packet_sent', {
+        p_packet_id: params.packetId,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intake-packets'] });
+      toast.success('Packet sent');
+    },
+    onError: (err: any) => toast.error('Failed to send packet: ' + err.message),
   });
 
   // ─── Save Signature ────────────────────────────────────────
@@ -524,8 +490,11 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     saveAnswer,
     loadAnswers,
     loadTemplateSections,
-    updateStatus,
+    autosaveInstance,
+    submitInstance,
+    finalizeInstance,
     createPacket,
+    markPacketSent,
     saveSignature,
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['intake-templates'] });
