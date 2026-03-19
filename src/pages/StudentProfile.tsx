@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic, Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,7 @@ import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggest
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
+import { SdcIntakeManager } from '@/components/sdc-intake';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
@@ -587,6 +588,10 @@ export default function StudentProfile() {
             <Brain className="w-3 h-3" />
             Assessment
           </TabsTrigger>
+          <TabsTrigger value="sdc-intake" className="gap-1 text-xs">
+            <Package className="w-3 h-3" />
+            SDC Intake
+          </TabsTrigger>
 
 
           <TabsTrigger value="appointments" className="gap-1 text-xs">
@@ -984,6 +989,15 @@ export default function StudentProfile() {
           </div>
         </TabsContent>
 
+
+        {/* SDC Intake Tab */}
+        <TabsContent value="sdc-intake" className="space-y-4">
+          <SdcIntakeManager
+            studentId={student.id}
+            studentName={student.name}
+            studentGrade={student.grade || ''}
+          />
+        </TabsContent>
 
 
 
