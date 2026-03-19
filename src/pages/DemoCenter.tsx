@@ -9,6 +9,7 @@ import { DemoCenterHeader } from '@/components/demo-center/DemoCenterHeader';
 import { DemoBanner } from '@/components/demo-center/DemoBanner';
 import { DemoCenterTabs } from '@/components/demo-center/DemoCenterTabs';
 import { DemoOnboardingModal } from '@/components/demo-center/DemoOnboardingModal';
+import { useDemoEcosystem } from '@/hooks/useDemoEcosystem';
 
 export interface DemoLearner {
   id: string;
@@ -40,6 +41,7 @@ export default function DemoCenter() {
   const [learners, setLearners] = useState<DemoLearner[]>([]);
   const [staff, setStaff] = useState<DemoStaff[]>([]);
   const [loading, setLoading] = useState(true);
+  const ecosystem = useDemoEcosystem();
 
   useEffect(() => {
     const load = async () => {
@@ -65,6 +67,7 @@ export default function DemoCenter() {
         learners={learners}
         staff={staff}
         loading={loading}
+        ecosystem={ecosystem}
       />
     </div>
   );
