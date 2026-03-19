@@ -68,6 +68,7 @@ import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { SdcIntakeManager } from '@/components/sdc-intake';
+import { BehaviorDecodedPanel, RewardEffectivenessPanel, BeaconAISuggestionsPanel } from '@/components/phase4';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
