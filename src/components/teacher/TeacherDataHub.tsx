@@ -84,6 +84,9 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
           <TabsContent value="shared">
             <TeacherSummaries clientId={clientId} />
           </TabsContent>
+          <TabsContent value="parent-config">
+            <ParentReportConfigPanel studentId={clientId} />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
