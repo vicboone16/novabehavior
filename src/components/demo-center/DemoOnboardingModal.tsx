@@ -44,8 +44,8 @@ export function DemoOnboardingModal({ onAction }: Props) {
             </div>
             <DialogTitle className="text-lg">Welcome to the Demo Workspace</DialogTitle>
           </div>
-          <DialogDescription className="text-sm">
-            This environment shows how the system works with real-world scenarios across clinical, school, and caregiver workflows. All data is simulated — explore freely.
+          <DialogDescription className="text-sm leading-relaxed">
+            This environment shows how the system works with real-world scenarios across clinical, school, and caregiver workflows. All data is simulated — explore freely. Nothing here affects real client data.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 mt-2">
