@@ -242,6 +242,19 @@ export default function DemoGateway() {
         </div>
       </div>
 
+      {/* ── Client / External Demo ── */}
+      <Card className="bg-muted/30 border-dashed rounded-2xl">
+        <CardContent className="py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold">Client-Facing Preview</p>
+            <p className="text-xs text-muted-foreground">Share a simplified view with parents, districts, or buyers</p>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-xl gap-1" onClick={() => navigate('/demo/client')}>
+            <Shield className="w-3.5 h-3.5" /> Open Preview
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* ── Footer ── */}
       <Separator />
       <p className="text-xs text-muted-foreground text-center pb-4">

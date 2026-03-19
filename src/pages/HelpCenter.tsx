@@ -71,14 +71,46 @@ export default function HelpCenter() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: faqData }, { data: articleData }, { data: glossaryData }] = await Promise.all([
+      const [{ data: faqData }, { data: faqData2 }, { data: articleData }, { data: glossaryData }, { data: glossaryData2 }] = await Promise.all([
         supabase.from('help_faq_items' as any).select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('help_articles' as any).select('*').eq('is_published', true).order('sort_order'),
+        supabase.from('faq_items').select('*').eq('is_visible', true).order('display_order'),
+        supabase.from('help_articles').select('*').eq('is_published', true).order('sort_order'),
         supabase.from('feature_inventory' as any).select('*').eq('status', 'active').order('sort_order'),
+        supabase.from('glossary_terms').select('*').order('display_order'),
       ]);
-      if (faqData) setFaqs(faqData as unknown as FAQItem[]);
+      // Merge FAQ sources, dedup by question
+      const allFaqs: FAQItem[] = [];
+      const seenQ = new Set<string>();
+      for (const item of [...(faqData || []), ...(faqData2 || [])] as any[]) {
+        const q = (item.question || '').toLowerCase();
+        if (!seenQ.has(q)) {
+          seenQ.add(q);
+          allFaqs.push({ id: item.id, question: item.question, answer: item.answer, category: item.category, sort_order: item.sort_order ?? item.display_order ?? 99 });
+        }
+      }
+      setFaqs(allFaqs);
       if (articleData) setArticles(articleData as unknown as HelpArticle[]);
-      if (glossaryData) setGlossary(glossaryData as unknown as GlossaryItem[]);
+      // Merge glossary sources
+      const allGlossary: GlossaryItem[] = [];
+      const seenT = new Set<string>();
+      for (const item of [...(glossaryData || []), ...(glossaryData2 || [])] as any[]) {
+        const name = (item.feature_name || item.term || '').toLowerCase();
+        if (!seenT.has(name)) {
+          seenT.add(name);
+          allGlossary.push({
+            id: item.id,
+            feature_name: item.feature_name || item.term,
+            feature_slug: item.feature_slug || item.term?.toLowerCase().replace(/\s+/g, '-') || '',
+            description: item.description || item.definition || '',
+            why_it_matters: item.why_it_matters || '',
+            where_it_lives: item.where_it_lives || item.category || '',
+            category: item.category || 'general',
+            role_audience: item.role_audience || [],
+            sort_order: item.sort_order ?? item.display_order ?? 99,
+          });
+        }
+      }
+      setGlossary(allGlossary);
     };
     load();
   }, []);
