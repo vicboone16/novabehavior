@@ -21456,7 +21456,7 @@ export type Database = {
           generalization_tags: Json | null
           goal_key: string
           id: string
-          intervention_id: string
+          intervention_id: string | null
           intervention_ref_key: string | null
           intervention_ref_label: string | null
           intervention_source_table: string
@@ -21475,7 +21475,7 @@ export type Database = {
           generalization_tags?: Json | null
           goal_key: string
           id?: string
-          intervention_id: string
+          intervention_id?: string | null
           intervention_ref_key?: string | null
           intervention_ref_label?: string | null
           intervention_source_table: string
@@ -21494,7 +21494,7 @@ export type Database = {
           generalization_tags?: Json | null
           goal_key?: string
           id?: string
-          intervention_id?: string
+          intervention_id?: string | null
           intervention_ref_key?: string | null
           intervention_ref_label?: string | null
           intervention_source_table?: string
