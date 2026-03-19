@@ -66,8 +66,8 @@ export function DemoOnboardingModal({ onAction }: Props) {
           <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => handleAction('walkthroughs')}>
             <Play className="w-4 h-4 text-primary" />
             <div className="text-left">
-              <p className="text-sm font-medium">Follow a Guided Walkthrough</p>
-              <p className="text-xs text-muted-foreground">Step through key workflows with suggestions</p>
+              <p className="text-sm font-medium">See Key Workflows</p>
+              <p className="text-xs text-muted-foreground">Follow key processes step-by-step with guided suggestions</p>
             </div>
           </Button>
         </div>
