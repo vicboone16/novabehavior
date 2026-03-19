@@ -397,7 +397,7 @@ export function useNovaAIActions(clientId: string | null) {
             insertData.notes = item.context.notes;
           }
 
-          console.log('[NovaAI] Saving behavior data:', item.target_match?.target_name, insertData);
+          console.log('[NovaAI] ✅ Saving behavior data:', item.target_match?.target_name, JSON.stringify(insertData));
 
           // Use upsert to handle potential duplicates
           const { error } = await (supabase as any)
