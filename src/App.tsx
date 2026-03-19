@@ -574,6 +574,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </DemoModeProvider>
     </AuthProvider>
   </QueryClientProvider>
   </GlobalErrorBoundary>
