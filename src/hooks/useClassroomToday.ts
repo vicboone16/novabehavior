@@ -12,6 +12,12 @@ export interface ClassroomSummary {
   promptCompletionToday: number | null;
   signalSummary: string;
   activeSignalCount: number;
+  // Beacon extensions
+  pointsAwardedToday: number;
+  pointsRedeemedToday: number;
+  rewardRedemptionsToday: number;
+  maydayEventsToday: number;
+  staffPresent: number;
 }
 
 export interface StudentTodayCard {
