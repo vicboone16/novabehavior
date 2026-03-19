@@ -664,7 +664,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, evidence_mode, client_id, system_suffix } = await req.json();
+    const { messages, evidence_mode, client_id, system_suffix, force_tools } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -699,12 +699,17 @@ serve(async (req) => {
 9. Always include posting_recommendation with each generated note
 10. For session reconstruction: extract ALL items (behaviors, skills, ABC events) AND generate appropriate notes in one pass
 11. Check for potential duplicate entries before suggesting saves
-12. CRITICAL: If the user provides ANY measurable data (counts, durations, trials, percentages), you MUST call extract_structured_data. Do NOT respond with text only.`;
+12. CRITICAL: If the user provides ANY measurable data (counts, durations, trials, percentages), you MUST call extract_structured_data. Text-only responses for data-containing messages are pipeline failures.`;
       } catch (e) {
         console.error("Failed to load client context:", e);
       }
     } else {
       systemContent += "\n\nNo client is currently selected. If the user asks you to log data, write a session note, or perform client-specific actions, remind them to select a client first. You can still answer general behavior science questions, provide clinical guidance, and assist with documentation.";
+    }
+
+    // If force_tools is true (retry after model failed to use tools), add extra emphasis
+    if (force_tools && client_id) {
+      systemContent += `\n\n⚠️ FORCED TOOL MODE: The previous attempt failed to produce tool calls despite clinical data being present. You MUST call extract_structured_data for ANY measurable data in the user's message. This is a MANDATORY requirement — text-only responses are NOT acceptable. Extract every behavior count, duration, trial score, and ABC event. If uncertain about targets, use match_status=no_match_new_target_suggested rather than skipping the tool call.`;
     }
 
     // Build request body — include tools only when client is selected
@@ -719,7 +724,8 @@ serve(async (req) => {
 
     if (client_id) {
       requestBody.tools = TOOL_DEFINITIONS;
-      requestBody.tool_choice = "auto";
+      // Force tool usage on retry, otherwise auto
+      requestBody.tool_choice = force_tools ? "required" : "auto";
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
