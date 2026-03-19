@@ -105,6 +105,8 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     try {
       const payload = await intake.getSnapshotSourcePayload(packageInstanceId);
 
+      await intake.logGenerationEvent(reportDraftId, draft?.generated_json ? 'regenerated' : 'generated', { source: 'nova_ai' });
+
       const resp = await novaAIFetch({
         body: {
           mode: 'sdc_snapshot',
@@ -157,6 +159,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     setShowRegenerateConfirm(false);
     setEditedSections({});
     await intake.saveSnapshotEdits(reportDraftId, null);
+    await intake.logGenerationEvent(reportDraftId, 'regenerated', { edits_cleared: true });
     generateSnapshot();
   };
 
@@ -175,6 +178,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     setIsSaving(true);
     try {
       await intake.saveSnapshotEdits(reportDraftId, editedSections);
+      await intake.logGenerationEvent(reportDraftId, 'edited');
       toast.success('Edits saved');
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);

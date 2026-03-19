@@ -115,12 +115,16 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
 
   const loadPackageDetails = async (pkgId: string) => {
     try {
-      const { forms } = await intake.fetchPackageInstance(pkgId);
+      const [{ forms }, instances, drafts, history] = await Promise.all([
+        intake.fetchPackageInstance(pkgId),
+        intake.fetchFormInstances(pkgId),
+        intake.fetchPackageReportDrafts(pkgId),
+        intake.fetchExportHistory(pkgId),
+      ]);
       setPackageForms(forms);
-      const instances = await intake.fetchFormInstances(pkgId);
       setFormInstances(instances);
-      const drafts = await intake.fetchPackageReportDrafts(pkgId);
       setReportDrafts(drafts);
+      setExportHistory(history);
     } catch (err: any) { toast.error('Failed to load package details: ' + err.message); }
   };
 
@@ -147,8 +151,21 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
 
   const handleAssignIndividualForm = async () => {
     if (!indFormSlug) { toast.error('Please select a form'); return; }
-    toast.success('Form assigned successfully.');
-    setShowAssignForm(false);
+    try {
+      await intake.createIndividualFormInstance({
+        formSlug: indFormSlug,
+        studentId,
+        deliveryMethod: indDelivery,
+        dueDate: indDueDate || undefined,
+      });
+      toast.success('Form assigned successfully.');
+      setShowAssignForm(false);
+      setIndFormSlug('');
+      setIndDueDate('');
+      await loadPackages();
+    } catch (err: any) {
+      toast.error('Failed to assign form: ' + err.message);
+    }
   };
 
   const handleSendQuestionnaire = async () => {
@@ -156,11 +173,27 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
       toast.error('Please fill in recipient details');
       return;
     }
-    toast.success('Questionnaire sent successfully.');
-    setShowSendQuestionnaire(false);
-    setSendRecipientName('');
-    setSendRecipientEmail('');
-    setSendMessage('');
+    if (!sendFormId) {
+      toast.error('Please select a form');
+      return;
+    }
+    try {
+      const token = await intake.createDeliveryLink({
+        formInstanceId: sendFormId,
+        recipientName: sendRecipientName,
+        recipientEmail: sendRecipientEmail,
+        expiresAt: sendExpiration || undefined,
+      });
+      toast.success('Questionnaire sent successfully.');
+      setShowSendQuestionnaire(false);
+      setSendRecipientName('');
+      setSendRecipientEmail('');
+      setSendFormId('');
+      setSendMessage('');
+      if (selectedPackageId) loadPackageDetails(selectedPackageId);
+    } catch (err: any) {
+      toast.error('Failed to send questionnaire: ' + err.message);
+    }
   };
 
   const handleGenerateSnapshot = async () => {
