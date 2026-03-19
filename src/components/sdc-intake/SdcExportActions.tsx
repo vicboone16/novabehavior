@@ -193,12 +193,14 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
         doc.text(`Student: ${studentName}`, 14, y);
         y += 10;
 
+        const bFieldMap = buildFieldMap(fi);
         for (const [key, val] of Object.entries(responseData)) {
-          const fv = formatValue(val);
+          const bField = bFieldMap[key];
+          const fv = resolveDisplayValue(val, bField);
           if (!fv) continue;
           if (y > 270) { doc.addPage(); y = 20; }
           doc.setFont('helvetica', 'bold');
-          doc.text(formatLabel(key), 14, y);
+          doc.text(bField?.label || formatLabel(key), 14, y);
           y += 5;
           doc.setFont('helvetica', 'normal');
           const lines = doc.splitTextToSize(fv, pageWidth - 28);
