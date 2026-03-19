@@ -151,8 +151,21 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
 
   const handleAssignIndividualForm = async () => {
     if (!indFormSlug) { toast.error('Please select a form'); return; }
-    toast.success('Form assigned successfully.');
-    setShowAssignForm(false);
+    try {
+      await intake.createIndividualFormInstance({
+        formSlug: indFormSlug,
+        studentId,
+        deliveryMethod: indDelivery,
+        dueDate: indDueDate || undefined,
+      });
+      toast.success('Form assigned successfully.');
+      setShowAssignForm(false);
+      setIndFormSlug('');
+      setIndDueDate('');
+      await loadPackages();
+    } catch (err: any) {
+      toast.error('Failed to assign form: ' + err.message);
+    }
   };
 
   const handleSendQuestionnaire = async () => {
@@ -160,11 +173,27 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
       toast.error('Please fill in recipient details');
       return;
     }
-    toast.success('Questionnaire sent successfully.');
-    setShowSendQuestionnaire(false);
-    setSendRecipientName('');
-    setSendRecipientEmail('');
-    setSendMessage('');
+    if (!sendFormId) {
+      toast.error('Please select a form');
+      return;
+    }
+    try {
+      const token = await intake.createDeliveryLink({
+        formInstanceId: sendFormId,
+        recipientName: sendRecipientName,
+        recipientEmail: sendRecipientEmail,
+        expiresAt: sendExpiration || undefined,
+      });
+      toast.success('Questionnaire sent successfully.');
+      setShowSendQuestionnaire(false);
+      setSendRecipientName('');
+      setSendRecipientEmail('');
+      setSendFormId('');
+      setSendMessage('');
+      if (selectedPackageId) loadPackageDetails(selectedPackageId);
+    } catch (err: any) {
+      toast.error('Failed to send questionnaire: ' + err.message);
+    }
   };
 
   const handleGenerateSnapshot = async () => {
