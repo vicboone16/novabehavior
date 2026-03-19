@@ -41,6 +41,7 @@ export default function DemoCenter() {
   const [learners, setLearners] = useState<DemoLearner[]>([]);
   const [staff, setStaff] = useState<DemoStaff[]>([]);
   const [loading, setLoading] = useState(true);
+  const ecosystem = useDemoEcosystem();
 
   useEffect(() => {
     const load = async () => {
@@ -66,6 +67,7 @@ export default function DemoCenter() {
         learners={learners}
         staff={staff}
         loading={loading}
+        ecosystem={ecosystem}
       />
     </div>
   );
