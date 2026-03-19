@@ -13,7 +13,11 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, Save, Send, Loader2, CheckCircle, Clock, Bot, User as UserIcon, ChevronDown, ChevronRight, Lock, AlertCircle, Plus, Trash2, MapPin } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  ArrowLeft, Save, Send, Loader2, CheckCircle, Clock, Bot, User as UserIcon,
+  ChevronDown, ChevronRight, Lock, AlertCircle, Plus, Trash2, MapPin, ShieldCheck
+} from 'lucide-react';
 import { useIntakeFormsEngine, type FormTemplateSection, type FormTemplateField } from '@/hooks/useIntakeFormsEngine';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,7 +38,7 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
   const [sections, setSections] = useState<FormTemplateSection[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
   const isDirtyRef = useRef(false);
   const responsesRef = useRef(responses);
 
@@ -73,6 +77,7 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
     }).catch(console.error);
   }, [instanceId, engine.loadAnswers]);
 
+  // Autosave interval
   useEffect(() => {
     const interval = setInterval(() => {
       if (isDirtyRef.current) {
@@ -82,12 +87,10 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
     return () => clearInterval(interval);
   }, [instanceId, sections]);
 
+  // Warn on unload
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirtyRef.current) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
+      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ''; }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
@@ -119,6 +122,26 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
     }
   }, [instanceId, sections, engine.saveAllAnswers, isSaving, onBack]);
 
+  const handleFinalize = async () => {
+    setShowFinalizeDialog(false);
+    try {
+      // Save any pending changes first
+      if (isDirtyRef.current) {
+        await engine.saveAllAnswers.mutateAsync({
+          instanceId,
+          answers: responsesRef.current,
+          sections,
+          isFinal: false,
+        });
+      }
+      await engine.updateStatus.mutateAsync({ instanceId, status: 'finalized' });
+      toast.success('Form finalized and locked');
+      onBack();
+    } catch (err: any) {
+      toast.error('Finalize failed: ' + err.message);
+    }
+  };
+
   const updateField = (fieldKey: string, value: any) => {
     setResponses(prev => ({ ...prev, [fieldKey]: value }));
     setIsDirty(true);
@@ -142,6 +165,7 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
   }
 
   const isLocked = instance?.status === 'finalized' || !!instance?.locked_at;
+  const isSubmitted = instance?.status === 'submitted';
   const templateName = instance?.form_templates?.name || instance?.title_override || 'Form';
   const totalFields = sections.reduce((sum, s) => sum + (s.fields?.length || 0), 0);
   const answeredFields = Object.keys(responses).filter(k => {
@@ -213,7 +237,7 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
             <div className="min-w-0">
               <h2 className="font-semibold text-lg truncate">{templateName}</h2>
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <Badge variant="outline">{instance?.status}</Badge>
+                <StatusBadge status={instance?.status} />
                 {instance?.completion_mode && (
                   <Badge variant="secondary" className="text-[10px]">{instance.completion_mode}</Badge>
                 )}
@@ -237,10 +261,16 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
               Save Draft
             </Button>
-            <Button size="sm" onClick={() => performSave(true)} disabled={isSaving || isLocked}>
-              <Send className="h-4 w-4 mr-1" />
-              Submit
-            </Button>
+            {!isSubmitted && !isLocked && (
+              <Button size="sm" onClick={() => performSave(true)} disabled={isSaving}>
+                <Send className="h-4 w-4 mr-1" /> Submit
+              </Button>
+            )}
+            {isSubmitted && !isLocked && (
+              <Button size="sm" variant="default" onClick={() => setShowFinalizeDialog(true)} disabled={isSaving}>
+                <ShieldCheck className="h-4 w-4 mr-1" /> Finalize
+              </Button>
+            )}
           </div>
         </div>
 
@@ -303,8 +333,40 @@ export function IntakeFormRenderer({ instanceId, onBack }: Props) {
           </Card>
         )}
       </div>
+
+      {/* Finalize confirmation dialog */}
+      <Dialog open={showFinalizeDialog} onOpenChange={setShowFinalizeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Finalize Form</DialogTitle>
+            <DialogDescription>
+              Finalizing will lock this form and prevent further edits. This action cannot be undone. Are you sure?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFinalizeDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleFinalize}>
+              <Lock className="h-4 w-4 mr-1" /> Finalize & Lock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+// ─── Status Badge ───────────────────────────────────────────────
+
+function StatusBadge({ status }: { status?: string }) {
+  const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    draft: { label: 'Draft', variant: 'outline' },
+    in_progress: { label: 'In Progress', variant: 'secondary' },
+    submitted: { label: 'Submitted', variant: 'default' },
+    finalized: { label: 'Finalized', variant: 'default' },
+    staff_review: { label: 'Needs Review', variant: 'destructive' },
+  };
+  const c = config[status || ''] || { label: status || 'Unknown', variant: 'outline' as const };
+  return <Badge variant={c.variant} className="text-[10px]">{c.label}</Badge>;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -321,15 +383,9 @@ function normalizeOptions(raw: any): { label: string; value: string }[] {
 // ─── Field Renderer ─────────────────────────────────────────────
 
 function FormFieldRenderer({
-  field,
-  value,
-  onChange,
-  disabled,
+  field, value, onChange, disabled,
 }: {
-  field: FormTemplateField;
-  value: any;
-  onChange: (val: any) => void;
-  disabled?: boolean;
+  field: FormTemplateField; value: any; onChange: (val: any) => void; disabled?: boolean;
 }) {
   const options = normalizeOptions(field.options_json);
   const fieldType = field.field_type;
@@ -358,39 +414,24 @@ function FormFieldRenderer({
           </Badge>
         )}
       </div>
-      {field.help_text && (
-        <p className="text-xs text-muted-foreground">{field.help_text}</p>
-      )}
+      {field.help_text && <p className="text-xs text-muted-foreground">{field.help_text}</p>}
 
       {(fieldType === 'text' || fieldType === 'email' || fieldType === 'phone') && (
         <Input
           type={fieldType === 'email' ? 'email' : fieldType === 'phone' ? 'tel' : 'text'}
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          placeholder={field.placeholder || ''}
-          required={field.is_required}
-          disabled={disabled}
+          value={value || ''} onChange={e => onChange(e.target.value)}
+          placeholder={field.placeholder || ''} required={field.is_required} disabled={disabled}
         />
       )}
 
       {fieldType === 'textarea' && (
-        <Textarea
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          placeholder={field.placeholder || ''}
-          rows={4}
-          disabled={disabled}
-        />
+        <Textarea value={value || ''} onChange={e => onChange(e.target.value)}
+          placeholder={field.placeholder || ''} rows={4} disabled={disabled} />
       )}
 
       {fieldType === 'number' && (
-        <Input
-          type="number"
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          placeholder={field.placeholder || ''}
-          disabled={disabled}
-        />
+        <Input type="number" value={value || ''} onChange={e => onChange(e.target.value)}
+          placeholder={field.placeholder || ''} disabled={disabled} />
       )}
 
       {fieldType === 'date' && (
@@ -399,13 +440,9 @@ function FormFieldRenderer({
 
       {fieldType === 'select' && (
         <Select value={value || ''} onValueChange={onChange} disabled={disabled}>
-          <SelectTrigger>
-            <SelectValue placeholder={field.placeholder || 'Select...'} />
-          </SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={field.placeholder || 'Select...'} /></SelectTrigger>
           <SelectContent>
-            {options.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
+            {options.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
           </SelectContent>
         </Select>
       )}
@@ -456,9 +493,7 @@ function FormFieldRenderer({
               <span className="text-sm">{opt.label}</span>
             </label>
           ))}
-          {options.length === 0 && (
-            <p className="text-xs text-muted-foreground">No options configured</p>
-          )}
+          {options.length === 0 && <p className="text-xs text-muted-foreground">No options configured</p>}
         </div>
       )}
 
@@ -483,12 +518,7 @@ function FormFieldRenderer({
       )}
 
       {fieldType === 'repeater' && (
-        <RepeaterField
-          columns={uiConfig.columns || []}
-          value={value || []}
-          onChange={onChange}
-          disabled={disabled}
-        />
+        <RepeaterField columns={uiConfig.columns || []} value={value || []} onChange={onChange} disabled={disabled} />
       )}
     </div>
   );
@@ -496,16 +526,8 @@ function FormFieldRenderer({
 
 // ─── Repeater Field ─────────────────────────────────────────────
 
-function RepeaterField({
-  columns,
-  value,
-  onChange,
-  disabled,
-}: {
-  columns: string[];
-  value: any[];
-  onChange: (val: any[]) => void;
-  disabled?: boolean;
+function RepeaterField({ columns, value, onChange, disabled }: {
+  columns: string[]; value: any[]; onChange: (val: any[]) => void; disabled?: boolean;
 }) {
   const rows = Array.isArray(value) ? value : [];
 
@@ -520,12 +542,9 @@ function RepeaterField({
     onChange(updated);
   };
 
-  const removeRow = (idx: number) => {
-    onChange(rows.filter((_, i) => i !== idx));
-  };
+  const removeRow = (idx: number) => onChange(rows.filter((_, i) => i !== idx));
 
-  const formatColLabel = (col: string) =>
-    col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const formatColLabel = (col: string) => col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   if (columns.length === 0) {
     return <p className="text-xs text-muted-foreground">No columns configured for repeater</p>;
@@ -538,31 +557,20 @@ function RepeaterField({
           <thead>
             <tr className="border-b bg-muted/50">
               {columns.map(col => (
-                <th key={col} className="text-left px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  {formatColLabel(col)}
-                </th>
+                <th key={col} className="text-left px-2 py-1.5 text-xs font-medium text-muted-foreground">{formatColLabel(col)}</th>
               ))}
               {!disabled && <th className="w-8" />}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 1} className="text-center py-4 text-xs text-muted-foreground">
-                  No entries yet
-                </td>
-              </tr>
+              <tr><td colSpan={columns.length + 1} className="text-center py-4 text-xs text-muted-foreground">No entries yet</td></tr>
             ) : (
               rows.map((row, idx) => (
                 <tr key={idx} className="border-b last:border-b-0">
                   {columns.map(col => (
                     <td key={col} className="px-1 py-1">
-                      <Input
-                        value={(row as any)[col] || ''}
-                        onChange={e => updateRow(idx, col, e.target.value)}
-                        className="h-8 text-xs"
-                        disabled={disabled}
-                      />
+                      <Input value={(row as any)[col] || ''} onChange={e => updateRow(idx, col, e.target.value)} className="h-8 text-xs" disabled={disabled} />
                     </td>
                   ))}
                   {!disabled && (
