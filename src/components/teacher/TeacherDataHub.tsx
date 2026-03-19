@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, AlertTriangle, Target, FileText, GraduationCap, Star, Camera } from "lucide-react";
+import { BarChart3, AlertTriangle, Target, FileText, GraduationCap, Star, Camera, Settings2 } from "lucide-react";
 import { TeacherWeeklySummaryPanel } from "./TeacherWeeklySummaryPanel";
 import { TeacherABCLogsPanel } from "./TeacherABCLogsPanel";
 import { TeacherDataSessionsPanel } from "./TeacherDataSessionsPanel";
