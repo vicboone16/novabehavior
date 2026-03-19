@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Brain, RefreshCw, Save, CheckCircle2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Brain, RefreshCw, Save, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSdcIntake, type ReportDraft } from '@/hooks/useSdcIntake';
 import { novaAIFetch } from '@/lib/novaAIFetch';
@@ -21,6 +23,42 @@ const SNAPSHOT_SECTIONS = [
   { key: 'areas_of_need', label: 'Areas of Need', placeholder: 'Describe the primary areas of concern and support needs...' },
   { key: 'strategies', label: 'Strategies & Recommendations', placeholder: 'Describe recommended strategies, interventions, and supports...' },
 ];
+
+// Helper to extract key data categories from source payload
+function extractSourceSummaries(payload: any) {
+  const forms = payload?.forms || [];
+  const triggers: string[] = [];
+  const consequences: string[] = [];
+  const strengths: string[] = [];
+  const behaviors: string[] = [];
+  const priorities: { name: string; total: number }[] = [];
+
+  for (const form of forms) {
+    const r = form.responses || {};
+    // Triggers
+    if (Array.isArray(r.antecedent_triggers)) triggers.push(...r.antecedent_triggers.map((v: string) => v.replace(/_/g, ' ')));
+    if (Array.isArray(r.immediate_triggers)) triggers.push(...r.immediate_triggers.map((v: string) => v.replace(/_/g, ' ')));
+    if (Array.isArray(r.slow_triggers)) triggers.push(...r.slow_triggers.map((v: string) => v.replace(/_/g, ' ')));
+    // Consequences
+    for (const k of ['obtained_items_or_events', 'escaped_or_avoided_items_or_events', 'consequence_adult_attention', 'consequence_peer_attention', 'consequence_tangible_access', 'consequence_escape_avoid']) {
+      if (Array.isArray(r[k])) consequences.push(...r[k].map((v: string) => v.replace(/_/g, ' ')));
+    }
+    // Strengths
+    for (const k of ['strengths_1', 'strengths_2', 'additional_strengths']) {
+      if (r[k]) strengths.push(r[k]);
+    }
+    // Behaviors
+    if (r.primary_problem_behavior) behaviors.push(r.primary_problem_behavior.replace(/_/g, ' '));
+    // Priorities
+    for (let i = 1; i <= 4; i++) {
+      const name = r[`behavior_${i}_name`];
+      const total = Number(r[`behavior_${i}_total`]) || 0;
+      if (name) priorities.push({ name, total });
+    }
+  }
+
+  return { triggers: [...new Set(triggers)], consequences: [...new Set(consequences)], strengths, behaviors: [...new Set(behaviors)], priorities, forms };
+}
 
 export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentName, onBack }: Props) {
   const intake = useSdcIntake();
@@ -44,13 +82,9 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       setDraft(d);
       if (d?.edited_json) {
         setEditedSections(d.edited_json as Record<string, string>);
-      } else if (d?.generated_json) {
-        // Don't populate edited from generated — show generated as baseline
       }
-
-      // If no generated content yet, trigger generation
       if (d && !d.generated_json && d.generation_status !== 'generating') {
-        generateSnapshot(d);
+        generateSnapshot();
       }
     } catch (err: any) {
       toast.error('Failed to load snapshot: ' + err.message);
@@ -66,7 +100,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     }
   };
 
-  const generateSnapshot = async (currentDraft?: ReportDraft) => {
+  const generateSnapshot = async () => {
     setIsGenerating(true);
     try {
       const payload = await intake.getSnapshotSourcePayload(packageInstanceId);
@@ -80,41 +114,23 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
         },
       });
 
-      if (!resp) {
-        setIsGenerating(false);
-        return;
-      }
+      if (!resp) { setIsGenerating(false); return; }
 
       const text = await resp.text();
       let generated: any = {};
       try {
-        // Try parsing as JSON
         const parsed = JSON.parse(text);
         if (parsed.choices?.[0]?.message?.content) {
-          const content = parsed.choices[0].message.content;
-          // Try parsing the content as JSON
-          try {
-            generated = JSON.parse(content);
-          } catch {
-            // If not JSON, split into sections heuristically
-            generated = {
-              strengths_interests: content.split('Areas of Need')[0] || content,
-              areas_of_need: '',
-              strategies: '',
-            };
+          try { generated = JSON.parse(parsed.choices[0].message.content); } catch {
+            generated = { strengths_interests: parsed.choices[0].message.content, areas_of_need: '', strategies: '' };
           }
         } else if (parsed.strengths_interests || parsed.areas_of_need || parsed.strategies) {
           generated = parsed;
         }
       } catch {
-        generated = {
-          strengths_interests: text,
-          areas_of_need: '',
-          strategies: '',
-        };
+        generated = { strengths_interests: text, areas_of_need: '', strategies: '' };
       }
 
-      // Normalize
       const normalized = {
         strengths_interests: generated.strengths_interests || '',
         areas_of_need: generated.areas_of_need || '',
@@ -126,9 +142,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       toast.success('Snapshot generated');
     } catch (err: any) {
       toast.error('Generation failed: ' + err.message);
-    } finally {
-      setIsGenerating(false);
-    }
+    } finally { setIsGenerating(false); }
   };
 
   const handleRegenerate = () => {
@@ -149,12 +163,9 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
   const handleSectionEdit = (key: string, value: string) => {
     setEditedSections(prev => {
       const next = { ...prev, [key]: value };
-      // Autosave debounce
       if (autosaveRef.current) clearTimeout(autosaveRef.current);
       autosaveRef.current = setTimeout(async () => {
-        try {
-          await intake.saveSnapshotEdits(reportDraftId, next);
-        } catch {}
+        try { await intake.saveSnapshotEdits(reportDraftId, next); } catch {}
       }, 2000);
       return next;
     });
@@ -167,21 +178,17 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       toast.success('Edits saved');
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const getSectionContent = (key: string): string => {
-    // Prefer edited, fallback to generated
     if (editedSections[key] !== undefined) return editedSections[key];
     if (draft?.edited_json && (draft.edited_json as any)[key] !== undefined) return (draft.edited_json as any)[key];
     if (draft?.generated_json) return (draft.generated_json as any)[key] || '';
     return '';
   };
 
-  // Extract source summaries for left panel
-  const sourceFormSummaries = sourcePayload?.forms || [];
+  const summary = sourcePayload ? extractSourceSummaries(sourcePayload) : null;
 
   return (
     <div className="space-y-4">
@@ -192,9 +199,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
           Back to Package
         </Button>
         <div className="flex items-center gap-2">
-          {hasManualEdits && (
-            <Badge variant="outline" className="text-xs">Has Edits</Badge>
-          )}
+          {hasManualEdits && <Badge variant="outline" className="text-xs">Has Edits</Badge>}
           <Button variant="outline" size="sm" onClick={handleManualSave} disabled={isSaving}>
             <Save className="w-3 h-3 mr-1" />
             {isSaving ? 'Saving...' : 'Save'}
@@ -207,38 +212,109 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left panel: Source data */}
+        {/* Left panel: Source data with categorized summaries */}
         <div className="lg:col-span-1 space-y-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Source Form Data</CardTitle>
-              <CardDescription className="text-xs">
-                Completed intake form responses used to generate this snapshot
-              </CardDescription>
+              <CardTitle className="text-sm">Source Data Summary</CardTitle>
+              <CardDescription className="text-xs">Key data extracted from completed forms</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
-              {sourceFormSummaries.length > 0 ? (
-                sourceFormSummaries.map((form: any, idx: number) => (
-                  <div key={idx} className="space-y-1">
-                    <p className="text-xs font-semibold text-primary">{form.form_name || `Form ${idx + 1}`}</p>
-                    {Object.entries(form.responses || {}).map(([key, val]) => {
-                      if (!val || (Array.isArray(val) && val.length === 0)) return null;
-                      const displayVal = Array.isArray(val) ? val.join(', ') : String(val);
-                      if (!displayVal) return null;
-                      return (
-                        <div key={key} className="text-xs">
-                          <span className="text-muted-foreground">{key.replace(/_/g, ' ')}: </span>
-                          <span>{displayVal}</span>
+            <CardContent>
+              <ScrollArea className="max-h-[70vh]">
+                <div className="space-y-3">
+                  {/* Strengths */}
+                  {summary && summary.strengths.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-primary mb-1">Strengths</p>
+                      {summary.strengths.map((s, i) => (
+                        <p key={i} className="text-xs text-muted-foreground">{s}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Behaviors */}
+                  {summary && summary.behaviors.length > 0 && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-xs font-semibold text-destructive mb-1">Behaviors of Concern</p>
+                      {summary.behaviors.map((b, i) => (
+                        <Badge key={i} variant="outline" className="mr-1 mb-1 text-xs capitalize">{b}</Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Triggers */}
+                  {summary && summary.triggers.length > 0 && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-xs font-semibold text-amber-700 mb-1">Triggers</p>
+                      <div className="flex flex-wrap gap-1">
+                        {summary.triggers.slice(0, 12).map((t, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs capitalize">{t}</Badge>
+                        ))}
+                        {summary.triggers.length > 12 && (
+                          <span className="text-xs text-muted-foreground">+{summary.triggers.length - 12} more</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Consequences */}
+                  {summary && summary.consequences.length > 0 && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-xs font-semibold text-blue-700 mb-1">Consequences</p>
+                      <div className="flex flex-wrap gap-1">
+                        {summary.consequences.slice(0, 10).map((c, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs capitalize">{c}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Priorities */}
+                  {summary && summary.priorities.length > 0 && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-xs font-semibold mb-1">Prioritization</p>
+                      {summary.priorities.sort((a, b) => b.total - a.total).map((p, i) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="capitalize">{p.name}</span>
+                          <Badge variant="outline" className="text-xs">{p.total}</Badge>
                         </div>
-                      );
-                    })}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {sourcePayload ? 'No completed form responses yet.' : 'Loading source data...'}
-                </p>
-              )}
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Raw form responses */}
+                  {summary && summary.forms.length > 0 && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">All Form Responses</p>
+                      {summary.forms.map((form: any, idx: number) => (
+                        <div key={idx} className="space-y-1 mb-2">
+                          <p className="text-xs font-semibold text-primary">{form.form_name || `Form ${idx + 1}`}</p>
+                          {Object.entries(form.responses || {}).map(([key, val]) => {
+                            if (!val || (Array.isArray(val) && val.length === 0)) return null;
+                            const displayVal = Array.isArray(val) ? val.join(', ') : String(val);
+                            if (!displayVal) return null;
+                            return (
+                              <div key={key} className="text-xs">
+                                <span className="text-muted-foreground">{key.replace(/_/g, ' ')}: </span>
+                                <span>{displayVal}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!summary && (
+                    <p className="text-xs text-muted-foreground">Loading source data...</p>
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
@@ -285,9 +361,12 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Regenerate Snapshot?</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Regenerate Snapshot?
+            </DialogTitle>
             <DialogDescription>
-              You have manual edits. Regenerating will replace all generated content. Your edits will be lost.
+              You have manual edits. Regenerating will replace all generated content and clear your edits. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
