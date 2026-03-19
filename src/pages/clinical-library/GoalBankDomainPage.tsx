@@ -259,7 +259,7 @@ function NestedGroups({
   );
 }
 
-
+function GoalList({
   goals,
   basePath,
   navigate,
