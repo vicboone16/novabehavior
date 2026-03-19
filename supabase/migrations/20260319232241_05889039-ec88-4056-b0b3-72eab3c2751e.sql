@@ -1,0 +1,1 @@
+ALTER TABLE public.goal_intervention_links ALTER COLUMN intervention_id DROP NOT NULL;
