@@ -800,10 +800,16 @@ export default function StudentProfile() {
         {/* Student Intelligence Tab */}
         <TabsContent value="intelligence" className="space-y-4">
           <StudentIntelligencePanel studentId={student.id} />
+          {/* AI Recommendations */}
+          <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           {/* Behavior Intelligence Section */}
           <BehaviorIntelligenceSection studentId={student.id} />
           {/* Skill Intelligence Section */}
           <SkillIntelligenceSection studentId={student.id} />
+          {/* Reward Effectiveness */}
+          <RewardEffectivenessPanel studentId={student.id} />
+          {/* Behavior Decoded Bridge */}
+          <BehaviorDecodedPanel studentId={student.id} />
         </TabsContent>
 
         {/* Programming Tab (unified Skills + Behaviors) */}
