@@ -62,6 +62,7 @@ export default function Analytics() {
             <TabsTrigger value="revenue">Revenue</TabsTrigger>
             <TabsTrigger value="utilization">Utilization</TabsTrigger>
             <TabsTrigger value="productivity">Productivity</TabsTrigger>
+            <TabsTrigger value="district">District & Schools</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
