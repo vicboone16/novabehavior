@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Activity, Lightbulb, BarChart3, ClipboardCheck, Clock, Plus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
