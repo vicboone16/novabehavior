@@ -10204,6 +10204,39 @@ export type Database = {
           },
         ]
       }
+      classroom_presence_history: {
+        Row: {
+          agency_id: string | null
+          changed_at: string
+          changed_by: string | null
+          classroom_id: string
+          id: string
+          notes: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          classroom_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          classroom_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       classroom_presence_log: {
         Row: {
           changed_at: string
@@ -20208,6 +20241,57 @@ export type Database = {
           },
         ]
       }
+      guardian_mappings: {
+        Row: {
+          agency_id: string | null
+          can_receive_reports: boolean
+          created_at: string
+          id: string
+          is_primary: boolean
+          parent_contact_id: string
+          relationship: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          can_receive_reports?: boolean
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          parent_contact_id: string
+          relationship?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          can_receive_reports?: boolean
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          parent_contact_id?: string
+          relationship?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guardian_mappings_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guardian_mappings_parent_contact_id_fkey"
+            columns: ["parent_contact_id"]
+            isOneToOne: false
+            referencedRelation: "v_parent_daily_snapshot_ready"
+            referencedColumns: ["parent_contact_id"]
+          },
+        ]
+      }
       help_articles: {
         Row: {
           article_type: string
@@ -27211,6 +27295,47 @@ export type Database = {
           tone?: string
         }
         Relationships: []
+      }
+      parent_report_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          profile_id: string
+          rule_key: string
+          rule_type: string
+          rule_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          profile_id: string
+          rule_key: string
+          rule_type?: string
+          rule_value?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          profile_id?: string
+          rule_key?: string
+          rule_type?: string
+          rule_value?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_report_rules_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "parent_report_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parent_summary_packet_reviews: {
         Row: {
