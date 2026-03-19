@@ -148,7 +148,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="fba" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(fbaBips).map(f => (
+          {filterByLearner(fbaBips).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.fba}</p>
+          ) : filterByLearner(fbaBips).map(f => (
             <Card key={f.id} className={f.status === 'in_progress' ? 'border-blue-300/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
