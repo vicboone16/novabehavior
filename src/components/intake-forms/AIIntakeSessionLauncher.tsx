@@ -86,16 +86,18 @@ export function AIIntakeSessionLauncher({ studentId, studentName, onComplete }: 
         })),
       }));
 
-      // 4. Call AI
+      // 4. Call AI via edge function
       const aiResponse = await novaAIFetch({
-        model: 'google/gemini-2.5-flash',
-        systemPrompt: INTAKE_AI_EXTRACTION_PROMPT,
-        userMessage: `Student: ${studentName}\n\nForm fields available:\n${JSON.stringify(fieldContext, null, 2)}\n\nTranscript:\n${transcript}`,
-        temperature: 0.2,
-        responseFormat: 'json',
+        body: {
+          message: `Student: ${studentName}\n\nForm fields available:\n${JSON.stringify(fieldContext, null, 2)}\n\nTranscript:\n${transcript}`,
+          systemPrompt: INTAKE_AI_EXTRACTION_PROMPT,
+          mode: 'intake_extraction',
+        },
       });
 
-      const parsed = typeof aiResponse === 'string' ? JSON.parse(aiResponse) : aiResponse;
+      if (!aiResponse) throw new Error('AI processing failed');
+      const responseData = await aiResponse.json();
+      const parsed = responseData?.content ? JSON.parse(responseData.content) : responseData;
       setResult(parsed as IntakeAIExtractionResult);
 
       // 5. Save extraction
