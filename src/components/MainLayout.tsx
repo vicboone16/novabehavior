@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 import { useAppNavigation, type NavItem } from '@/hooks/useAppNavigation';
 import { getNavIcon } from '@/lib/navIcons';
+import { DemoModeBanner } from '@/components/demo-center/DemoModeBanner';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -62,6 +63,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      <DemoModeBanner />
       <PendingApprovalsNotification />
 
       {isLoading && (

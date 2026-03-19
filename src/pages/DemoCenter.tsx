@@ -37,7 +37,14 @@ export interface DemoStaff {
 }
 
 export default function DemoCenter() {
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(() => {
+    const stored = sessionStorage.getItem('demo-center-tab');
+    if (stored) {
+      sessionStorage.removeItem('demo-center-tab');
+      return stored;
+    }
+    return 'overview';
+  });
   const [learners, setLearners] = useState<DemoLearner[]>([]);
   const [staff, setStaff] = useState<DemoStaff[]>([]);
   const [loading, setLoading] = useState(true);
