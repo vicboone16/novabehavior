@@ -756,10 +756,21 @@ export default function Intelligence() {
                         </Badge>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {room.studentCount} students</span>
                       <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {room.behaviorEventsToday} events</span>
+                      <span className="flex items-center gap-1"><Award className="w-3 h-3" /> {room.pointsAwardedToday} pts</span>
                     </div>
+                    {(room.maydayEventsToday > 0 || room.staffPresent > 0) && (
+                      <div className="flex gap-3 text-[10px] text-muted-foreground">
+                        {room.maydayEventsToday > 0 && (
+                          <span className="text-destructive font-medium">🚨 {room.maydayEventsToday} mayday</span>
+                        )}
+                        {room.staffPresent > 0 && (
+                          <span>👤 {room.staffPresent} staff present</span>
+                        )}
+                      </div>
+                    )}
                     <p className="text-[11px] italic text-muted-foreground">{room.signalSummary}</p>
                     <div className="flex gap-2 pt-1">
                       <Button variant="outline" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); setActiveTab('signals'); }}>
