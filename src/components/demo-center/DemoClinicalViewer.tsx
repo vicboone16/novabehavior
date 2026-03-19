@@ -94,9 +94,14 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="text-sm font-medium">{learnerMap.get(n.learner_id)}</span>
-                  <Badge className={`${NOTE_TYPE_COLORS[n.note_type]} text-[9px]`}>
-                    {NOTE_TYPE_LABELS[n.note_type] || n.note_type}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className={`${NOTE_TYPE_COLORS[n.note_type]} text-[9px] cursor-help`}>
+                        {NOTE_TYPE_LABELS[n.note_type] || n.note_type}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs max-w-[200px]">{NOTE_TOOLTIPS[n.note_type] || ''}</p></TooltipContent>
+                  </Tooltip>
                   <span className="text-[10px] text-muted-foreground">{n.session_date}</span>
                   {n.cpt_code && <Badge variant="outline" className="text-[9px]">{n.cpt_code}</Badge>}
                   {n.duration_minutes && <span className="text-[10px] text-muted-foreground">{n.duration_minutes} min</span>}
