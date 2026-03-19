@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileText, ClipboardCheck, Shield, CreditCard, Brain, ArrowRight } from 'lucide-react';
+import { TOOLTIPS, EMPTY_STATES } from '@/lib/demoCopy';
 import type { DemoSessionNote, DemoAssessment, DemoFbaBip, DemoBillingRecord } from '@/hooks/useDemoEcosystem';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
@@ -53,7 +55,16 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
   const filterByLearner = <T extends { learner_id: string }>(items: T[]) =>
     learnerFilter === 'all' ? items : items.filter(i => i.learner_id === learnerFilter);
 
+  const NOTE_TOOLTIPS: Record<string, string> = {
+    session: TOOLTIPS.sessionNote,
+    narrative: TOOLTIPS.narrativeNote,
+    supervision: TOOLTIPS.supervisionNote,
+    teacher_summary: TOOLTIPS.teacherSummary,
+    caregiver_summary: TOOLTIPS.caregiverSummary,
+  };
+
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <Select value={learnerFilter} onValueChange={setLearnerFilter}>
@@ -78,14 +89,21 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsList>
 
         <TabsContent value="notes" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(sessionNotes).map(n => (
+          {filterByLearner(sessionNotes).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.sessionNotes}</p>
+          ) : filterByLearner(sessionNotes).map(n => (
             <Card key={n.id}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="text-sm font-medium">{learnerMap.get(n.learner_id)}</span>
-                  <Badge className={`${NOTE_TYPE_COLORS[n.note_type]} text-[9px]`}>
-                    {NOTE_TYPE_LABELS[n.note_type] || n.note_type}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className={`${NOTE_TYPE_COLORS[n.note_type]} text-[9px] cursor-help`}>
+                        {NOTE_TYPE_LABELS[n.note_type] || n.note_type}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs max-w-[200px]">{NOTE_TOOLTIPS[n.note_type] || ''}</p></TooltipContent>
+                  </Tooltip>
                   <span className="text-[10px] text-muted-foreground">{n.session_date}</span>
                   {n.cpt_code && <Badge variant="outline" className="text-[9px]">{n.cpt_code}</Badge>}
                   {n.duration_minutes && <span className="text-[10px] text-muted-foreground">{n.duration_minutes} min</span>}
@@ -105,15 +123,22 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="assessments" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(assessments).map(a => (
+          {filterByLearner(assessments).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.assessments}</p>
+          ) : filterByLearner(assessments).map(a => (
             <Card key={a.id} className={a.status === 'pending' ? 'border-amber-300/30' : a.status === 'in_progress' ? 'border-blue-300/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="text-sm font-medium">{learnerMap.get(a.learner_id)}</span>
                   <Badge variant="outline" className="text-[9px]">{a.assessment_type}</Badge>
-                  <Badge className={`text-[9px] ${a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-700' : a.status === 'pending' ? 'bg-amber-500/15 text-amber-700' : 'bg-blue-500/15 text-blue-700'}`}>
-                    {a.status}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className={`text-[9px] cursor-help ${a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-700' : a.status === 'pending' ? 'bg-amber-500/15 text-amber-700' : 'bg-blue-500/15 text-blue-700'}`}>
+                        {a.status}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs max-w-[200px]">{a.status === 'pending' ? TOOLTIPS.assessmentPending : a.status === 'completed' ? TOOLTIPS.assessmentReviewed : 'Assessment is currently being completed.'}</p></TooltipContent>
+                  </Tooltip>
                   <span className="text-[10px] text-muted-foreground">{a.assessment_date}</span>
                 </div>
                 {a.summary && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.summary}</p>}
@@ -123,7 +148,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="fba" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(fbaBips).map(f => (
+          {filterByLearner(fbaBips).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.fba}</p>
+          ) : filterByLearner(fbaBips).map(f => (
             <Card key={f.id} className={f.status === 'in_progress' ? 'border-blue-300/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -149,7 +176,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="billing" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(billingRecords).map(b => (
+          {filterByLearner(billingRecords).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.billingRecords}</p>
+          ) : filterByLearner(billingRecords).map(b => (
             <Card key={b.id} className={b.status === 'denied' || b.status === 'rejected' ? 'border-destructive/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -166,7 +195,14 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   {b.cpt_code && <span>{b.cpt_code}</span>}
-                  {b.units_authorized != null && <span>{b.units_used}/{b.units_authorized} units</span>}
+                  {b.units_authorized != null && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help underline decoration-dotted">{b.units_used}/{b.units_authorized} units</span>
+                      </TooltipTrigger>
+                      <TooltipContent><p className="text-xs max-w-[200px]">{TOOLTIPS.unitsRemaining}</p></TooltipContent>
+                    </Tooltip>
+                  )}
                   {b.amount != null && b.amount > 0 && <span className="font-medium">${b.amount.toLocaleString()}</span>}
                   {b.expiry_date && <span>expires {b.expiry_date}</span>}
                 </div>
@@ -176,5 +212,6 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
       </Tabs>
     </div>
+    </TooltipProvider>
   );
 }

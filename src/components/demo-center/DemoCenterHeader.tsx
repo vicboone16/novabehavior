@@ -20,7 +20,7 @@ export function DemoCenterHeader() {
           <DEMO_BADGE />
         </div>
         <p className="text-sm text-muted-foreground">
-          Nova Behavioral Collaborative — a fully lived-in demo ecosystem
+          Explore the system — choose how you want to experience the platform
         </p>
       </div>
       <Button variant="outline" size="sm" onClick={() => window.open('/help-center', '_self')}>

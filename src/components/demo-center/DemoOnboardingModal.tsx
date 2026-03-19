@@ -44,8 +44,8 @@ export function DemoOnboardingModal({ onAction }: Props) {
             </div>
             <DialogTitle className="text-lg">Welcome to the Demo Workspace</DialogTitle>
           </div>
-          <DialogDescription className="text-sm">
-            This environment shows how the system works with real-world scenarios across clinical, school, and caregiver workflows. All data is simulated — explore freely.
+          <DialogDescription className="text-sm leading-relaxed">
+            This environment shows how the system works with real-world scenarios across clinical, school, and caregiver workflows. All data is simulated — explore freely. Nothing here affects real client data.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 mt-2">
@@ -53,7 +53,7 @@ export function DemoOnboardingModal({ onAction }: Props) {
             <GraduationCap className="w-4 h-4 text-primary" />
             <div className="text-left">
               <p className="text-sm font-medium">Start with a Learner</p>
-              <p className="text-xs text-muted-foreground">Explore client profiles and scenarios</p>
+              <p className="text-xs text-muted-foreground">View real-world client scenarios</p>
             </div>
           </Button>
           <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => handleAction('roles')}>
@@ -66,8 +66,8 @@ export function DemoOnboardingModal({ onAction }: Props) {
           <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => handleAction('walkthroughs')}>
             <Play className="w-4 h-4 text-primary" />
             <div className="text-left">
-              <p className="text-sm font-medium">Follow a Guided Walkthrough</p>
-              <p className="text-xs text-muted-foreground">Step through key workflows with suggestions</p>
+              <p className="text-sm font-medium">See Key Workflows</p>
+              <p className="text-xs text-muted-foreground">Follow key processes step-by-step with guided suggestions</p>
             </div>
           </Button>
         </div>
