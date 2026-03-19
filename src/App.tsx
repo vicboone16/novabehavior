@@ -470,6 +470,7 @@ const App = () => {
               <Route path="/demo/workflows" element={<DemoCenter />} />
               <Route path="/demo/training" element={<TrainingAcademy />} />
               <Route path="/demo/help" element={<HelpCenter />} />
+              <Route path="/demo/client" element={<ClientDemo />} />
               <Route path="/help-center" element={<HelpCenter />} />
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
