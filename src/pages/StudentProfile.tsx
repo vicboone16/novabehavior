@@ -964,18 +964,13 @@ export default function StudentProfile() {
               </Card>
             )}
           </div>
-        </TabsContent>
-
-
-        {/* SDC Intake Tab */}
-        <TabsContent value="sdc-intake" className="space-y-4">
+          {/* SDC Intake — merged into Assessment tab */}
           <SdcIntakeManager
             studentId={student.id}
             studentName={student.name}
             studentGrade={student.grade || ''}
           />
         </TabsContent>
-
 
 
         {/* Appointments Tab */}
@@ -991,13 +986,15 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-        {/* Teacher-Friendly View Tab */}
-        <TabsContent value="teacher" className="space-y-4">
+        {/* Data Sources Tab — consolidates Teacher, Observations, IEP */}
+        <TabsContent value="data-sources" className="space-y-4">
+          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
+          <TeacherDataHub clientId={student.id} />
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-primary" />
-                Teacher-Friendly View
+                Teacher Data Entry
               </CardTitle>
               <CardDescription>
                 Simplified interface with large touch targets for quick data entry
@@ -1007,26 +1004,22 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
-          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
-          <TeacherDataHub clientId={student.id} />
+          {/* Observations */}
+          <StudentObservationsTab studentId={student.id} studentName={student.name} />
+          {/* IEP Engine */}
+          <StudentIEPPrepTab studentId={student.id} />
           {/* Parent Snapshot Generator */}
           <ParentSnapshotGenerator studentId={student.id} studentName={student.name} />
         </TabsContent>
 
-        {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
-            consolidated into the Profile tab as collapsible sections */}
-
-        {/* Profile 2.0 Tabs - Documents */}
+        {/* Documents Tab — includes files, e-signatures, tags */}
         <TabsContent value="documents" className="space-y-4">
           <DocumentsTab
             clientId={student.id}
             documents={clientProfile.documents}
             onRefetch={clientProfile.refetch}
           />
-        </TabsContent>
-
-        {/* Profile 2.0 Tabs - Tags & Case Attributes */}
-        <TabsContent value="tags" className="space-y-4">
+          <StudentFileManager studentId={student.id} studentName={student.name} />
           <TagsCaseAttributesTab
             clientId={student.id}
             caseAttributes={clientProfile.caseAttributes}
@@ -1038,32 +1031,15 @@ export default function StudentProfile() {
         {fundingMode === 'insurance' && (
           <TabsContent value="payers" className="space-y-4">
             <PayersAuthorizationsTab studentId={student.id} />
-          </TabsContent>
-        )}
-
-        {/* Authorization Usage Tab (Insurance mode only) */}
-        {fundingMode === 'insurance' && (
-          <TabsContent value="usage" className="space-y-4">
             <AuthorizationUsagePage studentId={student.id} />
           </TabsContent>
         )}
-
-        {/* Observation Requests Tab */}
-        <TabsContent value="observations" className="space-y-4">
-          <StudentObservationsTab studentId={student.id} studentName={student.name} />
-        </TabsContent>
-
-        {/* IEP Meeting Prep Tab */}
-        <TabsContent value="iep-prep" className="space-y-4">
-          <StudentIEPPrepTab studentId={student.id} />
-        </TabsContent>
 
         {/* Caregiver Training Tab */}
         <TabsContent value="caregiver-training" className="space-y-4">
           <CaregiverTrainingTab studentId={student.id} />
         </TabsContent>
 
-        {/* Protocols moved into Programming */}
       </Tabs>
 
       {/* Add Behavior Dialog */}
