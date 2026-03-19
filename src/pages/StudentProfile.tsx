@@ -990,6 +990,15 @@ export default function StudentProfile() {
         </TabsContent>
 
 
+        {/* SDC Intake Tab */}
+        <TabsContent value="sdc-intake" className="space-y-4">
+          <SdcIntakeManager
+            studentId={student.id}
+            studentName={student.name}
+            studentGrade={student.grade || ''}
+          />
+        </TabsContent>
+
 
 
         {/* Appointments Tab */}
