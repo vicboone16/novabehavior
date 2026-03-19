@@ -25707,6 +25707,38 @@ export type Database = {
           },
         ]
       }
+      parent_channel_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          guardian_id: string
+          id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          guardian_id: string
+          id?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          guardian_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_channel_preferences_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "student_guardians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_contacts: {
         Row: {
           created_at: string
@@ -25842,6 +25874,70 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_notification_logs: {
+        Row: {
+          agency_id: string | null
+          channel: string
+          delivered_at: string | null
+          error_message: string | null
+          guardian_id: string | null
+          id: string
+          notification_id: string | null
+          read_at: string | null
+          sent_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          channel: string
+          delivered_at?: string | null
+          error_message?: string | null
+          guardian_id?: string | null
+          id?: string
+          notification_id?: string | null
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          channel?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          guardian_id?: string | null
+          id?: string
+          notification_id?: string | null
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_notification_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_notification_logs_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "student_guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_notification_logs_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "parent_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_notifications: {
         Row: {
           channel: string
@@ -25885,6 +25981,54 @@ export type Database = {
             columns: ["parent_contact_id"]
             isOneToOne: false
             referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_portal_access: {
+        Row: {
+          active: boolean
+          agency_id: string | null
+          created_at: string
+          guardian_id: string
+          id: string
+          last_login: string | null
+          portal_type: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          agency_id?: string | null
+          created_at?: string
+          guardian_id: string
+          id?: string
+          last_login?: string | null
+          portal_type?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          agency_id?: string | null
+          created_at?: string
+          guardian_id?: string
+          id?: string
+          last_login?: string | null
+          portal_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_portal_access_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_portal_access_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "student_guardians"
             referencedColumns: ["id"]
           },
         ]
@@ -26009,6 +26153,109 @@ export type Database = {
             columns: ["parent_contact_id"]
             isOneToOne: false
             referencedRelation: "parent_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_reply_permissions: {
+        Row: {
+          active: boolean
+          agency_id: string | null
+          created_at: string
+          guardian_id: string
+          id: string
+          reply_mode: string
+        }
+        Insert: {
+          active?: boolean
+          agency_id?: string | null
+          created_at?: string
+          guardian_id: string
+          id?: string
+          reply_mode?: string
+        }
+        Update: {
+          active?: boolean
+          agency_id?: string | null
+          created_at?: string
+          guardian_id?: string
+          id?: string
+          reply_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_reply_permissions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_reply_permissions_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: true
+            referencedRelation: "student_guardians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_report_overrides: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string
+          guardian_id: string | null
+          id: string
+          override_key: string
+          override_value: Json
+          profile_id: string
+          reason: string | null
+          student_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by: string
+          guardian_id?: string | null
+          id?: string
+          override_key: string
+          override_value: Json
+          profile_id: string
+          reason?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string
+          guardian_id?: string | null
+          id?: string
+          override_key?: string
+          override_value?: Json
+          profile_id?: string
+          reason?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_report_overrides_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_report_overrides_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "student_guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_report_overrides_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "parent_report_profiles"
             referencedColumns: ["id"]
           },
         ]
