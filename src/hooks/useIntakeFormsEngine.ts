@@ -37,6 +37,7 @@ export interface FormTemplateSection {
   is_repeatable: boolean;
   ai_extractable: boolean;
   created_at: string;
+  fields?: FormTemplateField[];
 }
 
 export interface FormTemplateField {
@@ -93,19 +94,28 @@ export interface FormInstance {
   created_by: string | null;
   // Joined
   form_templates?: FormTemplate;
-  form_responses?: FormResponse[];
   form_signatures?: FormSignature[];
 }
 
-export interface FormResponse {
+export interface FormAnswer {
   id: string;
   form_instance_id: string;
-  response_json: any;
-  is_final: boolean;
-  rendered_summary: string | null;
-  edited_by: string | null;
-  edited_at: string;
+  section_key: string;
+  field_key: string;
+  field_label: string;
+  repeat_index: number;
+  value_raw: any;
+  value_normalized: any;
+  source_type: string;
+  source_reference: string | null;
+  confidence_score: number | null;
+  ai_generated: boolean;
+  manually_edited: boolean;
+  verified_by_staff: boolean;
+  verified_by: string | null;
+  verified_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface FormSignature {
@@ -160,13 +170,27 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     staleTime: 5 * 60 * 1000,
   });
 
+  // ─── Template Sections + Fields ────────────────────────────
+  const loadTemplateSections = useCallback(async (templateId: string) => {
+    const { data, error } = await supabase
+      .from('form_template_sections')
+      .select('*, form_template_fields(*)')
+      .eq('template_id', templateId)
+      .order('display_order');
+    if (error) throw error;
+    return (data || []).map((s: any) => ({
+      ...s,
+      fields: (s.form_template_fields || []).sort((a: any, b: any) => a.display_order - b.display_order),
+    })) as FormTemplateSection[];
+  }, []);
+
   // ─── Instances (global or scoped) ─────────────────────────
   const instancesQuery = useQuery({
     queryKey: ['intake-instances', opts?.studentId, opts?.referralId],
     queryFn: async () => {
       let query = supabase
         .from('form_instances')
-        .select('*, form_templates(*), form_responses(*), form_signatures(*)')
+        .select('*, form_templates(*), form_signatures(*)')
         .order('updated_at', { ascending: false });
 
       if (opts?.studentId) {
@@ -201,6 +225,22 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     },
   });
 
+  // ─── Load Answers for an Instance ─────────────────────────
+  const loadAnswers = useCallback(async (instanceId: string) => {
+    const { data, error } = await supabase
+      .from('form_answers')
+      .select('*')
+      .eq('form_instance_id', instanceId)
+      .order('created_at');
+    if (error) throw error;
+    // Convert to a map: { fieldKey: valueRaw }
+    const map: Record<string, any> = {};
+    for (const row of (data || [])) {
+      map[(row as any).field_key] = (row as any).value_raw;
+    }
+    return { answers: (data || []) as unknown as FormAnswer[], map };
+  }, []);
+
   // ─── Create Instance ──────────────────────────────────────
   const createInstance = useMutation({
     mutationFn: async (params: {
@@ -211,7 +251,7 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
       linkedEntityType?: string;
       linkedEntityId?: string;
     }) => {
-      // First get the form_definition_id for this template
+      // Get form_definition_id
       const { data: defData } = await supabase
         .from('form_definitions')
         .select('id')
@@ -245,48 +285,123 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     onError: (err: any) => toast.error('Failed to create form: ' + err.message),
   });
 
-  // ─── Save Response (autosave) ─────────────────────────────
-  const saveResponse = useMutation({
-    mutationFn: async (params: { instanceId: string; responseJson: any; isFinal?: boolean }) => {
-      // Upsert response
-      const { data: existing } = await supabase
-        .from('form_responses')
-        .select('id')
-        .eq('form_instance_id', params.instanceId)
-        .maybeSingle();
+  // ─── Save Individual Answer (field-level) ─────────────────
+  const saveAnswer = useCallback(async (params: {
+    instanceId: string;
+    sectionKey: string;
+    fieldKey: string;
+    fieldLabel: string;
+    value: any;
+    repeatIndex?: number;
+    sourceType?: string;
+    aiGenerated?: boolean;
+    confidenceScore?: number;
+  }) => {
+    const { data: existing } = await supabase
+      .from('form_answers')
+      .select('id')
+      .eq('form_instance_id', params.instanceId)
+      .eq('field_key', params.fieldKey)
+      .eq('repeat_index', params.repeatIndex || 0)
+      .maybeSingle();
 
-      if (existing) {
-        const { error } = await supabase
-          .from('form_responses')
-          .update({
-            response_json: params.responseJson,
-            is_final: params.isFinal || false,
-            edited_by: user?.id,
-            edited_at: new Date().toISOString(),
-          } as any)
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('form_responses')
-          .insert({
-            form_instance_id: params.instanceId,
-            response_json: params.responseJson,
-            is_final: params.isFinal || false,
-            edited_by: user?.id,
-          } as any);
-        if (error) throw error;
+    if (existing) {
+      const { error } = await supabase
+        .from('form_answers')
+        .update({
+          value_raw: params.value,
+          manually_edited: params.sourceType !== 'ai',
+          ai_generated: params.aiGenerated || false,
+          confidence_score: params.confidenceScore || null,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', (existing as any).id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('form_answers')
+        .insert({
+          form_instance_id: params.instanceId,
+          section_key: params.sectionKey,
+          field_key: params.fieldKey,
+          field_label: params.fieldLabel,
+          repeat_index: params.repeatIndex || 0,
+          value_raw: params.value,
+          source_type: params.sourceType || 'manual',
+          ai_generated: params.aiGenerated || false,
+          confidence_score: params.confidenceScore || null,
+        } as any);
+      if (error) throw error;
+    }
+  }, []);
+
+  // ─── Batch Save All Answers (autosave / submit) ───────────
+  const saveAllAnswers = useMutation({
+    mutationFn: async (params: {
+      instanceId: string;
+      answers: Record<string, any>;
+      sections: FormTemplateSection[];
+      isFinal?: boolean;
+    }) => {
+      // Build a field lookup for section_key + label
+      const fieldLookup: Record<string, { sectionKey: string; label: string }> = {};
+      for (const section of params.sections) {
+        for (const field of (section.fields || [])) {
+          fieldLookup[field.field_key] = { sectionKey: section.section_key, label: field.field_label };
+        }
       }
 
-      // Update instance timestamp
+      // Upsert each answer
+      const entries = Object.entries(params.answers).filter(([_, v]) => v !== undefined && v !== '');
+      for (const [fieldKey, value] of entries) {
+        const lookup = fieldLookup[fieldKey];
+        if (!lookup) continue;
+        await saveAnswer({
+          instanceId: params.instanceId,
+          sectionKey: lookup.sectionKey,
+          fieldKey,
+          fieldLabel: lookup.label,
+          value,
+        });
+      }
+
+      // Update instance timestamp + status
+      const updates: any = {
+        last_saved_at: new Date().toISOString(),
+        status: params.isFinal ? 'submitted' : 'in_progress',
+      };
+      if (params.isFinal) {
+        updates.submitted_at = new Date().toISOString();
+      }
+      if (!params.isFinal) {
+        // Update started_at on first save
+        updates.started_at = new Date().toISOString();
+      }
+
       await supabase
         .from('form_instances')
-        .update({
-          last_saved_at: new Date().toISOString(),
-          status: params.isFinal ? 'submitted' : 'in_progress',
-          ...(params.isFinal ? { submitted_at: new Date().toISOString() } : {}),
-        } as any)
+        .update(updates)
         .eq('id', params.instanceId);
+
+      // Create version snapshot on submit/finalize
+      if (params.isFinal) {
+        const { data: versionCount } = await supabase
+          .from('form_versions')
+          .select('version_no')
+          .eq('form_instance_id', params.instanceId)
+          .order('version_no', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const nextVersion = ((versionCount as any)?.version_no || 0) + 1;
+        await supabase.from('form_versions').insert({
+          form_instance_id: params.instanceId,
+          version_no: nextVersion,
+          snapshot_type: 'submit',
+          snapshot_json: params.answers,
+          created_by: user?.id,
+        } as any);
+      }
     },
     onSuccess: (_, vars) => {
       if (vars.isFinal) {
@@ -340,7 +455,6 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
         .single();
       if (error) throw error;
 
-      // Insert packet items
       if (params.templateIds.length > 0) {
         const items = params.templateIds.map((tid, idx) => ({
           packet_id: packet.id,
@@ -395,7 +509,6 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
   const signedInstances = instances.filter(i => (i.form_signatures || []).length > 0);
 
   return {
-    // Data
     templates: templatesQuery.data || [],
     instances,
     packets: packetsQuery.data || [],
@@ -404,18 +517,16 @@ export function useIntakeFormsEngine(opts?: { studentId?: string; referralId?: s
     submittedInstances,
     finalizedInstances,
     signedInstances,
-
-    // Loading
     isLoading: templatesQuery.isLoading || instancesQuery.isLoading,
-
     // Actions
     createInstance,
-    saveResponse,
+    saveAllAnswers,
+    saveAnswer,
+    loadAnswers,
+    loadTemplateSections,
     updateStatus,
     createPacket,
     saveSignature,
-
-    // Refresh
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['intake-templates'] });
       queryClient.invalidateQueries({ queryKey: ['intake-instances'] });
