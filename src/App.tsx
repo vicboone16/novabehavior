@@ -98,6 +98,7 @@ import ClientDemo from "./pages/ClientDemo";
 import HelpCenter from "./pages/HelpCenter";
 import TrainingAcademy from "./pages/TrainingAcademy";
 import IntakeForms from "./pages/IntakeForms";
+import NovaCopilot from "./pages/NovaCopilot";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 
