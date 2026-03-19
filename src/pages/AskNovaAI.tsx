@@ -418,13 +418,76 @@ export default function AskNovaAI() {
           await autoExecutePipeline(executableActions, text.trim());
         }
       } else if (actions.length === 0 && selectedClientId && inputLikelyContainsData(text.trim())) {
-        // FALLBACK: Model returned text-only for data-like input.
-        // Show a prompt to the user instead of silently failing.
-        console.warn('[NovaAI] Model did not use tools for data-like input. Suggesting manual action.');
+        // FORCED RETRY: Model returned text-only for data-like input.
+        // Retry with force_tools=true to force tool_choice=required on the edge function.
+        console.warn('[NovaAI] Model did not use tools for data-like input. Retrying with forced tool_choice...');
+        
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: '⚠️ I detected clinical data in your message but didn\'t extract it automatically. You can try rephrasing with specific numbers (e.g., "aggression 3 times, manding 8/10 trials") or use the **Log Session Data** quick prompt.',
+          content: '🔄 Detected clinical data — re-processing with structured extraction...',
         }]);
+
+        try {
+          const retryResp = await novaAIFetch({
+            body: {
+              messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+              evidence_mode: evidenceMode,
+              client_id: selectedClientId,
+              force_tools: true,
+            },
+          });
+
+          if (retryResp?.body) {
+            let retryContent = '';
+            const retryReader = retryResp.body.getReader();
+            const retryDecoder = new TextDecoder();
+            let retryBuffer = '';
+
+            while (true) {
+              const { done, value } = await retryReader.read();
+              if (done) break;
+              retryBuffer += retryDecoder.decode(value, { stream: true });
+
+              let idx: number;
+              while ((idx = retryBuffer.indexOf('\n')) !== -1) {
+                let rLine = retryBuffer.slice(0, idx);
+                retryBuffer = retryBuffer.slice(idx + 1);
+                if (rLine.endsWith('\r')) rLine = rLine.slice(0, -1);
+                if (rLine.startsWith(':') || rLine.trim() === '') continue;
+                if (!rLine.startsWith('data: ')) continue;
+                const rJson = rLine.slice(6).trim();
+                if (rJson === '[DONE]') break;
+                try {
+                  const rParsed = JSON.parse(rJson);
+                  const rDelta = rParsed.choices?.[0]?.delta?.content;
+                  if (rDelta) retryContent += rDelta;
+                } catch { retryBuffer = rLine + '\n' + retryBuffer; break; }
+              }
+            }
+
+            const { actions: retryActions } = parseNovaActions(retryContent);
+            if (retryActions.length > 0) {
+              const execRetry = retryActions.filter(a => a.type !== 'request_clarification');
+              if (execRetry.length > 0) {
+                setMessages(prev => prev.filter(m => m.content !== '🔄 Detected clinical data — re-processing with structured extraction...'));
+                await autoExecutePipeline(execRetry, text.trim());
+              }
+            } else {
+              setMessages(prev => prev.map(m => 
+                m.content === '🔄 Detected clinical data — re-processing with structured extraction...'
+                  ? { ...m, content: '⚠️ I detected clinical data but couldn\'t extract it automatically. Try rephrasing with specific numbers (e.g., "aggression 3 times, manding 8/10 trials") or use the **Log Session Data** quick prompt.' }
+                  : m
+              ));
+            }
+          }
+        } catch (retryErr) {
+          console.error('[NovaAI] Forced retry failed:', retryErr);
+          setMessages(prev => prev.map(m => 
+            m.content === '🔄 Detected clinical data — re-processing with structured extraction...'
+              ? { ...m, content: '⚠️ I detected clinical data but couldn\'t extract it automatically. Try rephrasing with specific numbers or use the **Log Session Data** quick prompt.' }
+              : m
+          ));
+        }
       }
     } catch (e) {
       console.error('Chat error:', e);
