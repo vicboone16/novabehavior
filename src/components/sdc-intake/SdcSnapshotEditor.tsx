@@ -105,6 +105,8 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     try {
       const payload = await intake.getSnapshotSourcePayload(packageInstanceId);
 
+      await intake.logGenerationEvent(reportDraftId, draft?.generated_json ? 'regenerated' : 'generated', { source: 'nova_ai' });
+
       const resp = await novaAIFetch({
         body: {
           mode: 'sdc_snapshot',
