@@ -16625,6 +16625,384 @@ export type Database = {
           },
         ]
       }
+      demo_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          demo_org_id: string
+          description: string | null
+          id: string
+          learner_id: string | null
+          resolved_at: string | null
+          severity: string
+          source_app: string | null
+          staff_id: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          demo_org_id: string
+          description?: string | null
+          id?: string
+          learner_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_app?: string | null
+          staff_id?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          demo_org_id?: string
+          description?: string | null
+          id?: string
+          learner_id?: string | null
+          resolved_at?: string | null
+          severity?: string
+          source_app?: string | null
+          staff_id?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_alerts_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_alerts_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_alerts_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "demo_staff_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_assessments: {
+        Row: {
+          assessment_date: string
+          assessment_type: string
+          created_at: string
+          demo_org_id: string
+          id: string
+          learner_id: string
+          scores: Json
+          staff_id: string
+          status: string
+          summary: string | null
+        }
+        Insert: {
+          assessment_date: string
+          assessment_type: string
+          created_at?: string
+          demo_org_id: string
+          id?: string
+          learner_id: string
+          scores?: Json
+          staff_id: string
+          status?: string
+          summary?: string | null
+        }
+        Update: {
+          assessment_date?: string
+          assessment_type?: string
+          created_at?: string
+          demo_org_id?: string
+          id?: string
+          learner_id?: string
+          scores?: Json
+          staff_id?: string
+          status?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_assessments_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_assessments_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_assessments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "demo_staff_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_billing_records: {
+        Row: {
+          amount: number | null
+          cpt_code: string | null
+          created_at: string
+          demo_org_id: string
+          details: Json
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          learner_id: string
+          payer_name: string
+          record_type: string
+          status: string
+          units_authorized: number | null
+          units_remaining: number | null
+          units_used: number | null
+        }
+        Insert: {
+          amount?: number | null
+          cpt_code?: string | null
+          created_at?: string
+          demo_org_id: string
+          details?: Json
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          learner_id: string
+          payer_name: string
+          record_type: string
+          status?: string
+          units_authorized?: number | null
+          units_remaining?: number | null
+          units_used?: number | null
+        }
+        Update: {
+          amount?: number | null
+          cpt_code?: string | null
+          created_at?: string
+          demo_org_id?: string
+          details?: Json
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          learner_id?: string
+          payer_name?: string
+          record_type?: string
+          status?: string
+          units_authorized?: number | null
+          units_remaining?: number | null
+          units_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_billing_records_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_billing_records_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_cross_app_inputs: {
+        Row: {
+          created_at: string
+          demo_org_id: string
+          downstream_use: string | null
+          id: string
+          input_data: Json
+          input_type: string
+          learner_id: string
+          occurred_at: string
+          source_app: string
+          staff_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          demo_org_id: string
+          downstream_use?: string | null
+          id?: string
+          input_data?: Json
+          input_type: string
+          learner_id: string
+          occurred_at?: string
+          source_app: string
+          staff_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          demo_org_id?: string
+          downstream_use?: string | null
+          id?: string
+          input_data?: Json
+          input_type?: string
+          learner_id?: string
+          occurred_at?: string
+          source_app?: string
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_cross_app_inputs_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_cross_app_inputs_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_cross_app_inputs_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "demo_staff_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_dashboard_metrics: {
+        Row: {
+          created_at: string
+          demo_org_id: string
+          details: Json | null
+          id: string
+          metric_category: string
+          metric_key: string
+          metric_label: string
+          metric_value: number
+          snapshot_date: string
+          trend_direction: string | null
+          trend_pct: number | null
+        }
+        Insert: {
+          created_at?: string
+          demo_org_id: string
+          details?: Json | null
+          id?: string
+          metric_category: string
+          metric_key: string
+          metric_label: string
+          metric_value?: number
+          snapshot_date?: string
+          trend_direction?: string | null
+          trend_pct?: number | null
+        }
+        Update: {
+          created_at?: string
+          demo_org_id?: string
+          details?: Json | null
+          id?: string
+          metric_category?: string
+          metric_key?: string
+          metric_label?: string
+          metric_value?: number
+          snapshot_date?: string
+          trend_direction?: string | null
+          trend_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_dashboard_metrics_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_fba_bip: {
+        Row: {
+          created_at: string
+          demo_org_id: string
+          document_date: string
+          document_type: string
+          functions_identified: Json
+          id: string
+          interventions: Json
+          learner_id: string
+          linked_inputs: string[] | null
+          staff_id: string
+          status: string
+          summary: string | null
+          target_behaviors: Json
+        }
+        Insert: {
+          created_at?: string
+          demo_org_id: string
+          document_date: string
+          document_type: string
+          functions_identified?: Json
+          id?: string
+          interventions?: Json
+          learner_id: string
+          linked_inputs?: string[] | null
+          staff_id: string
+          status?: string
+          summary?: string | null
+          target_behaviors?: Json
+        }
+        Update: {
+          created_at?: string
+          demo_org_id?: string
+          document_date?: string
+          document_type?: string
+          functions_identified?: Json
+          id?: string
+          interventions?: Json
+          learner_id?: string
+          linked_inputs?: string[] | null
+          staff_id?: string
+          status?: string
+          summary?: string | null
+          target_behaviors?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_fba_bip_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_fba_bip_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_fba_bip_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "demo_staff_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_learner_scenarios: {
         Row: {
           age: number | null
@@ -16722,6 +17100,73 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      demo_session_notes: {
+        Row: {
+          content: Json
+          cpt_code: string | null
+          created_at: string
+          demo_org_id: string
+          duration_minutes: number | null
+          id: string
+          learner_id: string
+          note_type: string
+          session_date: string
+          source_app: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          content?: Json
+          cpt_code?: string | null
+          created_at?: string
+          demo_org_id: string
+          duration_minutes?: number | null
+          id?: string
+          learner_id: string
+          note_type: string
+          session_date: string
+          source_app?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          content?: Json
+          cpt_code?: string | null
+          created_at?: string
+          demo_org_id?: string
+          duration_minutes?: number | null
+          id?: string
+          learner_id?: string
+          note_type?: string
+          session_date?: string
+          source_app?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_session_notes_demo_org_id_fkey"
+            columns: ["demo_org_id"]
+            isOneToOne: false
+            referencedRelation: "demo_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_session_notes_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "demo_learner_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "demo_session_notes_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "demo_staff_personas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demo_staff_personas: {
         Row: {
