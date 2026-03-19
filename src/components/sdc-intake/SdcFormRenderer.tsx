@@ -514,7 +514,13 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         );
       })}
 
-      {/* Submit confirmation */}
+      {/* Helper text */}
+      {!isSubmitted && (
+        <p className="text-xs text-muted-foreground text-center py-2">
+          Your responses will be used to support behavior planning, staff review, and snapshot generation.
+        </p>
+      )}
+
       <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <DialogContent>
           <DialogHeader>
