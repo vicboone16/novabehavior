@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, Clock, Plus, RefreshCw, Shield, Volume2, VolumeX } from 'lucide-react';
+import { NotificationOrchestratorPanel } from '@/components/phase4';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
