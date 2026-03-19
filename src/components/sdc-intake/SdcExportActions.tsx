@@ -351,7 +351,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_${fi.form_definition?.slug || 'form'}.docx`;
       saveAs(buf, fileName);
       await intake.logFormExport({ formInstanceId: fi.id, exportScope: 'individual', exportFormat: 'docx', fileName });
-      toast.success('Word document exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
