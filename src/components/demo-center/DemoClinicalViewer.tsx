@@ -55,7 +55,16 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
   const filterByLearner = <T extends { learner_id: string }>(items: T[]) =>
     learnerFilter === 'all' ? items : items.filter(i => i.learner_id === learnerFilter);
 
+  const NOTE_TOOLTIPS: Record<string, string> = {
+    session: TOOLTIPS.sessionNote,
+    narrative: TOOLTIPS.narrativeNote,
+    supervision: TOOLTIPS.supervisionNote,
+    teacher_summary: TOOLTIPS.teacherSummary,
+    caregiver_summary: TOOLTIPS.caregiverSummary,
+  };
+
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <Select value={learnerFilter} onValueChange={setLearnerFilter}>
