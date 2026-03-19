@@ -195,7 +195,14 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   {b.cpt_code && <span>{b.cpt_code}</span>}
-                  {b.units_authorized != null && <span>{b.units_used}/{b.units_authorized} units</span>}
+                  {b.units_authorized != null && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help underline decoration-dotted">{b.units_used}/{b.units_authorized} units</span>
+                      </TooltipTrigger>
+                      <TooltipContent><p className="text-xs max-w-[200px]">{TOOLTIPS.unitsRemaining}</p></TooltipContent>
+                    </Tooltip>
+                  )}
                   {b.amount != null && b.amount > 0 && <span className="font-medium">${b.amount.toLocaleString()}</span>}
                   {b.expiry_date && <span>expires {b.expiry_date}</span>}
                 </div>
