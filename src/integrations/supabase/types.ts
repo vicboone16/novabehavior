@@ -16002,6 +16002,36 @@ export type Database = {
           },
         ]
       }
+      curriculum_library_registry: {
+        Row: {
+          adapter_view_name: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          refresh_function_name: string | null
+          source_type: string
+        }
+        Insert: {
+          adapter_view_name: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          refresh_function_name?: string | null
+          source_type: string
+        }
+        Update: {
+          adapter_view_name?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          refresh_function_name?: string | null
+          source_type?: string
+        }
+        Relationships: []
+      }
       curriculum_source_registry: {
         Row: {
           assessment_date: string | null
