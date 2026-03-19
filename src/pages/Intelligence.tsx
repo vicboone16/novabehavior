@@ -279,6 +279,9 @@ export default function Intelligence() {
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
 
+      {/* Beacon Activity KPIs — reward, mayday, triggers, engagement */}
+      <BeaconActivityKPIs agencyId={effectiveAgencyId} />
+
       {/* Clinical Intelligence Alert Rollup Cards */}
       <AlertRollupCards agencyId={effectiveAgencyId} />
 
