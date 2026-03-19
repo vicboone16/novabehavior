@@ -463,6 +463,7 @@ const App = () => {
               <Route path="/demo-center" element={<DemoCenter />} />
               <Route path="/help-center" element={<HelpCenter />} />
               <Route path="/training-academy" element={<TrainingAcademy />} />
+              <Route path="/intake-forms" element={<IntakeForms />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
