@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,55 @@ interface Props {
   onBack: () => void;
 }
 
+// Scoring categories for the prioritization form
+const SCORE_SUFFIXES = [
+  'danger_score', 'frequency_score', 'duration_score',
+  'reinforcement_gain_score', 'importance_score',
+  'reinforcement_for_others_score', 'change_likelihood_score',
+];
+
+function computeBehaviorTotals(responses: Record<string, any>): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (let i = 1; i <= 4; i++) {
+    let sum = 0;
+    for (const suffix of SCORE_SUFFIXES) {
+      const v = responses[`behavior_${i}_${suffix}`];
+      sum += Number(v) || 0;
+    }
+    totals[`behavior_${i}_total`] = sum;
+  }
+  return totals;
+}
+
+function suggestPriorityOrder(
+  responses: Record<string, any>,
+  totals: Record<string, number>,
+): Record<string, string> {
+  const items = [1, 2, 3, 4]
+    .filter(i => (responses[`behavior_${i}_name`] || '').trim())
+    .map(i => ({ idx: i, name: responses[`behavior_${i}_name`], total: totals[`behavior_${i}_total`] }))
+    .sort((a, b) => b.total - a.total);
+
+  const suggestion: Record<string, string> = {};
+  items.forEach((item, rank) => {
+    suggestion[`priority_${rank + 1}_behavior`] = item.name;
+  });
+  return suggestion;
+}
+
+/** Resolve a display label for a stored value using the field's options list */
+function resolveLabel(field: any, value: any): string {
+  if (!field?.options || !value) return String(value ?? '');
+  if (Array.isArray(value)) {
+    return value.map(v => {
+      const opt = field.options.find((o: any) => String(o.value) === String(v));
+      return opt ? opt.label : String(v);
+    }).join(', ');
+  }
+  const opt = field.options.find((o: any) => String(o.value) === String(value));
+  return opt ? opt.label : String(value);
+}
+
 export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, onBack }: Props) {
   const intake = useSdcIntake();
   const [formDef, setFormDef] = useState<FormDefinition | null>(formDefinition || null);
@@ -29,15 +78,31 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [prioritySuggestionApplied, setPrioritySuggestionApplied] = useState(false);
   const autosaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const isPrioritizationForm = formDef?.slug === 'sdc_prioritizing_target_behaviors';
+  const behaviorTotals = useMemo(() => isPrioritizationForm ? computeBehaviorTotals(responses) : {}, [responses, isPrioritizationForm]);
 
   useEffect(() => {
     loadFormData();
   }, [formInstanceId]);
 
+  // Auto-apply priority suggestion when totals change (if user hasn't manually edited)
+  useEffect(() => {
+    if (!isPrioritizationForm || prioritySuggestionApplied) return;
+    const hasAnyBehavior = [1, 2, 3, 4].some(i => (responses[`behavior_${i}_name`] || '').trim());
+    const hasAnyPriority = [1, 2, 3, 4].some(i => (responses[`priority_${i}_behavior`] || '').trim());
+    if (hasAnyBehavior && !hasAnyPriority) {
+      const suggestion = suggestPriorityOrder(responses, behaviorTotals);
+      if (Object.keys(suggestion).length > 0) {
+        setResponses(prev => ({ ...prev, ...suggestion }));
+      }
+    }
+  }, [behaviorTotals, isPrioritizationForm]);
+
   const loadFormData = async () => {
     try {
-      // Load existing response
       const resp = await intake.fetchFormResponse(formInstanceId);
       setExistingResponse(resp);
       if (resp?.response_json) {
@@ -46,11 +111,8 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       if (resp?.is_final) {
         setIsSubmitted(true);
       }
-
-      // Load form definition if not provided
       if (!formDefinition) {
         const defs = await intake.fetchFormDefinitions();
-        // We'd need the form_definition_id from form_instances, but for now use what's available
         if (defs.length > 0) setFormDef(defs[0]);
       }
     } catch (err: any) {
@@ -61,13 +123,16 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
   const handleFieldChange = useCallback((key: string, value: any) => {
     setResponses(prev => {
       const next = { ...prev, [key]: value };
-      // Auto-save debounce
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
       autosaveTimer.current = setTimeout(() => {
         intake.saveDraftResponse(formInstanceId, next).catch(() => {});
       }, 3000);
       return next;
     });
+    // If user manually edits a priority field, mark as applied so auto-suggestion stops
+    if (key.startsWith('priority_') && key.endsWith('_behavior')) {
+      setPrioritySuggestionApplied(true);
+    }
   }, [formInstanceId, intake]);
 
   const handleMultiselectToggle = useCallback((key: string, value: string) => {
@@ -88,7 +153,9 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
   const handleSaveDraft = async () => {
     setIsSaving(true);
     try {
-      await intake.saveDraftResponse(formInstanceId, responses);
+      // Include computed totals in saved data for prioritization form
+      const saveData = isPrioritizationForm ? { ...responses, ...behaviorTotals } : responses;
+      await intake.saveDraftResponse(formInstanceId, saveData);
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);
     } finally {
@@ -96,12 +163,20 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
     }
   };
 
+  const handleApplyPrioritySuggestion = () => {
+    const suggestion = suggestPriorityOrder(responses, behaviorTotals);
+    setResponses(prev => ({ ...prev, ...suggestion }));
+    setPrioritySuggestionApplied(true);
+    toast.success('Priority order updated from scores');
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const submitData = isPrioritizationForm ? { ...responses, ...behaviorTotals } : responses;
       await intake.submitFinalResponse(
         formInstanceId,
-        responses,
+        submitData,
         responses.teacher_or_respondent_name || responses.teacher_name || responses.completed_by,
         responses.respondent_role,
       );
@@ -171,13 +246,13 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         return (
           <div key={key} className="space-y-1">
             <Label className="text-sm">{field.label}{field.required && <span className="text-destructive"> *</span>}</Label>
-            <Select value={val} onValueChange={v => handleFieldChange(key, v)} disabled={disabled}>
+            <Select value={String(val)} onValueChange={v => handleFieldChange(key, v)} disabled={disabled}>
               <SelectTrigger>
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
                 {(field.options || []).map((opt: any) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={String(opt.value)} value={String(opt.value)}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -222,18 +297,38 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
         return (
           <div key={key} className="space-y-2">
             <Label className="text-sm">{field.label}</Label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {(field.options || []).map((opt: any) => (
                 <Button
-                  key={opt.value}
-                  variant={val === opt.value ? 'default' : 'outline'}
+                  key={String(opt.value)}
+                  variant={String(val) === String(opt.value) ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleFieldChange(key, opt.value)}
+                  className="min-w-[36px]"
+                  onClick={() => handleFieldChange(key, String(opt.value))}
                   disabled={disabled}
                 >
                   {opt.label}
                 </Button>
               ))}
+            </div>
+          </div>
+        );
+      case 'calculated_number':
+        return (
+          <div key={key} className="space-y-1">
+            <Label className="text-sm">{field.label}</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={behaviorTotals[key] ?? responses[key] ?? 0}
+                disabled
+                className="w-24 font-semibold text-center bg-muted/50"
+              />
+              {/* Show behavior name next to total for context */}
+              {key.match(/behavior_(\d+)_total/) && (
+                <span className="text-xs text-muted-foreground">
+                  {responses[`behavior_${key.match(/behavior_(\d+)_total/)?.[1]}_name`] || '—'}
+                </span>
+              )}
             </div>
           </div>
         );
@@ -249,6 +344,136 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
           </div>
         );
     }
+  };
+
+  // Group scoring fields by behavior number for the prioritization form
+  const renderScoringSection = (section: any) => {
+    if (section.key !== 'scoring' || !isPrioritizationForm) return null;
+
+    const behaviors = [1, 2, 3, 4];
+    const categories = [
+      { suffix: 'danger_score', label: 'Danger' },
+      { suffix: 'frequency_score', label: 'Frequency' },
+      { suffix: 'duration_score', label: 'Duration' },
+      { suffix: 'reinforcement_gain_score', label: 'Reinforcement Gain' },
+      { suffix: 'importance_score', label: 'Importance' },
+      { suffix: 'reinforcement_for_others_score', label: 'Others Reinforcement' },
+      { suffix: 'change_likelihood_score', label: 'Likelihood of Success' },
+    ];
+
+    return (
+      <Card key={section.key}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">{section.label}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Table-style grid */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 pr-3 font-medium text-muted-foreground">Category</th>
+                  {behaviors.map(i => (
+                    <th key={i} className="text-center py-2 px-2 font-medium min-w-[100px]">
+                      {responses[`behavior_${i}_name`] || `Behavior ${i}`}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(cat => (
+                  <tr key={cat.suffix} className="border-b border-border/50">
+                    <td className="py-2 pr-3 text-xs text-muted-foreground">{cat.label}</td>
+                    {behaviors.map(i => {
+                      const fieldKey = `behavior_${i}_${cat.suffix}`;
+                      const field = section.fields.find((f: any) => f.key === fieldKey);
+                      const val = responses[fieldKey] ?? '';
+                      return (
+                        <td key={i} className="text-center py-1.5 px-1">
+                          <div className="flex gap-0.5 justify-center">
+                            {(field?.options || []).map((opt: any) => (
+                              <Button
+                                key={String(opt.value)}
+                                variant={String(val) === String(opt.value) ? 'default' : 'outline'}
+                                size="sm"
+                                className="h-7 w-7 p-0 text-xs"
+                                onClick={() => handleFieldChange(fieldKey, String(opt.value))}
+                                disabled={isSubmitted}
+                              >
+                                {opt.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                {/* Totals row */}
+                <tr className="border-t-2 border-primary/30 font-semibold">
+                  <td className="py-2 pr-3 text-xs">TOTAL</td>
+                  {behaviors.map(i => (
+                    <td key={i} className="text-center py-2">
+                      <Badge variant="secondary" className="text-sm font-bold min-w-[32px]">
+                        {behaviorTotals[`behavior_${i}_total`] ?? 0}
+                      </Badge>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderPrioritySection = (section: any) => {
+    if (section.key !== 'priority_order' || !isPrioritizationForm) return null;
+
+    return (
+      <Card key={section.key}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">{section.label}</CardTitle>
+            {!isSubmitted && (
+              <Button variant="outline" size="sm" onClick={handleApplyPrioritySuggestion}>
+                Auto-Rank from Scores
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Show totals summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map(i => {
+              const name = responses[`behavior_${i}_name`];
+              if (!name) return null;
+              return (
+                <div key={i} className="text-center p-2 rounded-lg border bg-muted/30">
+                  <p className="text-xs text-muted-foreground truncate">{name}</p>
+                  <p className="text-lg font-bold">{behaviorTotals[`behavior_${i}_total`] ?? 0}</p>
+                </div>
+              );
+            })}
+          </div>
+          {/* Priority fields */}
+          {section.fields
+            .filter((f: any) => f.key.startsWith('priority_'))
+            .map((field: any) => (
+              <div key={field.key} className="space-y-1">
+                <Label className="text-sm font-medium">{field.label}</Label>
+                <Input
+                  value={responses[field.key] ?? ''}
+                  onChange={e => handleFieldChange(field.key, e.target.value)}
+                  disabled={isSubmitted}
+                  placeholder="Enter behavior name..."
+                />
+              </div>
+            ))}
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -291,16 +516,26 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       </Card>
 
       {/* Sections */}
-      {sections.map((section: any) => (
-        <Card key={section.key}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{section.label}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(section.fields || []).map((field: any) => renderField(field))}
-          </CardContent>
-        </Card>
-      ))}
+      {sections.map((section: any) => {
+        // Custom rendering for scoring and priority sections of prioritization form
+        if (isPrioritizationForm && section.key === 'scoring') {
+          return renderScoringSection(section);
+        }
+        if (isPrioritizationForm && section.key === 'priority_order') {
+          return renderPrioritySection(section);
+        }
+
+        return (
+          <Card key={section.key}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{section.label}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(section.fields || []).map((field: any) => renderField(field))}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* Submit confirmation */}
       <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>

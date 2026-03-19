@@ -31,10 +31,33 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
 
   const formatLabel = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-  const formatValue = (val: any): string => {
-    if (Array.isArray(val)) return val.map(v => formatLabel(String(v))).join(', ');
-    if (val === null || val === undefined) return '';
-    return String(val);
+  /** Build a lookup from field key -> { label, options } from the form schema */
+  const buildFieldMap = (fi: FormInstance): Record<string, any> => {
+    const map: Record<string, any> = {};
+    const sections = fi.form_definition?.schema_json?.sections || [];
+    for (const section of sections) {
+      for (const field of (section.fields || [])) {
+        map[field.key] = field;
+      }
+    }
+    return map;
+  };
+
+  /** Resolve a stored value to its display label using the field's options */
+  const resolveDisplayValue = (val: any, field: any): string => {
+    if (val === null || val === undefined || val === '') return '';
+    if (!field?.options) {
+      if (Array.isArray(val)) return val.join(', ');
+      return String(val);
+    }
+    if (Array.isArray(val)) {
+      return val.map(v => {
+        const opt = field.options.find((o: any) => String(o.value) === String(v));
+        return opt ? opt.label : String(v);
+      }).join(', ');
+    }
+    const opt = field.options.find((o: any) => String(o.value) === String(val));
+    return opt ? opt.label : String(val);
   };
 
   // ---- PDF Export ----
@@ -62,14 +85,16 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       }
       y += 5;
 
-      // Print responses
+      // Print responses using schema labels
+      const fieldMap = buildFieldMap(fi);
       doc.setFontSize(10);
       for (const [key, val] of Object.entries(responseData)) {
-        const fv = formatValue(val);
+        const field = fieldMap[key];
+        const fv = resolveDisplayValue(val, field);
         if (!fv) continue;
         if (y > 270) { doc.addPage(); y = 20; }
         doc.setFont('helvetica', 'bold');
-        const label = formatLabel(key);
+        const label = field?.label || formatLabel(key);
         doc.text(label, 14, y);
         y += 5;
         doc.setFont('helvetica', 'normal');
@@ -113,11 +138,13 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       }
       children.push(new Paragraph({ children: [] }));
 
+      const fieldMapDocx = buildFieldMap(fi);
       for (const [key, val] of Object.entries(responseData)) {
-        const fv = formatValue(val);
+        const field = fieldMapDocx[key];
+        const fv = resolveDisplayValue(val, field);
         if (!fv) continue;
         children.push(new Paragraph({
-          children: [new TextRun({ text: formatLabel(key), bold: true, size: 22 })],
+          children: [new TextRun({ text: field?.label || formatLabel(key), bold: true, size: 22 })],
         }));
         children.push(new Paragraph({
           children: [new TextRun({ text: fv, size: 22 })],
@@ -166,12 +193,14 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
         doc.text(`Student: ${studentName}`, 14, y);
         y += 10;
 
+        const bFieldMap = buildFieldMap(fi);
         for (const [key, val] of Object.entries(responseData)) {
-          const fv = formatValue(val);
+          const bField = bFieldMap[key];
+          const fv = resolveDisplayValue(val, bField);
           if (!fv) continue;
           if (y > 270) { doc.addPage(); y = 20; }
           doc.setFont('helvetica', 'bold');
-          doc.text(formatLabel(key), 14, y);
+          doc.text(bField?.label || formatLabel(key), 14, y);
           y += 5;
           doc.setFont('helvetica', 'normal');
           const lines = doc.splitTextToSize(fv, pageWidth - 28);
@@ -344,12 +373,14 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
         y += 10;
         doc.setFontSize(10);
 
+        const fpFieldMap = buildFieldMap(fi);
         for (const [key, val] of Object.entries(responseData)) {
-          const fv = formatValue(val);
+          const fpField = fpFieldMap[key];
+          const fv = resolveDisplayValue(val, fpField);
           if (!fv) continue;
           if (y > 270) { doc.addPage(); y = 20; }
           doc.setFont('helvetica', 'bold');
-          doc.text(formatLabel(key), 14, y);
+          doc.text(fpField?.label || formatLabel(key), 14, y);
           y += 5;
           doc.setFont('helvetica', 'normal');
           const lines = doc.splitTextToSize(fv, pageWidth - 28);
@@ -427,11 +458,13 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
           pageBreakBefore: true,
         }));
 
+        const fwFieldMap = buildFieldMap(fi);
         for (const [key, val] of Object.entries(responseData)) {
-          const fv = formatValue(val);
+          const fwField = fwFieldMap[key];
+          const fv = resolveDisplayValue(val, fwField);
           if (!fv) continue;
           children.push(new Paragraph({
-            children: [new TextRun({ text: formatLabel(key), bold: true, size: 22 })],
+            children: [new TextRun({ text: fwField?.label || formatLabel(key), bold: true, size: 22 })],
           }));
           children.push(new Paragraph({
             children: [new TextRun({ text: fv, size: 22 })],
