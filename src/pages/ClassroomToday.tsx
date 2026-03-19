@@ -1,8 +1,8 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClassroomTodayDrilldown, type LiveEventItem } from '@/hooks/useClassroomToday';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +13,7 @@ import {
   Stethoscope, Star, Gift, Siren, UserCheck
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { ClassroomPresencePanel } from '@/components/intelligence/ClassroomPresencePanel';
 
 const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   frequency: { bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: <Activity className="w-3 h-3" /> },
