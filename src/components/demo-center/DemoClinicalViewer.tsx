@@ -131,9 +131,14 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="text-sm font-medium">{learnerMap.get(a.learner_id)}</span>
                   <Badge variant="outline" className="text-[9px]">{a.assessment_type}</Badge>
-                  <Badge className={`text-[9px] ${a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-700' : a.status === 'pending' ? 'bg-amber-500/15 text-amber-700' : 'bg-blue-500/15 text-blue-700'}`}>
-                    {a.status}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className={`text-[9px] cursor-help ${a.status === 'completed' ? 'bg-emerald-500/15 text-emerald-700' : a.status === 'pending' ? 'bg-amber-500/15 text-amber-700' : 'bg-blue-500/15 text-blue-700'}`}>
+                        {a.status}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent><p className="text-xs max-w-[200px]">{a.status === 'pending' ? TOOLTIPS.assessmentPending : a.status === 'completed' ? TOOLTIPS.assessmentReviewed : 'Assessment is currently being completed.'}</p></TooltipContent>
+                  </Tooltip>
                   <span className="text-[10px] text-muted-foreground">{a.assessment_date}</span>
                 </div>
                 {a.summary && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{a.summary}</p>}
