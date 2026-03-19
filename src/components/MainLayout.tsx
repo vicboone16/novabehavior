@@ -177,6 +177,7 @@ export default function MainLayout() {
           Mobile View
         </Button>
       )}
+      <AskNovaButton />
     </div>
   );
 }
