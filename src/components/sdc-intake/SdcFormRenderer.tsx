@@ -487,8 +487,13 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">{formDef?.name || 'Form'}</CardTitle>
-          <p className="text-sm text-muted-foreground">{formDef?.description}</p>
-          <p className="text-xs text-muted-foreground">Student: {studentName}</p>
+          <p className="text-sm text-muted-foreground">
+            Complete this questionnaire to document staff observations, behavior patterns, triggers, and related supports.
+          </p>
+          <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+            <span>Student: {studentName}</span>
+            {existingResponse && <span>Status: {isSubmitted ? 'Submitted' : 'Draft'}</span>}
+          </div>
         </CardHeader>
       </Card>
 
