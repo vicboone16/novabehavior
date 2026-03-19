@@ -23,6 +23,7 @@ import { usePendingChangesCount } from '@/hooks/usePendingChangesCount';
 import { useAppNavigation, type NavItem } from '@/hooks/useAppNavigation';
 import { getNavIcon } from '@/lib/navIcons';
 import { DemoModeBanner } from '@/components/demo-center/DemoModeBanner';
+import { AskNovaButton } from '@/components/demo-center/AskNovaButton';
 
 export default function MainLayout() {
   const location = useLocation();
