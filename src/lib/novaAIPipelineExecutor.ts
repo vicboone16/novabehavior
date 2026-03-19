@@ -53,8 +53,7 @@ export function itemsNeedReview(action: NovaAction): boolean {
   const behaviors = action.data?.behaviors || [];
   return behaviors.some((b: any) =>
     b.quality?.needs_review ||
-    b.target_match?.match_status === 'ambiguous_match_review_needed' ||
-    b.target_match?.match_status === 'no_match_new_target_suggested'
+    b.target_match?.match_status === 'ambiguous_match_review_needed'
   );
 }
 
@@ -69,6 +68,26 @@ export function itemsNeedSession(action: NovaAction): boolean {
   return behaviors.some((b: any) =>
     b.item_type !== 'abc_event' && b.target_match?.target_id
   );
+}
+
+/**
+ * Detect if user input likely contains clinical data that should trigger tool calls.
+ * Used as a fallback check when the AI model fails to use tools.
+ */
+export function inputLikelyContainsData(input: string): boolean {
+  const dataPatterns = [
+    /\d+\s*(times?|instances?|episodes?|occurrences?)/i,
+    /\d+\/\d+/,  // trial data like 8/10
+    /\d+\s*(minutes?|mins?|seconds?|secs?|hours?|hrs?)/i,
+    /(hit|kicked|bit|scratched|threw|punched|slapped|eloped|tantrum|aggress)/i,
+    /(correct|incorrect|independent|prompted|trials?)/i,
+    /lasted\s+\d+/i,
+    /(frequency|duration|latency|interval)/i,
+    /session\s*(note|data|summary)/i,
+    /(soap|narrative)\s*note/i,
+    /log\s*(this|data|session)/i,
+  ];
+  return dataPatterns.some(p => p.test(input));
 }
 
 /**
