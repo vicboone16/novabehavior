@@ -71,6 +71,24 @@ export default function ClassroomToday() {
     prevCount.current = events.length;
   }, [events.length, autoScroll]);
 
+  // Build student name map for presence panel
+  const studentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of students) map.set(s.student_id, s.student_name);
+    return map;
+  }, [students]);
+
+  // Compute top triggers from ABC events
+  const topTriggers = useMemo(() => {
+    const triggerMap = new Map<string, number>();
+    for (const ev of events) {
+      if (ev.type === 'abc' && ev.detail) {
+        triggerMap.set(ev.detail, (triggerMap.get(ev.detail) || 0) + 1);
+      }
+    }
+    return [...triggerMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [events]);
+
   const filteredEvents = typeFilter === 'all' ? events : events.filter(e => e.type === typeFilter);
 
   if (loading && events.length === 0) {
