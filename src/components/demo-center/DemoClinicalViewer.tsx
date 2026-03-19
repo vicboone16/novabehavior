@@ -187,5 +187,6 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
       </Tabs>
     </div>
+    </TooltipProvider>
   );
 }
