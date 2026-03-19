@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Plus, Trash2, Edit2, Save, X, Tag, Clock, User as UserIcon } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit2, Save, X, Tag, Clock, User as UserIcon, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { NarrativeNote, Behavior } from '@/types/behavior';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -61,6 +56,7 @@ export function NarrativeNotesManager({
   const [selectedBehaviorId, setSelectedBehaviorId] = useState<string>('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [dialogMode, setDialogMode] = useState<'edit' | 'preview'>('edit');
 
   const userName = profile?.display_name || profile?.first_name || user?.email || 'Unknown';
 
@@ -79,7 +75,6 @@ export function NarrativeNotesManager({
     if (!content.trim()) return;
 
     if (editingNote) {
-      // Track edit history
       const editEntry = {
         editedBy: user?.id || '',
         editedByName: userName,
@@ -118,6 +113,7 @@ export function NarrativeNotesManager({
     setTagInput('');
     setShowAddNote(false);
     setEditingNote(null);
+    setDialogMode('edit');
   };
 
   const openEditNote = (note: NarrativeNote) => {
@@ -125,6 +121,7 @@ export function NarrativeNotesManager({
     setContent(note.content);
     setSelectedBehaviorId(note.behaviorId || '');
     setTags(note.tags || []);
+    setDialogMode('edit');
     setShowAddNote(true);
   };
 
@@ -165,7 +162,7 @@ export function NarrativeNotesManager({
               <FileText className="w-5 h-5 text-primary" />
               Narrative Notes
             </CardTitle>
-            <Button size="sm" onClick={() => setShowAddNote(true)}>
+            <Button size="sm" onClick={() => { setDialogMode('edit'); setShowAddNote(true); }}>
               <Plus className="w-4 h-4 mr-1" />
               Add Note
             </Button>
@@ -173,9 +170,13 @@ export function NarrativeNotesManager({
         </CardHeader>
         <CardContent>
           {sortedNotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No narrative notes yet. Add notes to document observations outside of sessions.
-            </p>
+            <div className="text-center py-8">
+              <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">No narrative notes yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add notes to document observations, updates, or summaries outside of formal sessions.
+              </p>
+            </div>
           ) : (
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
               {sortedNotes.map((note) => {
@@ -185,7 +186,19 @@ export function NarrativeNotesManager({
                     <CardContent className="py-4 px-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap font-[system-ui]">{note.content}</p>
+                          {/* Clinical formatting: break content into readable paragraphs */}
+                          <div className="prose prose-sm max-w-none">
+                            {note.content.split('\n\n').map((paragraph, idx) => (
+                              <p key={idx} className="text-sm leading-relaxed text-foreground mb-2 last:mb-0">
+                                {paragraph.split('\n').map((line, lidx) => (
+                                  <span key={lidx}>
+                                    {lidx > 0 && <br />}
+                                    {line}
+                                  </span>
+                                ))}
+                              </p>
+                            ))}
+                          </div>
                         </div>
                         <div className="flex gap-0.5 shrink-0">
                           <Button
@@ -268,90 +281,162 @@ export function NarrativeNotesManager({
         </CardContent>
       </Card>
 
-      {/* Add/Edit Note Dialog */}
+      {/* Add/Edit Note Dialog with Edit/Preview modes */}
       <Dialog open={showAddNote} onOpenChange={(open) => !open && resetForm()}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingNote ? 'Edit Narrative Note' : 'Add Narrative Note'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Note Content</Label>
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter your observation or note..."
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Link to Behavior (Optional)</Label>
-              <Select value={selectedBehaviorId} onValueChange={setSelectedBehaviorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a behavior (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {behaviors.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tags</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="Add a tag..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                />
-                <Button variant="outline" onClick={handleAddTag}>
-                  <Plus className="w-4 h-4" />
+            <div className="flex items-center justify-between">
+              <DialogTitle>
+                {editingNote ? 'Edit Narrative Note' : 'Add Narrative Note'}
+              </DialogTitle>
+              <div className="flex gap-1 bg-muted rounded-lg p-0.5">
+                <Button
+                  variant={dialogMode === 'edit' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-3 text-xs gap-1"
+                  onClick={() => setDialogMode('edit')}
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edit
+                </Button>
+                <Button
+                  variant={dialogMode === 'preview' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-7 px-3 text-xs gap-1"
+                  onClick={() => setDialogMode('preview')}
+                  disabled={!content.trim()}
+                >
+                  <Eye className="w-3 h-3" />
+                  Preview
                 </Button>
               </div>
+            </div>
+          </DialogHeader>
+
+          {dialogMode === 'edit' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Note Content</Label>
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Enter your clinical observation, update, or summary...&#10;&#10;Use paragraphs to organize your thoughts. Write naturally — this is a clinical narrative, not a form."
+                  rows={8}
+                  className="text-sm leading-relaxed resize-y min-h-[160px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Write in a clinical, professional tone. Separate sections with blank lines for readability.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Link to Behavior (Optional)</Label>
+                  <Select value={selectedBehaviorId} onValueChange={setSelectedBehaviorId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a behavior" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {behaviors.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Add a tag..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                    />
+                    <Button variant="outline" size="icon" onClick={handleAddTag}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div className="flex flex-wrap gap-1">
                   {tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs gap-1">
                       {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
+                      <button onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
                         <X className="w-3 h-3" />
                       </button>
                     </Badge>
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* Show who's editing */}
-            {editingNote && editingNote.createdByName && (
-              <p className="text-xs text-muted-foreground">
-                Originally created by {editingNote.createdByName}. Your edit will be tracked.
+              {editingNote && editingNote.createdByName && (
+                <p className="text-xs text-muted-foreground">
+                  Originally created by {editingNote.createdByName}. Your edit will be tracked.
+                </p>
+              )}
+            </div>
+          ) : (
+            /* Preview Mode */
+            <div className="space-y-4">
+              <Card>
+                <CardContent className="py-4 px-5">
+                  <div className="prose prose-sm max-w-none">
+                    {content.split('\n\n').map((paragraph, idx) => (
+                      <p key={idx} className="text-sm leading-relaxed text-foreground mb-3 last:mb-0">
+                        {paragraph.split('\n').map((line, lidx) => (
+                          <span key={lidx}>
+                            {lidx > 0 && <br />}
+                            {line}
+                          </span>
+                        ))}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap mt-4 pt-3 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {format(new Date(), 'MMM d, yyyy · h:mm a')}
+                    </span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <UserIcon className="w-3 h-3" />
+                      {userName}
+                    </span>
+                    {selectedBehaviorId && selectedBehaviorId !== 'none' && (
+                      <Badge variant="outline" className="text-xs">
+                        {behaviors.find(b => b.id === selectedBehaviorId)?.name}
+                      </Badge>
+                    )}
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        <Tag className="w-2.5 h-2.5 mr-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <p className="text-xs text-muted-foreground text-center">
+                This is how your note will appear. Switch to Edit to make changes.
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={resetForm}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={!content.trim()}>
-              {editingNote ? 'Update Note' : 'Add Note'}
+              <Save className="w-4 h-4 mr-1" />
+              {editingNote ? 'Update Note' : 'Save Note'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
-  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic, Package
+  Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic, Package, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,7 +91,7 @@ import {
   SafetyMedicalTab, 
   SchedulingTab,
   LocationsTab, 
-  TeamAssignmentsTab,
+  TeamAssignmentsTab, 
   DocumentsTab,
   TagsCaseAttributesTab,
   CommunicationCombinedTab,
@@ -136,15 +136,10 @@ export default function StudentProfile() {
   const student = students.find(s => s.id === studentId);
   const studentGoals = behaviorGoals.filter(g => g.studentId === studentId);
   
-  // Check user permissions for this student
   const studentAccess = useStudentAccess(studentId);
-  
-  // Funding mode hook
   const { fundingMode, insuranceTrackingState, setFundingMode, hasActivePayer, hasActiveAuth, refetch: refetchFunding } = useFundingMode(studentId);
-  
-  // Client profile data (for Profile 2.0 tabs)
   const clientProfile = useClientProfile(studentId);
-  // Log data access when viewing student profile
+
   useEffect(() => {
     if (studentId && student) {
       logDataAccess(studentId, 'view', 'profile', { studentName: student.name });
@@ -200,7 +195,6 @@ export default function StudentProfile() {
     setEditingBehaviorId(null);
   };
   
-  // Skill target state
   const [selectedSkillTarget, setSelectedSkillTarget] = useState<SkillTarget | null>(null);
 
   // Form states
@@ -225,7 +219,7 @@ export default function StudentProfile() {
   const [dataBehaviorId, setDataBehaviorId] = useState('');
   const [dataType, setDataType] = useState<'frequency' | 'abc'>('frequency');
   const [dataCount, setDataCount] = useState('1');
-  const [dataObservationDuration, setDataObservationDuration] = useState(''); // in minutes for rate calc
+  const [dataObservationDuration, setDataObservationDuration] = useState('');
   const [dataAntecedent, setDataAntecedent] = useState('');
   const [dataBehavior, setDataBehavior] = useState('');
   const [dataConsequence, setDataConsequence] = useState('');
@@ -241,18 +235,15 @@ export default function StudentProfile() {
     );
   }
 
-  // Get student's data summary
   const studentFrequency = frequencyEntries.filter(e => e.studentId === studentId);
   const studentABC = abcEntries.filter(e => e.studentId === studentId);
   const studentDuration = durationEntries.filter(e => e.studentId === studentId);
   const studentIntervals = intervalEntries.filter(e => e.studentId === studentId);
 
-  // Get historical interval sessions for this student
   const historicalIntervalSessions = sessions.filter(session => 
     session.intervalEntries.some(e => e.studentId === studentId)
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Helper to get behavior name by ID
   const getBehaviorName = (behaviorId: string) => {
     return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
   };
@@ -360,7 +351,6 @@ export default function StudentProfile() {
       return;
     }
     
-    // Use historical frequency entry to preserve observation duration
     addHistoricalFrequency({
       studentId: student.id,
       behaviorId: dataBehaviorId,
@@ -499,27 +489,16 @@ export default function StudentProfile() {
         <div className="flex gap-2 max-sm:w-full max-sm:justify-end">
           {student.isArchived ? (
             <>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  unarchiveStudent(student.id);
-                }}
-              >
+              <Button variant="outline" onClick={() => unarchiveStudent(student.id)}>
                 Restore
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
+              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Permanently
               </Button>
             </>
           ) : (
-            <Button
-              variant="outline"
-              onClick={() => setShowArchiveConfirm(true)}
-            >
+            <Button variant="outline" onClick={() => setShowArchiveConfirm(true)}>
               <Archive className="w-4 h-4 mr-2" />
               Archive
             </Button>
@@ -544,72 +523,45 @@ export default function StudentProfile() {
       <InsuranceStatusBanner
         fundingMode={fundingMode}
         insuranceTrackingState={insuranceTrackingState}
-        onFinishSetup={() => {
-          // The toggle will handle showing the wizard
-        }}
+        onFinishSetup={() => {}}
         onSwitchToSchoolBased={async () => {
           await setFundingMode('school_based');
           refetchFunding();
         }}
-        onReenableInsurance={() => {
-          // The toggle will handle showing the restore dialog
-        }}
+        onReenableInsurance={() => {}}
       />
 
-      <Tabs defaultValue="profile" className="space-y-4">
+      {/* ====== CORE 6-TAB NAVIGATION ====== */}
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex gap-1 h-auto p-1 w-full overflow-x-auto scrollbar-hide flex-nowrap">
-          <TabsTrigger value="profile" className="gap-1 text-xs whitespace-nowrap">
-            <Info className="w-3 h-3" />
-            Profile
+          <TabsTrigger value="overview" className="gap-1.5 text-xs whitespace-nowrap">
+            <Info className="w-3.5 h-3.5" />
+            Overview
           </TabsTrigger>
-          <TabsTrigger value="intelligence" className="gap-1 text-xs whitespace-nowrap">
-            <Zap className="w-3 h-3" />
-            Intelligence
-          </TabsTrigger>
-          <TabsTrigger value="programming" className="gap-1 text-xs whitespace-nowrap">
-            <Layers className="w-3 h-3" />
-            Programming
-          </TabsTrigger>
-          <TabsTrigger value="notes" className="gap-1 text-xs whitespace-nowrap">
-            <StickyNote className="w-3 h-3" />
+          <TabsTrigger value="notes" className="gap-1.5 text-xs whitespace-nowrap">
+            <StickyNote className="w-3.5 h-3.5" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="assessment" className="gap-1 text-xs whitespace-nowrap">
-            <Brain className="w-3 h-3" />
-            Assessment
+          <TabsTrigger value="programming" className="gap-1.5 text-xs whitespace-nowrap">
+            <Layers className="w-3.5 h-3.5" />
+            Programming
           </TabsTrigger>
-          {student.assessmentModeEnabled && (
-            <TabsTrigger value="fba" className="gap-1 text-xs whitespace-nowrap">
-              <ClipboardCheck className="w-3 h-3" />
-              FBA Tools
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="data-sources" className="gap-1 text-xs whitespace-nowrap">
-            <UserCheck className="w-3 h-3" />
-            Data Sources
+          <TabsTrigger value="assessments" className="gap-1.5 text-xs whitespace-nowrap">
+            <Brain className="w-3.5 h-3.5" />
+            Assessments
           </TabsTrigger>
-          <TabsTrigger value="documents" className="gap-1 text-xs whitespace-nowrap">
-            <FolderOpen className="w-3 h-3" />
+          <TabsTrigger value="reports" className="gap-1.5 text-xs whitespace-nowrap">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Reports
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="gap-1.5 text-xs whitespace-nowrap">
+            <FolderOpen className="w-3.5 h-3.5" />
             Documents
           </TabsTrigger>
-          <TabsTrigger value="appointments" className="gap-1 text-xs whitespace-nowrap">
-            <Calendar className="w-3 h-3" />
-            Schedule
-          </TabsTrigger>
-          <TabsTrigger value="caregiver-training" className="gap-1 text-xs whitespace-nowrap">
-            <Heart className="w-3 h-3" />
-            Caregiver
-          </TabsTrigger>
-          {fundingMode === 'insurance' && (
-            <TabsTrigger value="payers" className="gap-1 text-xs whitespace-nowrap">
-              <Shield className="w-3 h-3" />
-              Payers & Auth
-            </TabsTrigger>
-          )}
         </TabsList>
 
-        {/* Profile Tab - Now includes consolidated sections */}
-        <TabsContent value="profile" className="space-y-4">
+        {/* ====== OVERVIEW TAB ====== */}
+        <TabsContent value="overview" className="space-y-4">
           <StudentProfileInfo
             student={student}
             onUpdate={(updates) => updateStudentProfile(student.id, updates)}
@@ -621,8 +573,12 @@ export default function StudentProfile() {
           
           {/* Pending Teacher Edits */}
           <PendingStudentChanges studentId={student.id} studentName={student.name} />
+
+          {/* Intelligence Summary */}
+          <StudentIntelligencePanel studentId={student.id} />
+          <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           
-          {/* Team & Assignments Section */}
+          {/* Team & Assignments */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
@@ -646,7 +602,7 @@ export default function StudentProfile() {
             </Card>
           </Collapsible>
 
-          {/* Contacts Section */}
+          {/* Contacts */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
@@ -670,7 +626,7 @@ export default function StudentProfile() {
             </Card>
           </Collapsible>
 
-          {/* Locations Section */}
+          {/* Locations */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
@@ -694,7 +650,7 @@ export default function StudentProfile() {
             </Card>
           </Collapsible>
 
-          {/* Safety & Medical Section */}
+          {/* Safety & Medical */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
@@ -717,30 +673,32 @@ export default function StudentProfile() {
             </Card>
           </Collapsible>
 
-          {/* Scheduling Section */}
+          {/* Scheduling */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Scheduling Preferences
+                    Schedule & Appointments
                   </CardTitle>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="pt-0">
+                <CardContent className="pt-0 space-y-4">
                   <SchedulingTab
                     clientId={student.id}
                     data={clientProfile.schedulingPreferences}
                     onRefresh={clientProfile.refetch}
                   />
+                  <StudentAttendanceDashboard studentId={student.id} studentName={student.name} />
+                  <StudentAppointments studentId={student.id} studentName={student.name} studentColor={student.color} />
                 </CardContent>
               </CollapsibleContent>
             </Card>
           </Collapsible>
 
-          {/* Communication Section (Combined Log + Settings) */}
+          {/* Communication */}
           <Collapsible defaultOpen={false}>
             <Card>
               <CollapsibleTrigger asChild>
@@ -765,45 +723,50 @@ export default function StudentProfile() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
+
+          {/* Caregiver Training */}
+          <Collapsible defaultOpen={false}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    Caregiver Training
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <CaregiverTrainingTab studentId={student.id} />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Payers & Auth (insurance only) */}
+          {fundingMode === 'insurance' && (
+            <Collapsible defaultOpen={false}>
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Payers & Authorizations
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="pt-0 space-y-4">
+                    <PayersAuthorizationsTab studentId={student.id} />
+                    <AuthorizationUsagePage studentId={student.id} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
         </TabsContent>
 
-        {/* Student Intelligence Tab */}
-        <TabsContent value="intelligence" className="space-y-4">
-          <StudentIntelligencePanel studentId={student.id} />
-          {/* AI Recommendations */}
-          <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
-          {/* Behavior Intelligence Section */}
-          <BehaviorIntelligenceSection studentId={student.id} />
-          {/* Skill Intelligence Section */}
-          <SkillIntelligenceSection studentId={student.id} />
-          {/* Reward Effectiveness */}
-          <RewardEffectivenessPanel studentId={student.id} />
-          {/* Behavior Decoded Bridge */}
-          <BehaviorDecodedPanel studentId={student.id} />
-        </TabsContent>
-
-        {/* Programming Tab (unified Skills + Behaviors + Protocols) */}
-        <TabsContent value="programming" className="space-y-4">
-          {/* Intelligence cards at top of Programming */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <SkillMasteryIntelligenceCard studentId={student.id} />
-            <ReplacementBehaviorCard studentId={student.id} />
-          </div>
-          {/* Programming Intelligence Section */}
-          <ProgrammingIntelligenceSection studentId={student.id} />
-          <ProgrammingModule
-            studentId={student.id}
-            studentName={student.name}
-            isAdmin={studentAccess.isAdmin || studentAccess.canEditProfile}
-          />
-          {/* Protocol Assignments — Library-based program assignment */}
-          <ProtocolAssignmentManager studentId={student.id} />
-        </TabsContent>
-
-
-
-
-        {/* Consolidated Notes Tab */}
+        {/* ====== NOTES TAB ====== */}
         <TabsContent value="notes" className="space-y-4">
           <NotesHub
             student={student}
@@ -814,32 +777,28 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-        {/* Files tab merged into Documents */}
+        {/* ====== PROGRAMMING TAB ====== */}
+        <TabsContent value="programming" className="space-y-4">
+          {/* Intelligence cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <SkillMasteryIntelligenceCard studentId={student.id} />
+            <ReplacementBehaviorCard studentId={student.id} />
+          </div>
+          <ProgrammingIntelligenceSection studentId={student.id} />
+          <ProgrammingModule
+            studentId={student.id}
+            studentName={student.name}
+            isAdmin={studentAccess.isAdmin || studentAccess.canEditProfile}
+          />
+          {/* Protocol Assignments — Library-based program assignment */}
+          <ProtocolAssignmentManager studentId={student.id} />
+        </TabsContent>
 
-        {/* FBA Tools Tab - Only visible when Assessment Mode is ON */}
-        {student.assessmentModeEnabled && (
-          <TabsContent value="fba" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ClipboardCheck className="w-5 h-5 text-primary" />
-                  FBA / Assessment Tools
-                </CardTitle>
-                <CardDescription>
-                  Pattern detection, function analysis, and FBA report generation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FBAModeTools student={student} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {/* Assessment Tab - Shows saved FBA findings, indirect assessments, BIP data */}
-        <TabsContent value="assessment" className="space-y-4">
-          {/* Goal Suggestion Engine — Reassessment Surface */}
+        {/* ====== ASSESSMENTS TAB ====== */}
+        <TabsContent value="assessments" className="space-y-4">
+          {/* Goal Suggestion Engine */}
           <GoalSuggestionEnginePanel studentId={student.id} surface="reassessment" />
+          
           <div className="grid gap-4">
             {/* Active Observation Banner */}
             <ActiveObservationsBanner 
@@ -855,22 +814,34 @@ export default function StudentProfile() {
               }}
             />
 
-            {/* FBA Workflow Progress - shows completed steps and navigation */}
+            {/* FBA Workflow */}
             <FBAWorkflowProgress student={student} />
-
-            {/* Observation History */}
             <ObservationHistory studentId={student.id} />
-
-            {/* Editable Background Information for FBA */}
             <StudentBackgroundEditor
               student={student}
               onUpdate={(updates) => updateStudentProfile(student.id, updates)}
             />
-
-            {/* FBA Findings */}
             <FBAFindingsDisplay student={student} />
 
-            {/* Indirect Assessments Summary */}
+            {/* FBA Tools - inline when assessment mode is enabled */}
+            {student.assessmentModeEnabled && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <ClipboardCheck className="w-5 h-5 text-primary" />
+                    FBA / Assessment Tools
+                  </CardTitle>
+                  <CardDescription>
+                    Pattern detection, function analysis, and FBA report generation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FBAModeTools student={student} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Indirect Assessments */}
             {student.indirectAssessments && student.indirectAssessments.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
@@ -944,11 +915,8 @@ export default function StudentProfile() {
               </Card>
             )}
 
-            {/* Treatment Fidelity Dashboard */}
-            <FidelityDashboard
-              studentId={student.id}
-              studentName={student.name}
-            />
+            {/* Treatment Fidelity */}
+            <FidelityDashboard studentId={student.id} studentName={student.name} />
 
             {/* Empty State */}
             {!student.fbaFindings && (!student.indirectAssessments || student.indirectAssessments.length === 0) && !student.bipData && (
@@ -963,7 +931,8 @@ export default function StudentProfile() {
               </Card>
             )}
           </div>
-          {/* SDC Intake — merged into Assessment tab */}
+
+          {/* SDC Intake */}
           <SdcIntakeManager
             studentId={student.id}
             studentName={student.name}
@@ -971,23 +940,9 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-
-        {/* Appointments Tab */}
-        <TabsContent value="appointments" className="space-y-4">
-          <StudentAttendanceDashboard
-            studentId={student.id}
-            studentName={student.name}
-          />
-          <StudentAppointments
-            studentId={student.id}
-            studentName={student.name}
-            studentColor={student.color}
-          />
-        </TabsContent>
-
-        {/* Data Sources Tab — consolidates Teacher, Observations, IEP */}
-        <TabsContent value="data-sources" className="space-y-4">
-          {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
+        {/* ====== REPORTS TAB ====== */}
+        <TabsContent value="reports" className="space-y-4">
+          {/* Data Sources: Teacher, Observations, IEP, Parent */}
           <TeacherDataHub clientId={student.id} />
           <Card>
             <CardHeader>
@@ -1003,16 +958,20 @@ export default function StudentProfile() {
               <TeacherFriendlyView student={student} />
             </CardContent>
           </Card>
-          {/* Observations */}
           <StudentObservationsTab studentId={student.id} studentName={student.name} />
-          {/* IEP Engine */}
           <StudentIEPPrepTab studentId={student.id} />
-          {/* Parent Snapshot Generator */}
           <ParentSnapshotGenerator studentId={student.id} studentName={student.name} />
+
+          {/* Intelligence Sections */}
+          <BehaviorIntelligenceSection studentId={student.id} />
+          <SkillIntelligenceSection studentId={student.id} />
+          <RewardEffectivenessPanel studentId={student.id} />
+          <BehaviorDecodedPanel studentId={student.id} />
         </TabsContent>
 
-        {/* Documents Tab — includes files, e-signatures, tags */}
+        {/* ====== DOCUMENTS TAB ====== */}
         <TabsContent value="documents" className="space-y-4">
+          {/* E-Signatures & Intake Forms — surfaced prominently */}
           <DocumentsTab
             clientId={student.id}
             documents={clientProfile.documents}
@@ -1025,23 +984,9 @@ export default function StudentProfile() {
             onRefetch={clientProfile.refetch}
           />
         </TabsContent>
-
-        {/* Payers & Authorizations Tab (Insurance mode only) */}
-        {fundingMode === 'insurance' && (
-          <TabsContent value="payers" className="space-y-4">
-            <PayersAuthorizationsTab studentId={student.id} />
-            <AuthorizationUsagePage studentId={student.id} />
-          </TabsContent>
-        )}
-
-        {/* Caregiver Training Tab */}
-        <TabsContent value="caregiver-training" className="space-y-4">
-          <CaregiverTrainingTab studentId={student.id} />
-        </TabsContent>
-
       </Tabs>
 
-      {/* Add Behavior Dialog */}
+      {/* ====== DIALOGS (unchanged) ====== */}
       <Dialog open={showAddBehavior} onOpenChange={setShowAddBehavior}>
         <DialogContent>
           <DialogHeader>
@@ -1081,9 +1026,7 @@ export default function StudentProfile() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddBehavior(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowAddBehavior(false)}>Cancel</Button>
             <Button onClick={handleAddBehavior} disabled={!newBehaviorName.trim() || selectedMethods.length === 0}>
               Add Behavior
             </Button>
@@ -1091,7 +1034,6 @@ export default function StudentProfile() {
         </DialogContent>
       </Dialog>
 
-      {/* Add/Edit Goal Dialog */}
       <Dialog open={showAddGoal} onOpenChange={(open) => { setShowAddGoal(open); if (!open) setEditGoal(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -1101,9 +1043,7 @@ export default function StudentProfile() {
             <div className="space-y-2">
               <Label>Behavior</Label>
               <Select value={goalBehaviorId} onValueChange={setGoalBehaviorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select behavior" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select behavior" /></SelectTrigger>
                 <SelectContent>
                   {student.behaviors.map((b) => (
                     <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
@@ -1115,9 +1055,7 @@ export default function StudentProfile() {
               <div className="space-y-2">
                 <Label>Direction</Label>
                 <Select value={goalDirection} onValueChange={(v: GoalDirection) => setGoalDirection(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="increase">Increase</SelectItem>
                     <SelectItem value="decrease">Decrease</SelectItem>
@@ -1128,9 +1066,7 @@ export default function StudentProfile() {
               <div className="space-y-2">
                 <Label>Metric</Label>
                 <Select value={goalMetric} onValueChange={(v: GoalMetric) => setGoalMetric(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="frequency">Frequency</SelectItem>
                     <SelectItem value="percentage">Percentage</SelectItem>
@@ -1143,55 +1079,30 @@ export default function StudentProfile() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Target Value</Label>
-                <Input
-                  type="number"
-                  value={goalTarget}
-                  onChange={(e) => setGoalTarget(e.target.value)}
-                  placeholder="e.g., 5"
-                />
+                <Input type="number" value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} placeholder="e.g., 5" />
               </div>
               <div className="space-y-2">
                 <Label>Baseline (optional)</Label>
-                <Input
-                  type="number"
-                  value={goalBaseline}
-                  onChange={(e) => setGoalBaseline(e.target.value)}
-                  placeholder="Current level"
-                />
+                <Input type="number" value={goalBaseline} onChange={(e) => setGoalBaseline(e.target.value)} placeholder="Current level" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Goal Introduced Date</Label>
-                <Input
-                  type="date"
-                  value={goalIntroducedDate}
-                  onChange={(e) => setGoalIntroducedDate(e.target.value)}
-                />
+                <Input type="date" value={goalIntroducedDate} onChange={(e) => setGoalIntroducedDate(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Data Collection Start Date</Label>
-                <Input
-                  type="date"
-                  value={goalDataStartDate}
-                  onChange={(e) => setGoalDataStartDate(e.target.value)}
-                />
+                <Input type="date" value={goalDataStartDate} onChange={(e) => setGoalDataStartDate(e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
-              <Textarea
-                value={goalNotes}
-                onChange={(e) => setGoalNotes(e.target.value)}
-                placeholder="Additional notes about this goal..."
-                rows={3}
-              />
+              <Textarea value={goalNotes} onChange={(e) => setGoalNotes(e.target.value)} placeholder="Additional notes about this goal..." rows={3} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAddGoal(false); setEditGoal(null); }}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => { setShowAddGoal(false); setEditGoal(null); }}>Cancel</Button>
             <Button onClick={handleAddGoal} disabled={!goalBehaviorId}>
               {editGoal ? 'Save Changes' : 'Add Goal'}
             </Button>
@@ -1199,7 +1110,6 @@ export default function StudentProfile() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={() => setDeleteConfirm(null)}
@@ -1210,7 +1120,6 @@ export default function StudentProfile() {
         variant="destructive"
       />
 
-      {/* Delete Historical Session Confirmation */}
       <ConfirmDialog
         open={!!deleteSessionConfirm}
         onOpenChange={() => setDeleteSessionConfirm(null)}
@@ -1235,7 +1144,6 @@ export default function StudentProfile() {
         onConfirm={handleArchive}
       />
 
-      {/* Permanent Delete Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={(open) => {
         setShowDeleteConfirm(open);
         if (!open) setDeleteInput('');
@@ -1249,9 +1157,7 @@ export default function StudentProfile() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
-              <p className="text-sm text-destructive font-medium">
-                This action is IRREVERSIBLE
-              </p>
+              <p className="text-sm text-destructive font-medium">This action is IRREVERSIBLE</p>
               <p className="text-sm text-muted-foreground mt-2">
                 Permanently deleting "{student.name}" will remove:
               </p>
@@ -1264,26 +1170,12 @@ export default function StudentProfile() {
             </div>
             <div className="space-y-2">
               <Label>Type <span className="font-mono font-bold">DELETE</span> to confirm:</Label>
-              <Input
-                value={deleteInput}
-                onChange={(e) => setDeleteInput(e.target.value)}
-                placeholder="DELETE"
-                className="font-mono"
-              />
+              <Input value={deleteInput} onChange={(e) => setDeleteInput(e.target.value)} placeholder="DELETE" className="font-mono" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowDeleteConfirm(false);
-              setDeleteInput('');
-            }}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handlePermanentDelete}
-              disabled={deleteInput !== 'DELETE'}
-            >
+            <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setDeleteInput(''); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handlePermanentDelete} disabled={deleteInput !== 'DELETE'}>
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Permanently
             </Button>
@@ -1291,14 +1183,12 @@ export default function StudentProfile() {
         </DialogContent>
       </Dialog>
 
-      {/* Historical Interval Entry Dialog */}
       <HistoricalIntervalEntry 
         student={student} 
         open={showHistoricalInterval} 
         onOpenChange={setShowHistoricalInterval} 
       />
 
-      {/* Historical Session Editor Dialog */}
       {editSession && (
         <HistoricalSessionEditor
           student={student}
