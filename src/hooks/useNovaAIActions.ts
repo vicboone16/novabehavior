@@ -297,7 +297,7 @@ export function useNovaAIActions(clientId: string | null) {
 
         // ABC events don't need session_id — always route them
         if (item.item_type === 'abc_event') {
-          console.log('[NovaAI] Saving ABC event:', item.raw_text?.slice(0, 50));
+          console.log('[NovaAI] ✅ Saving ABC event:', item.raw_text?.slice(0, 50));
           await (supabase as any).from('abc_logs').insert({
             client_id: clientId,
             user_id: user.id,
