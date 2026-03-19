@@ -162,6 +162,35 @@ export default function ClassroomToday() {
         </div>
       )}
 
+      {/* Presence + Top Triggers Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {classroomId && (
+          <ClassroomPresencePanel classroomId={classroomId} studentNames={studentNameMap} />
+        )}
+        {topTriggers.length > 0 && (
+          <Card>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                Top Triggers Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 pb-3 px-4">
+              <div className="space-y-1.5">
+                {topTriggers.map(([trigger, count], i) => (
+                  <div key={trigger} className="flex items-center justify-between">
+                    <span className="text-sm">{trigger}</span>
+                    <Badge variant={i === 0 ? 'destructive' : 'secondary'} className="text-xs font-mono">
+                      {count}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Student Cards */}
         <div className="lg:col-span-2 space-y-3">
