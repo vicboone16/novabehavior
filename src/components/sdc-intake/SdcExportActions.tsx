@@ -489,7 +489,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.docx`;
       saveAs(buf, fileName);
       await intake.logReportExport({ reportDraftId: latestDraft.id, exportFormat: 'docx', fileName });
-      toast.success('Snapshot Word exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
