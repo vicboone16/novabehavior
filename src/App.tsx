@@ -98,6 +98,7 @@ import ClientDemo from "./pages/ClientDemo";
 import HelpCenter from "./pages/HelpCenter";
 import TrainingAcademy from "./pages/TrainingAcademy";
 import IntakeForms from "./pages/IntakeForms";
+import NovaCopilot from "./pages/NovaCopilot";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 
@@ -462,6 +463,7 @@ const App = () => {
               <Route path="/advanced-design" element={<AdvancedDesignAnalysis />} />
               <Route path="/ask-nova" element={<AskNovaAI />} />
               <Route path="/nova-ai" element={<NovaAI />} />
+              <Route path="/nova-copilot" element={<NovaCopilot />} />
               <Route path="/optimization" element={<GoalOptimization />} />
               <Route path="/capture" element={<CaptureCenter />} />
               <Route path="/demo" element={<DemoGateway />} />
