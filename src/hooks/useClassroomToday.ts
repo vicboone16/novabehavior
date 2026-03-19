@@ -118,11 +118,25 @@ export function useClassroomSummaries(agencyId: string | null) {
         }
       }
 
-      // Get active signals per classroom (from ci_signals)
-      const { data: signalsData } = await (supabase.from as any)('ci_signals')
-        .select('id, client_id, signal_type')
-        .is('resolved_at', null)
-        .gte('created_at', start);
+      // Fetch Beacon KPIs per classroom in parallel with signals
+      const [signalsRes, pointsRes, maydayRes, presenceRes] = await Promise.all([
+        (supabase.from as any)('ci_signals')
+          .select('id, client_id, signal_type')
+          .is('resolved_at', null)
+          .gte('created_at', start),
+        supabase.from('beacon_points_ledger' as any)
+          .select('classroom_id, points_delta')
+          .in('classroom_id', roomIds)
+          .gte('created_at', start),
+        supabase.from('mayday_alerts' as any)
+          .select('classroom_id')
+          .in('classroom_id', roomIds)
+          .gte('created_at', start),
+        supabase.from('staff_presence_status' as any)
+          .select('classroom_id')
+          .in('classroom_id', roomIds)
+          .eq('status', 'present'),
+      ]);
 
       const studentClassroomMap = new Map<string, string>();
       for (const [cid, sids] of memberMap) {
@@ -131,7 +145,7 @@ export function useClassroomSummaries(agencyId: string | null) {
 
       const signalsByClassroom = new Map<string, number>();
       const trendingUpByClassroom = new Map<string, number>();
-      for (const s of (signalsData || []) as any[]) {
+      for (const s of (signalsRes.data || []) as any[]) {
         const cid = s.client_id ? studentClassroomMap.get(s.client_id) : null;
         if (cid) {
           signalsByClassroom.set(cid, (signalsByClassroom.get(cid) || 0) + 1);
@@ -139,6 +153,23 @@ export function useClassroomSummaries(agencyId: string | null) {
             trendingUpByClassroom.set(cid, (trendingUpByClassroom.get(cid) || 0) + 1);
           }
         }
+      }
+
+      const pointsAwarded = new Map<string, number>();
+      const pointsRedeemed = new Map<string, number>();
+      for (const p of (pointsRes.data || []) as any[]) {
+        if (p.points_delta > 0) pointsAwarded.set(p.classroom_id, (pointsAwarded.get(p.classroom_id) || 0) + p.points_delta);
+        else pointsRedeemed.set(p.classroom_id, (pointsRedeemed.get(p.classroom_id) || 0) + Math.abs(p.points_delta));
+      }
+
+      const maydayCounts = new Map<string, number>();
+      for (const m of (maydayRes.data || []) as any[]) {
+        maydayCounts.set(m.classroom_id, (maydayCounts.get(m.classroom_id) || 0) + 1);
+      }
+
+      const presenceCounts = new Map<string, number>();
+      for (const p of (presenceRes.data || []) as any[]) {
+        presenceCounts.set(p.classroom_id, (presenceCounts.get(p.classroom_id) || 0) + 1);
       }
 
       const result: ClassroomSummary[] = rooms.map((r: any) => {
@@ -159,10 +190,15 @@ export function useClassroomSummaries(agencyId: string | null) {
           grade_level: r.grade_level,
           studentCount: studentIds.length,
           behaviorEventsToday: behaviorTotal,
-          engagementPctToday: null, // computed when weekly summary exists
+          engagementPctToday: null,
           promptCompletionToday: null,
           signalSummary: summary,
           activeSignalCount: sigCount,
+          pointsAwardedToday: pointsAwarded.get(r.id) || 0,
+          pointsRedeemedToday: pointsRedeemed.get(r.id) || 0,
+          rewardRedemptionsToday: 0,
+          maydayEventsToday: maydayCounts.get(r.id) || 0,
+          staffPresent: presenceCounts.get(r.id) || 0,
         };
       });
 
