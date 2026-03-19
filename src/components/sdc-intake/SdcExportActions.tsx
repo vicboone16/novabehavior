@@ -416,7 +416,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Forms_Bundle.docx`;
       saveAs(buf, fileName);
       await intake.logFormExport({ packageInstanceId, exportScope: 'package_bundle', exportFormat: 'docx', fileName });
-      toast.success('Forms bundle Word exported');
+      toast.success('Word export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
