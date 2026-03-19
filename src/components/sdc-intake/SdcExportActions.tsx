@@ -467,7 +467,7 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.pdf`;
       doc.save(fileName);
       await intake.logReportExport({ reportDraftId: latestDraft.id, exportFormat: 'pdf', fileName });
-      toast.success('Snapshot PDF exported');
+      toast.success('PDF export created.');
     } catch (err: any) {
       toast.error('Export failed: ' + err.message);
     } finally { setExporting(null); }
