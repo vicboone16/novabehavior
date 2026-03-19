@@ -28,8 +28,10 @@ import {
   buildChatSummary,
   verifyNovaActionComplete,
   inputLikelyContainsData,
+  createDebugReport,
   type PipelineResult,
   type PipelineStepResult,
+  type PipelineDebugReport,
 } from '@/lib/novaAIPipelineExecutor';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -133,6 +135,11 @@ export default function AskNovaAI() {
     const mode = classifyMode(actions);
     if (mode === 'assistant') return; // No pipeline needed
 
+    const debug = createDebugReport();
+    debug.mode = mode;
+    debug.stepTrace.push(`[1] message_received`);
+    debug.stepTrace.push(`[2] mode_classified: ${mode}`);
+
     const steps: PipelineStepResult[] = [];
     const errors: string[] = [];
     let needsReview = false;
@@ -142,24 +149,34 @@ export default function AskNovaAI() {
       try {
         if (action.type === 'extract_structured_data') {
           const behaviors = action.data?.behaviors || [];
-          if (!behaviors.length) continue;
+          debug.parsedItemCount += behaviors.length;
+          debug.stepTrace.push(`[3] parse_completed: ${behaviors.length} item(s)`);
+
+          if (!behaviors.length) {
+            debug.stepTrace.push(`[3a] SKIP: no items parsed`);
+            continue;
+          }
 
           // Check if items need review
           if (itemsNeedReview(action)) {
             needsReview = true;
+            debug.needsReview = true;
+            debug.stepTrace.push(`[4] review_required: true`);
             steps.push({ step: 'review_check', success: true, detail: `${behaviors.length} item(s) parsed, some need review` });
 
             // Auto-open review panel
             setReviewAction(action);
             
-            // Also auto-execute staging via executeAction so items are persisted
-            // even while review panel is open
             try {
               await executeAction(action, 'session_data', rawInput);
               steps.push({ step: 'staging', success: true, detail: 'Items staged for review' });
+              debug.stepTrace.push(`[5] staging_completed`);
             } catch (err: any) {
               steps.push({ step: 'staging', success: false, detail: err.message });
               errors.push(`Staging failed: ${err.message}`);
+              debug.failedStep = 'staging';
+              debug.failedReason = err.message;
+              debug.stepTrace.push(`[5] staging_FAILED: ${err.message}`);
             }
             continue;
           }
@@ -167,40 +184,60 @@ export default function AskNovaAI() {
           // Check if items need a session
           if (itemsNeedSession(action)) {
             needsSession = true;
+            debug.sessionMissing = true;
+            debug.stepTrace.push(`[6] session_check: MISSING — items need session_id`);
             steps.push({ step: 'session_check', success: true, detail: 'Items staged — session required' });
             
-            // Execute action which will handle pending_session path
             try {
               await executeAction(action, 'session_data', rawInput);
               steps.push({ step: 'staging', success: true, detail: 'Items staged as pending_session' });
+              debug.pendingSessionCount += behaviors.filter((b: any) => b.item_type !== 'abc_event').length;
+              debug.stepTrace.push(`[7] staging_completed: pending_session`);
             } catch (err: any) {
               steps.push({ step: 'staging', success: false, detail: err.message });
               errors.push(`Staging failed: ${err.message}`);
+              debug.failedStep = 'staging';
+              debug.failedReason = err.message;
+              debug.stepTrace.push(`[7] staging_FAILED: ${err.message}`);
             }
             continue;
           }
 
           // All items are clean — auto-route to clinical tables
+          debug.stepTrace.push(`[8] routing_started: ${behaviors.length} items`);
           try {
             const success = await executeAction(action, 'session_data', rawInput);
             if (success) {
-              steps.push({ step: 'clinical_routing', success: true, detail: `${behaviors.length} item(s) saved to clinical tables` });
+              // Parse the result from the saved count in the toast/log
+              steps.push({ step: 'clinical_routing', success: true, detail: `${behaviors.length} item(s) routed to clinical tables` });
               steps.push({ step: 'graph_queue', success: true, detail: 'Graph updates queued' });
               steps.push({ step: 'timeline', success: true, detail: 'Timeline entry created' });
+              debug.savedCount += behaviors.length;
+              debug.graphUpdatesQueued += behaviors.length;
+              debug.timelineWritten = true;
+              debug.stepTrace.push(`[9] clinical_save_success: ${behaviors.length}`);
+              debug.stepTrace.push(`[10] graph_queue_inserted`);
+              debug.stepTrace.push(`[11] timeline_written`);
             } else {
-              steps.push({ step: 'clinical_routing', success: false, detail: 'Save returned false' });
+              steps.push({ step: 'clinical_routing', success: false, detail: 'Save returned false — check logs for detail' });
               errors.push('Clinical routing did not complete');
+              debug.failedStep = 'clinical_routing';
+              debug.failedReason = 'executeAction returned false';
+              debug.stepTrace.push(`[9] clinical_save_FAILED: returned false`);
             }
           } catch (err: any) {
             steps.push({ step: 'clinical_routing', success: false, detail: err.message });
             errors.push(`Save failed: ${err.message}`);
+            debug.failedStep = 'clinical_routing';
+            debug.failedReason = err.message;
+            debug.stepTrace.push(`[9] clinical_save_FAILED: ${err.message}`);
           }
         } else if (
           action.type === 'generate_soap_note' ||
           action.type === 'generate_narrative_note' ||
           action.type === 'generate_caregiver_note'
         ) {
-          // Auto-execute note generation — save as draft
+          debug.stepTrace.push(`[12] note_generation_started: ${action.type}`);
           const destination = action.type === 'generate_soap_note' ? 'session_notes'
             : action.type === 'generate_narrative_note' ? 'narrative_notes'
             : 'caregiver_notes';
@@ -209,21 +246,34 @@ export default function AskNovaAI() {
             const success = await executeAction(action, destination, rawInput);
             if (success) {
               steps.push({ step: 'note_save', success: true, detail: `${action.type.replace('generate_', '').replace(/_/g, ' ')} saved as draft` });
+              debug.notesGenerated = true;
+              debug.stepTrace.push(`[13] note_saved: ${action.type}`);
             } else {
               steps.push({ step: 'note_save', success: false, detail: 'Note save failed' });
               errors.push('Note save did not complete');
+              debug.failedStep = 'note_save';
+              debug.failedReason = 'executeAction returned false';
+              debug.stepTrace.push(`[13] note_save_FAILED: returned false`);
             }
           } catch (err: any) {
             steps.push({ step: 'note_save', success: false, detail: err.message });
             errors.push(`Note save failed: ${err.message}`);
+            debug.failedStep = 'note_save';
+            debug.failedReason = err.message;
+            debug.stepTrace.push(`[13] note_save_FAILED: ${err.message}`);
           }
         }
-        // request_clarification actions are NOT auto-executed — they show buttons
       } catch (err: any) {
         console.error('[NovaAI Pipeline] Action execution error:', err);
         errors.push(`Action ${action.type} failed: ${err.message}`);
+        debug.failedStep = action.type;
+        debug.failedReason = err.message;
+        debug.stepTrace.push(`[!] UNHANDLED_ERROR: ${action.type} — ${err.message}`);
       }
     }
+
+    debug.errors = errors;
+    debug.stepTrace.push(`[14] final_status: ${errors.length === 0 ? 'SUCCESS' : 'FAILED'}`);
 
     // Build pipeline result
     const result: PipelineResult = {
@@ -234,6 +284,7 @@ export default function AskNovaAI() {
       needsReview,
       needsSession,
       errors,
+      debug,
     };
     result.summary = buildCompletionSummary(result);
 
@@ -262,27 +313,20 @@ export default function AskNovaAI() {
     } else if (needsReview) {
       toast.info('Nova AI parsed your data — some items need review.', { duration: 5000 });
     } else if (result.completed) {
-      // Show success toast only when truly complete
-      const savedCount = steps.filter(s => s.step === 'clinical_routing' && s.success)
-        .reduce((n, s) => n + (parseInt(s.detail) || 1), 0);
+      const savedCount = steps.filter(s => s.step === 'clinical_routing' && s.success).length;
       if (savedCount > 0) {
         toast.success(`Pipeline complete — data saved to clinical tables`);
       }
     }
 
-    // Append pipeline summary as a follow-up assistant message in the chat
+    // Append pipeline summary (with debug report) as a follow-up assistant message
     const chatSummary = buildChatSummary(result);
     if (chatSummary) {
       setMessages(prev => [...prev, { role: 'assistant', content: chatSummary }]);
     }
 
-    // Log pipeline result
-    console.log('[NovaAI Pipeline] Result:', {
-      mode: result.mode,
-      completed: result.completed,
-      steps: result.steps.map(s => `${s.step}: ${s.success ? '✓' : '✗'} ${s.detail}`),
-      errors: result.errors,
-    });
+    // Full console debug dump
+    console.log('[NovaAI Pipeline] DEBUG REPORT:', JSON.stringify(debug, null, 2));
   }, [executeAction]);
 
   const sendMessage = async (text: string) => {

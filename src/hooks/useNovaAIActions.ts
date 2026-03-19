@@ -255,13 +255,15 @@ export function useNovaAIActions(clientId: string | null) {
 
     for (const item of items) {
       try {
-        console.log('[NovaAI] Processing item:', {
+        console.log('[NovaAI] ▶ ROUTING ITEM:', {
           item_id: item.item_id,
           item_type: item.item_type,
           target_name: item.target_match?.target_name,
+          target_id: item.target_match?.target_id,
           match_status: item.target_match?.match_status,
           needs_review: item.quality?.needs_review,
           measurement_type: item.measurement?.measurement_type,
+          session_id: sessionId,
         });
 
         // Skip items that need review (unless user already reviewed them)
@@ -295,7 +297,7 @@ export function useNovaAIActions(clientId: string | null) {
 
         // ABC events don't need session_id — always route them
         if (item.item_type === 'abc_event') {
-          console.log('[NovaAI] Saving ABC event:', item.raw_text?.slice(0, 50));
+          console.log('[NovaAI] ✅ Saving ABC event:', item.raw_text?.slice(0, 50));
           await (supabase as any).from('abc_logs').insert({
             client_id: clientId,
             user_id: user.id,
@@ -334,7 +336,7 @@ export function useNovaAIActions(clientId: string | null) {
           const trialTotal = item.measurement?.trial_total || 1;
           const trialCorrect = item.measurement?.trial_correct || 0;
 
-          console.log('[NovaAI] Saving skill trial:', item.target_match?.target_name, `${trialCorrect}/${trialTotal}`);
+          console.log('[NovaAI] ✅ Saving skill trial:', item.target_match?.target_name, `${trialCorrect}/${trialTotal}`);
 
           const trialRows = [];
           for (let t = 0; t < trialTotal; t++) {
@@ -395,7 +397,7 @@ export function useNovaAIActions(clientId: string | null) {
             insertData.notes = item.context.notes;
           }
 
-          console.log('[NovaAI] Saving behavior data:', item.target_match?.target_name, insertData);
+          console.log('[NovaAI] ✅ Saving behavior data:', item.target_match?.target_name, JSON.stringify(insertData));
 
           // Use upsert to handle potential duplicates
           const { error } = await (supabase as any)
@@ -420,7 +422,7 @@ export function useNovaAIActions(clientId: string | null) {
       }
     }
 
-    console.log('[NovaAI] Routing complete:', result);
+    console.log('[NovaAI] ✅ ROUTING COMPLETE:', JSON.stringify(result));
     return result;
   }, [user, clientId, createNewTarget]);
 
