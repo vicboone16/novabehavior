@@ -16011,7 +16011,11 @@ export type Database = {
           generator_ready: boolean | null
           id: string
           objective_goal: string | null
+          priority_score: number | null
           program_name: string | null
+          send_to_bip: boolean | null
+          send_to_fba: boolean | null
+          send_to_iep: boolean | null
           skill_area_name: string | null
           source_reason: string | null
           source_record_id: string | null
@@ -16025,7 +16029,11 @@ export type Database = {
           generator_ready?: boolean | null
           id?: string
           objective_goal?: string | null
+          priority_score?: number | null
           program_name?: string | null
+          send_to_bip?: boolean | null
+          send_to_fba?: boolean | null
+          send_to_iep?: boolean | null
           skill_area_name?: string | null
           source_reason?: string | null
           source_record_id?: string | null
@@ -16039,7 +16047,11 @@ export type Database = {
           generator_ready?: boolean | null
           id?: string
           objective_goal?: string | null
+          priority_score?: number | null
           program_name?: string | null
+          send_to_bip?: boolean | null
+          send_to_fba?: boolean | null
+          send_to_iep?: boolean | null
           skill_area_name?: string | null
           source_reason?: string | null
           source_record_id?: string | null
