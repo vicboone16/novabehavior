@@ -18612,6 +18612,36 @@ export type Database = {
           },
         ]
       }
+      faq_items: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          question: string
+        }
+        Insert: {
+          answer: string
+          category?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          question: string
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          question?: string
+        }
+        Relationships: []
+      }
       fba_hypotheses: {
         Row: {
           agency_id: string | null
@@ -20530,6 +20560,36 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      glossary_terms: {
+        Row: {
+          category: string
+          created_at: string
+          definition: string
+          display_order: number
+          id: string
+          related_route: string | null
+          term: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          definition: string
+          display_order?: number
+          id?: string
+          related_route?: string | null
+          term: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          definition?: string
+          display_order?: number
+          id?: string
+          related_route?: string | null
+          term?: string
+        }
+        Relationships: []
       }
       goal_benchmark_criterion_steps: {
         Row: {
