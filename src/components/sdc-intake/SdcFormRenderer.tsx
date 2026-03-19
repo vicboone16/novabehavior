@@ -518,9 +518,9 @@ export function SdcFormRenderer({ formInstanceId, formDefinition, studentName, o
       <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Submit Form?</DialogTitle>
+            <DialogTitle>Submit this form as final?</DialogTitle>
             <DialogDescription>
-              This will mark the form as final. A BCBA/admin can still edit it after submission.
+              You can still allow admin edits later, but this will mark the form as submitted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

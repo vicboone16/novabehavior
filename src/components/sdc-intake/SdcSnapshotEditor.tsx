@@ -370,9 +370,14 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
               Regenerating may replace newly generated content. If manual edits exist, confirm whether you want to keep or replace them.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmRegenerate}>Replace & Regenerate</Button>
+            <Button variant="outline" onClick={() => { setShowRegenerateConfirm(false); generateSnapshot(); }}>
+              Regenerate and Keep My Edits
+            </Button>
+            <Button variant="destructive" onClick={confirmRegenerate}>
+              Regenerate and Replace Edits
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
