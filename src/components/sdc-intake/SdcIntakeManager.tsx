@@ -115,12 +115,16 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
 
   const loadPackageDetails = async (pkgId: string) => {
     try {
-      const { forms } = await intake.fetchPackageInstance(pkgId);
+      const [{ forms }, instances, drafts, history] = await Promise.all([
+        intake.fetchPackageInstance(pkgId),
+        intake.fetchFormInstances(pkgId),
+        intake.fetchPackageReportDrafts(pkgId),
+        intake.fetchExportHistory(pkgId),
+      ]);
       setPackageForms(forms);
-      const instances = await intake.fetchFormInstances(pkgId);
       setFormInstances(instances);
-      const drafts = await intake.fetchPackageReportDrafts(pkgId);
       setReportDrafts(drafts);
+      setExportHistory(history);
     } catch (err: any) { toast.error('Failed to load package details: ' + err.message); }
   };
 
