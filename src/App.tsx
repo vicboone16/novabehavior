@@ -159,6 +159,7 @@ const App = () => {
     <GlobalErrorBoundary region="App Shell">
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <DemoModeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
