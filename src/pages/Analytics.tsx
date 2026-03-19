@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
+import { DistrictReportingPanel } from '@/components/phase4';
 import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { format, subDays } from 'date-fns';
 
