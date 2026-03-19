@@ -138,3 +138,6 @@ verify_jwt = false
 [functions.cc-export-transcript]
 verify_jwt = false
 
+[functions.nova-copilot-spot]
+verify_jwt = false
+
