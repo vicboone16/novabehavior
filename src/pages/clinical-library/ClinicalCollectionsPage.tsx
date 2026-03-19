@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import {
   Target, Sparkles, BookOpen, ClipboardList,
-  FileText, FolderPlus, ExternalLink
+  FileText, FolderPlus, ExternalLink, Shield, GraduationCap
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,10 +22,17 @@ const SECTIONS = [
     route: null,
   },
   {
+    key: 'behavior-reduction',
+    label: 'Behavior Reduction',
+    description: 'Function-based goals, replacement behaviors, intervention protocols & crisis plans.',
+    icon: Shield,
+    route: '/clinical-library/behavior-reduction',
+  },
+  {
     key: 'skill-acquisition',
     label: 'Skill Acquisition',
     description: 'Manding, tacting, listener responding, echoics, intraverbals, play, social, daily living.',
-    icon: BookOpen,
+    icon: GraduationCap,
     route: null,
   },
   {
