@@ -422,7 +422,7 @@ export function useNovaAIActions(clientId: string | null) {
       }
     }
 
-    console.log('[NovaAI] Routing complete:', result);
+    console.log('[NovaAI] ✅ ROUTING COMPLETE:', JSON.stringify(result));
     return result;
   }, [user, clientId, createNewTarget]);
 
