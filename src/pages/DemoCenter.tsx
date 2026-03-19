@@ -9,6 +9,7 @@ import { DemoCenterHeader } from '@/components/demo-center/DemoCenterHeader';
 import { DemoBanner } from '@/components/demo-center/DemoBanner';
 import { DemoCenterTabs } from '@/components/demo-center/DemoCenterTabs';
 import { DemoOnboardingModal } from '@/components/demo-center/DemoOnboardingModal';
+import { useDemoEcosystem } from '@/hooks/useDemoEcosystem';
 
 export interface DemoLearner {
   id: string;
