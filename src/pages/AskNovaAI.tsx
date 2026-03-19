@@ -28,8 +28,10 @@ import {
   buildChatSummary,
   verifyNovaActionComplete,
   inputLikelyContainsData,
+  createDebugReport,
   type PipelineResult,
   type PipelineStepResult,
+  type PipelineDebugReport,
 } from '@/lib/novaAIPipelineExecutor';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
