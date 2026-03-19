@@ -255,13 +255,15 @@ export function useNovaAIActions(clientId: string | null) {
 
     for (const item of items) {
       try {
-        console.log('[NovaAI] Processing item:', {
+        console.log('[NovaAI] ▶ ROUTING ITEM:', {
           item_id: item.item_id,
           item_type: item.item_type,
           target_name: item.target_match?.target_name,
+          target_id: item.target_match?.target_id,
           match_status: item.target_match?.match_status,
           needs_review: item.quality?.needs_review,
           measurement_type: item.measurement?.measurement_type,
+          session_id: sessionId,
         });
 
         // Skip items that need review (unless user already reviewed them)
