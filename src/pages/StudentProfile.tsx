@@ -1039,6 +1039,8 @@ export default function StudentProfile() {
           </Card>
           {/* Teacher Data Hub — all teacher/classroom data for BCBA review */}
           <TeacherDataHub clientId={student.id} />
+          {/* Parent Snapshot Generator */}
+          <ParentSnapshotGenerator studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* Note: Team, Contacts, Locations, Safety, Scheduling, Communication tabs have been 
