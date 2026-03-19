@@ -87,6 +87,21 @@
     --chart-5: 70 18.8% 76.9%;
     --sidebar: 0 0% 98%;
 
+    /* Demo mode tokens */
+    --demo: 220 15% 13%;
+    --demo-foreground: 0 0% 100%;
+    --demo-banner: 263 100% 97%;
+    --demo-banner-border: 263 73% 87%;
+    --demo-banner-foreground: 263 55% 35%;
+    --demo-surface: 262 52% 96%;
+    --demo-accent: 262 52% 60%;
+
+    /* Status soft variants */
+    --success-soft: 142 76% 96%;
+    --warning-soft: 38 100% 96%;
+    --error-soft: 0 86% 97%;
+    --info-soft: 217 100% 97%;
+
     /* Gradients and shadows */
     --hero-gradient: linear-gradient(135deg, hsl(174,58%,40%), hsl(174,58%,50%), hsl(262,52%,60%));
     --warm-gradient: linear-gradient(135deg, hsl(26,85%,62%), hsl(38,92%,55%));
@@ -159,6 +174,20 @@
     --chart-4: 304 26.5% 62.7%;
     --chart-5: 16 24.6% 64.5%;
     --sidebar: 220 25% 14%;
+
+    /* Demo mode tokens (dark) */
+    --demo: 0 0% 95%;
+    --demo-foreground: 220 15% 13%;
+    --demo-banner: 263 40% 18%;
+    --demo-banner-border: 263 30% 30%;
+    --demo-banner-foreground: 263 73% 87%;
+    --demo-surface: 262 30% 20%;
+    --demo-accent: 262 52% 65%;
+    --success-soft: 142 40% 15%;
+    --warning-soft: 38 40% 15%;
+    --error-soft: 0 40% 15%;
+    --info-soft: 217 40% 15%;
+
     --sidebar-foreground: 40 33% 96%;
     --sidebar-primary: 174 58% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
