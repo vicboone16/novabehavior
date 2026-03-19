@@ -588,6 +588,10 @@ export default function StudentProfile() {
             <Brain className="w-3 h-3" />
             Assessment
           </TabsTrigger>
+          <TabsTrigger value="sdc-intake" className="gap-1 text-xs">
+            <Package className="w-3 h-3" />
+            SDC Intake
+          </TabsTrigger>
 
 
           <TabsTrigger value="appointments" className="gap-1 text-xs">
