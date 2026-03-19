@@ -782,7 +782,7 @@ export default function StudentProfile() {
           <BehaviorDecodedPanel studentId={student.id} />
         </TabsContent>
 
-        {/* Programming Tab (unified Skills + Behaviors) */}
+        {/* Programming Tab (unified Skills + Behaviors + Protocols) */}
         <TabsContent value="programming" className="space-y-4">
           {/* Intelligence cards at top of Programming */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -796,6 +796,8 @@ export default function StudentProfile() {
             studentName={student.name}
             isAdmin={studentAccess.isAdmin || studentAccess.canEditProfile}
           />
+          {/* Protocol Assignments — Library-based program assignment */}
+          <ProtocolAssignmentManager studentId={student.id} />
         </TabsContent>
 
 

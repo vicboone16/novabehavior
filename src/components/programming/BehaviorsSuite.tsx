@@ -52,26 +52,26 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as BehaviorTab)}>
-        <TabsList className="flex w-full max-w-3xl flex-wrap gap-1">
-          <TabsTrigger value="behaviors" className="flex items-center gap-1.5">
-            <Activity className="w-4 h-4" />
-            <span className="hidden sm:inline">Behaviors</span>
+        <TabsList className="flex w-full gap-1 h-auto p-1 overflow-x-auto scrollbar-hide">
+          <TabsTrigger value="behaviors" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Activity className="w-3.5 h-3.5" />
+            Behaviors & Goals
           </TabsTrigger>
-          <TabsTrigger value="interventions" className="flex items-center gap-1.5">
-            <Lightbulb className="w-4 h-4" />
-            <span className="hidden sm:inline">Interventions</span>
+          <TabsTrigger value="interventions" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Lightbulb className="w-3.5 h-3.5" />
+            Interventions
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Data</span>
+          <TabsTrigger value="data" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Data Entry
           </TabsTrigger>
-          <TabsTrigger value="review" className="flex items-center gap-1.5">
-            <ClipboardCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Review</span>
+          <TabsTrigger value="review" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            Progress Review
           </TabsTrigger>
-          <TabsTrigger value="context" className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Context</span>
+          <TabsTrigger value="context" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+            <Clock className="w-3.5 h-3.5" />
+            Context Log
           </TabsTrigger>
         </TabsList>
 
