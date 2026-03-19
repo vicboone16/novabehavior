@@ -814,10 +814,7 @@ export default function StudentProfile() {
           />
         </TabsContent>
 
-        {/* Files Tab */}
-        <TabsContent value="files" className="space-y-4">
-          <StudentFileManager studentId={student.id} studentName={student.name} />
-        </TabsContent>
+        {/* Files tab merged into Documents */}
 
         {/* FBA Tools Tab - Only visible when Assessment Mode is ON */}
         {student.assessmentModeEnabled && (
