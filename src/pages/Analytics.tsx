@@ -96,6 +96,10 @@ export default function Analytics() {
               view="productivity"
             />
           </TabsContent>
+
+          <TabsContent value="district">
+            <DistrictReportingPanel />
+          </TabsContent>
         </Tabs>
       </main>
     </div>

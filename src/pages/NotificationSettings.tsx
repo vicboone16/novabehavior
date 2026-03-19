@@ -321,6 +321,10 @@ export default function NotificationSettings() {
             </CardContent>
           </Card>
         )}
+
+        {/* Notification Orchestrator */}
+        <Separator className="my-6" />
+        <NotificationOrchestratorPanel />
       </div>
     </div>
   );
