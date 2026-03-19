@@ -159,6 +159,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     setShowRegenerateConfirm(false);
     setEditedSections({});
     await intake.saveSnapshotEdits(reportDraftId, null);
+    await intake.logGenerationEvent(reportDraftId, 'regenerated', { edits_cleared: true });
     generateSnapshot();
   };
 
