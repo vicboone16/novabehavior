@@ -31,10 +31,33 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
 
   const formatLabel = (key: string) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-  const formatValue = (val: any): string => {
-    if (Array.isArray(val)) return val.map(v => formatLabel(String(v))).join(', ');
-    if (val === null || val === undefined) return '';
-    return String(val);
+  /** Build a lookup from field key -> { label, options } from the form schema */
+  const buildFieldMap = (fi: FormInstance): Record<string, any> => {
+    const map: Record<string, any> = {};
+    const sections = fi.form_definition?.schema_json?.sections || [];
+    for (const section of sections) {
+      for (const field of (section.fields || [])) {
+        map[field.key] = field;
+      }
+    }
+    return map;
+  };
+
+  /** Resolve a stored value to its display label using the field's options */
+  const resolveDisplayValue = (val: any, field: any): string => {
+    if (val === null || val === undefined || val === '') return '';
+    if (!field?.options) {
+      if (Array.isArray(val)) return val.join(', ');
+      return String(val);
+    }
+    if (Array.isArray(val)) {
+      return val.map(v => {
+        const opt = field.options.find((o: any) => String(o.value) === String(v));
+        return opt ? opt.label : String(v);
+      }).join(', ');
+    }
+    const opt = field.options.find((o: any) => String(o.value) === String(val));
+    return opt ? opt.label : String(val);
   };
 
   // ---- PDF Export ----
