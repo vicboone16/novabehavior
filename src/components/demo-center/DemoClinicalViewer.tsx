@@ -176,7 +176,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="billing" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(billingRecords).map(b => (
+          {filterByLearner(billingRecords).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.billingRecords}</p>
+          ) : filterByLearner(billingRecords).map(b => (
             <Card key={b.id} className={b.status === 'denied' || b.status === 'rejected' ? 'border-destructive/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
