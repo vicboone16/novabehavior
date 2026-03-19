@@ -85,14 +85,16 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       }
       y += 5;
 
-      // Print responses
+      // Print responses using schema labels
+      const fieldMap = buildFieldMap(fi);
       doc.setFontSize(10);
       for (const [key, val] of Object.entries(responseData)) {
-        const fv = formatValue(val);
+        const field = fieldMap[key];
+        const fv = resolveDisplayValue(val, field);
         if (!fv) continue;
         if (y > 270) { doc.addPage(); y = 20; }
         doc.setFont('helvetica', 'bold');
-        const label = formatLabel(key);
+        const label = field?.label || formatLabel(key);
         doc.text(label, 14, y);
         y += 5;
         doc.setFont('helvetica', 'normal');
