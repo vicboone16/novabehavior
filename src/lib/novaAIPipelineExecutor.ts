@@ -19,12 +19,51 @@ export interface PipelineResult {
   needsSession: boolean;
   reviewAction?: NovaAction;
   errors: string[];
+  debug: PipelineDebugReport;
+}
+
+export interface PipelineDebugReport {
+  mode: string;
+  parsedItemCount: number;
+  needsReview: boolean;
+  savedCount: number;
+  skippedCount: number;
+  newTargetsCreated: number;
+  sessionMissing: boolean;
+  graphUpdatesQueued: number;
+  timelineWritten: boolean;
+  notesGenerated: boolean;
+  failedStep: string | null;
+  failedReason: string | null;
+  pendingSessionCount: number;
+  errors: string[];
+  stepTrace: string[];
 }
 
 export interface PipelineStepResult {
   step: string;
   success: boolean;
   detail: string;
+}
+
+function createDebugReport(): PipelineDebugReport {
+  return {
+    mode: 'unknown',
+    parsedItemCount: 0,
+    needsReview: false,
+    savedCount: 0,
+    skippedCount: 0,
+    newTargetsCreated: 0,
+    sessionMissing: false,
+    graphUpdatesQueued: 0,
+    timelineWritten: false,
+    notesGenerated: false,
+    failedStep: null,
+    failedReason: null,
+    pendingSessionCount: 0,
+    errors: [],
+    stepTrace: [],
+  };
 }
 
 /**
@@ -116,17 +155,20 @@ export function buildCompletionSummary(result: PipelineResult): string {
 }
 
 /**
- * Build a detailed markdown summary for display in the chat.
+ * Build a detailed markdown summary for display in the chat — includes DEBUG REPORT.
  */
 export function buildChatSummary(result: PipelineResult): string {
   const lines: string[] = [];
+  const d = result.debug;
   
+  // Header
   if (result.mode === 'structured_data' || result.mode === 'mixed') {
-    lines.push('**📊 Smart Data Pipeline Results**');
+    lines.push('**📊 Nova AI Smart Data Pipeline Results**');
   } else if (result.mode === 'note_generation') {
     lines.push('**📝 Note Generation Results**');
   }
 
+  // Step results
   const successSteps = result.steps.filter(s => s.success);
   const failedSteps = result.steps.filter(s => !s.success);
 
@@ -159,6 +201,42 @@ export function buildChatSummary(result: PipelineResult): string {
     lines.push(`\n✅ **Pipeline completed successfully**`);
   }
 
+  // DEBUG REPORT
+  lines.push('');
+  lines.push('<details>');
+  lines.push('<summary>🔍 Debug Report</summary>');
+  lines.push('');
+  lines.push(`| Step | Value |`);
+  lines.push(`|------|-------|`);
+  lines.push(`| Mode | ${d.mode} |`);
+  lines.push(`| Parsed items | ${d.parsedItemCount} |`);
+  lines.push(`| Needs review | ${d.needsReview} |`);
+  lines.push(`| Saved | ${d.savedCount} |`);
+  lines.push(`| Skipped | ${d.skippedCount} |`);
+  lines.push(`| New targets | ${d.newTargetsCreated} |`);
+  lines.push(`| Session missing | ${d.sessionMissing} |`);
+  lines.push(`| Pending session | ${d.pendingSessionCount} |`);
+  lines.push(`| Graph queued | ${d.graphUpdatesQueued} |`);
+  lines.push(`| Timeline written | ${d.timelineWritten} |`);
+  lines.push(`| Notes generated | ${d.notesGenerated} |`);
+  if (d.failedStep) {
+    lines.push(`| **FAILED STEP** | **${d.failedStep}** |`);
+    lines.push(`| **REASON** | **${d.failedReason}** |`);
+  }
+  lines.push('');
+  lines.push('**Step Trace:**');
+  for (const t of d.stepTrace) {
+    lines.push(`- ${t}`);
+  }
+  if (d.errors.length > 0) {
+    lines.push('');
+    lines.push('**Errors:**');
+    for (const e of d.errors) {
+      lines.push(`- 🔴 ${e}`);
+    }
+  }
+  lines.push('</details>');
+
   return lines.join('\n');
 }
 
@@ -175,3 +253,5 @@ export function verifyNovaActionComplete(
   );
   return expectedSteps.filter(s => !completedSteps.has(s));
 }
+
+export { createDebugReport };
