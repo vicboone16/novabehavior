@@ -32,18 +32,19 @@ export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
   }
 
   const handleAssign = async () => {
-    if (!selectedTemplate) return;
+    const template = engine.templates.find(t => t.id === selectedTemplate);
+    if (!template) return;
     setIsAssigning(true);
     try {
-      const result = await engine.createInstance.mutateAsync({
-        templateId: selectedTemplate,
+      const instanceId = await engine.createInstance.mutateAsync({
+        templateCode: template.code,
         studentId,
         completionMode,
         linkedEntityType: referralId ? 'referral' : 'student',
         linkedEntityId: referralId || studentId,
       });
-      if (result) {
-        setSelectedInstanceId(result.id);
+      if (instanceId) {
+        setSelectedInstanceId(instanceId);
       }
     } finally {
       setIsAssigning(false);

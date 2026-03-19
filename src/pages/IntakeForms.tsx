@@ -133,7 +133,6 @@ export default function IntakeForms() {
           <IntakePacketBuilder
             packets={engine.packets}
             templates={engine.templates}
-            onCreatePacket={engine.createPacket.mutateAsync}
             isLoading={engine.isLoading}
           />
         </TabsContent>

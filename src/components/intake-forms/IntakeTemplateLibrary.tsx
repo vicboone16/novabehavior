@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, FileText, Users, Bot, PenTool, Eye, Plus } from 'lucide-react';
 import type { FormTemplate } from '@/hooks/useIntakeFormsEngine';
+import { useIntakeFormsEngine } from '@/hooks/useIntakeFormsEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Props {
   templates: FormTemplate[];
@@ -19,6 +18,7 @@ interface Props {
 }
 
 export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAssigned }: Props) {
+  const engine = useIntakeFormsEngine();
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; template: FormTemplate | null }>({ open: false, template: null });
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -48,27 +48,17 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
     if (!assignDialog.template || !selectedStudentId) return;
     setIsAssigning(true);
     try {
-      const { data: defData } = await supabase.from('form_definitions').select('id').eq('is_active', true).limit(1).single();
-      const { data, error } = await supabase
-        .from('form_instances')
-        .insert({
-          template_id: assignDialog.template.id,
-          student_id: selectedStudentId,
-          form_definition_id: defData?.id || assignDialog.template.id,
-          completion_mode: completionMode,
-          linked_entity_type: 'student',
-          linked_entity_id: selectedStudentId,
-          status: 'draft',
-          delivery_method: completionMode === 'parent' ? 'secure_link' : 'in_app',
-        } as any)
-        .select('id')
-        .single();
-      if (error) throw error;
-      toast.success(`"${assignDialog.template.name}" assigned successfully`);
+      const instanceId = await engine.createInstance.mutateAsync({
+        templateCode: assignDialog.template.code,
+        studentId: selectedStudentId,
+        completionMode,
+        linkedEntityType: 'student',
+        linkedEntityId: selectedStudentId,
+      });
       setAssignDialog({ open: false, template: null });
-      onAssigned?.(data.id);
+      onAssigned?.(instanceId);
     } catch (err: any) {
-      toast.error('Assignment failed: ' + err.message);
+      // error toast handled by mutation
     } finally {
       setIsAssigning(false);
     }

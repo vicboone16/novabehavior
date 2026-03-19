@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle, Save, Send, FileText, PenTool } from 'lucide-react';
+import { Loader2, CheckCircle, Save, Send, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactSignatureCanvas from 'react-signature-canvas';
 
@@ -69,7 +69,6 @@ export function ParentPortalView({ token }: Props) {
 
   const loadFormFromToken = async () => {
     try {
-      // Look up delivery link
       const { data: link, error: linkErr } = await supabase
         .from('form_delivery_links')
         .select('form_instance_id, expires_at')
@@ -78,10 +77,8 @@ export function ParentPortalView({ token }: Props) {
       if (linkErr || !link) { setError('Invalid or expired link'); setLoading(false); return; }
       if (link.expires_at && new Date(link.expires_at) < new Date()) { setError('This link has expired'); setLoading(false); return; }
 
-      // Mark as opened
       await supabase.from('form_delivery_links').update({ delivery_status: 'opened', opened_at: new Date().toISOString() } as any).eq('token', token);
 
-      // Fetch instance
       const { data: inst } = await supabase
         .from('form_instances')
         .select('id, status, template_id, form_templates(name, require_signature_parent)')
@@ -96,7 +93,6 @@ export function ParentPortalView({ token }: Props) {
         return;
       }
 
-      // Load sections + fields
       const { data: secs } = await supabase
         .from('form_template_sections')
         .select('*, form_template_fields(*)')
@@ -109,7 +105,6 @@ export function ParentPortalView({ token }: Props) {
       }));
       setSections(formatted);
 
-      // Load existing answers
       const { data: answers } = await supabase
         .from('form_answers')
         .select('field_key, value_raw')
@@ -128,39 +123,37 @@ export function ParentPortalView({ token }: Props) {
     if (!instance || isSaving) return;
     setIsSaving(true);
     try {
-      for (const section of sections) {
-        for (const field of section.fields) {
-          const val = responsesRef.current[field.field_key];
-          if (val === undefined) continue;
-          const { data: existing } = await supabase
-            .from('form_answers')
-            .select('id')
-            .eq('form_instance_id', instance.id)
-            .eq('field_key', field.field_key)
-            .eq('repeat_index', 0)
-            .maybeSingle();
-          if (existing) {
-            await supabase.from('form_answers').update({ value_raw: val, updated_at: new Date().toISOString() } as any).eq('id', (existing as any).id);
-          } else {
-            await supabase.from('form_answers').insert({
-              form_instance_id: instance.id,
-              section_key: section.section_key,
-              field_key: field.field_key,
-              field_label: field.field_label,
-              value_raw: val,
-              source_type: 'parent_portal',
-            } as any);
-          }
-        }
+      // Build answers array for bulk RPC
+      const answersArray = Object.entries(responsesRef.current)
+        .filter(([_, v]) => v !== undefined)
+        .map(([fieldKey, value]) => ({
+          field_key: fieldKey,
+          value_raw: value,
+          repeat_index: 0,
+        }));
+
+      if (answersArray.length > 0) {
+        await supabase.rpc('save_form_answers_bulk', {
+          p_form_instance_id: instance.id,
+          p_answers: answersArray,
+          p_source_type: 'parent_portal',
+          p_ai_generated: false,
+          p_manually_edited: true,
+        });
       }
-      await supabase.from('form_instances').update({ last_saved_at: new Date().toISOString(), status: 'in_progress' } as any).eq('id', instance.id);
+
+      // Create autosave snapshot
+      await supabase.rpc('autosave_form_instance', {
+        p_form_instance_id: instance.id,
+      });
+
       toast.success('Progress saved! You can return later to finish.');
     } catch (err: any) {
       toast.error('Save failed: ' + err.message);
     } finally {
       setIsSaving(false);
     }
-  }, [instance, sections, isSaving]);
+  }, [instance, isSaving]);
 
   const handleSubmit = async () => {
     if (!instance) return;
@@ -181,7 +174,6 @@ export function ParentPortalView({ token }: Props) {
       return;
     }
 
-    // Check signature requirement
     if (instance.form_templates?.require_signature_parent && !signatureData) {
       toast.error('Please provide your signature before submitting.');
       return;
@@ -189,7 +181,24 @@ export function ParentPortalView({ token }: Props) {
 
     setIsSaving(true);
     try {
-      await saveDraft();
+      // Save answers via bulk RPC
+      const answersArray = Object.entries(responsesRef.current)
+        .filter(([_, v]) => v !== undefined)
+        .map(([fieldKey, value]) => ({
+          field_key: fieldKey,
+          value_raw: value,
+          repeat_index: 0,
+        }));
+
+      if (answersArray.length > 0) {
+        await supabase.rpc('save_form_answers_bulk', {
+          p_form_instance_id: instance.id,
+          p_answers: answersArray,
+          p_source_type: 'parent_portal',
+          p_ai_generated: false,
+          p_manually_edited: true,
+        });
+      }
 
       // Save signature if required
       if (signatureData) {
@@ -202,10 +211,10 @@ export function ParentPortalView({ token }: Props) {
         } as any);
       }
 
-      await supabase.from('form_instances').update({
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-      } as any).eq('id', instance.id);
+      // Submit via RPC
+      await supabase.rpc('submit_form_instance', {
+        p_form_instance_id: instance.id,
+      });
 
       // Mark delivery link completed
       await supabase.from('form_delivery_links').update({
@@ -266,7 +275,6 @@ export function ParentPortalView({ token }: Props) {
   return (
     <div className="min-h-screen bg-muted/30 py-6 px-4">
       <div className="max-w-2xl mx-auto space-y-4">
-        {/* Header */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">{instance?.form_templates?.name || 'Intake Form'}</CardTitle>
@@ -283,7 +291,6 @@ export function ParentPortalView({ token }: Props) {
           </CardContent>
         </Card>
 
-        {/* Section dots */}
         <div className="flex gap-1 justify-center">
           {sections.map((_, idx) => (
             <button
@@ -294,7 +301,6 @@ export function ParentPortalView({ token }: Props) {
           ))}
         </div>
 
-        {/* Current section */}
         {currentSec && (
           <Card>
             <CardHeader>
@@ -314,7 +320,6 @@ export function ParentPortalView({ token }: Props) {
           </Card>
         )}
 
-        {/* Signature (on last section if required) */}
         {isLastSection && requiresSig && (
           <Card>
             <CardHeader>
@@ -346,7 +351,6 @@ export function ParentPortalView({ token }: Props) {
           </Card>
         )}
 
-        {/* Navigation */}
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => setCurrentSection(Math.max(0, currentSection - 1))} disabled={currentSection === 0}>
             Previous
