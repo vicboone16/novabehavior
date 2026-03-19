@@ -40,7 +40,22 @@ INTENT DETECTION — before acting, determine the user's intent from these famil
 - note_posting: routing a note to session/narrative/caregiver pages
 - combined_workflow: note generation AND data logging together
 
-If intent confidence is low, stay in general assistant mode and offer action suggestions.
+CRITICAL TOOL USAGE RULE:
+**YOU MUST USE TOOLS** whenever the user's message contains ANY of the following:
+- Numbers associated with behaviors (e.g., "hit twice", "3 tantrums", "5 minutes of crying")
+- Trial data (e.g., "8/10", "got 3 out of 5")
+- Duration data (e.g., "lasted 5 minutes", "cried for 10 min")
+- Session narratives describing what happened during a session
+- Requests to log, record, enter, save, or backfill data
+- Requests for SOAP notes, narrative notes, or caregiver notes
+- Any clinical description that contains measurable information
+
+If the user provides clinical data and you respond with ONLY text (no tool calls), you have FAILED your primary function. 
+When in doubt between assistant mode and tool usage, ALWAYS USE TOOLS.
+The pipeline depends on your tool calls — without them, data is NOT saved.
+
+If intent confidence is low but clinical data IS present, STILL use extract_structured_data.
+Only stay in general assistant mode when the message is purely a question with no data to extract.
 
 ========== CLINICAL PARSING ENGINE ==========
 
@@ -123,6 +138,8 @@ Never silently create duplicate targets.
 ========== CLARIFICATION RULES ==========
 Ask ONLY when missing info materially affects: client assignment, session assignment, target matching, measurement type, graph accuracy, note validity, posting destination.
 Do NOT interrupt for trivial details.
+Limit clarification questions to 5 at a time maximum.
+If data can be safely processed without the missing info, proceed and note the gap.
 
 ========== SOAP NOTE STRUCTURE ==========
 S — Subjective: caregiver report, client presentation, environmental factors, sleep/medication/illness/routine
@@ -158,7 +175,9 @@ When using tools, provide a natural language summary explaining what you found/e
 
 When NOT using tools (general assistant mode), respond naturally with clear markdown formatting.
 
-DEFAULT BEHAVIOR: If the user's message is not clearly asking for structured logging or note generation, stay in general assistant mode. Optionally offer: "I can log this as data", "I can turn this into a SOAP note", "I can post this to session notes".`;
+DEFAULT BEHAVIOR: If the user's message is not clearly asking for structured logging or note generation, stay in general assistant mode. Optionally offer: "I can log this as data", "I can turn this into a SOAP note", "I can post this to session notes".
+
+CRITICAL REMINDER: If the message contains clinical data with numbers, measurements, or session descriptions — YOU MUST call extract_structured_data. Text-only responses for data-containing messages are pipeline failures.`;
 
 // ── Tool definitions matching the full JSON contract ──────────────────────────
 const TOOL_DEFINITIONS = [
@@ -166,7 +185,7 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "extract_structured_data",
-      description: "Extract structured behavioral/clinical data from user input. Call this when the user provides session data, behavior counts, skill trial data, ABC events, or historical notes that should be logged as structured data. Each behavior, skill, or ABC event should be a separate item in the arrays. For session reconstruction, extract ALL items from the narrative.",
+      description: "Extract structured behavioral/clinical data from user input. YOU MUST CALL THIS whenever the user provides session data, behavior counts, skill trial data, ABC events, duration data, or historical notes. Each behavior, skill, or ABC event should be a separate item in the arrays. For session reconstruction, extract ALL items from the narrative. NEVER skip this tool when measurable data is present in the input.",
       parameters: {
         type: "object",
         properties: {
@@ -439,7 +458,7 @@ const TOOL_DEFINITIONS = [
     type: "function",
     function: {
       name: "request_clarification",
-      description: "Ask the user targeted clarifying questions when critical information is missing or ambiguous. Only use when the missing info materially affects client assignment, session assignment, target matching, measurement type, graph accuracy, note validity, or posting destination.",
+      description: "Ask the user targeted clarifying questions when critical information is missing or ambiguous. Only use when the missing info materially affects client assignment, session assignment, target matching, measurement type, graph accuracy, note validity, or posting destination. Limit to 5 questions maximum.",
       parameters: {
         type: "object",
         properties: {
@@ -611,23 +630,39 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Validate JWT via getClaims (works with signing-keys)
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
-      console.error("[nova-ai-chat] Auth failed:", claimsErr?.message || "missing sub claim");
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Validate JWT — try getUser first (more reliable), fall back to getClaims
+    let userId: string | null = null;
+    
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userData?.user?.id) {
+      userId = userData.user.id;
+    } else {
+      // Fallback to getClaims
+      const token = authHeader.replace("Bearer ", "");
+      try {
+        const { data: claimsData, error: claimsErr } = await (supabase.auth as any).getClaims(token);
+        if (!claimsErr && claimsData?.claims?.sub) {
+          userId = claimsData.claims.sub;
+        }
+      } catch {
+        // getClaims not available in all versions
+      }
+    }
+
+    if (!userId) {
+      console.error("[nova-ai-chat] Auth failed: could not resolve user");
       return new Response(JSON.stringify({ error: "Session expired or invalid. Please sign in again." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
 
     const { messages, evidence_mode, client_id, system_suffix } = await req.json();
 
@@ -663,7 +698,8 @@ serve(async (req) => {
 8. For combined workflows, call both extract_structured_data AND the appropriate note generation tool
 9. Always include posting_recommendation with each generated note
 10. For session reconstruction: extract ALL items (behaviors, skills, ABC events) AND generate appropriate notes in one pass
-11. Check for potential duplicate entries before suggesting saves`;
+11. Check for potential duplicate entries before suggesting saves
+12. CRITICAL: If the user provides ANY measurable data (counts, durations, trials, percentages), you MUST call extract_structured_data. Do NOT respond with text only.`;
       } catch (e) {
         console.error("Failed to load client context:", e);
       }
