@@ -557,85 +557,54 @@ export default function StudentProfile() {
       />
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="flex gap-1 h-auto p-1 w-full max-w-5xl overflow-x-auto scrollbar-hide flex-nowrap max-sm:flex-nowrap">
-          <TabsTrigger value="profile" className="gap-1 text-xs">
+        <TabsList className="flex gap-1 h-auto p-1 w-full overflow-x-auto scrollbar-hide flex-nowrap">
+          <TabsTrigger value="profile" className="gap-1 text-xs whitespace-nowrap">
             <Info className="w-3 h-3" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="intelligence" className="gap-1 text-xs">
+          <TabsTrigger value="intelligence" className="gap-1 text-xs whitespace-nowrap">
             <Zap className="w-3 h-3" />
             Intelligence
           </TabsTrigger>
-          <TabsTrigger value="programming" className="gap-1 text-xs">
+          <TabsTrigger value="programming" className="gap-1 text-xs whitespace-nowrap">
             <Layers className="w-3 h-3" />
             Programming
           </TabsTrigger>
-
-
-          <TabsTrigger value="notes" className="gap-1 text-xs">
+          <TabsTrigger value="notes" className="gap-1 text-xs whitespace-nowrap">
             <StickyNote className="w-3 h-3" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="files" className="gap-1 text-xs">
-            <FolderOpen className="w-3 h-3" />
-            Files
+          <TabsTrigger value="assessment" className="gap-1 text-xs whitespace-nowrap">
+            <Brain className="w-3 h-3" />
+            Assessment
           </TabsTrigger>
           {student.assessmentModeEnabled && (
-            <TabsTrigger value="fba" className="gap-1 text-xs">
+            <TabsTrigger value="fba" className="gap-1 text-xs whitespace-nowrap">
               <ClipboardCheck className="w-3 h-3" />
               FBA Tools
             </TabsTrigger>
           )}
-          <TabsTrigger value="assessment" className="gap-1 text-xs">
-            <Brain className="w-3 h-3" />
-            Assessment
-          </TabsTrigger>
-          <TabsTrigger value="sdc-intake" className="gap-1 text-xs">
-            <Package className="w-3 h-3" />
-            SDC Intake
-          </TabsTrigger>
-
-
-          <TabsTrigger value="appointments" className="gap-1 text-xs">
-            <Calendar className="w-3 h-3" />
-            Appointments
-          </TabsTrigger>
-          <TabsTrigger value="teacher" className="gap-1 text-xs">
+          <TabsTrigger value="data-sources" className="gap-1 text-xs whitespace-nowrap">
             <UserCheck className="w-3 h-3" />
-            Teacher View
+            Data Sources
           </TabsTrigger>
-          <TabsTrigger value="observations" className="gap-1 text-xs">
-            <ClipboardCheck className="w-3 h-3" />
-            Observations
-          </TabsTrigger>
-          <TabsTrigger value="iep-prep" className="gap-1 text-xs">
-            <BrainCircuit className="w-3 h-3" />
-            IEP Engine
-          </TabsTrigger>
-          <TabsTrigger value="caregiver-training" className="gap-1 text-xs">
-            <Heart className="w-3 h-3" />
-            Caregiver Training
-          </TabsTrigger>
-          {/* Reduced tab set - Profile 2.0 tabs moved to Profile sections */}
-          <TabsTrigger value="documents" className="gap-1 text-xs">
+          <TabsTrigger value="documents" className="gap-1 text-xs whitespace-nowrap">
             <FolderOpen className="w-3 h-3" />
             Documents
           </TabsTrigger>
-          <TabsTrigger value="tags" className="gap-1 text-xs">
-            <Tag className="w-3 h-3" />
-            Tags
+          <TabsTrigger value="appointments" className="gap-1 text-xs whitespace-nowrap">
+            <Calendar className="w-3 h-3" />
+            Schedule
+          </TabsTrigger>
+          <TabsTrigger value="caregiver-training" className="gap-1 text-xs whitespace-nowrap">
+            <Heart className="w-3 h-3" />
+            Caregiver
           </TabsTrigger>
           {fundingMode === 'insurance' && (
-            <>
-              <TabsTrigger value="payers" className="gap-1 text-xs">
-                <Shield className="w-3 h-3" />
-                Payers & Auth
-              </TabsTrigger>
-              <TabsTrigger value="usage" className="gap-1 text-xs">
-                <Clock className="w-3 h-3" />
-                Auth Usage
-              </TabsTrigger>
-            </>
+            <TabsTrigger value="payers" className="gap-1 text-xs whitespace-nowrap">
+              <Shield className="w-3 h-3" />
+              Payers & Auth
+            </TabsTrigger>
           )}
         </TabsList>
 
