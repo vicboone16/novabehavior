@@ -255,6 +255,15 @@ export function useNovaAIActions(clientId: string | null) {
 
     for (const item of items) {
       try {
+        console.log('[NovaAI] Processing item:', {
+          item_id: item.item_id,
+          item_type: item.item_type,
+          target_name: item.target_match?.target_name,
+          match_status: item.target_match?.match_status,
+          needs_review: item.quality?.needs_review,
+          measurement_type: item.measurement?.measurement_type,
+        });
+
         // Skip items that need review (unless user already reviewed them)
         if (item.quality?.needs_review || item.target_match?.match_status === 'ambiguous_match_review_needed') {
           console.log('[NovaAI] Skipping item needing review:', item.item_id, item.target_match?.target_name);
