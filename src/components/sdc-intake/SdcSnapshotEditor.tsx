@@ -178,6 +178,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
     setIsSaving(true);
     try {
       await intake.saveSnapshotEdits(reportDraftId, editedSections);
+      await intake.logGenerationEvent(reportDraftId, 'edited');
       toast.success('Edits saved');
     } catch (err: any) {
       toast.error('Failed to save: ' + err.message);
