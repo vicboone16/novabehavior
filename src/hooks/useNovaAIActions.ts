@@ -336,7 +336,7 @@ export function useNovaAIActions(clientId: string | null) {
           const trialTotal = item.measurement?.trial_total || 1;
           const trialCorrect = item.measurement?.trial_correct || 0;
 
-          console.log('[NovaAI] Saving skill trial:', item.target_match?.target_name, `${trialCorrect}/${trialTotal}`);
+          console.log('[NovaAI] ✅ Saving skill trial:', item.target_match?.target_name, `${trialCorrect}/${trialTotal}`);
 
           const trialRows = [];
           for (let t = 0; t < trialTotal; t++) {
