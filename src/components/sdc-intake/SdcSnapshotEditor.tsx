@@ -367,7 +367,7 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
               Regenerate Snapshot?
             </DialogTitle>
             <DialogDescription>
-              You have manual edits. Regenerating will replace all generated content and clear your edits. This cannot be undone.
+              Regenerating may replace newly generated content. If manual edits exist, confirm whether you want to keep or replace them.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
