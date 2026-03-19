@@ -373,12 +373,14 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
         y += 10;
         doc.setFontSize(10);
 
+        const fpFieldMap = buildFieldMap(fi);
         for (const [key, val] of Object.entries(responseData)) {
-          const fv = formatValue(val);
+          const fpField = fpFieldMap[key];
+          const fv = resolveDisplayValue(val, fpField);
           if (!fv) continue;
           if (y > 270) { doc.addPage(); y = 20; }
           doc.setFont('helvetica', 'bold');
-          doc.text(formatLabel(key), 14, y);
+          doc.text(fpField?.label || formatLabel(key), 14, y);
           y += 5;
           doc.setFont('helvetica', 'normal');
           const lines = doc.splitTextToSize(fv, pageWidth - 28);
