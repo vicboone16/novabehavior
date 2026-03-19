@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FileText, ClipboardCheck, Shield, CreditCard, Brain, ArrowRight } from 'lucide-react';
+import { TOOLTIPS, EMPTY_STATES } from '@/lib/demoCopy';
 import type { DemoSessionNote, DemoAssessment, DemoFbaBip, DemoBillingRecord } from '@/hooks/useDemoEcosystem';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
