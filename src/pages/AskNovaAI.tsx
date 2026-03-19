@@ -410,17 +410,21 @@ export default function AskNovaAI() {
       }
 
       // ═══════════════════════════════════════════════════════════
-      // AUTO-EXECUTE PIPELINE: This is the key change.
-      // Instead of waiting for user to click buttons, we automatically
-      // run the structured data pipeline for extract_structured_data
-      // and note generation actions.
+      // AUTO-EXECUTE PIPELINE
       // ═══════════════════════════════════════════════════════════
       if (actions.length > 0 && selectedClientId) {
-        // Filter out clarification actions — those still need user interaction
         const executableActions = actions.filter(a => a.type !== 'request_clarification');
         if (executableActions.length > 0) {
           await autoExecutePipeline(executableActions, text.trim());
         }
+      } else if (actions.length === 0 && selectedClientId && inputLikelyContainsData(text.trim())) {
+        // FALLBACK: Model returned text-only for data-like input.
+        // Show a prompt to the user instead of silently failing.
+        console.warn('[NovaAI] Model did not use tools for data-like input. Suggesting manual action.');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '⚠️ I detected clinical data in your message but didn\'t extract it automatically. You can try rephrasing with specific numbers (e.g., "aggression 3 times, manding 8/10 trials") or use the **Log Session Data** quick prompt.',
+        }]);
       }
     } catch (e) {
       console.error('Chat error:', e);
