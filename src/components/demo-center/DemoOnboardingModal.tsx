@@ -53,7 +53,7 @@ export function DemoOnboardingModal({ onAction }: Props) {
             <GraduationCap className="w-4 h-4 text-primary" />
             <div className="text-left">
               <p className="text-sm font-medium">Start with a Learner</p>
-              <p className="text-xs text-muted-foreground">Explore client profiles and scenarios</p>
+              <p className="text-xs text-muted-foreground">View real-world client scenarios</p>
             </div>
           </Button>
           <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => handleAction('roles')}>
