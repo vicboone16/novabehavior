@@ -319,8 +319,9 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
           </Card>
         </div>
 
-        {/* Right panel: Editable snapshot */}
+        {/* Right panel: Snapshot Draft */}
         <div className="lg:col-span-2 space-y-3">
+          <p className="text-xs text-muted-foreground px-1">Snapshot Draft — edit sections below before exporting.</p>
           {isGenerating && (
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="py-6 text-center">
