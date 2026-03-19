@@ -8,6 +8,7 @@ import { TeacherIEPDraftsPanel } from "./TeacherIEPDraftsPanel";
 import { TeacherSummaries } from "@/components/TeacherSummaries";
 import { BeaconPointsPanel } from "./BeaconPointsPanel";
 import { ParentSnapshotPanel } from "./ParentSnapshotPanel";
+import { ParentReportConfigPanel } from "@/components/parent-comms/ParentReportConfigPanel";
 
 interface TeacherDataHubProps {
   clientId: string;
