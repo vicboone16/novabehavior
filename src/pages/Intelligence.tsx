@@ -38,6 +38,7 @@ import { AlertRollupCards } from '@/components/intelligence/AlertRollupCards';
 import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelAlertList';
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
+import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
@@ -277,6 +278,9 @@ export default function Intelligence() {
         <KPICard icon={<CalendarClock className="w-5 h-5" />} label="Auth Expiring" value={authKpis.authExpiringSoon} variant={authKpis.authExpiringSoon > 0 ? 'destructive' : 'default'} />
         <KPICard icon={<Activity className="w-5 h-5" />} label="Open Alerts" value={kpis.openAlerts} variant={kpis.openAlerts > 0 ? 'destructive' : 'default'} />
       </div>
+
+      {/* Beacon Activity KPIs — reward, mayday, triggers, engagement */}
+      <BeaconActivityKPIs agencyId={effectiveAgencyId} />
 
       {/* Clinical Intelligence Alert Rollup Cards */}
       <AlertRollupCards agencyId={effectiveAgencyId} />

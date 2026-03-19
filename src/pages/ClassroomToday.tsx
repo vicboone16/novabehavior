@@ -1,8 +1,8 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useClassroomTodayDrilldown, type LiveEventItem } from '@/hooks/useClassroomToday';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +13,7 @@ import {
   Stethoscope, Star, Gift, Siren, UserCheck
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { ClassroomPresencePanel } from '@/components/intelligence/ClassroomPresencePanel';
 
 const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   frequency: { bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: <Activity className="w-3 h-3" /> },
@@ -69,6 +70,24 @@ export default function ClassroomToday() {
     }
     prevCount.current = events.length;
   }, [events.length, autoScroll]);
+
+  // Build student name map for presence panel
+  const studentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of students) map.set(s.student_id, s.student_name);
+    return map;
+  }, [students]);
+
+  // Compute top triggers from ABC events
+  const topTriggers = useMemo(() => {
+    const triggerMap = new Map<string, number>();
+    for (const ev of events) {
+      if (ev.type === 'abc' && ev.detail) {
+        triggerMap.set(ev.detail, (triggerMap.get(ev.detail) || 0) + 1);
+      }
+    }
+    return [...triggerMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [events]);
 
   const filteredEvents = typeFilter === 'all' ? events : events.filter(e => e.type === typeFilter);
 
@@ -142,6 +161,35 @@ export default function ClassroomToday() {
           ))}
         </div>
       )}
+
+      {/* Presence + Top Triggers Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {classroomId && (
+          <ClassroomPresencePanel classroomId={classroomId} studentNames={studentNameMap} />
+        )}
+        {topTriggers.length > 0 && (
+          <Card>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                Top Triggers Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-0 pb-3 px-4">
+              <div className="space-y-1.5">
+                {topTriggers.map(([trigger, count], i) => (
+                  <div key={trigger} className="flex items-center justify-between">
+                    <span className="text-sm">{trigger}</span>
+                    <Badge variant={i === 0 ? 'destructive' : 'secondary'} className="text-xs font-mono">
+                      {count}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Student Cards */}
