@@ -212,12 +212,12 @@ export function SdcSnapshotEditor({ reportDraftId, packageInstanceId, studentNam
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left panel: Source data with categorized summaries */}
+        {/* Left panel: Source Responses */}
         <div className="lg:col-span-1 space-y-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Source Data Summary</CardTitle>
-              <CardDescription className="text-xs">Key data extracted from completed forms</CardDescription>
+              <CardTitle className="text-sm">Source Responses</CardTitle>
+              <CardDescription className="text-xs">Key data extracted from completed intake forms</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="max-h-[70vh]">
