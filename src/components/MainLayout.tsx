@@ -63,6 +63,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      <DemoModeBanner />
       <PendingApprovalsNotification />
 
       {isLoading && (
