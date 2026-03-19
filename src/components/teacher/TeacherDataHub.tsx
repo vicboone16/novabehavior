@@ -57,6 +57,10 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
               <GraduationCap className="w-3 h-3" />
               BCBA Summaries
             </TabsTrigger>
+            <TabsTrigger value="parent-config" className="gap-1 text-xs">
+              <Settings2 className="w-3 h-3" />
+              Parent Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly">
