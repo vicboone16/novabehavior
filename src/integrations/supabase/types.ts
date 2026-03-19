@@ -60184,10 +60184,9 @@ export type Database = {
           p_created_by?: string
           p_display_order?: number
           p_packet_id: string
-          p_required?: boolean
           p_template_code: string
         }
-        Returns: Json
+        Returns: string
       }
       append_strategy_narrative_to_section: {
         Args: {
@@ -61306,7 +61305,7 @@ export type Database = {
       }
       finalize_form_instance: {
         Args: { p_created_by?: string; p_form_instance_id: string }
-        Returns: Json
+        Returns: string
       }
       fn_apply_rounding: {
         Args: { p_agency_id: string; p_minutes: number }
@@ -62604,7 +62603,6 @@ export type Database = {
           p_answers: Json
           p_form_instance_id: string
           p_manually_edited?: boolean
-          p_source_reference?: string
           p_source_type?: string
         }
         Returns: number
