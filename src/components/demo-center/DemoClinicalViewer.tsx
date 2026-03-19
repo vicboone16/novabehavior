@@ -123,7 +123,9 @@ export function DemoClinicalViewer({ sessionNotes, assessments, fbaBips, billing
         </TabsContent>
 
         <TabsContent value="assessments" className="mt-3 space-y-2 max-h-[400px] overflow-y-auto">
-          {filterByLearner(assessments).map(a => (
+          {filterByLearner(assessments).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{EMPTY_STATES.assessments}</p>
+          ) : filterByLearner(assessments).map(a => (
             <Card key={a.id} className={a.status === 'pending' ? 'border-amber-300/30' : a.status === 'in_progress' ? 'border-blue-300/30' : ''}>
               <CardContent className="py-3 px-4">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
