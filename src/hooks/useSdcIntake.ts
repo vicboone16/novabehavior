@@ -447,6 +447,127 @@ export function useSdcIntake() {
     if (error) throw error;
   }, []);
 
+  // Create individual form instance (standalone, not in a package)
+  const createIndividualFormInstance = useCallback(async (opts: {
+    formSlug: string;
+    studentId: string;
+    deliveryMethod: string;
+    dueDate?: string;
+  }): Promise<string> => {
+    if (!user) throw new Error('Not authenticated');
+    // Look up form definition
+    const { data: fd, error: fdErr } = await supabase
+      .from('form_definitions')
+      .select('id')
+      .eq('slug', opts.formSlug)
+      .single();
+    if (fdErr || !fd) throw new Error('Form definition not found');
+
+    const { data, error } = await supabase
+      .from('form_instances')
+      .insert({
+        form_definition_id: fd.id,
+        student_id: opts.studentId,
+        delivery_method: opts.deliveryMethod,
+        status: 'not_started',
+        version: 1,
+        assigned_by: user.id,
+        due_date: opts.dueDate || null,
+      } as any)
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data.id;
+  }, [user]);
+
+  // Create delivery link for a form instance
+  const createDeliveryLink = useCallback(async (opts: {
+    formInstanceId: string;
+    recipientName: string;
+    recipientEmail: string;
+    expiresAt?: string;
+  }): Promise<string> => {
+    if (!user) throw new Error('Not authenticated');
+    const token = crypto.randomUUID();
+    const { error } = await supabase
+      .from('form_delivery_links')
+      .insert({
+        form_instance_id: opts.formInstanceId,
+        token,
+        delivery_status: 'sent',
+        sent_to_name: opts.recipientName,
+        sent_to_email: opts.recipientEmail,
+        expires_at: opts.expiresAt || null,
+        created_by: user.id,
+      } as any);
+    if (error) throw error;
+
+    // Update form instance with respondent info
+    await supabase
+      .from('form_instances')
+      .update({
+        respondent_name: opts.recipientName,
+        delivery_method: 'send_link',
+      } as any)
+      .eq('id', opts.formInstanceId);
+
+    return token;
+  }, [user]);
+
+  // Fetch export history for a package
+  const fetchExportHistory = useCallback(async (packageInstanceId: string): Promise<any[]> => {
+    const [formExports, reportExports] = await Promise.all([
+      supabase
+        .from('form_exports')
+        .select('*')
+        .eq('package_instance_id', packageInstanceId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('report_exports')
+        .select('*, report_drafts!inner(package_instance_id)')
+        .order('created_at', { ascending: false }),
+    ]);
+
+    const fExports = (formExports.data || []).map((e: any) => ({
+      ...e,
+      source: 'form',
+    }));
+
+    const rExports = (reportExports.data || [])
+      .filter((e: any) => e.report_drafts?.package_instance_id === packageInstanceId)
+      .map((e: any) => ({
+        ...e,
+        export_scope: 'snapshot',
+        source: 'report',
+      }));
+
+    return [...fExports, ...rExports].sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, []);
+
+  // Log generation event
+  const logGenerationEvent = useCallback(async (reportDraftId: string, eventType: string, payload?: any) => {
+    if (!user) return;
+    await supabase.from('report_generation_events').insert({
+      report_draft_id: reportDraftId,
+      event_type: eventType,
+      event_payload: payload || {},
+      created_by: user.id,
+    } as any);
+  }, [user]);
+
+  // Refresh package status via RPC
+  const refreshPackageStatus = useCallback(async (packageInstanceId: string) => {
+    try {
+      await supabase.rpc('refresh_package_instance_status', {
+        p_package_instance_id: packageInstanceId,
+      });
+    } catch {
+      // Silently fail if RPC doesn't exist yet
+    }
+  }, []);
+
   // Log form export
   const logFormExport = useCallback(async (opts: {
     formInstanceId?: string;
@@ -502,5 +623,10 @@ export function useSdcIntake() {
     updateGeneratedJson,
     logFormExport,
     logReportExport,
+    createIndividualFormInstance,
+    createDeliveryLink,
+    fetchExportHistory,
+    logGenerationEvent,
+    refreshPackageStatus,
   };
 }
