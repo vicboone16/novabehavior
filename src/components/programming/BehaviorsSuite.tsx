@@ -190,9 +190,9 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
                               <Badge variant="outline" className="text-xs">Active</Badge>
                             )}
                           </div>
-                          {behavior?.definition && (
+                          {behavior?.operationalDefinition && (
                             <p className="text-xs text-muted-foreground mt-2 italic border-t pt-2">
-                              Definition: {behavior.definition}
+                              Definition: {behavior.operationalDefinition}
                             </p>
                           )}
                           {goal.notes && (
