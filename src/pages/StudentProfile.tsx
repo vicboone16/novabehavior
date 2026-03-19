@@ -68,6 +68,7 @@ import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { SdcIntakeManager } from '@/components/sdc-intake';
+import { BehaviorDecodedPanel, RewardEffectivenessPanel, BeaconAISuggestionsPanel } from '@/components/phase4';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProgrammingModule } from '@/components/programming';
@@ -799,10 +800,16 @@ export default function StudentProfile() {
         {/* Student Intelligence Tab */}
         <TabsContent value="intelligence" className="space-y-4">
           <StudentIntelligencePanel studentId={student.id} />
+          {/* AI Recommendations */}
+          <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           {/* Behavior Intelligence Section */}
           <BehaviorIntelligenceSection studentId={student.id} />
           {/* Skill Intelligence Section */}
           <SkillIntelligenceSection studentId={student.id} />
+          {/* Reward Effectiveness */}
+          <RewardEffectivenessPanel studentId={student.id} />
+          {/* Behavior Decoded Bridge */}
+          <BehaviorDecodedPanel studentId={student.id} />
         </TabsContent>
 
         {/* Programming Tab (unified Skills + Behaviors) */}
