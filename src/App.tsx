@@ -93,10 +93,12 @@ import CaptureCenter from "./pages/CaptureCenter";
 import CaptureLive from "./pages/CaptureLive";
 import CaptureReview from "./pages/CaptureReview";
 import DemoCenter from "./pages/DemoCenter";
+import DemoGateway from "./pages/DemoGateway";
 import HelpCenter from "./pages/HelpCenter";
 import TrainingAcademy from "./pages/TrainingAcademy";
 import IntakeForms from "./pages/IntakeForms";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
+import { DemoModeProvider } from "./contexts/DemoModeContext";
 
 const queryClient = new QueryClient();
 
