@@ -38,6 +38,7 @@ import { AlertRollupCards } from '@/components/intelligence/AlertRollupCards';
 import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelAlertList';
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
+import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
