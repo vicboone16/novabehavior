@@ -27,6 +27,7 @@ import {
   buildCompletionSummary,
   buildChatSummary,
   verifyNovaActionComplete,
+  inputLikelyContainsData,
   type PipelineResult,
   type PipelineStepResult,
 } from '@/lib/novaAIPipelineExecutor';
