@@ -18,6 +18,7 @@ interface Props {
 export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
   const engine = useIntakeFormsEngine({ studentId, referralId });
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [completionMode, setCompletionMode] = useState('internal');
@@ -34,6 +35,7 @@ export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
   const handleAssign = async () => {
     const template = engine.templates.find(t => t.id === selectedTemplate);
     if (!template) return;
+
     setIsAssigning(true);
     try {
       const instanceId = await engine.createInstance.mutateAsync({
@@ -43,12 +45,17 @@ export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
         linkedEntityType: referralId ? 'referral' : 'student',
         linkedEntityId: referralId || studentId,
       });
+
+      engine.refetch();
+
       if (instanceId) {
+        setDialogOpen(false);
         setSelectedInstanceId(instanceId);
       }
     } finally {
       setIsAssigning(false);
       setSelectedTemplate('');
+      setCompletionMode('internal');
     }
   };
 
@@ -59,7 +66,7 @@ export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
           <FileText className="h-4 w-4" />
           Intake & Forms
         </h3>
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
@@ -94,7 +101,7 @@ export function StudentIntakeFormsTab({ studentId, referralId }: Props) {
                     <SelectItem value="internal">Internal (Staff Only)</SelectItem>
                     <SelectItem value="parent">Parent (Send to Caregiver)</SelectItem>
                     <SelectItem value="hybrid">Hybrid (Shared)</SelectItem>
-                    <SelectItem value="ai">AI-Assisted</SelectItem>
+                    <SelectItem value="ai_prefill">AI-Assisted</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
