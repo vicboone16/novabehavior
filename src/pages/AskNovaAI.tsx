@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BrainCircuit, Send, Loader2, BookOpen, Lightbulb, Users, 
   GraduationCap, Search, Target, HelpCircle, PenTool, Sparkles,
-  ClipboardList, Database, MessageSquare, FileText, RotateCcw
+  ClipboardList, Database, MessageSquare, FileText, RotateCcw, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
