@@ -12,7 +12,7 @@ import { IntakePacketBuilder } from '@/components/intake-forms/IntakePacketBuild
 import { IntakeFormRenderer } from '@/components/intake-forms/IntakeFormRenderer';
 
 export default function IntakeForms() {
-  const [activeTab, setActiveTab] = useState<IntakeTabKey>('templates');
+  const [activeTab, setActiveTab] = useState<ExtendedTabKey>('templates');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const engine = useIntakeFormsEngine();
