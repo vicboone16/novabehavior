@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle, Save, Send, PenTool } from 'lucide-react';
 import { toast } from 'sonner';
-import ReactSignatureCanvas from 'react-signature-canvas';
+import { SignaturePad } from '@/components/consent/SignaturePad';
 
 interface Props {
   token: string;
@@ -59,7 +59,6 @@ export function ParentPortalView({ token }: Props) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentSection, setCurrentSection] = useState(0);
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  const sigRef = useRef<ReactSignatureCanvas | null>(null);
   const responsesRef = useRef(responses);
   useEffect(() => { responsesRef.current = responses; }, [responses]);
 
@@ -331,22 +330,7 @@ export function ParentPortalView({ token }: Props) {
               <p className="text-xs text-muted-foreground mb-3">
                 By signing below, I confirm the information provided is accurate to the best of my knowledge.
               </p>
-              <div className="border-2 rounded-lg overflow-hidden bg-white">
-                <ReactSignatureCanvas
-                  ref={(ref) => { sigRef.current = ref; }}
-                  penColor="black"
-                  canvasProps={{ width: 500, height: 150, className: 'w-full' }}
-                  onEnd={() => {
-                    if (sigRef.current) setSignatureData(sigRef.current.toDataURL());
-                  }}
-                />
-              </div>
-              <Button variant="ghost" size="sm" className="mt-1 text-xs" onClick={() => {
-                sigRef.current?.clear();
-                setSignatureData(null);
-              }}>
-                Clear Signature
-              </Button>
+              <SignaturePad onSignatureChange={setSignatureData} />
             </CardContent>
           </Card>
         )}

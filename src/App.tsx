@@ -31,8 +31,8 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import QuestionnaireForm from "./pages/QuestionnaireForm";
 import ConsentForm from "./pages/ConsentForm";
 import TeacherObservationForm from "./pages/TeacherObservationForm";
-import PublicFormPage from "./pages/PublicFormPage";
 import ClinicalFormPage from "./pages/ClinicalFormPage";
+import FormRouteResolver from "./pages/FormRouteResolver";
 import DocumentInbox from "./pages/DocumentInbox";
 import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
@@ -185,7 +185,9 @@ const App = () => {
             {/* Public teacher observation form - no auth required */}
             <Route path="/observation/:token" element={<TeacherObservationForm />} />
             {/* Public custom form - no auth required */}
-            <Route path="/form/:token" element={<PublicFormPage />} />
+            <Route path="/form/:token" element={<FormRouteResolver />} />
+            {/* Public intake form - no auth required */}
+            <Route path="/intake-form/:token" element={<FormRouteResolver />} />
             {/* Public clinical form - no auth required */}
             <Route path="/clinical-form/:token" element={<ClinicalFormPage />} />
             <Route path="/pending-approval" element={
