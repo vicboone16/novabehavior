@@ -123,7 +123,7 @@ export default function ClientDemo() {
 
         <div>
           <h1 className="text-2xl font-bold">{selectedLearner.name}</h1>
-          <p className="text-sm text-muted-foreground">Age {selectedLearner.age} · Progress Summary</p>
+          <p className="text-sm text-muted-foreground">Age {selectedLearner.age} · Caregiver: {selectedLearner.parentName} · Progress Summary</p>
         </div>
 
         {/* Progress */}
