@@ -14143,6 +14143,39 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_frameworks: {
+        Row: {
+          created_at: string
+          description: string | null
+          framework_type: string
+          id: string
+          is_active: boolean
+          key: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          framework_type: string
+          id?: string
+          is_active?: boolean
+          key: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          framework_type?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       clinical_goal_benchmarks: {
         Row: {
           benchmark_order: number | null
@@ -47920,6 +47953,129 @@ export type Database = {
           student_id?: string
         }
         Relationships: []
+      }
+      unified_clinical_domains: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      unified_clinical_subdomains: {
+        Row: {
+          description: string | null
+          domain_id: string
+          id: string
+          key: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          description?: string | null
+          domain_id: string
+          id?: string
+          key: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          description?: string | null
+          domain_id?: string
+          id?: string
+          key?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_clinical_subdomains_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "unified_clinical_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unified_goal_framework_links: {
+        Row: {
+          alignment_type: string
+          framework_domain: string | null
+          framework_id: string
+          framework_item_code: string | null
+          framework_item_title: string | null
+          framework_subdomain: string | null
+          goal_id: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          alignment_type?: string
+          framework_domain?: string | null
+          framework_id: string
+          framework_item_code?: string | null
+          framework_item_title?: string | null
+          framework_subdomain?: string | null
+          goal_id: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          alignment_type?: string
+          framework_domain?: string | null
+          framework_id?: string
+          framework_item_code?: string | null
+          framework_item_title?: string | null
+          framework_subdomain?: string | null
+          goal_id?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_goal_framework_links_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_goal_framework_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_curricula_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_goal_framework_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "v_curricula_vbmapp"
+            referencedColumns: ["goal_id"]
+          },
+        ]
       }
       unit_deduction_ledger: {
         Row: {
