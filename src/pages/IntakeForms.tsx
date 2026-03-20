@@ -4,12 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search, Plus, FileText, Package, Send, CheckCircle, PenTool, Wrench, ArrowRight, Clock, Filter } from 'lucide-react';
+import { Loader2, Search, Plus, FileText, Package, Send, CheckCircle, PenTool, Wrench, ArrowRight, Clock, Filter, ClipboardList } from 'lucide-react';
 import { useIntakeFormsEngine, type IntakeTabKey } from '@/hooks/useIntakeFormsEngine';
 import { IntakeTemplateLibrary } from '@/components/intake-forms/IntakeTemplateLibrary';
 import { IntakeInstancesList } from '@/components/intake-forms/IntakeInstancesList';
 import { IntakePacketBuilder } from '@/components/intake-forms/IntakePacketBuilder';
 import { IntakeFormRenderer } from '@/components/intake-forms/IntakeFormRenderer';
+import { ClinicalFormsPanel } from '@/components/clinical-forms/ClinicalFormsPanel';
+
+type ExtendedTabKey = IntakeTabKey | 'clinical';
 
 export default function IntakeForms() {
   const [activeTab, setActiveTab] = useState<ExtendedTabKey>('templates');
