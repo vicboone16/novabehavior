@@ -26,6 +26,7 @@ import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
+import { ClinicalFormsPanel } from '@/components/clinical-forms/ClinicalFormsPanel';
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
