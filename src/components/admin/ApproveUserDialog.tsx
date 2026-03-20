@@ -200,6 +200,8 @@ export function ApproveUserDialog({
             </Select>
             <p className="text-xs text-muted-foreground">
               {selectedRole === 'staff' && 'Can collect data and view assigned students'}
+              {selectedRole === 'teacher' && 'Teacher access to assigned students and classroom tools'}
+              {selectedRole === 'caregiver' && 'Caregiver access to view their child\'s progress and reports'}
               {selectedRole === 'viewer' && 'View-only access to assigned students'}
               {selectedRole === 'admin' && 'Can manage users, students, and settings'}
               {selectedRole === 'super_admin' && 'Full system access including admin management'}
