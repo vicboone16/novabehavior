@@ -179,6 +179,11 @@ export default function ClinicalLibrary() {
         {activeSection === 'clinical_collections' && (
           <ClinicalCollectionsLanding onBack={() => setActiveSection(null)} />
         )}
+
+        {/* Unified Clinical Domains drill-down */}
+        {activeSection === 'unified_domains' && (
+          <UnifiedDomainsBrowser onBack={() => setActiveSection(null)} />
+        )}
       </div>
     </div>
   );
