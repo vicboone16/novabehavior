@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 interface DemoLearnerSnapshot {
   name: string;
   age: number;
+  parentName: string;
+  parentEmail: string;
   goals: string[];
   progressPct: number;
   recentUpdates: string[];
@@ -22,8 +24,10 @@ interface DemoLearnerSnapshot {
 
 const SAMPLE_LEARNERS: DemoLearnerSnapshot[] = [
   {
-    name: 'Daniel Foster',
+    name: 'Ethan Santos',
     age: 7,
+    parentName: 'Maria Santos',
+    parentEmail: 'demo-maria@behaviordecoded.app',
     goals: ['Improve social communication', 'Reduce challenging behaviors', 'Increase independent daily living skills'],
     progressPct: 68,
     recentUpdates: [
@@ -37,8 +41,10 @@ const SAMPLE_LEARNERS: DemoLearnerSnapshot[] = [
     ],
   },
   {
-    name: 'Ava Thompson',
+    name: 'Lily Chen',
     age: 5,
+    parentName: 'David Chen',
+    parentEmail: 'demo-david@behaviordecoded.app',
     goals: ['Expand expressive language', 'Increase play skills', 'Develop self-regulation strategies'],
     progressPct: 55,
     recentUpdates: [
@@ -52,8 +58,10 @@ const SAMPLE_LEARNERS: DemoLearnerSnapshot[] = [
     ],
   },
   {
-    name: 'Mason Rivera',
+    name: 'Marcus Johnson',
     age: 9,
+    parentName: 'Aisha Johnson',
+    parentEmail: 'demo-aisha@behaviordecoded.app',
     goals: ['Improve classroom behavior', 'Increase on-task duration', 'Develop peer interaction skills'],
     progressPct: 72,
     recentUpdates: [
@@ -64,6 +72,40 @@ const SAMPLE_LEARNERS: DemoLearnerSnapshot[] = [
     caregiverHighlights: [
       'Homework completion improving with timer strategy',
       'Initiated conversation with sibling about shared interest',
+    ],
+  },
+  {
+    name: 'Sofia Kim',
+    age: 6,
+    parentName: 'Rachel Kim',
+    parentEmail: 'demo-rachel@behaviordecoded.app',
+    goals: ['Develop functional communication', 'Reduce tantrums during transitions', 'Build turn-taking skills'],
+    progressPct: 48,
+    recentUpdates: [
+      'Using PECS Phase 3 to request across 2 environments',
+      'Transition tantrums reduced from 8/day to 3/day',
+      'Tolerated 2-minute wait with visual timer independently',
+    ],
+    caregiverHighlights: [
+      'Practicing PECS at home during snack time',
+      'Using first/then board for bath routine — fewer refusals',
+    ],
+  },
+  {
+    name: 'Amara Okafor',
+    age: 8,
+    parentName: 'James Okafor',
+    parentEmail: 'demo-james@behaviordecoded.app',
+    goals: ['Increase emotional vocabulary', 'Develop coping strategies', 'Improve peer conflict resolution'],
+    progressPct: 63,
+    recentUpdates: [
+      'Identifying 8 emotions on feeling cards with 80% accuracy',
+      'Using deep breathing strategy independently 3x this week',
+      'Resolved peer disagreement with verbal negotiation (prompted)',
+    ],
+    caregiverHighlights: [
+      'Practicing calm-down corner routine at home',
+      'Reports Amara asking for help before escalating',
     ],
   },
 ];
