@@ -41,7 +41,7 @@ export function ClinicalFormsPanel() {
     observation: templates.filter(t => t.form_category === 'observation'),
     data_sheet: templates.filter(t => t.form_category === 'data_sheet'),
     assessment: templates.filter(t => t.form_category === 'assessment'),
-    iep_dashboard: templates.filter(t => t.form_category === 'iep_dashboard'),
+    iep_dashboard: templates.filter(t => t.form_category === 'iep_dashboard' || t.form_category === 'built_in'),
   };
 
   const handleSend = async () => {
