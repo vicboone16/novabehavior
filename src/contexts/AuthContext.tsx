@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
 
-export type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
+export type AppRole = 'super_admin' | 'admin' | 'staff' | 'teacher' | 'caregiver' | 'viewer';
 
 interface Profile {
   id: string;
@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (roles.includes('super_admin')) return 'super_admin';
     if (roles.includes('admin')) return 'admin';
     if (roles.includes('staff')) return 'staff';
+    if (roles.includes('teacher')) return 'teacher';
+    if (roles.includes('caregiver')) return 'caregiver';
     return 'viewer';
   };
 

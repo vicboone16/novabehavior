@@ -23,7 +23,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Check, UserCheck } from 'lucide-react';
 
-type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
+type AppRole = 'super_admin' | 'admin' | 'staff' | 'teacher' | 'caregiver' | 'viewer';
 
 interface TagType {
   id: string;
@@ -185,6 +185,8 @@ export function ApproveUserDialog({
                 {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
                 {isSuperAdmin && <SelectItem value="admin">Admin</SelectItem>}
                 <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="teacher">Teacher</SelectItem>
+                <SelectItem value="caregiver">Caregiver</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
                 {customRoles.length > 0 && (
                   <>
@@ -198,6 +200,8 @@ export function ApproveUserDialog({
             </Select>
             <p className="text-xs text-muted-foreground">
               {selectedRole === 'staff' && 'Can collect data and view assigned students'}
+              {selectedRole === 'teacher' && 'Teacher access to assigned students and classroom tools'}
+              {selectedRole === 'caregiver' && 'Caregiver access to view their child\'s progress and reports'}
               {selectedRole === 'viewer' && 'View-only access to assigned students'}
               {selectedRole === 'admin' && 'Can manage users, students, and settings'}
               {selectedRole === 'super_admin' && 'Full system access including admin management'}
