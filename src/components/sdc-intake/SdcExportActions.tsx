@@ -854,9 +854,13 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
           {!latestDraft ? (
             <p className="text-xs text-muted-foreground">Generate an SDC Snapshot first.</p>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <ExBtn id="snapshot-pdf" label="Snapshot PDF" onClick={exportSnapshotPdf} />
               <ExBtn id="snapshot-docx" label="Snapshot Word" onClick={exportSnapshotDocx} />
+              <Button size="sm" variant="default" onClick={() => saveToDocuments('pdf')} disabled={isExporting || isSaving}>
+                {saving === 'pdf' ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Save className="w-3 h-3 mr-1" />}
+                Save to Profile
+              </Button>
             </div>
           )}
         </CardContent>
