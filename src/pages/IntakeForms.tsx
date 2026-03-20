@@ -4,15 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search, Plus, FileText, Package, Send, CheckCircle, PenTool, Wrench, ArrowRight, Clock, Filter } from 'lucide-react';
+import { Loader2, Search, Plus, FileText, Package, Send, CheckCircle, PenTool, Wrench, ArrowRight, Clock, Filter, ClipboardList } from 'lucide-react';
 import { useIntakeFormsEngine, type IntakeTabKey } from '@/hooks/useIntakeFormsEngine';
 import { IntakeTemplateLibrary } from '@/components/intake-forms/IntakeTemplateLibrary';
 import { IntakeInstancesList } from '@/components/intake-forms/IntakeInstancesList';
 import { IntakePacketBuilder } from '@/components/intake-forms/IntakePacketBuilder';
 import { IntakeFormRenderer } from '@/components/intake-forms/IntakeFormRenderer';
+import { ClinicalFormsPanel } from '@/components/clinical-forms/ClinicalFormsPanel';
+
+type ExtendedTabKey = IntakeTabKey | 'clinical';
 
 export default function IntakeForms() {
-  const [activeTab, setActiveTab] = useState<IntakeTabKey>('templates');
+  const [activeTab, setActiveTab] = useState<ExtendedTabKey>('templates');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
   const engine = useIntakeFormsEngine();
@@ -59,9 +62,13 @@ export default function IntakeForms() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as IntakeTabKey)}>
-        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8">
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as ExtendedTabKey)}>
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="clinical" className="gap-1">
+            <ClipboardList className="w-3 h-3" />
+            Clinical Forms
+          </TabsTrigger>
           <TabsTrigger value="assigned">
             Assigned
             {engine.draftInstances.length > 0 && (
@@ -87,6 +94,10 @@ export default function IntakeForms() {
             searchQuery={searchQuery}
             isLoading={engine.isLoading}
           />
+        </TabsContent>
+
+        <TabsContent value="clinical" className="mt-4">
+          <ClinicalFormsPanel />
         </TabsContent>
 
         <TabsContent value="assigned" className="mt-4">

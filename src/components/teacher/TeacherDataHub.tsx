@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, AlertTriangle, Target, FileText, GraduationCap, Star, Camera, Settings2 } from "lucide-react";
+import { BarChart3, AlertTriangle, Target, Star, Camera, Settings2, GraduationCap } from "lucide-react";
 import { TeacherWeeklySummaryPanel } from "./TeacherWeeklySummaryPanel";
 import { TeacherABCLogsPanel } from "./TeacherABCLogsPanel";
 import { TeacherDataSessionsPanel } from "./TeacherDataSessionsPanel";
-import { TeacherIEPDraftsPanel } from "./TeacherIEPDraftsPanel";
 import { TeacherSummaries } from "@/components/TeacherSummaries";
 import { BeaconPointsPanel } from "./BeaconPointsPanel";
 import { ParentSnapshotPanel } from "./ParentSnapshotPanel";
@@ -41,10 +40,6 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
               <Target className="w-3 h-3" />
               Data Sessions
             </TabsTrigger>
-            <TabsTrigger value="iep" className="gap-1 text-xs">
-              <FileText className="w-3 h-3" />
-              IEP Drafts
-            </TabsTrigger>
             <TabsTrigger value="points" className="gap-1 text-xs">
               <Star className="w-3 h-3" />
               Beacon Points
@@ -71,9 +66,6 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
           </TabsContent>
           <TabsContent value="sessions">
             <TeacherDataSessionsPanel clientId={clientId} />
-          </TabsContent>
-          <TabsContent value="iep">
-            <TeacherIEPDraftsPanel clientId={clientId} />
           </TabsContent>
           <TabsContent value="points">
             <BeaconPointsPanel clientId={clientId} />
