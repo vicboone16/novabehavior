@@ -67,7 +67,7 @@ import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggest
 import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
-import { SdcIntakeManager } from '@/components/sdc-intake';
+import { SdcIntakeManager, StudentSdcSnapshotViewer } from '@/components/sdc-intake';
 import { StudentIntakeFormsTab } from '@/components/intake-forms/StudentIntakeFormsTab';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { StudentClinicalForms } from '@/components/clinical-forms/StudentClinicalForms';
@@ -951,6 +951,9 @@ export default function StudentProfile() {
 
         {/* ====== REPORTS TAB ====== */}
         <TabsContent value="reports" className="space-y-4">
+          {/* SDC Behavior Snapshot — shows only if student has one */}
+          <StudentSdcSnapshotViewer studentId={student.id} studentName={student.name} />
+
           {/* Data Sources: Teacher, Observations, IEP, Parent */}
           <TeacherDataHub clientId={student.id} />
           <Card>
