@@ -882,7 +882,6 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
               </div>
             </CardContent>
           </Card>
-        )}
         ) : (
           <div className="h-[calc(100vh-200px)]">
             <BxInterventionLibrary />
