@@ -994,6 +994,11 @@ export default function AssessmentDashboard() {
             )}
           </TabsContent>
 
+          {/* Clinical Forms Tab */}
+          <TabsContent value="clinical-forms" className="space-y-4">
+            <ClinicalFormsPanel />
+          </TabsContent>
+
           {/* Report Tab */}
           <TabsContent value="report" className="space-y-4">
             <Card>
