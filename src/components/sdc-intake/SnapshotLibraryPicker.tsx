@@ -48,41 +48,41 @@ export function SnapshotLibraryPicker({ onInsert }: Props) {
       switch (activeSource) {
         case 'goals': {
           const [legacyRes, newRes, bxRes] = await Promise.all([
-            supabase.from('clinical_goals').select('id, title, description, domain').eq('library_section', 'clinical_collections').limit(200),
-            supabase.from('cl_goal_library').select('id, title, description, domain').eq('is_active', true).limit(200),
+            supabase.from('clinical_goals').select('id, title, domain').eq('library_section', 'clinical_collections').limit(200),
+            supabase.from('cl_goal_library').select('id, title, domain, objective').eq('is_active', true).limit(200),
             supabase.from('behavior_goals_library').select('id, goal_text, behavior_key').limit(200),
           ]);
           results = [
-            ...(legacyRes.data || []).map(r => ({ id: r.id, title: r.title, description: r.description || r.domain, source: 'Goal Bank' })),
-            ...(newRes.data || []).map(r => ({ id: r.id, title: r.title, description: r.description || r.domain, source: 'Goal Library' })),
-            ...(bxRes.data || []).map(r => ({ id: r.id, title: r.goal_text, description: r.behavior_key, source: 'Behavior Goals' })),
+            ...(legacyRes.data || []).map((r: any) => ({ id: r.id, title: r.title, description: r.domain, source: 'Goal Bank' })),
+            ...(newRes.data || []).map((r: any) => ({ id: r.id, title: r.title, description: r.objective || r.domain, source: 'Goal Library' })),
+            ...(bxRes.data || []).map((r: any) => ({ id: r.id, title: r.goal_text, description: r.behavior_key, source: 'Behavior Goals' })),
           ];
           break;
         }
         case 'strategies': {
           const [bxRes, bipRes] = await Promise.all([
-            supabase.from('bx_strategies').select('id, strategy_name, strategy_code, description').limit(200),
-            supabase.from('behavior_intervention_library').select('id, intervention_name, intervention_type, behavior_key').limit(200),
+            supabase.from('bx_strategies').select('id, strategy_name, strategy_code, short_description').limit(200),
+            supabase.from('behavior_intervention_library').select('id, strategy, intervention_type, behavior_key').limit(200),
           ]);
           results = [
-            ...(bxRes.data || []).map(r => ({ id: r.id, title: r.strategy_name, description: r.description || r.strategy_code, source: 'Bx Strategies' })),
-            ...(bipRes.data || []).map(r => ({ id: r.id, title: r.intervention_name, description: `${r.intervention_type} • ${r.behavior_key}`, source: 'Behavior Interventions' })),
+            ...(bxRes.data || []).map((r: any) => ({ id: r.id, title: r.strategy_name, description: r.short_description || r.strategy_code, source: 'Bx Strategies' })),
+            ...(bipRes.data || []).map((r: any) => ({ id: r.id, title: r.strategy, description: `${r.intervention_type} • ${r.behavior_key}`, source: 'Behavior Interventions' })),
           ];
           break;
         }
         case 'interventions': {
           const { data } = await supabase.from('aba_library_interventions').select('intervention_id, title, summary, intervention_type').eq('is_active', true).limit(200);
-          results = (data || []).map(r => ({ id: r.intervention_id, title: r.title, description: r.summary || r.intervention_type, source: 'ABA Library' }));
+          results = (data || []).map((r: any) => ({ id: r.intervention_id, title: r.title, description: r.summary || r.intervention_type, source: 'ABA Library' }));
           break;
         }
         case 'supports': {
-          const { data } = await supabase.from('bip_support_library').select('id, title, description, category').limit(200);
-          results = (data || []).map(r => ({ id: r.id, title: r.title, description: r.description || r.category, source: 'BIP Supports' }));
+          const { data } = await supabase.from('bip_support_library').select('id, support_title, support_description, category').limit(200);
+          results = (data || []).map((r: any) => ({ id: r.id, title: r.support_title, description: r.support_description || r.category, source: 'BIP Supports' }));
           break;
         }
         case 'programs': {
           const { data } = await supabase.from('abas_programs').select('id, program_name, program_description, program_code').limit(200);
-          results = (data || []).map(r => ({ id: r.id, title: r.program_name, description: r.program_description || r.program_code, source: 'ABAS Programs' }));
+          results = (data || []).map((r: any) => ({ id: r.id, title: r.program_name, description: r.program_description || r.program_code, source: 'ABAS Programs' }));
           break;
         }
       }
