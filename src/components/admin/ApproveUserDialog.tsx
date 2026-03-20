@@ -185,6 +185,8 @@ export function ApproveUserDialog({
                 {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
                 {isSuperAdmin && <SelectItem value="admin">Admin</SelectItem>}
                 <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="teacher">Teacher</SelectItem>
+                <SelectItem value="caregiver">Caregiver</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
                 {customRoles.length > 0 && (
                   <>
