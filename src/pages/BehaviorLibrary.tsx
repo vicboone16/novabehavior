@@ -650,48 +650,6 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
               </CardContent>
             </Card>
 
-            {/* Archived Behaviors Card */}
-            {archivedBuiltInBehaviors.length > 0 && (
-              <Card className="border-muted">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Archive className="w-4 h-4 text-muted-foreground" />
-                    Archived Behaviors
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {archivedBuiltInBehaviors.length} hidden behavior{archivedBuiltInBehaviors.length > 1 ? 's' : ''}. Click restore to reinstate.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {archivedBuiltInBehaviors.map(behaviorId => {
-                    const original = DEFAULT_BEHAVIORS.find(b => b.id === behaviorId);
-                    if (!original) return null;
-                    return (
-                      <div key={behaviorId} className="flex items-center justify-between p-2 bg-muted/50 rounded border">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{original.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{original.category}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1"
-                          onClick={() => {
-                            unarchiveBuiltInBehaviorStore(behaviorId);
-                            unarchiveBehaviorFromDB(behaviorId);
-                            toast({ title: 'Behavior restored', description: `"${original.name}" is now visible in the library again.` });
-                          }}
-                        >
-                          <ArchiveRestore className="w-3 h-3" />
-                          Restore
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
-
             {/* Merge duplicates card */}
             {mergeableBehaviors.length > 0 && (
               <Card className="border-primary/50 bg-primary/5">
@@ -762,9 +720,7 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                       <InlineNameEditor
                                         value={behavior.name}
                                         onSave={async (newName) => {
-                                          // Update the name in the store
                                           updateBankBehaviorDefinition(behavior.id, behavior.operationalDefinition, behavior.category);
-                                          // For org behaviors synced to DB
                                           const isGlobalBank = useDataStore.getState().globalBehaviorBank.some(b => b.id === behavior.id);
                                           if (isGlobalBank && user?.id) {
                                             const updated = useDataStore.getState().globalBehaviorBank.find(b => b.id === behavior.id);
@@ -883,6 +839,50 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
             </Card>
           </div>
         </div>
+
+        {/* Archived Behaviors — moved to bottom */}
+        {archivedBuiltInBehaviors.length > 0 && (
+          <Card className="border-muted mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Archive className="w-4 h-4 text-muted-foreground" />
+                Archived Behaviors
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {archivedBuiltInBehaviors.length} hidden behavior{archivedBuiltInBehaviors.length > 1 ? 's' : ''}. Click restore to reinstate.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {archivedBuiltInBehaviors.map(behaviorId => {
+                  const original = DEFAULT_BEHAVIORS.find(b => b.id === behaviorId);
+                  if (!original) return null;
+                  return (
+                    <div key={behaviorId} className="flex items-center justify-between p-2 bg-muted/50 rounded border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{original.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{original.category}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1"
+                        onClick={() => {
+                          unarchiveBuiltInBehaviorStore(behaviorId);
+                          unarchiveBehaviorFromDB(behaviorId);
+                          toast({ title: 'Behavior restored', description: `"${original.name}" is now visible in the library again.` });
+                        }}
+                      >
+                        <ArchiveRestore className="w-3 h-3" />
+                        Restore
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         ) : (
           <div className="h-[calc(100vh-200px)]">
             <BxInterventionLibrary />
