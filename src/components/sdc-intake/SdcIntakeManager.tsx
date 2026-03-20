@@ -594,6 +594,7 @@ export function SdcIntakeManager({ studentId, studentName, studentGrade }: Props
                       formInstances={formInstances}
                       reportDrafts={reportDrafts}
                       studentName={studentName}
+                      studentId={studentId}
                     />
                   </TabsContent>
 

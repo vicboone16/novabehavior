@@ -226,38 +226,107 @@ function snapshotDocxChildren(
   pageBreak: boolean,
 ): any[] {
   const children: any[] = [];
+  const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
+  const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+  const cellMargins = { top: 80, bottom: 80, left: 120, right: 120 };
 
+  // Title
   children.push(new Paragraph({
-    heading: HeadingLevel.HEADING_1,
+    alignment: AlignmentType.CENTER,
     pageBreakBefore: pageBreak,
-    children: [new TextRun({ text: 'SDC Behavior Snapshot', bold: true, font: 'Arial' })],
+    spacing: { after: 200 },
+    children: [new TextRun({ text: 'SDC Snapshots', bold: true, underline: {}, size: 28, font: 'Arial' })],
   }));
-  children.push(new Paragraph({ children: [new TextRun({ text: `Student: ${studentName}`, size: 22, font: 'Arial' })] }));
-  children.push(new Paragraph({ children: [new TextRun({ text: `Generated: ${new Date(createdAt).toLocaleDateString()}`, size: 20, color: '666666', font: 'Arial' })] }));
-  children.push(new Paragraph({ children: [] }));
 
   const sections = [
-    { key: 'strengths_interests', label: 'Strengths & Interests' },
+    { key: 'strengths_interests', label: 'Strengths/Interests' },
     { key: 'areas_of_need', label: 'Areas of Need' },
-    { key: 'strategies', label: 'Strategies & Recommendations' },
+    { key: 'strategies', label: 'Strategies' },
   ];
 
+  // Build table rows
+  const tableRows: TableRow[] = [];
+
+  // Header row with student name
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({
+        columnSpan: 2,
+        borders: cellBorders,
+        margins: cellMargins,
+        children: [new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: studentName, bold: true, size: 24, font: 'Arial' })],
+        })],
+      }),
+    ],
+  }));
+
   for (const section of sections) {
-    children.push(new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      spacing: { before: 240, after: 80 },
-      children: [new TextRun({ text: section.label.toUpperCase(), bold: true, font: 'Arial', color: '324F8C' })],
-    }));
     const text = content[section.key] || 'Not generated yet.';
-    for (const para of text.split('\n')) {
-      if (para.trim()) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: para, size: 22, font: 'Arial' })],
-          spacing: { after: 100 },
+    const bulletItems = text.split('\n').filter(l => l.trim());
+    const contentChildren: Paragraph[] = [];
+
+    // If areas_of_need, first line is bold summary
+    if (section.key === 'areas_of_need' && bulletItems.length > 0) {
+      const firstLine = bulletItems[0].replace(/^[-•]\s*/, '').trim();
+      if (firstLine) {
+        contentChildren.push(new Paragraph({
+          spacing: { after: 80 },
+          children: [new TextRun({ text: firstLine, bold: true, size: 22, font: 'Arial' })],
         }));
       }
+      for (let i = 1; i < bulletItems.length; i++) {
+        const line = bulletItems[i].replace(/^[-•]\s*/, '').trim();
+        if (line) {
+          contentChildren.push(new Paragraph({
+            numbering: { reference: BULLETS_REF, level: 0 },
+            children: [new TextRun({ text: line, size: 22, font: 'Arial' })],
+          }));
+        }
+      }
+    } else {
+      for (const item of bulletItems) {
+        const line = item.replace(/^[-•]\s*/, '').trim();
+        if (line) {
+          contentChildren.push(new Paragraph({
+            numbering: { reference: BULLETS_REF, level: 0 },
+            children: [new TextRun({ text: line, size: 22, font: 'Arial' })],
+          }));
+        }
+      }
     }
+
+    if (contentChildren.length === 0) {
+      contentChildren.push(new Paragraph({ children: [new TextRun({ text: 'Not generated yet.', size: 22, font: 'Arial', italics: true })] }));
+    }
+
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({
+          borders: cellBorders,
+          margins: cellMargins,
+          width: { size: 2800, type: WidthType.DXA },
+          children: [new Paragraph({
+            children: [new TextRun({ text: section.label, size: 22, font: 'Arial' })],
+          })],
+        }),
+        new TableCell({
+          borders: cellBorders,
+          margins: cellMargins,
+          width: { size: 6560, type: WidthType.DXA },
+          children: contentChildren,
+        }),
+      ],
+    }));
   }
+
+  children.push(new Table({
+    width: { size: 9360, type: WidthType.DXA },
+    columnWidths: [2800, 6560],
+    rows: tableRows,
+  }));
+
   return children;
 }
 
