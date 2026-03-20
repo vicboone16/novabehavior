@@ -105,23 +105,35 @@ export function useGoalBankDomains() {
   });
 }
 
-/** Get goals for a specific domain */
+/** Get goals for a specific domain (merges both tables) */
 export function useGoalsByDomain(domainSlug: string | undefined) {
   return useQuery({
     queryKey: ['clinical-goals', 'by-domain', domainSlug?.toLowerCase()],
     enabled: !!domainSlug,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clinical_goals')
-        .select('*')
-        .eq('library_section', 'clinical_collections')
-        .eq('collection_type', 'goal_bank')
-        .ilike('domain', domainSlug!.replace(/-/g, '_'))
-        .order('phase', { ascending: true, nullsFirst: false })
-        .order('title', { ascending: true });
+      const domainPattern = domainSlug!.replace(/-/g, '_');
 
-      if (error) throw error;
-      return (data || []) as ClinicalGoal[];
+      const [legacyRes, newRes] = await Promise.all([
+        supabase
+          .from('clinical_goals')
+          .select('*')
+          .eq('library_section', 'clinical_collections')
+          .eq('collection_type', 'goal_bank')
+          .ilike('domain', domainPattern)
+          .order('phase', { ascending: true, nullsFirst: false })
+          .order('title', { ascending: true }),
+        supabase
+          .from('cl_goal_library')
+          .select('*')
+          .eq('is_active', true)
+          .ilike('domain', domainPattern)
+          .order('sort_order', { ascending: true })
+          .order('title', { ascending: true }),
+      ]);
+
+      const legacy = (legacyRes.data || []) as ClinicalGoal[];
+      const mapped = (newRes.data || []).map(mapClGoalToClinical);
+      return [...legacy, ...mapped];
     },
   });
 }
