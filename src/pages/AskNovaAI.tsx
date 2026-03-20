@@ -699,6 +699,12 @@ export default function AskNovaAI() {
 
           {/* Input */}
           <div className="border-t border-border p-3">
+            {!selectedClientId && (
+              <div className="mb-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span><strong>Select a student above</strong> to enable data entry, note writing, and clinical logging. Without a student selected, Nova AI can only answer general questions.</span>
+              </div>
+            )}
             <div className="flex gap-2">
               <Textarea
                 ref={textareaRef}
@@ -706,8 +712,8 @@ export default function AskNovaAI() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={selectedClientId 
-                  ? "Ask a question, paste session notes, or describe what happened..."
-                  : "Ask a behavior science question..."
+                  ? "Ask a question, paste session notes, enter historical data, or describe what happened..."
+                  : "Select a student above, then ask me to log data, write notes, or analyze behavior..."
                 }
                 className="resize-none min-h-[44px] max-h-32"
                 rows={1}
