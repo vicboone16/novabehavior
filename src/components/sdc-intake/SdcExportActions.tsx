@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Package, Brain, Loader2 } from 'lucide-react';
+import { Download, FileText, Package, Brain, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSdcIntake, type FormInstance, type ReportDraft } from '@/hooks/useSdcIntake';
+import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   LevelFormat, AlignmentType, PageBreak,
+  Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 
