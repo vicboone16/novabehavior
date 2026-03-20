@@ -376,9 +376,10 @@ function addSnapshotToPdf(
 
 // ─── Component ─────────────────────────────────────────────────────────
 
-export function SdcExportActions({ packageInstanceId, formInstances, reportDrafts, studentName }: Props) {
+export function SdcExportActions({ packageInstanceId, formInstances, reportDrafts, studentName, studentId }: Props) {
   const intake = useSdcIntake();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const completedForms = formInstances.filter(fi => fi.status === 'submitted');
   const latestDraft = reportDrafts.length > 0 ? reportDrafts[0] : null;
