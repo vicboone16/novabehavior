@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
 import { ClinicalCollectionsLanding } from '@/components/clinical-library/ClinicalCollectionsLanding';
+import { UnifiedDomainsBrowser } from '@/components/clinical-library/UnifiedDomainsBrowser';
 
 type LibraryScope = 'personal' | 'organization';
-type ActiveSection = null | 'curriculum_systems' | 'clinical_collections';
+type ActiveSection = null | 'curriculum_systems' | 'clinical_collections' | 'unified_domains';
 
 export default function ClinicalLibrary() {
   const navigate = useNavigate();
