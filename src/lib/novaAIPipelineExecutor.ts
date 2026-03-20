@@ -125,6 +125,12 @@ export function inputLikelyContainsData(input: string): boolean {
     /session\s*(note|data|summary)/i,
     /(soap|narrative)\s*note/i,
     /log\s*(this|data|session)/i,
+    /(add|enter|record|save|input|backfill)\s*(data|points|info|behavior|historical)/i,
+    /historical\s*(data|entry|session|note)/i,
+    /(behavior|skill)\s*(data|points|score)/i,
+    /\d+\s*(points?|tokens?|stars?)/i,
+    /(on|from|dated?)\s*\d{1,2}[\/\-]\d{1,2}/i,  // date references
+    /(yesterday|last\s*(week|session|monday|tuesday|wednesday|thursday|friday))/i,
   ];
   return dataPatterns.some(p => p.test(input));
 }
