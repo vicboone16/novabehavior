@@ -940,6 +940,9 @@ export default function StudentProfile() {
             studentName={student.name}
             studentGrade={student.grade || ''}
           />
+
+          {/* Questionnaires — sendable forms (teacher observation, ABAS-3, etc.) */}
+          <QuestionnaireManager studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* ====== REPORTS TAB ====== */}
