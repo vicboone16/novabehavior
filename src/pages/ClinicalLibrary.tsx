@@ -45,6 +45,8 @@ export default function ClinicalLibrary() {
                     ? 'Standardized curriculum frameworks & formal assessment systems'
                     : activeSection === 'clinical_collections'
                     ? 'Goal banks, interventions, templates & custom programs'
+                    : activeSection === 'unified_domains'
+                    ? 'Cross-framework clinical domain alignment system'
                     : 'Curriculum systems, goal banks, interventions & clinical resources'}
                 </p>
               </div>
