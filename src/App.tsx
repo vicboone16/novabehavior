@@ -486,15 +486,7 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/behavior-library" element={
-              <ProtectedRoute>
-                <ApprovalCheck>
-                  <SyncProvider>
-                    <BehaviorLibraryFull />
-                  </SyncProvider>
-                </ApprovalCheck>
-              </ProtectedRoute>
-            } />
+            <Route path="/behavior-library" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
             <Route path="/academy" element={
               <ProtectedRoute>
                 <ApprovalCheck>
