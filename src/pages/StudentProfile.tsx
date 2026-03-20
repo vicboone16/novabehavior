@@ -942,8 +942,11 @@ export default function StudentProfile() {
             studentGrade={student.grade || ''}
           />
 
-          {/* Questionnaires — sendable forms (teacher observation, ABAS-3, etc.) */}
-          <QuestionnaireManager studentId={student.id} studentName={student.name} />
+            {/* Questionnaires — sendable forms (teacher observation, ABAS-3, etc.) */}
+            <QuestionnaireManager studentId={student.id} studentName={student.name} />
+
+            {/* Clinical Forms — sendable clinical assessment forms */}
+            <StudentClinicalForms studentId={student.id} studentName={student.name} />
         </TabsContent>
 
         {/* ====== REPORTS TAB ====== */}
