@@ -104,10 +104,11 @@ Deno.serve(async (req) => {
       await admin.from("user_app_access").upsert({
         user_id: userId,
         app_slug: "behavior_decoded",
+        agency_id: DEMO_AGENCY_ID,
         role: "caregiver",
         is_active: true,
         email: pair.email,
-      }, { onConflict: "user_id,app_slug" });
+      }, { onConflict: "user_id,app_slug,agency_id" });
 
       // 4) student_app_visibility
       await admin.from("student_app_visibility").upsert({
