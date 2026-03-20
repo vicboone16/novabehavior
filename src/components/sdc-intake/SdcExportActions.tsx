@@ -722,9 +722,45 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
     } finally { setExporting(null); }
   };
 
+  // ── Save to student documents ──
+  const saveToDocuments = async (format: 'pdf' | 'docx') => {
+    if (!latestDraft) return;
+    setSaving(format);
+    try {
+      const content = getSnapshotContent();
+      if (!content) throw new Error('No snapshot content');
+      const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.${format}`;
+      let blob: Blob;
+
+      if (format === 'pdf') {
+        const doc = new jsPDF();
+        // Reuse the table-format snapshot on first page
+        addSnapshotToPdfFirstPage(doc, content, studentName);
+        blob = doc.output('blob');
+      } else {
+        const children = snapshotDocxChildren(content, studentName, latestDraft.created_at, false);
+        const doc = new Document({
+          numbering: buildDocxNumbering(),
+          sections: [{ properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }],
+        });
+        blob = await Packer.toBlob(doc);
+      }
+
+      const filePath = `documents/${studentId}/${Date.now()}_${fileName}`;
+      const { error } = await supabase.storage.from('student-documents').upload(filePath, blob, {
+        contentType: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+      if (error) throw error;
+      toast.success(`Snapshot saved to student documents`);
+    } catch (err: any) {
+      toast.error('Save failed: ' + err.message);
+    } finally { setSaving(null); }
+  };
+
   const isExporting = exporting !== null;
+  const isSaving = saving !== null;
   const ExBtn = ({ id, label, onClick, disabled }: { id: string; label: string; onClick: () => void; disabled?: boolean }) => (
-    <Button size="sm" variant="outline" onClick={onClick} disabled={isExporting || disabled}>
+    <Button size="sm" variant="outline" onClick={onClick} disabled={isExporting || isSaving || disabled}>
       {exporting === id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
       {label}
     </Button>
