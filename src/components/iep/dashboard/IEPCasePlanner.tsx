@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { Plus, FileText, Search } from 'lucide-react';
+import { Plus, FileText, Search, Trash2, ExternalLink, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDataStore } from '@/store/dataStore';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface IEPCasePlannerProps {
   caseData: any[];
@@ -21,8 +23,10 @@ interface IEPCasePlannerProps {
 export function IEPCasePlanner({ caseData, onRefresh }: IEPCasePlannerProps) {
   const { user } = useAuth();
   const { students } = useDataStore();
+  const navigate = useNavigate();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [newCase, setNewCase] = useState({
     student_id: '',
     priority: 'medium',
@@ -51,6 +55,42 @@ export function IEPCasePlanner({ caseData, onRefresh }: IEPCasePlannerProps) {
       onRefresh();
     } catch (err: any) {
       toast.error('Failed to add case plan: ' + err.message);
+    }
+  };
+
+  const handleDeleteCase = async (caseId: string) => {
+    try {
+      setDeletingId(caseId);
+      const { error } = await supabase
+        .from('iep_case_data')
+        .delete()
+        .eq('id', caseId);
+      if (error) throw error;
+      toast.success('Case plan deleted');
+      onRefresh();
+    } catch (err: any) {
+      toast.error('Failed to delete: ' + err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleUpdateStatus = async (caseId: string, newStatus: string) => {
+    try {
+      const caseItem = caseData.find(c => c.id === caseId);
+      if (!caseItem) return;
+      const { error } = await supabase
+        .from('iep_case_data')
+        .update({
+          data: { ...caseItem.data, status: newStatus },
+          status: newStatus,
+        } as any)
+        .eq('id', caseId);
+      if (error) throw error;
+      toast.success(`Status updated to ${newStatus}`);
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -90,6 +130,7 @@ export function IEPCasePlanner({ caseData, onRefresh }: IEPCasePlannerProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Case Plan</DialogTitle>
+              <DialogDescription>Add a student to the IEP case planner for tracking and planning.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -141,18 +182,27 @@ export function IEPCasePlanner({ caseData, onRefresh }: IEPCasePlannerProps) {
           {filteredCases.map((caseItem: any) => {
             const student = students.find(s => s.id === caseItem.student_id);
             const priority = caseItem.data?.priority || 'medium';
+            const status = caseItem.data?.status || caseItem.status || 'active';
             return (
               <Card key={caseItem.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <div
+                      className="flex items-center gap-3 min-w-0 cursor-pointer group"
+                      onClick={() => {
+                        if (student?.id) navigate(`/students/${student.id}`);
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
                         <span className="text-xs font-semibold text-primary">
                           {student?.name?.charAt(0) || '?'}
                         </span>
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{student?.name || 'Unknown Student'}</p>
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors flex items-center gap-1">
+                          {student?.name || 'Unknown Student'}
+                          <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         {caseItem.data?.notes && (
                           <p className="text-xs text-muted-foreground truncate">{caseItem.data.notes}</p>
                         )}
@@ -167,6 +217,31 @@ export function IEPCasePlanner({ caseData, onRefresh }: IEPCasePlannerProps) {
                       <Badge variant="outline" className={getPriorityColor(priority)}>
                         {priority}
                       </Badge>
+                      <Select
+                        value={status}
+                        onValueChange={(v) => handleUpdateStatus(caseItem.id, v)}
+                      >
+                        <SelectTrigger className="h-7 w-[100px] text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="review">Review</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        disabled={deletingId === caseItem.id}
+                        onClick={() => {
+                          if (confirm('Delete this case plan?')) handleDeleteCase(caseItem.id);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
