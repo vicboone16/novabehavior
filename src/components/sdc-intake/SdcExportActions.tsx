@@ -734,8 +734,41 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
 
       if (format === 'pdf') {
         const doc = new jsPDF();
-        // Reuse the table-format snapshot on first page
-        addSnapshotToPdfFirstPage(doc, content, studentName);
+        // Build PDF with table layout directly on first page
+        const pageW = doc.internal.pageSize.getWidth();
+        let y = 20;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        const title = 'SDC Snapshots';
+        const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+        const titleX = (pageW - titleW) / 2;
+        doc.text(title, titleX, y);
+        doc.setDrawColor(0, 0, 0);
+        doc.line(titleX, y + 1, titleX + titleW, y + 1);
+        y += 12;
+        const leftCol = 14; const divider = 65; const rightCol = divider + 2; const rightEdge = pageW - 14; const rightW = rightEdge - rightCol;
+        doc.setLineWidth(0.3);
+        doc.rect(leftCol, y, rightEdge - leftCol, 8);
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0);
+        const nameW = doc.getStringUnitWidth(studentName) * 11 / doc.internal.scaleFactor;
+        doc.text(studentName, (pageW - nameW) / 2, y + 5.5);
+        y += 8;
+        for (const section of [{ key: 'strengths_interests', label: 'Strengths/Interests' }, { key: 'areas_of_need', label: 'Areas of Need' }, { key: 'strategies', label: 'Strategies' }]) {
+          const text = content[section.key] || '';
+          const bulletItems = text.split('\n').filter((l: string) => l.trim()).map((l: string) => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+          let contentLines: string[] = [];
+          for (const item of bulletItems) { contentLines.push(...doc.splitTextToSize(`-   ${item}`, rightW - 4)); }
+          if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+          const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+          if (y + rowH > 275) { doc.addPage(); y = 20; }
+          doc.rect(leftCol, y, divider - leftCol, rowH);
+          doc.rect(divider, y, rightEdge - divider, rowH);
+          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
+          doc.text(section.label, leftCol + 2, y + 5);
+          let cy = y + 5;
+          for (const item of bulletItems) { for (const line of doc.splitTextToSize(`-   ${item}`, rightW - 4)) { doc.text(line, rightCol + 2, cy); cy += 4.5; } }
+          y += rowH;
+        }
         blob = doc.output('blob');
       } else {
         const children = snapshotDocxChildren(content, studentName, latestDraft.created_at, false);
