@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (roles.includes('super_admin')) return 'super_admin';
     if (roles.includes('admin')) return 'admin';
     if (roles.includes('staff')) return 'staff';
+    if (roles.includes('teacher')) return 'teacher';
+    if (roles.includes('caregiver')) return 'caregiver';
     return 'viewer';
   };
 
