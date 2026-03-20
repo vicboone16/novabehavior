@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileText, Users, Bot, PenTool, Eye, Plus } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Loader2, FileText, Users, Bot, PenTool, Eye, Plus, X } from 'lucide-react';
 import type { FormTemplate } from '@/hooks/useIntakeFormsEngine';
 import { useIntakeFormsEngine } from '@/hooks/useIntakeFormsEngine';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   templates: FormTemplate[];
@@ -19,7 +22,11 @@ interface Props {
 
 export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAssigned }: Props) {
   const engine = useIntakeFormsEngine();
+  const { user } = useAuth();
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; template: FormTemplate | null }>({ open: false, template: null });
+  const [previewDialog, setPreviewDialog] = useState<{ open: boolean; template: FormTemplate | null }>({ open: false, template: null });
+  const [previewSections, setPreviewSections] = useState<any[]>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [completionMode, setCompletionMode] = useState('internal');
@@ -30,6 +37,38 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
     !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const openPreview = async (template: FormTemplate) => {
+    setPreviewDialog({ open: true, template });
+    setLoadingPreview(true);
+    try {
+      const { data: sections } = await supabase
+        .from('form_template_sections')
+        .select('*')
+        .eq('template_id', template.id)
+        .order('display_order');
+
+      if (sections && sections.length > 0) {
+        const { data: fields } = await supabase
+          .from('form_template_fields')
+          .select('*')
+          .eq('template_id', template.id)
+          .order('display_order');
+
+        const enriched = (sections || []).map(s => ({
+          ...s,
+          fields: (fields || []).filter(f => f.section_id === s.id),
+        }));
+        setPreviewSections(enriched);
+      } else {
+        setPreviewSections([]);
+      }
+    } catch {
+      setPreviewSections([]);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   const openAssignDialog = async (template: FormTemplate) => {
     setAssignDialog({ open: true, template });
@@ -62,6 +101,17 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
     } finally {
       setIsAssigning(false);
     }
+  };
+
+  const fieldTypeLabel = (type: string) => {
+    const map: Record<string, string> = {
+      text: 'Text', textarea: 'Long Text', number: 'Number', date: 'Date',
+      select: 'Dropdown', multi_select: 'Multi-Select', radio: 'Radio',
+      checkbox: 'Checkbox', toggle: 'Toggle', rating: 'Rating',
+      signature: 'Signature', file: 'File Upload', repeater: 'Table/Repeater',
+      header: 'Section Header',
+    };
+    return map[type] || type;
   };
 
   if (isLoading) {
@@ -128,7 +178,7 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => openPreview(template)}>
                         <Eye className="h-3.5 w-3.5 mr-1" /> Preview
                       </Button>
                       <Button size="sm" className="flex-1" onClick={() => openAssignDialog(template)}>
@@ -143,6 +193,70 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
         ))}
       </div>
 
+      {/* Preview Dialog */}
+      <Dialog open={previewDialog.open} onOpenChange={open => !open && setPreviewDialog({ open: false, template: null })}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              {previewDialog.template?.name}
+            </DialogTitle>
+            {previewDialog.template?.description && (
+              <p className="text-sm text-muted-foreground">{previewDialog.template.description}</p>
+            )}
+          </DialogHeader>
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            {loadingPreview ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : previewSections.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="h-8 w-8 mx-auto mb-2" />
+                <p>No sections configured for this template yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-6 pb-4">
+                {previewSections.map((section: any, idx: number) => (
+                  <div key={section.id}>
+                    {idx > 0 && <Separator className="mb-4" />}
+                    <div className="mb-3">
+                      <h3 className="font-semibold text-foreground">{section.title}</h3>
+                      {section.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
+                      )}
+                    </div>
+                    {section.fields && section.fields.length > 0 ? (
+                      <div className="space-y-2">
+                        {section.fields.map((field: any) => (
+                          <div key={field.id} className="flex items-start justify-between gap-2 p-2 rounded-md bg-muted/50 border border-border/50">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground">
+                                {field.field_label}
+                                {field.is_required && <span className="text-destructive ml-0.5">*</span>}
+                              </p>
+                              {field.help_text && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{field.help_text}</p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-[10px] shrink-0">
+                              {fieldTypeLabel(field.field_type)}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">No fields in this section</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Dialog */}
       <Dialog open={assignDialog.open} onOpenChange={open => !open && setAssignDialog({ open: false, template: null })}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -156,6 +270,8 @@ export function IntakeTemplateLibrary({ templates, searchQuery, isLoading, onAss
               <Label>Student / Referral</Label>
               {loadingStudents ? (
                 <div className="flex items-center gap-2 py-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>
+              ) : students.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">No students found. Add students first.</p>
               ) : (
                 <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
                   <SelectTrigger><SelectValue placeholder="Select student..." /></SelectTrigger>
