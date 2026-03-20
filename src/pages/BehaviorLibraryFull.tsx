@@ -256,7 +256,7 @@ export default function BehaviorLibraryFull({ embedded = false }: { embedded?: b
       </header>
       )}
 
-      <main className="container py-6">
+      <main className={embedded ? '' : 'container py-6'}>
         {data.isLoading ? (
           <div className="text-center py-16 text-muted-foreground">Loading library data...</div>
         ) : (
