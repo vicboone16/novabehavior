@@ -144,18 +144,18 @@ export default function ClinicalLibraryLayout() {
 
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
-              onClick={() => navigate('/clinical-library/behavior-reduction')}
+              onClick={() => navigate('/clinical-library/behavior-bank')}
             >
               <CardContent className="p-6">
                 <div className="p-3 rounded-xl bg-destructive/10 w-fit mb-4">
                   <Shield className="w-7 h-7 text-destructive" />
                 </div>
-                <h2 className="text-lg font-bold mb-1">Behavior Reduction & Interventions</h2>
+                <h2 className="text-lg font-bold mb-1">Behavior Bank</h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Function-based goals, intervention protocols, replacement behaviors & crisis plans.
+                  Behaviors & definitions, reduction strategies, and intervention protocols.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {['FCT', 'DRA/DRO', 'Crisis Plans', 'Strategies'].map(name => (
+                  {['Definitions', 'Antecedent', 'Reactive', 'FCT', 'DRA/DRO'].map(name => (
                     <Badge key={name} variant="outline" className="text-[10px] border-destructive/30 text-destructive">{name}</Badge>
                   ))}
                 </div>
