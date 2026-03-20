@@ -65,6 +65,8 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'staff', label: 'Staff' },
+    { value: 'teacher', label: 'Teacher' },
+    { value: 'caregiver', label: 'Caregiver' },
     { value: 'viewer', label: 'Viewer' },
   ];
 
@@ -117,7 +119,7 @@ export function StaffOverviewTab({ profile, updateProfile, supervisorLinks, supe
         }
       } else {
         if (checked) {
-          const { error } = await supabase.from('user_roles').insert({ user_id: profile.user_id, role: roleValue as 'super_admin' | 'admin' | 'staff' | 'viewer' });
+          const { error } = await supabase.from('user_roles').insert({ user_id: profile.user_id, role: roleValue as any });
           if (error) throw error;
         } else {
           await (supabase.from('user_roles') as any).delete().eq('user_id', profile.user_id).eq('role', roleValue);

@@ -41,6 +41,7 @@ export function ClinicalFormsPanel() {
     observation: templates.filter(t => t.form_category === 'observation'),
     data_sheet: templates.filter(t => t.form_category === 'data_sheet'),
     assessment: templates.filter(t => t.form_category === 'assessment'),
+    iep_dashboard: templates.filter(t => t.form_category === 'iep_dashboard'),
   };
 
   const handleSend = async () => {
@@ -175,6 +176,9 @@ export function ClinicalFormsPanel() {
           <TabsTrigger value="assessment" className="text-xs gap-1">
             <CheckCircle2 className="w-3 h-3" /> Assessments ({categoryTemplates.assessment.length})
           </TabsTrigger>
+          <TabsTrigger value="iep_dashboard" className="text-xs gap-1">
+            <FileText className="w-3 h-3" /> IEP Tools ({categoryTemplates.iep_dashboard.length})
+          </TabsTrigger>
           <TabsTrigger value="submissions" className="text-xs gap-1">
             <Clock className="w-3 h-3" /> Submissions ({submissions.length})
           </TabsTrigger>
@@ -191,6 +195,9 @@ export function ClinicalFormsPanel() {
         </TabsContent>
         <TabsContent value="assessment" className="mt-3">
           {renderTemplateList(categoryTemplates.assessment)}
+        </TabsContent>
+        <TabsContent value="iep_dashboard" className="mt-3">
+          {renderTemplateList(categoryTemplates.iep_dashboard)}
         </TabsContent>
         <TabsContent value="submissions" className="mt-3">
           {submissions.length === 0 ? (
