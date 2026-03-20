@@ -186,6 +186,8 @@ const App = () => {
             <Route path="/observation/:token" element={<TeacherObservationForm />} />
             {/* Public custom form - no auth required */}
             <Route path="/form/:token" element={<PublicFormPage />} />
+            {/* Public clinical form - no auth required */}
+            <Route path="/clinical-form/:token" element={<ClinicalFormPage />} />
             <Route path="/pending-approval" element={
               <ProtectedRoute>
                 <PendingApproval />
