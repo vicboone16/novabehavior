@@ -68,6 +68,8 @@ import { ObservationHistory } from '@/components/ObservationHistory';
 import { TeacherDataHub } from '@/components/teacher/TeacherDataHub';
 import { PendingStudentChanges } from '@/components/messaging/PendingStudentChanges';
 import { SdcIntakeManager } from '@/components/sdc-intake';
+import { StudentIntakeFormsTab } from '@/components/intake-forms/StudentIntakeFormsTab';
+import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
 import { ParentSnapshotGenerator } from '@/components/parent-comms/ParentSnapshotGenerator';
 import { BehaviorDecodedPanel, RewardEffectivenessPanel, BeaconAISuggestionsPanel } from '@/components/phase4';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
