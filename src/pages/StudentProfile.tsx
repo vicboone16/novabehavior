@@ -951,6 +951,9 @@ export default function StudentProfile() {
 
         {/* ====== REPORTS TAB ====== */}
         <TabsContent value="reports" className="space-y-4">
+          {/* SDC Behavior Snapshot — shows only if student has one */}
+          <StudentSdcSnapshotViewer studentId={student.id} studentName={student.name} />
+
           {/* Data Sources: Teacher, Observations, IEP, Parent */}
           <TeacherDataHub clientId={student.id} />
           <Card>
