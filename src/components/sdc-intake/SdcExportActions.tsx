@@ -546,38 +546,73 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const content = getSnapshotContent();
       if (!content) throw new Error('No snapshot content');
       const doc = new jsPDF();
-      // Write directly on first page (no addPage for first)
+      // Use addSnapshotToPdf but on the first page — slight hack: remove the addPage call
       const pageW = doc.internal.pageSize.getWidth();
       let y = 20;
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SDC Behavior Snapshot', 14, y); y += 8;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Student: ${studentName}`, 14, y); y += 5;
-      doc.text(`Generated: ${new Date(latestDraft.created_at).toLocaleDateString()}`, 14, y); y += 10;
-      doc.setTextColor(0, 0, 0);
 
-      for (const section of [
-        { key: 'strengths_interests', label: 'STRENGTHS & INTERESTS' },
-        { key: 'areas_of_need', label: 'AREAS OF NEED' },
-        { key: 'strategies', label: 'STRATEGIES & RECOMMENDATIONS' },
-      ]) {
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(50, 80, 140);
-        doc.text(section.label, 14, y); y += 2;
-        doc.setDrawColor(200, 210, 230);
-        doc.line(14, y, pageW - 14, y); y += 5;
-        doc.setTextColor(0, 0, 0);
+      // Title centered and underlined
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      const title = 'SDC Snapshots';
+      const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+      const titleX = (pageW - titleW) / 2;
+      doc.text(title, titleX, y);
+      doc.setDrawColor(0, 0, 0);
+      doc.line(titleX, y + 1, titleX + titleW, y + 1);
+      y += 12;
+
+      const leftCol = 14;
+      const divider = 65;
+      const rightCol = divider + 2;
+      const rightEdge = pageW - 14;
+      const rightW = rightEdge - rightCol;
+
+      const sections = [
+        { key: 'strengths_interests', label: 'Strengths/Interests' },
+        { key: 'areas_of_need', label: 'Areas of Need' },
+        { key: 'strategies', label: 'Strategies' },
+      ];
+
+      // Student name header row
+      doc.setLineWidth(0.3);
+      doc.rect(leftCol, y, rightEdge - leftCol, 8);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      const nameW = doc.getStringUnitWidth(studentName) * 11 / doc.internal.scaleFactor;
+      doc.text(studentName, (pageW - nameW) / 2, y + 5.5);
+      y += 8;
+
+      for (const section of sections) {
+        const text = content[section.key] || 'Not generated yet.';
+        const bulletItems = text.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+        let contentLines: string[] = [];
+        for (const item of bulletItems) {
+          const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+          contentLines.push(...wrapped);
+        }
+        if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+        const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+
+        if (y + rowH > 275) { doc.addPage(); y = 20; }
+
+        doc.rect(leftCol, y, divider - leftCol, rowH);
+        doc.rect(divider, y, rightEdge - divider, rowH);
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        const text = content[section.key] || 'Not generated yet.';
-        const lines = doc.splitTextToSize(text, pageW - 28);
-        doc.text(lines, 14, y);
-        y += lines.length * 4.5 + 8;
+        doc.setTextColor(0, 0, 0);
+        doc.text(section.label, leftCol + 2, y + 5);
+
+        let cy = y + 5;
+        for (const item of bulletItems) {
+          const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+          for (const line of wrapped) {
+            doc.text(line, rightCol + 2, cy);
+            cy += 4.5;
+          }
+        }
+        y += rowH;
       }
 
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.pdf`;
