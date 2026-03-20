@@ -99,9 +99,9 @@ export default function ClinicalLibrary() {
           </div>
         )}
 
-        {/* Top-level landing: two pathway cards */}
+        {/* Top-level landing: three pathway cards */}
         {!activeSection && (
-          <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto mt-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto mt-4">
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
               onClick={() => setActiveSection('curriculum_systems')}
@@ -140,6 +140,28 @@ export default function ClinicalLibrary() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {['Goal Banks', 'Interventions', 'Behavior Reduction', 'Skill Acquisition', 'Templates'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => setActiveSection('unified_domains')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Brain className="w-7 h-7 text-primary" />
+                  </div>
+                </div>
+                <h2 className="text-lg font-bold mb-1">Unified Clinical Domains</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Cross-framework alignment — map goals across VB-MAPP, ABLLS-R, PEAK, Vineland-3, SRS-2 & more.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['9 Frameworks', '10 Domains', 'Curriculum', 'Assessment', 'Adaptive'].map(name => (
                     <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
                   ))}
                 </div>
