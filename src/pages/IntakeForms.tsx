@@ -93,6 +93,10 @@ export default function IntakeForms() {
           />
         </TabsContent>
 
+        <TabsContent value="clinical" className="mt-4">
+          <ClinicalFormsPanel />
+        </TabsContent>
+
         <TabsContent value="assigned" className="mt-4">
           <IntakeInstancesList
             instances={engine.draftInstances}
