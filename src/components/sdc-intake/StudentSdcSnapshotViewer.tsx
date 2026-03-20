@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { FileText, Download, Save, ChevronRight, Loader2 } from 'lucide-react';
+import { SnapshotLibraryPicker } from './SnapshotLibraryPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
