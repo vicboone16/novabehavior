@@ -23,7 +23,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Check, UserCheck } from 'lucide-react';
 
-type AppRole = 'super_admin' | 'admin' | 'staff' | 'viewer';
+type AppRole = 'super_admin' | 'admin' | 'staff' | 'teacher' | 'caregiver' | 'viewer';
 
 interface TagType {
   id: string;
