@@ -976,7 +976,10 @@ export default function StudentProfile() {
 
         {/* ====== DOCUMENTS TAB ====== */}
         <TabsContent value="documents" className="space-y-4">
-          {/* E-Signatures & Intake Forms — surfaced prominently */}
+          {/* Intake Forms — assigned forms for this student */}
+          <StudentIntakeFormsTab studentId={student.id} />
+
+          {/* E-Signatures & Documents */}
           <DocumentsTab
             clientId={student.id}
             documents={clientProfile.documents}
