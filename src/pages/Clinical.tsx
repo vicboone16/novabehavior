@@ -39,6 +39,10 @@ export default function Clinical() {
             <List className="w-3.5 h-3.5" />
             Assessments
           </TabsTrigger>
+          <TabsTrigger value="iep" className="gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            IEP
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sessions">
@@ -46,6 +50,9 @@ export default function Clinical() {
         </TabsContent>
         <TabsContent value="assessments">
           <AssessmentDashboard />
+        </TabsContent>
+        <TabsContent value="iep">
+          <IEPDashboard />
         </TabsContent>
       </Tabs>
     </div>
