@@ -70,6 +70,7 @@ import { PendingStudentChanges } from '@/components/messaging/PendingStudentChan
 import { SdcIntakeManager } from '@/components/sdc-intake';
 import { StudentIntakeFormsTab } from '@/components/intake-forms/StudentIntakeFormsTab';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
+import { StudentClinicalForms } from '@/components/clinical-forms/StudentClinicalForms';
 import { ParentSnapshotGenerator } from '@/components/parent-comms/ParentSnapshotGenerator';
 import { BehaviorDecodedPanel, RewardEffectivenessPanel, BeaconAISuggestionsPanel } from '@/components/phase4';
 import { PhaseChangeManager } from '@/components/PhaseChangeManager';
