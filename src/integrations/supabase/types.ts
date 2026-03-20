@@ -38603,6 +38603,47 @@ export type Database = {
           },
         ]
       }
+      shared_library_folders: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          parent_folder_id: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_library_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "shared_library_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_library_items: {
         Row: {
           agency_id: string | null
@@ -38613,6 +38654,7 @@ export type Database = {
           file_size: number
           file_type: string
           folder: string | null
+          folder_id: string | null
           id: string
           is_pinned: boolean
           storage_path: string
@@ -38620,6 +38662,7 @@ export type Database = {
           title: string
           updated_at: string
           uploaded_by: string
+          visibility: string
         }
         Insert: {
           agency_id?: string | null
@@ -38630,6 +38673,7 @@ export type Database = {
           file_size?: number
           file_type?: string
           folder?: string | null
+          folder_id?: string | null
           id?: string
           is_pinned?: boolean
           storage_path: string
@@ -38637,6 +38681,7 @@ export type Database = {
           title: string
           updated_at?: string
           uploaded_by: string
+          visibility?: string
         }
         Update: {
           agency_id?: string | null
@@ -38647,6 +38692,7 @@ export type Database = {
           file_size?: number
           file_type?: string
           folder?: string | null
+          folder_id?: string | null
           id?: string
           is_pinned?: boolean
           storage_path?: string
@@ -38654,6 +38700,7 @@ export type Database = {
           title?: string
           updated_at?: string
           uploaded_by?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -38661,6 +38708,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_library_items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "shared_library_folders"
             referencedColumns: ["id"]
           },
         ]
