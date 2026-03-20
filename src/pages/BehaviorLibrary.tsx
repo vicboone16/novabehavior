@@ -573,6 +573,7 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
       {/* Main Content */}
       <main className={embedded ? '' : 'container py-6'}>
         {(embedded || activeLibraryTab === 'behaviors') ? (
+        <>
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Sidebar with search and filters */}
           <div className="lg:col-span-1 space-y-4">
@@ -882,6 +883,8 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
               </div>
             </CardContent>
           </Card>
+        )}
+        </>
         ) : (
           <div className="h-[calc(100vh-200px)]">
             <BxInterventionLibrary />
