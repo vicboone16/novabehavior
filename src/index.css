@@ -320,6 +320,11 @@
     padding: 1.5rem !important;
   }
 
+  /* Ensure min-h-screen pages can scroll on small viewports */
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+
   /* Tabs scroll horizontally on mobile */
   [role="tablist"] {
     overflow-x: auto;
