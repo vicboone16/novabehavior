@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -58,6 +58,7 @@ import GoalBankDomainPage from "./pages/clinical-library/GoalBankDomainPage";
 import GoalDetailPage from "./pages/clinical-library/GoalDetailPage";
 import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPage";
 import BehaviorReductionPage from "./pages/clinical-library/BehaviorReductionPage";
+import BehaviorBankPage from "./pages/clinical-library/BehaviorBankPage";
 import LibraryRegistryPage from "./pages/clinical-library/LibraryRegistryPage";
 import Intelligence from "./pages/Intelligence";
 import IntelligenceOps from "./pages/IntelligenceOps";
@@ -253,6 +254,7 @@ const App = () => {
             }>
               <Route path="curriculum-systems" element={<CurriculumSystemsPage />} />
               <Route path="behavior-reduction" element={<BehaviorReductionPage />} />
+              <Route path="behavior-bank" element={<BehaviorBankPage />} />
               <Route path="clinical-collections" element={<ClinicalCollectionsPage />} />
               <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
@@ -286,15 +288,7 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/behaviors" element={
-              <ProtectedRoute>
-                <ApprovalCheck>
-                  <SyncProvider>
-                    <BehaviorLibrary />
-                  </SyncProvider>
-                </ApprovalCheck>
-              </ProtectedRoute>
-            } />
+            <Route path="/behaviors" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
             <Route path="/supervision" element={
               <ProtectedRoute>
                 <ApprovalCheck>
@@ -492,15 +486,7 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/behavior-library" element={
-              <ProtectedRoute>
-                <ApprovalCheck>
-                  <SyncProvider>
-                    <BehaviorLibraryFull />
-                  </SyncProvider>
-                </ApprovalCheck>
-              </ProtectedRoute>
-            } />
+            <Route path="/behavior-library" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
             <Route path="/academy" element={
               <ProtectedRoute>
                 <ApprovalCheck>

@@ -22,11 +22,11 @@ const SECTIONS = [
     route: null,
   },
   {
-    key: 'behavior-reduction',
-    label: 'Behavior Reduction',
-    description: 'Function-based goals, replacement behaviors, intervention protocols & crisis plans.',
+    key: 'behavior-bank',
+    label: 'Behavior Bank',
+    description: 'Behaviors & definitions, reduction strategies, and intervention protocols.',
     icon: Shield,
-    route: '/clinical-library/behavior-reduction',
+    route: '/clinical-library/behavior-bank',
   },
   {
     key: 'skill-acquisition',

@@ -195,7 +195,7 @@ function StrategyDetailPanel({ strategy, onClose, linkedObjectives, linkedGoals,
   );
 }
 
-export default function BehaviorLibraryFull() {
+export default function BehaviorLibraryFull({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const data = useBehaviorLibraryData();
   const filters = useFilters();
@@ -239,7 +239,8 @@ export default function BehaviorLibraryFull() {
   }, [data.recs, filters.search]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? '' : 'min-h-screen bg-background'}>
+      {!embedded && (
       <header className="bg-card border-b border-border sticky top-0 z-20">
         <div className="container py-3">
           <div className="flex items-center gap-3">
@@ -253,8 +254,9 @@ export default function BehaviorLibraryFull() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="container py-6">
+      <main className={embedded ? '' : 'container py-6'}>
         {data.isLoading ? (
           <div className="text-center py-16 text-muted-foreground">Loading library data...</div>
         ) : (

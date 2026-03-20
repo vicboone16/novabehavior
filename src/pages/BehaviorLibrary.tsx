@@ -556,41 +556,23 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
         </header>
       )}
 
-      {/* Embedded action bar */}
+      {/* Embedded action bar — no tabs, just behaviors */}
       {embedded && (
-        <div className="container py-4">
-          <div className="flex items-center justify-between mb-4">
-            <Tabs value={activeLibraryTab} onValueChange={(v) => setActiveLibraryTab(v as 'behaviors' | 'interventions')}>
-              <TabsList>
-                <TabsTrigger value="behaviors" className="flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  Behaviors to Track
-                </TabsTrigger>
-                <TabsTrigger value="interventions" className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4" />
-                  Behavior Interventions
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            {activeLibraryTab === 'behaviors' && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setShowAdvancedMergeDialog(true)}>
-                  <Merge className="w-4 h-4 mr-2" />
-                  Merge
-                </Button>
-                <Button size="sm" onClick={() => setShowAddBehavior(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Behavior
-                </Button>
-              </div>
-            )}
-          </div>
+        <div className="flex items-center justify-end mb-4 gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAdvancedMergeDialog(true)}>
+            <Merge className="w-4 h-4 mr-2" />
+            Merge
+          </Button>
+          <Button size="sm" onClick={() => setShowAddBehavior(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Behavior
+          </Button>
         </div>
       )}
 
       {/* Main Content */}
       <main className={embedded ? '' : 'container py-6'}>
-        {activeLibraryTab === 'behaviors' ? (
+        {(embedded || activeLibraryTab === 'behaviors') ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Sidebar with search and filters */}
           <div className="lg:col-span-1 space-y-4">
