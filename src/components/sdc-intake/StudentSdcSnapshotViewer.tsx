@@ -286,13 +286,22 @@ export function StudentSdcSnapshotViewer({ studentId, studentName }: Props) {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <Textarea
-                    value={content}
-                    onChange={e => handleEdit(section.key, e.target.value)}
-                    placeholder={`Enter ${section.label.toLowerCase()}...`}
-                    rows={5}
-                    className="text-sm leading-relaxed"
-                  />
+                  <div className="space-y-2">
+                    <Textarea
+                      value={content}
+                      onChange={e => handleEdit(section.key, e.target.value)}
+                      placeholder={`Enter ${section.label.toLowerCase()}...`}
+                      rows={5}
+                      className="text-sm leading-relaxed"
+                    />
+                    <SnapshotLibraryPicker
+                      onInsert={(text) => {
+                        const current = getSectionContent(section.key);
+                        const newContent = current ? `${current}\n• ${text}` : `• ${text}`;
+                        handleEdit(section.key, newContent);
+                      }}
+                    />
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             );
