@@ -51,24 +51,51 @@ export interface GoalWithRelations extends ClinicalGoal {
 
 /* ── Hooks ──────────────────────────────────────────────────────────── */
 
-/** Get distinct goal-bank domains */
+/** Map a cl_goal_library row to the ClinicalGoal shape */
+function mapClGoalToClinical(row: any): ClinicalGoal {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.long_description || row.objective,
+    objective: row.objective,
+    domain: row.domain || 'Uncategorized',
+    subdomain: row.subdomain || null,
+    phase: row.strand || null,
+    goal_category: row.goal_type || null,
+    program_name: row.goal_code || null,
+    collection_type: 'goal_bank',
+    library_section: 'clinical_collections',
+    status: row.is_active ? 'active' : 'inactive',
+    crosswalk_tags: row.crosswalk_tags_json,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/** Get distinct goal-bank domains (merges clinical_goals + cl_goal_library) */
 export function useGoalBankDomains() {
   return useQuery({
     queryKey: ['clinical-goals', 'goal-bank-domains'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clinical_goals')
-        .select('domain')
-        .eq('library_section', 'clinical_collections')
-        .eq('collection_type', 'goal_bank');
+      // Fetch from both tables in parallel
+      const [legacyRes, newRes] = await Promise.all([
+        supabase
+          .from('clinical_goals')
+          .select('domain')
+          .eq('library_section', 'clinical_collections')
+          .eq('collection_type', 'goal_bank'),
+        supabase
+          .from('cl_goal_library')
+          .select('domain')
+          .eq('is_active', true),
+      ]);
 
-      if (error) throw error;
-      if (!data) return [];
-
-      // Dedupe + count
       const map = new Map<string, number>();
-      data.forEach((row: any) => {
-        map.set(row.domain, (map.get(row.domain) || 0) + 1);
+      (legacyRes.data || []).forEach((row: any) => {
+        if (row.domain) map.set(row.domain, (map.get(row.domain) || 0) + 1);
+      });
+      (newRes.data || []).forEach((row: any) => {
+        if (row.domain) map.set(row.domain, (map.get(row.domain) || 0) + 1);
       });
 
       return Array.from(map.entries())
