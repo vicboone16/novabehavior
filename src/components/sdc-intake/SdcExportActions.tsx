@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Package, Brain, Loader2 } from 'lucide-react';
+import { Download, FileText, Package, Brain, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSdcIntake, type FormInstance, type ReportDraft } from '@/hooks/useSdcIntake';
+import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   LevelFormat, AlignmentType, PageBreak,
+  Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -16,6 +18,7 @@ interface Props {
   formInstances: FormInstance[];
   reportDrafts: ReportDraft[];
   studentName: string;
+  studentId: string;
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────
@@ -223,38 +226,107 @@ function snapshotDocxChildren(
   pageBreak: boolean,
 ): any[] {
   const children: any[] = [];
+  const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: '000000' };
+  const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+  const cellMargins = { top: 80, bottom: 80, left: 120, right: 120 };
 
+  // Title
   children.push(new Paragraph({
-    heading: HeadingLevel.HEADING_1,
+    alignment: AlignmentType.CENTER,
     pageBreakBefore: pageBreak,
-    children: [new TextRun({ text: 'SDC Behavior Snapshot', bold: true, font: 'Arial' })],
+    spacing: { after: 200 },
+    children: [new TextRun({ text: 'SDC Snapshots', bold: true, underline: {}, size: 28, font: 'Arial' })],
   }));
-  children.push(new Paragraph({ children: [new TextRun({ text: `Student: ${studentName}`, size: 22, font: 'Arial' })] }));
-  children.push(new Paragraph({ children: [new TextRun({ text: `Generated: ${new Date(createdAt).toLocaleDateString()}`, size: 20, color: '666666', font: 'Arial' })] }));
-  children.push(new Paragraph({ children: [] }));
 
   const sections = [
-    { key: 'strengths_interests', label: 'Strengths & Interests' },
+    { key: 'strengths_interests', label: 'Strengths/Interests' },
     { key: 'areas_of_need', label: 'Areas of Need' },
-    { key: 'strategies', label: 'Strategies & Recommendations' },
+    { key: 'strategies', label: 'Strategies' },
   ];
 
+  // Build table rows
+  const tableRows: TableRow[] = [];
+
+  // Header row with student name
+  tableRows.push(new TableRow({
+    children: [
+      new TableCell({
+        columnSpan: 2,
+        borders: cellBorders,
+        margins: cellMargins,
+        children: [new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: studentName, bold: true, size: 24, font: 'Arial' })],
+        })],
+      }),
+    ],
+  }));
+
   for (const section of sections) {
-    children.push(new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      spacing: { before: 240, after: 80 },
-      children: [new TextRun({ text: section.label.toUpperCase(), bold: true, font: 'Arial', color: '324F8C' })],
-    }));
     const text = content[section.key] || 'Not generated yet.';
-    for (const para of text.split('\n')) {
-      if (para.trim()) {
-        children.push(new Paragraph({
-          children: [new TextRun({ text: para, size: 22, font: 'Arial' })],
-          spacing: { after: 100 },
+    const bulletItems = text.split('\n').filter(l => l.trim());
+    const contentChildren: Paragraph[] = [];
+
+    // If areas_of_need, first line is bold summary
+    if (section.key === 'areas_of_need' && bulletItems.length > 0) {
+      const firstLine = bulletItems[0].replace(/^[-•]\s*/, '').trim();
+      if (firstLine) {
+        contentChildren.push(new Paragraph({
+          spacing: { after: 80 },
+          children: [new TextRun({ text: firstLine, bold: true, size: 22, font: 'Arial' })],
         }));
       }
+      for (let i = 1; i < bulletItems.length; i++) {
+        const line = bulletItems[i].replace(/^[-•]\s*/, '').trim();
+        if (line) {
+          contentChildren.push(new Paragraph({
+            numbering: { reference: BULLETS_REF, level: 0 },
+            children: [new TextRun({ text: line, size: 22, font: 'Arial' })],
+          }));
+        }
+      }
+    } else {
+      for (const item of bulletItems) {
+        const line = item.replace(/^[-•]\s*/, '').trim();
+        if (line) {
+          contentChildren.push(new Paragraph({
+            numbering: { reference: BULLETS_REF, level: 0 },
+            children: [new TextRun({ text: line, size: 22, font: 'Arial' })],
+          }));
+        }
+      }
     }
+
+    if (contentChildren.length === 0) {
+      contentChildren.push(new Paragraph({ children: [new TextRun({ text: 'Not generated yet.', size: 22, font: 'Arial', italics: true })] }));
+    }
+
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({
+          borders: cellBorders,
+          margins: cellMargins,
+          width: { size: 2800, type: WidthType.DXA },
+          children: [new Paragraph({
+            children: [new TextRun({ text: section.label, size: 22, font: 'Arial' })],
+          })],
+        }),
+        new TableCell({
+          borders: cellBorders,
+          margins: cellMargins,
+          width: { size: 6560, type: WidthType.DXA },
+          children: contentChildren,
+        }),
+      ],
+    }));
   }
+
+  children.push(new Table({
+    width: { size: 9360, type: WidthType.DXA },
+    columnWidths: [2800, 6560],
+    rows: tableRows,
+  }));
+
   return children;
 }
 
@@ -268,45 +340,89 @@ function addSnapshotToPdf(
   const pageW = doc.internal.pageSize.getWidth();
   let y = 20;
 
-  doc.setFontSize(16);
+  // Title centered and underlined
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('SDC Behavior Snapshot', 14, y); y += 8;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Student: ${studentName}`, 14, y); y += 5;
-  doc.text(`Generated: ${new Date(createdAt).toLocaleDateString()}`, 14, y); y += 10;
-  doc.setTextColor(0, 0, 0);
+  const title = 'SDC Snapshots';
+  const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+  const titleX = (pageW - titleW) / 2;
+  doc.text(title, titleX, y);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(titleX, y + 1, titleX + titleW, y + 1);
+  y += 12;
+
+  // Table layout matching reference
+  const leftCol = 14;
+  const divider = 65;
+  const rightCol = divider + 2;
+  const rightEdge = pageW - 14;
+  const rightW = rightEdge - rightCol;
 
   const sections = [
-    { key: 'strengths_interests', label: 'STRENGTHS & INTERESTS' },
-    { key: 'areas_of_need', label: 'AREAS OF NEED' },
-    { key: 'strategies', label: 'STRATEGIES & RECOMMENDATIONS' },
+    { key: 'strengths_interests', label: 'Strengths/Interests' },
+    { key: 'areas_of_need', label: 'Areas of Need' },
+    { key: 'strategies', label: 'Strategies' },
   ];
 
+  // Student name header row
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.3);
+  doc.rect(leftCol, y, rightEdge - leftCol, 8);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  const nameText = studentName;
+  const nameW = doc.getStringUnitWidth(nameText) * 11 / doc.internal.scaleFactor;
+  doc.text(nameText, (pageW - nameW) / 2, y + 5.5);
+  y += 8;
+
   for (const section of sections) {
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50, 80, 140);
-    doc.text(section.label, 14, y); y += 2;
-    doc.setDrawColor(200, 210, 230);
-    doc.line(14, y, pageW - 14, y); y += 5;
-    doc.setTextColor(0, 0, 0);
+    const text = content[section.key] || 'Not generated yet.';
+    const bulletItems = text.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+
+    // Calculate row height
+    let contentLines: string[] = [];
+    for (const item of bulletItems) {
+      const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+      contentLines.push(...wrapped);
+    }
+    if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+    const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+
+    // Check page break
+    if (y + rowH > 275) { doc.addPage(); y = 20; }
+
+    // Draw cell borders
+    doc.rect(leftCol, y, divider - leftCol, rowH);
+    doc.rect(divider, y, rightEdge - divider, rowH);
+
+    // Label
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const text = content[section.key] || 'Not generated yet.';
-    const lines = doc.splitTextToSize(text, pageW - 28);
-    doc.text(lines, 14, y);
-    y += lines.length * 4.5 + 8;
+    doc.setTextColor(0, 0, 0);
+    doc.text(section.label, leftCol + 2, y + 5);
+
+    // Content bullets
+    doc.setFontSize(10);
+    let cy = y + 5;
+    for (const item of bulletItems) {
+      const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+      for (const line of wrapped) {
+        if (cy > 275) { doc.addPage(); cy = 20; }
+        doc.text(line, rightCol + 2, cy);
+        cy += 4.5;
+      }
+    }
+    y += rowH;
   }
 }
 
 // ─── Component ─────────────────────────────────────────────────────────
 
-export function SdcExportActions({ packageInstanceId, formInstances, reportDrafts, studentName }: Props) {
+export function SdcExportActions({ packageInstanceId, formInstances, reportDrafts, studentName, studentId }: Props) {
   const intake = useSdcIntake();
   const [exporting, setExporting] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const completedForms = formInstances.filter(fi => fi.status === 'submitted');
   const latestDraft = reportDrafts.length > 0 ? reportDrafts[0] : null;
@@ -430,38 +546,73 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
       const content = getSnapshotContent();
       if (!content) throw new Error('No snapshot content');
       const doc = new jsPDF();
-      // Write directly on first page (no addPage for first)
+      // Use addSnapshotToPdf but on the first page — slight hack: remove the addPage call
       const pageW = doc.internal.pageSize.getWidth();
       let y = 20;
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SDC Behavior Snapshot', 14, y); y += 8;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Student: ${studentName}`, 14, y); y += 5;
-      doc.text(`Generated: ${new Date(latestDraft.created_at).toLocaleDateString()}`, 14, y); y += 10;
-      doc.setTextColor(0, 0, 0);
 
-      for (const section of [
-        { key: 'strengths_interests', label: 'STRENGTHS & INTERESTS' },
-        { key: 'areas_of_need', label: 'AREAS OF NEED' },
-        { key: 'strategies', label: 'STRATEGIES & RECOMMENDATIONS' },
-      ]) {
-        if (y > 250) { doc.addPage(); y = 20; }
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(50, 80, 140);
-        doc.text(section.label, 14, y); y += 2;
-        doc.setDrawColor(200, 210, 230);
-        doc.line(14, y, pageW - 14, y); y += 5;
-        doc.setTextColor(0, 0, 0);
+      // Title centered and underlined
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      const title = 'SDC Snapshots';
+      const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+      const titleX = (pageW - titleW) / 2;
+      doc.text(title, titleX, y);
+      doc.setDrawColor(0, 0, 0);
+      doc.line(titleX, y + 1, titleX + titleW, y + 1);
+      y += 12;
+
+      const leftCol = 14;
+      const divider = 65;
+      const rightCol = divider + 2;
+      const rightEdge = pageW - 14;
+      const rightW = rightEdge - rightCol;
+
+      const sections = [
+        { key: 'strengths_interests', label: 'Strengths/Interests' },
+        { key: 'areas_of_need', label: 'Areas of Need' },
+        { key: 'strategies', label: 'Strategies' },
+      ];
+
+      // Student name header row
+      doc.setLineWidth(0.3);
+      doc.rect(leftCol, y, rightEdge - leftCol, 8);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      const nameW = doc.getStringUnitWidth(studentName) * 11 / doc.internal.scaleFactor;
+      doc.text(studentName, (pageW - nameW) / 2, y + 5.5);
+      y += 8;
+
+      for (const section of sections) {
+        const text = content[section.key] || 'Not generated yet.';
+        const bulletItems = text.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+        let contentLines: string[] = [];
+        for (const item of bulletItems) {
+          const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+          contentLines.push(...wrapped);
+        }
+        if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+        const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+
+        if (y + rowH > 275) { doc.addPage(); y = 20; }
+
+        doc.rect(leftCol, y, divider - leftCol, rowH);
+        doc.rect(divider, y, rightEdge - divider, rowH);
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        const text = content[section.key] || 'Not generated yet.';
-        const lines = doc.splitTextToSize(text, pageW - 28);
-        doc.text(lines, 14, y);
-        y += lines.length * 4.5 + 8;
+        doc.setTextColor(0, 0, 0);
+        doc.text(section.label, leftCol + 2, y + 5);
+
+        let cy = y + 5;
+        for (const item of bulletItems) {
+          const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+          for (const line of wrapped) {
+            doc.text(line, rightCol + 2, cy);
+            cy += 4.5;
+          }
+        }
+        y += rowH;
       }
 
       const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.pdf`;
@@ -571,9 +722,78 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
     } finally { setExporting(null); }
   };
 
+  // ── Save to student documents ──
+  const saveToDocuments = async (format: 'pdf' | 'docx') => {
+    if (!latestDraft) return;
+    setSaving(format);
+    try {
+      const content = getSnapshotContent();
+      if (!content) throw new Error('No snapshot content');
+      const fileName = `${studentName.replace(/\s+/g, '_')}_SDC_Snapshot.${format}`;
+      let blob: Blob;
+
+      if (format === 'pdf') {
+        const doc = new jsPDF();
+        // Build PDF with table layout directly on first page
+        const pageW = doc.internal.pageSize.getWidth();
+        let y = 20;
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        const title = 'SDC Snapshots';
+        const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+        const titleX = (pageW - titleW) / 2;
+        doc.text(title, titleX, y);
+        doc.setDrawColor(0, 0, 0);
+        doc.line(titleX, y + 1, titleX + titleW, y + 1);
+        y += 12;
+        const leftCol = 14; const divider = 65; const rightCol = divider + 2; const rightEdge = pageW - 14; const rightW = rightEdge - rightCol;
+        doc.setLineWidth(0.3);
+        doc.rect(leftCol, y, rightEdge - leftCol, 8);
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0);
+        const nameW = doc.getStringUnitWidth(studentName) * 11 / doc.internal.scaleFactor;
+        doc.text(studentName, (pageW - nameW) / 2, y + 5.5);
+        y += 8;
+        for (const section of [{ key: 'strengths_interests', label: 'Strengths/Interests' }, { key: 'areas_of_need', label: 'Areas of Need' }, { key: 'strategies', label: 'Strategies' }]) {
+          const text = content[section.key] || '';
+          const bulletItems = text.split('\n').filter((l: string) => l.trim()).map((l: string) => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+          let contentLines: string[] = [];
+          for (const item of bulletItems) { contentLines.push(...doc.splitTextToSize(`-   ${item}`, rightW - 4)); }
+          if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+          const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+          if (y + rowH > 275) { doc.addPage(); y = 20; }
+          doc.rect(leftCol, y, divider - leftCol, rowH);
+          doc.rect(divider, y, rightEdge - divider, rowH);
+          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
+          doc.text(section.label, leftCol + 2, y + 5);
+          let cy = y + 5;
+          for (const item of bulletItems) { for (const line of doc.splitTextToSize(`-   ${item}`, rightW - 4)) { doc.text(line, rightCol + 2, cy); cy += 4.5; } }
+          y += rowH;
+        }
+        blob = doc.output('blob');
+      } else {
+        const children = snapshotDocxChildren(content, studentName, latestDraft.created_at, false);
+        const doc = new Document({
+          numbering: buildDocxNumbering(),
+          sections: [{ properties: { page: { size: { width: 12240, height: 15840 }, margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children }],
+        });
+        blob = await Packer.toBlob(doc);
+      }
+
+      const filePath = `documents/${studentId}/${Date.now()}_${fileName}`;
+      const { error } = await supabase.storage.from('student-documents').upload(filePath, blob, {
+        contentType: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+      if (error) throw error;
+      toast.success(`Snapshot saved to student documents`);
+    } catch (err: any) {
+      toast.error('Save failed: ' + err.message);
+    } finally { setSaving(null); }
+  };
+
   const isExporting = exporting !== null;
+  const isSaving = saving !== null;
   const ExBtn = ({ id, label, onClick, disabled }: { id: string; label: string; onClick: () => void; disabled?: boolean }) => (
-    <Button size="sm" variant="outline" onClick={onClick} disabled={isExporting || disabled}>
+    <Button size="sm" variant="outline" onClick={onClick} disabled={isExporting || isSaving || disabled}>
       {exporting === id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Download className="w-3 h-3 mr-1" />}
       {label}
     </Button>
@@ -634,9 +854,13 @@ export function SdcExportActions({ packageInstanceId, formInstances, reportDraft
           {!latestDraft ? (
             <p className="text-xs text-muted-foreground">Generate an SDC Snapshot first.</p>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <ExBtn id="snapshot-pdf" label="Snapshot PDF" onClick={exportSnapshotPdf} />
               <ExBtn id="snapshot-docx" label="Snapshot Word" onClick={exportSnapshotDocx} />
+              <Button size="sm" variant="default" onClick={() => saveToDocuments('pdf')} disabled={isExporting || isSaving}>
+                {saving === 'pdf' ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Save className="w-3 h-3 mr-1" />}
+                Save to Profile
+              </Button>
             </div>
           )}
         </CardContent>
