@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataStore } from '@/store/dataStore';
 import AssessmentDashboard from '@/pages/AssessmentDashboard';
+import { IEPDashboard } from '@/components/iep/IEPDashboard';
 
 type ViewMode = 'grid' | 'rows' | 'tabs';
 
