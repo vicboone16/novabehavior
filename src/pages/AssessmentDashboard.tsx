@@ -518,6 +518,10 @@ export default function AssessmentDashboard() {
               <ClipboardCheck className="w-3 h-3" />
               Questionnaires
             </TabsTrigger>
+            <TabsTrigger value="clinical-forms" className="gap-1 text-xs">
+              <ClipboardList className="w-3 h-3" />
+              Forms
+            </TabsTrigger>
             <TabsTrigger value="report" className="gap-1 text-xs">
               <FileText className="w-3 h-3" />
               Report
