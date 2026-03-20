@@ -65255,7 +65255,13 @@ export type Database = {
       verify_pin: { Args: { _pin: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "admin" | "staff" | "viewer"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "staff"
+        | "viewer"
+        | "teacher"
+        | "caregiver"
       automation_mode: "manual" | "alert" | "queue_for_review" | "auto_advance"
       criteria_result: "met" | "not_met" | "insufficient_data"
       criteria_type: "mastery" | "probe" | "generalization" | "maintenance"
@@ -65521,7 +65527,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "admin", "staff", "viewer"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "staff",
+        "viewer",
+        "teacher",
+        "caregiver",
+      ],
       automation_mode: ["manual", "alert", "queue_for_review", "auto_advance"],
       criteria_result: ["met", "not_met", "insufficient_data"],
       criteria_type: ["mastery", "probe", "generalization", "maintenance"],
