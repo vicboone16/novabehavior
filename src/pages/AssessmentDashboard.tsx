@@ -26,6 +26,7 @@ import { FBAReportGenerator } from '@/components/FBAReportGenerator';
 import { BIPGenerator } from '@/components/BIPGenerator';
 import { ParentFriendlyFBASummary } from '@/components/ParentFriendlyFBASummary';
 import { QuestionnaireManager } from '@/components/questionnaire/QuestionnaireManager';
+import { ClinicalFormsPanel } from '@/components/clinical-forms/ClinicalFormsPanel';
 import { InternalVBMAPPEntry } from '@/components/assessment/InternalVBMAPPEntry';
 import { VBMAPPMilestonesGrid } from '@/components/skills/VBMAPPMilestonesGrid';
 import { InternalTrackerEntry } from '@/components/assessment/InternalTrackerEntry';
@@ -517,6 +518,10 @@ export default function AssessmentDashboard() {
               <ClipboardCheck className="w-3 h-3" />
               Questionnaires
             </TabsTrigger>
+            <TabsTrigger value="clinical-forms" className="gap-1 text-xs">
+              <ClipboardList className="w-3 h-3" />
+              Forms
+            </TabsTrigger>
             <TabsTrigger value="report" className="gap-1 text-xs">
               <FileText className="w-3 h-3" />
               Report
@@ -987,6 +992,11 @@ export default function AssessmentDashboard() {
                 <QuestionnaireManager studentId={selectedStudent.id} studentName={selectedStudent.name} />
               </>
             )}
+          </TabsContent>
+
+          {/* Clinical Forms Tab */}
+          <TabsContent value="clinical-forms" className="space-y-4">
+            <ClinicalFormsPanel />
           </TabsContent>
 
           {/* Report Tab */}

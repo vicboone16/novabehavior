@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ClipboardList, LayoutGrid, List, Rows3, Smartphone } from 'lucide-react';
+import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText } from 'lucide-react';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataStore } from '@/store/dataStore';
 import AssessmentDashboard from '@/pages/AssessmentDashboard';
+import { IEPDashboard } from '@/components/iep/IEPDashboard';
 
 type ViewMode = 'grid' | 'rows' | 'tabs';
 
@@ -38,6 +39,10 @@ export default function Clinical() {
             <List className="w-3.5 h-3.5" />
             Assessments
           </TabsTrigger>
+          <TabsTrigger value="iep" className="gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            IEP
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sessions">
@@ -45,6 +50,9 @@ export default function Clinical() {
         </TabsContent>
         <TabsContent value="assessments">
           <AssessmentDashboard />
+        </TabsContent>
+        <TabsContent value="iep">
+          <IEPDashboard />
         </TabsContent>
       </Tabs>
     </div>
