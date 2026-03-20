@@ -5170,6 +5170,30 @@ export type Database = {
           },
         ]
       }
+      behavior_benchmark_steps: {
+        Row: {
+          behavior_key: string
+          benchmark_text: string
+          created_at: string
+          id: string
+          step_number: number
+        }
+        Insert: {
+          behavior_key: string
+          benchmark_text: string
+          created_at?: string
+          id?: string
+          step_number: number
+        }
+        Update: {
+          behavior_key?: string
+          benchmark_text?: string
+          created_at?: string
+          id?: string
+          step_number?: number
+        }
+        Relationships: []
+      }
       behavior_categories: {
         Row: {
           client_id: string
@@ -5476,6 +5500,51 @@ export type Database = {
           response_class?: string | null
           setting_tags?: string[] | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      behavior_goals_library: {
+        Row: {
+          behavior_key: string
+          created_at: string
+          goal_text: string
+          id: string
+        }
+        Insert: {
+          behavior_key: string
+          created_at?: string
+          goal_text: string
+          id?: string
+        }
+        Update: {
+          behavior_key?: string
+          created_at?: string
+          goal_text?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      behavior_intervention_library: {
+        Row: {
+          behavior_key: string
+          created_at: string
+          id: string
+          intervention_type: string
+          strategy: string
+        }
+        Insert: {
+          behavior_key: string
+          created_at?: string
+          id?: string
+          intervention_type: string
+          strategy: string
+        }
+        Update: {
+          behavior_key?: string
+          created_at?: string
+          id?: string
+          intervention_type?: string
+          strategy?: string
         }
         Relationships: []
       }
@@ -6110,6 +6179,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      behavior_replacement_library: {
+        Row: {
+          behavior_key: string
+          created_at: string
+          id: string
+          replacement_behavior: string
+        }
+        Insert: {
+          behavior_key: string
+          created_at?: string
+          id?: string
+          replacement_behavior: string
+        }
+        Update: {
+          behavior_key?: string
+          created_at?: string
+          id?: string
+          replacement_behavior?: string
+        }
+        Relationships: []
       }
       behavior_replacement_map: {
         Row: {
@@ -48270,6 +48360,27 @@ export type Database = {
             referencedColumns: ["student_id"]
           },
         ]
+      }
+      universal_behavior_strategies: {
+        Row: {
+          created_at: string
+          id: string
+          strategy: string
+          strategy_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          strategy: string
+          strategy_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          strategy?: string
+          strategy_type?: string
+        }
+        Relationships: []
       }
       unlock_catalog: {
         Row: {
