@@ -125,7 +125,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center md:justify-center bg-background p-4 overflow-y-auto py-8 md:py-4">
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center space-y-2">
