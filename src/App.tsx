@@ -254,6 +254,7 @@ const App = () => {
             }>
               <Route path="curriculum-systems" element={<CurriculumSystemsPage />} />
               <Route path="behavior-reduction" element={<BehaviorReductionPage />} />
+              <Route path="behavior-bank" element={<BehaviorBankPage />} />
               <Route path="clinical-collections" element={<ClinicalCollectionsPage />} />
               <Route path="clinical-collections/goal-banks" element={<GoalBanksPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
