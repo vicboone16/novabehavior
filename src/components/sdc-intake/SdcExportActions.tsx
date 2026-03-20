@@ -340,37 +340,80 @@ function addSnapshotToPdf(
   const pageW = doc.internal.pageSize.getWidth();
   let y = 20;
 
-  doc.setFontSize(16);
+  // Title centered and underlined
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('SDC Behavior Snapshot', 14, y); y += 8;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Student: ${studentName}`, 14, y); y += 5;
-  doc.text(`Generated: ${new Date(createdAt).toLocaleDateString()}`, 14, y); y += 10;
-  doc.setTextColor(0, 0, 0);
+  const title = 'SDC Snapshots';
+  const titleW = doc.getStringUnitWidth(title) * 14 / doc.internal.scaleFactor;
+  const titleX = (pageW - titleW) / 2;
+  doc.text(title, titleX, y);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(titleX, y + 1, titleX + titleW, y + 1);
+  y += 12;
+
+  // Table layout matching reference
+  const leftCol = 14;
+  const divider = 65;
+  const rightCol = divider + 2;
+  const rightEdge = pageW - 14;
+  const rightW = rightEdge - rightCol;
 
   const sections = [
-    { key: 'strengths_interests', label: 'STRENGTHS & INTERESTS' },
-    { key: 'areas_of_need', label: 'AREAS OF NEED' },
-    { key: 'strategies', label: 'STRATEGIES & RECOMMENDATIONS' },
+    { key: 'strengths_interests', label: 'Strengths/Interests' },
+    { key: 'areas_of_need', label: 'Areas of Need' },
+    { key: 'strategies', label: 'Strategies' },
   ];
 
+  // Student name header row
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.3);
+  doc.rect(leftCol, y, rightEdge - leftCol, 8);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  const nameText = studentName;
+  const nameW = doc.getStringUnitWidth(nameText) * 11 / doc.internal.scaleFactor;
+  doc.text(nameText, (pageW - nameW) / 2, y + 5.5);
+  y += 8;
+
   for (const section of sections) {
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50, 80, 140);
-    doc.text(section.label, 14, y); y += 2;
-    doc.setDrawColor(200, 210, 230);
-    doc.line(14, y, pageW - 14, y); y += 5;
-    doc.setTextColor(0, 0, 0);
+    const text = content[section.key] || 'Not generated yet.';
+    const bulletItems = text.split('\n').filter(l => l.trim()).map(l => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+
+    // Calculate row height
+    let contentLines: string[] = [];
+    for (const item of bulletItems) {
+      const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+      contentLines.push(...wrapped);
+    }
+    if (contentLines.length === 0) contentLines = ['Not generated yet.'];
+    const rowH = Math.max(contentLines.length * 4.5 + 6, 14);
+
+    // Check page break
+    if (y + rowH > 275) { doc.addPage(); y = 20; }
+
+    // Draw cell borders
+    doc.rect(leftCol, y, divider - leftCol, rowH);
+    doc.rect(divider, y, rightEdge - divider, rowH);
+
+    // Label
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const text = content[section.key] || 'Not generated yet.';
-    const lines = doc.splitTextToSize(text, pageW - 28);
-    doc.text(lines, 14, y);
-    y += lines.length * 4.5 + 8;
+    doc.setTextColor(0, 0, 0);
+    doc.text(section.label, leftCol + 2, y + 5);
+
+    // Content bullets
+    doc.setFontSize(10);
+    let cy = y + 5;
+    for (const item of bulletItems) {
+      const wrapped = doc.splitTextToSize(`-   ${item}`, rightW - 4);
+      for (const line of wrapped) {
+        if (cy > 275) { doc.addPage(); cy = 20; }
+        doc.text(line, rightCol + 2, cy);
+        cy += 4.5;
+      }
+    }
+    y += rowH;
   }
 }
 
