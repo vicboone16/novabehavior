@@ -32,6 +32,7 @@ import QuestionnaireForm from "./pages/QuestionnaireForm";
 import ConsentForm from "./pages/ConsentForm";
 import TeacherObservationForm from "./pages/TeacherObservationForm";
 import PublicFormPage from "./pages/PublicFormPage";
+import ClinicalFormPage from "./pages/ClinicalFormPage";
 import DocumentInbox from "./pages/DocumentInbox";
 import Supervision from "./pages/Supervision";
 import Referrals from "./pages/Referrals";
