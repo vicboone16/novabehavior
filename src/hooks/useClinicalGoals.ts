@@ -138,45 +138,65 @@ export function useGoalsByDomain(domainSlug: string | undefined) {
   });
 }
 
-/** Get a single goal with benchmarks, targets, and crosswalk tags */
+/** Get a single goal with benchmarks, targets, and crosswalk tags (checks both tables) */
 export function useGoalDetail(goalId: string | undefined) {
   return useQuery({
     queryKey: ['clinical-goals', 'detail', goalId],
     enabled: !!goalId,
     queryFn: async () => {
-      const [goalRes, benchRes, targetRes, crosswalkRes] = await Promise.all([
-        supabase
-          .from('clinical_goals')
-          .select('*')
-          .eq('id', goalId!)
-          .single(),
-        supabase
-          .from('clinical_goal_benchmarks')
-          .select('*')
-          .eq('goal_id', goalId!)
-          .order('benchmark_order', { ascending: true }),
-        supabase
-          .from('clinical_goal_targets')
-          .select('*')
-          .eq('goal_id', goalId!)
-          .order('target_order', { ascending: true }),
-        supabase
-          .from('clinical_goal_crosswalk')
-          .select('id, tag_id, clinical_crosswalk_tags(id, system_name, tag_category, tag_name)')
-          .eq('goal_id', goalId!),
-      ]);
+      // Try legacy table first
+      const { data: legacyGoal } = await supabase
+        .from('clinical_goals')
+        .select('*')
+        .eq('id', goalId!)
+        .maybeSingle();
 
-      if (goalRes.error) throw goalRes.error;
+      if (legacyGoal) {
+        // Load legacy relations
+        const [benchRes, targetRes, crosswalkRes] = await Promise.all([
+          supabase.from('clinical_goal_benchmarks').select('*').eq('goal_id', goalId!).order('benchmark_order', { ascending: true }),
+          supabase.from('clinical_goal_targets').select('*').eq('goal_id', goalId!).order('target_order', { ascending: true }),
+          supabase.from('clinical_goal_crosswalk').select('id, tag_id, clinical_crosswalk_tags(id, system_name, tag_category, tag_name)').eq('goal_id', goalId!),
+        ]);
+        const tags: CrosswalkTag[] = (crosswalkRes.data || []).map((row: any) => row.clinical_crosswalk_tags).filter(Boolean);
+        return {
+          ...legacyGoal,
+          benchmarks: (benchRes.data || []) as ClinicalBenchmark[],
+          targets: (targetRes.data || []) as ClinicalTarget[],
+          crosswalkTags: tags,
+        } as GoalWithRelations;
+      }
 
-      const tags: CrosswalkTag[] = (crosswalkRes.data || [])
-        .map((row: any) => row.clinical_crosswalk_tags)
-        .filter(Boolean);
+      // Try new cl_goal_library table
+      const { data: newGoal, error } = await supabase
+        .from('cl_goal_library')
+        .select('*')
+        .eq('id', goalId!)
+        .single();
+
+      if (error) throw error;
+
+      const mapped = mapClGoalToClinical(newGoal);
+
+      // Load cl_goal_benchmarks
+      const { data: benchData } = await supabase
+        .from('cl_goal_benchmarks')
+        .select('*')
+        .eq('goal_id', goalId!)
+        .order('benchmark_order', { ascending: true });
+
+      const benchmarks: ClinicalBenchmark[] = (benchData || []).map((b: any) => ({
+        id: b.id,
+        goal_id: b.goal_id,
+        benchmark_text: b.benchmark_text,
+        benchmark_order: b.benchmark_order,
+      }));
 
       return {
-        ...goalRes.data,
-        benchmarks: (benchRes.data || []) as ClinicalBenchmark[],
-        targets: (targetRes.data || []) as ClinicalTarget[],
-        crosswalkTags: tags,
+        ...mapped,
+        benchmarks,
+        targets: [] as ClinicalTarget[],
+        crosswalkTags: [] as CrosswalkTag[],
       } as GoalWithRelations;
     },
   });
