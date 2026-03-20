@@ -81,17 +81,10 @@ export function TeacherABCLogsPanel({ clientId }: TeacherABCLogsPanelProps) {
           .eq("event_id", values.event_id);
         if (error) throw error;
       } else {
-        // Get agency_id from user profile
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("agency_id")
-          .eq("id", user?.id)
-          .single();
-        
         const { error } = await supabase
           .from("teacher_abc_events")
           .insert({
-            agency_id: profile?.agency_id || '',
+            agency_id: currentAgency?.id || '',
             client_id: clientId,
             created_by: user?.id || '',
             behavior: values.behavior,
