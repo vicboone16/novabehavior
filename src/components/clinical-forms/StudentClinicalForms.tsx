@@ -57,7 +57,8 @@ export function StudentClinicalForms({ studentId, studentName }: StudentClinical
     }
   };
 
-  const sendableTemplates = templates.filter(t => t.delivery_modes.includes('magic_link'));
+  // Show ALL templates — sendable via magic link, in-app, or exportable
+  const allTemplates = templates;
 
   return (
     <Collapsible defaultOpen={studentSubmissions.length > 0}>
@@ -82,8 +83,11 @@ export function StudentClinicalForms({ studentId, studentName }: StudentClinical
                 <SelectValue placeholder="Assign a form..." />
               </SelectTrigger>
               <SelectContent>
-                {sendableTemplates.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.form_name}</SelectItem>
+                {allTemplates.map(t => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.form_name}
+                    {t.form_category !== 'sendable' ? ` (${t.form_category.replace('_', ' ')})` : ''}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
