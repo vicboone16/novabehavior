@@ -202,7 +202,7 @@ export function useGoalDetail(goalId: string | undefined) {
   });
 }
 
-/** Search goals across all goal banks */
+/** Search goals across all goal banks (merges both tables) */
 export function useGoalSearch(query: string, filters?: {
   domain?: string;
   subdomain?: string;
@@ -214,6 +214,7 @@ export function useGoalSearch(query: string, filters?: {
     queryKey: ['clinical-goals', 'search', query, filters],
     enabled: query.length >= 2 || !!filters?.crosswalkTagId,
     queryFn: async () => {
+      // Legacy table query
       let q = supabase
         .from('clinical_goals')
         .select('*')
@@ -229,20 +230,34 @@ export function useGoalSearch(query: string, filters?: {
         q = q.or(`title.ilike.%${query}%,description.ilike.%${query}%,objective.ilike.%${query}%`);
       }
 
-      const { data, error } = await q.order('domain').order('title').limit(100);
-      if (error) throw error;
+      // New table query
+      let q2 = supabase.from('cl_goal_library').select('*').eq('is_active', true);
+      if (filters?.domain) q2 = q2.ilike('domain', filters.domain);
+      if (filters?.subdomain) q2 = q2.ilike('subdomain', filters.subdomain);
+      if (query.length >= 2) {
+        q2 = q2.or(`title.ilike.%${query}%,long_description.ilike.%${query}%,objective.ilike.%${query}%`);
+      }
 
-      // If filtering by crosswalk tag, do a secondary query
+      const [legacyRes, newRes] = await Promise.all([
+        q.order('domain').order('title').limit(100),
+        q2.order('domain').order('title').limit(100),
+      ]);
+
+      const legacy = (legacyRes.data || []) as ClinicalGoal[];
+      const mapped = (newRes.data || []).map(mapClGoalToClinical);
+      let combined = [...legacy, ...mapped];
+
+      // If filtering by crosswalk tag, do a secondary query (legacy only for now)
       if (filters?.crosswalkTagId) {
         const { data: linked } = await supabase
           .from('clinical_goal_crosswalk')
           .select('goal_id')
           .eq('tag_id', filters.crosswalkTagId);
         const linkedIds = new Set((linked || []).map((r: any) => r.goal_id));
-        return (data || []).filter((g: any) => linkedIds.has(g.id)) as ClinicalGoal[];
+        combined = combined.filter((g) => linkedIds.has(g.id));
       }
 
-      return (data || []) as ClinicalGoal[];
+      return combined;
     },
   });
 }
