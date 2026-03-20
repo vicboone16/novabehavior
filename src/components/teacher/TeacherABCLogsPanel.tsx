@@ -42,6 +42,7 @@ const EMPTY_FORM = {
 };
 
 export function TeacherABCLogsPanel({ clientId }: TeacherABCLogsPanelProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
   const [editingLog, setEditingLog] = useState<ABCLog | null>(null);
