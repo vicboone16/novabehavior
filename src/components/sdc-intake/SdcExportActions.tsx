@@ -18,6 +18,7 @@ interface Props {
   formInstances: FormInstance[];
   reportDrafts: ReportDraft[];
   studentName: string;
+  studentId: string;
 }
 
 // ─── helpers ───────────────────────────────────────────────────────────
