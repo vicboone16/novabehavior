@@ -222,7 +222,7 @@ export function StudentSdcSnapshotViewer({ studentId, studentName }: Props) {
       });
 
       const buffer = await Packer.toBuffer(wordDoc);
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const blob = new Blob([buffer as unknown as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       saveAs(blob, `SDC_Snapshot_${studentName.replace(/\s+/g, '_')}.docx`);
       toast.success('Word document exported');
     } catch (err: any) {
