@@ -21,22 +21,12 @@ const SCALE = [
 export function BopsAssessment({ studentId }: { studentId: string }) {
   const { data: questions, isLoading: qLoading } = useBopsQuestions();
   const { data: profile } = useStudentBopsProfile(studentId);
-  const { data: existingResponses } = useBopsAssessmentResponses(studentId);
   const saveMut = useSaveBopsResponses();
 
-  const [assessmentId] = useState(() => existingResponses?.[0]?.assessment_id || uuidv4());
+  const [assessmentId] = useState(() => uuidv4());
   const [responses, setResponses] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const pageSize = 10;
-
-  // Init from existing
-  useMemo(() => {
-    if (existingResponses?.length) {
-      const map: Record<string, number> = {};
-      existingResponses.forEach(r => { map[r.item_id] = r.response_value; });
-      setResponses(map);
-    }
-  }, [existingResponses]);
 
   if (qLoading) return <Loader2 className="animate-spin mx-auto mt-8" />;
   if (!questions?.length) return <p className="text-center text-muted-foreground py-8">No questions in bank.</p>;

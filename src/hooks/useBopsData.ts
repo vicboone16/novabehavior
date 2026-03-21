@@ -378,21 +378,32 @@ export function useSaveBopsResponses() {
       assessmentId: string;
       responses: Array<{ itemId: string; itemNumber: number; domain: string; value: number }>;
     }) => {
-      const rows = params.responses.map(r => ({
-        student_id: params.studentId,
-        assessment_id: params.assessmentId,
-        item_id: r.itemId,
-        item_number: r.itemNumber,
-        domain: r.domain,
-        response_value: r.value,
-      }));
-      const { error } = await supabase
+      // Ensure assessment header exists
+      const { data: existing } = await supabase
         .from('bops_assessment_responses')
-        .upsert(rows, { onConflict: 'assessment_id,item_id' });
-      if (error) throw error;
+        .select('id')
+        .eq('id', params.assessmentId)
+        .maybeSingle();
+      if (!existing) {
+        const { error: hErr } = await supabase.from('bops_assessment_responses').insert({
+          id: params.assessmentId,
+          student_id: params.studentId,
+          status: 'in_progress',
+        });
+        if (hErr) throw hErr;
+      }
+      // Save individual items
+      for (const r of params.responses) {
+        const { error } = await supabase.from('bops_assessment_items').upsert({
+          assessment_id: params.assessmentId,
+          item_id: r.itemId,
+          response_value: r.value,
+        }, { onConflict: 'assessment_id,item_id' });
+        if (error) throw error;
+      }
     },
     onSuccess: (_, v) => {
-      qc.invalidateQueries({ queryKey: ['bops-assessment-responses', v.studentId] });
+      qc.invalidateQueries({ queryKey: ['bops-assessment-items', v.assessmentId] });
       toast.success('Responses saved');
     },
     onError: (e: any) => toast.error(e.message),

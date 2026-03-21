@@ -60,7 +60,7 @@ export function BopsFrameworkSetup() {
                     <Card key={a.id} className="p-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold">{a.archetype_name}</p>
+                          <p className="font-semibold">{a.archetype}</p>
                           <p className="text-xs text-muted-foreground">{a.clinical_name}</p>
                         </div>
                         <Badge variant="outline">{a.linked_domain}</Badge>
