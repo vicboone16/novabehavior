@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useBopsQuestions, useBopsAssessmentResponses, useStudentBopsProfile, useBopsConstellations } from '@/hooks/useBopsData';
+import { useBopsQuestions, useStudentBopsProfile, useBopsConstellations, useBopsAssessmentItems } from '@/hooks/useBopsData';
 import { calculateBopsScores } from '@/hooks/useBopsData';
 import { Loader2 } from 'lucide-react';
 

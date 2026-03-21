@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useBopsQuestions, useBopsAssessmentResponses, useSaveBopsResponses, useStudentBopsProfile } from '@/hooks/useBopsData';
+import { useBopsQuestions, useSaveBopsResponses, useStudentBopsProfile } from '@/hooks/useBopsData';
 import { Loader2, Save, CheckCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
