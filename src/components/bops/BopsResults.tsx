@@ -15,7 +15,7 @@ const DOMAIN_COLORS: Record<string, string> = {
 
 export function BopsResults({ studentId }: { studentId: string }) {
   const { data: questions, isLoading: qL } = useBopsQuestions();
-  const { data: responses, isLoading: rL } = useBopsAssessmentResponses(studentId);
+  const { data: responses, isLoading: rL } = useBopsAssessmentItems(undefined); // TODO: pass assessment ID
   const { data: profile } = useStudentBopsProfile(studentId);
   const { data: constellations } = useBopsConstellations();
 

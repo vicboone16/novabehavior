@@ -272,7 +272,7 @@ export function useGenerateDailyPlan() {
         day_state: params.dayState,
         active_program_ids: filtered.map(p => p.id) as any,
         active_targets: [...new Set(targets)] as any,
-        benchmark_level: benchmarks[0] || 'N/A',
+        benchmark_level: String(benchmarks[0] || 'N/A'),
         antecedent_plan: [...new Set(antecedents)].join('; '),
         reactive_plan: [...new Set(reactives)].join('; '),
         reinforcement_plan: reinforcements.join('; '),
