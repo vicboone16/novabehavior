@@ -354,17 +354,16 @@ export function useReviewBeaconSubmission() {
   });
 }
 
-// ─── Assessment Responses ───
-export function useBopsAssessmentResponses(studentId: string | undefined) {
+// ─── Assessment Item Responses ───
+export function useBopsAssessmentItems(assessmentId: string | undefined) {
   return useQuery({
-    queryKey: ['bops-assessment-responses', studentId],
-    enabled: !!studentId,
+    queryKey: ['bops-assessment-items', assessmentId],
+    enabled: !!assessmentId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bops_assessment_responses')
+        .from('bops_assessment_items')
         .select('*')
-        .eq('student_id', studentId!)
-        .order('item_number');
+        .eq('assessment_id', assessmentId!);
       if (error) throw error;
       return data;
     },
