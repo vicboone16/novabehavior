@@ -7,7 +7,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nova-ai-chat
  * Get a fresh access token, refreshing the session if needed.
  * Returns null if the user must re-authenticate.
  */
-async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string | null> {
   const { data: { session }, error } = await supabase.auth.getSession();
 
   if (session?.access_token) {
