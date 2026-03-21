@@ -243,6 +243,60 @@ export function useNovaAIActions(clientId: string | null) {
     }
   }, [user, clientId]);
 
+  // ── Auto-create ad-hoc session for data entry ────────────────────────────
+  const getOrCreateAdHocSession = useCallback(async (
+    eventDate?: string
+  ): Promise<string | null> => {
+    if (!user || !clientId) return null;
+    try {
+      const sessionDate = eventDate || new Date().toISOString().split('T')[0];
+      const startTime = `${sessionDate}T00:00:00Z`;
+
+      // Check for existing ad-hoc session for this student on this date
+      const { data: existing } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('student_id', clientId)
+        .eq('status', 'ad_hoc_data_entry')
+        .gte('start_time', `${sessionDate}T00:00:00Z`)
+        .lte('start_time', `${sessionDate}T23:59:59Z`)
+        .limit(1);
+
+      if (existing?.length) {
+        console.log('[NovaAI] Reusing existing ad-hoc session:', existing[0].id);
+        return existing[0].id;
+      }
+
+      // Create new ad-hoc session
+      const { data: newSession, error } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          name: `Nova AI Data Entry – ${sessionDate}`,
+          start_time: startTime,
+          session_length_minutes: 0,
+          interval_length_seconds: 0,
+          student_ids: [clientId],
+          student_id: clientId,
+          status: 'ad_hoc_data_entry',
+          service_type: 'data_entry',
+          notes: 'Auto-created by Nova AI for historical/ad-hoc data entry',
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('[NovaAI] Failed to create ad-hoc session:', error);
+        return null;
+      }
+      console.log('[NovaAI] ✅ Created ad-hoc session:', newSession?.id);
+      return newSession?.id || null;
+    } catch (err) {
+      console.error('[NovaAI] Failed to create ad-hoc session:', err);
+      return null;
+    }
+  }, [user, clientId]);
+
   // ── Route structured items to clinical tables ───────────────────────────
   const routeToClinicalTables = useCallback(async (
     items: any[],
@@ -252,6 +306,22 @@ export function useNovaAIActions(clientId: string | null) {
     if (!user || !clientId) return { saved: 0, skipped: 0, errors: ['No user or client'], pendingSession: 0, newTargetsCreated: 0 };
 
     const result = { saved: 0, skipped: 0, errors: [] as string[], pendingSession: 0, newTargetsCreated: 0 };
+
+    // Auto-create session if none provided and we have non-ABC items
+    let effectiveSessionId = sessionId;
+    const hasNonAbcItems = items.some(i => i.item_type !== 'abc_event' && 
+      !i.quality?.needs_review && 
+      i.target_match?.match_status !== 'ambiguous_match_review_needed');
+    
+    if (!effectiveSessionId && hasNonAbcItems) {
+      // Extract date from first item or use today
+      const eventDate = items[0]?.context?.event_date || items[0]?.event_date || undefined;
+      console.log('[NovaAI] No session_id provided, auto-creating ad-hoc session for date:', eventDate || 'today');
+      effectiveSessionId = await getOrCreateAdHocSession(eventDate);
+      if (effectiveSessionId) {
+        console.log('[NovaAI] ✅ Using ad-hoc session:', effectiveSessionId);
+      }
+    }
 
     for (const item of items) {
       try {
@@ -263,7 +333,7 @@ export function useNovaAIActions(clientId: string | null) {
           match_status: item.target_match?.match_status,
           needs_review: item.quality?.needs_review,
           measurement_type: item.measurement?.measurement_type,
-          session_id: sessionId,
+          session_id: effectiveSessionId,
         });
 
         // Skip items that need review (unless user already reviewed them)
@@ -301,7 +371,7 @@ export function useNovaAIActions(clientId: string | null) {
           await (supabase as any).from('abc_logs').insert({
             client_id: clientId,
             user_id: user.id,
-            session_id: sessionId || null,
+            session_id: effectiveSessionId || null,
             antecedent: item.context?.antecedent || '',
             behavior: item.context?.behavior_description || item.raw_text || '',
             consequence: item.context?.consequence || '',
@@ -318,9 +388,9 @@ export function useNovaAIActions(clientId: string | null) {
           continue;
         }
 
-        // Non-ABC items need session_id — mark pending if missing
-        if (!sessionId) {
-          console.log('[NovaAI] Item needs session but none provided:', item.item_id, item.target_match?.target_name);
+        // Non-ABC items need session_id — try ad-hoc, else mark pending
+        if (!effectiveSessionId) {
+          console.log('[NovaAI] Item needs session but auto-create failed:', item.item_id, item.target_match?.target_name);
           result.pendingSession++;
           continue;
         }
@@ -343,7 +413,7 @@ export function useNovaAIActions(clientId: string | null) {
             const isCorrect = t < trialCorrect;
             trialRows.push({
               target_id: targetId,
-              session_id: sessionId,
+              session_id: effectiveSessionId,
               trial_index: t + 1,
               outcome: isCorrect ? 'correct' : 'incorrect',
               session_type: 'session',
@@ -372,7 +442,7 @@ export function useNovaAIActions(clientId: string | null) {
         ) {
           // Route to behavior_session_data
           const insertData: any = {
-            session_id: sessionId,
+            session_id: effectiveSessionId,
             student_id: clientId,
             behavior_id: targetId,
             data_state: 'final',
@@ -424,7 +494,7 @@ export function useNovaAIActions(clientId: string | null) {
 
     console.log('[NovaAI] ✅ ROUTING COMPLETE:', JSON.stringify(result));
     return result;
-  }, [user, clientId, createNewTarget]);
+  }, [user, clientId, createNewTarget, getOrCreateAdHocSession]);
 
   // ── Execute action (save to final tables) ───────────────────────────────
   const executeAction = useCallback(async (action: NovaAction, destination: string, rawInput?: string) => {
