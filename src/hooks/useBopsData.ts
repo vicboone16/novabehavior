@@ -258,24 +258,35 @@ export function useGenerateDailyPlan() {
       const teacherSummary = filtered.map(p => `• ${p.program_name}: ${p.teacher_friendly_summary}`).join('\n');
       const clinicianSummary = filtered.map(p => `• ${p.program_name}: ${p.clinician_summary}`).join('\n');
 
-      const { data, error } = await supabase
+      // Check if plan exists for this student+date
+      const { data: existing } = await supabase
         .from('bops_daily_plan')
-        .upsert({
-          student_id: params.studentId,
-          date: params.date,
-          day_state: params.dayState,
-          active_program_ids: filtered.map(p => p.id),
-          active_targets: [...new Set(targets)],
-          benchmark_level: benchmarks[0] || 'N/A',
-          antecedent_plan: [...new Set(antecedents)].join('; '),
-          reactive_plan: [...new Set(reactives)].join('; '),
-          reinforcement_plan: reinforcements.join('; '),
-          teacher_summary_view: teacherSummary,
-          clinician_summary_view: clinicianSummary,
-          status: 'published',
-        }, { onConflict: 'student_id,date' })
-        .select()
-        .single();
+        .select('id')
+        .eq('student_id', params.studentId)
+        .eq('date', params.date)
+        .maybeSingle();
+
+      const planData = {
+        student_id: params.studentId,
+        date: params.date,
+        day_state: params.dayState,
+        active_program_ids: filtered.map(p => p.id) as any,
+        active_targets: [...new Set(targets)] as any,
+        benchmark_level: benchmarks[0] || 'N/A',
+        antecedent_plan: [...new Set(antecedents)].join('; '),
+        reactive_plan: [...new Set(reactives)].join('; '),
+        reinforcement_plan: reinforcements.join('; '),
+        teacher_summary_view: teacherSummary,
+        clinician_summary_view: clinicianSummary,
+        status: 'published',
+      };
+
+      let data, error;
+      if (existing?.id) {
+        ({ data, error } = await supabase.from('bops_daily_plan').update(planData).eq('id', existing.id).select().single());
+      } else {
+        ({ data, error } = await supabase.from('bops_daily_plan').insert(planData).select().single());
+      }
       if (error) throw error;
       return data;
     },
