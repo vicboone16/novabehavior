@@ -442,7 +442,7 @@ export function useNovaAIActions(clientId: string | null) {
         ) {
           // Route to behavior_session_data
           const insertData: any = {
-            session_id: sessionId,
+            session_id: effectiveSessionId,
             student_id: clientId,
             behavior_id: targetId,
             data_state: 'final',
