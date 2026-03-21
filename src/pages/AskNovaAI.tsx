@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -88,6 +89,7 @@ function parseNovaActions(content: string): { cleanContent: string; actions: Nov
 
 export default function AskNovaAI() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -99,6 +101,7 @@ export default function AskNovaAI() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastUserInputRef = useRef('');
+  const hydratedParamsRef = useRef<string | null>(null);
   // In-flight send lock to prevent duplicate messages
   const sendLockRef = useRef(false);
 
@@ -114,6 +117,24 @@ export default function AskNovaAI() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const incomingClientId = searchParams.get('clientId') || searchParams.get('studentId') || searchParams.get('learnerId');
+    const incomingPrompt = searchParams.get('prompt');
+    const hydrationKey = `${incomingClientId || ''}|${incomingPrompt || ''}`;
+
+    if (hydratedParamsRef.current === hydrationKey) return;
+
+    if (incomingClientId) {
+      setSelectedClientId(prev => prev === incomingClientId ? prev : incomingClientId);
+    }
+
+    if (incomingPrompt && messages.length === 0 && !input.trim()) {
+      setInput(incomingPrompt);
+    }
+
+    hydratedParamsRef.current = hydrationKey;
+  }, [searchParams, messages.length, input]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -341,6 +362,8 @@ export default function AskNovaAI() {
     setInput('');
     lastUserInputRef.current = text.trim();
     setIsLoading(true);
+    const requestController = new AbortController();
+    const requestTimeout = window.setTimeout(() => requestController.abort(), 45000);
 
     let assistantContent = '';
 
@@ -351,6 +374,7 @@ export default function AskNovaAI() {
           evidence_mode: evidenceMode,
           client_id: selectedClientId,
         },
+        signal: requestController.signal,
       });
 
       if (!resp) {
@@ -479,6 +503,7 @@ export default function AskNovaAI() {
               client_id: selectedClientId,
               force_tools: true,
             },
+            signal: requestController.signal,
           });
 
           if (retryResp?.body) {
@@ -533,10 +558,11 @@ export default function AskNovaAI() {
           ));
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Chat error:', e);
-      toast.error('Failed to get AI response');
+      toast.error(e?.name === 'AbortError' ? 'Nova AI timed out before finishing. Please try again.' : 'Failed to get AI response');
     } finally {
+      window.clearTimeout(requestTimeout);
       setIsLoading(false);
       sendLockRef.current = false;
     }

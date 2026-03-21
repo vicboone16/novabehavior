@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, X, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/lib/novaAIFetch';
 import { toast } from 'sonner';
 
 interface VoiceNoteRecorderProps {
@@ -102,21 +102,32 @@ export function VoiceNoteRecorder({ studentId, onClose, onSave }: VoiceNoteRecor
     setIsTranscribing(true);
     
     try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('Your session expired. Please sign in again.');
+      }
+
       const formData = new FormData();
       formData.append('audio', new File([audioBlob], 'recording.webm', { type: 'audio/webm' }));
 
-      const { data, error } = await supabase.functions.invoke('elevenlabs-transcribe', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-transcribe`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
         body: formData,
       });
 
-      if (error) throw new Error(error.message);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || 'Transcription failed');
       
       const transcriptionText = data?.text || 'No speech detected';
       setTranscription(transcriptionText);
       toast.success('Transcription complete');
     } catch (error: any) {
       console.error('Transcription error:', error);
-      toast.error('Failed to transcribe audio');
+      toast.error(error?.message || 'Failed to transcribe audio');
     } finally {
       setIsTranscribing(false);
     }

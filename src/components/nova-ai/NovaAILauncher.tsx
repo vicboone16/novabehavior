@@ -42,7 +42,7 @@ export function NovaAILauncher({
     if (prompt) params.set('prompt', prompt);
     if (mode) params.set('mode', mode);
     if (context) params.set('context', context);
-    navigate(`/nova-ai?${params.toString()}`);
+    navigate(`/ask-nova?${params.toString()}`);
   };
 
   if (variant === 'button' || !actions?.length) {

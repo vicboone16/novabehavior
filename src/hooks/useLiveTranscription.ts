@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useScribe, CommitStrategy } from '@elevenlabs/react';
-import { supabase } from '@/integrations/supabase/client';
+import { getAccessToken } from '@/lib/novaAIFetch';
 import { toast } from 'sonner';
 
 interface TranscriptEntry {
@@ -14,6 +14,7 @@ export function useLiveTranscription() {
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [isConnecting, setIsConnecting] = useState(false);
   const entryIdRef = useRef(0);
+  const scribeTokenUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-scribe-token`;
 
   const scribe = useScribe({
     modelId: 'scribe_v2_realtime',
@@ -50,10 +51,25 @@ export function useLiveTranscription() {
   const startTranscription = useCallback(async () => {
     setIsConnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('elevenlabs-scribe-token');
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('Your session expired. Please sign in again.');
+      }
 
-      if (error || !data?.token) {
-        throw new Error(error?.message || 'Failed to get transcription token');
+      const response = await fetch(scribeTokenUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.token) {
+        throw new Error(data?.error || 'Failed to get transcription token');
       }
 
       await scribe.connect({
@@ -71,7 +87,7 @@ export function useLiveTranscription() {
     } finally {
       setIsConnecting(false);
     }
-  }, [scribe]);
+  }, [scribe, scribeTokenUrl]);
 
   const stopTranscription = useCallback(() => {
     scribe.disconnect();
