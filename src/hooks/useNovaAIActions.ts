@@ -413,7 +413,7 @@ export function useNovaAIActions(clientId: string | null) {
             const isCorrect = t < trialCorrect;
             trialRows.push({
               target_id: targetId,
-              session_id: sessionId,
+              session_id: effectiveSessionId,
               trial_index: t + 1,
               outcome: isCorrect ? 'correct' : 'incorrect',
               session_type: 'session',
