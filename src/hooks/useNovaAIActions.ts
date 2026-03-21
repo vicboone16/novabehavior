@@ -494,7 +494,7 @@ export function useNovaAIActions(clientId: string | null) {
 
     console.log('[NovaAI] ✅ ROUTING COMPLETE:', JSON.stringify(result));
     return result;
-  }, [user, clientId, createNewTarget]);
+  }, [user, clientId, createNewTarget, getOrCreateAdHocSession]);
 
   // ── Execute action (save to final tables) ───────────────────────────────
   const executeAction = useCallback(async (action: NovaAction, destination: string, rawInput?: string) => {
