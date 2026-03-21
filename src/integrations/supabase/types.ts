@@ -40231,7 +40231,10 @@ export type Database = {
       staff_presence_status: {
         Row: {
           agency_id: string | null
+          assigned_student_id: string | null
+          available_for_support: boolean | null
           classroom_id: string | null
+          group_id: string | null
           id: string
           notes: string | null
           status: string
@@ -40240,7 +40243,10 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          assigned_student_id?: string | null
+          available_for_support?: boolean | null
           classroom_id?: string | null
+          group_id?: string | null
           id?: string
           notes?: string | null
           status?: string
@@ -40249,14 +40255,109 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          assigned_student_id?: string | null
+          available_for_support?: boolean | null
           classroom_id?: string | null
+          group_id?: string | null
           id?: string
           notes?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "canon_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_student_risk_scores"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_assigned_student_id_fkey"
+            columns: ["assigned_student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster_sources"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "staff_presence_status_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "classroom_groups"
+            referencedColumns: ["group_id"]
+          },
+        ]
       }
       staff_timesheet_entries: {
         Row: {
