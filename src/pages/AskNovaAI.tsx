@@ -363,7 +363,7 @@ export default function AskNovaAI() {
     lastUserInputRef.current = text.trim();
     setIsLoading(true);
     const requestController = new AbortController();
-    const requestTimeout = window.setTimeout(() => requestController.abort(), 45000);
+    const requestTimeout = window.setTimeout(() => requestController.abort(), 90000);
 
     let assistantContent = '';
 
