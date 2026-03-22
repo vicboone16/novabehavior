@@ -5093,6 +5093,42 @@ export type Database = {
         }
         Relationships: []
       }
+      beacon_shared_plans: {
+        Row: {
+          antecedents: Json | null
+          day_state: string | null
+          id: string
+          plan_date: string | null
+          programs: Json | null
+          reactives: Json | null
+          reinforcement: string | null
+          student_id: string | null
+          targets: Json | null
+        }
+        Insert: {
+          antecedents?: Json | null
+          day_state?: string | null
+          id?: string
+          plan_date?: string | null
+          programs?: Json | null
+          reactives?: Json | null
+          reinforcement?: string | null
+          student_id?: string | null
+          targets?: Json | null
+        }
+        Update: {
+          antecedents?: Json | null
+          day_state?: string | null
+          id?: string
+          plan_date?: string | null
+          programs?: Json | null
+          reactives?: Json | null
+          reinforcement?: string | null
+          student_id?: string | null
+          targets?: Json | null
+        }
+        Relationships: []
+      }
       beacon_submissions: {
         Row: {
           behavior_summary: Json | null
@@ -7874,13 +7910,6 @@ export type Database = {
             referencedRelation: "bops_assessment_responses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "bops_assessment_items_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "bops_question_bank"
-            referencedColumns: ["item_id"]
-          },
         ]
       }
       bops_assessment_responses: {
@@ -7919,6 +7948,36 @@ export type Database = {
           status?: string | null
           student_id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      bops_assessment_sessions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          rater_name: string | null
+          rater_role: string | null
+          started_at: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          rater_name?: string | null
+          rater_role?: string | null
+          started_at?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          rater_name?: string | null
+          rater_role?: string | null
+          started_at?: string
+          status?: string
+          student_id?: string
         }
         Relationships: []
       }
@@ -8275,6 +8334,258 @@ export type Database = {
         }
         Relationships: []
       }
+      bops_dual_constellation_registry: {
+        Row: {
+          active: boolean
+          antecedent_strategies: string | null
+          avoid_strategies: string | null
+          balance_emphasis: string | null
+          cfi_guidance: string | null
+          classroom_presentation: string | null
+          clinical_name: string
+          common_misinterpretations: string | null
+          common_triggers: string | null
+          constellation_key: string
+          created_at: string
+          deescalation_strategies: string | null
+          escalation_multiplier: number | null
+          escalation_pattern: string | null
+          hidden_need_multiplier: number | null
+          id: string
+          likely_iep_classifications: string | null
+          primary_archetype: string
+          primary_domain: string
+          protective_factors: string | null
+          recovery_multiplier: number | null
+          secondary_archetype: string
+          secondary_domain: string
+          summary: string | null
+          training_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          antecedent_strategies?: string | null
+          avoid_strategies?: string | null
+          balance_emphasis?: string | null
+          cfi_guidance?: string | null
+          classroom_presentation?: string | null
+          clinical_name: string
+          common_misinterpretations?: string | null
+          common_triggers?: string | null
+          constellation_key: string
+          created_at?: string
+          deescalation_strategies?: string | null
+          escalation_multiplier?: number | null
+          escalation_pattern?: string | null
+          hidden_need_multiplier?: number | null
+          id?: string
+          likely_iep_classifications?: string | null
+          primary_archetype: string
+          primary_domain: string
+          protective_factors?: string | null
+          recovery_multiplier?: number | null
+          secondary_archetype: string
+          secondary_domain: string
+          summary?: string | null
+          training_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          antecedent_strategies?: string | null
+          avoid_strategies?: string | null
+          balance_emphasis?: string | null
+          cfi_guidance?: string | null
+          classroom_presentation?: string | null
+          clinical_name?: string
+          common_misinterpretations?: string | null
+          common_triggers?: string | null
+          constellation_key?: string
+          created_at?: string
+          deescalation_strategies?: string | null
+          escalation_multiplier?: number | null
+          escalation_pattern?: string | null
+          hidden_need_multiplier?: number | null
+          id?: string
+          likely_iep_classifications?: string | null
+          primary_archetype?: string
+          primary_domain?: string
+          protective_factors?: string | null
+          recovery_multiplier?: number | null
+          secondary_archetype?: string
+          secondary_domain?: string
+          summary?: string | null
+          training_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bops_dual_constellations: {
+        Row: {
+          active: boolean
+          archetype_a: string | null
+          archetype_b: string | null
+          clinical_name: string | null
+          domain_a: string
+          domain_b: string
+          escalation_multiplier: number | null
+          hidden_need_multiplier: number | null
+          id: string
+          nickname: string | null
+          recovery_multiplier: number | null
+          training_name: string | null
+        }
+        Insert: {
+          active?: boolean
+          archetype_a?: string | null
+          archetype_b?: string | null
+          clinical_name?: string | null
+          domain_a: string
+          domain_b: string
+          escalation_multiplier?: number | null
+          hidden_need_multiplier?: number | null
+          id?: string
+          nickname?: string | null
+          recovery_multiplier?: number | null
+          training_name?: string | null
+        }
+        Update: {
+          active?: boolean
+          archetype_a?: string | null
+          archetype_b?: string | null
+          clinical_name?: string | null
+          domain_a?: string
+          domain_b?: string
+          escalation_multiplier?: number | null
+          hidden_need_multiplier?: number | null
+          id?: string
+          nickname?: string | null
+          recovery_multiplier?: number | null
+          training_name?: string | null
+        }
+        Relationships: []
+      }
+      bops_item_responses: {
+        Row: {
+          created_at: string
+          id: string
+          item_number: number
+          response_value: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_number: number
+          response_value: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_number?: number
+          response_value?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bops_item_responses_item_number_fkey"
+            columns: ["item_number"]
+            isOneToOne: false
+            referencedRelation: "bops_question_bank"
+            referencedColumns: ["item_number"]
+          },
+          {
+            foreignKeyName: "bops_item_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "bops_assessment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bops_master_program_library: {
+        Row: {
+          active: boolean
+          antecedent_strategies: Json
+          benchmark_ladder: Json
+          clinician_summary: string | null
+          created_at: string
+          day_state: string | null
+          deescalation_steps: Json
+          goal_description: string | null
+          goal_title: string | null
+          id: string
+          linked_archetype: string | null
+          linked_constellation_key: string | null
+          linked_domain: string | null
+          linked_profile_key: string | null
+          mastery_criteria: string | null
+          problem_area: string | null
+          program_key: string
+          program_name: string
+          reactive_strategies: Json
+          reinforcement_plan: string | null
+          target_options: Json
+          teacher_friendly_summary: string | null
+          teaching_strategies: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          antecedent_strategies?: Json
+          benchmark_ladder?: Json
+          clinician_summary?: string | null
+          created_at?: string
+          day_state?: string | null
+          deescalation_steps?: Json
+          goal_description?: string | null
+          goal_title?: string | null
+          id?: string
+          linked_archetype?: string | null
+          linked_constellation_key?: string | null
+          linked_domain?: string | null
+          linked_profile_key?: string | null
+          mastery_criteria?: string | null
+          problem_area?: string | null
+          program_key: string
+          program_name: string
+          reactive_strategies?: Json
+          reinforcement_plan?: string | null
+          target_options?: Json
+          teacher_friendly_summary?: string | null
+          teaching_strategies?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          antecedent_strategies?: Json
+          benchmark_ladder?: Json
+          clinician_summary?: string | null
+          created_at?: string
+          day_state?: string | null
+          deescalation_steps?: Json
+          goal_description?: string | null
+          goal_title?: string | null
+          id?: string
+          linked_archetype?: string | null
+          linked_constellation_key?: string | null
+          linked_domain?: string | null
+          linked_profile_key?: string | null
+          mastery_criteria?: string | null
+          problem_area?: string | null
+          program_key?: string
+          program_name?: string
+          reactive_strategies?: Json
+          reinforcement_plan?: string | null
+          target_options?: Json
+          teacher_friendly_summary?: string | null
+          teaching_strategies?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bops_naming_rules: {
         Row: {
           active: boolean | null
@@ -8302,6 +8613,129 @@ export type Database = {
           pattern_type?: string
           rule_description?: string | null
           template_string?: string | null
+        }
+        Relationships: []
+      }
+      bops_profile_program_map: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          priority_rank: number
+          profile_key: string
+          program_key: string
+          recommended_by_default: boolean
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          priority_rank?: number
+          profile_key: string
+          program_key: string
+          recommended_by_default?: boolean
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          priority_rank?: number
+          profile_key?: string
+          program_key?: string
+          recommended_by_default?: boolean
+        }
+        Relationships: []
+      }
+      bops_profile_registry: {
+        Row: {
+          active: boolean
+          antecedent_strategies: string | null
+          avoid_strategies: string | null
+          balance_emphasis: string | null
+          cfi_guidance: string | null
+          classroom_presentation: string | null
+          clinical_name: string
+          common_misinterpretations: string | null
+          common_triggers: string | null
+          created_at: string
+          deescalation_strategies: string | null
+          escalation_pattern: string | null
+          id: string
+          likely_iep_classifications: string | null
+          notes: string | null
+          primary_archetype: string | null
+          primary_domain: string | null
+          profile_key: string
+          profile_type: string
+          protective_factors: string | null
+          risk_level: string | null
+          secondary_archetype: string | null
+          secondary_domain: string | null
+          summary: string | null
+          tertiary_archetype: string | null
+          tertiary_domain: string | null
+          training_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          antecedent_strategies?: string | null
+          avoid_strategies?: string | null
+          balance_emphasis?: string | null
+          cfi_guidance?: string | null
+          classroom_presentation?: string | null
+          clinical_name: string
+          common_misinterpretations?: string | null
+          common_triggers?: string | null
+          created_at?: string
+          deescalation_strategies?: string | null
+          escalation_pattern?: string | null
+          id?: string
+          likely_iep_classifications?: string | null
+          notes?: string | null
+          primary_archetype?: string | null
+          primary_domain?: string | null
+          profile_key: string
+          profile_type: string
+          protective_factors?: string | null
+          risk_level?: string | null
+          secondary_archetype?: string | null
+          secondary_domain?: string | null
+          summary?: string | null
+          tertiary_archetype?: string | null
+          tertiary_domain?: string | null
+          training_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          antecedent_strategies?: string | null
+          avoid_strategies?: string | null
+          balance_emphasis?: string | null
+          cfi_guidance?: string | null
+          classroom_presentation?: string | null
+          clinical_name?: string
+          common_misinterpretations?: string | null
+          common_triggers?: string | null
+          created_at?: string
+          deescalation_strategies?: string | null
+          escalation_pattern?: string | null
+          id?: string
+          likely_iep_classifications?: string | null
+          notes?: string | null
+          primary_archetype?: string | null
+          primary_domain?: string | null
+          profile_key?: string
+          profile_type?: string
+          protective_factors?: string | null
+          risk_level?: string | null
+          secondary_archetype?: string | null
+          secondary_domain?: string | null
+          summary?: string | null
+          tertiary_archetype?: string | null
+          tertiary_domain?: string | null
+          training_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -8403,53 +8837,36 @@ export type Database = {
       }
       bops_question_bank: {
         Row: {
-          active: boolean | null
-          clinical_wording: string | null
-          created_at: string | null
-          domain: string
+          active: boolean
+          created_at: string
           id: string
-          item_id: string
           item_number: number
           item_text: string
-          response_scale: string | null
-          reverse_scored: boolean | null
-          teacher_friendly_wording: string | null
+          linked_domain: string
+          reverse_scored: boolean
+          subscale: string | null
         }
         Insert: {
-          active?: boolean | null
-          clinical_wording?: string | null
-          created_at?: string | null
-          domain: string
+          active?: boolean
+          created_at?: string
           id?: string
-          item_id: string
           item_number: number
           item_text: string
-          response_scale?: string | null
-          reverse_scored?: boolean | null
-          teacher_friendly_wording?: string | null
+          linked_domain: string
+          reverse_scored?: boolean
+          subscale?: string | null
         }
         Update: {
-          active?: boolean | null
-          clinical_wording?: string | null
-          created_at?: string | null
-          domain?: string
+          active?: boolean
+          created_at?: string
           id?: string
-          item_id?: string
           item_number?: number
           item_text?: string
-          response_scale?: string | null
-          reverse_scored?: boolean | null
-          teacher_friendly_wording?: string | null
+          linked_domain?: string
+          reverse_scored?: boolean
+          subscale?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bops_question_bank_domain_fkey"
-            columns: ["domain"]
-            isOneToOne: false
-            referencedRelation: "bops_domains"
-            referencedColumns: ["domain_id"]
-          },
-        ]
+        Relationships: []
       }
       bops_student_day_state: {
         Row: {
@@ -38553,6 +38970,8 @@ export type Database = {
           event_type: string
           id: string
           interval_index: number | null
+          rate_unit: string | null
+          rate_value: number | null
           session_id: string
           student_id: string
           timestamp: string
@@ -38567,6 +38986,8 @@ export type Database = {
           event_type: string
           id?: string
           interval_index?: number | null
+          rate_unit?: string | null
+          rate_value?: number | null
           session_id: string
           student_id: string
           timestamp?: string
@@ -38581,6 +39002,8 @@ export type Database = {
           event_type?: string
           id?: string
           interval_index?: number | null
+          rate_unit?: string | null
+          rate_value?: number | null
           session_id?: string
           student_id?: string
           timestamp?: string
@@ -42528,6 +42951,75 @@ export type Database = {
         }
         Relationships: []
       }
+      student_bops_config: {
+        Row: {
+          active_bops_session_id: string | null
+          bops_assessment_status: string
+          bops_enabled: boolean
+          bops_profile_saved: boolean
+          bops_programming_active: boolean
+          bops_programming_available: boolean
+          created_at: string
+          id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          active_bops_session_id?: string | null
+          bops_assessment_status?: string
+          bops_enabled?: boolean
+          bops_profile_saved?: boolean
+          bops_programming_active?: boolean
+          bops_programming_available?: boolean
+          created_at?: string
+          id?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          active_bops_session_id?: string | null
+          bops_assessment_status?: string
+          bops_enabled?: boolean
+          bops_profile_saved?: boolean
+          bops_programming_active?: boolean
+          bops_programming_available?: boolean
+          created_at?: string
+          id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_bops_day_state: {
+        Row: {
+          created_at: string
+          day_state: string
+          id: string
+          notes: string | null
+          selected_by: string | null
+          state_date: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_state: string
+          id?: string
+          notes?: string | null
+          selected_by?: string | null
+          state_date?: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          day_state?: string
+          id?: string
+          notes?: string | null
+          selected_by?: string | null
+          state_date?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       student_bops_profiles: {
         Row: {
           active_domains: Json | null
@@ -42608,6 +43100,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bops_constellations"
             referencedColumns: ["constellation_id"]
+          },
+        ]
+      }
+      student_bops_scores: {
+        Row: {
+          assessment_date: string
+          authority_score: number | null
+          autonomy_score: number | null
+          calculated_clinical_name: string | null
+          calculated_primary: string | null
+          calculated_profile_type: string | null
+          calculated_secondary: string | null
+          calculated_tertiary: string | null
+          calculated_training_name: string | null
+          context_score: number | null
+          created_at: string
+          emotion_score: number | null
+          escalation_index: number | null
+          hidden_need_index: number | null
+          id: string
+          impulse_score: number | null
+          power_conflict_index: number | null
+          recovery_burden_index: number | null
+          rigidity_score: number | null
+          sensory_load_index: number | null
+          sensory_score: number | null
+          session_id: string
+          social_complexity_index: number | null
+          social_score: number | null
+          storm_score: number | null
+          student_id: string
+          supporting_drivers: Json
+          threat_score: number | null
+          withdrawal_score: number | null
+        }
+        Insert: {
+          assessment_date?: string
+          authority_score?: number | null
+          autonomy_score?: number | null
+          calculated_clinical_name?: string | null
+          calculated_primary?: string | null
+          calculated_profile_type?: string | null
+          calculated_secondary?: string | null
+          calculated_tertiary?: string | null
+          calculated_training_name?: string | null
+          context_score?: number | null
+          created_at?: string
+          emotion_score?: number | null
+          escalation_index?: number | null
+          hidden_need_index?: number | null
+          id?: string
+          impulse_score?: number | null
+          power_conflict_index?: number | null
+          recovery_burden_index?: number | null
+          rigidity_score?: number | null
+          sensory_load_index?: number | null
+          sensory_score?: number | null
+          session_id: string
+          social_complexity_index?: number | null
+          social_score?: number | null
+          storm_score?: number | null
+          student_id: string
+          supporting_drivers?: Json
+          threat_score?: number | null
+          withdrawal_score?: number | null
+        }
+        Update: {
+          assessment_date?: string
+          authority_score?: number | null
+          autonomy_score?: number | null
+          calculated_clinical_name?: string | null
+          calculated_primary?: string | null
+          calculated_profile_type?: string | null
+          calculated_secondary?: string | null
+          calculated_tertiary?: string | null
+          calculated_training_name?: string | null
+          context_score?: number | null
+          created_at?: string
+          emotion_score?: number | null
+          escalation_index?: number | null
+          hidden_need_index?: number | null
+          id?: string
+          impulse_score?: number | null
+          power_conflict_index?: number | null
+          recovery_burden_index?: number | null
+          rigidity_score?: number | null
+          sensory_load_index?: number | null
+          sensory_score?: number | null
+          session_id?: string
+          social_complexity_index?: number | null
+          social_score?: number | null
+          storm_score?: number | null
+          student_id?: string
+          supporting_drivers?: Json
+          threat_score?: number | null
+          withdrawal_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bops_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "bops_assessment_sessions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -63082,13 +63678,6 @@ export type Database = {
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -63098,7 +63687,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63112,7 +63701,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63121,6 +63710,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63133,8 +63736,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63147,8 +63750,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63161,7 +63764,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -63175,20 +63778,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -63196,7 +63785,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -63210,7 +63799,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -63224,7 +63813,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -63237,13 +63826,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -63269,13 +63865,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -63285,7 +63874,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63299,7 +63888,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63308,6 +63897,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63320,8 +63923,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63334,8 +63937,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -63348,7 +63951,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -63362,20 +63965,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -63383,7 +63972,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -63397,7 +63986,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -63411,7 +64000,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -63424,13 +64013,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -63955,13 +64551,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -63971,7 +64560,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63985,7 +64574,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -63994,6 +64583,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -64006,8 +64609,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -64020,8 +64623,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -64034,7 +64637,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -64048,20 +64651,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -64069,7 +64658,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -64083,7 +64672,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -64097,7 +64686,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -64110,13 +64699,20 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -64216,13 +64812,6 @@ export type Database = {
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -64232,7 +64821,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -64246,7 +64835,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -64255,6 +64844,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -64267,8 +64870,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -64281,8 +64884,8 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "v_ci_client_final_score"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
@@ -64295,7 +64898,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
+            referencedRelation: "v_ci_effective_thresholds"
             referencedColumns: ["client_id"]
           },
           {
@@ -64309,20 +64912,6 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -64330,7 +64919,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
           {
@@ -64344,7 +64933,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -64358,7 +64947,7 @@ export type Database = {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -64371,13 +64960,20 @@ export type Database = {
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_roster"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "coach_evidence_packets_student_id_fkey"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "coach_evidence_packets_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
@@ -64446,6 +65042,10 @@ export type Database = {
       acknowledge_publication: {
         Args: { p_publication_id: string; p_reaction?: string }
         Returns: string
+      }
+      activate_bops_programming: {
+        Args: { p_student: string }
+        Returns: undefined
       }
       add_custom_parent_training_goal: {
         Args: {
@@ -64903,6 +65503,7 @@ export type Database = {
         Args: { p_created_by?: string; p_form_instance_id: string }
         Returns: string
       }
+      bops_domain_to_archetype: { Args: { p_domain: string }; Returns: string }
       build_bcba_session_export: {
         Args: { p_date_from: string; p_date_to: string; p_student_id: string }
         Returns: Json
@@ -64976,6 +65577,7 @@ export type Database = {
         Args: { p_agency_id: string; p_source_table?: string }
         Returns: number
       }
+      calculate_bops_cfi: { Args: { p_session_id: string }; Returns: undefined }
       calculate_student_risk_score: {
         Args: { p_student_id: string }
         Returns: number
@@ -65352,6 +65954,14 @@ export type Database = {
         Returns: undefined
       }
       current_agency_id: { Args: never; Returns: string }
+      deactivate_bops_programming: {
+        Args: { p_student: string }
+        Returns: undefined
+      }
+      disable_bops_for_student: {
+        Args: { p_student: string }
+        Returns: undefined
+      }
       disable_staff_assignment: {
         Args: { p_id: string }
         Returns: {
@@ -65389,6 +65999,14 @@ export type Database = {
       effective_staff_can_review:
         | { Args: { _client_id: string }; Returns: boolean }
         | { Args: { _client_id: string; _user_id: string }; Returns: boolean }
+      enable_bops_assessment: {
+        Args: {
+          p_rater_name?: string
+          p_rater_role?: string
+          p_student: string
+        }
+        Returns: string
+      }
       enrich_intervention_recs_with_effectiveness: {
         Args: { p_client_id: string }
         Returns: {
@@ -65627,6 +66245,22 @@ export type Database = {
           title: string
         }[]
       }
+      finalize_bops_and_unlock_programming: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      finalize_bops_assessment_only: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      finalize_bops_with_programming: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      finalize_bops_with_programming_available: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       finalize_form_instance: {
         Args: { p_created_by?: string; p_form_instance_id: string }
         Returns: string
@@ -65731,6 +66365,12 @@ export type Database = {
           title: string
         }[]
       }
+      generate_bops_plan:
+        | {
+            Args: { p_date: string; p_state: string; p_student: string }
+            Returns: undefined
+          }
+        | { Args: { p_state: string; p_student: string }; Returns: undefined }
       generate_caregiver_intervention_packet: {
         Args: { p_report_id: string; p_report_type: string }
         Returns: string
@@ -66940,6 +67580,14 @@ export type Database = {
         }
         Returns: string
       }
+      save_bops_response: {
+        Args: {
+          p_item_number: number
+          p_response: number
+          p_session_id: string
+        }
+        Returns: undefined
+      }
       save_form_answer: {
         Args: {
           p_ai_generated?: boolean
@@ -67061,6 +67709,10 @@ export type Database = {
         Args: { p_generated_json: Json; p_report_draft_id: string }
         Returns: undefined
       }
+      score_bops_assessment: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       score_vineland_assessment: {
         Args: { p_student_assessment_id: string }
         Returns: undefined
@@ -67145,6 +67797,15 @@ export type Database = {
         Args: { _agency_id: string; _suffix: string }
         Returns: Json
       }
+      set_bops_day_state_and_generate_plan: {
+        Args: {
+          p_notes?: string
+          p_selected_by?: string
+          p_state: string
+          p_student: string
+        }
+        Returns: undefined
+      }
       set_staff_presence: {
         Args: {
           p_agency_id: string
@@ -67190,6 +67851,14 @@ export type Database = {
         Returns: string
       }
       snapshot_clinical_intelligence_alerts: { Args: never; Returns: number }
+      start_bops_assessment: {
+        Args: {
+          p_rater_name?: string
+          p_rater_role?: string
+          p_student: string
+        }
+        Returns: string
+      }
       start_client_intervention_run: {
         Args: {
           p_agency_id: string
