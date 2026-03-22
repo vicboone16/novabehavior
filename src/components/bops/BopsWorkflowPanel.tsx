@@ -24,6 +24,8 @@ import {
   useBeaconSharedPlan,
   useAcceptSuggestedProgram,
   useAcceptAllPrograms,
+  useAcceptByDayState,
+  useAcceptAndActivate,
   useActivateProgramming,
   useDeactivateProgramming,
   useGenerateBopsPlan,
@@ -232,11 +234,15 @@ function SuggestedPrograms({ studentId, config }: { studentId: string; config: a
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const acceptOne = useAcceptSuggestedProgram();
   const acceptAll = useAcceptAllPrograms();
+  const acceptByDayState = useAcceptByDayState();
+  const acceptAndActivate = useAcceptAndActivate();
 
   if (isLoading) return <Loader2 className="animate-spin mx-auto mt-8" />;
   if (!programs?.length) {
     return <Card><CardContent className="py-8 text-center text-muted-foreground">No suggested programs available. Complete a BOPS assessment first.</CardContent></Card>;
   }
+
+  const sessionId = config?.active_bops_session_id || '';
 
   const toggleSelect = (key: string) => {
     setSelected(prev => {
@@ -253,32 +259,64 @@ function SuggestedPrograms({ studentId, config }: { studentId: string; config: a
     setSelected(new Set());
   };
 
+  // Group programs by day_state for display
+  const grouped: Record<string, any[]> = {};
+  programs.forEach((p: any) => {
+    const ds = p.day_state || 'other';
+    if (!grouped[ds]) grouped[ds] = [];
+    grouped[ds].push(p);
+  });
+  const stateOrder = ['red', 'yellow', 'green', 'other'];
+  const stateLabels: Record<string, string> = {
+    red: '🔴 Red — Regulation',
+    yellow: '🟡 Yellow — Supported',
+    green: '🟢 Green — Skill Building',
+    other: 'Other',
+  };
+
+  const anyPending = acceptOne.isPending || acceptAll.isPending || acceptByDayState.isPending || acceptAndActivate.isPending;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">{programs.length} programs recommended</p>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" disabled={selected.size === 0 || acceptOne.isPending} onClick={handleAcceptSelected}>
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant="outline" disabled={selected.size === 0 || anyPending} onClick={handleAcceptSelected}>
             Accept Selected ({selected.size})
           </Button>
-          <Button size="sm" disabled={acceptAll.isPending} onClick={() => acceptAll.mutate({ studentId, sessionId: config?.active_bops_session_id || '' })}>
+          <Button size="sm" variant="outline" disabled={anyPending} onClick={() => acceptByDayState.mutate({ studentId, sessionId })}>
+            {acceptByDayState.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+            Accept by Day State
+          </Button>
+          <Button size="sm" variant="outline" disabled={anyPending} onClick={() => acceptAll.mutate({ studentId, sessionId })}>
             {acceptAll.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
             Accept All
+          </Button>
+          <Button size="sm" disabled={anyPending} onClick={() => acceptAndActivate.mutate({ studentId, sessionId })}>
+            {acceptAndActivate.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Zap className="w-3 h-3 mr-1" />}
+            Accept + Activate
           </Button>
         </div>
       </div>
 
       <ScrollArea className="h-[600px]">
-        <div className="space-y-3">
-          {programs.map((p: any) => (
-            <ProgramRecommendationCard
-              key={p.program_key}
-              program={p}
-              selected={selected.has(p.program_key)}
-              onToggle={() => toggleSelect(p.program_key)}
-              onAccept={() => acceptOne.mutate({ studentId, programKey: p.program_key })}
-              accepting={acceptOne.isPending}
-            />
+        <div className="space-y-5">
+          {stateOrder.filter(s => grouped[s]).map(state => (
+            <div key={state}>
+              <p className="font-semibold text-sm mb-2">{stateLabels[state] || state}</p>
+              <div className="space-y-3">
+                {grouped[state].map((p: any) => (
+                  <ProgramRecommendationCard
+                    key={p.program_key}
+                    program={p}
+                    selected={selected.has(p.program_key)}
+                    onToggle={() => toggleSelect(p.program_key)}
+                    onAccept={() => acceptOne.mutate({ studentId, programKey: p.program_key })}
+                    accepting={acceptOne.isPending}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </ScrollArea>
