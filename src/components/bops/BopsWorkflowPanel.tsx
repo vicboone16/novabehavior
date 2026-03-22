@@ -24,6 +24,8 @@ import {
   useBeaconSharedPlan,
   useAcceptSuggestedProgram,
   useAcceptAllPrograms,
+  useAcceptByDayState,
+  useAcceptAndActivate,
   useActivateProgramming,
   useDeactivateProgramming,
   useGenerateBopsPlan,

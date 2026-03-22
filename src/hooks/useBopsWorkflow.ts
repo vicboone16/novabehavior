@@ -166,6 +166,49 @@ export function useAcceptAllPrograms() {
   });
 }
 
+// ─── Accept Recommended by Day State ───
+export function useAcceptByDayState() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
+      const { data, error } = await supabase.rpc('accept_recommended_programs_by_day_state' as any, {
+        p_student: studentId,
+        p_session_id: sessionId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, v) => {
+      qc.invalidateQueries({ queryKey: ['bops-student-bank', v.studentId] });
+      qc.invalidateQueries({ queryKey: ['bops-suggested-programs', v.studentId] });
+      toast.success('Programs accepted by day state');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+// ─── Accept by Day State + Activate ───
+export function useAcceptAndActivate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
+      const { data, error } = await supabase.rpc('accept_by_day_state_and_activate' as any, {
+        p_student: studentId,
+        p_session_id: sessionId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, v) => {
+      qc.invalidateQueries({ queryKey: ['bops-student-bank', v.studentId] });
+      qc.invalidateQueries({ queryKey: ['bops-suggested-programs', v.studentId] });
+      qc.invalidateQueries({ queryKey: ['bops-config', v.studentId] });
+      toast.success('Programs accepted and programming activated');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 // ─── Update Student Program ───
 export function useUpdateStudentProgram() {
   const qc = useQueryClient();
