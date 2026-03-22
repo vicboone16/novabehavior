@@ -69,11 +69,11 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
                 <div className="flex items-start gap-2 mb-2">
                   <span className="font-mono text-xs text-muted-foreground shrink-0 mt-0.5">Q{q.item_number}</span>
                   <p className="text-sm font-medium">{q.item_text}</p>
-                  <Badge variant="outline" className="text-xs shrink-0 ml-auto">{q.domain}</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0 ml-auto">{q.linked_domain}</Badge>
                 </div>
                 <RadioGroup
-                  value={responses[q.item_id]?.toString()}
-                  onValueChange={v => setResponses(prev => ({ ...prev, [q.item_id]: parseInt(v) }))}
+                  value={responses[q.id]?.toString()}
+                  onValueChange={v => setResponses(prev => ({ ...prev, [q.id]: parseInt(v) }))}
                   className="flex gap-4"
                 >
                   {SCALE.map(s => (
