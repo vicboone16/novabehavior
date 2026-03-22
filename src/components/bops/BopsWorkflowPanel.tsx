@@ -852,6 +852,3 @@ function BeaconPreview({ studentId }: { studentId: string }) {
     </Card>
   );
 }
-
-// Need toast import for EditProgramModal
-import { toast } from 'sonner';
