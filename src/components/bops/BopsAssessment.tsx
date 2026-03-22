@@ -38,8 +38,8 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
 
   const handleSave = () => {
     const data = Object.entries(responses).map(([itemId, value]) => {
-      const q = questions.find(qq => qq.item_id === itemId);
-      return { itemId, itemNumber: q?.item_number || 0, domain: q?.domain || '', value };
+      const q = questions.find(qq => qq.id === itemId);
+      return { itemId, itemNumber: q?.item_number || 0, domain: q?.linked_domain || '', value };
     });
     saveMut.mutate({ studentId, assessmentId, responses: data });
   };
@@ -69,17 +69,17 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
                 <div className="flex items-start gap-2 mb-2">
                   <span className="font-mono text-xs text-muted-foreground shrink-0 mt-0.5">Q{q.item_number}</span>
                   <p className="text-sm font-medium">{q.item_text}</p>
-                  <Badge variant="outline" className="text-xs shrink-0 ml-auto">{q.domain}</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0 ml-auto">{q.linked_domain}</Badge>
                 </div>
                 <RadioGroup
-                  value={responses[q.item_id]?.toString()}
-                  onValueChange={v => setResponses(prev => ({ ...prev, [q.item_id]: parseInt(v) }))}
+                  value={responses[q.id]?.toString()}
+                  onValueChange={v => setResponses(prev => ({ ...prev, [q.id]: parseInt(v) }))}
                   className="flex gap-4"
                 >
                   {SCALE.map(s => (
                     <div key={s.value} className="flex items-center gap-1">
-                      <RadioGroupItem value={s.value.toString()} id={`${q.item_id}-${s.value}`} />
-                      <Label htmlFor={`${q.item_id}-${s.value}`} className="text-xs cursor-pointer">{s.label}</Label>
+                      <RadioGroupItem value={s.value.toString()} id={`${q.id}-${s.value}`} />
+                      <Label htmlFor={`${q.id}-${s.value}`} className="text-xs cursor-pointer">{s.label}</Label>
                     </div>
                   ))}
                 </RadioGroup>

@@ -105,7 +105,7 @@ export function BopsFrameworkSetup() {
                     <div key={q.id} className="flex items-start gap-3 py-2 border-b text-sm">
                       <span className="font-mono text-xs text-muted-foreground w-8 shrink-0">Q{q.item_number}</span>
                       <span className="flex-1">{q.item_text}</span>
-                      <Badge variant="outline" className="text-xs shrink-0">{q.domain}</Badge>
+                      <Badge variant="outline" className="text-xs shrink-0">{q.linked_domain}</Badge>
                     </div>
                   ))}
                 </div>
