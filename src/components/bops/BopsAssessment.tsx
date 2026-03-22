@@ -38,8 +38,8 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
 
   const handleSave = () => {
     const data = Object.entries(responses).map(([itemId, value]) => {
-      const q = questions.find(qq => qq.item_id === itemId);
-      return { itemId, itemNumber: q?.item_number || 0, domain: q?.domain || '', value };
+      const q = questions.find(qq => qq.id === itemId);
+      return { itemId, itemNumber: q?.item_number || 0, domain: q?.linked_domain || '', value };
     });
     saveMut.mutate({ studentId, assessmentId, responses: data });
   };
