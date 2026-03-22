@@ -10,6 +10,7 @@ import { BopsDailyAdjustment } from './BopsDailyAdjustment';
 import { BopsSyncPanel } from './BopsSyncPanel';
 import { BopsAssessment } from './BopsAssessment';
 import { BopsResults } from './BopsResults';
+import { BopsWorkflowPanel } from './BopsWorkflowPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 
@@ -63,6 +64,7 @@ export function BopsStudentHub() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="assessment">Assessment</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
+            <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="programs">Programs</TabsTrigger>
             <TabsTrigger value="daily">Daily Plan</TabsTrigger>
             <TabsTrigger value="sync">Sync Controls</TabsTrigger>
@@ -78,6 +80,9 @@ export function BopsStudentHub() {
           </TabsContent>
           <TabsContent value="results">
             <BopsResults studentId={studentId} />
+          </TabsContent>
+          <TabsContent value="workflow">
+            <BopsWorkflowPanel studentId={studentId} />
           </TabsContent>
           <TabsContent value="programs">
             <BopsProgramBank studentId={studentId} />
