@@ -130,7 +130,7 @@ export function useAcceptSuggestedProgram() {
   return useMutation({
     mutationFn: async ({ studentId, programKey }: { studentId: string; programKey: string }) => {
       const { data, error } = await supabase.rpc('accept_bops_suggested_program', {
-        p_student_id: studentId,
+        p_student: studentId,
         p_program_key: programKey,
       });
       if (error) throw error;
