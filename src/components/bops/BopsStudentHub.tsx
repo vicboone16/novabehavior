@@ -64,6 +64,7 @@ export function BopsStudentHub() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="assessment">Assessment</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
+            <TabsTrigger value="workflow">Workflow</TabsTrigger>
             <TabsTrigger value="programs">Programs</TabsTrigger>
             <TabsTrigger value="daily">Daily Plan</TabsTrigger>
             <TabsTrigger value="sync">Sync Controls</TabsTrigger>
