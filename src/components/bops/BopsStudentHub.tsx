@@ -10,6 +10,7 @@ import { BopsDailyAdjustment } from './BopsDailyAdjustment';
 import { BopsSyncPanel } from './BopsSyncPanel';
 import { BopsAssessment } from './BopsAssessment';
 import { BopsResults } from './BopsResults';
+import { BopsWorkflowPanel } from './BopsWorkflowPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 
