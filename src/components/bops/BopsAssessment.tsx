@@ -78,8 +78,8 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
                 >
                   {SCALE.map(s => (
                     <div key={s.value} className="flex items-center gap-1">
-                      <RadioGroupItem value={s.value.toString()} id={`${q.item_id}-${s.value}`} />
-                      <Label htmlFor={`${q.item_id}-${s.value}`} className="text-xs cursor-pointer">{s.label}</Label>
+                      <RadioGroupItem value={s.value.toString()} id={`${q.id}-${s.value}`} />
+                      <Label htmlFor={`${q.id}-${s.value}`} className="text-xs cursor-pointer">{s.label}</Label>
                     </div>
                   ))}
                 </RadioGroup>
