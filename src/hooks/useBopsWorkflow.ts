@@ -230,7 +230,7 @@ export function useDeactivateProgramming() {
   return useMutation({
     mutationFn: async (studentId: string) => {
       const { data, error } = await supabase.rpc('deactivate_bops_programming', {
-        p_student_id: studentId,
+        p_student: studentId,
       });
       if (error) throw error;
       return data;
