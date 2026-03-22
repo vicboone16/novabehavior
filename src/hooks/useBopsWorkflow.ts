@@ -151,7 +151,7 @@ export function useAcceptAllPrograms() {
   return useMutation({
     mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
       const { data, error } = await supabase.rpc('accept_all_bops_recommended_programs', {
-        p_student_id: studentId,
+        p_student: studentId,
         p_session_id: sessionId,
       });
       if (error) throw error;
