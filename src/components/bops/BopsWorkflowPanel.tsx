@@ -447,7 +447,21 @@ function EditProgramModal({ program, onClose }: { program: any; onClose: () => v
   const [teacherSummary, setTeacherSummary] = useState(program.teacher_friendly_summary || '');
   const [clinicianSummary, setClinicianSummary] = useState(program.clinician_summary || '');
 
-  const updateProg = useUpdateStudentProgram();
+  const qc = useQueryClient();
+  const updateProg = useMutation({
+    mutationFn: async ({ programId, updates }: { programId: string; updates: Record<string, any> }) => {
+      const { error } = await supabase.rpc('update_student_bops_program', {
+        p_program_id: programId,
+        ...updates,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bops-student-bank'] });
+      toast.success('Program updated');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const handleSave = () => {
     try {

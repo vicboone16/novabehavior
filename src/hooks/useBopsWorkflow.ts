@@ -251,8 +251,8 @@ export function useGenerateBopsPlan() {
       studentId: string; dayState: string; selectedBy: string; notes?: string;
     }) => {
       const { data, error } = await supabase.rpc('set_bops_day_state_and_generate_plan', {
-        p_student_id: studentId,
-        p_day_state: dayState,
+        p_student: studentId,
+        p_state: dayState,
         p_selected_by: selectedBy,
         p_notes: notes || '',
       });
