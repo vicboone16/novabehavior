@@ -81,6 +81,9 @@ export function BopsStudentHub() {
           <TabsContent value="results">
             <BopsResults studentId={studentId} />
           </TabsContent>
+          <TabsContent value="workflow">
+            <BopsWorkflowPanel studentId={studentId} />
+          </TabsContent>
           <TabsContent value="programs">
             <BopsProgramBank studentId={studentId} />
           </TabsContent>
