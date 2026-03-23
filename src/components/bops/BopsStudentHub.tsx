@@ -63,6 +63,7 @@ export function BopsStudentHub() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="placement">Placement</TabsTrigger>
             <TabsTrigger value="assessment">Assessment</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
