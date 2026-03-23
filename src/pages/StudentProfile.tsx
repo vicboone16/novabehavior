@@ -1003,6 +1003,11 @@ export default function StudentProfile() {
             onRefetch={clientProfile.refetch}
           />
         </TabsContent>
+
+        {/* ====== BOPS TAB ====== */}
+        <TabsContent value="bops" className="space-y-4">
+          <StudentBopsTab studentId={student.id} />
+        </TabsContent>
       </Tabs>
 
       {/* ====== DIALOGS (unchanged) ====== */}
