@@ -8,6 +8,7 @@ import { BopsProfileCard } from './BopsProfileCard';
 import { BopsProgramBank } from './BopsProgramBank';
 import { BopsDailyAdjustment } from './BopsDailyAdjustment';
 import { BopsSyncPanel } from './BopsSyncPanel';
+import { BopsPlacementPanel } from './BopsPlacementPanel';
 import { BopsAssessment } from './BopsAssessment';
 import { BopsResults } from './BopsResults';
 import { BopsWorkflowPanel } from './BopsWorkflowPanel';
@@ -62,6 +63,7 @@ export function BopsStudentHub() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="placement">Placement</TabsTrigger>
             <TabsTrigger value="assessment">Assessment</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
             <TabsTrigger value="workflow">Workflow</TabsTrigger>
@@ -74,6 +76,9 @@ export function BopsStudentHub() {
             {pLoading ? <Loader2 className="animate-spin mx-auto" /> : (
               <BopsProfileCard studentId={studentId} profile={profile} />
             )}
+          </TabsContent>
+          <TabsContent value="placement">
+            <BopsPlacementPanel studentId={studentId} />
           </TabsContent>
           <TabsContent value="assessment">
             <BopsAssessment studentId={studentId} />
