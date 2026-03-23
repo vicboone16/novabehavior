@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,101 +9,110 @@ import { SyncProvider } from "@/contexts/SyncContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ApprovalCheck } from "@/components/ApprovalCheck";
 import { SessionTimeoutWarning } from "@/components/SessionTimeoutWarning";
-import MainLayout from "./components/MainLayout";
-import Dashboard from "./pages/Dashboard";
-import Students from "./pages/Students";
-import StudentProfile from "./pages/StudentProfile";
-import Reports from "./pages/Reports";
-import AssessmentDashboard from "./pages/AssessmentDashboard";
-import Clinical from "./pages/Clinical";
-import SkillAcquisition from "./pages/SkillAcquisition";
-import NotesReview from "./pages/NotesReview";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import PostLoginRouter from "./pages/PostLoginRouter";
-import Admin from "./pages/Admin";
-import BehaviorLibrary from "./pages/BehaviorLibrary";
-import PendingApproval from "./pages/PendingApproval";
-import UserProfile from "./pages/UserProfile";
-import Schedule from "./pages/Schedule";
-import SecuritySettings from "./pages/SecuritySettings";
-import TeacherDashboard from "./pages/TeacherDashboard";
-import QuestionnaireForm from "./pages/QuestionnaireForm";
-import ConsentForm from "./pages/ConsentForm";
-import TeacherObservationForm from "./pages/TeacherObservationForm";
-import ClinicalFormPage from "./pages/ClinicalFormPage";
-import FormRouteResolver from "./pages/FormRouteResolver";
-import DocumentInbox from "./pages/DocumentInbox";
-import Supervision from "./pages/Supervision";
-import Referrals from "./pages/Referrals";
-import Billing from "./pages/Billing";
-import AgencyBillingPolicy from "./pages/AgencyBillingPolicy";
-import Analytics from "./pages/Analytics";
-import Recruiting from "./pages/Recruiting";
-import LMS from "./pages/LMS";
-import ParentTrainingAdmin from "./pages/ParentTrainingAdmin";
-import ParentTrainingViewer from "./pages/ParentTrainingViewer";
-import ParentModulePlayer from "./pages/ParentModulePlayer";
-import ModulePlayer from "./pages/ModulePlayer";
-import NotFound from "./pages/NotFound";
-import BehaviorLabCatalog from "./pages/BehaviorLabCatalog";
-import BehaviorLabPlayer from "./pages/BehaviorLabPlayer";
-import IEPLibrary from "./pages/IEPLibrary";
-import BehaviorLibraryFull from "./pages/BehaviorLibraryFull";
-import Academy from "./pages/Academy";
-import InterventionBuilder from "./pages/InterventionBuilder";
-import ClinicalLibraryLayout from "./pages/clinical-library/ClinicalLibraryLayout";
-import ClinicalCollectionsPage from "./pages/clinical-library/ClinicalCollectionsPage";
-import GoalBanksPage from "./pages/clinical-library/GoalBanksPage";
-import GoalBankDomainPage from "./pages/clinical-library/GoalBankDomainPage";
-import GoalDetailPage from "./pages/clinical-library/GoalDetailPage";
-import CurriculumSystemsPage from "./pages/clinical-library/CurriculumSystemsPage";
-import BehaviorReductionPage from "./pages/clinical-library/BehaviorReductionPage";
-import BehaviorBankPage from "./pages/clinical-library/BehaviorBankPage";
-import LibraryRegistryPage from "./pages/clinical-library/LibraryRegistryPage";
-import Intelligence from "./pages/Intelligence";
-import IntelligenceOps from "./pages/IntelligenceOps";
-import ClientDrilldown from "./pages/ClientDrilldown";
-import ClassroomTodayPage from "./pages/ClassroomToday";
-import { StaffProfilePage } from "./components/staff-profile";
-import StaffAssignments from "./pages/StaffAssignments";
-import IncidentLogs from "./pages/IncidentLogs";
- import PayerDirectoryPage from "./pages/payers/PayerDirectoryPage";
- import PayerDetailPage from "./pages/payers/PayerDetailPage";
- import ServiceDetailPage from "./pages/payers/ServiceDetailPage";
 import { toast } from "sonner";
 import { useBackendGuard } from "@/hooks/useBackendGuard";
 import { BackendGuardScreen } from "@/components/BackendGuardScreen";
 import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
-import Diagnostics from "./pages/Diagnostics";
-import ExportHours from "./pages/ExportHours";
-import TeacherComms from "./pages/TeacherComms";
-import SDCTraining from "./pages/SDCTraining";
-import SDCModuleDetail from "./pages/SDCModuleDetail";
-import SDCCertificationTracker from "./pages/SDCCertificationTracker";
-import BehaviorStrategies from "./pages/BehaviorStrategies";
-import BehaviorRecommendations from "./pages/BehaviorRecommendations";
-import BehaviorRecommendationDetail from "./pages/BehaviorRecommendationDetail";
-import AdvancedDesignAnalysis from "./pages/AdvancedDesignAnalysis";
-import AskNovaAI from "./pages/AskNovaAI";
-import NovaAI from "./pages/NovaAI";
-import GoalOptimization from "./pages/GoalOptimization";
-import ResourceHub from "./pages/ResourceHub";
-import Operations from "./pages/Operations";
-import NotificationSettings from "./pages/NotificationSettings";
-import CaptureCenter from "./pages/CaptureCenter";
-import CaptureLive from "./pages/CaptureLive";
-import CaptureReview from "./pages/CaptureReview";
-import DemoCenter from "./pages/DemoCenter";
-import DemoGateway from "./pages/DemoGateway";
-import ClientDemo from "./pages/ClientDemo";
-import HelpCenter from "./pages/HelpCenter";
-import TrainingAcademy from "./pages/TrainingAcademy";
-import IntakeForms from "./pages/IntakeForms";
-import NovaCopilot from "./pages/NovaCopilot";
-import BopsEngine from "./pages/BopsEngine";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
+import { Loader2 } from "lucide-react";
+
+// Lazy-loaded page components for code splitting
+const MainLayout = lazy(() => import("./components/MainLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Students = lazy(() => import("./pages/Students"));
+const StudentProfile = lazy(() => import("./pages/StudentProfile"));
+const Reports = lazy(() => import("./pages/Reports"));
+const AssessmentDashboard = lazy(() => import("./pages/AssessmentDashboard"));
+const Clinical = lazy(() => import("./pages/Clinical"));
+const SkillAcquisition = lazy(() => import("./pages/SkillAcquisition"));
+const NotesReview = lazy(() => import("./pages/NotesReview"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PostLoginRouter = lazy(() => import("./pages/PostLoginRouter"));
+const Admin = lazy(() => import("./pages/Admin"));
+const BehaviorLibrary = lazy(() => import("./pages/BehaviorLibrary"));
+const PendingApproval = lazy(() => import("./pages/PendingApproval"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const Schedule = lazy(() => import("./pages/Schedule"));
+const SecuritySettings = lazy(() => import("./pages/SecuritySettings"));
+const TeacherDashboard = lazy(() => import("./pages/TeacherDashboard"));
+const QuestionnaireForm = lazy(() => import("./pages/QuestionnaireForm"));
+const ConsentForm = lazy(() => import("./pages/ConsentForm"));
+const TeacherObservationForm = lazy(() => import("./pages/TeacherObservationForm"));
+const ClinicalFormPage = lazy(() => import("./pages/ClinicalFormPage"));
+const FormRouteResolver = lazy(() => import("./pages/FormRouteResolver"));
+const DocumentInbox = lazy(() => import("./pages/DocumentInbox"));
+const Supervision = lazy(() => import("./pages/Supervision"));
+const Referrals = lazy(() => import("./pages/Referrals"));
+const Billing = lazy(() => import("./pages/Billing"));
+const AgencyBillingPolicy = lazy(() => import("./pages/AgencyBillingPolicy"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Recruiting = lazy(() => import("./pages/Recruiting"));
+const LMS = lazy(() => import("./pages/LMS"));
+const ParentTrainingAdmin = lazy(() => import("./pages/ParentTrainingAdmin"));
+const ParentTrainingViewer = lazy(() => import("./pages/ParentTrainingViewer"));
+const ParentModulePlayer = lazy(() => import("./pages/ParentModulePlayer"));
+const ModulePlayer = lazy(() => import("./pages/ModulePlayer"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const BehaviorLabCatalog = lazy(() => import("./pages/BehaviorLabCatalog"));
+const BehaviorLabPlayer = lazy(() => import("./pages/BehaviorLabPlayer"));
+const IEPLibrary = lazy(() => import("./pages/IEPLibrary"));
+const BehaviorLibraryFull = lazy(() => import("./pages/BehaviorLibraryFull"));
+const Academy = lazy(() => import("./pages/Academy"));
+const InterventionBuilder = lazy(() => import("./pages/InterventionBuilder"));
+const ClinicalLibraryLayout = lazy(() => import("./pages/clinical-library/ClinicalLibraryLayout"));
+const ClinicalCollectionsPage = lazy(() => import("./pages/clinical-library/ClinicalCollectionsPage"));
+const GoalBanksPage = lazy(() => import("./pages/clinical-library/GoalBanksPage"));
+const GoalBankDomainPage = lazy(() => import("./pages/clinical-library/GoalBankDomainPage"));
+const GoalDetailPage = lazy(() => import("./pages/clinical-library/GoalDetailPage"));
+const CurriculumSystemsPage = lazy(() => import("./pages/clinical-library/CurriculumSystemsPage"));
+const BehaviorReductionPage = lazy(() => import("./pages/clinical-library/BehaviorReductionPage"));
+const BehaviorBankPage = lazy(() => import("./pages/clinical-library/BehaviorBankPage"));
+const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryRegistryPage"));
+const Intelligence = lazy(() => import("./pages/Intelligence"));
+const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
+const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
+const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
+const StaffProfilePage = lazy(() => import("./components/staff-profile").then(m => ({ default: m.StaffProfilePage })));
+const StaffAssignments = lazy(() => import("./pages/StaffAssignments"));
+const IncidentLogs = lazy(() => import("./pages/IncidentLogs"));
+const PayerDirectoryPage = lazy(() => import("./pages/payers/PayerDirectoryPage"));
+const PayerDetailPage = lazy(() => import("./pages/payers/PayerDetailPage"));
+const ServiceDetailPage = lazy(() => import("./pages/payers/ServiceDetailPage"));
+const Diagnostics = lazy(() => import("./pages/Diagnostics"));
+const ExportHours = lazy(() => import("./pages/ExportHours"));
+const TeacherComms = lazy(() => import("./pages/TeacherComms"));
+const SDCTraining = lazy(() => import("./pages/SDCTraining"));
+const SDCModuleDetail = lazy(() => import("./pages/SDCModuleDetail"));
+const SDCCertificationTracker = lazy(() => import("./pages/SDCCertificationTracker"));
+const BehaviorStrategies = lazy(() => import("./pages/BehaviorStrategies"));
+const BehaviorRecommendations = lazy(() => import("./pages/BehaviorRecommendations"));
+const BehaviorRecommendationDetail = lazy(() => import("./pages/BehaviorRecommendationDetail"));
+const AdvancedDesignAnalysis = lazy(() => import("./pages/AdvancedDesignAnalysis"));
+const AskNovaAI = lazy(() => import("./pages/AskNovaAI"));
+const NovaAI = lazy(() => import("./pages/NovaAI"));
+const GoalOptimization = lazy(() => import("./pages/GoalOptimization"));
+const ResourceHub = lazy(() => import("./pages/ResourceHub"));
+const Operations = lazy(() => import("./pages/Operations"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const CaptureCenter = lazy(() => import("./pages/CaptureCenter"));
+const CaptureLive = lazy(() => import("./pages/CaptureLive"));
+const CaptureReview = lazy(() => import("./pages/CaptureReview"));
+const DemoCenter = lazy(() => import("./pages/DemoCenter"));
+const DemoGateway = lazy(() => import("./pages/DemoGateway"));
+const ClientDemo = lazy(() => import("./pages/ClientDemo"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const TrainingAcademy = lazy(() => import("./pages/TrainingAcademy"));
+const IntakeForms = lazy(() => import("./pages/IntakeForms"));
+const NovaCopilot = lazy(() => import("./pages/NovaCopilot"));
+const BopsEngine = lazy(() => import("./pages/BopsEngine"));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -171,6 +180,7 @@ const App = () => {
         <SessionTimeoutWarning />
         <BrowserRouter>
         <FloatingCaptureButton />
+        <Suspense fallback={<PageLoader />}>
         <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -569,6 +579,7 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </Suspense>
         </BrowserRouter>
       </TooltipProvider>
       </DemoModeProvider>
