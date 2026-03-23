@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// ─── Engine Roster ───
 export function useBopsEngineRoster() {
   return useQuery({
     queryKey: ['bops-engine-roster'],
@@ -16,7 +15,6 @@ export function useBopsEngineRoster() {
   });
 }
 
-// ─── Student Intelligence Dashboard ───
 export function useStudentBopsDashboard(studentId: string | undefined) {
   return useQuery({
     queryKey: ['bops-intelligence-dashboard', studentId],
@@ -33,7 +31,6 @@ export function useStudentBopsDashboard(studentId: string | undefined) {
   });
 }
 
-// ─── Enable/Disable BOPS ───
 export function useToggleBops() {
   const qc = useQueryClient();
   return useMutation({
@@ -52,7 +49,6 @@ export function useToggleBops() {
   });
 }
 
-// ─── Run CFI ───
 export function useRunCfi() {
   const qc = useQueryClient();
   return useMutation({
@@ -68,18 +64,17 @@ export function useRunCfi() {
   });
 }
 
-// ─── Generate Recommendations ───
 export function useGenerateRecommendations() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
       const { error: e1 } = await supabase.rpc('refresh_bops_recommended_programs', {
-        p_student_id: studentId,
+        p_student: studentId,
         p_session_id: sessionId,
       });
       if (e1) throw e1;
       const { error: e2 } = await supabase.rpc('refresh_bops_recommended_programs_from_combo', {
-        p_student_id: studentId,
+        p_student: studentId,
         p_session_id: sessionId,
       });
       if (e2) throw e2;
@@ -92,18 +87,17 @@ export function useGenerateRecommendations() {
   });
 }
 
-// ─── Accept + Activate ───
 export function useAcceptAndActivate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
       const { error } = await supabase.rpc('accept_all_bops_recommended_programs', {
-        p_student_id: studentId,
+        p_student: studentId,
         p_session_id: sessionId,
       });
       if (error) throw error;
       const { error: e2 } = await supabase.rpc('activate_bops_programming', {
-        p_student_id: studentId,
+        p_student: studentId,
       });
       if (e2) throw e2;
     },
@@ -116,7 +110,6 @@ export function useAcceptAndActivate() {
   });
 }
 
-// ─── Set Day State + Generate Plan ───
 export function useSetDayStateAndPlan() {
   const qc = useQueryClient();
   return useMutation({
@@ -127,8 +120,8 @@ export function useSetDayStateAndPlan() {
       notes?: string;
     }) => {
       const { error } = await supabase.rpc('set_bops_day_state_and_generate_plan', {
-        p_student_id: params.studentId,
-        p_day_state: params.dayState,
+        p_student: params.studentId,
+        p_state: params.dayState,
         p_selected_by: params.selectedBy || 'Staff',
         p_notes: params.notes || null,
       });
@@ -144,12 +137,11 @@ export function useSetDayStateAndPlan() {
   });
 }
 
-// ─── Activate / Deactivate Programming ───
 export function useActivateProgramming() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ studentId }: { studentId: string }) => {
-      const { error } = await supabase.rpc('activate_bops_programming', { p_student_id: studentId });
+      const { error } = await supabase.rpc('activate_bops_programming', { p_student: studentId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -164,7 +156,7 @@ export function useDeactivateProgramming() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ studentId }: { studentId: string }) => {
-      const { error } = await supabase.rpc('deactivate_bops_programming', { p_student_id: studentId });
+      const { error } = await supabase.rpc('deactivate_bops_programming', { p_student: studentId });
       if (error) throw error;
     },
     onSuccess: () => {
