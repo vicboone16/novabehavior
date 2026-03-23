@@ -561,6 +561,10 @@ export default function StudentProfile() {
             <FolderOpen className="w-3.5 h-3.5" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="bops" className="gap-1.5 text-xs whitespace-nowrap">
+            <Shield className="w-3.5 h-3.5" />
+            BOPS
+          </TabsTrigger>
         </TabsList>
 
         {/* ====== OVERVIEW TAB ====== */}
