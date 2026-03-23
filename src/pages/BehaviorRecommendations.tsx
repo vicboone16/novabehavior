@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Sparkles, Save, BookOpen, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBehaviorRecommendations, RecommendationResult, QuickRecommendParams } from '@/hooks/useBehaviorRecommendations';
+import { useBehaviorRecommendations, RecommendationResult, QuickRecommendParams, SupplementalLayers } from '@/hooks/useBehaviorRecommendations';
 import { QuickRecommendForm } from '@/components/behavior-recommendations/QuickRecommendForm';
 import { RecommendationResultCard } from '@/components/behavior-recommendations/RecommendationResultCard';
 import { ProfileCard } from '@/components/behavior-recommendations/ProfileCard';
 import { SavedResultRow } from '@/components/behavior-recommendations/SavedResultRow';
+import { SupplementalLayersDisplay } from '@/components/behavior-recommendations/SupplementalLayersDisplay';
 
 export default function BehaviorRecommendations() {
   const navigate = useNavigate();
@@ -19,19 +20,30 @@ export default function BehaviorRecommendations() {
   const {
     profiles, savedResults, isLoading,
     quickRecommend, saveRecommendationSet, updateProfile,
+    recommendWithSupplements,
   } = useBehaviorRecommendations();
 
   const [tab, setTab] = useState('quick');
   const [recommending, setRecommending] = useState(false);
   const [results, setResults] = useState<RecommendationResult[]>([]);
+  const [supplements, setSupplements] = useState<SupplementalLayers | null>(null);
   const [lastParams, setLastParams] = useState<QuickRecommendParams | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const handleRecommend = async (params: QuickRecommendParams) => {
+  const handleRecommend = async (params: QuickRecommendParams & { behavior_key?: string }) => {
     setRecommending(true);
-    setLastParams(params);
-    const data = await quickRecommend(params);
-    setResults(data);
+    const { behavior_key, ...coreParams } = params;
+    setLastParams(coreParams);
+
+    if (behavior_key) {
+      const { strategies, supplements: supp } = await recommendWithSupplements(coreParams, behavior_key);
+      setResults(strategies);
+      setSupplements(supp);
+    } else {
+      const data = await quickRecommend(coreParams);
+      setResults(data);
+      setSupplements(null);
+    }
     setRecommending(false);
   };
 
@@ -83,6 +95,9 @@ export default function BehaviorRecommendations() {
         <TabsContent value="quick" className="space-y-4">
           <QuickRecommendForm onSubmit={handleRecommend} isLoading={recommending} />
 
+          {/* Supplemental Layers (MTSS, goals, strategies) */}
+          {supplements && <SupplementalLayersDisplay supplements={supplements} />}
+
           {results.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -114,7 +129,7 @@ export default function BehaviorRecommendations() {
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 Try clearing optional filters or selecting a different function target to broaden results.
               </p>
-              <Button variant="outline" size="sm" onClick={() => { setLastParams(null); setResults([]); }}>
+              <Button variant="outline" size="sm" onClick={() => { setLastParams(null); setResults([]); setSupplements(null); }}>
                 Clear & Try Again
               </Button>
             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Sparkles, Loader2 } from 'lucide-react';
@@ -18,6 +19,7 @@ interface Props {
     escalation_level?: string;
     age_band?: string;
     tier?: string;
+    behavior_key?: string;
   }) => void;
   isLoading: boolean;
 }
@@ -28,6 +30,7 @@ export function QuickRecommendForm({ onSubmit, isLoading }: Props) {
   const [escalationLevel, setEscalationLevel] = useState('');
   const [ageBand, setAgeBand] = useState('');
   const [tier, setTier] = useState('');
+  const [behaviorKey, setBehaviorKey] = useState('');
 
   const handleSubmit = () => {
     if (!functionTarget) return;
@@ -37,6 +40,7 @@ export function QuickRecommendForm({ onSubmit, isLoading }: Props) {
       escalation_level: escalationLevel || undefined,
       age_band: ageBand || undefined,
       tier: tier || undefined,
+      behavior_key: behaviorKey || undefined,
     });
   };
 
@@ -50,7 +54,7 @@ export function QuickRecommendForm({ onSubmit, isLoading }: Props) {
           Quick Recommend
         </CardTitle>
         <CardDescription>
-          Select behavior function and optional filters to get ranked strategy suggestions.
+          Select behavior function and optional filters to get ranked strategy suggestions with MTSS and goal layers.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -109,8 +113,17 @@ export function QuickRecommendForm({ onSubmit, isLoading }: Props) {
             </Select>
           </div>
 
-          <div className="flex items-end">
-            <Button onClick={handleSubmit} disabled={!functionTarget || isLoading} className="w-full">
+          <div className="space-y-2">
+            <Label>Behavior Key <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Input
+              placeholder="e.g. elopement, aggression"
+              value={behaviorKey}
+              onChange={e => setBehaviorKey(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-end lg:col-span-3">
+            <Button onClick={handleSubmit} disabled={!functionTarget || isLoading} className="w-full sm:w-auto">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
               Get Recommendations
             </Button>
