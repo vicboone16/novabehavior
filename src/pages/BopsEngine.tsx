@@ -3,10 +3,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BopsFrameworkSetup } from '@/components/bops/BopsFrameworkSetup';
 import { BopsStudentHub } from '@/components/bops/BopsStudentHub';
 import { BopsSubmissionReview } from '@/components/bops/BopsSubmissionReview';
-import { Shield, Users, FileCheck } from 'lucide-react';
+import { BopsEngineConsole } from '@/components/bops/BopsEngineConsole';
+import { Shield, Users, FileCheck, LayoutDashboard } from 'lucide-react';
 
 export default function BopsEngine() {
-  const [tab, setTab] = useState('students');
+  const [tab, setTab] = useState('engine');
 
   return (
     <div className="space-y-6">
@@ -19,6 +20,10 @@ export default function BopsEngine() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
+          <TabsTrigger value="engine" className="gap-1.5">
+            <LayoutDashboard className="w-4 h-4" />
+            Engine Console
+          </TabsTrigger>
           <TabsTrigger value="students" className="gap-1.5">
             <Users className="w-4 h-4" />
             Student Profiles
@@ -33,6 +38,9 @@ export default function BopsEngine() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="engine">
+          <BopsEngineConsole />
+        </TabsContent>
         <TabsContent value="students">
           <BopsStudentHub />
         </TabsContent>
