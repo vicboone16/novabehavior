@@ -101,6 +101,7 @@ import {
 } from '@/components/client-profile/tabs';
 import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { StudentBopsTab } from '@/components/bops/StudentBopsTab';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
@@ -561,6 +562,10 @@ export default function StudentProfile() {
             <FolderOpen className="w-3.5 h-3.5" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="bops" className="gap-1.5 text-xs whitespace-nowrap">
+            <Shield className="w-3.5 h-3.5" />
+            BOPS
+          </TabsTrigger>
         </TabsList>
 
         {/* ====== OVERVIEW TAB ====== */}
@@ -998,6 +1003,11 @@ export default function StudentProfile() {
             caseAttributes={clientProfile.caseAttributes}
             onRefetch={clientProfile.refetch}
           />
+        </TabsContent>
+
+        {/* ====== BOPS TAB ====== */}
+        <TabsContent value="bops" className="space-y-4">
+          <StudentBopsTab studentId={student.id} />
         </TabsContent>
       </Tabs>
 
