@@ -77,6 +77,9 @@ export function BopsStudentHub() {
               <BopsProfileCard studentId={studentId} profile={profile} />
             )}
           </TabsContent>
+          <TabsContent value="placement">
+            <BopsPlacementPanel studentId={studentId} />
+          </TabsContent>
           <TabsContent value="assessment">
             <BopsAssessment studentId={studentId} />
           </TabsContent>
