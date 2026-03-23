@@ -8,6 +8,7 @@ import { BopsProfileCard } from './BopsProfileCard';
 import { BopsProgramBank } from './BopsProgramBank';
 import { BopsDailyAdjustment } from './BopsDailyAdjustment';
 import { BopsSyncPanel } from './BopsSyncPanel';
+import { BopsPlacementPanel } from './BopsPlacementPanel';
 import { BopsAssessment } from './BopsAssessment';
 import { BopsResults } from './BopsResults';
 import { BopsWorkflowPanel } from './BopsWorkflowPanel';
