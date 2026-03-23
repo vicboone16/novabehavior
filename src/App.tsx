@@ -180,6 +180,7 @@ const App = () => {
         <SessionTimeoutWarning />
         <BrowserRouter>
         <FloatingCaptureButton />
+        <Suspense fallback={<PageLoader />}>
         <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
