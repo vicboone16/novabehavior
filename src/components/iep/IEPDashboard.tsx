@@ -2,20 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Users, MessageSquare, Calendar, BookOpen,
   Plus, ChevronRight, AlertCircle, CheckCircle2, Clock,
-  Download, Eye, Send
+  Download, ClipboardCheck
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 import { IEPCasePlanner } from './dashboard/IEPCasePlanner';
 import { IEPServiceTracker } from './dashboard/IEPServiceTracker';
 import { IEPCommsLog } from './dashboard/IEPCommsLog';
 import { IEPAutoWorkbook } from './dashboard/IEPAutoWorkbook';
+import { IEPEvalTracker } from './dashboard/IEPEvalTracker';
+import { IEPStudentDetail } from './dashboard/IEPStudentDetail';
 
 interface IEPStats {
   totalStudents: number;
@@ -26,7 +29,9 @@ interface IEPStats {
 
 export function IEPDashboard() {
   const { user } = useAuth();
+  const { students } = useDataStore();
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; color?: string } | null>(null);
   const [stats, setStats] = useState<IEPStats>({
     totalStudents: 0,
     upcomingMeetings: 0,
@@ -48,7 +53,6 @@ export function IEPDashboard() {
       if (error) throw error;
       setCaseData(data || []);
 
-      // Calculate stats
       const cases = data || [];
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -70,7 +74,7 @@ export function IEPDashboard() {
           new Date(c.updated_at) >= monthStart
         ).length,
       });
-    } catch (err: any) {
+    } catch {
       toast.error('Failed to load IEP data');
     } finally {
       setIsLoading(false);
@@ -81,12 +85,51 @@ export function IEPDashboard() {
     fetchData();
   }, [fetchData]);
 
+  // Calendar sync: creates an appointment entry when scheduling from eval tracker
+  const handleScheduleAppointment = async (data: { student_id: string; title: string; date: string; type: string; notes?: string }) => {
+    if (!user) return;
+    try {
+      const startTime = new Date(data.date);
+      const endTime = new Date(startTime.getTime() + 30 * 60000); // 30 min default
+      
+      const { error } = await supabase.from('appointments').insert({
+        title: data.title,
+        student_id: data.student_id,
+        created_by: user.id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        duration_minutes: 30,
+        appointment_type: data.type,
+        status: 'scheduled',
+        notes: data.notes || null,
+      } as any);
+      
+      if (error) throw error;
+      toast.success(`${data.title} added to calendar`);
+    } catch (err: any) {
+      toast.error('Failed to add to calendar: ' + err.message);
+    }
+  };
+
+  // If a student is selected, show their detail view
+  if (selectedStudent) {
+    return (
+      <IEPStudentDetail
+        student={selectedStudent}
+        onClose={() => setSelectedStudent(null)}
+      />
+    );
+  }
+
   const statCards = [
     { label: 'Active Students', value: stats.totalStudents, icon: Users, color: 'text-blue-600' },
     { label: 'Upcoming Meetings', value: stats.upcomingMeetings, icon: Calendar, color: 'text-emerald-600' },
     { label: 'Overdue Items', value: stats.overdueItems, icon: AlertCircle, color: 'text-amber-600' },
     { label: 'Completed This Month', value: stats.completedThisMonth, icon: CheckCircle2, color: 'text-green-600' },
   ];
+
+  // Get unique students from case data for the overview clickable list
+  const studentIds = [...new Set(caseData.map(c => c.student_id))];
 
   return (
     <div className="space-y-4">
@@ -112,6 +155,10 @@ export function IEPDashboard() {
             <BookOpen className="w-3.5 h-3.5" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="eval-tracker" className="gap-1.5 text-xs">
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            Eval Tracker
+          </TabsTrigger>
           <TabsTrigger value="case-planner" className="gap-1.5 text-xs">
             <FileText className="w-3.5 h-3.5" />
             Case Planner
@@ -132,31 +179,47 @@ export function IEPDashboard() {
 
         <TabsContent value="overview">
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Recent Activity */}
+            {/* Students on caseload - clickable */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Recent Activity</CardTitle>
+                <CardTitle className="text-sm">Students on Caseload</CardTitle>
               </CardHeader>
               <CardContent>
-                {caseData.length === 0 ? (
+                {studentIds.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground text-sm">
-                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p>No IEP activity yet</p>
-                    <p className="text-xs mt-1">Start by adding case data from the Case Planner tab</p>
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>No students on IEP caseload</p>
+                    <p className="text-xs mt-1">Add a case plan or evaluation to get started</p>
                   </div>
                 ) : (
                   <ScrollArea className="h-48">
-                    <div className="space-y-2">
-                      {caseData.slice(0, 10).map((item: any) => (
-                        <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 text-sm">
-                          <Badge variant="outline" className="text-xs shrink-0">
-                            {item.data_type.replace('_', ' ')}
-                          </Badge>
-                          <span className="truncate text-muted-foreground">
-                            {new Date(item.updated_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="space-y-1">
+                      {studentIds.map(sid => {
+                        const student = students.find(s => s.id === sid);
+                        if (!student) return null;
+                        const studentCases = caseData.filter(c => c.student_id === sid);
+                        const activeCount = studentCases.filter(c => c.status === 'active').length;
+                        return (
+                          <div
+                            key={sid}
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors"
+                            onClick={() => setSelectedStudent({ id: student.id, name: student.name, color: student.color })}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: student.color || 'hsl(var(--primary))' }}>
+                                <span className="text-[10px] font-bold text-white">{student.name.charAt(0)}</span>
+                              </div>
+                              <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                                {student.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {activeCount > 0 && <Badge variant="secondary" className="text-[10px] h-5">{activeCount} active</Badge>}
+                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 )}
@@ -169,6 +232,9 @@ export function IEPDashboard() {
                 <CardTitle className="text-sm">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start gap-2 text-sm" onClick={() => setActiveTab('eval-tracker')}>
+                  <ClipboardCheck className="w-4 h-4" /> New Evaluation Tracker
+                </Button>
                 <Button variant="outline" className="w-full justify-start gap-2 text-sm" onClick={() => setActiveTab('case-planner')}>
                   <Plus className="w-4 h-4" /> New Case Plan
                 </Button>
@@ -184,6 +250,10 @@ export function IEPDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="eval-tracker">
+          <IEPEvalTracker onScheduleAppointment={handleScheduleAppointment} />
         </TabsContent>
 
         <TabsContent value="case-planner">
