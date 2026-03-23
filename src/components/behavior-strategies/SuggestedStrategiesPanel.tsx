@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Sparkles, ChevronDown, ChevronUp, Loader2, Plus, Eye, Save, BookOpen, AlertCircle } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Loader2, Plus, Eye, Save, AlertCircle, Layers, Target, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import type { SupplementalLayers } from '@/hooks/useBehaviorRecommendations';
 
 const FUNCTIONS = ['attention', 'escape', 'access', 'sensory'];
 const ENVIRONMENTS = ['classroom', 'home', 'community', 'clinic', 'playground', 'cafeteria', 'hallway'];
@@ -30,13 +31,11 @@ interface StrategyResult {
 }
 
 interface SuggestedStrategiesPanelProps {
-  /** Pre-filled function from FBA/BIP analysis */
   detectedFunction?: string;
-  /** Pre-filled environment */
   detectedEnvironment?: string;
-  /** Student ID to attach when saving */
   studentId?: string;
-  /** Called when user clicks "Add to Draft" with strategy content to append */
+  /** Behavior key to fetch supplemental MTSS/goal layers */
+  behaviorKey?: string;
   onAddToDraft?: (content: {
     strategyName: string;
     description: string;
@@ -44,7 +43,6 @@ interface SuggestedStrategiesPanelProps {
     familyVersion: string;
     category: string;
   }) => void;
-  /** Called when user appends a raw strategy string (BIP-style) */
   onAppendStrategy?: (strategy: string, type?: string) => void;
 }
 
@@ -61,6 +59,7 @@ export function SuggestedStrategiesPanel({
   detectedFunction,
   detectedEnvironment,
   studentId,
+  behaviorKey,
   onAddToDraft,
   onAppendStrategy,
 }: SuggestedStrategiesPanelProps) {
@@ -73,12 +72,12 @@ export function SuggestedStrategiesPanel({
   const [tier, setTier] = useState('');
 
   const [results, setResults] = useState<StrategyResult[]>([]);
+  const [supplements, setSupplements] = useState<SupplementalLayers | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
-  // Sync detected values when they change
   if (detectedFunction && detectedFunction !== functionTarget && !hasSearched) {
     setFunctionTarget(detectedFunction);
   }
@@ -97,16 +96,65 @@ export function SuggestedStrategiesPanel({
       if (ageBand && ageBand !== '__clear__') args.p_age_band = ageBand;
       if (tier && tier !== '__clear__') args.p_tier = tier;
 
-      const { data, error } = await (supabase.rpc as any)('recommend_behavior_strategies_v2', args);
-      if (error) throw error;
-      setResults((data || []).sort((a: StrategyResult, b: StrategyResult) => b.priority_score - a.priority_score));
+      // Parallel: fetch strategies + supplemental layers
+      const [stratResult, suppResult] = await Promise.all([
+        (supabase.rpc as any)('recommend_behavior_strategies_v2', args),
+        behaviorKey
+          ? (supabase.rpc as any)('get_behavior_full_recommendations', { p_behavior_key: behaviorKey })
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      if (stratResult.error) throw stratResult.error;
+      setResults((stratResult.data || []).sort((a: StrategyResult, b: StrategyResult) => b.priority_score - a.priority_score));
+
+      // Process supplemental layers
+      if (suppResult.data?.length) {
+        const rows = suppResult.data;
+        const mtssMap = new Map<string, any>();
+        const antecedentSet = new Set<string>();
+        const teachingSet = new Set<string>();
+        const reactiveSet = new Set<string>();
+        const goalMap = new Map<string, any>();
+        const benchmarkSet = new Set<string>();
+
+        for (const r of rows) {
+          if (r.mtss_intervention_id && !mtssMap.has(r.mtss_intervention_id)) {
+            mtssMap.set(r.mtss_intervention_id, {
+              tier: r.tier, intervention_name: r.mtss_intervention_name,
+              description: r.mtss_description, support_type: r.support_type || '', setting_scope: r.setting_scope || '',
+            });
+          }
+          if (r.strategy && r.intervention_type) {
+            const type = r.intervention_type.toLowerCase();
+            if (type.includes('antecedent')) antecedentSet.add(r.strategy);
+            else if (type.includes('reactive') || type.includes('consequence')) reactiveSet.add(r.strategy);
+            else teachingSet.add(r.strategy);
+          }
+          if (r.goal_title && !goalMap.has(r.goal_title)) {
+            goalMap.set(r.goal_title, { title: r.goal_title, domain: r.goal_domain, support_level: r.support_level });
+          }
+          if (r.benchmark_goal) benchmarkSet.add(r.benchmark_goal);
+        }
+
+        setSupplements({
+          mtss_recommendations: Array.from(mtssMap.values()),
+          antecedent_strategies: Array.from(antecedentSet),
+          teaching_strategies: Array.from(teachingSet),
+          reactive_strategies: Array.from(reactiveSet),
+          linked_goals: Array.from(goalMap.values()),
+          benchmark_goals: Array.from(benchmarkSet),
+        });
+      } else {
+        setSupplements(null);
+      }
     } catch (err: any) {
       toast.error('Recommendation failed: ' + err.message);
       setResults([]);
+      setSupplements(null);
     } finally {
       setLoading(false);
     }
-  }, [functionTarget, environment, escalationLevel, ageBand, tier]);
+  }, [functionTarget, environment, escalationLevel, ageBand, tier, behaviorKey]);
 
   const handleSaveSet = useCallback(async () => {
     if (results.length === 0) return;
@@ -248,6 +296,91 @@ export function SuggestedStrategiesPanel({
                 </Button>
               </div>
             </div>
+
+            {/* Supplemental Layers */}
+            {supplements && (
+              <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+                <p className="text-xs font-semibold flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  Supplemental Layers
+                </p>
+
+                {/* MTSS Interventions */}
+                {supplements.mtss_recommendations.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1">MTSS Interventions</p>
+                    <div className="space-y-1">
+                      {supplements.mtss_recommendations.map((m, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{m.tier}</Badge>
+                          <span className="font-medium">{m.intervention_name}</span>
+                          {m.support_type && <Badge variant="secondary" className="text-[10px] px-1 py-0">{m.support_type}</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strategy Groups */}
+                <div className="grid grid-cols-3 gap-2">
+                  {supplements.antecedent_strategies.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                        <Shield className="h-3 w-3" /> Antecedent
+                      </p>
+                      <ul className="text-[11px] space-y-0.5">
+                        {supplements.antecedent_strategies.map((s, i) => <li key={i} className="text-foreground">• {s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {supplements.teaching_strategies.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1">Teaching</p>
+                      <ul className="text-[11px] space-y-0.5">
+                        {supplements.teaching_strategies.map((s, i) => <li key={i} className="text-foreground">• {s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {supplements.reactive_strategies.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground mb-1">Reactive</p>
+                      <ul className="text-[11px] space-y-0.5">
+                        {supplements.reactive_strategies.map((s, i) => <li key={i} className="text-foreground">• {s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Goals & Benchmarks */}
+                {supplements.linked_goals.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                      <Target className="h-3 w-3" /> Linked Goals
+                    </p>
+                    <div className="space-y-0.5">
+                      {supplements.linked_goals.map((g, i) => (
+                        <div key={i} className="text-[11px] flex items-center gap-1.5">
+                          <span>{g.title}</span>
+                          {g.domain && <Badge variant="outline" className="text-[9px] px-1 py-0">{g.domain}</Badge>}
+                          {g.support_level && <Badge variant="secondary" className="text-[9px] px-1 py-0">{g.support_level}</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {supplements.benchmark_goals.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-medium text-muted-foreground mb-1">Benchmark Goals</p>
+                    <div className="flex flex-wrap gap-1">
+                      {supplements.benchmark_goals.map((b, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px]">{b}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Results */}
             {results.length > 0 && (

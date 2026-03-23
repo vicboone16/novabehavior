@@ -70,6 +70,33 @@ export interface QuickRecommendParams {
   tier?: string;
 }
 
+// ─── NEW: MTSS + Goal supplement types ───
+export interface MTSSRecommendation {
+  behavior_key: string;
+  mtss_intervention_id: string;
+  mtss_intervention_name: string;
+  tier: string;
+  support_type: string;
+  mtss_description: string;
+  setting_scope: string;
+  intervention_type: string;
+  strategy: string;
+  goal_title: string | null;
+  benchmark_goal: string | null;
+  skill_target: string | null;
+  goal_domain: string | null;
+  support_level: string | null;
+}
+
+export interface SupplementalLayers {
+  mtss_recommendations: { tier: string; intervention_name: string; description: string; support_type: string; setting_scope: string }[];
+  antecedent_strategies: string[];
+  teaching_strategies: string[];
+  reactive_strategies: string[];
+  linked_goals: { title: string; domain: string | null; support_level: string | null }[];
+  benchmark_goals: string[];
+}
+
 export function useBehaviorRecommendations() {
   const [profiles, setProfiles] = useState<RecommendationProfile[]>([]);
   const [savedResults, setSavedResults] = useState<SavedResult[]>([]);
@@ -79,7 +106,6 @@ export function useBehaviorRecommendations() {
     try {
       const { data, error } = await (supabase.from as any)('v_behavior_recommendation_profiles').select('*');
       if (error) {
-        // fallback to base table
         const { data: base } = await supabase.from('behavior_recommendation_profiles').select('*');
         setProfiles((base || []) as RecommendationProfile[]);
       } else {
@@ -128,6 +154,101 @@ export function useBehaviorRecommendations() {
     }
   }, []);
 
+  // ─── NEW: Fetch supplemental MTSS/goal layers for a behavior key ───
+  const fetchSupplementalLayers = useCallback(async (behaviorKey: string): Promise<SupplementalLayers> => {
+    const empty: SupplementalLayers = {
+      mtss_recommendations: [],
+      antecedent_strategies: [],
+      teaching_strategies: [],
+      reactive_strategies: [],
+      linked_goals: [],
+      benchmark_goals: [],
+    };
+
+    try {
+      const { data, error } = await (supabase.rpc as any)('get_behavior_full_recommendations', {
+        p_behavior_key: behaviorKey,
+      });
+      if (error) throw error;
+      if (!data?.length) return empty;
+
+      const rows = data as MTSSRecommendation[];
+
+      // Deduplicate MTSS interventions
+      const mtssMap = new Map<string, typeof empty.mtss_recommendations[0]>();
+      const antecedentSet = new Set<string>();
+      const teachingSet = new Set<string>();
+      const reactiveSet = new Set<string>();
+      const goalMap = new Map<string, typeof empty.linked_goals[0]>();
+      const benchmarkSet = new Set<string>();
+
+      for (const r of rows) {
+        // MTSS interventions
+        if (r.mtss_intervention_id && !mtssMap.has(r.mtss_intervention_id)) {
+          mtssMap.set(r.mtss_intervention_id, {
+            tier: r.tier,
+            intervention_name: r.mtss_intervention_name,
+            description: r.mtss_description,
+            support_type: r.support_type || '',
+            setting_scope: r.setting_scope || '',
+          });
+        }
+
+        // Strategies by type
+        if (r.strategy && r.intervention_type) {
+          const type = r.intervention_type.toLowerCase();
+          if (type.includes('antecedent')) antecedentSet.add(r.strategy);
+          else if (type.includes('teaching') || type.includes('replacement')) teachingSet.add(r.strategy);
+          else if (type.includes('reactive') || type.includes('consequence')) reactiveSet.add(r.strategy);
+          else teachingSet.add(r.strategy); // default bucket
+        }
+
+        // Goals
+        if (r.goal_title && !goalMap.has(r.goal_title)) {
+          goalMap.set(r.goal_title, {
+            title: r.goal_title,
+            domain: r.goal_domain || null,
+            support_level: r.support_level || null,
+          });
+        }
+
+        // Benchmarks
+        if (r.benchmark_goal) benchmarkSet.add(r.benchmark_goal);
+      }
+
+      return {
+        mtss_recommendations: Array.from(mtssMap.values()),
+        antecedent_strategies: Array.from(antecedentSet),
+        teaching_strategies: Array.from(teachingSet),
+        reactive_strategies: Array.from(reactiveSet),
+        linked_goals: Array.from(goalMap.values()),
+        benchmark_goals: Array.from(benchmarkSet),
+      };
+    } catch (err: any) {
+      console.error('Failed to load supplemental layers:', err.message);
+      return empty;
+    }
+  }, []);
+
+  // ─── NEW: Combined recommend with supplements ───
+  const recommendWithSupplements = useCallback(async (
+    params: QuickRecommendParams,
+    behaviorKey?: string
+  ): Promise<{ strategies: RecommendationResult[]; supplements: SupplementalLayers }> => {
+    const [strategies, supplements] = await Promise.all([
+      quickRecommend(params),
+      behaviorKey ? fetchSupplementalLayers(behaviorKey) : Promise.resolve({
+        mtss_recommendations: [],
+        antecedent_strategies: [],
+        teaching_strategies: [],
+        reactive_strategies: [],
+        linked_goals: [],
+        benchmark_goals: [],
+      } as SupplementalLayers),
+    ]);
+    return { strategies, supplements };
+  }, [quickRecommend, fetchSupplementalLayers]);
+
   const saveRecommendationSet = useCallback(async (
     params: QuickRecommendParams,
     strategies: RecommendationResult[],
@@ -135,7 +256,6 @@ export function useBehaviorRecommendations() {
     notes?: string
   ): Promise<string | null> => {
     try {
-      // 1) Insert result
       const { data: resultData, error: resultErr } = await supabase
         .from('behavior_recommendation_results')
         .insert({
@@ -153,7 +273,6 @@ export function useBehaviorRecommendations() {
       if (resultErr) throw resultErr;
       const resultId = resultData.id;
 
-      // 2) Insert result strategies
       const stratRows = strategies.map(s => ({
         recommendation_result_id: resultId,
         strategy_id: s.strategy_id,
@@ -230,5 +349,7 @@ export function useBehaviorRecommendations() {
     profiles, savedResults, isLoading,
     fetchAll, quickRecommend, saveRecommendationSet,
     fetchResultDetail, toggleStrategySelected, updateProfile,
+    // NEW supplemental layer methods
+    fetchSupplementalLayers, recommendWithSupplements,
   };
 }
