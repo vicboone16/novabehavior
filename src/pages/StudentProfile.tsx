@@ -101,6 +101,7 @@ import {
 } from '@/components/client-profile/tabs';
 import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { StudentBopsTab } from '@/components/bops/StudentBopsTab';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
