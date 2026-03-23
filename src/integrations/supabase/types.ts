@@ -25019,6 +25019,150 @@ export type Database = {
           },
         ]
       }
+      iep_evaluation_tracker: {
+        Row: {
+          ap_consent_date: string | null
+          classification: string | null
+          consent_received: boolean
+          consent_requested: boolean
+          created_at: string
+          created_by: string
+          eval_due_date: string | null
+          eval_type: string
+          forms_scored: boolean
+          id: string
+          iep_meeting_date: string | null
+          iep_meeting_notes: string | null
+          iep_scheduled: boolean
+          notes: string | null
+          observation_1_completed: boolean
+          observation_1_date: string | null
+          observation_1_notes: string | null
+          observation_2_completed: boolean
+          observation_2_date: string | null
+          observation_2_notes: string | null
+          observation_3_completed: boolean
+          observation_3_date: string | null
+          observation_3_notes: string | null
+          observation_4_completed: boolean
+          observation_4_date: string | null
+          observation_4_notes: string | null
+          observation_5_completed: boolean
+          observation_5_date: string | null
+          observation_5_notes: string | null
+          parent_forms_administered: boolean
+          parent_forms_collected: boolean
+          parent_input: boolean
+          parent_meeting_date: string | null
+          parent_meeting_notes: string | null
+          present_at_iep: boolean
+          record_review: boolean
+          report_drafted: boolean
+          report_finalized: boolean
+          school_site: string | null
+          status: string
+          student_id: string
+          teacher_forms_administered: boolean
+          teacher_forms_collected: boolean
+          teacher_input: boolean
+          updated_at: string
+        }
+        Insert: {
+          ap_consent_date?: string | null
+          classification?: string | null
+          consent_received?: boolean
+          consent_requested?: boolean
+          created_at?: string
+          created_by: string
+          eval_due_date?: string | null
+          eval_type?: string
+          forms_scored?: boolean
+          id?: string
+          iep_meeting_date?: string | null
+          iep_meeting_notes?: string | null
+          iep_scheduled?: boolean
+          notes?: string | null
+          observation_1_completed?: boolean
+          observation_1_date?: string | null
+          observation_1_notes?: string | null
+          observation_2_completed?: boolean
+          observation_2_date?: string | null
+          observation_2_notes?: string | null
+          observation_3_completed?: boolean
+          observation_3_date?: string | null
+          observation_3_notes?: string | null
+          observation_4_completed?: boolean
+          observation_4_date?: string | null
+          observation_4_notes?: string | null
+          observation_5_completed?: boolean
+          observation_5_date?: string | null
+          observation_5_notes?: string | null
+          parent_forms_administered?: boolean
+          parent_forms_collected?: boolean
+          parent_input?: boolean
+          parent_meeting_date?: string | null
+          parent_meeting_notes?: string | null
+          present_at_iep?: boolean
+          record_review?: boolean
+          report_drafted?: boolean
+          report_finalized?: boolean
+          school_site?: string | null
+          status?: string
+          student_id: string
+          teacher_forms_administered?: boolean
+          teacher_forms_collected?: boolean
+          teacher_input?: boolean
+          updated_at?: string
+        }
+        Update: {
+          ap_consent_date?: string | null
+          classification?: string | null
+          consent_received?: boolean
+          consent_requested?: boolean
+          created_at?: string
+          created_by?: string
+          eval_due_date?: string | null
+          eval_type?: string
+          forms_scored?: boolean
+          id?: string
+          iep_meeting_date?: string | null
+          iep_meeting_notes?: string | null
+          iep_scheduled?: boolean
+          notes?: string | null
+          observation_1_completed?: boolean
+          observation_1_date?: string | null
+          observation_1_notes?: string | null
+          observation_2_completed?: boolean
+          observation_2_date?: string | null
+          observation_2_notes?: string | null
+          observation_3_completed?: boolean
+          observation_3_date?: string | null
+          observation_3_notes?: string | null
+          observation_4_completed?: boolean
+          observation_4_date?: string | null
+          observation_4_notes?: string | null
+          observation_5_completed?: boolean
+          observation_5_date?: string | null
+          observation_5_notes?: string | null
+          parent_forms_administered?: boolean
+          parent_forms_collected?: boolean
+          parent_input?: boolean
+          parent_meeting_date?: string | null
+          parent_meeting_notes?: string | null
+          present_at_iep?: boolean
+          record_review?: boolean
+          report_drafted?: boolean
+          report_finalized?: boolean
+          school_site?: string | null
+          status?: string
+          student_id?: string
+          teacher_forms_administered?: boolean
+          teacher_forms_collected?: boolean
+          teacher_input?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       iep_extracted_accommodations: {
         Row: {
           accommodation_text: string | null
