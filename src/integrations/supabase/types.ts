@@ -67991,30 +67991,20 @@ export type Database = {
         }
         Returns: string
       }
-      create_form_instance:
-        | {
-            Args: {
-              p_completion_mode?: string
-              p_linked_entity_id: string
-              p_linked_entity_type: string
-              p_template_code: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_assigned_contact_id?: string
-              p_completion_mode?: string
-              p_created_by?: string
-              p_linked_entity_id: string
-              p_linked_entity_type: string
-              p_packet_id?: string
-              p_source_type?: string
-              p_template_code: string
-              p_title_override?: string
-            }
-            Returns: string
-          }
+      create_form_instance: {
+        Args: {
+          p_assigned_contact_id?: string
+          p_completion_mode?: string
+          p_created_by?: string
+          p_linked_entity_id: string
+          p_linked_entity_type: string
+          p_packet_id?: string
+          p_source_type?: string
+          p_template_code: string
+          p_title_override?: string
+        }
+        Returns: string
+      }
       create_form_packet: {
         Args: {
           p_delivery_method?: string
