@@ -35,6 +35,8 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
   
   const { students } = useDataStore();
   const student = students.find(s => s.id === studentId);
+  const { data: bopsPrograms } = useStudentBopsPrograms(studentId);
+  const bopsCount = bopsPrograms?.length || 0;
   
   if (!student) return null;
 
