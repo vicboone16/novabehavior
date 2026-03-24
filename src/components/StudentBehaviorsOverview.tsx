@@ -1765,6 +1765,44 @@ export function StudentBehaviorsOverview({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Behavior Definition Dialog */}
+      <Dialog open={!!editingDefBehavior} onOpenChange={(open) => !open && setEditingDefBehavior(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Definition — {editingDefBehavior?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Operational Definition</Label>
+              <textarea
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={editDefText}
+                onChange={(e) => setEditDefText(e.target.value)}
+                placeholder="Provide a clear, observable, and measurable definition..."
+              />
+              <p className="text-xs text-muted-foreground">
+                A good operational definition is observable, measurable, and specific enough that multiple observers would agree on occurrence.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingDefBehavior(null)}>Cancel</Button>
+              <Button 
+                className="flex-1" 
+                onClick={() => {
+                  if (editingDefBehavior) {
+                    updateBehaviorDefinition(studentId, editingDefBehavior.id, editDefText.trim());
+                    toast.success(`Definition updated for ${editingDefBehavior.name}`);
+                    setEditingDefBehavior(null);
+                  }
+                }}
+              >
+                Save Definition
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
