@@ -140,7 +140,21 @@ export function useStaffingCapacityVsLoad() {
         .from('v_staffing_capacity_vs_load' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve staff names
+      const userIds = [...new Set((data || []).map((d: any) => d.user_id).filter(Boolean))];
+      if (userIds.length === 0) return data as any[];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, first_name, last_name')
+        .in('user_id', userIds);
+      const nameMap = new Map((profiles || []).map((p: any) => [
+        p.user_id,
+        p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown'
+      ]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        staff_name: nameMap.get(d.user_id) || d.user_id?.slice(0, 8) + '…',
+      })) as any[];
     },
   });
 }
