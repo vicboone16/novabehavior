@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -6,76 +6,37 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Download, Image, FileText } from 'lucide-react';
+import { Download, Image, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface GraphExportButtonProps {
-  /** The CSS selector or ref for the chart container to capture */
   containerRef: React.RefObject<HTMLDivElement>;
   filename?: string;
+  studentName?: string;
 }
 
-async function captureToCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
-  // Find the SVG inside the recharts container
-  const svg = element.querySelector('svg.recharts-surface') || element.querySelector('svg');
-  if (!svg) throw new Error('No chart SVG found');
-
-  const svgEl = svg as SVGSVGElement;
-  const bbox = svgEl.getBoundingClientRect();
-  const width = bbox.width || 800;
-  const height = bbox.height || 400;
-
-  // Clone the SVG and inline computed styles
-  const clone = svgEl.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute('width', String(width));
-  clone.setAttribute('height', String(height));
-  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-
-  // Inline styles from the original
-  const allOriginal = svgEl.querySelectorAll('*');
-  const allCloned = clone.querySelectorAll('*');
-  allOriginal.forEach((origEl, i) => {
-    const clonedEl = allCloned[i];
-    if (clonedEl && origEl instanceof Element) {
-      const computed = window.getComputedStyle(origEl);
-      (clonedEl as HTMLElement).style.cssText = computed.cssText;
-    }
+async function captureHighQuality(element: HTMLElement): Promise<HTMLCanvasElement> {
+  const canvas = await html2canvas(element, {
+    scale: 3,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    allowTaint: true,
+    removeContainer: true,
   });
-
-  const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(clone);
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const scale = 2; // retina
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      const ctx = canvas.getContext('2d')!;
-      ctx.scale(scale, scale);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      resolve(canvas);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
+  return canvas;
 }
 
-export function GraphExportButton({ containerRef, filename = 'chart' }: GraphExportButtonProps) {
+export function GraphExportButton({ containerRef, filename = 'chart', studentName }: GraphExportButtonProps) {
   const [exporting, setExporting] = useState(false);
 
   const exportAsPng = async () => {
     if (!containerRef.current) return;
     setExporting(true);
     try {
-      const canvas = await captureToCanvas(containerRef.current);
+      const canvas = await captureHighQuality(containerRef.current);
       canvas.toBlob((blob) => {
         if (!blob) return;
         const link = document.createElement('a');
@@ -97,14 +58,45 @@ export function GraphExportButton({ containerRef, filename = 'chart' }: GraphExp
     if (!containerRef.current) return;
     setExporting(true);
     try {
-      const canvas = await captureToCanvas(containerRef.current);
+      const canvas = await captureHighQuality(containerRef.current);
       const imgData = canvas.toDataURL('image/png');
+      
+      const pdfWidth = canvas.width / 3;
+      const pdfHeight = canvas.height / 3;
+      const headerHeight = 40;
+      const footerHeight = 20;
+      const margin = 20;
+      const totalHeight = pdfHeight + headerHeight + footerHeight + margin * 2;
+      const totalWidth = pdfWidth + margin * 2;
+
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        orientation: totalWidth > totalHeight ? 'landscape' : 'portrait',
         unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2],
+        format: [totalWidth, totalHeight],
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+
+      // Header
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      const title = studentName ? `${studentName} — Behavior Data` : filename;
+      pdf.text(title, margin, margin + 14);
+
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      const dateStr = new Date().toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+      pdf.text(`Exported: ${dateStr}`, margin, margin + 28);
+
+      // Chart image
+      pdf.addImage(imgData, 'PNG', margin, margin + headerHeight, pdfWidth, pdfHeight);
+
+      // Footer
+      pdf.setFontSize(7);
+      pdf.setTextColor(150);
+      pdf.text('Nova Behavioral Health', margin, totalHeight - 10);
+
       pdf.save(`${filename}.pdf`);
       toast.success('Graph exported as PDF');
     } catch (err) {
@@ -119,8 +111,8 @@ export function GraphExportButton({ containerRef, filename = 'chart' }: GraphExp
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" disabled={exporting} className="gap-1.5">
-          <Download className="w-3.5 h-3.5" />
-          Export Graph
+          {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          Export
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
