@@ -488,6 +488,7 @@ const App = () => {
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
               <Route path="/bops" element={<BopsEngine />} />
+              <Route path="/district-intelligence" element={<DistrictIntelligence />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
