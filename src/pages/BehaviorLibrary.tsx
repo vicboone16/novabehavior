@@ -465,10 +465,38 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
     setPromotingBehavior(null);
   };
 
-  const handleAdvancedMerge = (sourceId: string, targetId: string, useSourceName: boolean) => {
-    // Remove the source from DB since it's being merged
+  const handleAdvancedMerge = async (sourceId: string, targetId: string, useSourceName: boolean) => {
+    // 1. Update DB-side session_data and behavior_session_data to remap source -> target
+    try {
+      // Remap session_data rows
+      await supabase
+        .from('session_data')
+        .update({ behavior_id: targetId } as any)
+        .eq('behavior_id', sourceId);
+
+      // Remap behavior_session_data rows
+      await supabase
+        .from('behavior_session_data')
+        .update({ behavior_id: targetId } as any)
+        .eq('behavior_id', sourceId);
+
+      // Update student_behavior_map entries
+      await supabase
+        .from('student_behavior_map')
+        .update({ behavior_entry_id: targetId } as any)
+        .eq('behavior_entry_id', sourceId);
+
+      console.log(`[Merge] Remapped DB records from ${sourceId} -> ${targetId}`);
+    } catch (dbErr) {
+      console.error('[Merge] DB remap error (continuing with local merge):', dbErr);
+    }
+
+    // 2. Remove the source from behavior bank DB
     removeCustomBehaviorFromDB(sourceId);
+    
+    // 3. Update local store
     advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
+    
     toast({ 
       title: 'Behaviors merged', 
       description: 'All data has been preserved and behaviors combined.' 
