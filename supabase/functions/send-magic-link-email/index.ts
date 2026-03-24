@@ -19,7 +19,6 @@ interface SendMagicLinkRequest {
   password?: string;
   pin?: string;
 }
-}
 
 interface EmailPayload {
   recipientEmail: string;
