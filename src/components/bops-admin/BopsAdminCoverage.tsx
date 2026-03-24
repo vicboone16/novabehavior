@@ -16,7 +16,7 @@ export function BopsAdminCoverage() {
 
   if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
-  const types = [...new Set((audit || []).map((a: any) => a.profile_type))];
+  const types = [...new Set((audit || []).map((a: any) => a.profile_type))] as string[];
   const totalCovered = (audit || []).filter((a: any) => !a.missing_programs).length;
   const totalMissing = (audit || []).filter((a: any) => a.missing_programs).length;
 
