@@ -66,9 +66,16 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const d = dash || {} as any;
   const sessionId = d.latest_scored_session_id;
 
-  const redPrograms = programs?.filter((p: any) => p.day_state === 'red') || [];
-  const yellowPrograms = programs?.filter((p: any) => p.day_state === 'yellow') || [];
-  const greenPrograms = programs?.filter((p: any) => p.day_state === 'green') || [];
+  const hasState = (p: any, state: string) => {
+    const vis = Array.isArray(p.state_visibility) ? p.state_visibility : [];
+    if (vis.length > 0) return vis.includes(state);
+    const stm = p.state_target_map && typeof p.state_target_map === 'object' ? p.state_target_map : {};
+    return !!stm[state];
+  };
+  const redPrograms = programs?.filter((p: any) => hasState(p, 'red')) || [];
+  const yellowPrograms = programs?.filter((p: any) => hasState(p, 'yellow')) || [];
+  const greenPrograms = programs?.filter((p: any) => hasState(p, 'green')) || [];
+  const bluePrograms = programs?.filter((p: any) => hasState(p, 'blue')) || [];
 
   return (
     <div className="space-y-4">
