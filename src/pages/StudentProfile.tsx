@@ -84,11 +84,9 @@ import { FundingModeToggle, PayersAuthorizationsTab, InsuranceStatusBanner, Auth
 import { useFundingMode } from '@/hooks/useFundingMode';
 import { useClientProfile } from '@/hooks/useClientProfile';
 import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
-import { SkillMasteryIntelligenceCard } from '@/components/intelligence/SkillMasteryIntelligenceCard';
 import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
 import { BehaviorIntelligenceSection } from '@/components/intelligence/BehaviorIntelligenceSection';
 import { SkillIntelligenceSection } from '@/components/intelligence/SkillIntelligenceSection';
-import { ProgrammingIntelligenceSection } from '@/components/intelligence/ProgrammingIntelligenceSection';
 import { 
   ContactsTab, 
   SafetyMedicalTab, 
@@ -791,9 +789,6 @@ export default function StudentProfile() {
 
         {/* ====== PROGRAMMING TAB ====== */}
         <TabsContent value="programming" className="space-y-4">
-          {/* Combined Intelligence Banner */}
-          <SkillMasteryIntelligenceCard studentId={student.id} />
-          <ProgrammingIntelligenceSection studentId={student.id} />
           <ProgrammingModule
             studentId={student.id}
             studentName={student.name}
