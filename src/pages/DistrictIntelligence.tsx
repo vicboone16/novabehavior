@@ -147,7 +147,10 @@ function AgencyOverviewTab() {
               <TableBody>
                 {(entityCounts || []).slice(0, 10).map((e: any) => (
                   <TableRow key={e.entity_id}>
-                    <TableCell className="font-medium">{e.entity_id?.slice(0, 8)}…</TableCell>
+                    <TableCell className="font-medium">
+                      {e.entity_name || 'Unnamed Entity'}
+                      {e.entity_type && <Badge variant="outline" className="ml-2 text-[10px] capitalize">{e.entity_type}</Badge>}
+                    </TableCell>
                     <TableCell className="text-right font-mono">{e.client_count}</TableCell>
                   </TableRow>
                 ))}
