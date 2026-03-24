@@ -91,10 +91,9 @@ export function useVoiceCaptureEngine() {
         throw uploadError;
       }
 
-      // Record chunk in DB with org_id
+      // Record chunk in DB
       const { error: dbError } = await supabase.from('voice_recording_chunks' as any).insert({
         recording_id: recordingId,
-        org_id: orgId,
         chunk_index: chunk.index,
         duration_ms: CHUNK_INTERVAL_MS,
         storage_path: path,
