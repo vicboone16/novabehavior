@@ -422,6 +422,7 @@ RULES:
           if (langCode) formData.append("language_code", langCode);
         }
 
+        console.log(`[voice-capture-process] Sending ${combined.length} bytes to ElevenLabs Scribe`);
         const transcribeRes = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
           method: "POST",
           headers: { "xi-api-key": ELEVENLABS_API_KEY },
@@ -431,9 +432,10 @@ RULES:
         if (transcribeRes.ok) {
           const transcription = await transcribeRes.json();
           fullTranscriptText = transcription.text || "";
+          console.log(`[voice-capture-process] Transcription received: ${fullTranscriptText.length} chars`);
 
-          // Save transcript
-          const { data: savedTranscript } = await supabase.from("voice_transcripts").insert({
+          // Save transcript using admin client
+          const { data: savedTranscript, error: transErr } = await supabaseAdmin.from("voice_transcripts").insert({
             recording_id,
             version_number: 1,
             source_language: recording.language_mode || "auto",
@@ -445,9 +447,12 @@ RULES:
             created_by_model: "scribe_v2",
           }).select().single();
 
+          if (transErr) {
+            console.error("[voice-capture-process] Failed to save transcript:", transErr.message);
+          }
+
           // Save segments with speaker info
           if (transcription.words && savedTranscript) {
-            // Group words into speaker turns
             let currentSpeaker = "";
             let currentText = "";
             let segStart = 0;
@@ -483,7 +488,7 @@ RULES:
             }
 
             if (segments.length > 0) {
-              await supabase.from("voice_transcript_segments").insert(segments);
+              await supabaseAdmin.from("voice_transcript_segments").insert(segments);
             }
 
             // Create speaker records
@@ -491,7 +496,7 @@ RULES:
               transcription.words.map((w: any) => w.speaker).filter(Boolean)
             );
             for (const label of speakerLabels) {
-              await supabase.from("voice_speakers").insert({
+              await supabaseAdmin.from("voice_speakers").insert({
                 recording_id,
                 speaker_label: label,
                 speaker_role: "unknown",
