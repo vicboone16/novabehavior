@@ -570,10 +570,12 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
                         skillImported={skillImported}
                         targetsImported={targetsImported}
                         protocolImported={protocolImported}
-                        busy={busyKey === `skill-${program.programming_assignment_id || program.program_name}` || busyKey === `targets-${program.programming_assignment_id || program.program_name}` || busyKey === `protocol-${program.programming_assignment_id || program.program_name}`}
+                        busy={busyKey !== null && busyKey.includes(program.programming_assignment_id || program.program_name)}
                         onAllocateSkill={() => handleAllocateSkill(program)}
                         onAllocateTargets={() => handleAllocateTargets(program)}
                         onAllocateProtocol={() => handleAllocateProtocol(program)}
+                        onAllocateBehaviorGoal={() => handleAllocateBehaviorGoal(program)}
+                        onAllocateReplacement={() => handleAllocateReplacement(program)}
                       />
                     );
                   })}
