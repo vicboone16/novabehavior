@@ -504,7 +504,7 @@ RULES:
             }
           }
 
-          await supabase.from("voice_recordings").update({
+          await supabaseAdmin.from("voice_recordings").update({
             transcript_status: "completed",
             detected_languages: transcription.language_code
               ? [transcription.language_code]
@@ -512,8 +512,8 @@ RULES:
           }).eq("id", recording_id);
         } else {
           const errText = await transcribeRes.text();
-          console.error("Transcription failed:", errText);
-          await supabase.from("voice_recordings").update({
+          console.error("[voice-capture-process] Transcription API failed:", transcribeRes.status, errText);
+          await supabaseAdmin.from("voice_recordings").update({
             transcript_status: "failed",
           }).eq("id", recording_id);
         }
