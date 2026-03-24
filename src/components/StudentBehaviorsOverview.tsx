@@ -121,7 +121,9 @@ export function StudentBehaviorsOverview({
   const [showPhaseLines, setShowPhaseLines] = useState(true);
   const [editingMethodsBehaviorId, setEditingMethodsBehaviorId] = useState<string | null>(null);
   const [editingMethods, setEditingMethods] = useState<DataCollectionMethod[]>([]);
-  const { updateBehaviorMethods } = useDataStore();
+  const [editingDefBehavior, setEditingDefBehavior] = useState<Behavior | null>(null);
+  const [editDefText, setEditDefText] = useState('');
+  const { updateBehaviorMethods, updateBehaviorDefinition } = useDataStore();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const handleExportChartPNG = useCallback(() => {
@@ -1541,7 +1543,33 @@ export function StudentBehaviorsOverview({
                   </CollapsibleTrigger>
 
                   <CollapsibleContent>
-                    <div className="p-3 bg-muted/30 border-t space-y-2">
+                    <div className="p-3 bg-muted/30 border-t space-y-3">
+                      {/* Operational Definition */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">Operational Definition</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const srcBehavior = behaviors.find(b => b.id === behavior.id);
+                              if (srcBehavior) {
+                                setEditingDefBehavior(srcBehavior);
+                                setEditDefText(srcBehavior.operationalDefinition || '');
+                              }
+                            }}
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            Edit
+                          </Button>
+                        </div>
+                        <p className="text-xs text-foreground/80 italic">
+                          {behavior.operationalDefinition || 'No definition set — click Edit to add one.'}
+                        </p>
+                      </div>
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                         <div>
                           <div className="text-muted-foreground">Total (all time)</div>
@@ -1732,6 +1760,44 @@ export function StudentBehaviorsOverview({
                 }
               >
                 Link Behavior
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Behavior Definition Dialog */}
+      <Dialog open={!!editingDefBehavior} onOpenChange={(open) => !open && setEditingDefBehavior(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Definition — {editingDefBehavior?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Operational Definition</Label>
+              <textarea
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={editDefText}
+                onChange={(e) => setEditDefText(e.target.value)}
+                placeholder="Provide a clear, observable, and measurable definition..."
+              />
+              <p className="text-xs text-muted-foreground">
+                A good operational definition is observable, measurable, and specific enough that multiple observers would agree on occurrence.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingDefBehavior(null)}>Cancel</Button>
+              <Button 
+                className="flex-1" 
+                onClick={() => {
+                  if (editingDefBehavior) {
+                    updateBehaviorDefinition(studentId, editingDefBehavior.id, editDefText.trim());
+                    toast.success(`Definition updated for ${editingDefBehavior.name}`);
+                    setEditingDefBehavior(null);
+                  }
+                }}
+              >
+                Save Definition
               </Button>
             </div>
           </div>
