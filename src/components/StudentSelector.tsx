@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
+import { useDemoFilteredStudents } from '@/hooks/useDemoFilteredStudents';
 import { SessionStartConfirmation } from './SessionStartConfirmation';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,7 +47,6 @@ export function StudentSelector() {
   const { user } = useAuth();
 
   const {
-    students,
     selectedStudentIds,
     toggleStudentSelection,
     sessionStartTime,
@@ -54,6 +54,8 @@ export function StudentSelector() {
     currentSessionId,
     getStudentSessionStatus,
   } = useDataStore();
+
+  const students = useDemoFilteredStudents();
 
   const { participants, joinSession: addParticipant } = useSessionParticipants(currentSessionId);
 
