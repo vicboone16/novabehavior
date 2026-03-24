@@ -64,6 +64,8 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
   const [dateRange, setDateRange] = useState('30');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [activeTab, setActiveTab] = useState('overview');
+  const overviewChartRef = useRef<HTMLDivElement>(null);
+  const domainChartRef = useRef<HTMLDivElement>(null);
 
   // Merge legacy targets with DB program targets for unified metrics
   const allTargetsMerged = useMemo(() => {
