@@ -30,6 +30,7 @@ import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
 import { ProgramHierarchyView } from './ProgramHierarchyView';
+import { MoveTargetToProgram } from './MoveTargetToProgram';
 import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
 import type { StudentTarget } from '@/types/curriculum';
 import type { SkillProgram } from '@/types/skillPrograms';
