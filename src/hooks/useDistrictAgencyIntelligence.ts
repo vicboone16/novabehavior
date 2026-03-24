@@ -104,3 +104,84 @@ export function useOrgProgramRecommendations() {
     },
   });
 }
+
+export function useSupervisorCaseloadDashboard() {
+  return useQuery({
+    queryKey: ['supervisor-caseload-dashboard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supervisor_caseload_dashboard' as any)
+        .select('*');
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useStaffingCapacityVsLoad() {
+  return useQuery({
+    queryKey: ['staffing-capacity-vs-load'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_staffing_capacity_vs_load' as any)
+        .select('*');
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useEntityClientCounts() {
+  return useQuery({
+    queryKey: ['entity-client-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_entity_client_counts' as any)
+        .select('*');
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useOrgEntities(entityType?: string) {
+  return useQuery({
+    queryKey: ['org-entities', entityType],
+    queryFn: async () => {
+      let query = supabase.from('org_entities' as any).select('*').eq('is_active', true);
+      if (entityType) query = query.eq('entity_type', entityType);
+      const { data, error } = await query.order('name');
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useStaffingRecommendations() {
+  return useQuery({
+    queryKey: ['staffing-recommendations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('staffing_recommendations' as any)
+        .select('*')
+        .eq('status', 'open')
+        .order('priority', { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useProgramRecommendations() {
+  return useQuery({
+    queryKey: ['program-recommendations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('program_recommendations' as any)
+        .select('*')
+        .order('priority', { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
