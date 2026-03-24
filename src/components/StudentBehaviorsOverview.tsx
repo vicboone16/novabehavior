@@ -435,7 +435,6 @@ export function StudentBehaviorsOverview({
       durationEntries: rekey(state.durationEntries),
       abcEntries: rekey(state.abcEntries),
       intervalEntries: rekey(state.intervalEntries),
-      historicalData: rekey(state.historicalData as any),
     } as any));
   }, [orphanedBehaviors, behaviors, studentId]);
 

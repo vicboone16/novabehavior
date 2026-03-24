@@ -162,7 +162,7 @@ export function useStudentDailyPlan(studentId: string | undefined, date?: string
     enabled: !!studentId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bops_daily_plans')
+        .from('bops_daily_plan')
         .select('*')
         .eq('student_id', studentId!)
         .eq('date', d)
@@ -189,7 +189,7 @@ export function useStudentSuggestedPrograms(studentId: string | undefined) {
   });
 }
 
-// ─── Accepted Programs ───
+// ─── Accepted Programs (from program bank) ───
 export function useStudentAcceptedPrograms(studentId: string | undefined) {
   return useQuery({
     queryKey: ['bops-accepted-programs', studentId],
@@ -205,6 +205,79 @@ export function useStudentAcceptedPrograms(studentId: string | undefined) {
       return data;
     },
   });
+}
+
+// ─── Assessment Items ───
+export function useBopsAssessmentItems(assessmentId: string | undefined) {
+  return useQuery({
+    queryKey: ['bops-assessment-items', assessmentId],
+    enabled: !!assessmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bops_assessment_items')
+        .select('*')
+        .eq('assessment_id', assessmentId!);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Beacon Shared Plan ───
+export function useBeaconSharedPlan(studentId: string | undefined) {
+  const today = new Date().toISOString().split('T')[0];
+  return useQuery({
+    queryKey: ['beacon-shared-plan', studentId, today],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('beacon_shared_plans')
+        .select('*')
+        .eq('student_id', studentId!)
+        .eq('plan_date', today)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Score Calculator ───
+export function calculateBopsScores(
+  responses: Array<{ item_number: number; value: number; domain?: string }>,
+  questions: Array<{ item_number: number; linked_domain: string }>
+) {
+  const domainScores: Record<string, { total: number; count: number }> = {};
+  for (const r of responses) {
+    const q = questions.find(qq => qq.item_number === r.item_number);
+    const domain = r.domain || q?.linked_domain || 'unknown';
+    if (!domainScores[domain]) domainScores[domain] = { total: 0, count: 0 };
+    domainScores[domain].total += r.value;
+    domainScores[domain].count += 1;
+  }
+
+  const scores: Record<string, number> = {};
+  for (const [d, v] of Object.entries(domainScores)) {
+    scores[d] = v.count > 0 ? v.total / (v.count * 4) : 0;
+  }
+
+  const sorted = Object.entries(scores)
+    .filter(([d]) => !['navigator', 'storm'].includes(d))
+    .sort((a, b) => b[1] - a[1]);
+
+  return {
+    scores,
+    primary: sorted[0]?.[0] || 'unknown',
+    secondary: sorted[1]?.[0] || 'unknown',
+    profileType: (scores.navigator || 0) >= 0.5 ? 'navigator' : 'non-navigator',
+    stormScore: scores.storm || 0,
+    escalationIndex: ((scores.impulse || 0) + (scores.emotion || 0)) / 2,
+    hiddenNeedIndex: ((scores.withdrawal || 0) + (scores.sensory || 0)) / 2,
+    sensoryLoadIndex: scores.sensory || 0,
+    powerConflictIndex: ((scores.authority || 0) + (scores.autonomy || 0)) / 2,
+    socialComplexityIndex: ((scores.social || 0) + (scores.context || 0)) / 2,
+    recoveryBurdenIndex: ((scores.rigidity || 0) + (scores.emotion || 0)) / 2,
+  };
 }
 
 // ─── Mutations ───
@@ -260,5 +333,65 @@ export function useGenerateDailyPlan() {
       toast.success('Daily plan generated');
     },
     onError: (e: any) => toast.error(e.message || 'Failed to generate daily plan'),
+  });
+}
+
+export function useSaveBopsResponses() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, assessmentId, responses }: {
+      studentId: string;
+      assessmentId: string;
+      responses: Array<{ itemId: string; itemNumber: number; domain: string; value: number }>;
+    }) => {
+      const rows = responses.map(r => ({
+        assessment_id: assessmentId,
+        student_id: studentId,
+        item_id: r.itemId,
+        item_number: r.itemNumber,
+        domain: r.domain,
+        value: r.value,
+      }));
+      const { error } = await supabase.from('bops_assessment_items').upsert(rows, { onConflict: 'assessment_id,item_id' });
+      if (error) throw error;
+    },
+    onSuccess: () => toast.success('Assessment responses saved'),
+    onError: (e: any) => toast.error(e.message || 'Failed to save responses'),
+  });
+}
+
+export function useReviewBeaconSubmission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from('beacon_submissions')
+        .update({ submission_status: status, reviewed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['beacon-submissions-all'] });
+      toast.success('Submission reviewed');
+    },
+    onError: (e: any) => toast.error(e.message || 'Failed to review submission'),
+  });
+}
+
+export function useUpdateSyncControl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      const { error } = await supabase
+        .from('bops_sync_controls')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bops-sync'] });
+      toast.success('Sync control updated');
+    },
+    onError: (e: any) => toast.error(e.message || 'Failed to update sync control'),
   });
 }
