@@ -3,10 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers } from 'lucide-react';
+import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers, Check, Copy, Trash2, Star, Power } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useStudentBopsDashboard, useToggleBops, useRunCfi, useGenerateRecommendations, useAcceptAndActivate, useActivateProgramming, useDeactivateProgramming, useSetDayStateAndPlan } from '@/hooks/useBopsEngine';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useStudentBopsDashboard, useToggleBops, useRunCfi, useGenerateRecommendations,
+  useAcceptAndActivate, useActivateProgramming, useDeactivateProgramming,
+  useSetDayStateAndPlan, useScoreAssessment, useFinalizeAndUnlock,
+  useAcceptSuggestedProgram, useAcceptByDayState,
+  useDisableProgram, useEnableProgram, useDuplicateProgram, useDeleteProgram,
+  useSetPreferredDefault, useStudentSuggestedPrograms, useStudentAcceptedPrograms,
+  useStudentCfiSummary, useStudentBeaconDashboard,
+} from '@/hooks/useBopsEngine';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +23,7 @@ const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
   yellow: 'bg-yellow-400 text-black',
   green: 'bg-green-500 text-white',
+  blue: 'bg-blue-500 text-white',
 };
 
 const fitBandColors: Record<string, string> = {
@@ -25,6 +35,11 @@ const fitBandColors: Record<string, string> = {
 export function StudentBopsTab({ studentId }: { studentId: string }) {
   const { data: dash, isLoading } = useStudentBopsDashboard(studentId);
   const { data: programs } = useStudentBopsPrograms(studentId);
+  const { data: suggested } = useStudentSuggestedPrograms(studentId);
+  const { data: accepted } = useStudentAcceptedPrograms(studentId);
+  const { data: cfiModels } = useStudentCfiSummary(studentId);
+  const { data: beacon } = useStudentBeaconDashboard(studentId);
+
   const toggleBops = useToggleBops();
   const runCfi = useRunCfi();
   const genRecs = useGenerateRecommendations();
@@ -32,7 +47,18 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const activateProg = useActivateProgramming();
   const deactivateProg = useDeactivateProgramming();
   const setDayState = useSetDayStateAndPlan();
+  const scoreAssessment = useScoreAssessment();
+  const finalizeUnlock = useFinalizeAndUnlock();
+  const acceptOne = useAcceptSuggestedProgram();
+  const acceptByDay = useAcceptByDayState();
+  const disableProg = useDisableProgram();
+  const enableProg = useEnableProgram();
+  const duplicateProg = useDuplicateProgram();
+  const deleteProg = useDeleteProgram();
+  const setDefault = useSetPreferredDefault();
+
   const [selectedState, setSelectedState] = useState<string>('yellow');
+  const [planNotes, setPlanNotes] = useState('');
   const navigate = useNavigate();
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>;
@@ -40,9 +66,9 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const d = dash || {} as any;
   const sessionId = d.latest_scored_session_id;
 
-  const redPrograms = programs?.filter(p => p.day_state === 'red') || [];
-  const yellowPrograms = programs?.filter(p => p.day_state === 'yellow') || [];
-  const greenPrograms = programs?.filter(p => p.day_state === 'green') || [];
+  const redPrograms = programs?.filter((p: any) => p.day_state === 'red') || [];
+  const yellowPrograms = programs?.filter((p: any) => p.day_state === 'yellow') || [];
+  const greenPrograms = programs?.filter((p: any) => p.day_state === 'green') || [];
 
   return (
     <div className="space-y-4">
@@ -57,7 +83,11 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">BOPS</span>
-              <Switch checked={!!d.bops_enabled} onCheckedChange={c => toggleBops.mutate({ studentId, enable: c })} />
+              <Switch
+                checked={!!d.bops_enabled}
+                disabled={toggleBops.isPending}
+                onCheckedChange={c => toggleBops.mutate({ studentId, enable: c })}
+              />
             </div>
             <StatusBadge label="Assessment" value={d.bops_assessment_status} />
             <StatusBadge label="Profile" value={d.bops_profile_saved ? 'Saved' : 'Pending'} variant={d.bops_profile_saved} />
@@ -99,24 +129,37 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </Card>
       )}
 
-      {/* Section 3: Placement */}
+      {/* Section 3: Placement Intelligence */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Target className="w-4 h-4" /> Placement Intelligence
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-4 items-center">
             <KV label="Best Fit" value={d.best_fit_model_name || 'Not run'} />
-            {d.best_fit_score && <KV label="Score" value={Number(d.best_fit_score).toFixed(2)} />}
+            {d.best_fit_score != null && <KV label="Score" value={Number(d.best_fit_score).toFixed(2)} />}
             {d.best_fit_band && <Badge className={`${fitBandColors[d.best_fit_band]} text-xs`}>{d.best_fit_band}</Badge>}
-            {sessionId && (
-              <Button size="sm" variant="outline" onClick={() => runCfi.mutate({ sessionId })} disabled={runCfi.isPending}>
-                <BarChart3 className="w-3.5 h-3.5 mr-1" /> Run CFI
-              </Button>
-            )}
           </div>
+          {cfiModels && cfiModels.length > 0 && (
+            <div className="space-y-1 mt-2">
+              <span className="text-xs font-medium text-muted-foreground">All CFI Models:</span>
+              {cfiModels.map((m: any, i: number) => (
+                <div key={i} className="flex justify-between text-xs bg-muted/50 rounded px-2 py-1">
+                  <span>{m.model_name}</span>
+                  <span className="font-medium">{Number(m.cfi_score || 0).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {sessionId && (
+            <Button size="sm" variant="outline" disabled={runCfi.isPending}
+              onClick={() => runCfi.mutate({ studentId, sessionId })}>
+              {runCfi.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5 mr-1" />}
+              Run CFI
+            </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -124,16 +167,30 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => navigate(`/bops-engine`)}>
+            <Button size="sm" variant="outline" onClick={() => navigate('/bops-engine')}>
               Open Full Assessment
             </Button>
             {sessionId && (
               <>
-                <Button size="sm" variant="outline" onClick={() => genRecs.mutate({ studentId, sessionId })} disabled={genRecs.isPending}>
-                  <Zap className="w-3.5 h-3.5 mr-1" /> Generate Recommendations
+                <Button size="sm" variant="outline" disabled={scoreAssessment.isPending}
+                  onClick={() => scoreAssessment.mutate({ studentId, sessionId })}>
+                  {scoreAssessment.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+                  Re-score
                 </Button>
-                <Button size="sm" onClick={() => acceptActivate.mutate({ studentId, sessionId })} disabled={acceptActivate.isPending}>
-                  <Play className="w-3.5 h-3.5 mr-1" /> Accept + Activate
+                <Button size="sm" variant="outline" disabled={finalizeUnlock.isPending}
+                  onClick={() => finalizeUnlock.mutate({ studentId, sessionId })}>
+                  {finalizeUnlock.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Power className="w-3.5 h-3.5 mr-1" />}
+                  Finalize + Unlock
+                </Button>
+                <Button size="sm" variant="outline" disabled={genRecs.isPending}
+                  onClick={() => genRecs.mutate({ studentId, sessionId })}>
+                  {genRecs.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1" />}
+                  Generate Recommendations
+                </Button>
+                <Button size="sm" disabled={acceptActivate.isPending}
+                  onClick={() => acceptActivate.mutate({ studentId, sessionId })}>
+                  {acceptActivate.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1" />}
+                  Accept + Activate
                 </Button>
               </>
             )}
@@ -141,11 +198,49 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </CardContent>
       </Card>
 
-      {/* Section 5: Programs Summary */}
+      {/* Section 5: Suggested Programs */}
+      {suggested && suggested.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Suggested Programs</CardTitle>
+            <CardDescription>{suggested.length} recommendation{suggested.length !== 1 ? 's' : ''}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex gap-2 mb-2">
+              {sessionId && (
+                <>
+                  <Button size="sm" variant="outline" disabled={acceptByDay.isPending}
+                    onClick={() => acceptByDay.mutate({ studentId, sessionId })}>
+                    <Check className="w-3.5 h-3.5 mr-1" /> Accept All by Day State
+                  </Button>
+                  <Button size="sm" variant="outline" disabled={genRecs.isPending}
+                    onClick={() => genRecs.mutate({ studentId, sessionId })}>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Regenerate
+                  </Button>
+                </>
+              )}
+            </div>
+            {suggested.map((s: any, i: number) => (
+              <div key={i} className="flex items-center justify-between text-xs border rounded px-2 py-1.5">
+                <div className="flex items-center gap-2">
+                  <Badge className={`${dayStateColors[s.day_state] || 'bg-muted'} text-xs`}>{s.day_state}</Badge>
+                  <span className="font-medium">{s.program_name || s.source_program_key}</span>
+                </div>
+                <Button size="sm" variant="ghost" className="h-6 text-xs" disabled={acceptOne.isPending}
+                  onClick={() => acceptOne.mutate({ studentId, programKey: s.source_program_key || s.program_key })}>
+                  <Check className="w-3 h-3 mr-1" /> Accept
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section 6: Accepted Program Bank */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Layers className="w-4 h-4" /> Program Bank
+            <Layers className="w-4 h-4" /> Accepted Program Bank
           </CardTitle>
           <CardDescription>
             {d.accepted_programs_total || 0} total · {d.accepted_programs_active || 0} active
@@ -166,11 +261,40 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
                 <ChevronDown className="w-3.5 h-3.5" /> {group.label} Programs ({group.programs.length})
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="space-y-1 pl-5 mt-1">
+                <div className="space-y-1.5 pl-5 mt-1">
                   {group.programs.map((p: any) => (
-                    <div key={p.id} className={`text-xs border-l-2 ${group.color} pl-2 py-1`}>
-                      <span className="font-medium">{p.program_name}</span>
-                      {p.teacher_friendly_summary && <span className="text-muted-foreground ml-1">— {p.teacher_friendly_summary}</span>}
+                    <div key={p.id} className={`text-xs border-l-2 ${group.color} pl-2 py-1 flex items-center justify-between`}>
+                      <div>
+                        <span className="font-medium">{p.program_name}</span>
+                        {p.is_preferred_default && <Star className="w-3 h-3 inline ml-1 text-yellow-500" />}
+                        {!p.active && <Badge variant="secondary" className="text-[10px] ml-1">disabled</Badge>}
+                        {p.teacher_friendly_summary && <span className="text-muted-foreground ml-1">— {p.teacher_friendly_summary}</span>}
+                      </div>
+                      <div className="flex gap-0.5 shrink-0">
+                        {!p.active ? (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Enable"
+                            onClick={() => enableProg.mutate({ studentId, programId: p.id })}>
+                            <Play className="w-3 h-3" />
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Disable"
+                            onClick={() => disableProg.mutate({ studentId, programId: p.id })}>
+                            <Pause className="w-3 h-3" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Set Preferred"
+                          onClick={() => setDefault.mutate({ studentId, programId: p.id })}>
+                          <Star className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Duplicate"
+                          onClick={() => duplicateProg.mutate({ studentId, programId: p.id })}>
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Delete"
+                          onClick={() => deleteProg.mutate({ studentId, programId: p.id })}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -180,7 +304,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </CardContent>
       </Card>
 
-      {/* Section 6: Nova Plan */}
+      {/* Section 7: Nova Plan */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Current Nova Plan</CardTitle>
@@ -196,7 +320,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
               <span className="font-medium">Teacher View:</span> {d.teacher_summary_view}
             </div>
           )}
-          <div className="flex gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2">
             <Select value={selectedState} onValueChange={setSelectedState}>
               <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -205,24 +329,32 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
                 <SelectItem value="green">Green</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setDayState.mutate({ studentId, dayState: selectedState })} disabled={setDayState.isPending}>
+            <Textarea placeholder="Plan notes (optional)..." value={planNotes} onChange={e => setPlanNotes(e.target.value)}
+              className="text-xs h-8 min-h-[2rem] flex-1 min-w-[150px]" />
+            <Button size="sm" disabled={setDayState.isPending}
+              onClick={() => { setDayState.mutate({ studentId, dayState: selectedState, notes: planNotes }); setPlanNotes(''); }}>
+              {setDayState.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
               Generate Plan
             </Button>
+          </div>
+          <div className="flex gap-2 mt-1">
             {d.bops_programming_active ? (
-              <Button size="sm" variant="outline" onClick={() => deactivateProg.mutate({ studentId })}>
-                <Pause className="w-3.5 h-3.5 mr-1" /> Pause
+              <Button size="sm" variant="outline" disabled={deactivateProg.isPending}
+                onClick={() => deactivateProg.mutate({ studentId })}>
+                <Pause className="w-3.5 h-3.5 mr-1" /> Pause Programming
               </Button>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => activateProg.mutate({ studentId })}>
-                <Play className="w-3.5 h-3.5 mr-1" /> Activate
+              <Button size="sm" variant="outline" disabled={activateProg.isPending}
+                onClick={() => activateProg.mutate({ studentId })}>
+                <Play className="w-3.5 h-3.5 mr-1" /> Activate Programming
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Section 7: Beacon Snapshot */}
-      {(d.beacon_day_state || d.beacon_teacher_summary) && (
+      {/* Section 8: Beacon Snapshot */}
+      {(beacon || d.beacon_day_state || d.beacon_teacher_summary) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Beacon Snapshot</CardTitle>
@@ -230,37 +362,45 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex gap-3 items-center">
-              {d.beacon_day_state && <Badge className={`${dayStateColors[d.beacon_day_state]} text-xs`}>{d.beacon_day_state}</Badge>}
-              {d.beacon_state_date && <span className="text-xs text-muted-foreground">{d.beacon_state_date}</span>}
+              {(beacon?.day_state || d.beacon_day_state) && (
+                <Badge className={`${dayStateColors[beacon?.day_state || d.beacon_day_state]} text-xs`}>
+                  {beacon?.day_state || d.beacon_day_state}
+                </Badge>
+              )}
+              {(beacon?.state_date || d.beacon_state_date) && (
+                <span className="text-xs text-muted-foreground">{beacon?.state_date || d.beacon_state_date}</span>
+              )}
             </div>
-            {d.beacon_teacher_summary && (
-              <div className="text-xs bg-muted/50 rounded p-2">{d.beacon_teacher_summary}</div>
+            {(beacon?.teacher_summary || d.beacon_teacher_summary) && (
+              <div className="text-xs bg-muted/50 rounded p-2">{beacon?.teacher_summary || d.beacon_teacher_summary}</div>
             )}
-            {d.beacon_targets && Array.isArray(d.beacon_targets) && d.beacon_targets.length > 0 && (
+            {beacon?.targets && Array.isArray(beacon.targets) && beacon.targets.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {d.beacon_targets.map((t: string, i: number) => <Badge key={i} variant="outline" className="text-xs">{t}</Badge>)}
+                {beacon.targets.map((t: string, i: number) => <Badge key={i} variant="outline" className="text-xs">{t}</Badge>)}
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Section 8: MTSS Snapshot */}
-      {d.latest_mtss_tier && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">MTSS Snapshot</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Section 9: MTSS Snapshot */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">MTSS Snapshot</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {d.latest_mtss_tier ? (
             <div className="grid grid-cols-2 gap-2">
               <KV label="Tier" value={d.latest_mtss_tier} />
               <KV label="Status" value={d.latest_mtss_status} />
               <KV label="Primary Goal" value={d.latest_mtss_primary_goal} />
               <KV label="Interventions" value={d.latest_mtss_intervention_count} />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-muted-foreground">No MTSS plan yet</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
