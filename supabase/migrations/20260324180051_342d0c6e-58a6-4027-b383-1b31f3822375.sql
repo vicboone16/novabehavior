@@ -1,0 +1,1 @@
+UPDATE public.app_navigation_structure SET parent_key = 'intelligence', level = 1, sort_order = 61 WHERE nav_key = 'district-intelligence';

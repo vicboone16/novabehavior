@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Brain, AlertTriangle, TrendingUp, TrendingDown, Minus, 
@@ -39,6 +39,8 @@ import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelA
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
 import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
+
+const DistrictIntelligence = lazy(() => import('./DistrictIntelligence'));
 
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
@@ -328,6 +330,10 @@ export default function Intelligence() {
             {classroomSummaries.length > 0 && (
               <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{classroomSummaries.length}</Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="district-agency">
+            <Building2 className="w-4 h-4 mr-1" />
+            District & Agency
           </TabsTrigger>
         </TabsList>
 
@@ -789,6 +795,12 @@ export default function Intelligence() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="district-agency" className="space-y-4">
+          <Suspense fallback={<Loader2 className="animate-spin mx-auto mt-8" />}>
+            <DistrictIntelligence />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
