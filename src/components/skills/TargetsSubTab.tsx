@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { 
-  Plus, Download, Filter, Pencil, Link2, BookOpen, Building2, 
+import {
+  Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
   ListChecks, FolderTree,
 } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -30,6 +30,7 @@ import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
 import { ProgramHierarchyView } from './ProgramHierarchyView';
+import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
 import type { StudentTarget } from '@/types/curriculum';
 import type { SkillProgram } from '@/types/skillPrograms';
 
@@ -56,6 +57,10 @@ const SOURCE_CONFIG = {
   org_template: { label: 'Org Goal', icon: Building2, color: 'bg-blue-100 text-blue-700' },
   custom: { label: 'Custom', icon: Pencil, color: 'bg-gray-100 text-gray-700' },
 };
+
+const FALLBACK_SOURCE = { label: 'Other', icon: Link2, color: 'bg-muted text-muted-foreground' };
+const FALLBACK_PRIORITY = { label: 'Medium', color: 'text-muted-foreground border-border' };
+const FALLBACK_STATUS = { label: 'Unknown', color: 'bg-muted', icon: AlertTriangle };
 
 export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const { targets, loading: targetsLoading, refetch: refetchTargets } = useStudentTargets(studentId);
@@ -85,7 +90,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   }, [targets, searchQuery, statusFilter, domainFilter]);
 
   const handleStatusChange = async (targetId: string, newStatus: string) => {
-    await updateTarget(targetId, { 
+    await updateTarget(targetId, {
       status: newStatus as StudentTarget['status'],
       date_mastered: newStatus === 'mastered' ? new Date().toISOString() : null,
     });
@@ -95,7 +100,6 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Tabs value={view} onValueChange={v => setView(v as any)}>
@@ -147,25 +151,32 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
       </div>
 
-      {/* Programs View */}
       {view === 'programs' && (
         loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading programs...</div>
         ) : (
-          <ProgramHierarchyView
-            programs={programs}
-            domains={domains}
-            studentId={studentId}
-            onRefetch={refetchPrograms}
-            onEditProgram={(p) => {
-              setEditingProgram(p);
-              setShowProgramDialog(true);
-            }}
-          />
+          <div className="space-y-4">
+            <BopsProgramsSection
+              studentId={studentId}
+              onAllocated={() => {
+                refetchPrograms();
+                refetchTargets();
+              }}
+            />
+            <ProgramHierarchyView
+              programs={programs}
+              domains={domains}
+              studentId={studentId}
+              onRefetch={refetchPrograms}
+              onEditProgram={(p) => {
+                setEditingProgram(p);
+                setShowProgramDialog(true);
+              }}
+            />
+          </div>
         )
       )}
 
-      {/* Legacy Flat Targets View */}
       {view === 'legacy' && (
         <>
           <Card>
@@ -212,7 +223,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 <h3 className="font-medium text-lg mb-2">No targets found</h3>
                 <p className="text-sm text-muted-foreground">
                   {targets.length === 0
-                    ? 'Add skill acquisition targets from the curriculum library or create custom targets.'
+                    ? 'Add skill acquisition targets from the curriculum library or send BOPS targets here from the Programs section.'
                     : 'No targets match the current filters.'}
                 </p>
               </CardContent>
@@ -220,11 +231,14 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
           ) : (
             <div className="space-y-2">
               {filteredTargets.map(target => {
-                const statusConfig = STATUS_CONFIG[target.status];
-                const priorityConfig = PRIORITY_CONFIG[target.priority];
-                const sourceConfig = SOURCE_CONFIG[target.source_type];
+                const statusConfig = STATUS_CONFIG[target.status as keyof typeof STATUS_CONFIG] || FALLBACK_STATUS;
+                const priorityConfig = PRIORITY_CONFIG[target.priority as keyof typeof PRIORITY_CONFIG] || FALLBACK_PRIORITY;
+                const sourceConfig = SOURCE_CONFIG[target.source_type as keyof typeof SOURCE_CONFIG] || FALLBACK_SOURCE;
                 const StatusIcon = statusConfig.icon;
                 const SourceIcon = sourceConfig.icon;
+                const dataTypeLabel = typeof target.data_collection_type === 'string'
+                  ? target.data_collection_type.replace(/_/g, ' ')
+                  : 'unspecified';
 
                 return (
                   <Card key={target.id} className="hover:shadow-md transition-shadow">
@@ -252,7 +266,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                             <Badge variant="outline" className={`text-xs ${priorityConfig.color}`}>
                               {priorityConfig.label}
                             </Badge>
-                            <span>{target.data_collection_type.replace('_', ' ')}</span>
+                            <span>{dataTypeLabel}</span>
                           </div>
                           {target.description && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{target.description}</p>
@@ -305,7 +319,6 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </>
       )}
 
-      {/* Dialogs */}
       <AddTargetDialog
         open={showAddDialog || !!editingTarget}
         onOpenChange={(open) => {

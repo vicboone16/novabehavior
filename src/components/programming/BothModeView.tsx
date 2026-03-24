@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { Target, Activity, Plus, ChevronRight, Shield } from 'lucide-react';
+import { Target, Activity, Plus, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,15 +10,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
-import { BopsProgramsSection } from './BopsProgramsSection';
 import { useDataStore } from '@/store/dataStore';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
-
-type Selection = 
-  | { type: 'skill'; id: string }
-  | { type: 'behavior'; id: string }
-  | null;
 
 type DetailView = 'skills' | 'behaviors';
 
@@ -32,17 +24,16 @@ interface BothModeViewProps {
 
 export function BothModeView({ studentId, studentName, isAdmin = false }: BothModeViewProps) {
   const [detailView, setDetailView] = useState<DetailView>('skills');
-  
+
   const { students } = useDataStore();
   const student = students.find(s => s.id === studentId);
   const { data: bopsPrograms } = useStudentBopsPrograms(studentId);
   const bopsCount = bopsPrograms?.length || 0;
-  
+
   if (!student) return null;
 
   return (
     <div className="space-y-4 overflow-y-auto">
-      {/* Combined Add Menu */}
       <div className="flex items-center justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -64,12 +55,11 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
         </DropdownMenu>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4">
-        <Card 
+        <Card
           className={cn(
-            "cursor-pointer transition-colors hover:bg-muted/50",
-            detailView === 'skills' && "ring-2 ring-primary/50"
+            'cursor-pointer transition-colors hover:bg-muted/50',
+            detailView === 'skills' && 'ring-2 ring-primary/50'
           )}
           onClick={() => setDetailView('skills')}
         >
@@ -85,10 +75,10 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
           </CardContent>
         </Card>
 
-        <Card 
+        <Card
           className={cn(
-            "cursor-pointer transition-colors hover:bg-muted/50",
-            detailView === 'behaviors' && "ring-2 ring-primary/50"
+            'cursor-pointer transition-colors hover:bg-muted/50',
+            detailView === 'behaviors' && 'ring-2 ring-primary/50'
           )}
           onClick={() => setDetailView('behaviors')}
         >
@@ -105,11 +95,7 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
         </Card>
 
         {bopsCount > 0 && (
-          <Card 
-            className={cn(
-              "cursor-pointer transition-colors hover:bg-muted/50 col-span-2",
-            )}
-          >
+          <Card className="col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Shield className="w-4 h-4 text-primary" />
@@ -118,26 +104,22 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{bopsCount}</p>
-              <p className="text-xs text-muted-foreground">active BOPS programs</p>
+              <p className="text-xs text-muted-foreground">available for allocation in Targets → Programs</p>
             </CardContent>
           </Card>
         )}
       </div>
 
-      {/* BOPS Programs Section */}
-      <BopsProgramsSection studentId={studentId} />
-
-      {/* Detail View */}
       {detailView === 'skills' ? (
-        <SkillsTabContainer 
-          studentId={studentId} 
-          studentName={studentName} 
-          isAdmin={isAdmin} 
+        <SkillsTabContainer
+          studentId={studentId}
+          studentName={studentName}
+          isAdmin={isAdmin}
         />
       ) : (
-        <BehaviorsSuite 
-          studentId={studentId} 
-          studentName={studentName} 
+        <BehaviorsSuite
+          studentId={studentId}
+          studentName={studentName}
         />
       )}
     </div>
