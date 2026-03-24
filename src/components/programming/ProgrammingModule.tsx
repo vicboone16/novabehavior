@@ -23,15 +23,10 @@ export function ProgrammingModule({
   const [mode, setMode] = useState<ProgrammingMode>(defaultMode);
 
   return (
-    <div className="space-y-4">
-      {/* Mode Toggle */}
+    <div className="space-y-3">
+      {/* Compact header with toggle */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Programming</h2>
-          <p className="text-sm text-muted-foreground">
-            Skills acquisition, behavior tracking, and intervention plans for {studentName}
-          </p>
-        </div>
+        <h2 className="text-base font-semibold">Programming</h2>
         <ToggleGroup 
           type="single" 
           value={mode} 
