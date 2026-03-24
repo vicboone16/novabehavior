@@ -230,10 +230,10 @@ export function useVoiceCaptureEngine() {
       chunksRef.current = [];
       chunkIndexRef.current = 0;
 
-      let currentChunkBlobs: Blob[] = [];
+      currentChunkBlobsRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) currentChunkBlobs.push(e.data);
+        if (e.data.size > 0) currentChunkBlobsRef.current.push(e.data);
       };
 
       // Collect data every CHUNK_INTERVAL_MS and upload
@@ -241,13 +241,13 @@ export function useVoiceCaptureEngine() {
 
       // Periodic chunk finalization
       const chunkTimer = setInterval(() => {
-        if (currentChunkBlobs.length > 0) {
-          const blob = new Blob(currentChunkBlobs, { type: 'audio/webm' });
+        if (currentChunkBlobsRef.current.length > 0) {
+          const blob = new Blob(currentChunkBlobsRef.current, { type: 'audio/webm' });
           const chunk: ChunkRecord = { index: chunkIndexRef.current++, blob, uploaded: false };
           chunksRef.current.push(chunk);
           setState(prev => ({ ...prev, totalChunks: prev.totalChunks + 1 }));
           uploadChunk(recId, orgId || '', chunk);
-          currentChunkBlobs = [];
+          currentChunkBlobsRef.current = [];
         }
       }, CHUNK_INTERVAL_MS + 500);
 
