@@ -24,6 +24,11 @@ export function PTHomeworkTab({ homework, isLoading, onRefresh, onReview }: Prop
 
   useEffect(() => { onRefresh(); }, [onRefresh]);
 
+  const parentIds = useMemo(() => homework.map(h => h.parent_user_id).filter(Boolean), [homework]);
+  const clientIds = useMemo(() => homework.map(h => h.client_id).filter(Boolean), [homework]);
+  const { getName: getParentName } = useProfileNameResolver(parentIds);
+  const { getName: getClientName } = useClientNameResolver(clientIds);
+
   const handleReview = async (status: string) => {
     if (!viewItem) return;
     try {
