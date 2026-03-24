@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Transcription service not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { recording_id, org_id, transcript_version = 1, audio_storage_path } = await req.json();
-    if (!recording_id || !org_id) {
-      return new Response(JSON.stringify({ error: "recording_id and org_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { recording_id, org_id = null, transcript_version = 1, audio_storage_path } = await req.json();
+    if (!recording_id) {
+      return new Response(JSON.stringify({ error: "recording_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Validate recording
