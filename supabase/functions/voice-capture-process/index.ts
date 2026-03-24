@@ -336,7 +336,7 @@ RULES:
       }
 
       // Update draft with transformed content
-      await supabase.from("voice_ai_drafts").update({
+      await supabaseAdmin.from("voice_ai_drafts").update({
         content: transformed,
         tone: transform_type === "translate_spanish" ? "clinical" : transform_type,
         output_language: transform_type === "translate_spanish" ? "es" : draft.output_language,
@@ -607,7 +607,7 @@ RULES:
               const summaryTypes = ["one_line_summary", "concise_summary", "detailed_clinical_summary", "parent_friendly_summary"];
               for (const st of summaryTypes) {
                 if (extracted[st]) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: st,
                     json_payload: { text: extracted[st] },
@@ -627,7 +627,7 @@ RULES:
               ];
               for (const field of structuredFields) {
                 if (extracted[field] && (Array.isArray(extracted[field]) ? extracted[field].length > 0 : true)) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: field,
                     json_payload: { items: extracted[field] },
@@ -639,7 +639,7 @@ RULES:
               // Save scalar extractions
               for (const field of ["setting", "reason_for_contact"]) {
                 if (extracted[field]) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: field,
                     json_payload: { value: extracted[field] },
@@ -650,7 +650,7 @@ RULES:
               // Save tasks
               if (extracted.action_items?.length > 0) {
                 for (const item of extracted.action_items) {
-                  await supabase.from("voice_tasks").insert({
+                  await supabaseAdmin.from("voice_tasks").insert({
                     recording_id,
                     client_id: recording.client_id || null,
                     task_text: item.task,
@@ -707,7 +707,7 @@ RULES:
               const draftData = await draftRes.json();
               const content = draftData.choices?.[0]?.message?.content;
               if (content) {
-                await supabase.from("voice_ai_drafts").insert({
+                await supabaseAdmin.from("voice_ai_drafts").insert({
                   recording_id,
                   draft_type: draftType.key,
                   tone: "clinical",
