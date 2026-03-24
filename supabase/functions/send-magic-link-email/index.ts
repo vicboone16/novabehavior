@@ -72,10 +72,14 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { type, recordId }: SendMagicLinkRequest = await req.json();
+    const body = await req.json();
+    const { type, recordId, recipientEmail, recipientName, password, pin } = body as SendMagicLinkRequest;
 
-    if (!type || !recordId) {
-      throw new Error("Missing required fields: type, recordId");
+    if (!type) {
+      throw new Error("Missing required field: type");
+    }
+    if (type !== 'staff_credentials' && !recordId) {
+      throw new Error("Missing required field: recordId");
     }
 
     const appUrl =
