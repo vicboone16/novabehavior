@@ -44328,6 +44328,7 @@ export type Database = {
           custom_rule_json: Json | null
           discontinue_reason_text: string | null
           display_order: number
+          error_correction: string | null
           global_criteria_id: string | null
           hold_at: string | null
           hold_reason: string | null
@@ -44344,10 +44345,12 @@ export type Database = {
           program_criteria_id: string | null
           program_id: string
           prompt_counts_as_correct: boolean | null
+          prompt_hierarchy: Json | null
           reinstated_at: string | null
           reopened_at: string | null
           replaced_by_target_id: string | null
           replaces_target_id: string | null
+          sd_instructions: string | null
           sort_order: number
           status: string
           status_effective_date: string
@@ -44367,6 +44370,7 @@ export type Database = {
           custom_rule_json?: Json | null
           discontinue_reason_text?: string | null
           display_order?: number
+          error_correction?: string | null
           global_criteria_id?: string | null
           hold_at?: string | null
           hold_reason?: string | null
@@ -44383,10 +44387,12 @@ export type Database = {
           program_criteria_id?: string | null
           program_id: string
           prompt_counts_as_correct?: boolean | null
+          prompt_hierarchy?: Json | null
           reinstated_at?: string | null
           reopened_at?: string | null
           replaced_by_target_id?: string | null
           replaces_target_id?: string | null
+          sd_instructions?: string | null
           sort_order?: number
           status?: string
           status_effective_date?: string
@@ -44406,6 +44412,7 @@ export type Database = {
           custom_rule_json?: Json | null
           discontinue_reason_text?: string | null
           display_order?: number
+          error_correction?: string | null
           global_criteria_id?: string | null
           hold_at?: string | null
           hold_reason?: string | null
@@ -44422,10 +44429,12 @@ export type Database = {
           program_criteria_id?: string | null
           program_id?: string
           prompt_counts_as_correct?: boolean | null
+          prompt_hierarchy?: Json | null
           reinstated_at?: string | null
           reopened_at?: string | null
           replaced_by_target_id?: string | null
           replaces_target_id?: string | null
+          sd_instructions?: string | null
           sort_order?: number
           status?: string
           status_effective_date?: string
