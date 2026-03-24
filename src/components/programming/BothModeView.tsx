@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Target, Activity, Plus, ChevronRight } from 'lucide-react';
+import { Target, Activity, Plus, ChevronRight, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
+import { BopsProgramsSection } from './BopsProgramsSection';
 import { useDataStore } from '@/store/dataStore';
+import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
 
 type Selection = 
@@ -33,6 +35,8 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
   
   const { students } = useDataStore();
   const student = students.find(s => s.id === studentId);
+  const { data: bopsPrograms } = useStudentBopsPrograms(studentId);
+  const bopsCount = bopsPrograms?.length || 0;
   
   if (!student) return null;
 
@@ -99,7 +103,29 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
             <p className="text-xs text-muted-foreground">tracked behaviors</p>
           </CardContent>
         </Card>
+
+        {bopsCount > 0 && (
+          <Card 
+            className={cn(
+              "cursor-pointer transition-colors hover:bg-muted/50 col-span-2",
+            )}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                BOPS Programs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{bopsCount}</p>
+              <p className="text-xs text-muted-foreground">active BOPS programs</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* BOPS Programs Section */}
+      <BopsProgramsSection studentId={studentId} />
 
       {/* Detail View */}
       {detailView === 'skills' ? (

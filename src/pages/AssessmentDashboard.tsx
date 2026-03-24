@@ -45,6 +45,8 @@ import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport
 import { useAuth } from '@/contexts/AuthContext';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
+import BopsEngine from '@/pages/BopsEngine';
+import { Shield } from 'lucide-react';
 
 // FBA Workflow Steps
 const FBA_WORKFLOW_STEPS = [
@@ -485,7 +487,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-9 w-full">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -525,6 +527,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="report" className="gap-1 text-xs">
               <FileText className="w-3 h-3" />
               Report
+            </TabsTrigger>
+            <TabsTrigger value="bops" className="gap-1 text-xs">
+              <Shield className="w-3 h-3" />
+              BOPS
             </TabsTrigger>
           </TabsList>
 
@@ -1048,6 +1054,9 @@ export default function AssessmentDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="bops" className="space-y-4">
+            <BopsEngine />
           </TabsContent>
         </Tabs>
       )}

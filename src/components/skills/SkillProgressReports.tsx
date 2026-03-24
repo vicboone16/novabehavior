@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, Download, FileText, 
   Calendar, Target, CheckCircle2, Clock, Award
@@ -36,6 +36,7 @@ import { saveAs } from 'file-saver';
 import { useStudentTargets, useStudentAssessments, useDomains } from '@/hooks/useCurriculum';
 import { useUnifiedSkillData } from '@/hooks/useUnifiedSkillData';
 import type { StudentTarget } from '@/types/curriculum';
+import { GraphExportButton } from '@/components/shared/GraphExportButton';
 
 interface SkillProgressReportsProps {
   studentId: string;
@@ -63,6 +64,8 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
   const [dateRange, setDateRange] = useState('30');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [activeTab, setActiveTab] = useState('overview');
+  const overviewChartRef = useRef<HTMLDivElement>(null);
+  const domainChartRef = useRef<HTMLDivElement>(null);
 
   // Merge legacy targets with DB program targets for unified metrics
   const allTargetsMerged = useMemo(() => {
@@ -503,17 +506,23 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Progress Over Time</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setChartType(chartType === 'line' ? 'bar' : 'line')}
-                  >
-                    {chartType === 'line' ? <BarChart3 className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <GraphExportButton 
+                      containerRef={overviewChartRef} 
+                      filename={`progress-${studentName.replace(/\s+/g, '-')}`} 
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setChartType(chartType === 'line' ? 'bar' : 'line')}
+                    >
+                      {chartType === 'line' ? <BarChart3 className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[250px]">
+                <div className="h-[250px]" ref={overviewChartRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'line' ? (
                       <LineChart data={progressData}>
