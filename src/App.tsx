@@ -108,6 +108,7 @@ const TrainingAcademy = lazy(() => import("./pages/TrainingAcademy"));
 const IntakeForms = lazy(() => import("./pages/IntakeForms"));
 const NovaCopilot = lazy(() => import("./pages/NovaCopilot"));
 const BopsEngine = lazy(() => import("./pages/BopsEngine"));
+const BopsAdminConsole = lazy(() => import("./pages/BopsAdminConsole"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -488,6 +489,7 @@ const App = () => {
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
               <Route path="/bops" element={<BopsEngine />} />
+              <Route path="/bops-admin" element={<BopsAdminConsole />} />
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
