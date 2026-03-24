@@ -229,10 +229,18 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         m.agency_id === agencyId ? { ...m, status: m.status === 'active' ? 'inactive' : 'active' } : m
       ));
     } else {
-      setMemberships(prev => [...prev, {
-        id: '', agency_id: agencyId, user_id: userId,
-        role: 'staff', status: 'active', is_primary: prev.length === 0,
-      }]);
+      const DEMO_AGENCY_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+      setMemberships(prev => {
+        const activeNonDemo = prev.filter(m => m.status === 'active' && m.agency_id !== DEMO_AGENCY_ID);
+        const shouldBePrimary = prev.length === 0 || (agencyId !== DEMO_AGENCY_ID && activeNonDemo.length === 0);
+        const updated = shouldBePrimary && agencyId !== DEMO_AGENCY_ID
+          ? prev.map(m => m.agency_id === DEMO_AGENCY_ID ? { ...m, is_primary: false } : m)
+          : prev;
+        return [...updated, {
+          id: '', agency_id: agencyId, user_id: userId,
+          role: 'staff', status: 'active', is_primary: shouldBePrimary,
+        }];
+      });
     }
     setHasChanges(true);
   };

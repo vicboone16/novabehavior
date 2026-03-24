@@ -87,8 +87,15 @@ export function useAgencyContext(): AgencyContext {
       }
       
       if (!activeMembership) {
-        // Fall back to primary agency
-        activeMembership = typedMemberships.find(m => m.is_primary) || typedMemberships[0] || null;
+        const DEMO_AGENCY_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        // Fall back to primary agency, but prefer non-demo if multiple exist
+        activeMembership = typedMemberships.find(m => m.is_primary) || null;
+        if (activeMembership && activeMembership.agency_id === DEMO_AGENCY_ID && typedMemberships.length > 1) {
+          activeMembership = typedMemberships.find(m => m.agency_id !== DEMO_AGENCY_ID) || activeMembership;
+        }
+        if (!activeMembership) {
+          activeMembership = typedMemberships.find(m => m.agency_id !== DEMO_AGENCY_ID) || typedMemberships[0] || null;
+        }
       }
 
       if (activeMembership) {
