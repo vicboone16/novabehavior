@@ -128,6 +128,8 @@ function BopsProgramCard({
   onAllocateSkill,
   onAllocateTargets,
   onAllocateProtocol,
+  onAllocateBehaviorGoal,
+  onAllocateReplacement,
   busy,
 }: {
   program: any;
@@ -137,6 +139,8 @@ function BopsProgramCard({
   onAllocateSkill: () => void;
   onAllocateTargets: () => void;
   onAllocateProtocol: () => void;
+  onAllocateBehaviorGoal: () => void;
+  onAllocateReplacement: () => void;
   busy: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -190,7 +194,7 @@ function BopsProgramCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onAllocateSkill} disabled={busy}>
                 <FolderTree className="w-4 h-4 mr-2" />
-                Send to Programs
+                Send to Skill Programs
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateTargets} disabled={busy}>
                 <ListChecks className="w-4 h-4 mr-2" />
@@ -199,6 +203,14 @@ function BopsProgramCard({
               <DropdownMenuItem onClick={onAllocateProtocol} disabled={busy}>
                 <ArrowRightLeft className="w-4 h-4 mr-2" />
                 Send to Interventions
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onAllocateBehaviorGoal} disabled={busy}>
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Send to Behavior Goals
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onAllocateReplacement} disabled={busy}>
+                <Repeat className="w-4 h-4 mr-2" />
+                Send to Replacement Behaviors
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
