@@ -230,16 +230,17 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
       ));
     } else {
       const DEMO_AGENCY_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
-      const activeNonDemo = prev.filter(m => m.status === 'active' && m.agency_id !== DEMO_AGENCY_ID);
-      const shouldBePrimary = prev.length === 0 || (agencyId !== DEMO_AGENCY_ID && activeNonDemo.length === 0);
-      // If adding a real agency and demo was primary, demote demo
-      const updated = shouldBePrimary && agencyId !== DEMO_AGENCY_ID
-        ? prev.map(m => m.agency_id === DEMO_AGENCY_ID ? { ...m, is_primary: false } : m)
-        : prev;
-      setMemberships([...updated, {
-        id: '', agency_id: agencyId, user_id: userId,
-        role: 'staff', status: 'active', is_primary: shouldBePrimary,
-      }]);
+      setMemberships(prev => {
+        const activeNonDemo = prev.filter(m => m.status === 'active' && m.agency_id !== DEMO_AGENCY_ID);
+        const shouldBePrimary = prev.length === 0 || (agencyId !== DEMO_AGENCY_ID && activeNonDemo.length === 0);
+        const updated = shouldBePrimary && agencyId !== DEMO_AGENCY_ID
+          ? prev.map(m => m.agency_id === DEMO_AGENCY_ID ? { ...m, is_primary: false } : m)
+          : prev;
+        return [...updated, {
+          id: '', agency_id: agencyId, user_id: userId,
+          role: 'staff', status: 'active', is_primary: shouldBePrimary,
+        }];
+      });
     }
     setHasChanges(true);
   };
