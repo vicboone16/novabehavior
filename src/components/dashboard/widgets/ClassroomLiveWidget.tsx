@@ -14,18 +14,20 @@ export function ClassroomLiveWidget() {
   const { currentAgency } = useAgencyContext();
   const agencyId = currentAgency?.id || null;
   const { signals, loading: signalsLoading } = useSupervisorSignals(agencyId);
-  const { classrooms, loading: classroomsLoading, refetch } = useClassroomSummaries(agencyId);
+  const { classrooms, loading: classroomsLoading, refresh } = useClassroomSummaries(agencyId);
 
   // Realtime subscription for beacon points + mayday alerts
   useEffect(() => {
     const channel = supabase
       .channel('classroom-live-updates')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beacon_points_ledger' }, () => { refetch?.(); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mayday_alerts' }, () => { refetch?.(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_presence_status' }, () => { refetch?.(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beacon_points_ledger' }, () => { refresh?.(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mayday_alerts' }, () => { refresh?.(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_presence_status' }, () => { refresh?.(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [refetch]);
+  }, [refresh]);
+
+  const loading = signalsLoading || classroomsLoading;
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
