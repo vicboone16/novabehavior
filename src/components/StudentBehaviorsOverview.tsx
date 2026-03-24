@@ -1067,6 +1067,7 @@ export function StudentBehaviorsOverview({
       </div>
 
       {/* Charts Tabs */}
+      <div ref={chartContainerRef}>
       <Tabs defaultValue="frequency" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="frequency" className="text-xs">
