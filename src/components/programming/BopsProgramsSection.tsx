@@ -404,7 +404,7 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
         }));
 
       if (rows.length === 0) {
-        toast.info('These BOPS targets are already in Flat Targets');
+        toast.info('These BOPS targets are already in Individual Targets');
         return;
       }
 
