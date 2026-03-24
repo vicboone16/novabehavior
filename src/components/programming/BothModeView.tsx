@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Target, Activity, Plus, ChevronRight } from 'lucide-react';
+import { Target, Activity, Plus, ChevronRight, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
+import { BopsProgramsSection } from './BopsProgramsSection';
 import { useDataStore } from '@/store/dataStore';
+import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
 
 type Selection = 
