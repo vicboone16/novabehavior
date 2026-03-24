@@ -138,7 +138,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
                 <Pencil className="w-4 h-4 mr-2" />
-                Create Legacy Target
+                Create Individual Target
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
                 <BookOpen className="w-4 h-4 mr-2" />
