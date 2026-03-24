@@ -113,7 +113,21 @@ export function useSupervisorCaseloadDashboard() {
         .from('v_supervisor_caseload_dashboard' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve supervisor names
+      const userIds = [...new Set((data || []).map((d: any) => d.supervisor_user_id).filter(Boolean))];
+      if (userIds.length === 0) return data as any[];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, first_name, last_name')
+        .in('user_id', userIds);
+      const nameMap = new Map((profiles || []).map((p: any) => [
+        p.user_id,
+        p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown'
+      ]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        supervisor_name: nameMap.get(d.supervisor_user_id) || d.supervisor_user_id?.slice(0, 8) + '…',
+      })) as any[];
     },
   });
 }
