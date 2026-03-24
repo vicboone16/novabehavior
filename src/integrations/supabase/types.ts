@@ -75986,6 +75986,10 @@ export type Database = {
         Args: { p_response_json: Json }
         Returns: Json
       }
+      ensure_behavior_catalog_for_student: {
+        Args: { _student_id: string }
+        Returns: undefined
+      }
       ensure_solo_teacher_agency: {
         Args: { p_user_id: string }
         Returns: {
@@ -76983,6 +76987,7 @@ export type Database = {
         Args: { p_function: string }
         Returns: string
       }
+      normalize_behavior_label: { Args: { value: string }; Returns: string }
       normalize_behavior_topography: {
         Args: { p_topography: string }
         Returns: string
@@ -77088,6 +77093,10 @@ export type Database = {
           score: number
           setting_match: number
         }[]
+      }
+      rebuild_behavior_session_data_for_session: {
+        Args: { _session_id: string }
+        Returns: undefined
       }
       recalculate_mts_session: {
         Args: { p_mts_session_id: string }
@@ -77350,6 +77359,14 @@ export type Database = {
           p_archetype_1: string
           p_archetype_2: string
           p_archetype_3: string
+        }
+        Returns: string
+      }
+      resolve_canonical_behavior_id: {
+        Args: {
+          _behavior_name: string
+          _raw_behavior_id: string
+          _student_id: string
         }
         Returns: string
       }
