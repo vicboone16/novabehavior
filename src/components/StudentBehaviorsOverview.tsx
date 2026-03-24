@@ -1,11 +1,11 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, isWithinInterval, startOfDay, endOfDay, eachDayOfInterval } from 'date-fns';
 import { useDataStore } from '@/store/dataStore';
 import { 
   TrendingUp, TrendingDown, Minus, Activity, Calendar, 
   BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon,
-  Layers, AlertTriangle, UserPlus, Edit2, Check, X
+  Layers, AlertTriangle, UserPlus, Edit2, Check, X, Image, FileImage
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -122,6 +122,79 @@ export function StudentBehaviorsOverview({
   const [editingMethodsBehaviorId, setEditingMethodsBehaviorId] = useState<string | null>(null);
   const [editingMethods, setEditingMethods] = useState<DataCollectionMethod[]>([]);
   const { updateBehaviorMethods } = useDataStore();
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleExportChartPNG = useCallback(() => {
+    if (!chartContainerRef.current) return;
+    const svg = chartContainerRef.current.querySelector('svg');
+    if (!svg) { toast.error('No chart visible to export'); return; }
+    const canvas = document.createElement('canvas');
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new window.Image();
+    img.onload = () => {
+      canvas.width = img.width * 2;
+      canvas.height = img.height * 2;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(2, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const link = document.createElement('a');
+      const rangeLabel = dateRangePreset === 'custom'
+        ? `${customStartDate ? format(customStartDate, 'yyyy-MM-dd') : ''}_to_${customEndDate ? format(customEndDate, 'yyyy-MM-dd') : ''}`
+        : dateRangePreset;
+      link.download = `${studentName.replace(/\s+/g, '_')}_behavior_chart_${rangeLabel}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success('Chart exported as PNG');
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  }, [studentName, dateRangePreset, customStartDate, customEndDate]);
+
+  const handleExportChartPDF = useCallback(async () => {
+    if (!chartContainerRef.current) return;
+    const svg = chartContainerRef.current.querySelector('svg');
+    if (!svg) { toast.error('No chart visible to export'); return; }
+    try {
+      const { jsPDF } = await import('jspdf');
+      const canvas = document.createElement('canvas');
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width * 2;
+        canvas.height = img.height * 2;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.scale(2, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = 280;
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.setFontSize(14);
+        pdf.text(`${studentName} — Behavior Data`, 14, 15);
+        pdf.setFontSize(9);
+        const rangeText = dateRangePreset === 'all' ? 'All Time'
+          : dateRangePreset === 'custom'
+            ? `${customStartDate ? format(customStartDate, 'MMM d, yyyy') : '?'} – ${customEndDate ? format(customEndDate, 'MMM d, yyyy') : '?'}`
+            : DATE_RANGE_PRESETS.find(p => p.value === dateRangePreset)?.label || dateRangePreset;
+        pdf.text(`Date Range: ${rangeText}  |  Exported: ${format(new Date(), 'MMM d, yyyy h:mm a')}`, 14, 22);
+        pdf.addImage(imgData, 'PNG', 10, 28, pdfWidth, pdfHeight);
+        const rangeLabel = dateRangePreset === 'custom'
+          ? `${customStartDate ? format(customStartDate, 'yyyy-MM-dd') : ''}_to_${customEndDate ? format(customEndDate, 'yyyy-MM-dd') : ''}`
+          : dateRangePreset;
+        pdf.save(`${studentName.replace(/\s+/g, '_')}_behavior_chart_${rangeLabel}.pdf`);
+        toast.success('Chart exported as PDF');
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    } catch (err) {
+      toast.error('PDF export failed');
+      console.error(err);
+    }
+  }, [studentName, dateRangePreset, customStartDate, customEndDate]);
 
   const ALL_METHODS: { value: DataCollectionMethod; label: string }[] = [
     { value: 'frequency', label: 'Frequency' },
@@ -945,7 +1018,15 @@ export function StudentBehaviorsOverview({
           <DropdownMenuContent>
             <DropdownMenuItem onClick={handleExportCSV}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Export CSV
+              Export Data CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportChartPNG}>
+              <Image className="w-4 h-4 mr-2" />
+              Export Chart PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportChartPDF}>
+              <FileText className="w-4 h-4 mr-2" />
+              Export Chart PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -986,6 +1067,7 @@ export function StudentBehaviorsOverview({
       </div>
 
       {/* Charts Tabs */}
+      <div ref={chartContainerRef}>
       <Tabs defaultValue="frequency" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="frequency" className="text-xs">
@@ -1334,6 +1416,7 @@ export function StudentBehaviorsOverview({
           </div>
         </TabsContent>
       </Tabs>
+      </div>
 
       {/* Behavior List with Stats */}
       <Card>
