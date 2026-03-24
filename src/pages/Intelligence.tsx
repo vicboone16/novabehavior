@@ -40,6 +40,8 @@ import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAl
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
 import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
 
+const DistrictIntelligence = lazy(() => import('./DistrictIntelligence'));
+
 function getRiskColor(score: number) {
   if (score >= 75) return 'bg-destructive text-destructive-foreground';
   if (score >= 50) return 'bg-orange-500 text-white';
