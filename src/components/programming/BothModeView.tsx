@@ -41,7 +41,7 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
   if (!student) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-y-auto">
       {/* Combined Add Menu */}
       <div className="flex items-center justify-end">
         <DropdownMenu>
