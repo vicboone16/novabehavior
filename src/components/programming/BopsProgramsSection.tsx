@@ -410,7 +410,7 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
 
       await bulkAddTargets(rows);
       onAllocated?.();
-      toast.success('BOPS targets sent to Flat Targets');
+      toast.success('BOPS targets sent to Individual Targets');
     } finally {
       setBusyKey(null);
     }
