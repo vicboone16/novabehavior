@@ -349,14 +349,14 @@ RULES:
     }
 
     // Update status for full pipeline
-    await supabase.from("voice_recordings").update({
+    await supabaseAdmin.from("voice_recordings").update({
       status: "processing",
       transcript_status: "processing",
       ai_status: "processing",
     }).eq("id", recording_id);
 
     // Log AI run
-    const { data: aiRun } = await supabase.from("voice_ai_runs").insert({
+    const { data: aiRun } = await supabaseAdmin.from("voice_ai_runs").insert({
       recording_id,
       run_type: "full_pipeline",
       model_name: "google/gemini-3-flash-preview",
