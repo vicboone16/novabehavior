@@ -165,7 +165,7 @@ function BopsProgramCard({
                     <Badge variant="secondary" className="text-[10px]">{program.domain}</Badge>
                   )}
                   {skillImported && <Badge variant="default" className="text-[10px]">In Programs</Badge>}
-                  {targetsImported && <Badge variant="outline" className="text-[10px]">In Flat Targets</Badge>}
+                  {targetsImported && <Badge variant="outline" className="text-[10px]">In Individual Targets</Badge>}
                   {protocolImported && <Badge variant="secondary" className="text-[10px]">In Protocols</Badge>}
                 </div>
                 {program.teacher_friendly_summary && (
