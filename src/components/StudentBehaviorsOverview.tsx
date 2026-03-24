@@ -121,7 +121,9 @@ export function StudentBehaviorsOverview({
   const [showPhaseLines, setShowPhaseLines] = useState(true);
   const [editingMethodsBehaviorId, setEditingMethodsBehaviorId] = useState<string | null>(null);
   const [editingMethods, setEditingMethods] = useState<DataCollectionMethod[]>([]);
-  const { updateBehaviorMethods } = useDataStore();
+  const [editingDefBehavior, setEditingDefBehavior] = useState<Behavior | null>(null);
+  const [editDefText, setEditDefText] = useState('');
+  const { updateBehaviorMethods, updateBehaviorDefinition } = useDataStore();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const handleExportChartPNG = useCallback(() => {
