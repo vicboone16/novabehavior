@@ -27,6 +27,11 @@ export function AdminAssignmentsTab({ assignments, modules, isLoading, onRefresh
 
   useEffect(() => { onRefresh(); }, [onRefresh]);
 
+  const parentIds = useMemo(() => assignments.map(a => a.parent_user_id).filter(Boolean), [assignments]);
+  const clientIds = useMemo(() => assignments.map(a => a.client_id).filter(Boolean), [assignments]);
+  const { getName: getParentName } = useProfileNameResolver(parentIds);
+  const { getName: getClientName } = useClientNameResolver(clientIds);
+
   const handleCreate = async () => {
     try {
       await onCreate({
