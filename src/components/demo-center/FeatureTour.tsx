@@ -75,11 +75,13 @@ const SLIDES: FeatureSlide[] = [
   },
 ];
 
-const TEACHER_BENEFITS = [
+const AUDIENCE_BENEFITS = [
   { icon: Clock, label: 'Save 45+ min/day', desc: 'No more end-of-day data entry' },
-  { icon: Smartphone, label: 'Works on iPad', desc: 'Designed for classroom tablets' },
+  { icon: Smartphone, label: 'Works on iPad', desc: 'Designed for classroom & clinic' },
   { icon: Shield, label: 'HIPAA Secure', desc: 'All data encrypted & compliant' },
   { icon: Star, label: 'No Training Needed', desc: 'Intuitive from day one' },
+  { icon: BarChart3, label: 'Real-Time Analytics', desc: 'Graphs update automatically' },
+  { icon: Users, label: 'Multi-Site Ready', desc: 'Scale across clinics & districts' },
 ];
 
 export function FeatureTour() {
