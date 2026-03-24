@@ -247,9 +247,15 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 return (
                   <Card key={target.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="py-3">
-                      <div className="flex items-start justify-between gap-3">
+                      <div
+                        className="flex items-start justify-between gap-3 cursor-pointer"
+                        onClick={() => setExpandedTargetId(expandedTargetId === target.id ? null : target.id)}
+                      >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {expandedTargetId === target.id
+                              ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                              : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                             <h4 className="font-medium text-sm">{target.title}</h4>
                             <Badge className={`${statusConfig.color} text-white text-xs`}>
                               <StatusIcon className="w-3 h-3 mr-1" />
@@ -265,25 +271,17 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground ml-6">
                             {target.domain && <span className="font-medium">{target.domain.name}</span>}
                             <Badge variant="outline" className={`text-xs ${priorityConfig.color}`}>
                               {priorityConfig.label}
                             </Badge>
                             <span>{dataTypeLabel}</span>
                           </div>
-                          {target.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{target.description}</p>
-                          )}
-                          {target.mastery_criteria && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              <span className="font-medium">Mastery:</span> {target.mastery_criteria}
-                            </p>
-                          )}
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}>
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -291,6 +289,11 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                             <DropdownMenuItem onClick={() => setEditingTarget(target)}>
                               <Pencil className="w-4 h-4 mr-2" /> Edit Target
                             </DropdownMenuItem>
+                            {programs.length > 0 && (
+                              <DropdownMenuItem onClick={() => setMoveTargetId(target.id)}>
+                                <ArrowRight className="w-4 h-4 mr-2" /> Move to Program
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {target.status !== 'active' && (
                               <DropdownMenuItem onClick={() => handleStatusChange(target.id, 'active')}>
@@ -314,6 +317,50 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
+
+                      {/* Expanded details */}
+                      {expandedTargetId === target.id && (
+                        <div className="mt-3 ml-6 p-3 bg-muted/40 rounded-lg border border-border/50 space-y-2 text-xs">
+                          {target.description && (
+                            <div>
+                              <span className="font-semibold text-foreground">Operational Definition:</span>
+                              <p className="text-muted-foreground mt-0.5">{target.description}</p>
+                            </div>
+                          )}
+                          {target.mastery_criteria && (
+                            <div>
+                              <span className="font-semibold text-foreground">Mastery Criteria:</span>
+                              <p className="text-muted-foreground mt-0.5">{target.mastery_criteria}</p>
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-4">
+                            {target.domain && (
+                              <div>
+                                <span className="font-semibold text-foreground">Domain:</span>{' '}
+                                <span className="text-muted-foreground">{target.domain.name}</span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="font-semibold text-foreground">Data Collection:</span>{' '}
+                              <span className="text-muted-foreground">{dataTypeLabel}</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-foreground">Source:</span>{' '}
+                              <span className="text-muted-foreground">{sourceConfig.label}</span>
+                            </div>
+                          </div>
+                          {programs.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs mt-2"
+                              onClick={() => setMoveTargetId(target.id)}
+                            >
+                              <ArrowRight className="w-3 h-3 mr-1" /> Move to Program
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
