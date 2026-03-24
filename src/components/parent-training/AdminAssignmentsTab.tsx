@@ -86,8 +86,8 @@ export function AdminAssignmentsTab({ assignments, modules, isLoading, onRefresh
               ) : assignments.map(a => (
                 <TableRow key={a.assignment_id}>
                   <TableCell className="font-medium">{a.module_title || a.module_id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{a.parent_user_id.slice(0, 8)}…</TableCell>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{a.client_id.slice(0, 8)}…</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getParentName(a.parent_user_id) || a.parent_user_id.slice(0, 8) + '…'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getClientName(a.client_id) || a.client_id.slice(0, 8) + '…'}</TableCell>
                   <TableCell><Badge variant={statusColor(a.status) as any}>{a.status}</Badge></TableCell>
                   <TableCell>{a.due_at ? format(new Date(a.due_at), 'MMM d, yyyy') : '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{format(new Date(a.created_at), 'MMM d')}</TableCell>
