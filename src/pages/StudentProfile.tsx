@@ -791,11 +791,8 @@ export default function StudentProfile() {
 
         {/* ====== PROGRAMMING TAB ====== */}
         <TabsContent value="programming" className="space-y-4">
-          {/* Intelligence cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <SkillMasteryIntelligenceCard studentId={student.id} />
-            <ReplacementBehaviorCard studentId={student.id} />
-          </div>
+          {/* Combined Intelligence Banner */}
+          <SkillMasteryIntelligenceCard studentId={student.id} />
           <ProgrammingIntelligenceSection studentId={student.id} />
           <ProgrammingModule
             studentId={student.id}
