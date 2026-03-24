@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
     // Service-role client for all DB ops
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { recording_id, org_id } = await req.json();
-    if (!recording_id || !org_id) {
-      return new Response(JSON.stringify({ error: "recording_id and org_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { recording_id, org_id = null } = await req.json();
+    if (!recording_id) {
+      return new Response(JSON.stringify({ error: "recording_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Load recording
