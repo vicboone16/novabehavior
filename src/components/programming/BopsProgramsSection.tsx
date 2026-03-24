@@ -608,7 +608,7 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
               >
                 {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 <span className="text-sm font-semibold">{domain}</span>
-                <Badge variant="outline" className="text-[10px]">{domainPrograms.length}</Badge>
+                <Badge variant="outline" className="text-[10px]">{(domainPrograms as any[]).length}</Badge>
               </button>
 
               {!isCollapsed && (
