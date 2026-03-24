@@ -84,6 +84,11 @@ export function BopsEngineConsole() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <h2 className="text-xl font-bold text-foreground">BOPS Engine Console</h2>
+        <p className="text-sm text-muted-foreground">Behavioral Operating Profile System — assessment, classification, and daily planning</p>
+      </div>
       {/* Toolbar */}
       <Card>
         <CardContent className="pt-4">

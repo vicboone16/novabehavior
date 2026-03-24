@@ -37,7 +37,7 @@ export function BopsStudentHub() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Select Student</CardTitle>
+          <CardTitle className="text-base text-foreground">Select Student</CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={studentId} onValueChange={setStudentId}>
