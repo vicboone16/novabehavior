@@ -108,7 +108,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 <FolderTree className="w-3 h-3 mr-1" /> Programs
               </TabsTrigger>
               <TabsTrigger value="legacy" className="text-xs h-7 px-3">
-                <ListChecks className="w-3 h-3 mr-1" /> Flat Targets
+                <ListChecks className="w-3 h-3 mr-1" /> Individual Targets
               </TabsTrigger>
             </TabsList>
           </Tabs>
