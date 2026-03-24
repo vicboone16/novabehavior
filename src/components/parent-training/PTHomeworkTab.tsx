@@ -56,8 +56,8 @@ export function PTHomeworkTab({ homework, isLoading, onRefresh, onReview }: Prop
                 : homework.map(h => (
                   <TableRow key={h.homework_id}>
                     <TableCell className="font-medium">{h.title}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{h.parent_user_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{h.client_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getParentName(h.parent_user_id) || h.parent_user_id.slice(0, 8) + '…'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getClientName(h.client_id) || h.client_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{format(new Date(h.submitted_at), 'MMM d, yyyy')}</TableCell>
                     <TableCell><Badge variant={statusColor(h.review_status) as any}>{h.review_status}</Badge></TableCell>
                     <TableCell>
