@@ -38,6 +38,9 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
 
   return (
     <div className="space-y-3 overflow-y-auto">
+      {/* Unified Intelligence Banner */}
+      <ProgrammingIntelligenceBanner studentId={studentId} />
+
       {/* Compact summary bar + view toggle */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
