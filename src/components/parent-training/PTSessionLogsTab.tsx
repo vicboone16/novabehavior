@@ -23,6 +23,8 @@ interface Props {
 }
 
 export function PTSessionLogsTab({ sessionLogs, modules, isLoading, onRefresh, onCreate }: Props) {
+  const parentIds = useMemo(() => sessionLogs.map(l => l.parent_user_id).filter(Boolean), [sessionLogs]);
+  const { getName } = useProfileNameResolver(parentIds);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({
     parent_user_id: '', client_id: '', session_date: new Date().toISOString().slice(0, 10),
