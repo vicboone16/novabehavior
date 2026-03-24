@@ -71,6 +71,7 @@ const BehaviorReductionPage = lazy(() => import("./pages/clinical-library/Behavi
 const BehaviorBankPage = lazy(() => import("./pages/clinical-library/BehaviorBankPage"));
 const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryRegistryPage"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
+const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
 const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
@@ -487,6 +488,7 @@ const App = () => {
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
               <Route path="/bops" element={<BopsEngine />} />
+              <Route path="/district-intelligence" element={<DistrictIntelligence />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
