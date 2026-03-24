@@ -28,6 +28,11 @@ export function PTAssignedTrainingTab({ assignments, modules, isLoading, onRefre
 
   useEffect(() => { onRefresh(); }, [onRefresh]);
 
+  const parentIds = useMemo(() => assignments.map(a => a.parent_user_id).filter(Boolean), [assignments]);
+  const clientIds = useMemo(() => assignments.map(a => a.client_id).filter(Boolean), [assignments]);
+  const { getName: getParentName } = useProfileNameResolver(parentIds);
+  const { getName: getClientName } = useClientNameResolver(clientIds);
+
   const handleAssign = async () => {
     try {
       await onAssign(form.module_id, form.parent_user_id, form.client_id, form.due_at || undefined);
