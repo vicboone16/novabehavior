@@ -179,6 +179,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
         const mappedStudents: Student[] = studentsData.map((s: any) => ({
           id: s.id,
           name: s.name,
+          agencyId: s.agency_id || undefined,
           firstName: s.first_name || undefined,
           lastName: s.last_name || undefined,
           displayName: s.display_name || undefined,
@@ -1539,6 +1540,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
                 // Then apply all fields from the realtime update
                 id: s.id,
                 name: s.name,
+                agencyId: s.agency_id || undefined,
                 firstName: s.first_name || undefined,
                 lastName: s.last_name || undefined,
                 displayName: s.display_name || undefined,

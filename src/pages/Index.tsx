@@ -17,10 +17,12 @@ import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { DataExportManager } from '@/components/DataExportManager';
 import { TrashRecovery } from '@/components/TrashRecovery';
 import { useDataStore } from '@/store/dataStore';
+import { useDemoFilteredStudents } from '@/hooks/useDemoFilteredStudents';
 
 const Index = () => {
-  const { students, selectedStudentIds } = useDataStore();
-  const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id));
+  const { selectedStudentIds } = useDataStore();
+  const students = useDemoFilteredStudents();
+  const selectedStudents = students.filter(s => selectedStudentIds.includes(s.id) && !s.isArchived);
 
   // Check if any selected student has interval behaviors
   const hasIntervalBehaviors = selectedStudents.some(s => 

@@ -134,7 +134,7 @@ export default function DemoGateway() {
             </Card>
 
             {/* Explore by Role */}
-            <Card className="group hover:border-demo-accent/40 transition-all hover:shadow-md rounded-2xl">
+            <Card className="group hover:border-demo-accent/40 transition-all hover:shadow-md cursor-pointer rounded-2xl" onClick={() => goToTab('roles')}>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-demo-surface flex items-center justify-center">
