@@ -8,11 +8,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type LinkType = "observation" | "questionnaire" | "custom_form" | "consent";
+type LinkType = "observation" | "questionnaire" | "custom_form" | "consent" | "staff_credentials";
 
 interface SendMagicLinkRequest {
   type: LinkType;
-  recordId: string;
+  recordId?: string;
+  // Staff credentials fields
+  recipientEmail?: string;
+  recipientName?: string;
+  password?: string;
+  pin?: string;
+}
 }
 
 interface EmailPayload {
