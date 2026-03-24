@@ -1543,7 +1543,33 @@ export function StudentBehaviorsOverview({
                   </CollapsibleTrigger>
 
                   <CollapsibleContent>
-                    <div className="p-3 bg-muted/30 border-t space-y-2">
+                    <div className="p-3 bg-muted/30 border-t space-y-3">
+                      {/* Operational Definition */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">Operational Definition</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const srcBehavior = behaviors.find(b => b.id === behavior.id);
+                              if (srcBehavior) {
+                                setEditingDefBehavior(srcBehavior);
+                                setEditDefText(srcBehavior.operationalDefinition || '');
+                              }
+                            }}
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            Edit
+                          </Button>
+                        </div>
+                        <p className="text-xs text-foreground/80 italic">
+                          {behavior.operationalDefinition || 'No definition set — click Edit to add one.'}
+                        </p>
+                      </div>
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                         <div>
                           <div className="text-muted-foreground">Total (all time)</div>
