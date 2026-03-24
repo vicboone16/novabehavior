@@ -80,7 +80,7 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{(student.skillTargets || []).length}</p>
+            <p className="text-2xl font-bold">{(student.skillTargets || []).length + bopsCount}</p>
             <p className="text-xs text-muted-foreground">active targets</p>
           </CardContent>
         </Card>
