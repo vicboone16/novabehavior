@@ -39,7 +39,7 @@ export function BopsAdminCoverage() {
           <SelectTrigger className="w-48"><SelectValue placeholder="Profile Type" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            {types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {types.map((t: string) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
         <Button variant={filterMissing ? 'default' : 'outline'} size="sm" onClick={() => setFilterMissing(!filterMissing)}>

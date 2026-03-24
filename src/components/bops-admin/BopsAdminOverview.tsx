@@ -47,16 +47,16 @@ export function BopsAdminOverview() {
       </div>
 
       {warnings.length > 0 && (
-        <Card className="border-yellow-500/50 bg-yellow-500/5">
+        <Card className="border-destructive/50 bg-destructive/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+              <AlertTriangle className="w-4 h-4 text-destructive" />
               System Health Warnings
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             {warnings.map((w, i) => (
-              <p key={i} className="text-sm text-yellow-700 dark:text-yellow-400">• {w}</p>
+              <p key={i} className="text-sm text-destructive">• {w}</p>
             ))}
           </CardContent>
         </Card>
