@@ -36,6 +36,7 @@ import { saveAs } from 'file-saver';
 import { useStudentTargets, useStudentAssessments, useDomains } from '@/hooks/useCurriculum';
 import { useUnifiedSkillData } from '@/hooks/useUnifiedSkillData';
 import type { StudentTarget } from '@/types/curriculum';
+import { GraphExportButton } from '@/components/shared/GraphExportButton';
 
 interface SkillProgressReportsProps {
   studentId: string;
