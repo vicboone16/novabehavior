@@ -365,23 +365,33 @@ RULES:
     }).select().single();
 
     // ── Step 1: Get audio chunks and transcribe ──
-    const { data: chunks } = await supabase
+    // Use admin client for chunk retrieval and storage download (bypasses RLS)
+    const { data: chunks, error: chunksErr } = await supabaseAdmin
       .from("voice_recording_chunks")
       .select("*")
       .eq("recording_id", recording_id)
       .order("chunk_index", { ascending: true });
 
+    console.log(`[voice-capture-process] Found ${chunks?.length || 0} chunks for recording ${recording_id}`, chunksErr ? `Error: ${chunksErr.message}` : '');
+
     let fullTranscriptText = "";
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
+    if (!ELEVENLABS_API_KEY) {
+      console.error("[voice-capture-process] ELEVENLABS_API_KEY not configured");
+    }
+
     if (ELEVENLABS_API_KEY && chunks && chunks.length > 0) {
-      // Download and concatenate audio chunks
+      // Download and concatenate audio chunks using admin client
       const audioBlobs: Uint8Array[] = [];
       for (const chunk of chunks) {
         if (chunk.storage_path) {
-          const { data: fileData } = await supabase.storage
+          const { data: fileData, error: dlErr } = await supabaseAdmin.storage
             .from("voice-recordings")
             .download(chunk.storage_path);
+          if (dlErr) {
+            console.error(`[voice-capture-process] Failed to download chunk ${chunk.chunk_index}:`, dlErr.message);
+          }
           if (fileData) {
             const arrayBuf = await fileData.arrayBuffer();
             audioBlobs.push(new Uint8Array(arrayBuf));
