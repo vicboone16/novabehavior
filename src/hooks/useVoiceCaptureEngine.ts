@@ -80,7 +80,8 @@ export function useVoiceCaptureEngine() {
 
   const uploadChunk = async (recordingId: string, orgId: string, chunk: ChunkRecord) => {
     try {
-      const path = `org/${orgId}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
+      const orgSegment = orgId && orgId !== '' ? orgId : 'default';
+      const path = `org/${orgSegment}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
       console.log(`[VoiceCapture] Uploading chunk ${chunk.index} to ${path}, size: ${chunk.blob.size}`);
       const { error: uploadError } = await supabase.storage
         .from('voice-recordings')
