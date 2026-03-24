@@ -128,18 +128,59 @@ Deno.serve(async (req) => {
     const isSuperAdmin = roles.includes("super_admin");
     const isAdmin = roles.includes("admin");
 
-    // 3. Fetch agencies from user_agency_access
-    const { data: agencyAccess, error: agencyError } = await supabaseAdmin
-      .from("user_agency_access")
-      .select("agency_id, role")
-      .eq("user_id", userId);
+    const slugAliases: Record<string, string> = {
+      behaviordecoded: "behavior_decoded",
+      behavior_decoded: "behavior_decoded",
+      studentconnect: "student_connect",
+      student_connect: "student_connect",
+      teacherhub: "teacher_hub",
+      teacher_hub: "teacher_hub",
+      beacon: "teacher_hub",
+      novateachers: "teacher_hub",
+      nova_teachers: "teacher_hub",
+      novatrack: "novatrack",
+    };
+    const inputSlug = (app_slug || "behavior_decoded").toLowerCase().replace(/[\s-]/g, "");
+    const resolvedSlug = slugAliases[inputSlug] || inputSlug;
+
+    // 3. Fetch agencies from organizational access and app access
+    const [{ data: agencyAccess, error: agencyError }, { data: appAccess, error: appAccessError }] = await Promise.all([
+      supabaseAdmin
+        .from("user_agency_access")
+        .select("agency_id, role")
+        .eq("user_id", userId),
+      supabaseAdmin
+        .from("user_app_access")
+        .select("agency_id, role")
+        .eq("user_id", userId)
+        .eq("app_slug", resolvedSlug)
+        .eq("is_active", true),
+    ]);
 
     if (agencyError) {
       console.error("Agency access lookup error:", agencyError);
     }
 
+    if (appAccessError) {
+      console.error("App access lookup error:", appAccessError);
+    }
+
+    const combinedAgencyAccess = new Map<string, { agency_id: string; role: string }>();
+
+    for (const row of agencyAccess || []) {
+      if (row.agency_id) {
+        combinedAgencyAccess.set(row.agency_id, row);
+      }
+    }
+
+    for (const row of appAccess || []) {
+      if (row.agency_id && !combinedAgencyAccess.has(row.agency_id)) {
+        combinedAgencyAccess.set(row.agency_id, row);
+      }
+    }
+
     // Deduplicate agency IDs and fetch agency details
-    const uniqueAgencyIds = [...new Set((agencyAccess || []).map((a: any) => a.agency_id))];
+    const uniqueAgencyIds = Array.from(combinedAgencyAccess.keys());
     let agencyDetails: any[] = [];
     if (uniqueAgencyIds.length > 0) {
       const { data: agencyRows } = await supabaseAdmin
@@ -150,13 +191,7 @@ Deno.serve(async (req) => {
     }
 
     const agencyMap = Object.fromEntries(agencyDetails.map((a: any) => [a.id, a]));
-    const seenAgencyIds = new Set<string>();
-    const agencies = (agencyAccess || [])
-      .filter((a: any) => {
-        if (seenAgencyIds.has(a.agency_id)) return false;
-        seenAgencyIds.add(a.agency_id);
-        return true;
-      })
+    const agencies = Array.from(combinedAgencyAccess.values())
       .map((a: any) => ({
         agency_id: a.agency_id,
         role: a.role,
@@ -164,20 +199,6 @@ Deno.serve(async (req) => {
       }));
 
     // 4. Fetch visible student IDs
-    const slugAliases: Record<string, string> = {
-      behaviordecoded: "behavior_decoded",
-      behavior_decoded: "behavior_decoded",
-      studentconnect: "student_connect",
-      student_connect: "student_connect",
-      teacherhub: "teacher_hub",
-      teacher_hub: "teacher_hub",
-      novateachers: "teacher_hub",
-      nova_teachers: "teacher_hub",
-      novatrack: "novatrack",
-    };
-    const inputSlug = (app_slug || "behavior_decoded").toLowerCase().replace(/[\s-]/g, "");
-    const resolvedSlug = slugAliases[inputSlug] || inputSlug;
-
     let visibleStudentIds: string[] = [];
 
     if (isSuperAdmin || isAdmin) {

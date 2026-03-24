@@ -379,6 +379,54 @@ export function StaffAccessPermissionsTab({ userId }: StaffAccessPermissionsTabP
         }
       }
 
+      // 2c. Keep organization access aligned with active memberships/app access
+      const desiredAgencyIds = Array.from(new Set([
+        ...memberships.filter(m => m.status === 'active').map(m => m.agency_id),
+        ...appAccess.filter(a => a.is_active && !!a.agency_id).map(a => a.agency_id as string),
+      ]));
+
+      const { data: existingAgencyAccess, error: existingAgencyAccessError } = await supabase
+        .from('user_agency_access')
+        .select('id, agency_id')
+        .eq('user_id', userId)
+        .is('client_id', null);
+      if (existingAgencyAccessError) throw existingAgencyAccessError;
+
+      const existingAgencyAccessMap = new Map((existingAgencyAccess || []).map((row: any) => [row.agency_id, row.id]));
+      const agencyIdsToRemove = (existingAgencyAccess || [])
+        .map((row: any) => row.agency_id as string)
+        .filter((agencyId: string) => !desiredAgencyIds.includes(agencyId));
+
+      if (agencyIdsToRemove.length > 0) {
+        const { error } = await supabase
+          .from('user_agency_access')
+          .delete()
+          .eq('user_id', userId)
+          .is('client_id', null)
+          .in('agency_id', agencyIdsToRemove);
+        if (error) throw error;
+      }
+
+      for (const agencyId of desiredAgencyIds) {
+        const membership = memberships.find(m => m.agency_id === agencyId && m.status === 'active');
+        const activeAppRole = appAccess.find(a => a.agency_id === agencyId && a.is_active)?.role;
+        const derivedRole = membership?.role || activeAppRole || 'staff';
+        const existingId = existingAgencyAccessMap.get(agencyId);
+
+        if (existingId) {
+          const { error } = await supabase
+            .from('user_agency_access')
+            .update({ role: derivedRole, email: staffEmail })
+            .eq('id', existingId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('user_agency_access')
+            .insert({ user_id: userId, agency_id: agencyId, role: derivedRole, email: staffEmail });
+          if (error) throw error;
+        }
+      }
+
       // 3. Upsert/delete student access (table does not have is_active column)
       for (const sa of studentAccess) {
         const { id, student_name, is_active, ...payload } = sa as any;

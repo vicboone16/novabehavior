@@ -183,6 +183,18 @@ Deno.serve(async (req) => {
       await supabaseAdmin.from("user_roles").insert({ user_id: userId, role });
     }
 
+    const agencyIdsToGrant = new Set<string>();
+
+    if (agency_id) {
+      agencyIdsToGrant.add(agency_id);
+    }
+
+    for (const access of app_access || []) {
+      if (access.agency_id) {
+        agencyIdsToGrant.add(access.agency_id);
+      }
+    }
+
     // Assign to agency (membership)
     if (agency_id) {
       const { error: membershipError } = await supabaseAdmin
@@ -201,21 +213,26 @@ Deno.serve(async (req) => {
         console.error("Agency membership error:", membershipError);
       }
 
-      // Upsert user_agency_access with email for cross-app lookups
-      await supabaseAdmin
-        .from("user_agency_access")
-        .upsert({
-          user_id: userId,
-          agency_id,
-          role: role === "admin" ? "admin" : "staff",
-          email: normalizedEmail,
-          created_at: new Date().toISOString(),
-        }, { onConflict: "user_id,agency_id" });
-
       // Set user agency context
       await supabaseAdmin
         .from("user_agency_context")
         .upsert({ user_id: userId, current_agency_id: agency_id, last_switched_at: new Date().toISOString() }, { onConflict: "user_id" });
+    }
+
+    for (const grantedAgencyId of agencyIdsToGrant) {
+      const { error: agencyAccessError } = await supabaseAdmin
+        .from("user_agency_access")
+        .insert({
+          user_id: userId,
+          agency_id: grantedAgencyId,
+          role: role === "admin" ? "admin" : "staff",
+          email: normalizedEmail,
+          created_at: new Date().toISOString(),
+        });
+
+      if (agencyAccessError && agencyAccessError.code !== "23505") {
+        console.error("User agency access error:", agencyAccessError);
+      }
     }
 
     // Insert per-student access permissions
