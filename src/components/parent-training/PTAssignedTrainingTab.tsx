@@ -68,8 +68,8 @@ export function PTAssignedTrainingTab({ assignments, modules, isLoading, onRefre
                 : assignments.map(a => (
                   <TableRow key={a.assignment_id}>
                     <TableCell className="font-medium">{a.module_title || 'Module'}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{a.parent_user_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{a.client_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getParentName(a.parent_user_id) || a.parent_user_id.slice(0, 8) + '…'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getClientName(a.client_id) || a.client_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.goal_count}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.homework_count}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.session_log_count}</Badge></TableCell>
