@@ -592,6 +592,16 @@ export default function StudentProfile() {
           <StudentIntelligencePanel studentId={student.id} />
           <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           
+          {/* UI Reference Frames */}
+          <UIReferenceFrame
+            image={studentProfileRef}
+            alt="Student profile layout reference"
+            label="Student Profile Layout"
+            caption="Standard student page: BIP summary, goal metrics, progress notes, and goal tracking"
+          />
+
+          {/* Downloadable Student Page Template */}
+          <StudentPageTemplate />
           {/* Team & Assignments */}
           <Collapsible defaultOpen={false}>
             <Card>
