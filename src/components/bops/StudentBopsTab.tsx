@@ -272,7 +272,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
               <CollapsibleContent>
                 <div className="space-y-1.5 pl-5 mt-1">
                   {group.programs.map((p: any) => (
-                    <div key={p.id} className={`text-xs border-l-2 ${group.color} pl-2 py-1 flex items-center justify-between`}>
+                    <div key={p.programming_assignment_id || p.program_name} className={`text-xs border-l-2 ${group.color} pl-2 py-1 flex items-center justify-between`}>
                       <div>
                         <span className="font-medium">{p.program_name}</span>
                         {p.is_preferred_default && <Star className="w-3 h-3 inline ml-1 text-yellow-500" />}
