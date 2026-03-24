@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           agency_id,
-          role: role === "admin" ? "admin" : "member",
+          role: role === "admin" ? "admin" : "staff",
           status: "active",
           is_primary: true,
           joined_at: new Date().toISOString(),
@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
         .upsert({
           user_id: userId,
           agency_id,
-          role: role === "admin" ? "admin" : "member",
+          role: role === "admin" ? "admin" : "staff",
           email: normalizedEmail,
           created_at: new Date().toISOString(),
         }, { onConflict: "user_id,agency_id" });
@@ -230,7 +230,6 @@ Deno.serve(async (req) => {
         can_edit_profile: sp.can_edit_profile ?? false,
         can_generate_reports: sp.can_generate_reports ?? false,
         granted_by: callerUser.id,
-        granted_at: new Date().toISOString(),
       }));
 
       const { error: accessError } = await supabaseAdmin
@@ -277,7 +276,6 @@ Deno.serve(async (req) => {
             can_edit_profile: sp.can_edit_profile ?? false,
             can_generate_reports: sp.can_generate_reports ?? false,
             granted_by: callerUser.id,
-            granted_at: new Date().toISOString(),
           }));
 
           const { error: perAppError } = await supabaseAdmin
