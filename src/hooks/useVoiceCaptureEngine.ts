@@ -55,6 +55,7 @@ export function useVoiceCaptureEngine() {
   const animFrameRef = useRef<number | null>(null);
   const recordingIdRef = useRef<string | null>(null);
   const orgIdRef = useRef<string | null>(null);
+  const currentChunkBlobsRef = useRef<Blob[]>([]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -80,7 +81,8 @@ export function useVoiceCaptureEngine() {
 
   const uploadChunk = async (recordingId: string, orgId: string, chunk: ChunkRecord) => {
     try {
-      const path = `org/${orgId}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
+      const orgSegment = orgId && orgId !== '' ? orgId : 'default';
+      const path = `org/${orgSegment}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
       console.log(`[VoiceCapture] Uploading chunk ${chunk.index} to ${path}, size: ${chunk.blob.size}`);
       const { error: uploadError } = await supabase.storage
         .from('voice-recordings')
@@ -91,10 +93,9 @@ export function useVoiceCaptureEngine() {
         throw uploadError;
       }
 
-      // Record chunk in DB with org_id
+      // Record chunk in DB
       const { error: dbError } = await supabase.from('voice_recording_chunks' as any).insert({
         recording_id: recordingId,
-        org_id: orgId,
         chunk_index: chunk.index,
         duration_ms: CHUNK_INTERVAL_MS,
         storage_path: path,
@@ -229,10 +230,10 @@ export function useVoiceCaptureEngine() {
       chunksRef.current = [];
       chunkIndexRef.current = 0;
 
-      let currentChunkBlobs: Blob[] = [];
+      currentChunkBlobsRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) currentChunkBlobs.push(e.data);
+        if (e.data.size > 0) currentChunkBlobsRef.current.push(e.data);
       };
 
       // Collect data every CHUNK_INTERVAL_MS and upload
@@ -240,13 +241,13 @@ export function useVoiceCaptureEngine() {
 
       // Periodic chunk finalization
       const chunkTimer = setInterval(() => {
-        if (currentChunkBlobs.length > 0) {
-          const blob = new Blob(currentChunkBlobs, { type: 'audio/webm' });
+        if (currentChunkBlobsRef.current.length > 0) {
+          const blob = new Blob(currentChunkBlobsRef.current, { type: 'audio/webm' });
           const chunk: ChunkRecord = { index: chunkIndexRef.current++, blob, uploaded: false };
           chunksRef.current.push(chunk);
           setState(prev => ({ ...prev, totalChunks: prev.totalChunks + 1 }));
           uploadChunk(recId, orgId || '', chunk);
-          currentChunkBlobs = [];
+          currentChunkBlobsRef.current = [];
         }
       }, CHUNK_INTERVAL_MS + 500);
 
@@ -302,17 +303,39 @@ export function useVoiceCaptureEngine() {
 
     return new Promise<void>((resolve) => {
       recorder.onstop = async () => {
+        // Flush final chunk
+        if (currentChunkBlobsRef.current.length > 0) {
+          const blob = new Blob(currentChunkBlobsRef.current, { type: 'audio/webm' });
+          const chunk: ChunkRecord = { index: chunkIndexRef.current++, blob, uploaded: false };
+          chunksRef.current.push(chunk);
+          setState(prev => ({ ...prev, totalChunks: prev.totalChunks + 1 }));
+          await uploadChunk(recId, orgId || '', chunk);
+          currentChunkBlobsRef.current = [];
+        }
+
+        // Wait for any pending chunk uploads
+        const pendingUploads = chunksRef.current.filter(c => !c.uploaded);
+        if (pendingUploads.length > 0) {
+          console.log(`[VoiceCapture] Waiting for ${pendingUploads.length} pending uploads...`);
+          await Promise.all(
+            pendingUploads.map(c => uploadChunk(recId, orgId || '', c))
+          );
+        }
+
         // Stop stream
         streamRef.current?.getTracks().forEach(t => t.stop());
         streamRef.current = null;
         releaseWakeLock();
+
+        const uploadedCount = chunksRef.current.filter(c => c.uploaded).length;
+        console.log(`[VoiceCapture] Recording stopped. ${uploadedCount}/${chunksRef.current.length} chunks uploaded.`);
 
         // Update status
         await supabase.from('voice_recordings' as any).update({
           status: 'audio_secured',
           ended_at: new Date().toISOString(),
           duration_seconds: state.elapsedSeconds,
-          upload_status: 'uploaded',
+          upload_status: uploadedCount > 0 ? 'uploaded' : 'failed',
         }).eq('id', recId);
 
         // Audit
@@ -323,7 +346,7 @@ export function useVoiceCaptureEngine() {
             org_id: orgId,
             user_id: user.id,
             action_type: 'recording_stopped',
-            metadata_json: { duration_seconds: state.elapsedSeconds },
+            metadata_json: { duration_seconds: state.elapsedSeconds, chunks_uploaded: uploadedCount },
           });
         }
 
@@ -337,7 +360,7 @@ export function useVoiceCaptureEngine() {
         }));
 
         if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
-        toast.success('Recording saved');
+        toast.success(`Recording saved (${uploadedCount} chunks uploaded)`);
         resolve();
       };
 
