@@ -167,7 +167,20 @@ export function useEntityClientCounts() {
         .from('v_entity_client_counts' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve entity names
+      const entityIds = [...new Set((data || []).map((d: any) => d.entity_id).filter(Boolean))];
+      if (entityIds.length === 0) return data as any[];
+      const { data: entities } = await supabase
+        .from('org_entities' as any)
+        .select('id, name, entity_type')
+        .in('id', entityIds);
+      const nameMap = new Map((entities || []).map((e: any) => [e.id, e.name]));
+      const typeMap = new Map((entities || []).map((e: any) => [e.id, e.entity_type]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        entity_name: nameMap.get(d.entity_id) || d.entity_id?.slice(0, 8) + '…',
+        entity_type: typeMap.get(d.entity_id) || 'unknown',
+      })) as any[];
     },
   });
 }
