@@ -20,6 +20,9 @@ export function AdminAnalyticsTab({ progress, assignments, isLoading, onRefreshP
     onRefreshAssignments();
   }, [onRefreshProgress, onRefreshAssignments]);
 
+  const userIds = useMemo(() => progress.map(p => p.parent_user_id).filter(Boolean), [progress]);
+  const { getName } = useProfileNameResolver(userIds);
+
   const stats = useMemo(() => {
     const total = assignments.length;
     const completed = assignments.filter(a => a.status === 'completed').length;
