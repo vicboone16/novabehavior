@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Search, RefreshCw, Eye, Play, Zap, BarChart3, ChevronRight } from 'lucide-react';
-import { useBopsEngineRoster, useToggleBops, useRunCfi, useGenerateRecommendations, useAcceptAndActivate, useStudentBopsDashboard } from '@/hooks/useBopsEngine';
+import { Loader2, Search, RefreshCw, Eye, Play, Zap, BarChart3 } from 'lucide-react';
+import {
+  useBopsEngineRoster, useToggleBops, useRunCfi, useGenerateRecommendations,
+  useAcceptAndActivate, useStudentBopsDashboard, useStudentSuggestedPrograms,
+  useStudentAcceptedPrograms,
+} from '@/hooks/useBopsEngine';
 import { useNavigate } from 'react-router-dom';
 
 const statusColors: Record<string, string> = {
@@ -63,11 +67,7 @@ export function BopsEngineConsole() {
   }, [roster, search, filterEnabled, filterStatus]);
 
   const toggleSelect = (id: string) => {
-    setSelected(prev => {
-      const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
+    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
   const toggleAll = () => {
@@ -167,7 +167,11 @@ export function BopsEngineConsole() {
                         </button>
                       </TableCell>
                       <TableCell>
-                        <Switch checked={!!r.bops_enabled} onCheckedChange={c => toggleBops.mutate({ studentId: r.student_id, enable: c })} />
+                        <Switch
+                          checked={!!r.bops_enabled}
+                          disabled={toggleBops.isPending}
+                          onCheckedChange={c => toggleBops.mutate({ studentId: r.student_id, enable: c })}
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge className={`text-xs ${statusColors[r.bops_assessment_status] || 'bg-muted'}`}>
@@ -198,14 +202,17 @@ export function BopsEngineConsole() {
                           {r.latest_scored_session_id && (
                             <>
                               <Button variant="ghost" size="icon" className="h-7 w-7" title="Run CFI"
-                                onClick={() => runCfi.mutate({ sessionId: r.latest_scored_session_id })}>
+                                disabled={runCfi.isPending}
+                                onClick={() => runCfi.mutate({ studentId: r.student_id, sessionId: r.latest_scored_session_id })}>
                                 <BarChart3 className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" title="Generate Recs"
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title="Generate Recommendations"
+                                disabled={genRecs.isPending}
                                 onClick={() => genRecs.mutate({ studentId: r.student_id, sessionId: r.latest_scored_session_id })}>
                                 <Zap className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" title="Accept + Activate"
+                                disabled={acceptActivate.isPending}
                                 onClick={() => acceptActivate.mutate({ studentId: r.student_id, sessionId: r.latest_scored_session_id })}>
                                 <Play className="w-3.5 h-3.5" />
                               </Button>
@@ -234,6 +241,8 @@ export function BopsEngineConsole() {
 
 function BopsDetailDrawer({ studentId, onClose }: { studentId: string | null; onClose: () => void }) {
   const { data, isLoading } = useStudentBopsDashboard(studentId || undefined);
+  const { data: suggested } = useStudentSuggestedPrograms(studentId || undefined);
+  const { data: accepted } = useStudentAcceptedPrograms(studentId || undefined);
 
   return (
     <Sheet open={!!studentId} onOpenChange={o => !o && onClose()}>
@@ -247,7 +256,6 @@ function BopsDetailDrawer({ studentId, onClose }: { studentId: string | null; on
           <p className="text-sm text-muted-foreground py-8 text-center">No BOPS data available</p>
         ) : (
           <div className="space-y-4 mt-4">
-            {/* Profile */}
             <Section title="Profile">
               <KV label="Training Name" value={data.calculated_training_name} />
               <KV label="Clinical Name" value={data.calculated_clinical_name} />
@@ -257,7 +265,6 @@ function BopsDetailDrawer({ studentId, onClose }: { studentId: string | null; on
               <KV label="Tertiary" value={data.tertiary_archetype} />
             </Section>
 
-            {/* Indices */}
             <Section title="Clinical Indices">
               <div className="grid grid-cols-2 gap-2">
                 <IndexChip label="Storm" value={data.storm_score} />
@@ -265,22 +272,20 @@ function BopsDetailDrawer({ studentId, onClose }: { studentId: string | null; on
                 <IndexChip label="Hidden Need" value={data.hidden_need_index} />
                 <IndexChip label="Sensory Load" value={data.sensory_load_index} />
                 <IndexChip label="Power Conflict" value={data.power_conflict_index} />
-                <IndexChip label="Social Complexity" value={data.social_complexity_index} />
-                <IndexChip label="Recovery Burden" value={data.recovery_burden_index} />
+                <IndexChip label="Social" value={data.social_complexity_index} />
+                <IndexChip label="Recovery" value={data.recovery_burden_index} />
               </div>
             </Section>
 
-            {/* Placement */}
             <Section title="Placement">
               <KV label="Best Fit" value={data.best_fit_model_name} />
               <KV label="Score" value={data.best_fit_score} />
               <KV label="Band" value={data.best_fit_band} />
             </Section>
 
-            {/* Programs */}
             <Section title="Programs">
-              <KV label="Suggested" value={data.total_suggested_programs} />
-              <KV label="Accepted" value={data.accepted_programs_total} />
+              <KV label="Suggested" value={suggested?.length ?? data.total_suggested_programs} />
+              <KV label="Accepted" value={accepted?.length ?? data.accepted_programs_total} />
               <KV label="Active" value={data.accepted_programs_active} />
               <div className="flex gap-2 mt-1">
                 <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">Red: {data.red_programs || 0}</Badge>
@@ -289,13 +294,11 @@ function BopsDetailDrawer({ studentId, onClose }: { studentId: string | null; on
               </div>
             </Section>
 
-            {/* Day States */}
             <Section title="Day States">
               <KV label="Nova" value={data.current_day_state} />
               <KV label="Beacon" value={data.beacon_day_state} />
             </Section>
 
-            {/* MTSS */}
             {data.latest_mtss_tier && (
               <Section title="MTSS">
                 <KV label="Tier" value={data.latest_mtss_tier} />
