@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useDemoMode } from '@/contexts/DemoModeContext';
 import { DemoSearch } from '@/components/demo-center/DemoSearch';
+import { FeatureTour } from '@/components/demo-center/FeatureTour';
 import { StatusBadge } from '@/components/demo-center/StatusBadge';
 import { DemoProgressWidget } from '@/components/demo-center/DemoProgressWidget';
 import { AskNovaButton } from '@/components/demo-center/AskNovaButton';
@@ -241,6 +242,9 @@ export default function DemoGateway() {
           <DemoProgressWidget items={PROGRESS_ITEMS} />
         </div>
       </div>
+
+      {/* ── Feature Tour ── */}
+      <FeatureTour />
 
       {/* ── Client / External Demo ── */}
       <Card className="bg-muted/30 border-dashed rounded-2xl">
