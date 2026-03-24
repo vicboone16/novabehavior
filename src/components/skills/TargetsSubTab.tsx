@@ -81,6 +81,8 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const [showBulkImportDialog, setShowBulkImportDialog] = useState(false);
   const [editingTarget, setEditingTarget] = useState<StudentTarget | null>(null);
   const [editingProgram, setEditingProgram] = useState<SkillProgram | null>(null);
+  const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null);
+  const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => {
