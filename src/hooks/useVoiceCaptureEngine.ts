@@ -303,17 +303,39 @@ export function useVoiceCaptureEngine() {
 
     return new Promise<void>((resolve) => {
       recorder.onstop = async () => {
+        // Flush final chunk
+        if (currentChunkBlobsRef.current.length > 0) {
+          const blob = new Blob(currentChunkBlobsRef.current, { type: 'audio/webm' });
+          const chunk: ChunkRecord = { index: chunkIndexRef.current++, blob, uploaded: false };
+          chunksRef.current.push(chunk);
+          setState(prev => ({ ...prev, totalChunks: prev.totalChunks + 1 }));
+          await uploadChunk(recId, orgId || '', chunk);
+          currentChunkBlobsRef.current = [];
+        }
+
+        // Wait for any pending chunk uploads
+        const pendingUploads = chunksRef.current.filter(c => !c.uploaded);
+        if (pendingUploads.length > 0) {
+          console.log(`[VoiceCapture] Waiting for ${pendingUploads.length} pending uploads...`);
+          await Promise.all(
+            pendingUploads.map(c => uploadChunk(recId, orgId || '', c))
+          );
+        }
+
         // Stop stream
         streamRef.current?.getTracks().forEach(t => t.stop());
         streamRef.current = null;
         releaseWakeLock();
+
+        const uploadedCount = chunksRef.current.filter(c => c.uploaded).length;
+        console.log(`[VoiceCapture] Recording stopped. ${uploadedCount}/${chunksRef.current.length} chunks uploaded.`);
 
         // Update status
         await supabase.from('voice_recordings' as any).update({
           status: 'audio_secured',
           ended_at: new Date().toISOString(),
           duration_seconds: state.elapsedSeconds,
-          upload_status: 'uploaded',
+          upload_status: uploadedCount > 0 ? 'uploaded' : 'failed',
         }).eq('id', recId);
 
         // Audit
@@ -324,7 +346,7 @@ export function useVoiceCaptureEngine() {
             org_id: orgId,
             user_id: user.id,
             action_type: 'recording_stopped',
-            metadata_json: { duration_seconds: state.elapsedSeconds },
+            metadata_json: { duration_seconds: state.elapsedSeconds, chunks_uploaded: uploadedCount },
           });
         }
 
@@ -338,7 +360,7 @@ export function useVoiceCaptureEngine() {
         }));
 
         if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
-        toast.success('Recording saved');
+        toast.success(`Recording saved (${uploadedCount} chunks uploaded)`);
         resolve();
       };
 
