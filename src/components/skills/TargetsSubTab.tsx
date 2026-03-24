@@ -116,7 +116,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
             {programs.length} programs
           </Badge>
           <Badge variant="secondary" className="text-xs">
-            {targets.length} legacy targets
+            {targets.length} individual targets
           </Badge>
         </div>
 

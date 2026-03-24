@@ -103,10 +103,12 @@ import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-rea
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StudentBopsTab } from '@/components/bops/StudentBopsTab';
 import { useSupabaseAbcSync } from '@/hooks/useSupabaseAbcSync';
+import { useBehaviorSessionSync } from '@/hooks/useBehaviorSessionSync';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
   useSupabaseAbcSync(studentId);
+  useBehaviorSessionSync(studentId);
   const navigate = useNavigate();
   const { 
     students, 
