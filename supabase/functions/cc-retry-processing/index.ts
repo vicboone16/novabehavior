@@ -30,9 +30,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { recording_id, org_id, failed_stage } = await req.json();
-    if (!recording_id || !org_id || !failed_stage) {
-      return new Response(JSON.stringify({ error: "recording_id, org_id, and failed_stage required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { recording_id, org_id = null, failed_stage } = await req.json();
+    if (!recording_id || !failed_stage) {
+      return new Response(JSON.stringify({ error: "recording_id and failed_stage required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const validStages = ["transcription", "extraction", "drafts"];
