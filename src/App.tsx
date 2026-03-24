@@ -488,8 +488,8 @@ const App = () => {
               <Route path="/help-center" element={<HelpCenter />} />
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
-              <Route path="/bops" element={<BopsEngine />} />
-              <Route path="/bops-admin" element={<BopsAdminConsole />} />
+              <Route path="/bops" element={<Navigate to="/clinical" replace />} />
+              <Route path="/bops-admin" element={<Navigate to="/clinical" replace />} />
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
