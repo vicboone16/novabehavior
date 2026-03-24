@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useSupervisorSignals } from '@/hooks/useSupervisorSignals';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Radio, Activity, BarChart3, Eye, School, Star, Siren } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +14,18 @@ export function ClassroomLiveWidget() {
   const { currentAgency } = useAgencyContext();
   const agencyId = currentAgency?.id || null;
   const { signals, loading: signalsLoading } = useSupervisorSignals(agencyId);
-  const { classrooms, loading: classroomsLoading } = useClassroomSummaries(agencyId);
+  const { classrooms, loading: classroomsLoading, refetch } = useClassroomSummaries(agencyId);
 
-  const loading = signalsLoading || classroomsLoading;
+  // Realtime subscription for beacon points + mayday alerts
+  useEffect(() => {
+    const channel = supabase
+      .channel('classroom-live-updates')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'beacon_points_ledger' }, () => { refetch?.(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mayday_alerts' }, () => { refetch?.(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_presence_status' }, () => { refetch?.(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [refetch]);
 
   if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
