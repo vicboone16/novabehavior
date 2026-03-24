@@ -1018,7 +1018,15 @@ export function StudentBehaviorsOverview({
           <DropdownMenuContent>
             <DropdownMenuItem onClick={handleExportCSV}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Export CSV
+              Export Data CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportChartPNG}>
+              <Image className="w-4 h-4 mr-2" />
+              Export Chart PNG
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportChartPDF}>
+              <FileText className="w-4 h-4 mr-2" />
+              Export Chart PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
