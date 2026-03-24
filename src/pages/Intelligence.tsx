@@ -796,6 +796,12 @@ export default function Intelligence() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="district-agency" className="space-y-4">
+          <Suspense fallback={<Loader2 className="animate-spin mx-auto mt-8" />}>
+            <DistrictIntelligence />
+          </Suspense>
+        </TabsContent>
       </Tabs>
     </div>
   );
