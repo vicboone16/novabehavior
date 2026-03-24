@@ -58,18 +58,58 @@ Deno.serve(async (req) => {
     await supabase.from("voice_recordings").update({ transcript_status: "running" }).eq("id", recording_id);
 
     try {
-      // Get merged audio file — do NOT concatenate raw chunks (invalid for media containers)
+      // Try merged file first, then fall back to concatenating chunks
+      let audioBlob: Uint8Array;
       const storagePath = audio_storage_path || recording.secure_storage_path;
-      if (!storagePath) {
-        throw new Error("No merged audio file available. Ensure audio is finalized before transcription.");
+
+      if (storagePath) {
+        const { data: fileData, error: dlErr } = await supabase.storage.from("voice-recordings").download(storagePath);
+        if (dlErr || !fileData) {
+          throw new Error(`Failed to download audio: ${dlErr?.message || "file not found"}`);
+        }
+        audioBlob = new Uint8Array(await fileData.arrayBuffer());
+      } else {
+        // No merged file — download and concatenate chunks in order
+        console.log("No merged audio path found, falling back to chunk concatenation");
+        const { data: chunks, error: chunksErr } = await supabase
+          .from("voice_recording_chunks")
+          .select("storage_path, chunk_index")
+          .eq("recording_id", recording_id)
+          .eq("upload_status", "uploaded")
+          .order("chunk_index", { ascending: true });
+
+        if (chunksErr || !chunks || chunks.length === 0) {
+          throw new Error(`No audio chunks found for recording ${recording_id}. Record a new session.`);
+        }
+
+        console.log(`Found ${chunks.length} chunks to concatenate`);
+        const chunkBuffers: Uint8Array[] = [];
+        for (const chunk of chunks) {
+          const { data: chunkData, error: chunkDlErr } = await supabase.storage
+            .from("voice-recordings")
+            .download(chunk.storage_path);
+          if (chunkDlErr || !chunkData) {
+            console.error(`Failed to download chunk ${chunk.chunk_index}: ${chunkDlErr?.message}`);
+            continue;
+          }
+          chunkBuffers.push(new Uint8Array(await chunkData.arrayBuffer()));
+        }
+
+        if (chunkBuffers.length === 0) {
+          throw new Error("All chunk downloads failed");
+        }
+
+        // Concatenate all chunk buffers
+        const totalLen = chunkBuffers.reduce((sum, buf) => sum + buf.length, 0);
+        audioBlob = new Uint8Array(totalLen);
+        let offset = 0;
+        for (const buf of chunkBuffers) {
+          audioBlob.set(buf, offset);
+          offset += buf.length;
+        }
+        console.log(`Concatenated ${chunkBuffers.length} chunks, total size: ${totalLen} bytes`);
       }
 
-      const { data: fileData, error: dlErr } = await supabase.storage.from("voice-recordings").download(storagePath);
-      if (dlErr || !fileData) {
-        throw new Error(`Failed to download audio: ${dlErr?.message || "file not found"}`);
-      }
-
-      const audioBlob = new Uint8Array(await fileData.arrayBuffer());
       if (audioBlob.length === 0) {
         throw new Error("Audio file is empty");
       }

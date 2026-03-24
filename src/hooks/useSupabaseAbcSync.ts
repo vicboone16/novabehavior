@@ -5,6 +5,7 @@ import { useDataStore } from '@/store/dataStore';
 /**
  * Fetches abc_logs from Supabase for a given client and merges them
  * into the local Zustand store so graphs can render cloud-sourced data.
+ * Also ensures the student has corresponding behavior entries for graphing.
  */
 export function useSupabaseAbcSync(clientId: string | undefined) {
   const syncedRef = useRef<string | null>(null);
@@ -61,6 +62,38 @@ export function useSupabaseAbcSync(clientId: string | undefined) {
           }));
 
         if (newEntries.length === 0) return;
+
+        // Ensure the student has behavior entries for all categories found in abc_logs
+        const store = useDataStore.getState();
+        const student = store.students.find(s => s.id === clientId);
+        if (student) {
+          const existingBehaviorIds = new Set(student.behaviors.map(b => b.id));
+          const categoriesSeen = new Set<string>();
+          const behaviorsToAdd: Array<{ id: string; name: string; type: string; methods: string[] }> = [];
+
+          for (const entry of newEntries) {
+            if (!categoriesSeen.has(entry.behaviorId) && !existingBehaviorIds.has(entry.behaviorId)) {
+              categoriesSeen.add(entry.behaviorId);
+              behaviorsToAdd.push({
+                id: entry.behaviorId,
+                name: entry.behaviorName,
+                type: 'frequency',
+                methods: ['frequency', 'abc'],
+              });
+            }
+          }
+
+          if (behaviorsToAdd.length > 0) {
+            useDataStore.setState(state => ({
+              students: state.students.map(s =>
+                s.id === clientId
+                  ? { ...s, behaviors: [...s.behaviors, ...behaviorsToAdd as any] }
+                  : s
+              ),
+            } as any));
+            console.log(`[AbcSync] Added ${behaviorsToAdd.length} missing behaviors for client ${clientId}:`, behaviorsToAdd.map(b => b.name));
+          }
+        }
 
         useDataStore.setState(state => ({
           abcEntries: [...state.abcEntries, ...newEntries],
