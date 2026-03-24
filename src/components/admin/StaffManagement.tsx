@@ -340,6 +340,29 @@ export function StaffManagement({ onNavigateToSchedule }: StaffManagementProps) 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // Send credentials email if "Send Now" was selected
+      if (newStaffForm.emailOption === 'now') {
+        try {
+          await supabase.functions.invoke('send-magic-link-email', {
+            body: { 
+              type: 'staff_credentials',
+              recipientEmail: newStaffForm.email,
+              recipientName: `${newStaffForm.first_name} ${newStaffForm.last_name}`,
+              password: newStaffForm.password,
+              pin: newStaffForm.pin || undefined,
+            },
+          });
+          toast({ title: 'Credentials email sent', description: `Login details sent to ${newStaffForm.email}` });
+        } catch (emailErr: any) {
+          console.error('Failed to send credentials email:', emailErr);
+          toast({ 
+            title: 'Staff created but email failed', 
+            description: 'The staff member was created but the credentials email could not be sent. You can resend later.',
+            variant: 'destructive',
+          });
+        }
+      }
+
       const enabledCount = newStaffForm.studentPermissions.filter(sp => sp.enabled).length;
       toast({ 
         title: 'Staff member created successfully', 

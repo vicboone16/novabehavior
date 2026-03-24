@@ -8,11 +8,16 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type LinkType = "observation" | "questionnaire" | "custom_form" | "consent";
+type LinkType = "observation" | "questionnaire" | "custom_form" | "consent" | "staff_credentials";
 
 interface SendMagicLinkRequest {
   type: LinkType;
-  recordId: string;
+  recordId?: string;
+  // Staff credentials fields
+  recipientEmail?: string;
+  recipientName?: string;
+  password?: string;
+  pin?: string;
 }
 
 interface EmailPayload {
@@ -66,10 +71,14 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { type, recordId }: SendMagicLinkRequest = await req.json();
+    const body = await req.json();
+    const { type, recordId, recipientEmail, recipientName, password, pin } = body as SendMagicLinkRequest;
 
-    if (!type || !recordId) {
-      throw new Error("Missing required fields: type, recordId");
+    if (!type) {
+      throw new Error("Missing required field: type");
+    }
+    if (type !== 'staff_credentials' && !recordId) {
+      throw new Error("Missing required field: recordId");
     }
 
     const appUrl =
@@ -191,8 +200,64 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case "consent": {
-        // Future: consent form magic links
         throw new Error("Consent form email not yet implemented");
+      }
+
+      case "staff_credentials": {
+        if (!recipientEmail || !recipientName || !password) {
+          throw new Error("Missing required fields for staff_credentials: recipientEmail, recipientName, password");
+        }
+
+        const pinSection = pin
+          ? `<tr><td style="padding: 8px 0; font-size: 14px; color: #6b7280;">Quick-Access PIN</td><td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #111827; font-family: monospace; letter-spacing: 2px;">${pin}</td></tr>`
+          : '';
+
+        const credentialsHtml = `
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 24px 28px; border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: 600;">Welcome to Nova Behavior</h1>
+            </div>
+            <div style="background-color: #f9fafb; padding: 28px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+              <p style="font-size: 16px; color: #374151; margin-top: 0;">Hello <strong>${recipientName}</strong>,</p>
+              <p style="font-size: 15px; color: #4b5563; line-height: 1.6;">Your account has been created. Here are your login credentials:</p>
+              <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 8px 0; font-size: 14px; color: #6b7280;">Email</td><td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #111827;">${recipientEmail}</td></tr>
+                  <tr><td style="padding: 8px 0; font-size: 14px; color: #6b7280;">Password</td><td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #111827; font-family: monospace;">${password}</td></tr>
+                  ${pinSection}
+                </table>
+              </div>
+              <div style="margin: 28px 0; text-align: center;">
+                <a href="${appUrl}/auth"
+                   style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);">
+                  Sign In Now
+                </a>
+              </div>
+              <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">
+                Please change your password after your first login. If you did not expect this email, contact your administrator.
+              </p>
+            </div>
+          </div>
+        `;
+
+        const { data: credEmailData, error: credEmailError } = await resend.emails.send({
+          from: "Nova Behavior <noreply@novabehavior.com>",
+          to: [recipientEmail],
+          subject: "Your Nova Behavior Login Credentials",
+          html: credentialsHtml,
+        });
+
+        if (credEmailError) {
+          console.error("Resend error:", credEmailError);
+          throw new Error(`Failed to send credentials email: ${credEmailError.message}`);
+        }
+
+        console.log(`Staff credentials email sent to ${recipientEmail}:`, credEmailData);
+
+        return new Response(
+          JSON.stringify({ success: true, emailId: credEmailData?.id }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
 
       default:
