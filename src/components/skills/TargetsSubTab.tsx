@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import {
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
-  ListChecks, FolderTree,
+  ListChecks, FolderTree, Activity, Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
