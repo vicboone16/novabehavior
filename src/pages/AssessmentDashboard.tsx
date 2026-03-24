@@ -487,7 +487,7 @@ export default function AssessmentDashboard() {
         </Card>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid grid-cols-9 w-full">
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full">
             <TabsTrigger value="workflow" className="gap-1 text-xs">
               <Target className="w-3 h-3" />
               Workflow
@@ -527,6 +527,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="report" className="gap-1 text-xs">
               <FileText className="w-3 h-3" />
               Report
+            </TabsTrigger>
+            <TabsTrigger value="bops" className="gap-1 text-xs">
+              <Shield className="w-3 h-3" />
+              BOPS
             </TabsTrigger>
           </TabsList>
 
