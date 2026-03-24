@@ -2,16 +2,8 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useBopsQuestions, useStudentBopsProfile, useBopsConstellations, useBopsAssessmentItems } from '@/hooks/useBopsData';
-import { calculateBopsScores } from '@/hooks/useBopsData';
+import { useBopsQuestions, useStudentBopsProfile, useBopsConstellations, useBopsAssessmentItems, calculateBopsScores } from '@/hooks/useBopsData';
 import { Loader2 } from 'lucide-react';
-
-const DOMAIN_COLORS: Record<string, string> = {
-  threat: 'bg-red-500', withdrawal: 'bg-gray-500', sensory: 'bg-purple-500',
-  emotion: 'bg-orange-500', impulse: 'bg-yellow-500', autonomy: 'bg-blue-500',
-  authority: 'bg-indigo-500', rigidity: 'bg-teal-500', social: 'bg-pink-500',
-  context: 'bg-emerald-500', navigator: 'bg-cyan-500', storm: 'bg-red-700',
-};
 
 export function BopsResults({ studentId }: { studentId: string }) {
   const { data: questions, isLoading: qL } = useBopsQuestions();
@@ -21,7 +13,12 @@ export function BopsResults({ studentId }: { studentId: string }) {
 
   const scores = useMemo(() => {
     if (!responses?.length || !questions?.length) return null;
-    return calculateBopsScores(responses as any, questions as any);
+    const mapped = responses.map((r: any) => ({
+      item_number: r.item_number as number,
+      value: r.value as number,
+      domain: r.domain as string,
+    }));
+    return calculateBopsScores(mapped, questions as any);
   }, [responses, questions]);
 
   if (qL || rL) return <Loader2 className="animate-spin mx-auto mt-8" />;
@@ -43,7 +40,6 @@ export function BopsResults({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Classification */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">BOPS Classification</CardTitle>
@@ -81,7 +77,6 @@ export function BopsResults({ studentId }: { studentId: string }) {
         </CardContent>
       </Card>
 
-      {/* Domain Scores */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Domain Scores</CardTitle>
@@ -90,23 +85,25 @@ export function BopsResults({ studentId }: { studentId: string }) {
           <div className="space-y-3">
             {Object.entries(scores.scores)
               .filter(([d]) => !['navigator', 'storm'].includes(d))
-              .sort((a, b) => b[1] - a[1])
-              .map(([domain, score]) => (
-                <div key={domain} className="flex items-center gap-3">
-                  <span className="text-sm font-medium capitalize w-24 shrink-0">{domain}</span>
-                  <div className="flex-1">
-                    <Progress value={score * 100} className="h-3" />
+              .sort((a, b) => (b[1] as number) - (a[1] as number))
+              .map(([domain, score]) => {
+                const s = score as number;
+                return (
+                  <div key={domain} className="flex items-center gap-3">
+                    <span className="text-sm font-medium capitalize w-24 shrink-0">{domain}</span>
+                    <div className="flex-1">
+                      <Progress value={s * 100} className="h-3" />
+                    </div>
+                    <span className="text-sm font-mono w-12 text-right">{(s * 100).toFixed(0)}%</span>
+                    {s >= 0.7 && <Badge variant="destructive" className="text-xs">High</Badge>}
+                    {s >= 0.5 && s < 0.7 && <Badge variant="secondary" className="text-xs">Mod</Badge>}
                   </div>
-                  <span className="text-sm font-mono w-12 text-right">{(score * 100).toFixed(0)}%</span>
-                  {score >= 0.7 && <Badge variant="destructive" className="text-xs">High</Badge>}
-                  {score >= 0.5 && score < 0.7 && <Badge variant="secondary" className="text-xs">Mod</Badge>}
-                </div>
-              ))}
+                );
+              })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Indices */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Clinical Indices</CardTitle>
@@ -131,7 +128,6 @@ export function BopsResults({ studentId }: { studentId: string }) {
         </CardContent>
       </Card>
 
-      {/* Existing Profile Comparison */}
       {profile && (
         <Card>
           <CardHeader>

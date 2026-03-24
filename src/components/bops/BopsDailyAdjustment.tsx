@@ -26,8 +26,8 @@ export function BopsDailyAdjustment({ studentId }: { studentId: string }) {
   const availableProblems = [...new Set(programs?.map(p => p.problem_area).filter(Boolean) || [])];
 
   const handleSetAndGenerate = async () => {
-    await setStateMut.mutateAsync({ studentId, date, dayState, selectedProblems, clinicianNote: clinNote });
-    await genPlanMut.mutateAsync({ studentId, date, dayState, selectedProblems });
+    await setStateMut.mutateAsync({ studentId, date, dayState, note: clinNote });
+    await genPlanMut.mutateAsync({ studentId, state: dayState, notes: clinNote });
   };
 
   const stateButtons = [
@@ -112,8 +112,8 @@ export function BopsDailyAdjustment({ studentId }: { studentId: string }) {
             <div>
               <p className="text-xs font-medium text-muted-foreground">Active Targets</p>
               <div className="flex flex-wrap gap-1 mt-1">
-                {(Array.isArray(dailyPlan.active_targets) ? dailyPlan.active_targets : []).map((t: string, i: number) => (
-                  <Badge key={i} variant="outline">{t}</Badge>
+                {(Array.isArray(dailyPlan.active_targets) ? dailyPlan.active_targets : []).map((t: any, i: number) => (
+                  <Badge key={i} variant="outline">{String(t)}</Badge>
                 ))}
               </div>
             </div>
