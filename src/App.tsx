@@ -71,6 +71,7 @@ const BehaviorReductionPage = lazy(() => import("./pages/clinical-library/Behavi
 const BehaviorBankPage = lazy(() => import("./pages/clinical-library/BehaviorBankPage"));
 const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryRegistryPage"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
+const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
 const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
