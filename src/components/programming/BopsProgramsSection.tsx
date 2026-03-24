@@ -594,7 +594,7 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
         <CardTitle className="text-sm flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary" />
           BOPS Programs
-          <Badge variant="secondary" className="text-[10px] ml-1">{programs.length}</Badge>
+          <Badge variant="secondary" className="text-[10px] ml-1">{consolidatedPrograms.length}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
