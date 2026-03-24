@@ -5,7 +5,7 @@ import { useDataStore } from '@/store/dataStore';
 import { 
   TrendingUp, TrendingDown, Minus, Activity, Calendar, 
   BarChart3, Clock, Filter, Download, FileSpreadsheet, FileText, LineChart as LineChartIcon,
-  Layers, AlertTriangle, UserPlus, Edit2, Check, X
+  Layers, AlertTriangle, UserPlus, Edit2, Check, X, Image, FileImage
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
