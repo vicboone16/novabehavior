@@ -518,6 +518,14 @@ RULES:
           }).eq("id", recording_id);
         }
       }
+    } else {
+      console.log(`[voice-capture-process] No audio chunks found or no API key. Chunks: ${chunks?.length || 0}, API key: ${!!ELEVENLABS_API_KEY}`);
+      // Update status to indicate no audio was available
+      await supabaseAdmin.from("voice_recordings").update({
+        status: "audio_secured",
+        transcript_status: "failed",
+        ai_status: "failed",
+      }).eq("id", recording_id);
     }
 
     // ── Step 2: AI Extraction + Draft Generation via Lovable AI ──
