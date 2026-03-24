@@ -77094,10 +77094,6 @@ export type Database = {
           setting_match: number
         }[]
       }
-      rebuild_behavior_session_data_for_session: {
-        Args: { _session_id: string }
-        Returns: undefined
-      }
       recalculate_mts_session: {
         Args: { p_mts_session_id: string }
         Returns: string
