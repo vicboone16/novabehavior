@@ -55,6 +55,7 @@ export function useVoiceCaptureEngine() {
   const animFrameRef = useRef<number | null>(null);
   const recordingIdRef = useRef<string | null>(null);
   const orgIdRef = useRef<string | null>(null);
+  const currentChunkBlobsRef = useRef<Blob[]>([]);
 
   // Cleanup on unmount
   useEffect(() => {
