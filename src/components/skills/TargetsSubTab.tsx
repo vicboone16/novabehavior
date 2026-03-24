@@ -405,6 +405,57 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         existingTargetSourceIds={targets.filter(t => t.source_id).map(t => t.source_id!)}
         onSuccess={refetchTargets}
       />
+
+      {/* Move individual target to a program */}
+      {moveTargetId && (
+        <Dialog open={!!moveTargetId} onOpenChange={(o) => !o && setMoveTargetId(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Move Target to Program</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="text-sm">
+                <span className="text-muted-foreground">Target:</span>{' '}
+                <span className="font-medium">{targets.find(t => t.id === moveTargetId)?.title}</span>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Destination Program</label>
+                <Select onValueChange={async (programId) => {
+                  const { supabase } = await import('@/integrations/supabase/client');
+                  const { toast } = await import('sonner');
+                  const { error } = await supabase
+                    .from('skill_targets')
+                    .insert({
+                      program_id: programId,
+                      name: targets.find(t => t.id === moveTargetId)?.title || 'Target',
+                      operational_definition: targets.find(t => t.id === moveTargetId)?.description || null,
+                      mastery_criteria: targets.find(t => t.id === moveTargetId)?.mastery_criteria || null,
+                      display_order: 0,
+                    });
+                  if (error) {
+                    toast.error('Failed to move target');
+                  } else {
+                    toast.success('Target added to program');
+                    setMoveTargetId(null);
+                    refetchPrograms();
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a program..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.domain?.name ? `${p.domain.name} › ` : ''}{p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
