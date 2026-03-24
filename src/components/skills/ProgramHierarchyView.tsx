@@ -167,6 +167,28 @@ export function ProgramHierarchyView({
           <p className="text-muted-foreground mt-0.5">{target.mastery_criteria}</p>
         </div>
       )}
+      {target.sd_instructions && (
+        <div>
+          <span className="font-semibold text-foreground">SD Instructions:</span>
+          <p className="text-muted-foreground mt-0.5">{target.sd_instructions}</p>
+        </div>
+      )}
+      {target.prompt_hierarchy && target.prompt_hierarchy.length > 0 && (
+        <div>
+          <span className="font-semibold text-foreground">Prompt Hierarchy:</span>
+          <ol className="list-decimal ml-4 mt-1 space-y-0.5 text-muted-foreground">
+            {target.prompt_hierarchy.map((level: string, i: number) => (
+              <li key={i}>{level}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {target.error_correction && (
+        <div>
+          <span className="font-semibold text-foreground">Error Correction:</span>
+          <p className="text-muted-foreground mt-0.5">{target.error_correction}</p>
+        </div>
+      )}
       {target.notes && (
         <div>
           <span className="font-semibold text-foreground">Notes / Instructions:</span>
@@ -181,10 +203,6 @@ export function ProgramHierarchyView({
         <div>
           <span className="font-semibold text-foreground">Status:</span>{' '}
           <span className="text-muted-foreground">{TARGET_STATUS_LABELS[target.status] || target.status}</span>
-        </div>
-        <div>
-          <span className="font-semibold text-foreground">Display Order:</span>{' '}
-          <span className="text-muted-foreground">{target.display_order}</span>
         </div>
       </div>
       {target.ta_steps && target.ta_steps.length > 0 && (

@@ -41,6 +41,9 @@ export interface SkillTarget {
   display_order: number;
   active: boolean;
   notes: string | null;
+  sd_instructions: string | null;
+  prompt_hierarchy: string[] | null;
+  error_correction: string | null;
   created_at: string;
   updated_at: string;
   // Joined
