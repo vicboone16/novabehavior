@@ -408,13 +408,15 @@ export function StudentBehaviorsOverview({
   useEffect(() => {
     if (orphanedBehaviors.length === 0 || behaviors.length === 0) return;
 
+    const normalize = (value?: string) => (value || '').toLowerCase().trim();
     const behaviorsByName = new Map<string, string>();
-    behaviors.forEach(b => behaviorsByName.set(b.name.toLowerCase().trim(), b.id));
+    behaviors.forEach(b => behaviorsByName.set(normalize(b.name), b.id));
 
     const toRekey: { oldId: string; newId: string; name: string }[] = [];
     orphanedBehaviors.forEach(orphan => {
-      if (orphan.inferredName.startsWith('Unlinked')) return;
-      const matchId = behaviorsByName.get(orphan.inferredName.toLowerCase().trim());
+      const normalized = normalize(orphan.inferredName.replace(/^Unlinked\s*\(|\)$/g, ''));
+      if (!normalized || normalized.startsWith('unlinked')) return;
+      const matchId = behaviorsByName.get(normalized);
       if (matchId && matchId !== orphan.id) {
         toRekey.push({ oldId: orphan.id, newId: matchId, name: orphan.inferredName });
       }
@@ -422,26 +424,19 @@ export function StudentBehaviorsOverview({
 
     if (toRekey.length === 0) return;
 
-    // Batch rekey all matching orphans
-    const rekey = (entries: any[]) => {
-      let changed = false;
-      const result = entries.map(e => {
-        if (e.studentId !== studentId) return e;
-        const match = toRekey.find(r => r.oldId === e.behaviorId);
-        if (match) { changed = true; return { ...e, behaviorId: match.newId }; }
-        return e;
-      });
-      return changed ? result : entries;
-    };
+    const rekey = (entries: any[]) => entries.map(e => {
+      if (e.studentId !== studentId) return e;
+      const match = toRekey.find(r => r.oldId === e.behaviorId);
+      return match ? { ...e, behaviorId: match.newId } : e;
+    });
 
     useDataStore.setState(state => ({
       frequencyEntries: rekey(state.frequencyEntries),
       durationEntries: rekey(state.durationEntries),
       abcEntries: rekey(state.abcEntries),
       intervalEntries: rekey(state.intervalEntries),
-    }));
-
-    console.log(`[Auto-reconcile] Rekeyed ${toRekey.length} orphaned behaviors for ${studentId}:`, toRekey.map(r => r.name));
+      historicalData: rekey(state.historicalData as any),
+    } as any));
   }, [orphanedBehaviors, behaviors, studentId]);
 
   const [adoptDialogOpen, setAdoptDialogOpen] = useState(false);
