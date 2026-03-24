@@ -167,9 +167,12 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
+    // Service-role client for storage downloads during processing
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
