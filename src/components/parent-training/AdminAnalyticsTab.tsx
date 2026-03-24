@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import type { ParentTrainingProgress, ParentTrainingAssignment } from '@/types/parentTraining';
+import { useProfileNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   progress: ParentTrainingProgress[];
