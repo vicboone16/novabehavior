@@ -1416,6 +1416,7 @@ export function StudentBehaviorsOverview({
           </div>
         </TabsContent>
       </Tabs>
+      </div>
 
       {/* Behavior List with Stats */}
       <Card>
