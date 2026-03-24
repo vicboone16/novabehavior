@@ -103,7 +103,29 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
             <p className="text-xs text-muted-foreground">tracked behaviors</p>
           </CardContent>
         </Card>
+
+        {bopsCount > 0 && (
+          <Card 
+            className={cn(
+              "cursor-pointer transition-colors hover:bg-muted/50 col-span-2",
+            )}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                BOPS Programs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{bopsCount}</p>
+              <p className="text-xs text-muted-foreground">active BOPS programs</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* BOPS Programs Section */}
+      <BopsProgramsSection studentId={studentId} />
 
       {/* Detail View */}
       {detailView === 'skills' ? (

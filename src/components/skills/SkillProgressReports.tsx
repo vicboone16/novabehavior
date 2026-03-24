@@ -506,17 +506,23 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm">Progress Over Time</CardTitle>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setChartType(chartType === 'line' ? 'bar' : 'line')}
-                  >
-                    {chartType === 'line' ? <BarChart3 className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <GraphExportButton 
+                      containerRef={overviewChartRef} 
+                      filename={`progress-${studentName.replace(/\s+/g, '-')}`} 
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setChartType(chartType === 'line' ? 'bar' : 'line')}
+                    >
+                      {chartType === 'line' ? <BarChart3 className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[250px]">
+                <div className="h-[250px]" ref={overviewChartRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'line' ? (
                       <LineChart data={progressData}>
