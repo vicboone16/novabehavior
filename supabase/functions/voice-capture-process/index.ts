@@ -167,9 +167,12 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
+    // Service-role client for storage downloads during processing
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
@@ -333,7 +336,7 @@ RULES:
       }
 
       // Update draft with transformed content
-      await supabase.from("voice_ai_drafts").update({
+      await supabaseAdmin.from("voice_ai_drafts").update({
         content: transformed,
         tone: transform_type === "translate_spanish" ? "clinical" : transform_type,
         output_language: transform_type === "translate_spanish" ? "es" : draft.output_language,
@@ -346,14 +349,14 @@ RULES:
     }
 
     // Update status for full pipeline
-    await supabase.from("voice_recordings").update({
+    await supabaseAdmin.from("voice_recordings").update({
       status: "processing",
       transcript_status: "processing",
       ai_status: "processing",
     }).eq("id", recording_id);
 
     // Log AI run
-    const { data: aiRun } = await supabase.from("voice_ai_runs").insert({
+    const { data: aiRun } = await supabaseAdmin.from("voice_ai_runs").insert({
       recording_id,
       run_type: "full_pipeline",
       model_name: "google/gemini-3-flash-preview",
@@ -362,23 +365,33 @@ RULES:
     }).select().single();
 
     // ── Step 1: Get audio chunks and transcribe ──
-    const { data: chunks } = await supabase
+    // Use admin client for chunk retrieval and storage download (bypasses RLS)
+    const { data: chunks, error: chunksErr } = await supabaseAdmin
       .from("voice_recording_chunks")
       .select("*")
       .eq("recording_id", recording_id)
       .order("chunk_index", { ascending: true });
 
+    console.log(`[voice-capture-process] Found ${chunks?.length || 0} chunks for recording ${recording_id}`, chunksErr ? `Error: ${chunksErr.message}` : '');
+
     let fullTranscriptText = "";
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
+    if (!ELEVENLABS_API_KEY) {
+      console.error("[voice-capture-process] ELEVENLABS_API_KEY not configured");
+    }
+
     if (ELEVENLABS_API_KEY && chunks && chunks.length > 0) {
-      // Download and concatenate audio chunks
+      // Download and concatenate audio chunks using admin client
       const audioBlobs: Uint8Array[] = [];
       for (const chunk of chunks) {
         if (chunk.storage_path) {
-          const { data: fileData } = await supabase.storage
+          const { data: fileData, error: dlErr } = await supabaseAdmin.storage
             .from("voice-recordings")
             .download(chunk.storage_path);
+          if (dlErr) {
+            console.error(`[voice-capture-process] Failed to download chunk ${chunk.chunk_index}:`, dlErr.message);
+          }
           if (fileData) {
             const arrayBuf = await fileData.arrayBuffer();
             audioBlobs.push(new Uint8Array(arrayBuf));
@@ -409,6 +422,7 @@ RULES:
           if (langCode) formData.append("language_code", langCode);
         }
 
+        console.log(`[voice-capture-process] Sending ${combined.length} bytes to ElevenLabs Scribe`);
         const transcribeRes = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
           method: "POST",
           headers: { "xi-api-key": ELEVENLABS_API_KEY },
@@ -418,9 +432,10 @@ RULES:
         if (transcribeRes.ok) {
           const transcription = await transcribeRes.json();
           fullTranscriptText = transcription.text || "";
+          console.log(`[voice-capture-process] Transcription received: ${fullTranscriptText.length} chars`);
 
-          // Save transcript
-          const { data: savedTranscript } = await supabase.from("voice_transcripts").insert({
+          // Save transcript using admin client
+          const { data: savedTranscript, error: transErr } = await supabaseAdmin.from("voice_transcripts").insert({
             recording_id,
             version_number: 1,
             source_language: recording.language_mode || "auto",
@@ -432,9 +447,12 @@ RULES:
             created_by_model: "scribe_v2",
           }).select().single();
 
+          if (transErr) {
+            console.error("[voice-capture-process] Failed to save transcript:", transErr.message);
+          }
+
           // Save segments with speaker info
           if (transcription.words && savedTranscript) {
-            // Group words into speaker turns
             let currentSpeaker = "";
             let currentText = "";
             let segStart = 0;
@@ -470,7 +488,7 @@ RULES:
             }
 
             if (segments.length > 0) {
-              await supabase.from("voice_transcript_segments").insert(segments);
+              await supabaseAdmin.from("voice_transcript_segments").insert(segments);
             }
 
             // Create speaker records
@@ -478,7 +496,7 @@ RULES:
               transcription.words.map((w: any) => w.speaker).filter(Boolean)
             );
             for (const label of speakerLabels) {
-              await supabase.from("voice_speakers").insert({
+              await supabaseAdmin.from("voice_speakers").insert({
                 recording_id,
                 speaker_label: label,
                 speaker_role: "unknown",
@@ -486,7 +504,7 @@ RULES:
             }
           }
 
-          await supabase.from("voice_recordings").update({
+          await supabaseAdmin.from("voice_recordings").update({
             transcript_status: "completed",
             detected_languages: transcription.language_code
               ? [transcription.language_code]
@@ -494,12 +512,20 @@ RULES:
           }).eq("id", recording_id);
         } else {
           const errText = await transcribeRes.text();
-          console.error("Transcription failed:", errText);
-          await supabase.from("voice_recordings").update({
+          console.error("[voice-capture-process] Transcription API failed:", transcribeRes.status, errText);
+          await supabaseAdmin.from("voice_recordings").update({
             transcript_status: "failed",
           }).eq("id", recording_id);
         }
       }
+    } else {
+      console.log(`[voice-capture-process] No audio chunks found or no API key. Chunks: ${chunks?.length || 0}, API key: ${!!ELEVENLABS_API_KEY}`);
+      // Update status to indicate no audio was available
+      await supabaseAdmin.from("voice_recordings").update({
+        status: "audio_secured",
+        transcript_status: "failed",
+        ai_status: "failed",
+      }).eq("id", recording_id);
     }
 
     // ── Step 2: AI Extraction + Draft Generation via Lovable AI ──
@@ -581,7 +607,7 @@ RULES:
               const summaryTypes = ["one_line_summary", "concise_summary", "detailed_clinical_summary", "parent_friendly_summary"];
               for (const st of summaryTypes) {
                 if (extracted[st]) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: st,
                     json_payload: { text: extracted[st] },
@@ -601,7 +627,7 @@ RULES:
               ];
               for (const field of structuredFields) {
                 if (extracted[field] && (Array.isArray(extracted[field]) ? extracted[field].length > 0 : true)) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: field,
                     json_payload: { items: extracted[field] },
@@ -613,7 +639,7 @@ RULES:
               // Save scalar extractions
               for (const field of ["setting", "reason_for_contact"]) {
                 if (extracted[field]) {
-                  await supabase.from("voice_ai_extractions").insert({
+                  await supabaseAdmin.from("voice_ai_extractions").insert({
                     recording_id,
                     extraction_type: field,
                     json_payload: { value: extracted[field] },
@@ -624,7 +650,7 @@ RULES:
               // Save tasks
               if (extracted.action_items?.length > 0) {
                 for (const item of extracted.action_items) {
-                  await supabase.from("voice_tasks").insert({
+                  await supabaseAdmin.from("voice_tasks").insert({
                     recording_id,
                     client_id: recording.client_id || null,
                     task_text: item.task,
@@ -681,7 +707,7 @@ RULES:
               const draftData = await draftRes.json();
               const content = draftData.choices?.[0]?.message?.content;
               if (content) {
-                await supabase.from("voice_ai_drafts").insert({
+                await supabaseAdmin.from("voice_ai_drafts").insert({
                   recording_id,
                   draft_type: draftType.key,
                   tone: "clinical",
@@ -699,20 +725,20 @@ RULES:
     }
 
     // ── Finalize ──
-    await supabase.from("voice_recordings").update({
+    await supabaseAdmin.from("voice_recordings").update({
       status: fullTranscriptText ? "review_ready" : "audio_secured",
       ai_status: fullTranscriptText ? "completed" : "pending",
     }).eq("id", recording_id);
 
     if (aiRun) {
-      await supabase.from("voice_ai_runs").update({
+      await supabaseAdmin.from("voice_ai_runs").update({
         status: "completed",
         completed_at: new Date().toISOString(),
       }).eq("id", aiRun.id);
     }
 
     // Audit
-    await supabase.from("voice_audit_log").insert({
+    await supabaseAdmin.from("voice_audit_log").insert({
       recording_id,
       user_id: userId,
       action_type: "processing_completed",

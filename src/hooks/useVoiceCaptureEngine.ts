@@ -81,14 +81,18 @@ export function useVoiceCaptureEngine() {
   const uploadChunk = async (recordingId: string, orgId: string, chunk: ChunkRecord) => {
     try {
       const path = `org/${orgId}/recording/${recordingId}/chunks/chunk_${String(chunk.index).padStart(4, '0')}.webm`;
+      console.log(`[VoiceCapture] Uploading chunk ${chunk.index} to ${path}, size: ${chunk.blob.size}`);
       const { error: uploadError } = await supabase.storage
         .from('voice-recordings')
         .upload(path, chunk.blob, { contentType: 'audio/webm', upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error(`[VoiceCapture] Storage upload failed for chunk ${chunk.index}:`, uploadError.message);
+        throw uploadError;
+      }
 
       // Record chunk in DB with org_id
-      await supabase.from('voice_recording_chunks' as any).insert({
+      const { error: dbError } = await supabase.from('voice_recording_chunks' as any).insert({
         recording_id: recordingId,
         org_id: orgId,
         chunk_index: chunk.index,
@@ -97,14 +101,19 @@ export function useVoiceCaptureEngine() {
         upload_status: 'uploaded',
       });
 
+      if (dbError) {
+        console.error(`[VoiceCapture] DB insert failed for chunk ${chunk.index}:`, dbError.message);
+      }
+
       chunk.uploaded = true;
+      console.log(`[VoiceCapture] Chunk ${chunk.index} uploaded successfully`);
       setState(prev => ({ ...prev, uploadedChunks: prev.uploadedChunks + 1 }));
       captureStore.updateChunks(
         chunksRef.current.filter(c => c.uploaded).length,
         chunksRef.current.filter(c => !c.uploaded).length
       );
     } catch (err) {
-      console.error('Chunk upload failed:', err);
+      console.error('[VoiceCapture] Chunk upload failed:', err);
       captureStore.updateConnection('reconnecting');
       // Will retry later - chunk stays in queue
     }
