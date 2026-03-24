@@ -243,6 +243,9 @@ export default function DemoGateway() {
         </div>
       </div>
 
+      {/* ── Feature Tour ── */}
+      <FeatureTour />
+
       {/* ── Client / External Demo ── */}
       <Card className="bg-muted/30 border-dashed rounded-2xl">
         <CardContent className="py-4 flex items-center justify-between gap-4">
