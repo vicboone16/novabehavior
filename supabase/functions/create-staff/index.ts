@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
         .upsert({
           user_id: userId,
           agency_id,
-          role: role === "admin" ? "admin" : "member",
+          role: role === "admin" ? "admin" : "staff",
           email: normalizedEmail,
           created_at: new Date().toISOString(),
         }, { onConflict: "user_id,agency_id" });
