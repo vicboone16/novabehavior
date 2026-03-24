@@ -25,6 +25,9 @@ import {
   FolderTree,
   ListChecks,
   ArrowRightLeft,
+  AlertTriangle,
+  Heart,
+  Repeat,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
