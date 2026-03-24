@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Plus, CheckCircle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ParentTrainingModule } from '@/types/parentTraining';
 import type { PTAssignmentDashboard } from '@/hooks/useParentTrainingAdmin';
+import { useProfileNameResolver, useClientNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   assignments: PTAssignmentDashboard[];
