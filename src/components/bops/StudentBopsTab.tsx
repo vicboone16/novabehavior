@@ -255,13 +255,15 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-3">
-            <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">Red: {d.red_programs || 0}</Badge>
-            <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">Yellow: {d.yellow_programs || 0}</Badge>
-            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs">Green: {d.green_programs || 0}</Badge>
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">Red: {redPrograms.length}</Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">Yellow: {yellowPrograms.length}</Badge>
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs">Green: {greenPrograms.length}</Badge>
+            {bluePrograms.length > 0 && <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs">Blue: {bluePrograms.length}</Badge>}
           </div>
           {[{ label: 'Red', programs: redPrograms, color: 'border-red-300' },
             { label: 'Yellow', programs: yellowPrograms, color: 'border-yellow-300' },
-            { label: 'Green', programs: greenPrograms, color: 'border-green-300' }
+            { label: 'Green', programs: greenPrograms, color: 'border-green-300' },
+            { label: 'Blue', programs: bluePrograms, color: 'border-blue-300' },
           ].map(group => group.programs.length > 0 && (
             <Collapsible key={group.label} defaultOpen={false}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium py-1 hover:text-primary w-full">
