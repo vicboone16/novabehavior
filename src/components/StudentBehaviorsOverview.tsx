@@ -405,37 +405,78 @@ export function StudentBehaviorsOverview({
   }, [behaviors, frequencyEntries, durationEntries, abcEntries, intervalEntries, historicalData, studentId]);
 
   // Auto-reconcile orphans whose inferredName matches an existing behavior by name
+  // Also fetches student_behavior_map from DB to resolve IDs by subtype name
   useEffect(() => {
     if (orphanedBehaviors.length === 0 || behaviors.length === 0) return;
 
-    const normalize = (value?: string) => (value || '').toLowerCase().trim();
+    const normalize = (value?: string) => (value || '').toLowerCase().replace(/[_\-]/g, ' ').trim();
     const behaviorsByName = new Map<string, string>();
     behaviors.forEach(b => behaviorsByName.set(normalize(b.name), b.id));
 
-    const toRekey: { oldId: string; newId: string; name: string }[] = [];
-    orphanedBehaviors.forEach(orphan => {
-      const normalized = normalize(orphan.inferredName.replace(/^Unlinked\s*\(|\)$/g, ''));
-      if (!normalized || normalized.startsWith('unlinked')) return;
-      const matchId = behaviorsByName.get(normalized);
-      if (matchId && matchId !== orphan.id) {
-        toRekey.push({ oldId: orphan.id, newId: matchId, name: orphan.inferredName });
-      }
-    });
+    const doReconcile = async () => {
+      // Fetch student_behavior_map entries to resolve orphan IDs by subtype
+      let dbSubtypeMap = new Map<string, string>(); // behavior_entry_id -> subtype name
+      try {
+        const { data: mapRows } = await supabase
+          .from('student_behavior_map')
+          .select('behavior_entry_id, behavior_subtype')
+          .eq('student_id', studentId)
+          .eq('active', true);
+        if (mapRows) {
+          mapRows.forEach((r: any) => {
+            dbSubtypeMap.set(r.behavior_entry_id, r.behavior_subtype);
+          });
+        }
+      } catch { /* ignore */ }
 
-    if (toRekey.length === 0) return;
+      const toRekey: { oldId: string; newId: string; name: string }[] = [];
+      orphanedBehaviors.forEach(orphan => {
+        // Try matching by inferred name first
+        const normalized = normalize(orphan.inferredName.replace(/^Unlinked\s*\(|\)$/g, ''));
+        if (normalized && !normalized.startsWith('unlinked')) {
+          const matchId = behaviorsByName.get(normalized);
+          if (matchId && matchId !== orphan.id) {
+            toRekey.push({ oldId: orphan.id, newId: matchId, name: orphan.inferredName });
+            return;
+          }
+        }
 
-    const rekey = (entries: any[]) => entries.map(e => {
-      if (e.studentId !== studentId) return e;
-      const match = toRekey.find(r => r.oldId === e.behaviorId);
-      return match ? { ...e, behaviorId: match.newId } : e;
-    });
+        // Try matching orphan.id against student_behavior_map behavior_entry_id -> subtype -> local behavior name
+        const subtypeName = dbSubtypeMap.get(orphan.id);
+        if (subtypeName) {
+          const normalizedSubtype = normalize(subtypeName);
+          const matchId = behaviorsByName.get(normalizedSubtype);
+          if (matchId && matchId !== orphan.id) {
+            toRekey.push({ oldId: orphan.id, newId: matchId, name: subtypeName });
+            return;
+          }
+          // Also try partial matching
+          for (const [bName, bId] of behaviorsByName) {
+            if (bId !== orphan.id && (bName.includes(normalizedSubtype) || normalizedSubtype.includes(bName))) {
+              toRekey.push({ oldId: orphan.id, newId: bId, name: subtypeName });
+              return;
+            }
+          }
+        }
+      });
 
-    useDataStore.setState(state => ({
-      frequencyEntries: rekey(state.frequencyEntries),
-      durationEntries: rekey(state.durationEntries),
-      abcEntries: rekey(state.abcEntries),
-      intervalEntries: rekey(state.intervalEntries),
-    } as any));
+      if (toRekey.length === 0) return;
+
+      const rekey = (entries: any[]) => entries.map(e => {
+        if (e.studentId !== studentId) return e;
+        const match = toRekey.find(r => r.oldId === e.behaviorId);
+        return match ? { ...e, behaviorId: match.newId } : e;
+      });
+
+      useDataStore.setState(state => ({
+        frequencyEntries: rekey(state.frequencyEntries),
+        durationEntries: rekey(state.durationEntries),
+        abcEntries: rekey(state.abcEntries),
+        intervalEntries: rekey(state.intervalEntries),
+      } as any));
+    };
+
+    doReconcile();
   }, [orphanedBehaviors, behaviors, studentId]);
 
   const [adoptDialogOpen, setAdoptDialogOpen] = useState(false);

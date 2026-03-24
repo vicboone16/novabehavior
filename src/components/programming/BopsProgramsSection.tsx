@@ -25,6 +25,9 @@ import {
   FolderTree,
   ListChecks,
   ArrowRightLeft,
+  AlertTriangle,
+  Heart,
+  Repeat,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
@@ -125,6 +128,8 @@ function BopsProgramCard({
   onAllocateSkill,
   onAllocateTargets,
   onAllocateProtocol,
+  onAllocateBehaviorGoal,
+  onAllocateReplacement,
   busy,
 }: {
   program: any;
@@ -134,6 +139,8 @@ function BopsProgramCard({
   onAllocateSkill: () => void;
   onAllocateTargets: () => void;
   onAllocateProtocol: () => void;
+  onAllocateBehaviorGoal: () => void;
+  onAllocateReplacement: () => void;
   busy: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -187,7 +194,7 @@ function BopsProgramCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onAllocateSkill} disabled={busy}>
                 <FolderTree className="w-4 h-4 mr-2" />
-                Send to Programs
+                Send to Skill Programs
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateTargets} disabled={busy}>
                 <ListChecks className="w-4 h-4 mr-2" />
@@ -196,6 +203,14 @@ function BopsProgramCard({
               <DropdownMenuItem onClick={onAllocateProtocol} disabled={busy}>
                 <ArrowRightLeft className="w-4 h-4 mr-2" />
                 Send to Interventions
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onAllocateBehaviorGoal} disabled={busy}>
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Send to Behavior Goals
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onAllocateReplacement} disabled={busy}>
+                <Repeat className="w-4 h-4 mr-2" />
+                Send to Replacement Behaviors
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -450,6 +465,71 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
     }
   };
 
+  const handleAllocateBehaviorGoal = async (program: any) => {
+    const key = `goal-${program.programming_assignment_id || program.program_name}`;
+    setBusyKey(key);
+    try {
+      const domainId = resolveDomainId(program.domain);
+      const existingTitles = new Set(targets.map((t) => normalize(t.title)));
+      const goalTitle = program.goal_title || program.program_name;
+
+      if (existingTitles.has(normalize(goalTitle))) {
+        toast.info('This behavior goal already exists in targets');
+        return;
+      }
+
+      await bulkAddTargets([{
+        title: goalTitle,
+        description: program.goal_description || program.teacher_friendly_summary || null,
+        mastery_criteria: program.mastery_criteria || null,
+        domain_id: domainId,
+        data_collection_type: 'frequency',
+        priority: 'high' as const,
+        source_type: 'custom' as const,
+        notes_for_staff: `[Behavior Goal] ${program.program_name}\n${program.reinforcement_plan || ''}`.trim(),
+      }]);
+
+      onAllocated?.();
+      toast.success('BOPS program sent to Behavior Goals');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleAllocateReplacement = async (program: any) => {
+    const key = `replace-${program.programming_assignment_id || program.program_name}`;
+    setBusyKey(key);
+    try {
+      const domainId = resolveDomainId(program.domain);
+      const bopsTargets = getProgramTargets(program);
+      const existingTitles = new Set(targets.map((t) => normalize(t.title)));
+
+      const rows = bopsTargets
+        .filter((title) => !existingTitles.has(normalize(title)))
+        .map((title) => ({
+          title: `[Replacement] ${title}`,
+          description: program.goal_description || program.teacher_friendly_summary || null,
+          mastery_criteria: program.mastery_criteria || null,
+          domain_id: domainId,
+          data_collection_type: program.data_collection_type || 'frequency',
+          priority: 'high' as const,
+          source_type: 'custom' as const,
+          notes_for_staff: `[Replacement Behavior] Source: ${program.program_name}\n${program.reinforcement_plan || ''}`.trim(),
+        }));
+
+      if (rows.length === 0) {
+        toast.info('These replacement behaviors already exist');
+        return;
+      }
+
+      await bulkAddTargets(rows);
+      onAllocated?.();
+      toast.success('BOPS targets sent as Replacement Behaviors');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -502,10 +582,12 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
                         skillImported={skillImported}
                         targetsImported={targetsImported}
                         protocolImported={protocolImported}
-                        busy={busyKey === `skill-${program.programming_assignment_id || program.program_name}` || busyKey === `targets-${program.programming_assignment_id || program.program_name}` || busyKey === `protocol-${program.programming_assignment_id || program.program_name}`}
+                        busy={busyKey !== null && busyKey.includes(program.programming_assignment_id || program.program_name)}
                         onAllocateSkill={() => handleAllocateSkill(program)}
                         onAllocateTargets={() => handleAllocateTargets(program)}
                         onAllocateProtocol={() => handleAllocateProtocol(program)}
+                        onAllocateBehaviorGoal={() => handleAllocateBehaviorGoal(program)}
+                        onAllocateReplacement={() => handleAllocateReplacement(program)}
                       />
                     );
                   })}
