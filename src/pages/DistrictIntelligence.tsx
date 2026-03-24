@@ -320,7 +320,7 @@ function SupervisorCaseloadTab() {
             <TableBody>
               {(supervisors || []).map((s: any) => (
                 <TableRow key={s.supervisor_user_id}>
-                  <TableCell className="font-medium">{s.supervisor_user_id?.slice(0, 8)}…</TableCell>
+                  <TableCell className="font-medium">{s.supervisor_name || 'Unknown Supervisor'}</TableCell>
                   <TableCell className="text-right font-mono">{s.client_count || 0}</TableCell>
                   <TableCell className="text-right">
                     {(s.high_risk_clients || 0) > 0 ? (
