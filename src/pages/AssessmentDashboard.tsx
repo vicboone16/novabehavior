@@ -1055,6 +1055,9 @@ export default function AssessmentDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="bops" className="space-y-4">
+            <BopsEngine />
+          </TabsContent>
         </Tabs>
       )}
     </div>
