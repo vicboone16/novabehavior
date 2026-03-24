@@ -453,6 +453,71 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
     }
   };
 
+  const handleAllocateBehaviorGoal = async (program: any) => {
+    const key = `goal-${program.programming_assignment_id || program.program_name}`;
+    setBusyKey(key);
+    try {
+      const domainId = resolveDomainId(program.domain);
+      const existingTitles = new Set(targets.map((t) => normalize(t.title)));
+      const goalTitle = program.goal_title || program.program_name;
+
+      if (existingTitles.has(normalize(goalTitle))) {
+        toast.info('This behavior goal already exists in targets');
+        return;
+      }
+
+      await bulkAddTargets([{
+        title: goalTitle,
+        description: program.goal_description || program.teacher_friendly_summary || null,
+        mastery_criteria: program.mastery_criteria || null,
+        domain_id: domainId,
+        data_collection_type: 'frequency',
+        priority: 'high' as const,
+        source_type: 'custom' as const,
+        notes_for_staff: `[Behavior Goal] ${program.program_name}\n${program.reinforcement_plan || ''}`.trim(),
+      }]);
+
+      onAllocated?.();
+      toast.success('BOPS program sent to Behavior Goals');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleAllocateReplacement = async (program: any) => {
+    const key = `replace-${program.programming_assignment_id || program.program_name}`;
+    setBusyKey(key);
+    try {
+      const domainId = resolveDomainId(program.domain);
+      const bopsTargets = getProgramTargets(program);
+      const existingTitles = new Set(targets.map((t) => normalize(t.title)));
+
+      const rows = bopsTargets
+        .filter((title) => !existingTitles.has(normalize(title)))
+        .map((title) => ({
+          title: `[Replacement] ${title}`,
+          description: program.goal_description || program.teacher_friendly_summary || null,
+          mastery_criteria: program.mastery_criteria || null,
+          domain_id: domainId,
+          data_collection_type: program.data_collection_type || 'frequency',
+          priority: 'high' as const,
+          source_type: 'custom' as const,
+          notes_for_staff: `[Replacement Behavior] Source: ${program.program_name}\n${program.reinforcement_plan || ''}`.trim(),
+        }));
+
+      if (rows.length === 0) {
+        toast.info('These replacement behaviors already exist');
+        return;
+      }
+
+      await bulkAddTargets(rows);
+      onAllocated?.();
+      toast.success('BOPS targets sent as Replacement Behaviors');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
