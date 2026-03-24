@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
+import { ProgrammingIntelligenceBanner } from './ProgrammingIntelligenceBanner';
 import { useDataStore } from '@/store/dataStore';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
