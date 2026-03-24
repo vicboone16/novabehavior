@@ -230,7 +230,6 @@ Deno.serve(async (req) => {
         can_edit_profile: sp.can_edit_profile ?? false,
         can_generate_reports: sp.can_generate_reports ?? false,
         granted_by: callerUser.id,
-        granted_at: new Date().toISOString(),
       }));
 
       const { error: accessError } = await supabaseAdmin
