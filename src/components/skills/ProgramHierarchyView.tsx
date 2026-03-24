@@ -10,11 +10,12 @@ import {
   ListChecks,
   Clock,
   Info,
+  ArrowRight,
+  FolderInput,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,6 +45,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSkillProgramActions } from '@/hooks/useSkillPrograms';
+import { MoveTargetDialog } from './MoveTargetDialog';
+import { MoveProgramDialog } from './MoveProgramDialog';
 import type { SkillProgram, SkillTarget, ProgramStatus } from '@/types/skillPrograms';
 import {
   PROGRAM_STATUS_LABELS,
@@ -76,6 +79,7 @@ export function ProgramHierarchyView({
 
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
+  const [expandedTargets, setExpandedTargets] = useState<Set<string>>(new Set());
   const [addingTargetTo, setAddingTargetTo] = useState<string | null>(null);
   const [newTargetName, setNewTargetName] = useState('');
   const [newTargetDef, setNewTargetDef] = useState('');
@@ -83,6 +87,10 @@ export function ProgramHierarchyView({
   const [newStatus, setNewStatus] = useState<ProgramStatus>('acquisition');
   const [statusDate, setStatusDate] = useState(new Date().toISOString().split('T')[0]);
   const [statusNote, setStatusNote] = useState('');
+
+  // Move dialogs
+  const [moveTarget, setMoveTarget] = useState<{ id: string; name: string; programId: string } | null>(null);
+  const [moveProgram, setMoveProgram] = useState<{ id: string; name: string; domainId: string | null } | null>(null);
 
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
@@ -113,6 +121,14 @@ export function ProgramHierarchyView({
     });
   };
 
+  const toggleTarget = (id: string) => {
+    setExpandedTargets(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const handleAddTarget = async (programId: string) => {
     if (!newTargetName.trim()) return;
     await addTarget(programId, {
@@ -137,11 +153,59 @@ export function ProgramHierarchyView({
     setStatusNote('');
   };
 
+  const renderTargetDetails = (target: SkillTarget) => (
+    <div className="ml-12 mr-3 mb-2 p-3 bg-muted/40 rounded-lg border border-border/50 space-y-2 text-xs">
+      {target.operational_definition && (
+        <div>
+          <span className="font-semibold text-foreground">Operational Definition:</span>
+          <p className="text-muted-foreground mt-0.5">{target.operational_definition}</p>
+        </div>
+      )}
+      {target.mastery_criteria && (
+        <div>
+          <span className="font-semibold text-foreground">Mastery Criteria:</span>
+          <p className="text-muted-foreground mt-0.5">{target.mastery_criteria}</p>
+        </div>
+      )}
+      {target.notes && (
+        <div>
+          <span className="font-semibold text-foreground">Notes / Instructions:</span>
+          <p className="text-muted-foreground mt-0.5">{target.notes}</p>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-3">
+        <div>
+          <span className="font-semibold text-foreground">Phase:</span>{' '}
+          <span className="text-muted-foreground">{PHASE_LABELS[(target as any).phase as TargetPhase] || target.phase || 'N/A'}</span>
+        </div>
+        <div>
+          <span className="font-semibold text-foreground">Status:</span>{' '}
+          <span className="text-muted-foreground">{TARGET_STATUS_LABELS[target.status] || target.status}</span>
+        </div>
+        <div>
+          <span className="font-semibold text-foreground">Display Order:</span>{' '}
+          <span className="text-muted-foreground">{target.display_order}</span>
+        </div>
+      </div>
+      {target.ta_steps && target.ta_steps.length > 0 && (
+        <div>
+          <span className="font-semibold text-foreground">Task Analysis Steps:</span>
+          <ol className="list-decimal ml-4 mt-1 space-y-0.5 text-muted-foreground">
+            {target.ta_steps.map(step => (
+              <li key={step.id}>{step.step_label}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+
   const renderTarget = (target: SkillTarget, program: SkillProgram) => {
+    const isExpanded = expandedTargets.has(target.id);
     const promptSetting = resolvePromptCountsAsCorrect(
       target.prompt_counts_as_correct,
       program.prompt_counts_as_correct,
-      undefined // student level would come from parent
+      undefined
     );
     const promptSource = getPromptCorrectnessSource(
       target.prompt_counts_as_correct,
@@ -150,63 +214,70 @@ export function ProgramHierarchyView({
     );
 
     return (
-      <div
-        key={target.id}
-        className="flex items-center justify-between py-1.5 px-3 ml-8 border-l-2 border-muted hover:bg-muted/30 rounded-r text-sm"
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Target className="w-3 h-3 text-muted-foreground shrink-0" />
-          <span className="truncate">{target.name}</span>
-          <Badge variant="outline" className="text-[10px] shrink-0">
-            {TARGET_STATUS_LABELS[target.status] || target.status}
-          </Badge>
-          {(target as any).phase && (
-            <Badge className={`${PHASE_COLORS[(target as any).phase as TargetPhase] || 'bg-slate-500'} text-white text-[10px] shrink-0`}>
-              {PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}
+      <div key={target.id}>
+        <div
+          className="flex items-center justify-between py-1.5 px-3 ml-8 border-l-2 border-muted hover:bg-muted/30 rounded-r text-sm cursor-pointer"
+          onClick={() => toggleTarget(target.id)}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {isExpanded ? <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" /> : <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />}
+            <Target className="w-3 h-3 text-muted-foreground shrink-0" />
+            <span className="truncate font-medium">{target.name}</span>
+            <Badge variant="outline" className="text-[10px] shrink-0">
+              {TARGET_STATUS_LABELS[target.status] || target.status}
             </Badge>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className={`text-[10px] shrink-0 cursor-help ${promptSetting ? 'border-amber-500 text-amber-600' : 'border-muted-foreground/30'}`}
-              >
-                {promptSetting ? 'P=✓' : 'P=✗'}
+            {(target as any).phase && (
+              <Badge className={`${PHASE_COLORS[(target as any).phase as TargetPhase] || 'bg-slate-500'} text-white text-[10px] shrink-0`}>
+                {PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}
               </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">
-                Prompted = {promptSetting ? 'Correct' : 'Incorrect'}
-                <span className="text-muted-foreground"> (from {promptSource})</span>
-              </p>
-            </TooltipContent>
-          </Tooltip>
+            )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] shrink-0 cursor-help ${promptSetting ? 'border-amber-500 text-amber-600' : 'border-muted-foreground/30'}`}
+                >
+                  {promptSetting ? 'P=✓' : 'P=✗'}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">
+                  Prompted = {promptSetting ? 'Correct' : 'Incorrect'}
+                  <span className="text-muted-foreground"> (from {promptSource})</span>
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}>
+                <MoreHorizontal className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setMoveTarget({ id: target.id, name: target.name, programId: program.id })}>
+                <ArrowRight className="w-3 h-3 mr-2" /> Move to Program
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                const current = target.prompt_counts_as_correct;
+                const next = current === null ? true : current === true ? false : null;
+                updateTarget(target.id, { prompt_counts_as_correct: next } as any);
+              }}>
+                <Info className="w-3 h-3 mr-2" />
+                {target.prompt_counts_as_correct === null
+                  ? 'Set: Prompted = Correct'
+                  : target.prompt_counts_as_correct
+                    ? 'Set: Prompted = Incorrect'
+                    : 'Reset to inherit'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
+                <Trash2 className="w-3 h-3 mr-2" /> Archive Target
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <MoreHorizontal className="w-3 h-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => {
-              const current = target.prompt_counts_as_correct;
-              const next = current === null ? true : current === true ? false : null;
-              updateTarget(target.id, { prompt_counts_as_correct: next } as any);
-            }}>
-              <Info className="w-3 h-3 mr-2" />
-              {target.prompt_counts_as_correct === null
-                ? 'Set: Prompted = Correct'
-                : target.prompt_counts_as_correct
-                  ? 'Set: Prompted = Incorrect'
-                  : 'Reset to inherit'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
-              <Trash2 className="w-3 h-3 mr-2" /> Archive Target
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isExpanded && renderTargetDetails(target)}
       </div>
     );
   };
@@ -248,6 +319,9 @@ export function ProgramHierarchyView({
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onEditProgram(program)}>
                     <Pencil className="w-3 h-3 mr-2" /> Edit Program
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setMoveProgram({ id: program.id, name: program.name, domainId: program.domain_id })}>
+                    <FolderInput className="w-3 h-3 mr-2" /> Move to Domain
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
                     setStatusChangeProgram(program);
@@ -313,7 +387,7 @@ export function ProgramHierarchyView({
           <CollapsibleTrigger className="w-full">
             <CardContent className="py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30">
               {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-              <h3 className="font-semibold text-sm">{domain?.name || 'Unknown Domain'}</h3>
+              <h3 className="font-semibold text-sm">{domain?.name || 'Unassigned'}</h3>
               <Badge variant="secondary" className="text-xs">
                 {domainPrograms.length} program{domainPrograms.length !== 1 ? 's' : ''}
               </Badge>
@@ -349,6 +423,32 @@ export function ProgramHierarchyView({
         renderDomainGroup(domainId, progs)
       )}
       {noDomain.length > 0 && renderDomainGroup('__none__', noDomain)}
+
+      {/* Move Target Dialog */}
+      {moveTarget && (
+        <MoveTargetDialog
+          open={!!moveTarget}
+          onOpenChange={(o) => !o && setMoveTarget(null)}
+          targetId={moveTarget.id}
+          targetName={moveTarget.name}
+          currentProgramId={moveTarget.programId}
+          programs={programs}
+          onSuccess={onRefetch}
+        />
+      )}
+
+      {/* Move Program Dialog */}
+      {moveProgram && (
+        <MoveProgramDialog
+          open={!!moveProgram}
+          onOpenChange={(o) => !o && setMoveProgram(null)}
+          programId={moveProgram.id}
+          programName={moveProgram.name}
+          currentDomainId={moveProgram.domainId}
+          domains={domains}
+          onSuccess={onRefetch}
+        />
+      )}
 
       {/* Status Change Dialog */}
       <Dialog open={!!statusChangeProgram} onOpenChange={(o) => !o && setStatusChangeProgram(null)}>
