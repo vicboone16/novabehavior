@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Plus, CheckCircle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ParentTrainingModule } from '@/types/parentTraining';
 import type { PTAssignmentDashboard } from '@/hooks/useParentTrainingAdmin';
+import { useProfileNameResolver, useClientNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   assignments: PTAssignmentDashboard[];
@@ -26,6 +27,11 @@ export function PTAssignedTrainingTab({ assignments, modules, isLoading, onRefre
   const [form, setForm] = useState({ module_id: '', parent_user_id: '', client_id: '', due_at: '' });
 
   useEffect(() => { onRefresh(); }, [onRefresh]);
+
+  const parentIds = useMemo(() => assignments.map(a => a.parent_user_id).filter(Boolean), [assignments]);
+  const clientIds = useMemo(() => assignments.map(a => a.client_id).filter(Boolean), [assignments]);
+  const { getName: getParentName } = useProfileNameResolver(parentIds);
+  const { getName: getClientName } = useClientNameResolver(clientIds);
 
   const handleAssign = async () => {
     try {
@@ -62,8 +68,8 @@ export function PTAssignedTrainingTab({ assignments, modules, isLoading, onRefre
                 : assignments.map(a => (
                   <TableRow key={a.assignment_id}>
                     <TableCell className="font-medium">{a.module_title || 'Module'}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{a.parent_user_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{a.client_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getParentName(a.parent_user_id) || a.parent_user_id.slice(0, 8) + '…'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getClientName(a.client_id) || a.client_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.goal_count}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.homework_count}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{a.session_log_count}</Badge></TableCell>

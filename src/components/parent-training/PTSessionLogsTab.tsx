@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ParentTrainingModule } from '@/types/parentTraining';
 import type { PTSessionLog } from '@/hooks/useParentTrainingAdmin';
+import { useProfileNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   sessionLogs: PTSessionLog[];
@@ -22,6 +23,8 @@ interface Props {
 }
 
 export function PTSessionLogsTab({ sessionLogs, modules, isLoading, onRefresh, onCreate }: Props) {
+  const parentIds = useMemo(() => sessionLogs.map(l => l.parent_user_id).filter(Boolean), [sessionLogs]);
+  const { getName } = useProfileNameResolver(parentIds);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({
     parent_user_id: '', client_id: '', session_date: new Date().toISOString().slice(0, 10),
@@ -72,7 +75,7 @@ export function PTSessionLogsTab({ sessionLogs, modules, isLoading, onRefresh, o
                     <TableCell><Badge variant="outline">{l.service_code}</Badge></TableCell>
                     <TableCell>{l.duration_minutes}m</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{l.module_title || '—'}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{l.parent_user_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getName(l.parent_user_id) || l.parent_user_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{l.session_summary || '—'}</TableCell>
                   </TableRow>
                 ))}

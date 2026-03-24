@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Eye, CheckCircle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import type { PTHomework } from '@/hooks/useParentTrainingAdmin';
+import { useProfileNameResolver, useClientNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   homework: PTHomework[];
@@ -22,6 +23,11 @@ export function PTHomeworkTab({ homework, isLoading, onRefresh, onReview }: Prop
   const [reviewNotes, setReviewNotes] = useState('');
 
   useEffect(() => { onRefresh(); }, [onRefresh]);
+
+  const parentIds = useMemo(() => homework.map(h => h.parent_user_id).filter(Boolean), [homework]);
+  const clientIds = useMemo(() => homework.map(h => h.client_id).filter(Boolean), [homework]);
+  const { getName: getParentName } = useProfileNameResolver(parentIds);
+  const { getName: getClientName } = useClientNameResolver(clientIds);
 
   const handleReview = async (status: string) => {
     if (!viewItem) return;
@@ -50,8 +56,8 @@ export function PTHomeworkTab({ homework, isLoading, onRefresh, onReview }: Prop
                 : homework.map(h => (
                   <TableRow key={h.homework_id}>
                     <TableCell className="font-medium">{h.title}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{h.parent_user_id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{h.client_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getParentName(h.parent_user_id) || h.parent_user_id.slice(0, 8) + '…'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getClientName(h.client_id) || h.client_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{format(new Date(h.submitted_at), 'MMM d, yyyy')}</TableCell>
                     <TableCell><Badge variant={statusColor(h.review_status) as any}>{h.review_status}</Badge></TableCell>
                     <TableCell>

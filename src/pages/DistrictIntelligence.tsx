@@ -147,7 +147,10 @@ function AgencyOverviewTab() {
               <TableBody>
                 {(entityCounts || []).slice(0, 10).map((e: any) => (
                   <TableRow key={e.entity_id}>
-                    <TableCell className="font-medium">{e.entity_id?.slice(0, 8)}…</TableCell>
+                    <TableCell className="font-medium">
+                      {e.entity_name || 'Unnamed Entity'}
+                      {e.entity_type && <Badge variant="outline" className="ml-2 text-[10px] capitalize">{e.entity_type}</Badge>}
+                    </TableCell>
                     <TableCell className="text-right font-mono">{e.client_count}</TableCell>
                   </TableRow>
                 ))}
@@ -317,7 +320,7 @@ function SupervisorCaseloadTab() {
             <TableBody>
               {(supervisors || []).map((s: any) => (
                 <TableRow key={s.supervisor_user_id}>
-                  <TableCell className="font-medium">{s.supervisor_user_id?.slice(0, 8)}…</TableCell>
+                  <TableCell className="font-medium">{s.supervisor_name || 'Unknown Supervisor'}</TableCell>
                   <TableCell className="text-right font-mono">{s.client_count || 0}</TableCell>
                   <TableCell className="text-right">
                     {(s.high_risk_clients || 0) > 0 ? (
@@ -386,7 +389,7 @@ function StaffingOptimizationTab() {
               <TableBody>
                 {(capacity || []).map((c: any) => (
                   <TableRow key={c.user_id}>
-                    <TableCell className="font-medium">{c.user_id?.slice(0, 8)}…</TableCell>
+                    <TableCell className="font-medium">{c.staff_name || 'Unknown Staff'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs capitalize">{c.primary_role}</Badge></TableCell>
                     <TableCell className="text-right font-mono">{c.max_clients}</TableCell>
                     <TableCell className="text-right font-mono">{c.assigned_clients}</TableCell>

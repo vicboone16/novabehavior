@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart3, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import type { ParentTrainingProgress, ParentTrainingAssignment } from '@/types/parentTraining';
+import { useProfileNameResolver } from '@/hooks/useProfileNameResolver';
 
 interface Props {
   progress: ParentTrainingProgress[];
@@ -18,6 +19,9 @@ export function AdminAnalyticsTab({ progress, assignments, isLoading, onRefreshP
     onRefreshProgress();
     onRefreshAssignments();
   }, [onRefreshProgress, onRefreshAssignments]);
+
+  const userIds = useMemo(() => progress.map(p => p.parent_user_id).filter(Boolean), [progress]);
+  const { getName } = useProfileNameResolver(userIds);
 
   const stats = useMemo(() => {
     const total = assignments.length;
@@ -107,7 +111,7 @@ export function AdminAnalyticsTab({ progress, assignments, isLoading, onRefreshP
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No progress data yet.</TableCell></TableRow>
               ) : progress.slice(0, 20).map(p => (
                 <TableRow key={p.progress_id}>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{p.parent_user_id.slice(0, 8)}…</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getName(p.parent_user_id) || p.parent_user_id.slice(0, 8) + '…'}</TableCell>
                   <TableCell>
                     <Badge variant={p.completed_at ? 'default' : 'secondary'}>
                       {p.completed_at ? 'Completed' : p.started_at ? 'In Progress' : 'Not Started'}

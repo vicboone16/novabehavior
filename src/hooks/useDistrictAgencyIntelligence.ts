@@ -113,7 +113,21 @@ export function useSupervisorCaseloadDashboard() {
         .from('v_supervisor_caseload_dashboard' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve supervisor names
+      const userIds = [...new Set((data || []).map((d: any) => d.supervisor_user_id).filter(Boolean))];
+      if (userIds.length === 0) return data as any[];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, first_name, last_name')
+        .in('user_id', userIds);
+      const nameMap = new Map((profiles || []).map((p: any) => [
+        p.user_id,
+        p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown'
+      ]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        supervisor_name: nameMap.get(d.supervisor_user_id) || d.supervisor_user_id?.slice(0, 8) + '…',
+      })) as any[];
     },
   });
 }
@@ -126,7 +140,21 @@ export function useStaffingCapacityVsLoad() {
         .from('v_staffing_capacity_vs_load' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve staff names
+      const userIds = [...new Set((data || []).map((d: any) => d.user_id).filter(Boolean))];
+      if (userIds.length === 0) return data as any[];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, first_name, last_name')
+        .in('user_id', userIds);
+      const nameMap = new Map((profiles || []).map((p: any) => [
+        p.user_id,
+        p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown'
+      ]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        staff_name: nameMap.get(d.user_id) || d.user_id?.slice(0, 8) + '…',
+      })) as any[];
     },
   });
 }
@@ -139,7 +167,20 @@ export function useEntityClientCounts() {
         .from('v_entity_client_counts' as any)
         .select('*');
       if (error) throw error;
-      return data as any[];
+      // Resolve entity names
+      const entityIds = [...new Set((data || []).map((d: any) => d.entity_id).filter(Boolean))];
+      if (entityIds.length === 0) return data as any[];
+      const { data: entities } = await supabase
+        .from('org_entities' as any)
+        .select('id, name, entity_type')
+        .in('id', entityIds);
+      const nameMap = new Map((entities || []).map((e: any) => [e.id, e.name]));
+      const typeMap = new Map((entities || []).map((e: any) => [e.id, e.entity_type]));
+      return (data || []).map((d: any) => ({
+        ...d,
+        entity_name: nameMap.get(d.entity_id) || d.entity_id?.slice(0, 8) + '…',
+        entity_type: typeMap.get(d.entity_id) || 'unknown',
+      })) as any[];
     },
   });
 }
