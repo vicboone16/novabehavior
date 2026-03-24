@@ -66,9 +66,16 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const d = dash || {} as any;
   const sessionId = d.latest_scored_session_id;
 
-  const redPrograms = programs?.filter((p: any) => p.day_state === 'red') || [];
-  const yellowPrograms = programs?.filter((p: any) => p.day_state === 'yellow') || [];
-  const greenPrograms = programs?.filter((p: any) => p.day_state === 'green') || [];
+  const hasState = (p: any, state: string) => {
+    const vis = Array.isArray(p.state_visibility) ? p.state_visibility : [];
+    if (vis.length > 0) return vis.includes(state);
+    const stm = p.state_target_map && typeof p.state_target_map === 'object' ? p.state_target_map : {};
+    return !!stm[state];
+  };
+  const redPrograms = programs?.filter((p: any) => hasState(p, 'red')) || [];
+  const yellowPrograms = programs?.filter((p: any) => hasState(p, 'yellow')) || [];
+  const greenPrograms = programs?.filter((p: any) => hasState(p, 'green')) || [];
+  const bluePrograms = programs?.filter((p: any) => hasState(p, 'blue')) || [];
 
   return (
     <div className="space-y-4">
@@ -248,13 +255,15 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-3">
-            <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">Red: {d.red_programs || 0}</Badge>
-            <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">Yellow: {d.yellow_programs || 0}</Badge>
-            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs">Green: {d.green_programs || 0}</Badge>
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">Red: {redPrograms.length}</Badge>
+            <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs">Yellow: {yellowPrograms.length}</Badge>
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs">Green: {greenPrograms.length}</Badge>
+            {bluePrograms.length > 0 && <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs">Blue: {bluePrograms.length}</Badge>}
           </div>
           {[{ label: 'Red', programs: redPrograms, color: 'border-red-300' },
             { label: 'Yellow', programs: yellowPrograms, color: 'border-yellow-300' },
-            { label: 'Green', programs: greenPrograms, color: 'border-green-300' }
+            { label: 'Green', programs: greenPrograms, color: 'border-green-300' },
+            { label: 'Blue', programs: bluePrograms, color: 'border-blue-300' },
           ].map(group => group.programs.length > 0 && (
             <Collapsible key={group.label} defaultOpen={false}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium py-1 hover:text-primary w-full">
@@ -263,7 +272,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
               <CollapsibleContent>
                 <div className="space-y-1.5 pl-5 mt-1">
                   {group.programs.map((p: any) => (
-                    <div key={p.id} className={`text-xs border-l-2 ${group.color} pl-2 py-1 flex items-center justify-between`}>
+                    <div key={p.programming_assignment_id || p.program_name} className={`text-xs border-l-2 ${group.color} pl-2 py-1 flex items-center justify-between`}>
                       <div>
                         <span className="font-medium">{p.program_name}</span>
                         {p.is_preferred_default && <Star className="w-3 h-3 inline ml-1 text-yellow-500" />}
