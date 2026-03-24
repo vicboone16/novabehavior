@@ -197,6 +197,19 @@ Deno.serve(async (req) => {
 
     // Assign to agency (membership)
     if (agency_id) {
+      // Check if user already has other memberships — demo agency should not be primary
+      const DEMO_AGENCY_ID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+      const { data: existingMemberships } = await supabaseAdmin
+        .from("agency_memberships")
+        .select("agency_id")
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      const hasNonDemoMembership = (existingMemberships || []).some(m => m.agency_id !== DEMO_AGENCY_ID);
+      const isDemoAgency = agency_id === DEMO_AGENCY_ID;
+      // Only set primary if no existing memberships, or this is a non-demo agency
+      const shouldBePrimary = !existingMemberships?.length || (!isDemoAgency && !hasNonDemoMembership);
+
       const { error: membershipError } = await supabaseAdmin
         .from("agency_memberships")
         .insert({
@@ -204,10 +217,20 @@ Deno.serve(async (req) => {
           agency_id,
           role: role === "admin" ? "admin" : "staff",
           status: "active",
-          is_primary: true,
+          is_primary: shouldBePrimary,
           joined_at: new Date().toISOString(),
           invited_by: callerUser.id,
         });
+
+      // If we just added a non-demo agency and demo was primary, flip primary
+      if (!membershipError && !isDemoAgency) {
+        await supabaseAdmin
+          .from("agency_memberships")
+          .update({ is_primary: false })
+          .eq("user_id", userId)
+          .eq("agency_id", DEMO_AGENCY_ID)
+          .eq("is_primary", true);
+      }
 
       if (membershipError) {
         console.error("Agency membership error:", membershipError);
