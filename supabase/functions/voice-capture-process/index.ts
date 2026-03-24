@@ -725,20 +725,20 @@ RULES:
     }
 
     // ── Finalize ──
-    await supabase.from("voice_recordings").update({
+    await supabaseAdmin.from("voice_recordings").update({
       status: fullTranscriptText ? "review_ready" : "audio_secured",
       ai_status: fullTranscriptText ? "completed" : "pending",
     }).eq("id", recording_id);
 
     if (aiRun) {
-      await supabase.from("voice_ai_runs").update({
+      await supabaseAdmin.from("voice_ai_runs").update({
         status: "completed",
         completed_at: new Date().toISOString(),
       }).eq("id", aiRun.id);
     }
 
     // Audit
-    await supabase.from("voice_audit_log").insert({
+    await supabaseAdmin.from("voice_audit_log").insert({
       recording_id,
       user_id: userId,
       action_type: "processing_completed",
