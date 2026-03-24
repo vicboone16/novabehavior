@@ -56,6 +56,8 @@ const SOURCE_CONFIG = {
   curriculum: { label: 'Curriculum', icon: BookOpen, color: 'bg-purple-100 text-purple-700' },
   org_template: { label: 'Org Goal', icon: Building2, color: 'bg-blue-100 text-blue-700' },
   custom: { label: 'Custom', icon: Pencil, color: 'bg-gray-100 text-gray-700' },
+  behavior: { label: 'Behavior', icon: Activity, color: 'bg-red-100 text-red-700' },
+  bops: { label: 'BOPS', icon: Shield, color: 'bg-blue-100 text-blue-700' },
 };
 
 const FALLBACK_SOURCE = { label: 'Other', icon: Link2, color: 'bg-muted text-muted-foreground' };
