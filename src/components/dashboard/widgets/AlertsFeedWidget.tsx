@@ -1,7 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { useCIAlertFeed } from '@/hooks/useClinicalIntelligence';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
@@ -16,12 +17,23 @@ const severityColors: Record<string, string> = {
   info: 'bg-blue-500 text-white',
 };
 
+function getAlertRoute(alert: any): string | null {
+  if (!alert.client_id) return null;
+  const base = `/students/${alert.client_id}`;
+  const domain = alert.domain || '';
+  if (domain === 'skill' || domain === 'behavior' || domain === 'programming') return base + '?tab=programming';
+  if (domain === 'caregiver') return base + '?tab=caregiver-training';
+  return base + '?tab=intelligence';
+}
+
 export function AlertsFeedWidget() {
+  const navigate = useNavigate();
   const { currentAgency } = useAgencyContext();
   const { user } = useAuth();
   const { alerts, loading, resolveAlert } = useCIAlertFeed(currentAgency?.id || null);
 
-  const handleResolve = async (alertId: string) => {
+  const handleResolve = async (e: React.MouseEvent, alertId: string) => {
+    e.stopPropagation();
     if (!user) return;
     const ok = await resolveAlert(alertId, user.id);
     if (ok) toast.success('Alert resolved');
@@ -34,25 +46,39 @@ export function AlertsFeedWidget() {
 
   return (
     <div className="space-y-2">
-      {unresolved.slice(0, 10).map(alert => (
-        <div key={alert.alert_id} className="flex items-start gap-2 p-2 rounded-md border border-border/50 hover:bg-muted/30 transition-colors">
-          <Badge className={`${severityColors[alert.severity] || 'bg-muted'} text-[10px] shrink-0 mt-0.5`}>
-            {alert.severity}
-          </Badge>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm leading-tight">{alert.message}</p>
-            <div className="flex items-center gap-2 mt-1">
-              {alert.client_name && <span className="text-xs text-muted-foreground">{alert.client_name}</span>}
-              <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
-              </span>
+      {unresolved.slice(0, 10).map(alert => {
+        const route = getAlertRoute(alert);
+        return (
+          <div
+            key={alert.alert_id}
+            className={`flex items-start gap-2 p-2 rounded-md border border-border/50 transition-colors ${route ? 'cursor-pointer hover:bg-muted/50' : 'hover:bg-muted/30'}`}
+            onClick={() => route && navigate(route)}
+          >
+            <Badge className={`${severityColors[alert.severity] || 'bg-muted'} text-[10px] shrink-0 mt-0.5`}>
+              {alert.severity}
+            </Badge>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm leading-tight">{alert.message}</p>
+              <div className="flex items-center gap-2 mt-1">
+                {alert.client_name && <span className="text-xs text-muted-foreground">{alert.client_name}</span>}
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0">
+              {route && (
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); navigate(route); }}>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleResolve(e, alert.alert_id)}>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleResolve(alert.alert_id)}>
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
