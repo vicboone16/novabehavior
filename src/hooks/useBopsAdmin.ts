@@ -11,8 +11,13 @@ export function useBopsAdminAccess() {
     queryKey: ['bops-admin-access', user?.id],
     queryFn: async () => {
       if (!user) return false;
-      const { data } = await db.from('bops_admin_users').select('is_admin').eq('user_id', user.id).maybeSingle();
-      return data?.is_admin === true;
+      // Check bops_admin_users table
+      const { data: bopsAdmin } = await db.from('bops_admin_users').select('is_admin').eq('user_id', user.id).maybeSingle();
+      if (bopsAdmin?.is_admin === true) return true;
+      // Also grant access to super_admin and admin roles
+      const { data: roles } = await db.from('user_roles').select('role').eq('user_id', user.id);
+      if (roles?.some((r: any) => r.role === 'super_admin' || r.role === 'admin')) return true;
+      return false;
     },
     enabled: !!user,
   });
