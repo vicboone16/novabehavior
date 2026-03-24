@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText } from 'lucide-react';
+import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText, Zap, Shield } from 'lucide-react';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -21,16 +21,29 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useDataStore } from '@/store/dataStore';
 import AssessmentDashboard from '@/pages/AssessmentDashboard';
 import { IEPDashboard } from '@/components/iep/IEPDashboard';
+import { BopsEngineConsole } from '@/components/bops/BopsEngineConsole';
+import { BopsFrameworkSetup } from '@/components/bops/BopsFrameworkSetup';
+import { BopsStudentHub } from '@/components/bops/BopsStudentHub';
+import { BopsSubmissionReview } from '@/components/bops/BopsSubmissionReview';
+import { useBopsAdminAccess } from '@/hooks/useBopsAdmin';
+import { Loader2 } from 'lucide-react';
+
+const BopsAdminOverview = lazy(() => import('@/components/bops-admin/BopsAdminOverview').then(m => ({ default: m.BopsAdminOverview })));
+const BopsAdminStudents = lazy(() => import('@/components/bops-admin/BopsAdminStudents').then(m => ({ default: m.BopsAdminStudents })));
+const BopsAdminClassrooms = lazy(() => import('@/components/bops-admin/BopsAdminClassrooms').then(m => ({ default: m.BopsAdminClassrooms })));
+const BopsAdminCoverage = lazy(() => import('@/components/bops-admin/BopsAdminCoverage').then(m => ({ default: m.BopsAdminCoverage })));
+const BopsAdminTools = lazy(() => import('@/components/bops-admin/BopsAdminTools').then(m => ({ default: m.BopsAdminTools })));
 
 type ViewMode = 'grid' | 'rows' | 'tabs';
 
 export default function Clinical() {
   const [activeTab, setActiveTab] = useState('sessions');
+  const { data: isAdmin } = useBopsAdminAccess();
 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-muted/50">
+        <TabsList className="bg-muted/50 flex-wrap h-auto gap-0.5">
           <TabsTrigger value="sessions" className="gap-1.5">
             <ClipboardList className="w-3.5 h-3.5" />
             Sessions
@@ -43,6 +56,16 @@ export default function Clinical() {
             <FileText className="w-3.5 h-3.5" />
             IEP
           </TabsTrigger>
+          <TabsTrigger value="bops" className="gap-1.5">
+            <Zap className="w-3.5 h-3.5" />
+            BOPS Engine
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="bops-admin" className="gap-1.5">
+              <Shield className="w-3.5 h-3.5" />
+              BOPS Admin
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="sessions">
@@ -54,6 +77,59 @@ export default function Clinical() {
         <TabsContent value="iep">
           <IEPDashboard />
         </TabsContent>
+        <TabsContent value="bops">
+          <BopsEngineContent />
+        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="bops-admin">
+            <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>}>
+              <BopsAdminContent />
+            </Suspense>
+          </TabsContent>
+        )}
+      </Tabs>
+    </div>
+  );
+}
+
+function BopsEngineContent() {
+  const [subTab, setSubTab] = useState('engine');
+  return (
+    <div className="space-y-4">
+      <Tabs value={subTab} onValueChange={setSubTab}>
+        <TabsList>
+          <TabsTrigger value="engine" className="gap-1.5"><LayoutGrid className="w-3.5 h-3.5" />Engine Console</TabsTrigger>
+          <TabsTrigger value="students" className="gap-1.5"><List className="w-3.5 h-3.5" />Student Profiles</TabsTrigger>
+          <TabsTrigger value="framework" className="gap-1.5"><Shield className="w-3.5 h-3.5" />Framework Setup</TabsTrigger>
+          <TabsTrigger value="submissions" className="gap-1.5"><FileText className="w-3.5 h-3.5" />Beacon Submissions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="engine"><BopsEngineConsole /></TabsContent>
+        <TabsContent value="students"><BopsStudentHub /></TabsContent>
+        <TabsContent value="framework"><BopsFrameworkSetup /></TabsContent>
+        <TabsContent value="submissions"><BopsSubmissionReview /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function BopsAdminContent() {
+  const [subTab, setSubTab] = useState('overview');
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">BOPS Admin Console</h2>
+      <Tabs value={subTab} onValueChange={setSubTab}>
+        <TabsList className="flex-wrap h-auto gap-0.5">
+          <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+          <TabsTrigger value="students" className="text-xs">Students</TabsTrigger>
+          <TabsTrigger value="classrooms" className="text-xs">Classrooms</TabsTrigger>
+          <TabsTrigger value="coverage" className="text-xs">Coverage</TabsTrigger>
+          <TabsTrigger value="tools" className="text-xs">Tools</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview"><BopsAdminOverview /></TabsContent>
+        <TabsContent value="students"><BopsAdminStudents /></TabsContent>
+        <TabsContent value="classrooms"><BopsAdminClassrooms /></TabsContent>
+        <TabsContent value="coverage"><BopsAdminCoverage /></TabsContent>
+        <TabsContent value="tools"><BopsAdminTools /></TabsContent>
       </Tabs>
     </div>
   );
