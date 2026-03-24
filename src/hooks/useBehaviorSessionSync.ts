@@ -1,0 +1,146 @@
+import { useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useDataStore } from '@/store/dataStore';
+
+/**
+ * Syncs behavior_session_data from the database into the local Zustand store
+ * so that behavior graphs render server-side data (e.g. data inserted via migrations or AI).
+ */
+export function useBehaviorSessionSync(clientId: string | undefined) {
+  const syncedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!clientId || syncedRef.current === clientId) return;
+    syncedRef.current = clientId;
+
+    const fetchAndMerge = async () => {
+      try {
+        // Fetch behavior_session_data with behavior name
+        const { data: rows, error } = await supabase
+          .from('behavior_session_data')
+          .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions!inner(start_time)')
+          .eq('student_id', clientId)
+          .eq('data_state', 'measured')
+          .order('created_at', { ascending: true })
+          .limit(500);
+
+        if (error || !rows || rows.length === 0) {
+          // Fallback: try without inner join
+          const { data: fallbackRows, error: fallbackError } = await supabase
+            .from('behavior_session_data')
+            .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at')
+            .eq('student_id', clientId)
+            .eq('data_state', 'measured')
+            .order('created_at', { ascending: true })
+            .limit(500);
+          
+          if (fallbackError || !fallbackRows || fallbackRows.length === 0) return;
+          
+          mergeRows(fallbackRows, clientId);
+          return;
+        }
+
+        mergeRows(rows, clientId);
+      } catch (err) {
+        console.warn('[BehaviorSessionSync] Failed:', err);
+      }
+    };
+
+    fetchAndMerge();
+  }, [clientId]);
+}
+
+function mergeRows(rows: any[], clientId: string) {
+  const store = useDataStore.getState();
+  const existingIds = new Set(
+    store.frequencyEntries
+      .filter(e => e.studentId === clientId)
+      .map(e => e.id)
+  );
+
+  // Get behavior names from student_behavior_map or behaviors
+  const student = store.students.find(s => s.id === clientId);
+  const behaviorMap = new Map<string, string>();
+  if (student) {
+    for (const b of student.behaviors) {
+      behaviorMap.set(b.id, b.name);
+    }
+  }
+
+  // Also fetch behavior names from behavior_id mapping
+  const newFrequencyEntries = rows
+    .filter(r => r.frequency != null && r.frequency > 0 && !existingIds.has(`bsd-${r.id}`))
+    .map(r => ({
+      id: `bsd-${r.id}`,
+      studentId: clientId,
+      behaviorId: r.behavior_id,
+      count: r.frequency,
+      timestamp: (r as any).sessions?.start_time || r.created_at,
+      notes: '',
+    }));
+
+  const newDurationEntries = rows
+    .filter(r => r.duration_seconds != null && r.duration_seconds > 0)
+    .map(r => ({
+      id: `bsd-dur-${r.id}`,
+      studentId: clientId,
+      behaviorId: r.behavior_id,
+      durationMs: r.duration_seconds * 1000,
+      timestamp: (r as any).sessions?.start_time || r.created_at,
+      notes: '',
+    }));
+
+  // Ensure student has the behavior in their behavior list
+  if (student) {
+    const existingBehaviorIds = new Set(student.behaviors.map(b => b.id));
+    const missingBehaviorIds = new Set<string>();
+    
+    for (const r of rows) {
+      if (!existingBehaviorIds.has(r.behavior_id)) {
+        missingBehaviorIds.add(r.behavior_id);
+      }
+    }
+
+    if (missingBehaviorIds.size > 0) {
+      // Fetch behavior names
+      supabase
+        .from('behaviors')
+        .select('id, name')
+        .in('id', Array.from(missingBehaviorIds))
+        .then(({ data: behaviors }) => {
+          if (!behaviors) return;
+          const behaviorsToAdd = behaviors.map(b => ({
+            id: b.id,
+            name: b.name,
+            type: 'frequency' as const,
+            methods: ['frequency'] as any[],
+          }));
+          
+          if (behaviorsToAdd.length > 0) {
+            useDataStore.setState(state => ({
+              students: state.students.map(s =>
+                s.id === clientId
+                  ? { ...s, behaviors: [...s.behaviors, ...behaviorsToAdd as any] }
+                  : s
+              ),
+            } as any));
+            console.log(`[BehaviorSessionSync] Added ${behaviorsToAdd.length} behaviors for graphing`);
+          }
+        });
+    }
+  }
+
+  if (newFrequencyEntries.length > 0) {
+    useDataStore.setState(state => ({
+      frequencyEntries: [...state.frequencyEntries, ...newFrequencyEntries],
+    } as any));
+    console.log(`[BehaviorSessionSync] Merged ${newFrequencyEntries.length} frequency entries for client ${clientId}`);
+  }
+
+  if (newDurationEntries.length > 0) {
+    useDataStore.setState(state => ({
+      durationEntries: [...state.durationEntries, ...newDurationEntries],
+    } as any));
+    console.log(`[BehaviorSessionSync] Merged ${newDurationEntries.length} duration entries for client ${clientId}`);
+  }
+}

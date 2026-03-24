@@ -165,7 +165,7 @@ function BopsProgramCard({
                     <Badge variant="secondary" className="text-[10px]">{program.domain}</Badge>
                   )}
                   {skillImported && <Badge variant="default" className="text-[10px]">In Programs</Badge>}
-                  {targetsImported && <Badge variant="outline" className="text-[10px]">In Flat Targets</Badge>}
+                  {targetsImported && <Badge variant="outline" className="text-[10px]">In Individual Targets</Badge>}
                   {protocolImported && <Badge variant="secondary" className="text-[10px]">In Protocols</Badge>}
                 </div>
                 {program.teacher_friendly_summary && (
@@ -198,7 +198,7 @@ function BopsProgramCard({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateTargets} disabled={busy}>
                 <ListChecks className="w-4 h-4 mr-2" />
-                Send to Flat Targets
+                Send to Individual Targets
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateProtocol} disabled={busy}>
                 <ArrowRightLeft className="w-4 h-4 mr-2" />
@@ -404,13 +404,13 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
         }));
 
       if (rows.length === 0) {
-        toast.info('These BOPS targets are already in Flat Targets');
+        toast.info('These BOPS targets are already in Individual Targets');
         return;
       }
 
       await bulkAddTargets(rows);
       onAllocated?.();
-      toast.success('BOPS targets sent to Flat Targets');
+      toast.success('BOPS targets sent to Individual Targets');
     } finally {
       setBusyKey(null);
     }

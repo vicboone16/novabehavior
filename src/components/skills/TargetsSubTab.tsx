@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import {
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
-  ListChecks, FolderTree,
+  ListChecks, FolderTree, Activity, Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +56,8 @@ const SOURCE_CONFIG = {
   curriculum: { label: 'Curriculum', icon: BookOpen, color: 'bg-purple-100 text-purple-700' },
   org_template: { label: 'Org Goal', icon: Building2, color: 'bg-blue-100 text-blue-700' },
   custom: { label: 'Custom', icon: Pencil, color: 'bg-gray-100 text-gray-700' },
+  behavior: { label: 'Behavior', icon: Activity, color: 'bg-red-100 text-red-700' },
+  bops: { label: 'BOPS', icon: Shield, color: 'bg-blue-100 text-blue-700' },
 };
 
 const FALLBACK_SOURCE = { label: 'Other', icon: Link2, color: 'bg-muted text-muted-foreground' };
@@ -108,7 +110,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 <FolderTree className="w-3 h-3 mr-1" /> Programs
               </TabsTrigger>
               <TabsTrigger value="legacy" className="text-xs h-7 px-3">
-                <ListChecks className="w-3 h-3 mr-1" /> Flat Targets
+                <ListChecks className="w-3 h-3 mr-1" /> Individual Targets
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -116,7 +118,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
             {programs.length} programs
           </Badge>
           <Badge variant="secondary" className="text-xs">
-            {targets.length} legacy targets
+            {targets.length} individual targets
           </Badge>
         </div>
 
@@ -136,7 +138,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
                 <Pencil className="w-4 h-4 mr-2" />
-                Create Legacy Target
+                Create Individual Target
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
                 <BookOpen className="w-4 h-4 mr-2" />

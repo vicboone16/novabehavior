@@ -103,10 +103,12 @@ import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-rea
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StudentBopsTab } from '@/components/bops/StudentBopsTab';
 import { useSupabaseAbcSync } from '@/hooks/useSupabaseAbcSync';
+import { useBehaviorSessionSync } from '@/hooks/useBehaviorSessionSync';
 
 export default function StudentProfile() {
   const { studentId } = useParams<{ studentId: string }>();
   useSupabaseAbcSync(studentId);
+  useBehaviorSessionSync(studentId);
   const navigate = useNavigate();
   const { 
     students, 
@@ -789,11 +791,8 @@ export default function StudentProfile() {
 
         {/* ====== PROGRAMMING TAB ====== */}
         <TabsContent value="programming" className="space-y-4">
-          {/* Intelligence cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <SkillMasteryIntelligenceCard studentId={student.id} />
-            <ReplacementBehaviorCard studentId={student.id} />
-          </div>
+          {/* Combined Intelligence Banner */}
+          <SkillMasteryIntelligenceCard studentId={student.id} />
           <ProgrammingIntelligenceSection studentId={student.id} />
           <ProgrammingModule
             studentId={student.id}
