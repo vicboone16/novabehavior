@@ -235,17 +235,18 @@ export function FeatureTour() {
         </div>
       </div>
 
-      {/* ── Teacher Benefits Strip ── */}
+      {/* ── Audience Benefits Strip ── */}
       <div className="space-y-4">
         <div className="text-center">
-          <h3 className="text-lg font-display font-bold">Why Teachers Love NovaTrack</h3>
+          <h3 className="text-lg font-display font-bold">Why ABA Agencies, Clinicians & School Districts Love It</h3>
+          <p className="text-xs text-muted-foreground mt-1">Built for the speed of a real classroom and the rigor clinicians demand</p>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {TEACHER_BENEFITS.map(b => (
-            <Card key={b.label} className="rounded-2xl border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {AUDIENCE_BENEFITS.map(b => (
+            <Card key={b.label} className="rounded-2xl border-primary/20 bg-primary/5 dark:bg-primary/10">
               <CardContent className="py-4 flex flex-col items-center text-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                  <b.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                  <b.icon className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-sm font-semibold">{b.label}</p>
                 <p className="text-xs text-muted-foreground">{b.desc}</p>
