@@ -389,7 +389,7 @@ function StaffingOptimizationTab() {
               <TableBody>
                 {(capacity || []).map((c: any) => (
                   <TableRow key={c.user_id}>
-                    <TableCell className="font-medium">{c.user_id?.slice(0, 8)}…</TableCell>
+                    <TableCell className="font-medium">{c.staff_name || 'Unknown Staff'}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs capitalize">{c.primary_role}</Badge></TableCell>
                     <TableCell className="text-right font-mono">{c.max_clients}</TableCell>
                     <TableCell className="text-right font-mono">{c.assigned_clients}</TableCell>
