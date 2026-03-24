@@ -75,7 +75,7 @@ export function PTSessionLogsTab({ sessionLogs, modules, isLoading, onRefresh, o
                     <TableCell><Badge variant="outline">{l.service_code}</Badge></TableCell>
                     <TableCell>{l.duration_minutes}m</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{l.module_title || '—'}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{l.parent_user_id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{getName(l.parent_user_id) || l.parent_user_id.slice(0, 8) + '…'}</TableCell>
                     <TableCell className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{l.session_summary || '—'}</TableCell>
                   </TableRow>
                 ))}
