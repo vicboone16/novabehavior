@@ -111,7 +111,7 @@ export function AdminAnalyticsTab({ progress, assignments, isLoading, onRefreshP
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No progress data yet.</TableCell></TableRow>
               ) : progress.slice(0, 20).map(p => (
                 <TableRow key={p.progress_id}>
-                  <TableCell className="text-xs font-mono text-muted-foreground">{p.parent_user_id.slice(0, 8)}…</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getName(p.parent_user_id) || p.parent_user_id.slice(0, 8) + '…'}</TableCell>
                   <TableCell>
                     <Badge variant={p.completed_at ? 'default' : 'secondary'}>
                       {p.completed_at ? 'Completed' : p.started_at ? 'In Progress' : 'Not Started'}
