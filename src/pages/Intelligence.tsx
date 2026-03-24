@@ -331,6 +331,10 @@ export default function Intelligence() {
               <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">{classroomSummaries.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="district-agency">
+            <Building2 className="w-4 h-4 mr-1" />
+            District & Agency
+          </TabsTrigger>
         </TabsList>
 
         {/* Caseload Tab */}
