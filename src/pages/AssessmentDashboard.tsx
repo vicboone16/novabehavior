@@ -45,6 +45,8 @@ import { Vineland3NormImport } from '@/components/assessment/Vineland3NormImport
 import { useAuth } from '@/contexts/AuthContext';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
+import BopsEngine from '@/pages/BopsEngine';
+import { Shield } from 'lucide-react';
 
 // FBA Workflow Steps
 const FBA_WORKFLOW_STEPS = [
