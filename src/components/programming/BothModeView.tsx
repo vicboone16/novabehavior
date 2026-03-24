@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Target, Activity, Plus, Shield } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,9 +32,45 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
 
   if (!student) return null;
 
+  const skillCount = (student.skillTargets || []).length + bopsCount;
+  const behaviorCount = student.behaviors.length;
+
   return (
-    <div className="space-y-4 overflow-y-auto">
-      <div className="flex items-center justify-end">
+    <div className="space-y-3 overflow-y-auto">
+      {/* Compact summary bar + view toggle */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setDetailView('skills')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              detailView === 'skills'
+                ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
+                : 'text-muted-foreground hover:bg-muted'
+            )}
+          >
+            <Target className="w-4 h-4" />
+            <span>{skillCount} Targets</span>
+          </button>
+          <button
+            onClick={() => setDetailView('behaviors')}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              detailView === 'behaviors'
+                ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
+                : 'text-muted-foreground hover:bg-muted'
+            )}
+          >
+            <Activity className="w-4 h-4" />
+            <span>{behaviorCount} Behaviors</span>
+          </button>
+          {bopsCount > 0 && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Shield className="w-3 h-3" />
+              {bopsCount} BOPS
+            </Badge>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" className="gap-1.5">
@@ -53,61 +89,6 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card
-          className={cn(
-            'cursor-pointer transition-colors hover:bg-muted/50',
-            detailView === 'skills' && 'ring-2 ring-primary/50'
-          )}
-          onClick={() => setDetailView('skills')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" />
-              Skill Targets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{(student.skillTargets || []).length + bopsCount}</p>
-            <p className="text-xs text-muted-foreground">active targets</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className={cn(
-            'cursor-pointer transition-colors hover:bg-muted/50',
-            detailView === 'behaviors' && 'ring-2 ring-primary/50'
-          )}
-          onClick={() => setDetailView('behaviors')}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" />
-              Behaviors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{student.behaviors.length}</p>
-            <p className="text-xs text-muted-foreground">tracked behaviors</p>
-          </CardContent>
-        </Card>
-
-        {bopsCount > 0 && (
-          <Card className="col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary" />
-                BOPS Programs
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{bopsCount}</p>
-              <p className="text-xs text-muted-foreground">available for allocation in Targets → Programs</p>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {detailView === 'skills' ? (
