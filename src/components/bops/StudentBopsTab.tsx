@@ -167,7 +167,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         <Card>
           <CardContent className="pt-4">
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => navigate('/bops-engine')}>
+              <Button size="sm" variant="outline" onClick={() => navigate('/bops')}>
                 Open Full Assessment
               </Button>
               {sessionId && (
