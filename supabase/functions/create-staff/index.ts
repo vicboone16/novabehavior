@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         .insert({
           user_id: userId,
           agency_id,
-          role: role === "admin" ? "admin" : "member",
+          role: role === "admin" ? "admin" : "staff",
           status: "active",
           is_primary: true,
           joined_at: new Date().toISOString(),
