@@ -198,7 +198,7 @@ function BopsProgramCard({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateTargets} disabled={busy}>
                 <ListChecks className="w-4 h-4 mr-2" />
-                Send to Flat Targets
+                Send to Individual Targets
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onAllocateProtocol} disabled={busy}>
                 <ArrowRightLeft className="w-4 h-4 mr-2" />
