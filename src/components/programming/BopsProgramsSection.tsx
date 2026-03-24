@@ -327,15 +327,61 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
     fetchAssignments(studentId);
   }, [fetchAssignments, fetchTemplates, studentId]);
 
+  // Consolidate day-state variants (e.g. "Smart Choices - Red", "Smart Choices - Yellow") into parent program
+  const consolidatedPrograms = useMemo(() => {
+    if (!programs) return [];
+    const parentMap = new Map<string, any[]>();
+    
+    for (const program of programs as any[]) {
+      // Strip day-state suffixes to find the base program name
+      const baseName = (program.program_name || '')
+        .replace(/\s*-\s*(Red|Yellow|Green|Blue)$/i, '')
+        .replace(/\s*\((Red|Yellow|Green|Blue)\)$/i, '')
+        .trim();
+      
+      if (!parentMap.has(baseName)) parentMap.set(baseName, []);
+      parentMap.get(baseName)!.push(program);
+    }
+
+    // Merge variants into a single consolidated program
+    return Array.from(parentMap.entries()).map(([baseName, variants]) => {
+      if (variants.length === 1) return variants[0];
+
+      // Pick the most complete variant as primary
+      const primary = variants.reduce((best, v) =>
+        (v.clinician_summary?.length || 0) > (best.clinician_summary?.length || 0) ? v : best
+      , variants[0]);
+
+      // Merge state_target_maps from all variants
+      const mergedStateMap: Record<string, any> = {};
+      for (const v of variants) {
+        if (v.state_target_map && typeof v.state_target_map === 'object') {
+          Object.assign(mergedStateMap, v.state_target_map);
+        }
+      }
+
+      // Merge all unique target options
+      const allTargets = [...new Set(variants.flatMap(v => getProgramTargets(v)))];
+
+      return {
+        ...primary,
+        program_name: baseName,
+        state_target_map: Object.keys(mergedStateMap).length > 0 ? mergedStateMap : primary.state_target_map,
+        default_target_options: allTargets,
+        _variant_count: variants.length,
+        _variant_ids: variants.map((v: any) => v.programming_assignment_id),
+      };
+    });
+  }, [programs]);
+
   const groupedByDomain = useMemo(() => {
-    if (!programs) return {} as Record<string, any[]>;
-    return programs.reduce((acc: Record<string, any[]>, program: any) => {
+    return consolidatedPrograms.reduce((acc: Record<string, any[]>, program: any) => {
       const domain = program.domain || 'General';
       if (!acc[domain]) acc[domain] = [];
       acc[domain].push(program);
       return acc;
     }, {});
-  }, [programs]);
+  }, [consolidatedPrograms]);
 
   const resolveDomainId = (domainName?: string | null) => {
     const target = normalize(domainName);
