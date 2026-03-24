@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, Download, FileText, 
   Calendar, Target, CheckCircle2, Clock, Award
