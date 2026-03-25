@@ -14,7 +14,7 @@ const QUICK_CHIPS = [
 const TEMPLATES = [
   { label: '🏆 Win', body: 'Great day today — [Student] showed strong focus and followed directions more independently.' },
   { label: '📈 Pattern', body: 'We noticed [Student] does best when expectations are previewed first. Try doing the same at home!' },
-  { label: '💪 Encouragement', body: 'Today was a little harder, but [Student] showed great recovery. We'll keep supporting that tomorrow.' },
+  { label: '💪 Encouragement', body: "Today was a little harder, but [Student] showed great recovery. We will keep supporting that tomorrow." },
   { label: '🏠 Home Tip', body: 'Please praise [Student] tonight for staying calm during transitions. A quick reward at home would be great!' },
 ];
 
