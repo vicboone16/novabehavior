@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, AlertTriangle, Target, Star, Camera, Settings2, GraduationCap } from "lucide-react";
+import { BarChart3, AlertTriangle, Target, Star, Camera, Settings2, GraduationCap, Scroll, Sparkles, Users } from "lucide-react";
 import { TeacherWeeklySummaryPanel } from "./TeacherWeeklySummaryPanel";
 import { TeacherABCLogsPanel } from "./TeacherABCLogsPanel";
 import { TeacherDataSessionsPanel } from "./TeacherDataSessionsPanel";
@@ -8,6 +8,9 @@ import { TeacherSummaries } from "@/components/TeacherSummaries";
 import { BeaconPointsPanel } from "./BeaconPointsPanel";
 import { ParentSnapshotPanel } from "./ParentSnapshotPanel";
 import { ParentReportConfigPanel } from "@/components/parent-comms/ParentReportConfigPanel";
+import { QuestBoard } from "@/components/quests/QuestBoard";
+import { CosmeticInventory } from "@/components/cosmetics/CosmeticInventory";
+import { TeacherParentEngagement } from "@/components/parent-loop/TeacherParentEngagement";
 
 interface TeacherDataHubProps {
   clientId: string;
