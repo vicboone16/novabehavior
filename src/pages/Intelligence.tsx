@@ -39,6 +39,7 @@ import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelA
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
 import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
+import { LinkedSystemView } from '@/components/intelligence/LinkedSystemView';
 
 const DistrictIntelligence = lazy(() => import('./DistrictIntelligence'));
 
@@ -334,6 +335,10 @@ export default function Intelligence() {
           <TabsTrigger value="district-agency">
             <Building2 className="w-4 h-4 mr-1" />
             District & Agency
+          </TabsTrigger>
+          <TabsTrigger value="linked-system">
+            <Eye className="w-4 h-4 mr-1" />
+            Linked System
           </TabsTrigger>
         </TabsList>
 
@@ -801,6 +806,13 @@ export default function Intelligence() {
           <Suspense fallback={<Loader2 className="animate-spin mx-auto mt-8" />}>
             <DistrictIntelligence />
           </Suspense>
+        </TabsContent>
+
+        <TabsContent value="linked-system" className="space-y-4">
+          <LinkedSystemView 
+            agencyId={effectiveAgencyId}
+            students={caseloadRows.map(r => ({ id: r.client_id, name: r.client_name || r.client_id }))}
+          />
         </TabsContent>
       </Tabs>
     </div>
