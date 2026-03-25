@@ -417,16 +417,18 @@ export function SyncProvider({ children }: SyncProviderProps) {
         const mappedSessions: Session[] = sessionsData.map((session) => {
           const entries = sessionDataEntries?.filter(e => e.session_id === session.id) || [];
           
-          // Use session.start_time as the canonical date (set when the session was started).
-          // This prevents dates from shifting to unrelated entry timestamps.
-          const sessionDate = session.start_time 
-            ? new Date(session.start_time) 
-            : (entries.length > 0
-              ? new Date(entries.reduce((earliest: number, e: any) => {
-                  const t = new Date(e.timestamp).getTime();
-                  return t < earliest ? t : earliest;
-                }, Infinity))
-              : new Date());
+          // Use started_at first (correct for historical imports), then start_time, 
+          // then earliest entry timestamp as fallback.
+          const sessionDate = session.started_at
+            ? new Date(session.started_at)
+            : session.start_time 
+              ? new Date(session.start_time) 
+              : (entries.length > 0
+                ? new Date(entries.reduce((earliest: number, e: any) => {
+                    const t = new Date(e.timestamp).getTime();
+                    return t < earliest ? t : earliest;
+                  }, Infinity))
+                : new Date());
           
           // Back-fill studentIds in-memory if the DB array is empty but entries exist.
           // This fixes sessions where student_ids = [] due to a failed presence-sync.
