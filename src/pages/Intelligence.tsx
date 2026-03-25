@@ -39,6 +39,7 @@ import { ClinicalIntelAlertList } from '@/components/intelligence/ClinicalIntelA
 import { useClinicalIntelligenceAlerts } from '@/hooks/useClinicalIntelligenceAlerts';
 import { useClassroomSummaries } from '@/hooks/useClassroomToday';
 import { BeaconActivityKPIs } from '@/components/intelligence/BeaconActivityKPIs';
+import { LinkedSystemView } from '@/components/intelligence/LinkedSystemView';
 
 const DistrictIntelligence = lazy(() => import('./DistrictIntelligence'));
 
