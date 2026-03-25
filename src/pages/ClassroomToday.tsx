@@ -51,16 +51,21 @@ export default function ClassroomToday() {
   const returnTo = searchParams.get('from') || '/intelligence';
 
   const [classroomName, setClassroomName] = useState('Classroom');
+  const [agencyId, setAgencyId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [autoScroll, setAutoScroll] = useState(true);
   const streamRef = useRef<HTMLDivElement>(null);
 
   const { snapshot, students, events, flags, loading, refresh } = useClassroomTodayDrilldown(classroomId || null);
+  const { staff, myPresence, loading: presenceLoading, checkIn, checkOut, setAvailability, moveStaff } = useStaffPresence(agencyId, classroomId);
 
   useEffect(() => {
     if (!classroomId) return;
-    supabase.from('classrooms').select('name').eq('id', classroomId).maybeSingle().then(({ data }) => {
-      if (data) setClassroomName(data.name);
+    supabase.from('classrooms').select('name, agency_id').eq('id', classroomId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setClassroomName(data.name);
+        setAgencyId(data.agency_id);
+      }
     });
   }, [classroomId]);
 
