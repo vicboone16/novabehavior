@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { FileText, RefreshCw, Lock, Unlock, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, RefreshCw, Lock, Unlock, Save, ChevronDown, ChevronUp, ArrowUp, ArrowDown, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
