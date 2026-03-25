@@ -41289,6 +41289,69 @@ export type Database = {
           },
         ]
       }
+      reward_economy_settings: {
+        Row: {
+          agency_id: string
+          bonus_windows_enabled: boolean
+          classroom_id: string | null
+          cooldown_pricing_enabled: boolean
+          created_at: string
+          demand_pricing_enabled: boolean
+          dynamic_pricing_enabled: boolean
+          id: string
+          max_price: number
+          min_price: number
+          overuse_price_increase: number
+          overuse_threshold: number
+          reset_cycle: string
+          scarcity_enabled: boolean
+          settings_json: Json
+          underuse_price_decrease: number
+          underuse_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          bonus_windows_enabled?: boolean
+          classroom_id?: string | null
+          cooldown_pricing_enabled?: boolean
+          created_at?: string
+          demand_pricing_enabled?: boolean
+          dynamic_pricing_enabled?: boolean
+          id?: string
+          max_price?: number
+          min_price?: number
+          overuse_price_increase?: number
+          overuse_threshold?: number
+          reset_cycle?: string
+          scarcity_enabled?: boolean
+          settings_json?: Json
+          underuse_price_decrease?: number
+          underuse_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          bonus_windows_enabled?: boolean
+          classroom_id?: string | null
+          cooldown_pricing_enabled?: boolean
+          created_at?: string
+          demand_pricing_enabled?: boolean
+          dynamic_pricing_enabled?: boolean
+          id?: string
+          max_price?: number
+          min_price?: number
+          overuse_price_increase?: number
+          overuse_threshold?: number
+          reset_cycle?: string
+          scarcity_enabled?: boolean
+          settings_json?: Json
+          underuse_price_decrease?: number
+          underuse_threshold?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reward_effectiveness_observations: {
         Row: {
           behavior_delta: number | null
@@ -41338,6 +41401,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reward_inventory: {
+        Row: {
+          agency_id: string
+          classroom_id: string | null
+          id: string
+          is_limited: boolean
+          quantity_available: number
+          quantity_reserved: number
+          reward_id: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          classroom_id?: string | null
+          id?: string
+          is_limited?: boolean
+          quantity_available?: number
+          quantity_reserved?: number
+          reward_id: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          classroom_id?: string | null
+          id?: string
+          is_limited?: boolean
+          quantity_available?: number
+          quantity_reserved?: number
+          reward_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       reward_transactions: {
         Row: {
