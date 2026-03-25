@@ -960,7 +960,8 @@ export const useDataStore = create<DataState>()(
           ),
           // Remove source from global bank if it was there
           globalBehaviorBank: s.globalBehaviorBank.filter((b) => b.id !== sourceBehaviorId),
-        }));
+        };
+        });
       },
 
       getBehaviorBankDefinition: (behaviorId) => {
