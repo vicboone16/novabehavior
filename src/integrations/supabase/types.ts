@@ -34641,6 +34641,63 @@ export type Database = {
         }
         Relationships: []
       }
+      parent_insights: {
+        Row: {
+          behavior_summary: Json
+          created_at: string
+          headline: string | null
+          id: string
+          insight_date: string
+          insight_type: string
+          points_earned: number
+          points_redeemed: number
+          rewards_summary: Json | null
+          status: string
+          student_id: string
+          teacher_note: string | null
+          trend_data: Json | null
+          updated_at: string
+          what_this_means: string | null
+          what_you_can_do: Json
+        }
+        Insert: {
+          behavior_summary?: Json
+          created_at?: string
+          headline?: string | null
+          id?: string
+          insight_date?: string
+          insight_type?: string
+          points_earned?: number
+          points_redeemed?: number
+          rewards_summary?: Json | null
+          status?: string
+          student_id: string
+          teacher_note?: string | null
+          trend_data?: Json | null
+          updated_at?: string
+          what_this_means?: string | null
+          what_you_can_do?: Json
+        }
+        Update: {
+          behavior_summary?: Json
+          created_at?: string
+          headline?: string | null
+          id?: string
+          insight_date?: string
+          insight_type?: string
+          points_earned?: number
+          points_redeemed?: number
+          rewards_summary?: Json | null
+          status?: string
+          student_id?: string
+          teacher_note?: string | null
+          trend_data?: Json | null
+          updated_at?: string
+          what_this_means?: string | null
+          what_you_can_do?: Json
+        }
+        Relationships: []
+      }
       parent_invite_codes: {
         Row: {
           agency_id: string | null
