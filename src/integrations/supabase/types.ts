@@ -13232,11 +13232,13 @@ export type Database = {
           classroom_id: string
           default_mode_id: string | null
           default_theme_id: string | null
+          game_mode: string | null
           id: string
           leaderboard_enabled: boolean
           privacy_mode: string
           public_class_link_enabled: boolean
           student_portal_enabled: boolean
+          track_id: string | null
           updated_at: string
           use_shared_class_board: boolean
         }
@@ -13247,11 +13249,13 @@ export type Database = {
           classroom_id: string
           default_mode_id?: string | null
           default_theme_id?: string | null
+          game_mode?: string | null
           id?: string
           leaderboard_enabled?: boolean
           privacy_mode?: string
           public_class_link_enabled?: boolean
           student_portal_enabled?: boolean
+          track_id?: string | null
           updated_at?: string
           use_shared_class_board?: boolean
         }
@@ -13262,11 +13266,13 @@ export type Database = {
           classroom_id?: string
           default_mode_id?: string | null
           default_theme_id?: string | null
+          game_mode?: string | null
           id?: string
           leaderboard_enabled?: boolean
           privacy_mode?: string
           public_class_link_enabled?: boolean
           student_portal_enabled?: boolean
+          track_id?: string | null
           updated_at?: string
           use_shared_class_board?: boolean
         }
@@ -25486,6 +25492,33 @@ export type Database = {
           mode_key?: string
           name?: string
           theme_key?: string
+        }
+        Relationships: []
+      }
+      game_tracks: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          nodes_json: Json
+          total_steps: number
+          track_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          nodes_json: Json
+          total_steps?: number
+          track_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          nodes_json?: Json
+          total_steps?: number
+          track_type?: string | null
         }
         Relationships: []
       }
@@ -69696,7 +69729,6 @@ export type Database = {
           inventory_enabled: boolean | null
           is_limited: boolean | null
           max_cost: number | null
-          metadata_json: Json | null
           min_cost: number | null
           name: string | null
           quantity_available: number | null
@@ -72130,6 +72162,7 @@ export type Database = {
       }
       v_student_reward_history: {
         Row: {
+          agency_id: string | null
           balance_after: number | null
           balance_before: number | null
           created_at: string | null
