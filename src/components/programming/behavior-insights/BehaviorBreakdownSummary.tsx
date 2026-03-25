@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Target, Lightbulb, AlertTriangle, Shield, TrendingUp, Users } from 'lucide-react';
@@ -23,7 +24,9 @@ export function BehaviorBreakdownSummary({
   daysWithData = 20,
   tone = 'clinical',
 }: BehaviorBreakdownSummaryProps) {
-  const enabledKeys = useTemplateStore(s => s.sections.filter(sec => sec.enabled).map(sec => sec.key));
+  const enabledKeys = useTemplateStore(
+    useShallow((state) => state.sections.filter((section) => section.enabled).map((section) => section.key))
+  );
   const isEnabled = (key: string) => enabledKeys.includes(key);
 
   const summary = useMemo(() => {
