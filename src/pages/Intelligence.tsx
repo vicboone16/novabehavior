@@ -6,7 +6,7 @@ import {
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
   Eye, ShieldAlert, Award, Hand, FileText, Lightbulb,
-  School
+  School, Wand2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
