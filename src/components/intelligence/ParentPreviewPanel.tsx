@@ -7,6 +7,8 @@ import {
   Lightbulb, Home, Star, Gift, MessageSquare,
   BarChart3, Loader2, Heart, CheckCircle2, Wand2
 } from 'lucide-react';
+import { ParentActionButtons } from '@/components/parent-loop/ParentActionButtons';
+import { HomeReinforcementLog } from '@/components/parent-loop/HomeReinforcementLog';
 import { useLatestParentInsight } from '@/hooks/useParentInsights';
 import { useBehaviorTranslations } from '@/hooks/useBehaviorTranslation';
 import { useStudentRewardSummary } from '@/hooks/useBeaconCoreData';
