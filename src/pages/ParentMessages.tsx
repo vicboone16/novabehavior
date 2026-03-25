@@ -18,7 +18,8 @@ const db = supabase as any;
 
 export default function ParentMessages() {
   const { user, profile } = useAuth();
-  const { selectedAgencyId } = useAgencyContext();
+  const { currentAgency } = useAgencyContext();
+  const selectedAgencyId = currentAgency?.id || null;
   const { threads, loading: threadsLoading, refresh: refreshThreads } = useParentThreads(selectedAgencyId);
   const [selectedThread, setSelectedThread] = useState<ParentThread | null>(null);
   const { messages, loading: msgsLoading, refresh: refreshMsgs } = useParentThreadMessages(selectedThread?.id || null);
