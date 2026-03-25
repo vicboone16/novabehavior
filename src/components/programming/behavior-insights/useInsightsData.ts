@@ -1,10 +1,19 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
-import { startOfDay, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, isWithinInterval, format, parseISO, differenceInDays } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  startOfDay, subDays, subWeeks, subMonths, startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth, startOfQuarter, isWithinInterval, format,
+  parseISO, differenceInDays,
+} from 'date-fns';
 import type { InsightsFilters, BehaviorDayData, BehaviorSummaryRow, InsightBadge } from './types';
 
-function getDateRange(preset: InsightsFilters['dateRange'], customStart?: string, customEnd?: string): { start: Date; end: Date } {
+function getDateRange(
+  preset: InsightsFilters['dateRange'],
+  customStart?: string,
+  customEnd?: string,
+): { start: Date; end: Date } {
   const now = new Date();
   const today = startOfDay(now);
 
@@ -29,6 +38,52 @@ function getDateRange(preset: InsightsFilters['dateRange'], customStart?: string
   }
 }
 
+/**
+ * Fetches behavior_daily_aggregates from Supabase for the student + date range.
+ * Falls back to Zustand store data if DB returns nothing.
+ */
+function useDbAggregates(studentId: string, dateRange: { start: Date; end: Date }) {
+  const [dbRows, setDbRows] = useState<BehaviorDayData[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const startStr = format(dateRange.start, 'yyyy-MM-dd');
+    const endStr = format(dateRange.end, 'yyyy-MM-dd');
+
+    supabase
+      .from('behavior_daily_aggregates')
+      .select('behavior_id, behavior_name, service_date, total_count, total_duration_seconds, session_count, rate_per_hour')
+      .eq('student_id', studentId)
+      .gte('service_date', startStr)
+      .lte('service_date', endStr)
+      .order('service_date', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (!error && data && data.length > 0) {
+          setDbRows(
+            data.map((r: any) => ({
+              date: r.service_date,
+              behaviorId: r.behavior_id,
+              behaviorName: r.behavior_name || r.behavior_id,
+              count: r.total_count || 0,
+              duration: r.total_duration_seconds || 0,
+              sessions: r.session_count || 1,
+              rate: r.rate_per_hour || 0,
+            }))
+          );
+        } else {
+          setDbRows([]);
+        }
+        setLoaded(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [studentId, dateRange.start.getTime(), dateRange.end.getTime()]);
+
+  return { dbRows, loaded };
+}
+
 export function useInsightsData(studentId: string, filters: InsightsFilters) {
   const { students, frequencyEntries, durationEntries, abcEntries, sessions } = useDataStore(useShallow((state) => ({
     students: state.students,
@@ -39,18 +94,23 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
   })));
   const student = students.find(s => s.id === studentId);
 
-  const dateRange = useMemo(() => getDateRange(filters.dateRange, filters.customStart, filters.customEnd), [filters.dateRange, filters.customStart, filters.customEnd]);
+  const dateRange = useMemo(
+    () => getDateRange(filters.dateRange, filters.customStart, filters.customEnd),
+    [filters.dateRange, filters.customStart, filters.customEnd],
+  );
 
   const behaviors = useMemo(() => student?.behaviors || [], [student]);
 
-  // Aggregate daily data per behavior
-  const dailyData = useMemo(() => {
+  // Fetch from DB aggregates
+  const { dbRows, loaded: dbLoaded } = useDbAggregates(studentId, dateRange);
+
+  // Zustand-based daily data (fallback)
+  const zustandData = useMemo(() => {
     if (!student) return [];
 
     const result: BehaviorDayData[] = [];
     const behaviorMap = new Map(behaviors.map(b => [b.id, b.name]));
 
-    // Group frequency entries by date+behavior
     const freqByKey = new Map<string, number>();
     frequencyEntries
       .filter(e => e.studentId === studentId)
@@ -62,7 +122,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
         freqByKey.set(key, (freqByKey.get(key) || 0) + 1);
       });
 
-    // Group duration entries
     const durByKey = new Map<string, number>();
     durationEntries
       .filter(e => e.studentId === studentId)
@@ -74,7 +133,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
         durByKey.set(key, (durByKey.get(key) || 0) + (e.duration || 0));
       });
 
-    // Group ABC entries
     const abcByKey = new Map<string, number>();
     abcEntries
       .filter(e => e.studentId === studentId)
@@ -86,7 +144,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
         abcByKey.set(key, (abcByKey.get(key) || 0) + 1);
       });
 
-    // Sessions per day
     const sessionsByDay = new Map<string, number>();
     sessions
       .filter(s => s.studentIds?.includes(studentId) && s.date)
@@ -95,7 +152,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
         sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
       });
 
-    // Merge all keys
     const allKeys = new Set([...freqByKey.keys(), ...durByKey.keys(), ...abcByKey.keys()]);
     allKeys.forEach(key => {
       const [date, behaviorId] = key.split('|');
@@ -115,6 +171,12 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
 
     return result.sort((a, b) => a.date.localeCompare(b.date));
   }, [student, studentId, frequencyEntries, durationEntries, abcEntries, sessions, behaviors, dateRange]);
+
+  // Merge: prefer DB aggregates, fall back to Zustand
+  const dailyData = useMemo(() => {
+    if (dbRows.length > 0) return dbRows;
+    return zustandData;
+  }, [dbRows, zustandData]);
 
   // Filter by selected behaviors
   const filteredData = useMemo(() => {
@@ -139,7 +201,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
       const totalSessions = data.reduce((s, d) => s + d.sessions, 0);
       const peakEntry = data.reduce((max, d) => d.count > max.count ? d : max, data[0]);
 
-      // Simple trend: compare first half vs second half
       const mid = Math.floor(data.length / 2);
       const firstHalf = data.slice(0, mid).reduce((s, d) => s + d.count, 0);
       const secondHalf = data.slice(mid).reduce((s, d) => s + d.count, 0);
@@ -178,14 +239,12 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     const biggestIncrease = sorted.find(r => (r.trendPct ?? 0) > 0) || null;
     const biggestDecrease = [...sorted].reverse().find(r => (r.trendPct ?? 0) < 0) || null;
 
-    // Peak day across all behaviors
     const dayTotals = new Map<string, number>();
     filteredData.forEach(d => dayTotals.set(d.date, (dayTotals.get(d.date) || 0) + d.count));
     let peakDay = '';
     let peakCount = 0;
     dayTotals.forEach((count, date) => { if (count > peakCount) { peakCount = count; peakDay = date; } });
 
-    // Data completeness
     const dayCount = Math.max(1, differenceInDays(dateRange.end, dateRange.start));
     const daysWithData = new Set(filteredData.map(d => d.date)).size;
     const completeness = Math.round((daysWithData / dayCount) * 100);
@@ -227,14 +286,12 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [filteredData, filters.metric]);
 
-  // Unique behavior names for chart series
   const activeBehaviorNames = useMemo(() => {
     const names = new Set<string>();
     filteredData.forEach(d => names.add(d.behaviorName));
     return Array.from(names);
   }, [filteredData]);
 
-  // Smart view recommendation
   const recommendedView = useMemo(() => {
     const count = activeBehaviorNames.length;
     if (count <= 3) return 'overlay';
