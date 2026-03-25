@@ -66,6 +66,13 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
             onExport={() => setExportOpen(true)}
           />
 
+          {/* Active Filter Chips */}
+          <ActiveFilterChips
+            filters={filters}
+            onChange={setFilters}
+            behaviorCount={behaviors.length}
+          />
+
           {/* Template Builder Trigger */}
           <div className="flex justify-end">
             <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setTemplateOpen(true)}>

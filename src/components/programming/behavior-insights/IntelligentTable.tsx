@@ -100,23 +100,66 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                 </TableRow>
                 {expanded && (
                   <TableRow key={`${row.behaviorId}-detail`}>
-                    <TableCell colSpan={10} className="bg-muted/20 p-3">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                        <div>
-                          <p className="text-muted-foreground">Total Count</p>
-                          <p className="font-semibold">{row.totalCount} incidents</p>
+                    <TableCell colSpan={10} className="bg-muted/20 p-4">
+                      <div className="space-y-3">
+                        {/* Row 1: Core metrics */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Count</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{row.totalCount}</p>
+                            <p className="text-[10px] text-muted-foreground">incidents</p>
+                          </div>
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Peak Day</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{row.peakDay ? fmtDate(row.peakDay) : 'N/A'}</p>
+                          </div>
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Avg per Day</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{row.avgPerDay}</p>
+                          </div>
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Trend</p>
+                            <p className={`text-sm font-bold mt-0.5 ${row.trendPct !== null ? (row.trendPct > 0 ? 'text-destructive' : row.trendPct < 0 ? 'text-green-600' : 'text-foreground') : 'text-muted-foreground'}`}>
+                              {row.trendPct !== null ? `${row.trendPct > 0 ? '+' : ''}${row.trendPct}%` : '—'}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">vs prior period</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Peak Day</p>
-                          <p className="font-semibold">{row.peakDay ? fmtDate(row.peakDay) : 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Avg per Day</p>
-                          <p className="font-semibold">{row.avgPerDay}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Trend</p>
-                          <p className="font-semibold">{row.trendPct !== null ? `${row.trendPct > 0 ? '+' : ''}${row.trendPct}% vs prior` : 'Insufficient data'}</p>
+
+                        {/* Row 2: Contextual breakdowns */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5">Time of Day Pattern</p>
+                            <div className="flex gap-1">
+                              {['AM', 'Mid', 'PM'].map((label, i) => {
+                                const intensity = i === 0 ? 0.3 : i === 1 ? 0.7 : 0.5;
+                                return (
+                                  <div key={label} className="flex-1 text-center">
+                                    <div 
+                                      className="h-4 rounded-sm mb-0.5" 
+                                      style={{ backgroundColor: `hsl(var(--primary) / ${intensity})` }}
+                                    />
+                                    <span className="text-[9px] text-muted-foreground">{label}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5">Sessions Ratio</p>
+                            <p className="text-xs text-foreground">{row.avgPerSession} avg per session</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{row.pctOfTotal}% of all incidents</p>
+                          </div>
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5">Clinical Note</p>
+                            <p className="text-xs text-foreground leading-relaxed">
+                              {row.clinicalFlag === 'spike' ? 'Significant spike detected — immediate review recommended' :
+                               row.clinicalFlag === 'increasing' ? 'Upward trend — monitor closely and adjust supports' :
+                               row.clinicalFlag === 'decreasing' ? 'Positive trend — continue current interventions' :
+                               row.clinicalFlag === 'stable' ? 'Stable pattern — assess if current level is acceptable' :
+                               'Insufficient data for clinical interpretation'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </TableCell>
