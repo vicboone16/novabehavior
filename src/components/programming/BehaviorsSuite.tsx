@@ -90,22 +90,7 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
         </TabsList>
 
         <TabsContent value="behaviors" className="mt-4 space-y-4">
-          <StudentBehaviorsOverview
-            studentId={student.id}
-            studentName={student.name}
-            studentColor={student.color}
-            behaviors={student.behaviors}
-            frequencyEntries={studentFrequency}
-            durationEntries={studentDuration}
-            abcEntries={studentABC}
-            intervalEntries={studentIntervals}
-            sessions={sessions}
-            historicalData={student.historicalData?.frequencyEntries || []}
-            dataCollectionStartDate={student.dataCollectionStartDate}
-            behaviorGoals={studentGoals}
-          />
-          
-          {/* Goal Suggestion Engine — below graphs, above behavior details */}
+          {/* Goal Suggestion Engine */}
           <GoalSuggestionEnginePanel studentId={studentId} surface="programming" />
         </TabsContent>
 
