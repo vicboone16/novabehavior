@@ -1,26 +1,49 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { 
   Sparkles, TrendingUp, TrendingDown, Minus, 
   Lightbulb, Home, Star, Gift, MessageSquare,
-  BarChart3, Loader2, Heart, CheckCircle2
+  BarChart3, Loader2, Heart, CheckCircle2, Wand2
 } from 'lucide-react';
 import { useLatestParentInsight } from '@/hooks/useParentInsights';
 import { useBehaviorTranslations } from '@/hooks/useBehaviorTranslation';
 import { useStudentRewardSummary } from '@/hooks/useBeaconCoreData';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   studentId: string;
   studentName: string;
+  isAdmin?: boolean;
 }
 
-export function ParentPreviewPanel({ studentId, studentName }: Props) {
+export function ParentPreviewPanel({ studentId, studentName, isAdmin }: Props) {
   const { insight, loading: insightLoading } = useLatestParentInsight(studentId);
   const { translate, translateFunction } = useBehaviorTranslations();
   const { summary: rewardSummary } = useStudentRewardSummary(studentId);
+  const { toast } = useToast();
+  const [generating, setGenerating] = useState(false);
 
   const firstName = studentName.split(' ')[0] || 'Your child';
+
+  async function handleGenerate() {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-parent-insight', {
+        body: { student_id: studentId },
+      });
+      if (error) throw error;
+      toast({ title: 'Insight generated', description: `Status: draft — ready for review.` });
+      // Force page reload to refresh the hook
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: 'Generation failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   if (insightLoading) {
     return (
@@ -30,7 +53,6 @@ export function ParentPreviewPanel({ studentId, studentName }: Props) {
     );
   }
 
-  // Mock/preview data when no insights exist yet
   const hasInsight = !!insight;
   const pointsEarned = insight?.points_earned ?? rewardSummary?.earned_today ?? 0;
   const headline = insight?.headline || `${firstName} had a productive day today!`;
@@ -45,15 +67,45 @@ export function ParentPreviewPanel({ studentId, studentName }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Preview badge */}
+      {/* Preview badge + Generate button */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border border-dashed border-border">
         <Heart className="w-3.5 h-3.5 text-pink-500" />
         <span className="text-xs text-muted-foreground font-medium">
           Parent App Preview — This is what {firstName}'s family would see
         </span>
-        {!hasInsight && (
-          <Badge variant="outline" className="text-[10px] ml-auto">Sample Data</Badge>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {!hasInsight && (
+            <Badge variant="outline" className="text-[10px]">Sample Data</Badge>
+          )}
+          {hasInsight && (
+            <Badge 
+              variant="outline" 
+              className={`text-[10px] ${
+                insight.status === 'published' ? 'border-emerald-500/50 text-emerald-600' :
+                insight.status === 'reviewed' ? 'border-blue-500/50 text-blue-600' :
+                'border-amber-500/50 text-amber-600'
+              }`}
+            >
+              {insight.status}
+            </Badge>
+          )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 text-[10px] gap-1"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Wand2 className="w-3 h-3" />
+              )}
+              Generate Today's Insight
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Today's Progress */}
