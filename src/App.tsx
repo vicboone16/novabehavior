@@ -206,6 +206,8 @@ const App = () => {
             <Route path="/intake-form/:token" element={<FormRouteResolver />} />
             {/* Public clinical form - no auth required */}
             <Route path="/clinical-form/:token" element={<ClinicalFormPage />} />
+            {/* Public parent view - no auth required */}
+            <Route path="/parent-view" element={<ParentView />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
