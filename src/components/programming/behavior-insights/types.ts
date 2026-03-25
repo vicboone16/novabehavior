@@ -71,7 +71,7 @@ export interface InsightBadge {
 }
 
 export const DEFAULT_FILTERS: InsightsFilters = {
-  dateRange: 'last_30',
+  dateRange: 'all_time',
   comparison: 'none',
   selectedBehaviors: [],
   viewMode: 'overlay',
