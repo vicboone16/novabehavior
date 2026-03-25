@@ -61,16 +61,42 @@ export function ClassroomLiveWidget() {
                   </Badge>
                 )}
               </div>
+              {/* Beacon KPIs */}
+              <div className="grid grid-cols-2 gap-1.5 mb-2">
+                <div className="flex items-center gap-1.5 bg-muted/40 rounded px-2 py-1">
+                  <Star className="w-3 h-3 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground leading-none">Awarded</p>
+                    <p className="text-sm font-semibold leading-tight">{room.pointsAwardedToday} pts</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 bg-muted/40 rounded px-2 py-1">
+                  <Gift className="w-3 h-3 text-violet-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground leading-none">Redeemed</p>
+                    <p className="text-sm font-semibold leading-tight">{room.pointsRedeemedToday} pts</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 bg-muted/40 rounded px-2 py-1">
+                  <TrendingUp className="w-3 h-3 text-emerald-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground leading-none">Reinforcements</p>
+                    <p className="text-sm font-semibold leading-tight">{room.rewardRedemptionsToday + room.pointsAwardedToday}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 bg-muted/40 rounded px-2 py-1">
+                  <Activity className="w-3 h-3 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground leading-none">Events</p>
+                    <p className="text-sm font-semibold leading-tight">{room.behaviorEventsToday}</p>
+                  </div>
+                </div>
+              </div>
+              {/* Staff & Safety */}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mb-2">
-                <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{room.behaviorEventsToday} events</span>
-                {room.engagementPctToday != null && (
-                  <span className="flex items-center gap-1"><BarChart3 className="w-3 h-3" />{room.engagementPctToday}%</span>
-                )}
-                {(room as any).pointsAwardedToday > 0 && (
-                  <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-500" />{(room as any).pointsAwardedToday} pts</span>
-                )}
-                {(room as any).maydayEventsToday > 0 && (
-                  <span className="flex items-center gap-1 text-destructive"><Siren className="w-3 h-3" />{(room as any).maydayEventsToday} mayday</span>
+                <span className="flex items-center gap-1"><Users className="w-3 h-3" />{room.staffPresent} staff</span>
+                {room.maydayEventsToday > 0 && (
+                  <span className="flex items-center gap-1 text-destructive"><Siren className="w-3 h-3" />{room.maydayEventsToday} mayday</span>
                 )}
                 <span className="text-[10px] italic">{room.signalSummary}</span>
               </div>
