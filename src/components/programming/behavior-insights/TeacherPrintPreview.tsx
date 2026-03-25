@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import type { BehaviorSummaryRow } from './types';
 import { generateFullSummary, type ToneProfile } from './summaryEngine';
 
-type PrintMode = 'teacher' | 'team_meeting' | 'bcba' | 'parent' | 'fba_bip';
+type PrintMode = 'teacher' | 'team_meeting' | 'bcba' | 'parent' | 'fba_bip' | 'bip_packet';
 
 const PRINT_MODES: { value: PrintMode; label: string; icon: React.ElementType; tone: ToneProfile }[] = [
   { value: 'teacher', label: 'Teacher Summary', icon: FileText, tone: 'teacher_friendly' },
@@ -16,6 +16,7 @@ const PRINT_MODES: { value: PrintMode; label: string; icon: React.ElementType; t
   { value: 'bcba', label: 'BCBA Clinical', icon: Stethoscope, tone: 'clinical' },
   { value: 'parent', label: 'Parent-Friendly', icon: Heart, tone: 'parent_friendly' },
   { value: 'fba_bip', label: 'FBA/BIP Appendix', icon: BookOpen, tone: 'detailed' },
+  { value: 'bip_packet', label: 'BIP Intervention Packet', icon: BookOpen, tone: 'teacher_friendly' },
 ];
 
 interface TeacherPrintPreviewProps {
