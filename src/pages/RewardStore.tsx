@@ -14,8 +14,9 @@ import type { RewardItem } from "@/hooks/useRewardEconomy";
 import type { RewardItem } from "@/hooks/useRewardEconomy";
 
 export default function RewardStore() {
-  const { agencyId } = useAuth() as any;
-  const economy = useRewardEconomy(agencyId || null);
+  const { currentAgency } = useAgencyContext();
+  const agencyId = currentAgency?.id || null;
+  const economy = useRewardEconomy(agencyId);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
