@@ -65,6 +65,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosyste
         <TabsTrigger value="workflows" className="text-xs">By Workflow</TabsTrigger>
         <TabsTrigger value="payers" className="text-xs">By Payer</TabsTrigger>
         <TabsTrigger value="walkthroughs" className="text-xs">Walkthroughs</TabsTrigger>
+        <TabsTrigger value="templates" className="text-xs gap-1"><Layout className="w-3 h-3" /> Templates</TabsTrigger>
         <TabsTrigger value="progress" className="text-xs gap-1"><Trophy className="w-3 h-3" /> Progress</TabsTrigger>
       </TabsList>
 
