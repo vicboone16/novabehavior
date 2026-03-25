@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, Re
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Student, Behavior, BehaviorGoal, Session } from '@/types/behavior';
 import { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
@@ -39,21 +40,40 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
   const isProcessingRealtimeRef = useRef(false);
   
-  const students = useDataStore((state) => state.students);
-  const behaviorGoals = useDataStore((state) => state.behaviorGoals);
-  const sessions = useDataStore((state) => state.sessions);
-  const sessionNotes = useDataStore((state) => state.sessionNotes);
-  
-  // Live session data that needs real-time sync
-  const frequencyEntries = useDataStore((state) => state.frequencyEntries);
-  const durationEntries = useDataStore((state) => state.durationEntries);
-  const intervalEntries = useDataStore((state) => state.intervalEntries);
-  const abcEntries = useDataStore((state) => state.abcEntries);
-  const latencyEntries = useDataStore((state) => state.latencyEntries);
-  const currentSessionId = useDataStore((state) => state.currentSessionId);
-  const sessionStartTime = useDataStore((state) => state.sessionStartTime);
-  const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
-  const sessionLengthMinutes = useDataStore((state) => state.sessionLengthMinutes);
+  // IMPORTANT: Use a SINGLE batched selector with useShallow instead of 15 individual selectors.
+  // Multiple individual selectors cause cascading re-renders during store hydration/setState,
+  // leading to "Maximum update depth exceeded" (React Error #185).
+  const storeSnapshot = useDataStore(useShallow((state) => ({
+    students: state.students,
+    behaviorGoals: state.behaviorGoals,
+    sessions: state.sessions,
+    sessionNotes: state.sessionNotes,
+    frequencyEntries: state.frequencyEntries,
+    durationEntries: state.durationEntries,
+    intervalEntries: state.intervalEntries,
+    abcEntries: state.abcEntries,
+    latencyEntries: state.latencyEntries,
+    currentSessionId: state.currentSessionId,
+    sessionStartTime: state.sessionStartTime,
+    selectedStudentIds: state.selectedStudentIds,
+    sessionLengthMinutes: state.sessionLengthMinutes,
+  })));
+
+  const {
+    students,
+    behaviorGoals,
+    sessions,
+    sessionNotes,
+    frequencyEntries,
+    durationEntries,
+    intervalEntries,
+    abcEntries,
+    latencyEntries,
+    currentSessionId,
+    sessionStartTime,
+    selectedStudentIds,
+    sessionLengthMinutes,
+  } = storeSnapshot;
 
   // Track live-session presence sync to support cross-device resume even before any data rows exist.
   const lastPresenceKeyRef = useRef<string>('');
