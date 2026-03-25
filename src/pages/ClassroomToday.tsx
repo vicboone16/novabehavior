@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ClassroomPresencePanel } from '@/components/intelligence/ClassroomPresencePanel';
+import { WhosHerePanel } from '@/components/presence/WhosHerePanel';
+import { useStaffPresence } from '@/hooks/useStaffPresence';
 
 const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   frequency: { bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: <Activity className="w-3 h-3" /> },
