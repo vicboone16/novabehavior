@@ -807,6 +807,13 @@ export default function Intelligence() {
             <DistrictIntelligence />
           </Suspense>
         </TabsContent>
+
+        <TabsContent value="linked-system" className="space-y-4">
+          <LinkedSystemView 
+            agencyId={effectiveAgencyId}
+            students={caseloadRows.map(r => ({ id: r.student_id, name: r.client_name || r.student_id }))}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
