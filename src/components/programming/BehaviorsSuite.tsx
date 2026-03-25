@@ -189,13 +189,18 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
                       <Card key={goal.id} className="border-l-4 border-l-primary/40">
                         <CardContent className="py-3 px-4">
                           <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-sm">{behavior?.name || 'Unknown Behavior'}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Goal: {goal.direction === 'increase' ? '↑ Increase' : goal.direction === 'decrease' ? '↓ Decrease' : '→ Maintain'}{' '}
-                                {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
-                                {goal.baseline !== undefined ? ` (baseline: ${goal.baseline})` : ''}
-                              </p>
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <p className="font-medium text-sm">{behavior?.name || 'Unknown Behavior'}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  Goal: {goal.direction === 'increase' ? '↑ Increase' : goal.direction === 'decrease' ? '↓ Decrease' : '→ Maintain'}{' '}
+                                  {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
+                                  {goal.baseline !== undefined ? ` (baseline: ${goal.baseline})` : ''}
+                                </p>
+                              </div>
+                              {!behavior && (
+                                <CanonicalStatusBadge status="needs_mapping" size="sm" />
+                              )}
                             </div>
                             {goal.isMastered ? (
                               <Badge className="bg-emerald-100 text-emerald-800 text-xs">✓ Mastered</Badge>
