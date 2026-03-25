@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { BarChart3, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
   const [exportOpen, setExportOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const {
     behaviors,
@@ -77,13 +78,15 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
           {/* Insight Badges */}
           <InsightBadgesRow badges={insights} />
 
-          {/* Smart Graph */}
-          <SmartGraphPanel
-            chartData={chartData}
-            behaviorNames={activeBehaviorNames}
-            viewMode={filters.viewMode}
-            recommendedView={recommendedView}
-          />
+          {/* Smart Graph — ref for export pipeline */}
+          <div ref={chartRef}>
+            <SmartGraphPanel
+              chartData={chartData}
+              behaviorNames={activeBehaviorNames}
+              viewMode={filters.viewMode}
+              recommendedView={recommendedView}
+            />
+          </div>
 
           {/* Intelligent Table */}
           <IntelligentTable rows={summaryRows} />
@@ -102,7 +105,9 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
         onOpenChange={setExportOpen}
         summaryRows={summaryRows}
         studentName={studentName}
+        studentId={studentId}
         dateRange={dateRange}
+        chartRef={chartRef}
       />
 
       <TeacherPrintPreview
