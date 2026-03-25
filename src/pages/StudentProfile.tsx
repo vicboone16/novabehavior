@@ -86,10 +86,6 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
 import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
 import { BehaviorIntelligenceSection } from '@/components/intelligence/BehaviorIntelligenceSection';
-import { UIReferenceFrame } from '@/components/demo-center/UIReferenceFrame';
-import { StudentPageTemplate } from '@/components/demo-center/StudentPageTemplate';
-import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
-import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import { SkillIntelligenceSection } from '@/components/intelligence/SkillIntelligenceSection';
 import { 
   ContactsTab, 
@@ -592,16 +588,6 @@ export default function StudentProfile() {
           <StudentIntelligencePanel studentId={student.id} />
           <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           
-          {/* UI Reference Frames */}
-          <UIReferenceFrame
-            image={studentProfileRef}
-            alt="Student profile layout reference"
-            label="Student Profile Layout"
-            caption="Standard student page: BIP summary, goal metrics, progress notes, and goal tracking"
-          />
-
-          {/* Downloadable Student Page Template */}
-          <StudentPageTemplate />
           {/* Team & Assignments */}
           <Collapsible defaultOpen={false}>
             <Card>
@@ -811,13 +797,6 @@ export default function StudentProfile() {
           {/* Protocol Assignments — Library-based program assignment */}
           <ProtocolAssignmentManager studentId={student.id} />
 
-          {/* Clinical Progress Reference */}
-          <UIReferenceFrame
-            image={clinicalProgressRef}
-            alt="Clinical progress report layout"
-            label="Clinical Progress View"
-            caption="Clinical progress report with narrative summary, charts, and fidelity data table"
-          />
         </TabsContent>
 
         {/* ====== ASSESSMENTS TAB ====== */}
