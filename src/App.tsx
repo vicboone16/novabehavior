@@ -110,6 +110,8 @@ const NovaCopilot = lazy(() => import("./pages/NovaCopilot"));
 const BopsEngine = lazy(() => import("./pages/BopsEngine"));
 const BopsAdminConsole = lazy(() => import("./pages/BopsAdminConsole"));
 const RewardStore = lazy(() => import("./pages/RewardStore"));
+const ParentView = lazy(() => import("./pages/ParentView"));
+const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -204,6 +206,8 @@ const App = () => {
             <Route path="/intake-form/:token" element={<FormRouteResolver />} />
             {/* Public clinical form - no auth required */}
             <Route path="/clinical-form/:token" element={<ClinicalFormPage />} />
+            {/* Public parent view - no auth required */}
+            <Route path="/parent-view" element={<ParentView />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
@@ -494,6 +498,7 @@ const App = () => {
               <Route path="/bops-admin" element={<Navigate to="/clinical" replace />} />
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
               <Route path="/reward-store" element={<RewardStore />} />
+              <Route path="/parent-portal" element={<ParentPortal />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={

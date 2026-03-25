@@ -144,3 +144,6 @@ verify_jwt = false
 [functions.generate-parent-insight]
 verify_jwt = false
 
+[functions.parent-link-gateway]
+verify_jwt = false
+
