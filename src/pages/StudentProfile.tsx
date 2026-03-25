@@ -251,7 +251,7 @@ export default function StudentProfile() {
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getBehaviorName = (behaviorId: string) => {
-    return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
+    return student.behaviors.find(b => b.id === behaviorId)?.name || `Needs Mapping (${behaviorId.slice(0, 6)})`;
   };
 
   const handleAddBehavior = () => {

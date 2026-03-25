@@ -446,7 +446,7 @@ export function StudentBehaviorsOverview({
       if (!orphanMap.has(behaviorId)) {
         orphanMap.set(behaviorId, {
           id: behaviorId,
-          inferredName: entryBehaviorName || `Unlinked (${behaviorId.slice(0, 6)})`,
+          inferredName: entryBehaviorName || `Needs Mapping (${behaviorId.slice(0, 6)})`,
           freqCount: 0, durationSec: 0, abcCount: 0,
         });
       }
@@ -464,7 +464,7 @@ export function StudentBehaviorsOverview({
     abcEntries.filter(e => e.studentId === studentId).forEach(e => {
       const o = processEntry(e.behaviorId, (e as any).behaviorName || (e as any).behavior);
       if (o) { o.abcCount += 1; o.freqCount += ((e as any).frequencyCount || 1); }
-      if (o && ((e as any).behaviorName || (e as any).behavior) && o.inferredName.startsWith('Unlinked')) {
+      if (o && ((e as any).behaviorName || (e as any).behavior) && o.inferredName.startsWith('Needs Mapping')) {
         o.inferredName = (e as any).behaviorName || (e as any).behavior;
       }
     });
@@ -507,8 +507,8 @@ export function StudentBehaviorsOverview({
       const toRekey: { oldId: string; newId: string; name: string }[] = [];
       orphanedBehaviors.forEach(orphan => {
         // Try matching by inferred name first
-        const normalized = normalize(orphan.inferredName.replace(/^Unlinked\s*\(|\)$/g, ''));
-        if (normalized && !normalized.startsWith('unlinked')) {
+        const normalized = normalize(orphan.inferredName.replace(/^Needs Mapping\s*\(|\)$/g, ''));
+        if (normalized && !normalized.startsWith('needs mapping')) {
           const matchId = behaviorsByName.get(normalized);
           if (matchId && matchId !== orphan.id) {
             toRekey.push({ oldId: orphan.id, newId: matchId, name: orphan.inferredName });
@@ -1599,16 +1599,16 @@ export function StudentBehaviorsOverview({
         </CardContent>
       </Card>
 
-      {/* Orphaned / Unlinked Behavior Data */}
+      {/* Orphaned / Needs Mapping Behavior Data */}
       {orphanedBehaviors.length > 0 && (
         <Card className="border-warning/50 bg-warning/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
-              Unlinked Behavior Data ({orphanedBehaviors.length})
+              Needs Mapping ({orphanedBehaviors.length})
             </CardTitle>
             <CardDescription className="text-xs">
-              Data collected during assessments or observations that isn't linked to a defined behavior. Click "Link" to name and adopt it.
+              Data collected during assessments or observations that needs mapping to a canonical behavior. Click "Map" to resolve it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -1628,7 +1628,7 @@ export function StudentBehaviorsOverview({
                   className="gap-1"
                   onClick={() => {
                     setAdoptTarget({ id: orphan.id, inferredName: orphan.inferredName });
-                    setAdoptName(orphan.inferredName.startsWith('Unlinked') ? '' : orphan.inferredName);
+                    setAdoptName(orphan.inferredName.startsWith('Needs Mapping') ? '' : orphan.inferredName);
                     setAdoptDefinition('');
                     setAdoptMode(behaviors.length > 0 ? 'existing' : 'bank');
                     setAdoptExistingId('');
@@ -1636,7 +1636,7 @@ export function StudentBehaviorsOverview({
                   }}
                 >
                   <UserPlus className="w-3 h-3" />
-                  Link
+                  Map
                 </Button>
               </div>
             ))}

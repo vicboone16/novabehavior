@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getStatusDisplay } from '@/hooks/useCanonicalBehaviors';
-import { Archive, GitMerge, AlertTriangle, FileQuestion, Clock } from 'lucide-react';
+import { Archive, GitMerge, AlertTriangle, FileQuestion, Clock, MapPin, Puzzle } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +23,8 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   deprecated: <AlertTriangle className="h-3 w-3" />,
   draft: <FileQuestion className="h-3 w-3" />,
   historical: <Clock className="h-3 w-3" />,
+  needs_mapping: <MapPin className="h-3 w-3" />,
+  detached_custom: <Puzzle className="h-3 w-3" />,
 };
 
 export function CanonicalStatusBadge({

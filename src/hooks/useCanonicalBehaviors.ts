@@ -89,6 +89,15 @@ export function getStatusDisplay(
   if (status === 'draft') {
     return { label: 'Draft', variant: 'outline' };
   }
+  if (status === 'needs_mapping') {
+    return { label: 'Needs Mapping', variant: 'destructive', description: 'This item needs to be mapped to a canonical entry' };
+  }
+  if (status === 'detached_custom') {
+    return { label: 'Custom', variant: 'outline', description: 'Locally created item not yet in the canonical library' };
+  }
+  if (status === 'historical') {
+    return { label: 'Historical', variant: 'secondary', description: 'This item is retained for historical records only' };
+  }
   return { label: status || 'Unknown', variant: 'outline' };
 }
 
