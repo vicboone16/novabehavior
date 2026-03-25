@@ -5422,40 +5422,64 @@ export type Database = {
       beacon_rewards: {
         Row: {
           active: boolean
+          base_cost: number | null
           cost: number
           created_at: string
           description: string | null
+          dynamic_pricing_enabled: boolean | null
           id: string
           image_url: string | null
+          inventory_enabled: boolean | null
+          max_cost: number | null
+          metadata_json: Json | null
+          min_cost: number | null
           name: string
+          reward_type: string | null
           scope_id: string | null
           scope_type: string
+          sort_order: number | null
           stock_count: number | null
           time_sensitive_until: string | null
         }
         Insert: {
           active?: boolean
+          base_cost?: number | null
           cost: number
           created_at?: string
           description?: string | null
+          dynamic_pricing_enabled?: boolean | null
           id?: string
           image_url?: string | null
+          inventory_enabled?: boolean | null
+          max_cost?: number | null
+          metadata_json?: Json | null
+          min_cost?: number | null
           name: string
+          reward_type?: string | null
           scope_id?: string | null
           scope_type?: string
+          sort_order?: number | null
           stock_count?: number | null
           time_sensitive_until?: string | null
         }
         Update: {
           active?: boolean
+          base_cost?: number | null
           cost?: number
           created_at?: string
           description?: string | null
+          dynamic_pricing_enabled?: boolean | null
           id?: string
           image_url?: string | null
+          inventory_enabled?: boolean | null
+          max_cost?: number | null
+          metadata_json?: Json | null
+          min_cost?: number | null
           name?: string
+          reward_type?: string | null
           scope_id?: string | null
           scope_type?: string
+          sort_order?: number | null
           stock_count?: number | null
           time_sensitive_until?: string | null
         }
@@ -41289,6 +41313,42 @@ export type Database = {
           },
         ]
       }
+      reward_dynamic_prices: {
+        Row: {
+          agency_id: string
+          classroom_id: string | null
+          computed_at: string
+          computed_price: number
+          evidence_json: Json
+          id: string
+          price_reason: string | null
+          reward_id: string
+          student_id: string | null
+        }
+        Insert: {
+          agency_id: string
+          classroom_id?: string | null
+          computed_at?: string
+          computed_price: number
+          evidence_json?: Json
+          id?: string
+          price_reason?: string | null
+          reward_id: string
+          student_id?: string | null
+        }
+        Update: {
+          agency_id?: string
+          classroom_id?: string | null
+          computed_at?: string
+          computed_price?: number
+          evidence_json?: Json
+          id?: string
+          price_reason?: string | null
+          reward_id?: string
+          student_id?: string | null
+        }
+        Relationships: []
+      }
       reward_economy_settings: {
         Row: {
           agency_id: string
@@ -76012,6 +76072,15 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      compute_dynamic_reward_price: {
+        Args: {
+          p_agency_id: string
+          p_classroom_id?: string
+          p_reward_id: string
+          p_student_id?: string
+        }
+        Returns: Json
+      }
       compute_intervention_outcomes: {
         Args: { p_run_id: string }
         Returns: number
@@ -77523,6 +77592,16 @@ export type Database = {
               role_slug: string
             }[]
           }
+      redeem_reward_dynamic: {
+        Args: {
+          p_agency_id: string
+          p_classroom_id?: string
+          p_created_by?: string
+          p_reward_id: string
+          p_student_id: string
+        }
+        Returns: Json
+      }
       refresh_abas_generator_pipeline: { Args: never; Returns: undefined }
       refresh_abas_registry: { Args: never; Returns: undefined }
       refresh_ablls_registry: { Args: never; Returns: undefined }
