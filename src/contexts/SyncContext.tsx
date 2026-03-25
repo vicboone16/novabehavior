@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, Re
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Student, Behavior, BehaviorGoal, Session } from '@/types/behavior';
 import { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
