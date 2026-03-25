@@ -69,14 +69,14 @@ function mergeRows(rows: any[], clientId: string) {
 
   // Also fetch behavior names from behavior_id mapping
   const newFrequencyEntries = rows
-    .filter(r => r.frequency != null && r.frequency > 0 && !existingIds.has(`bsd-${r.id}`))
+    .filter(r => r.frequency != null && !existingIds.has(`bsd-${r.id}`))
     .map(r => ({
       id: `bsd-${r.id}`,
       studentId: clientId,
       behaviorId: r.behavior_id,
       count: r.frequency,
       timestamp: (r as any).sessions?.start_time || r.created_at,
-      notes: '',
+      notes: r.frequency === 0 ? 'observed_zero' : '',
     }));
 
   const newDurationEntries = rows
