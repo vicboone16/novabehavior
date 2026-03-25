@@ -335,7 +335,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
 
   // Get behavior name by ID
   const getBehaviorName = (behaviorId: string) => {
-    return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
+    return student.behaviors.find(b => b.id === behaviorId)?.name || `Needs Mapping (${behaviorId.slice(0, 6)})`;
   };
 
   // Handle adding a new behavior

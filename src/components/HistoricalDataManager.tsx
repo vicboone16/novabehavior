@@ -93,7 +93,7 @@ export function HistoricalDataManager({ studentId }: HistoricalDataManagerProps)
   if (!student) return null;
 
   const getBehaviorName = (behaviorId: string) => {
-    return student.behaviors.find(b => b.id === behaviorId)?.name || `Unlinked Behavior (${behaviorId.slice(0, 6)})`;
+    return student.behaviors.find(b => b.id === behaviorId)?.name || `Needs Mapping (${behaviorId.slice(0, 6)})`;
   };
 
   const toggleSection = (section: string) => {

@@ -1636,7 +1636,7 @@ export function StudentBehaviorsOverview({
                   }}
                 >
                   <UserPlus className="w-3 h-3" />
-                  Link
+                  Map
                 </Button>
               </div>
             ))}
