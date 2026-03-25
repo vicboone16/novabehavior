@@ -231,6 +231,7 @@ export default function Intelligence() {
     toast.success(`Generated ${successCount} insights${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
   }
 
+  if (accessLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
