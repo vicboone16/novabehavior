@@ -47,6 +47,10 @@ import {
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
 import { supabase } from '@/integrations/supabase/client';
+import { useBehaviorOperations } from '@/hooks/useCanonicalBehaviors';
+import { CanonicalStatusBadge } from '@/components/programming/CanonicalStatusBadge';
+import { BopsTagChips } from '@/components/programming/BopsTagChips';
+import { useEntityBopsTags } from '@/hooks/useBopsTags';
 
 interface BehaviorLibraryProps {
   embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
