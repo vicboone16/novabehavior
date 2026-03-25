@@ -446,7 +446,7 @@ export function StudentBehaviorsOverview({
       if (!orphanMap.has(behaviorId)) {
         orphanMap.set(behaviorId, {
           id: behaviorId,
-          inferredName: entryBehaviorName || `Unlinked (${behaviorId.slice(0, 6)})`,
+          inferredName: entryBehaviorName || `Needs Mapping (${behaviorId.slice(0, 6)})`,
           freqCount: 0, durationSec: 0, abcCount: 0,
         });
       }
