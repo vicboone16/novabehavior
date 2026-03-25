@@ -34651,6 +34651,8 @@ export type Database = {
           insight_type: string
           points_earned: number
           points_redeemed: number
+          reviewed_at: string | null
+          reviewed_by: string | null
           rewards_summary: Json | null
           status: string
           student_id: string
@@ -34669,6 +34671,8 @@ export type Database = {
           insight_type?: string
           points_earned?: number
           points_redeemed?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           rewards_summary?: Json | null
           status?: string
           student_id: string
@@ -34687,6 +34691,8 @@ export type Database = {
           insight_type?: string
           points_earned?: number
           points_redeemed?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           rewards_summary?: Json | null
           status?: string
           student_id?: string
