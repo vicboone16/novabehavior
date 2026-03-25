@@ -5924,6 +5924,66 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_daily_aggregates: {
+        Row: {
+          agency_id: string | null
+          avg_intensity: number | null
+          behavior_category: string | null
+          behavior_id: string
+          behavior_name: string | null
+          created_at: string
+          id: string
+          rate_per_hour: number | null
+          service_date: string
+          session_count: number | null
+          setting_breakdown: Json
+          staff_breakdown: Json
+          student_id: string
+          time_of_day_breakdown: Json
+          total_count: number
+          total_duration_seconds: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          avg_intensity?: number | null
+          behavior_category?: string | null
+          behavior_id: string
+          behavior_name?: string | null
+          created_at?: string
+          id?: string
+          rate_per_hour?: number | null
+          service_date: string
+          session_count?: number | null
+          setting_breakdown?: Json
+          staff_breakdown?: Json
+          student_id: string
+          time_of_day_breakdown?: Json
+          total_count?: number
+          total_duration_seconds?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          avg_intensity?: number | null
+          behavior_category?: string | null
+          behavior_id?: string
+          behavior_name?: string | null
+          created_at?: string
+          id?: string
+          rate_per_hour?: number | null
+          service_date?: string
+          session_count?: number | null
+          setting_breakdown?: Json
+          staff_breakdown?: Json
+          student_id?: string
+          time_of_day_breakdown?: Json
+          total_count?: number
+          total_duration_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behavior_decision_trees: {
         Row: {
           audience: string | null
@@ -6260,6 +6320,51 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_insights: {
+        Row: {
+          agency_id: string | null
+          behavior_id: string | null
+          created_at: string
+          date_range_end: string | null
+          date_range_start: string | null
+          id: string
+          insight_text: string
+          insight_type: string
+          is_active: boolean
+          metadata_json: Json
+          severity: string | null
+          student_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          behavior_id?: string | null
+          created_at?: string
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          insight_text: string
+          insight_type: string
+          is_active?: boolean
+          metadata_json?: Json
+          severity?: string | null
+          student_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          behavior_id?: string | null
+          created_at?: string
+          date_range_end?: string | null
+          date_range_start?: string | null
+          id?: string
+          insight_text?: string
+          insight_type?: string
+          is_active?: boolean
+          metadata_json?: Json
+          severity?: string | null
+          student_id?: string
+        }
+        Relationships: []
+      }
       behavior_intervention_library: {
         Row: {
           behavior_key: string
@@ -6571,6 +6676,78 @@ export type Database = {
           sort_order?: number | null
           tag_type?: string
           tag_value?: string
+        }
+        Relationships: []
+      }
+      behavior_period_summaries: {
+        Row: {
+          agency_id: string | null
+          avg_duration_seconds: number | null
+          avg_intensity: number | null
+          avg_per_day: number | null
+          avg_per_session: number | null
+          behavior_id: string
+          behavior_name: string | null
+          created_at: string
+          end_date: string
+          id: string
+          last_occurrence: string | null
+          metadata_json: Json
+          pct_of_total: number | null
+          peak_day: string | null
+          period_type: string
+          start_date: string
+          student_id: string
+          total_count: number
+          trend_delta: number | null
+          trend_pct_change: number | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          avg_duration_seconds?: number | null
+          avg_intensity?: number | null
+          avg_per_day?: number | null
+          avg_per_session?: number | null
+          behavior_id: string
+          behavior_name?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          last_occurrence?: string | null
+          metadata_json?: Json
+          pct_of_total?: number | null
+          peak_day?: string | null
+          period_type?: string
+          start_date: string
+          student_id: string
+          total_count?: number
+          trend_delta?: number | null
+          trend_pct_change?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          avg_duration_seconds?: number | null
+          avg_intensity?: number | null
+          avg_per_day?: number | null
+          avg_per_session?: number | null
+          behavior_id?: string
+          behavior_name?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          last_occurrence?: string | null
+          metadata_json?: Json
+          pct_of_total?: number | null
+          peak_day?: string | null
+          period_type?: string
+          start_date?: string
+          student_id?: string
+          total_count?: number
+          trend_delta?: number | null
+          trend_pct_change?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -23630,6 +23807,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      export_jobs: {
+        Row: {
+          agency_id: string | null
+          bundle_type: string | null
+          completed_at: string | null
+          created_at: string
+          diagnostics_json: Json
+          error_message: string | null
+          export_type: string
+          file_name: string | null
+          file_url: string | null
+          filters_json: Json
+          id: string
+          mime_type: string | null
+          status: string
+          student_id: string | null
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          bundle_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          diagnostics_json?: Json
+          error_message?: string | null
+          export_type: string
+          file_name?: string | null
+          file_url?: string | null
+          filters_json?: Json
+          id?: string
+          mime_type?: string | null
+          status?: string
+          student_id?: string | null
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          bundle_type?: string | null
+          completed_at?: string | null
+          created_at?: string
+          diagnostics_json?: Json
+          error_message?: string | null
+          export_type?: string
+          file_name?: string | null
+          file_url?: string | null
+          filters_json?: Json
+          id?: string
+          mime_type?: string | null
+          status?: string
+          student_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       external_access_links: {
         Row: {
@@ -40711,6 +40942,71 @@ export type Database = {
         }
         Relationships: []
       }
+      report_output_snapshots: {
+        Row: {
+          agency_id: string | null
+          comparison_range_end: string | null
+          comparison_range_start: string | null
+          created_at: string
+          created_by: string | null
+          date_range_end: string
+          date_range_start: string
+          edited_output_json: Json | null
+          filters_json: Json
+          generated_output_json: Json
+          id: string
+          layout_style: string | null
+          output_status: string
+          student_id: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          comparison_range_end?: string | null
+          comparison_range_start?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_range_end: string
+          date_range_start: string
+          edited_output_json?: Json | null
+          filters_json?: Json
+          generated_output_json?: Json
+          id?: string
+          layout_style?: string | null
+          output_status?: string
+          student_id: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          comparison_range_end?: string | null
+          comparison_range_start?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_range_end?: string
+          date_range_start?: string
+          edited_output_json?: Json | null
+          filters_json?: Json
+          generated_output_json?: Json
+          id?: string
+          layout_style?: string | null
+          output_status?: string
+          student_id?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_output_snapshots_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_strategy_narratives: {
         Row: {
           created_at: string | null
@@ -40925,6 +41221,163 @@ export type Database = {
             referencedColumns: ["strategy_id"]
           },
         ]
+      }
+      report_template_section_edits: {
+        Row: {
+          edit_type: string | null
+          edited_at: string
+          edited_by: string | null
+          id: string
+          new_value_json: Json
+          previous_value_json: Json
+          template_section_id: string
+        }
+        Insert: {
+          edit_type?: string | null
+          edited_at?: string
+          edited_by?: string | null
+          id?: string
+          new_value_json?: Json
+          previous_value_json?: Json
+          template_section_id: string
+        }
+        Update: {
+          edit_type?: string | null
+          edited_at?: string
+          edited_by?: string | null
+          id?: string
+          new_value_json?: Json
+          previous_value_json?: Json
+          template_section_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_template_section_edits_template_section_id_fkey"
+            columns: ["template_section_id"]
+            isOneToOne: false
+            referencedRelation: "report_template_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_template_sections: {
+        Row: {
+          config_json: Json
+          content_mode: string
+          created_at: string
+          display_label: string
+          fallback_text: string | null
+          format_style: string | null
+          id: string
+          is_enabled: boolean
+          is_locked: boolean
+          is_required: boolean
+          prompt_instructions: string | null
+          section_key: string
+          section_type: string
+          sort_order: number
+          template_id: string
+          tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          config_json?: Json
+          content_mode?: string
+          created_at?: string
+          display_label: string
+          fallback_text?: string | null
+          format_style?: string | null
+          id?: string
+          is_enabled?: boolean
+          is_locked?: boolean
+          is_required?: boolean
+          prompt_instructions?: string | null
+          section_key: string
+          section_type?: string
+          sort_order?: number
+          template_id: string
+          tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config_json?: Json
+          content_mode?: string
+          created_at?: string
+          display_label?: string
+          fallback_text?: string | null
+          format_style?: string | null
+          id?: string
+          is_enabled?: boolean
+          is_locked?: boolean
+          is_required?: boolean
+          prompt_instructions?: string | null
+          section_key?: string
+          section_type?: string
+          sort_order?: number
+          template_id?: string
+          tone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_template_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_templates: {
+        Row: {
+          agency_id: string | null
+          audience_type: string
+          config_json: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          is_system_template: boolean
+          layout_style: string
+          template_name: string
+          template_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          audience_type?: string
+          config_json?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_system_template?: boolean
+          layout_style?: string
+          template_name: string
+          template_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          audience_type?: string
+          config_json?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_system_template?: boolean
+          layout_style?: string
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       reporting_snapshots: {
         Row: {
@@ -41636,6 +42089,57 @@ export type Database = {
           id?: string
           module_key?: string
           role_key?: string
+        }
+        Relationships: []
+      }
+      saved_reporting_views: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          description: string | null
+          filters_json: Json
+          graph_config_json: Json
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          print_config_json: Json
+          student_id: string | null
+          table_config_json: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          description?: string | null
+          filters_json?: Json
+          graph_config_json?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          print_config_json?: Json
+          student_id?: string | null
+          table_config_json?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          description?: string | null
+          filters_json?: Json
+          graph_config_json?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          print_config_json?: Json
+          student_id?: string | null
+          table_config_json?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
