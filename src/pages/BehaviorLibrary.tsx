@@ -432,18 +432,17 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
     toast({ title: 'Definition reset to default' });
   };
 
-  const handleArchiveBehavior = (behavior: typeof allBehaviors[0]) => {
+  const handleArchiveBehavior = async (behavior: typeof allBehaviors[0]) => {
+    // Use canonical archive RPC — soft-archives in nt_behaviors, preserves all learner history
+    await canonicalArchive(behavior.id);
+    
+    // Also update legacy store for immediate UI consistency
     if (behavior.source === 'built-in') {
       archiveBuiltInBehaviorStore(behavior.id);
       if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
-      toast({ title: 'Behavior archived', description: `"${behavior.name}" is hidden from the library. You can restore it later.` });
     } else if (behavior.source === 'organization') {
       removeBankBehavior(behavior.id);
       removeCustomBehaviorFromDB(behavior.id);
-      toast({ title: 'Behavior removed', description: `"${behavior.name}" has been removed from the organization library.` });
-    } else {
-      // custom (student-only) — no action needed since they live on student profiles
-      toast({ title: 'Custom behaviors are managed per-student' });
     }
   };
 

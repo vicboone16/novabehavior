@@ -355,11 +355,13 @@ export function BehaviorBank({
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                 title={behavior.isArchived ? 'Restore behavior' : 'Archive behavior'}
-                                onClick={() => {
+                                onClick={async () => {
                                   if (behavior.isArchived) {
                                     unarchiveBuiltInBehaviorStore(behavior.id);
                                     unarchiveBehaviorFromDB(behavior.id);
                                   } else {
+                                    // Use canonical archive RPC
+                                    await canonicalArchive(behavior.id);
                                     archiveBuiltInBehaviorStore(behavior.id);
                                     if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
                                   }
