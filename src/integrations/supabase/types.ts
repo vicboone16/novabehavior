@@ -41339,6 +41339,51 @@ export type Database = {
           },
         ]
       }
+      reward_transactions: {
+        Row: {
+          agency_id: string
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata_json: Json
+          point_cost: number | null
+          quantity: number
+          reward_id: string
+          student_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          agency_id: string
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata_json?: Json
+          point_cost?: number | null
+          quantity?: number
+          reward_id: string
+          student_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          agency_id?: string
+          balance_after?: number | null
+          balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata_json?: Json
+          point_cost?: number | null
+          quantity?: number
+          reward_id?: string
+          student_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: []
+      }
       role_module_permissions: {
         Row: {
           agency_id: string
