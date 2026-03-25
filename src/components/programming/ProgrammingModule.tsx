@@ -4,6 +4,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
 import { BothModeView } from './BothModeView';
+import { BehaviorInsightsModule } from './behavior-insights/BehaviorInsightsModule';
+import { BehaviorsSuite } from './BehaviorsSuite';
+import { BothModeView } from './BothModeView';
 
 export type ProgrammingMode = 'skills' | 'behaviors' | 'both';
 
