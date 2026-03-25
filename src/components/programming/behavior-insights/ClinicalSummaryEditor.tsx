@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import type { BehaviorSummaryRow } from './types';
+import { regenerateSection, type ToneProfile, type SummaryInput } from './summaryEngine';
 
 interface SummarySection {
   key: string;
@@ -19,54 +20,47 @@ interface SummarySection {
 interface ClinicalSummaryEditorProps {
   rows: BehaviorSummaryRow[];
   studentName: string;
-}
-
-function generateSectionContent(key: string, rows: BehaviorSummaryRow[], studentName: string): string {
-  const increasing = rows.filter(r => r.clinicalFlag === 'increasing' || r.clinicalFlag === 'spike');
-  const decreasing = rows.filter(r => r.clinicalFlag === 'decreasing');
-  const top = rows.slice(0, 3);
-
-  switch (key) {
-    case 'key_trends':
-      if (rows.length === 0) return 'Insufficient data to identify trends.';
-      return `Over the selected period, ${studentName} displayed ${rows.reduce((s, r) => s + r.totalCount, 0)} total behavior incidents across ${rows.length} tracked behaviors. ${top[0] ? `${top[0].behaviorName} accounted for ${top[0].pctOfTotal}% of all recorded incidents.` : ''}`;
-    case 'main_concerns':
-      if (increasing.length === 0) return 'No behaviors currently flagged as increasing.';
-      return `Data suggests elevated concern for: ${increasing.map(r => `${r.behaviorName} (+${r.trendPct ?? 0}%)`).join(', ')}. These patterns may indicate a need for intervention adjustment.`;
-    case 'improvements':
-      if (decreasing.length === 0) return 'No significant improvements detected in the current range.';
-      return `Notable improvement observed in: ${decreasing.map(r => `${r.behaviorName} (${r.trendPct}%)`).join(', ')}. This pattern appears to reflect progress toward behavioral goals.`;
-    case 'function_hypotheses':
-      if (rows.length === 0) return 'Insufficient data for function hypothesis.';
-      return `Based on behavioral distribution, the data pattern is consistent with possible escape-maintained and/or attention-maintained functions. Further ABC analysis may clarify primary function.`;
-    case 'escalation_interpretation':
-      return `Available data does not yet support a confirmed escalation sequence. Continued monitoring may reveal precursor patterns.`;
-    case 'data_quality':
-      return `Data quality appears adequate for the selected range. Gaps in recording may affect trend accuracy.`;
-    case 'next_steps':
-      return `Consider reviewing intervention strategies for top-frequency behaviors. Recommend team discussion of current replacement skill targets and reinforcement schedules.`;
-    default:
-      return '';
-  }
+  dateRangeLabel?: string;
+  totalDays?: number;
+  daysWithData?: number;
+  tone?: ToneProfile;
 }
 
 const SECTION_DEFS = [
   { key: 'key_trends', label: 'Key Trends' },
-  { key: 'main_concerns', label: 'Main Concerns' },
-  { key: 'improvements', label: 'Improvements' },
-  { key: 'function_hypotheses', label: 'Function Hypotheses' },
-  { key: 'escalation_interpretation', label: 'Escalation Interpretation' },
-  { key: 'data_quality', label: 'Data Quality Notes' },
-  { key: 'next_steps', label: 'Suggested Next Steps' },
+  { key: 'fba_summary', label: 'Data-Informed Summary' },
+  { key: 'escalation_chain', label: 'Escalation Interpretation' },
+  { key: 'antecedents', label: 'Antecedents' },
+  { key: 'consequences', label: 'Consequences' },
+  { key: 'replacement_skills', label: 'Replacement Skills' },
+  { key: 'intervention_focus', label: 'Intervention Focus' },
+  { key: 'staff_response', label: 'Staff Response' },
+  { key: 'reinforcement_focus', label: 'Reinforcement Focus' },
+  { key: 'data_quality_note', label: 'Data Quality Notes' },
+  { key: 'recommendations', label: 'Suggested Next Steps' },
 ];
 
-export function ClinicalSummaryEditor({ rows, studentName }: ClinicalSummaryEditorProps) {
+function buildInput(props: ClinicalSummaryEditorProps): SummaryInput {
+  return {
+    rows: props.rows,
+    studentName: props.studentName,
+    tone: props.tone || 'clinical',
+    dateRangeLabel: props.dateRangeLabel || 'the selected range',
+    totalDays: props.totalDays || 30,
+    daysWithData: props.daysWithData || 20,
+  };
+}
+
+export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
+  const { rows } = props;
+  const input = useMemo(() => buildInput(props), [rows, props.studentName, props.tone, props.dateRangeLabel, props.totalDays, props.daysWithData]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [sections, setSections] = useState<SummarySection[]>(() =>
     SECTION_DEFS.map(d => ({
       key: d.key,
       label: d.label,
-      content: generateSectionContent(d.key, rows, studentName),
+      content: regenerateSection(d.key, input),
       isLocked: false,
       isEdited: false,
     }))
@@ -80,15 +74,15 @@ export function ClinicalSummaryEditor({ rows, studentName }: ClinicalSummaryEdit
     setSections(prev => prev.map(s => s.key === key ? { ...s, isLocked: !s.isLocked } : s));
   };
 
-  const regenerateSection = (key: string) => {
+  const handleRegenerate = (key: string) => {
     const section = sections.find(s => s.key === key);
     if (section?.isLocked) {
       toast.error('Section is locked. Unlock to regenerate.');
       return;
     }
-    const newContent = generateSectionContent(key, rows, studentName);
+    const newContent = regenerateSection(key, input);
     setSections(prev => prev.map(s => s.key === key ? { ...s, content: newContent, isEdited: false } : s));
-    toast.success('Section regenerated');
+    toast.success('Section regenerated from data');
   };
 
   const saveSnapshot = () => {
@@ -126,8 +120,8 @@ export function ClinicalSummaryEditor({ rows, studentName }: ClinicalSummaryEdit
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => regenerateSection(section.key)}
-                      title="Regenerate"
+                      onClick={() => handleRegenerate(section.key)}
+                      title="Regenerate from data"
                     >
                       <RefreshCw className="w-3 h-3" />
                     </Button>
