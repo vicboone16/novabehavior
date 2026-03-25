@@ -11,7 +11,6 @@ import { CreateRewardDialog } from "@/components/rewards/CreateRewardDialog";
 import { TransactionHistoryDrawer } from "@/components/rewards/TransactionHistoryDrawer";
 import { useAgencyContext } from "@/hooks/useAgencyContext";
 import type { RewardItem } from "@/hooks/useRewardEconomy";
-import type { RewardItem } from "@/hooks/useRewardEconomy";
 
 export default function RewardStore() {
   const { currentAgency } = useAgencyContext();
