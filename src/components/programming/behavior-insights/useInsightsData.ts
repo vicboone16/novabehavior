@@ -82,9 +82,9 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     // Sessions per day
     const sessionsByDay = new Map<string, number>();
     sessions
-      .filter(s => s.studentId === studentId && s.startTime)
+      .filter(s => s.studentIds?.includes(studentId) && s.date)
       .forEach(s => {
-        const d = format(new Date(s.startTime), 'yyyy-MM-dd');
+        const d = format(new Date(s.date), 'yyyy-MM-dd');
         sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
       });
 
