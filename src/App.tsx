@@ -478,13 +478,6 @@ const App = () => {
               <Route path="/nova-copilot" element={<NovaCopilot />} />
               <Route path="/optimization" element={<GoalOptimization />} />
               <Route path="/capture" element={<CaptureCenter />} />
-              <Route path="/demo" element={<DemoGateway />} />
-              <Route path="/demo-center" element={<DemoCenter />} />
-              <Route path="/demo/learners" element={<DemoCenter />} />
-              <Route path="/demo/workflows" element={<DemoCenter />} />
-              <Route path="/demo/training" element={<TrainingAcademy />} />
-              <Route path="/demo/help" element={<HelpCenter />} />
-              <Route path="/demo/client" element={<ClientDemo />} />
               <Route path="/help-center" element={<HelpCenter />} />
               <Route path="/training-academy" element={<TrainingAcademy />} />
               <Route path="/intake-forms" element={<IntakeForms />} />
