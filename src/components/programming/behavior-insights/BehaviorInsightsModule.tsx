@@ -3,6 +3,7 @@ import { BarChart3, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { InsightsControlBar } from './InsightsControlBar';
+import { ActiveFilterChips } from './ActiveFilterChips';
 import { SummaryCardsRow } from './SummaryCardsRow';
 import { InsightBadgesRow } from './InsightBadges';
 import { SmartGraphPanel } from './SmartGraphPanel';
