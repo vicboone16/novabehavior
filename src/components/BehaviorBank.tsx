@@ -8,6 +8,8 @@ import {
   archiveBehaviorToDB,
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
+import { useBehaviorOperations } from '@/hooks/useCanonicalBehaviors';
+import { CanonicalStatusBadge } from '@/components/programming/CanonicalStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -165,6 +167,9 @@ export function BehaviorBank({
 
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
+
+  // Canonical operations
+  const { archiveBehavior: canonicalArchive } = useBehaviorOperations();
 
   // Get global behavior bank and overrides from store
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
@@ -350,11 +355,13 @@ export function BehaviorBank({
                                 size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                 title={behavior.isArchived ? 'Restore behavior' : 'Archive behavior'}
-                                onClick={() => {
+                                onClick={async () => {
                                   if (behavior.isArchived) {
                                     unarchiveBuiltInBehaviorStore(behavior.id);
                                     unarchiveBehaviorFromDB(behavior.id);
                                   } else {
+                                    // Use canonical archive RPC
+                                    await canonicalArchive(behavior.id);
                                     archiveBuiltInBehaviorStore(behavior.id);
                                     if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
                                   }

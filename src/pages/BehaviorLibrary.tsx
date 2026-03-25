@@ -47,6 +47,10 @@ import {
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
 import { supabase } from '@/integrations/supabase/client';
+import { useBehaviorOperations } from '@/hooks/useCanonicalBehaviors';
+import { CanonicalStatusBadge } from '@/components/programming/CanonicalStatusBadge';
+import { BopsTagChips } from '@/components/programming/BopsTagChips';
+import { useEntityBopsTags } from '@/hooks/useBopsTags';
 
 interface BehaviorLibraryProps {
   embedded?: boolean; // When true, hides the page header (used inside ClinicalLibrary)
@@ -180,6 +184,9 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
+
+  // Canonical operations (archive/merge via RPCs)
+  const { archiveBehavior: canonicalArchive, mergeBehavior: canonicalMerge, operating: canonicalOperating } = useBehaviorOperations();
 
   // Tags system
   const {
@@ -425,18 +432,17 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
     toast({ title: 'Definition reset to default' });
   };
 
-  const handleArchiveBehavior = (behavior: typeof allBehaviors[0]) => {
+  const handleArchiveBehavior = async (behavior: typeof allBehaviors[0]) => {
+    // Use canonical archive RPC — soft-archives in nt_behaviors, preserves all learner history
+    await canonicalArchive(behavior.id);
+    
+    // Also update legacy store for immediate UI consistency
     if (behavior.source === 'built-in') {
       archiveBuiltInBehaviorStore(behavior.id);
       if (user?.id) archiveBehaviorToDB(behavior.id, user.id);
-      toast({ title: 'Behavior archived', description: `"${behavior.name}" is hidden from the library. You can restore it later.` });
     } else if (behavior.source === 'organization') {
       removeBankBehavior(behavior.id);
       removeCustomBehaviorFromDB(behavior.id);
-      toast({ title: 'Behavior removed', description: `"${behavior.name}" has been removed from the organization library.` });
-    } else {
-      // custom (student-only) — no action needed since they live on student profiles
-      toast({ title: 'Custom behaviors are managed per-student' });
     }
   };
 
@@ -466,49 +472,11 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   };
 
   const handleAdvancedMerge = async (sourceId: string, targetId: string, useSourceName: boolean) => {
-    // 1. Update DB-side session_data and behavior_session_data to remap source -> target
-    try {
-      // Remap session_data rows
-      await supabase
-        .from('session_data')
-        .update({ behavior_id: targetId } as any)
-        .eq('behavior_id', sourceId);
-
-      // Remap behavior_session_data rows
-      await supabase
-        .from('behavior_session_data')
-        .update({ behavior_id: targetId } as any)
-        .eq('behavior_id', sourceId);
-
-      // Update student_behavior_map entries
-      await supabase
-        .from('student_behavior_map')
-        .update({ behavior_entry_id: targetId } as any)
-        .eq('behavior_entry_id', sourceId);
-
-      console.log(`[Merge] Remapped DB records from ${sourceId} -> ${targetId}`);
-    } catch (dbErr) {
-      console.error('[Merge] DB remap error (continuing with local merge):', dbErr);
-    }
-
-    // 2. Archive source from behavior bank (don't delete — preserve for historical resolution)
-    try {
-      await supabase
-        .from('behavior_bank_entries')
-        .update({ is_archived: true } as any)
-        .eq('behavior_id', sourceId);
-    } catch {
-      // Fallback: remove if archive column doesn't exist
-      removeCustomBehaviorFromDB(sourceId);
-    }
+    // Use canonical merge RPC — remaps assignments, sets successor, preserves all data
+    await canonicalMerge(sourceId, targetId, 'Library merge');
     
-    // 3. Update local store — remaps student behavior IDs and data entries
+    // Also update local store for immediate UI consistency
     advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
-    
-    toast({ 
-      title: 'Behaviors merged', 
-      description: 'All data has been preserved and behaviors combined.' 
-    });
   };
 
   // Prepare behaviors for advanced merge dialog
@@ -790,6 +758,12 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                           {(behavior as any).studentNames.length} student{(behavior as any).studentNames.length > 1 ? 's' : ''}
                                         </Badge>
                                       )}
+                                      <CanonicalStatusBadge
+                                        status={behavior.source === 'built-in' && archivedBuiltInBehaviors.includes(behavior.id) ? 'archived' : 'active'}
+                                        originalId={behavior.id}
+                                        effectiveId={behavior.id}
+                                        size="sm"
+                                      />
                                     </div>
                                     <p className="text-sm text-muted-foreground mb-2">
                                       {behavior.operationalDefinition}
