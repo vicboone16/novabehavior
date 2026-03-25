@@ -40,10 +40,10 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
   const isProcessingRealtimeRef = useRef(false);
   
-  // IMPORTANT: Use a SINGLE batched selector instead of 15 individual selectors.
-  // Multiple selectors cause cascading re-renders during store hydration/setState,
+  // IMPORTANT: Use a SINGLE batched selector with useShallow instead of 15 individual selectors.
+  // Multiple individual selectors cause cascading re-renders during store hydration/setState,
   // leading to "Maximum update depth exceeded" (React Error #185).
-  const storeSnapshot = useDataStore((state) => ({
+  const storeSnapshot = useDataStore(useShallow((state) => ({
     students: state.students,
     behaviorGoals: state.behaviorGoals,
     sessions: state.sessions,
@@ -57,7 +57,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
     sessionStartTime: state.sessionStartTime,
     selectedStudentIds: state.selectedStudentIds,
     sessionLengthMinutes: state.sessionLengthMinutes,
-  }));
+  })));
 
   const {
     students,
