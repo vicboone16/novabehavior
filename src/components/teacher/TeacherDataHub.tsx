@@ -59,6 +59,18 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
               <Settings2 className="w-3 h-3" />
               Parent Settings
             </TabsTrigger>
+            <TabsTrigger value="quests" className="gap-1 text-xs">
+              <Scroll className="w-3 h-3" />
+              Quests
+            </TabsTrigger>
+            <TabsTrigger value="cosmetics" className="gap-1 text-xs">
+              <Sparkles className="w-3 h-3" />
+              Unlocks
+            </TabsTrigger>
+            <TabsTrigger value="parent-engagement" className="gap-1 text-xs">
+              <Users className="w-3 h-3" />
+              Parent Loop
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly">
@@ -81,6 +93,15 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
           </TabsContent>
           <TabsContent value="parent-config">
             <ParentReportConfigPanel studentId={clientId} />
+          </TabsContent>
+          <TabsContent value="quests">
+            <QuestBoard studentId={clientId} agencyId="" isTeacher />
+          </TabsContent>
+          <TabsContent value="cosmetics">
+            <CosmeticInventory studentId={clientId} />
+          </TabsContent>
+          <TabsContent value="parent-engagement">
+            <TeacherParentEngagement studentId={clientId} />
           </TabsContent>
         </Tabs>
       </CardContent>
