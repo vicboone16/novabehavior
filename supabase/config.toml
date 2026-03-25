@@ -141,3 +141,6 @@ verify_jwt = false
 [functions.nova-copilot-spot]
 verify_jwt = false
 
+[functions.generate-parent-insight]
+verify_jwt = false
+
