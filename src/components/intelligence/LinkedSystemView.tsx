@@ -17,9 +17,10 @@ import { ClinicalSyncPanel } from './ClinicalSyncPanel';
 interface LinkedSystemViewProps {
   agencyId: string | null;
   students: { id: string; name: string }[];
+  isAdmin?: boolean;
 }
 
-export function LinkedSystemView({ agencyId, students }: LinkedSystemViewProps) {
+export function LinkedSystemView({ agencyId, students, isAdmin }: LinkedSystemViewProps) {
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
   const selectedStudent = students.find(s => s.id === selectedStudentId);
 
