@@ -28,6 +28,7 @@ import {
 } from '@/types/behavior';
 import { BehaviorDefinitionOverride, GlobalBankBehavior } from '@/types/behaviorBank';
 import { supabase } from '@/integrations/supabase/client';
+import { markNarrativeNotesPending } from '@/lib/pendingNarrativeGuard';
 import { emitHistoricalDataChanged } from '@/lib/historicalDataSync';
 
 // Direct save of historical data to database - bypasses sync debounce
