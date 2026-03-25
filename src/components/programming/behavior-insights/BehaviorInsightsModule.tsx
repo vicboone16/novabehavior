@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { InsightsControlBar } from './InsightsControlBar';
@@ -8,7 +8,10 @@ import { InsightBadgesRow } from './InsightBadges';
 import { SmartGraphPanel } from './SmartGraphPanel';
 import { IntelligentTable } from './IntelligentTable';
 import { BehaviorBreakdownSummary } from './BehaviorBreakdownSummary';
+import { ClinicalSummaryEditor } from './ClinicalSummaryEditor';
+import { TeacherPrintPreview } from './TeacherPrintPreview';
 import { ExportCenter } from './ExportCenter';
+import { SummaryTemplateBuilder } from './SummaryTemplateBuilder';
 import { useInsightsData } from './useInsightsData';
 import { DEFAULT_FILTERS } from './types';
 import type { InsightsFilters } from './types';
@@ -22,6 +25,8 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
   const [filters, setFilters] = useState<InsightsFilters>(DEFAULT_FILTERS);
   const [isOpen, setIsOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   const {
     behaviors,
@@ -55,8 +60,16 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
             filters={filters}
             onChange={setFilters}
             behaviors={behaviors.map(b => ({ id: b.id, name: b.name }))}
+            onPrint={() => setPrintOpen(true)}
             onExport={() => setExportOpen(true)}
           />
+
+          {/* Template Builder Trigger */}
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1" onClick={() => setTemplateOpen(true)}>
+              <Settings2 className="w-3 h-3" /> Summary Template
+            </Button>
+          </div>
 
           {/* Summary Cards */}
           <SummaryCardsRow {...kpis} />
@@ -77,16 +90,32 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
 
           {/* Behavior Breakdown Summary */}
           <BehaviorBreakdownSummary rows={summaryRows} studentName={studentName} />
+
+          {/* Clinical Summary Editor */}
+          <ClinicalSummaryEditor rows={summaryRows} studentName={studentName} />
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Export Center */}
+      {/* Modals / Drawers */}
       <ExportCenter
         open={exportOpen}
         onOpenChange={setExportOpen}
         summaryRows={summaryRows}
         studentName={studentName}
         dateRange={dateRange}
+      />
+
+      <TeacherPrintPreview
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        studentName={studentName}
+        dateRange={dateRange}
+        rows={summaryRows}
+      />
+
+      <SummaryTemplateBuilder
+        open={templateOpen}
+        onOpenChange={setTemplateOpen}
       />
     </div>
   );
