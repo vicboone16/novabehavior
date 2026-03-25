@@ -1,4 +1,4 @@
-import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe, Trophy } from 'lucide-react';
+import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe, Trophy, Layout } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,6 +8,11 @@ import { DemoOnboarding } from './DemoOnboarding';
 import { DemoEcosystemViewer } from './DemoEcosystemViewer';
 import { DemoDashboardPanel } from './DemoDashboardPanel';
 import { DemoClinicalViewer } from './DemoClinicalViewer';
+import { UIReferenceFrame } from './UIReferenceFrame';
+import { StudentPageTemplate } from './StudentPageTemplate';
+import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
+import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
+import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
 const ICON_MAP: Record<string, any> = {
