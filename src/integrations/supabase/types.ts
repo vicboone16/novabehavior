@@ -77764,6 +77764,21 @@ export type Database = {
         Args: { p_generated_by?: string; p_package_instance_id: string }
         Returns: string
       }
+      create_student_quest: {
+        Args: {
+          p_agency_id: string
+          p_classroom_id?: string
+          p_created_by?: string
+          p_description?: string
+          p_goal_value?: number
+          p_quest_type: string
+          p_reward_points?: number
+          p_reward_type?: string
+          p_student_id: string
+          p_title: string
+        }
+        Returns: Json
+      }
       create_trigger_if_missing: {
         Args: {
           function_name: unknown
@@ -79096,6 +79111,18 @@ export type Database = {
           strategy_name: string
           teacher_quick_version: string
         }[]
+      }
+      record_parent_action: {
+        Args: {
+          p_action_type: string
+          p_agency_id: string
+          p_message?: string
+          p_parent_user_id: string
+          p_points_equivalent?: number
+          p_related_insight_id?: string
+          p_student_id: string
+        }
+        Returns: Json
       }
       record_pin_attempt: {
         Args: {
