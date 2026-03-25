@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview';
+// StudentBehaviorsOverview removed — now unified in BehaviorInsightsModule
 import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
 import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
