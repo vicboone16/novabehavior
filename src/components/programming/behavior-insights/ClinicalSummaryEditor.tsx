@@ -74,6 +74,22 @@ export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
     setSections(prev => prev.map(s => s.key === key ? { ...s, isLocked: !s.isLocked } : s));
   };
 
+  const toggleHide = (key: string) => {
+    setSections(prev => prev.map(s => s.key === key ? { ...s, isHidden: !s.isHidden } : s));
+  };
+
+  const moveSection = (key: string, direction: -1 | 1) => {
+    setSections(prev => {
+      const idx = prev.findIndex(s => s.key === key);
+      if (idx < 0) return prev;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      return next;
+    });
+  };
+
   const handleRegenerate = (key: string) => {
     const section = sections.find(s => s.key === key);
     if (section?.isLocked) {
