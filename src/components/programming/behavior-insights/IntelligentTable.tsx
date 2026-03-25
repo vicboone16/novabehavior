@@ -70,8 +70,8 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
             const expanded = expandedId === row.behaviorId;
             const flag = row.clinicalFlag ? FLAG_CONFIG[row.clinicalFlag] : null;
             return (
-              <>
-                <TableRow key={row.behaviorId} className="hover:bg-muted/40">
+              <React.Fragment key={row.behaviorId}>
+                <TableRow className="hover:bg-muted/40">
                   <TableCell className="text-xs font-medium max-w-[140px] truncate">{row.behaviorName}</TableCell>
                   <TableCell className="text-xs font-semibold">{row.totalCount}</TableCell>
                   <TableCell className="text-xs">{row.pctOfTotal}%</TableCell>
