@@ -172,10 +172,20 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     return result.sort((a, b) => a.date.localeCompare(b.date));
   }, [student, studentId, frequencyEntries, durationEntries, abcEntries, sessions, behaviors, dateRange]);
 
-  // Merge: prefer DB aggregates, fall back to Zustand
+  // Merge: combine DB aggregates with Zustand data
+  // DB rows take priority for matching date+behavior pairs; Zustand fills gaps
   const dailyData = useMemo(() => {
-    if (dbRows.length > 0) return dbRows;
-    return zustandData;
+    if (dbRows.length === 0) return zustandData;
+    if (zustandData.length === 0) return dbRows;
+
+    // Build a set of date|behaviorId keys present in DB rows
+    const dbKeys = new Set(dbRows.map(r => `${r.date}|${r.behaviorId}`));
+    // Include all DB rows, plus any Zustand rows that don't overlap
+    const merged = [
+      ...dbRows,
+      ...zustandData.filter(z => !dbKeys.has(`${z.date}|${z.behaviorId}`)),
+    ];
+    return merged.sort((a, b) => a.date.localeCompare(b.date));
   }, [dbRows, zustandData]);
 
   // Filter by selected behaviors
