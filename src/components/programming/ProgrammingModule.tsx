@@ -4,6 +4,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
 import { BothModeView } from './BothModeView';
+import { BehaviorInsightsModule } from './behavior-insights/BehaviorInsightsModule';
 
 export type ProgrammingMode = 'skills' | 'behaviors' | 'both';
 
@@ -80,6 +81,9 @@ export function ProgrammingModule({
           isAdmin={isAdmin} 
         />
       )}
+
+      {/* Behavior Insights & Reporting Module */}
+      <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
     </div>
   );
 }
