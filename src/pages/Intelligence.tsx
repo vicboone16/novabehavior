@@ -209,7 +209,28 @@ export default function Intelligence() {
     return data.sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
   }, [signals, signalTypeFilter]);
 
-  if (accessLoading) {
+  async function handleBulkGenerate() {
+    const students = caseloadRows.map(r => r.client_id);
+    if (students.length === 0) { toast.error('No students on caseload'); return; }
+    setBulkGenerating(true);
+    setBulkProgress({ done: 0, total: students.length });
+    let successCount = 0;
+    let errorCount = 0;
+    // Process in batches of 5
+    for (let i = 0; i < students.length; i += 5) {
+      const batch = students.slice(i, i + 5);
+      const promises = batch.map(sid =>
+        supabase.functions.invoke('generate-parent-insight', { body: { student_id: sid } })
+          .then(({ error }) => { if (error) throw error; successCount++; })
+          .catch(() => { errorCount++; })
+      );
+      await Promise.all(promises);
+      setBulkProgress({ done: Math.min(i + 5, students.length), total: students.length });
+    }
+    setBulkGenerating(false);
+    toast.success(`Generated ${successCount} insights${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+  }
+
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
