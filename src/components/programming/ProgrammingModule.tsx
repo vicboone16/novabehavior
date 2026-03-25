@@ -83,6 +83,9 @@ export function ProgrammingModule({
           isAdmin={isAdmin} 
         />
       )}
+
+      {/* Behavior Insights & Reporting Module */}
+      <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
     </div>
   );
 }
