@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const FLAG_CONFIG: Record<string, { icon: React.ElementType; label: string; vari
   increasing: { icon: TrendingUp, label: 'Increasing', variant: 'destructive' },
   decreasing: { icon: TrendingDown, label: 'Decreasing', variant: 'default' },
   stable: { icon: Minus, label: 'Stable', variant: 'secondary' },
+  priority: { icon: AlertTriangle, label: 'Priority', variant: 'destructive' },
 };
 
 export function IntelligentTable({ rows }: IntelligentTableProps) {
@@ -69,8 +70,8 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
             const expanded = expandedId === row.behaviorId;
             const flag = row.clinicalFlag ? FLAG_CONFIG[row.clinicalFlag] : null;
             return (
-              <>
-                <TableRow key={row.behaviorId} className="hover:bg-muted/40">
+              <React.Fragment key={row.behaviorId}>
+                <TableRow className="hover:bg-muted/40">
                   <TableCell className="text-xs font-medium max-w-[140px] truncate">{row.behaviorName}</TableCell>
                   <TableCell className="text-xs font-semibold">{row.totalCount}</TableCell>
                   <TableCell className="text-xs">{row.pctOfTotal}%</TableCell>
@@ -165,7 +166,7 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </TableBody>

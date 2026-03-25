@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import type { BehaviorSummaryRow } from './types';
 import { generateFullSummary, type ToneProfile } from './summaryEngine';
 
-type PrintMode = 'teacher' | 'team_meeting' | 'bcba' | 'parent' | 'fba_bip';
+type PrintMode = 'teacher' | 'team_meeting' | 'bcba' | 'parent' | 'fba_bip' | 'bip_packet';
 
 const PRINT_MODES: { value: PrintMode; label: string; icon: React.ElementType; tone: ToneProfile }[] = [
   { value: 'teacher', label: 'Teacher Summary', icon: FileText, tone: 'teacher_friendly' },
@@ -16,6 +16,7 @@ const PRINT_MODES: { value: PrintMode; label: string; icon: React.ElementType; t
   { value: 'bcba', label: 'BCBA Clinical', icon: Stethoscope, tone: 'clinical' },
   { value: 'parent', label: 'Parent-Friendly', icon: Heart, tone: 'parent_friendly' },
   { value: 'fba_bip', label: 'FBA/BIP Appendix', icon: BookOpen, tone: 'detailed' },
+  { value: 'bip_packet', label: 'BIP Intervention Packet', icon: BookOpen, tone: 'teacher_friendly' },
 ];
 
 interface TeacherPrintPreviewProps {
@@ -101,7 +102,7 @@ export function TeacherPrintPreview({ open, onOpenChange, studentName, dateRange
     w.print();
   };
 
-  const isDetailed = mode === 'bcba' || mode === 'fba_bip' || mode === 'team_meeting';
+  const isDetailed = mode === 'bcba' || mode === 'fba_bip' || mode === 'team_meeting' || mode === 'bip_packet';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -269,7 +270,7 @@ export function TeacherPrintPreview({ open, onOpenChange, studentName, dateRange
               </div>
 
               {/* Staff Response — 3-card grid */}
-              {(mode === 'teacher' || mode === 'team_meeting' || mode === 'fba_bip') && (
+              {(mode === 'teacher' || mode === 'team_meeting' || mode === 'fba_bip' || mode === 'bip_packet') && (
                 <div className="section">
                   <h3 className="text-sm font-bold text-primary border-b-2 border-border pb-1.5 mb-3 uppercase tracking-wider">
                     Staff Response Focus

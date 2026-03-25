@@ -218,6 +218,9 @@ export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onEx
                   );
                   onChange({ ...filters, selectedBehaviors: escape.map(b => b.id) });
                 }},
+                { label: 'Recently Active', action: () => {
+                  onChange({ ...filters, selectedBehaviors: behaviors.slice(0, Math.min(behaviors.length, 8)).map(b => b.id) });
+                }},
               ].map(preset => (
                 <Button key={preset.label} variant="outline" size="sm" className="text-[10px] h-5 px-2" onClick={preset.action}>
                   {preset.label}
