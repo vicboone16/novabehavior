@@ -1,4 +1,4 @@
-import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe, Trophy } from 'lucide-react';
+import { Users, GraduationCap, FileText, CreditCard, Play, UserCheck, Briefcase, School, Heart, BarChart3, AlertTriangle, Activity, Globe, Trophy, Layout } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -8,6 +8,10 @@ import { DemoOnboarding } from './DemoOnboarding';
 import { DemoEcosystemViewer } from './DemoEcosystemViewer';
 import { DemoDashboardPanel } from './DemoDashboardPanel';
 import { DemoClinicalViewer } from './DemoClinicalViewer';
+import { UIReferenceFrame } from './UIReferenceFrame';
+import { StudentPageTemplate } from './StudentPageTemplate';
+import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
+import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
 const ICON_MAP: Record<string, any> = {
@@ -60,6 +64,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosyste
         <TabsTrigger value="workflows" className="text-xs">By Workflow</TabsTrigger>
         <TabsTrigger value="payers" className="text-xs">By Payer</TabsTrigger>
         <TabsTrigger value="walkthroughs" className="text-xs">Walkthroughs</TabsTrigger>
+        <TabsTrigger value="templates" className="text-xs gap-1"><Layout className="w-3 h-3" /> Templates</TabsTrigger>
         <TabsTrigger value="progress" className="text-xs gap-1"><Trophy className="w-3 h-3" /> Progress</TabsTrigger>
       </TabsList>
 
@@ -247,6 +252,28 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosyste
 
       <TabsContent value="walkthroughs" className="mt-4">
         <DemoWalkthroughs />
+      </TabsContent>
+
+      <TabsContent value="templates" className="space-y-4 mt-4">
+        <div className="space-y-1 mb-4">
+          <h2 className="text-lg font-semibold">UI Templates & Reference Frames</h2>
+          <p className="text-sm text-muted-foreground">Reference layouts and downloadable templates for student pages, clinical reports, and dashboards.</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <UIReferenceFrame
+            image={studentProfileRef}
+            alt="Student profile layout reference"
+            label="Student Profile Layout"
+            caption="Standard student page: BIP summary, goal metrics, progress notes, and goal tracking"
+          />
+          <UIReferenceFrame
+            image={clinicalProgressRef}
+            alt="Clinical progress report layout"
+            label="Clinical Progress View"
+            caption="Clinical progress report with narrative summary, charts, and fidelity data table"
+          />
+        </div>
+        <StudentPageTemplate />
       </TabsContent>
 
       <TabsContent value="progress" className="mt-4">
