@@ -247,6 +247,24 @@ export function ParentPreviewPanel({ studentId, studentName, isAdmin }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* Parent Actions */}
+      <Card>
+        <CardContent className="py-4 px-5">
+          <h4 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            How are things going?
+          </h4>
+          <ParentActionButtons
+            studentId={studentId}
+            agencyId=""
+            insightId={insight?.id}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Home Reinforcement */}
+      <HomeReinforcementLog studentId={studentId} agencyId="" />
     </div>
   );
 }
