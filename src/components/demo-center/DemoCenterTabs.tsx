@@ -9,7 +9,7 @@ import { DemoEcosystemViewer } from './DemoEcosystemViewer';
 import { DemoDashboardPanel } from './DemoDashboardPanel';
 import { DemoClinicalViewer } from './DemoClinicalViewer';
 import { UIReferenceFrame } from './UIReferenceFrame';
-import { StudentPageTemplate } from './StudentPageTemplate';
+
 import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
 import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
@@ -273,7 +273,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosyste
             caption="Clinical progress report with narrative summary, charts, and fidelity data table"
           />
         </div>
-        <StudentPageTemplate />
+        
       </TabsContent>
 
       <TabsContent value="progress" className="mt-4">
