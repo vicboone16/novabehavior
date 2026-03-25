@@ -130,11 +130,15 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     durationEntries
       .filter(e => e.studentId === studentId)
       .forEach(e => {
-        const d = format(new Date(e.startTime), 'yyyy-MM-dd');
-        const entryDate = parseISO(d);
-        if (!isWithinInterval(entryDate, dateRange)) return;
-        const key = `${d}|${e.behaviorId}`;
-        durByKey.set(key, (durByKey.get(key) || 0) + (e.duration || 0));
+        try {
+          const ts = new Date(e.startTime);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          const entryDate = parseISO(d);
+          if (!isWithinInterval(entryDate, dateRange)) return;
+          const key = `${d}|${e.behaviorId}`;
+          durByKey.set(key, (durByKey.get(key) || 0) + (e.duration || 0));
+        } catch { /* skip invalid timestamps */ }
       });
 
     const abcByKey = new Map<string, number>();
