@@ -166,7 +166,7 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </TableBody>
