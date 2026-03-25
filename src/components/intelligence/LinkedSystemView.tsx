@@ -88,7 +88,7 @@ export function LinkedSystemView({ agencyId, students, isAdmin }: LinkedSystemVi
         </TabsContent>
 
         <TabsContent value="parent">
-          <ParentPreviewPanel studentId={selectedStudentId} studentName={selectedStudent?.name || ''} />
+          <ParentPreviewPanel studentId={selectedStudentId} studentName={selectedStudent?.name || ''} isAdmin={isAdmin} />
         </TabsContent>
 
         <TabsContent value="clinical">
