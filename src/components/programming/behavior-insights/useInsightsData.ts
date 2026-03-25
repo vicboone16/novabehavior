@@ -210,14 +210,14 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
 
   // Chart data grouped by date for overlay
   const chartData = useMemo(() => {
-    const byDate = new Map<string, Record<string, number>>();
+    const byDate = new Map<string, Record<string, any>>();
     filteredData.forEach(d => {
       const existing = byDate.get(d.date) || { date: d.date };
       const valKey = filters.metric === 'duration' ? d.duration : filters.metric === 'rate' ? d.rate : d.count;
-      existing[d.behaviorName] = (existing[d.behaviorName] as number || 0) + valKey;
+      existing[d.behaviorName] = ((existing[d.behaviorName] as number) || 0) + valKey;
       byDate.set(d.date, existing);
     });
-    return Array.from(byDate.values()).sort((a, b) => (a.date as string).localeCompare(b.date as string));
+    return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }, [filteredData, filters.metric]);
 
   // Unique behavior names for chart series
