@@ -23,6 +23,9 @@ export function BehaviorBreakdownSummary({
   daysWithData = 20,
   tone = 'clinical',
 }: BehaviorBreakdownSummaryProps) {
+  const enabledKeys = useTemplateStore(s => s.sections.filter(sec => sec.enabled).map(sec => sec.key));
+  const isEnabled = (key: string) => enabledKeys.includes(key);
+
   const summary = useMemo(() => {
     if (rows.length === 0) return null;
     return generateFullSummary({
