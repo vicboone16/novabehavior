@@ -145,11 +145,15 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     abcEntries
       .filter(e => e.studentId === studentId)
       .forEach(e => {
-        const d = format(new Date(e.timestamp), 'yyyy-MM-dd');
-        const entryDate = parseISO(d);
-        if (!isWithinInterval(entryDate, dateRange)) return;
-        const key = `${d}|${e.behaviorId}`;
-        abcByKey.set(key, (abcByKey.get(key) || 0) + 1);
+        try {
+          const ts = new Date(e.timestamp);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          const entryDate = parseISO(d);
+          if (!isWithinInterval(entryDate, dateRange)) return;
+          const key = `${d}|${e.behaviorId}`;
+          abcByKey.set(key, (abcByKey.get(key) || 0) + 1);
+        } catch { /* skip invalid timestamps */ }
       });
 
     const sessionsByDay = new Map<string, number>();
