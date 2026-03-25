@@ -1599,16 +1599,16 @@ export function StudentBehaviorsOverview({
         </CardContent>
       </Card>
 
-      {/* Orphaned / Unlinked Behavior Data */}
+      {/* Orphaned / Needs Mapping Behavior Data */}
       {orphanedBehaviors.length > 0 && (
         <Card className="border-warning/50 bg-warning/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
-              Unlinked Behavior Data ({orphanedBehaviors.length})
+              Needs Mapping ({orphanedBehaviors.length})
             </CardTitle>
             <CardDescription className="text-xs">
-              Data collected during assessments or observations that isn't linked to a defined behavior. Click "Link" to name and adopt it.
+              Data collected during assessments or observations that needs mapping to a canonical behavior. Click "Map" to resolve it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
