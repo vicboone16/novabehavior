@@ -9,7 +9,8 @@ import { RewardDetailDrawer } from "@/components/rewards/RewardDetailDrawer";
 import { EconomySettingsModal } from "@/components/rewards/EconomySettingsModal";
 import { CreateRewardDialog } from "@/components/rewards/CreateRewardDialog";
 import { TransactionHistoryDrawer } from "@/components/rewards/TransactionHistoryDrawer";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAgencyContext } from "@/hooks/useAgencyContext";
+import type { RewardItem } from "@/hooks/useRewardEconomy";
 import type { RewardItem } from "@/hooks/useRewardEconomy";
 
 export default function RewardStore() {
