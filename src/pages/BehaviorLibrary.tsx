@@ -758,6 +758,12 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
                                           {(behavior as any).studentNames.length} student{(behavior as any).studentNames.length > 1 ? 's' : ''}
                                         </Badge>
                                       )}
+                                      <CanonicalStatusBadge
+                                        status={behavior.source === 'built-in' && archivedBuiltInBehaviors.includes(behavior.id) ? 'archived' : 'active'}
+                                        originalId={behavior.id}
+                                        effectiveId={behavior.id}
+                                        size="sm"
+                                      />
                                     </div>
                                     <p className="text-sm text-muted-foreground mb-2">
                                       {behavior.operationalDefinition}
