@@ -287,6 +287,25 @@ export default function Intelligence() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBulkGenerate}
+            disabled={bulkGenerating}
+            className="gap-1.5"
+          >
+            {bulkGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {bulkProgress.done}/{bulkProgress.total}
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-3.5 h-3.5" />
+                Generate All Insights
+              </>
+            )}
+          </Button>
           {kpis.openAlerts > 0 && (
             <Badge variant="destructive" className="text-sm px-3 py-1">
               {kpis.openAlerts} Open Alert{kpis.openAlerts !== 1 ? 's' : ''}
