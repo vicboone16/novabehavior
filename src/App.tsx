@@ -498,6 +498,7 @@ const App = () => {
               <Route path="/bops-admin" element={<Navigate to="/clinical" replace />} />
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
               <Route path="/reward-store" element={<RewardStore />} />
+              <Route path="/parent-portal" element={<ParentPortal />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
