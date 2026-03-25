@@ -15,6 +15,7 @@ const FLAG_CONFIG: Record<string, { icon: React.ElementType; label: string; vari
   increasing: { icon: TrendingUp, label: 'Increasing', variant: 'destructive' },
   decreasing: { icon: TrendingDown, label: 'Decreasing', variant: 'default' },
   stable: { icon: Minus, label: 'Stable', variant: 'secondary' },
+  priority: { icon: AlertTriangle, label: 'Priority', variant: 'destructive' },
 };
 
 export function IntelligentTable({ rows }: IntelligentTableProps) {
