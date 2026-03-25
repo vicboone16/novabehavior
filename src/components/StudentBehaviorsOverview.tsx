@@ -464,7 +464,7 @@ export function StudentBehaviorsOverview({
     abcEntries.filter(e => e.studentId === studentId).forEach(e => {
       const o = processEntry(e.behaviorId, (e as any).behaviorName || (e as any).behavior);
       if (o) { o.abcCount += 1; o.freqCount += ((e as any).frequencyCount || 1); }
-      if (o && ((e as any).behaviorName || (e as any).behavior) && o.inferredName.startsWith('Unlinked')) {
+      if (o && ((e as any).behaviorName || (e as any).behavior) && o.inferredName.startsWith('Needs Mapping')) {
         o.inferredName = (e as any).behaviorName || (e as any).behavior;
       }
     });
