@@ -172,6 +172,18 @@ export default function ClassroomToday() {
       {/* Presence + Top Triggers Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {classroomId && (
+          <WhosHerePanel
+            staff={staff}
+            myPresence={myPresence}
+            loading={presenceLoading}
+            onCheckIn={checkIn}
+            onCheckOut={checkOut}
+            onSetAvailability={setAvailability}
+            onMoveStaff={moveStaff}
+            currentClassroomId={classroomId}
+          />
+        )}
+        {classroomId && (
           <ClassroomPresencePanel classroomId={classroomId} studentNames={studentNameMap} />
         )}
         {topTriggers.length > 0 && (
