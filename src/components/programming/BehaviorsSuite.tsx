@@ -8,6 +8,7 @@ import { StudentBehaviorsOverview } from '@/components/StudentBehaviorsOverview'
 import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
 import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
@@ -30,7 +31,15 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
     intervalEntries, 
     sessions,
     behaviorGoals 
-  } = useDataStore();
+  } = useDataStore(useShallow((state) => ({
+    students: state.students,
+    frequencyEntries: state.frequencyEntries,
+    durationEntries: state.durationEntries,
+    abcEntries: state.abcEntries,
+    intervalEntries: state.intervalEntries,
+    sessions: state.sessions,
+    behaviorGoals: state.behaviorGoals,
+  })));
   
   const student = students.find(s => s.id === studentId);
   

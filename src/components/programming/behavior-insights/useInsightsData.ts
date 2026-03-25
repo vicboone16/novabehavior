@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { startOfDay, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, isWithinInterval, format, parseISO, differenceInDays } from 'date-fns';
 import type { InsightsFilters, BehaviorDayData, BehaviorSummaryRow, InsightBadge } from './types';
 
@@ -29,7 +30,13 @@ function getDateRange(preset: InsightsFilters['dateRange'], customStart?: string
 }
 
 export function useInsightsData(studentId: string, filters: InsightsFilters) {
-  const { students, frequencyEntries, durationEntries, abcEntries, sessions } = useDataStore();
+  const { students, frequencyEntries, durationEntries, abcEntries, sessions } = useDataStore(useShallow((state) => ({
+    students: state.students,
+    frequencyEntries: state.frequencyEntries,
+    durationEntries: state.durationEntries,
+    abcEntries: state.abcEntries,
+    sessions: state.sessions,
+  })));
   const student = students.find(s => s.id === studentId);
 
   const dateRange = useMemo(() => getDateRange(filters.dateRange, filters.customStart, filters.customEnd), [filters.dateRange, filters.customStart, filters.customEnd]);

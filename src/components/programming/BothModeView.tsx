@@ -12,6 +12,7 @@ import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
 import { ProgrammingIntelligenceBanner } from './ProgrammingIntelligenceBanner';
 import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +27,7 @@ interface BothModeViewProps {
 export function BothModeView({ studentId, studentName, isAdmin = false }: BothModeViewProps) {
   const [detailView, setDetailView] = useState<DetailView>('skills');
 
-  const { students } = useDataStore();
+  const students = useDataStore(useShallow((state) => state.students));
   const student = students.find(s => s.id === studentId);
   const { data: bopsPrograms } = useStudentBopsPrograms(studentId);
   const bopsCount = bopsPrograms?.length || 0;

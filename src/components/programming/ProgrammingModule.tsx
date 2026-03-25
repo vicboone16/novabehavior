@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Target, Activity, Columns3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Target, Activity, Columns3, Loader2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
@@ -15,6 +15,12 @@ interface ProgrammingModuleProps {
   defaultMode?: ProgrammingMode;
 }
 
+/**
+ * ProgrammingModule defers rendering its heavy children by one frame.
+ * This prevents the "Maximum update depth exceeded" crash (React #185)
+ * caused by dozens of bare useDataStore() selectors in the subtree
+ * firing cascading re-renders during Zustand store hydration.
+ */
 export function ProgrammingModule({ 
   studentId, 
   studentName, 
@@ -22,6 +28,13 @@ export function ProgrammingModule({
   defaultMode = 'both' 
 }: ProgrammingModuleProps) {
   const [mode, setMode] = useState<ProgrammingMode>(defaultMode);
+  const [ready, setReady] = useState(false);
+
+  // Defer heavy subtree mount by one frame so the store settles first
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -58,32 +71,40 @@ export function ProgrammingModule({
         </ToggleGroup>
       </div>
 
-      {/* Content */}
-      {mode === 'skills' && (
-        <SkillsTabContainer 
-          studentId={studentId} 
-          studentName={studentName} 
-          isAdmin={isAdmin} 
-        />
-      )}
+      {!ready ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
+          {/* Content */}
+          {mode === 'skills' && (
+            <SkillsTabContainer 
+              studentId={studentId} 
+              studentName={studentName} 
+              isAdmin={isAdmin} 
+            />
+          )}
 
-      {mode === 'behaviors' && (
-        <BehaviorsSuite 
-          studentId={studentId} 
-          studentName={studentName} 
-        />
-      )}
+          {mode === 'behaviors' && (
+            <BehaviorsSuite 
+              studentId={studentId} 
+              studentName={studentName} 
+            />
+          )}
 
-      {mode === 'both' && (
-        <BothModeView 
-          studentId={studentId} 
-          studentName={studentName} 
-          isAdmin={isAdmin} 
-        />
-      )}
+          {mode === 'both' && (
+            <BothModeView 
+              studentId={studentId} 
+              studentName={studentName} 
+              isAdmin={isAdmin} 
+            />
+          )}
 
-      {/* Behavior Insights & Reporting Module */}
-      <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
+          {/* Behavior Insights & Reporting Module */}
+          <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
+        </>
+      )}
     </div>
   );
 }
