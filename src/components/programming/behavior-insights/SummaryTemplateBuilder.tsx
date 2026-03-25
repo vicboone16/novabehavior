@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Settings2, GripVertical, Eye, EyeOff, Trash2, Plus, Save, ArrowUp, ArrowDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
