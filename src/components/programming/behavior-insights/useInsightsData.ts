@@ -160,8 +160,12 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     sessions
       .filter(s => s.studentIds?.includes(studentId) && s.date)
       .forEach(s => {
-        const d = format(new Date(s.date), 'yyyy-MM-dd');
-        sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
+        try {
+          const ts = new Date(s.date);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
+        } catch { /* skip invalid dates */ }
       });
 
     const allKeys = new Set([...freqByKey.keys(), ...durByKey.keys(), ...abcByKey.keys()]);
