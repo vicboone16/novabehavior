@@ -273,7 +273,7 @@ export function DemoCenterTabs({ tab, setTab, learners, staff, loading, ecosyste
             caption="Clinical progress report with narrative summary, charts, and fidelity data table"
           />
         </div>
-        <StudentPageTemplate />
+        
       </TabsContent>
 
       <TabsContent value="progress" className="mt-4">
