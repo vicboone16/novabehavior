@@ -150,6 +150,8 @@ export default function Intelligence() {
   const [trendFilter, setTrendFilter] = useState<string>('all');
   const [signalTypeFilter, setSignalTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('caseload');
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
 
   // Agency display name
   const agencyDisplayName = useMemo(() => {
