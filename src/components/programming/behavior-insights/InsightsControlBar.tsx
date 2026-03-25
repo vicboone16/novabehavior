@@ -18,6 +18,8 @@ import { useTemplateStore } from './useTemplateStore';
 interface Behavior {
   id: string;
   name: string;
+  category?: string;
+  functionTag?: string;
 }
 
 interface InsightsControlBarProps {
