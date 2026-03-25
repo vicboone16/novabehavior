@@ -34670,6 +34670,8 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: string
+          is_active: boolean
+          parent_name: string | null
           student_id: string
         }
         Insert: {
@@ -34678,6 +34680,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean
+          parent_name?: string | null
           student_id: string
         }
         Update: {
@@ -34686,6 +34690,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean
+          parent_name?: string | null
           student_id?: string
         }
         Relationships: []
@@ -34961,6 +34967,51 @@ export type Database = {
           student_id?: string
           updated_at?: string
           uses_count?: number
+        }
+        Relationships: []
+      }
+      parent_messages: {
+        Row: {
+          agency_id: string
+          created_at: string
+          id: string
+          is_quick_reply: boolean
+          message_text: string
+          quick_reply_key: string | null
+          read_at: string | null
+          sender_name: string | null
+          sender_token: string | null
+          sender_type: string
+          sender_user_id: string | null
+          student_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          id?: string
+          is_quick_reply?: boolean
+          message_text: string
+          quick_reply_key?: string | null
+          read_at?: string | null
+          sender_name?: string | null
+          sender_token?: string | null
+          sender_type?: string
+          sender_user_id?: string | null
+          student_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          id?: string
+          is_quick_reply?: boolean
+          message_text?: string
+          quick_reply_key?: string | null
+          read_at?: string | null
+          sender_name?: string | null
+          sender_token?: string | null
+          sender_type?: string
+          sender_user_id?: string | null
+          student_id?: string
         }
         Relationships: []
       }
