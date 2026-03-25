@@ -22,7 +22,7 @@ interface ExportCenterProps {
 }
 
 type ExportFormat = 'png' | 'pdf' | 'xlsx' | 'csv' | 'doc';
-type ExportBundle = 'graph' | 'table' | 'summary' | 'full' | 'teacher' | 'bcba' | 'fba_bip' | 'raw';
+type ExportBundle = 'graph' | 'table' | 'summary' | 'full' | 'teacher' | 'bcba' | 'fba_bip' | 'bip_packet' | 'raw';
 
 const FORMAT_OPTIONS: { value: ExportFormat; label: string; icon: React.ElementType }[] = [
   { value: 'png', label: 'PNG Image', icon: Image },
@@ -40,6 +40,7 @@ const BUNDLE_OPTIONS: { value: ExportBundle; label: string; desc: string }[] = [
   { value: 'teacher', label: 'Teacher-Friendly Packet', desc: 'Clean, jargon-free teacher handout' },
   { value: 'bcba', label: 'BCBA Clinical Packet', desc: 'Full clinical interpretation' },
   { value: 'fba_bip', label: 'FBA/BIP Appendix', desc: 'Assessment data appendix' },
+  { value: 'bip_packet', label: 'BIP-Style Intervention Packet', desc: 'Full intervention packet with strategies and staff guides' },
   { value: 'raw', label: 'Raw Data Workbook', desc: 'Full data export for analysis' },
 ];
 

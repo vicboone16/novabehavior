@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { FileText, RefreshCw, Lock, Unlock, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, RefreshCw, Lock, Unlock, Save, ChevronDown, ChevronUp, ArrowUp, ArrowDown, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ interface SummarySection {
   content: string;
   isLocked: boolean;
   isEdited: boolean;
+  isHidden?: boolean;
 }
 
 interface ClinicalSummaryEditorProps {
@@ -74,6 +75,22 @@ export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
     setSections(prev => prev.map(s => s.key === key ? { ...s, isLocked: !s.isLocked } : s));
   };
 
+  const toggleHide = (key: string) => {
+    setSections(prev => prev.map(s => s.key === key ? { ...s, isHidden: !s.isHidden } : s));
+  };
+
+  const moveSection = (key: string, direction: -1 | 1) => {
+    setSections(prev => {
+      const idx = prev.findIndex(s => s.key === key);
+      if (idx < 0) return prev;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      return next;
+    });
+  };
+
   const handleRegenerate = (key: string) => {
     const section = sections.find(s => s.key === key);
     if (section?.isLocked) {
@@ -107,7 +124,7 @@ export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
 
         <CollapsibleContent>
           <CardContent className="space-y-3 px-4 pb-4">
-            {sections.map(section => (
+            {sections.filter(s => !s.isHidden).map((section, idx) => (
               <div key={section.key} className="border border-border rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -115,24 +132,21 @@ export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
                     {section.isEdited && <Badge variant="outline" className="text-[9px]">Edited</Badge>}
                     {section.isLocked && <Lock className="w-3 h-3 text-muted-foreground" />}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => handleRegenerate(section.key)}
-                      title="Regenerate from data"
-                    >
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveSection(section.key, -1)} title="Move up">
+                      <ArrowUp className="w-3 h-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => moveSection(section.key, 1)} title="Move down">
+                      <ArrowDown className="w-3 h-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRegenerate(section.key)} title="Regenerate from data">
                       <RefreshCw className="w-3 h-3" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => toggleLock(section.key)}
-                      title={section.isLocked ? 'Unlock' : 'Lock'}
-                    >
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleLock(section.key)} title={section.isLocked ? 'Unlock' : 'Lock'}>
                       {section.isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleHide(section.key)} title="Hide section">
+                      <EyeOff className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
@@ -145,6 +159,15 @@ export function ClinicalSummaryEditor(props: ClinicalSummaryEditorProps) {
                 />
               </div>
             ))}
+            {sections.some(s => s.isHidden) && (
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted/30 rounded-md px-3 py-1.5">
+                <EyeOff className="w-3 h-3" />
+                {sections.filter(s => s.isHidden).length} hidden section(s)
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] px-2" onClick={() => setSections(prev => prev.map(s => ({ ...s, isHidden: false })))}>
+                  Show All
+                </Button>
+              </div>
+            )}
 
             <div className="flex justify-end">
               <Button size="sm" className="gap-1 text-xs" onClick={saveSnapshot}>

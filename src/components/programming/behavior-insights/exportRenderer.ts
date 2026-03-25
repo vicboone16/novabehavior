@@ -48,6 +48,7 @@ const BUNDLE_PROFILES: Record<string, BundleProfile> = {
   teacher: { tone: 'teacher_friendly', sections: ['behavior_percentages', 'fba_summary', 'replacement_skills', 'staff_response'], title: 'Teacher Summary' },
   bcba: { tone: 'clinical', sections: ['behavior_percentages', 'fba_summary', 'escalation_chain', 'antecedents', 'consequences', 'replacement_skills', 'intervention_focus', 'staff_response', 'reinforcement_focus', 'data_quality_note'], title: 'BCBA Clinical Report' },
   fba_bip: { tone: 'detailed', sections: ['behavior_percentages', 'fba_summary', 'escalation_chain', 'antecedents', 'consequences', 'replacement_skills', 'intervention_focus', 'staff_response', 'reinforcement_focus', 'data_quality_note'], title: 'FBA/BIP Appendix' },
+  bip_packet: { tone: 'teacher_friendly', sections: ['behavior_percentages', 'fba_summary', 'escalation_chain', 'antecedents', 'consequences', 'replacement_skills', 'intervention_focus', 'staff_response', 'reinforcement_focus', 'data_quality_note'], title: 'BIP-Style Intervention Packet' },
   raw: { tone: 'concise', sections: ['behavior_percentages'], title: 'Raw Data Export' },
 };
 

@@ -18,6 +18,8 @@ import { useTemplateStore } from './useTemplateStore';
 interface Behavior {
   id: string;
   name: string;
+  category?: string;
+  functionTag?: string;
 }
 
 interface InsightsControlBarProps {
@@ -196,6 +198,31 @@ export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onEx
             <div className="flex gap-2 mb-2">
               <Button variant="ghost" size="sm" className="text-xs h-6" onClick={selectAll}>Select All</Button>
               <Button variant="ghost" size="sm" className="text-xs h-6" onClick={clearAll}>Clear</Button>
+            </div>
+            {/* Quick-select presets */}
+            <div className="flex flex-wrap gap-1 mb-2 border-b border-border pb-2">
+              {[
+                { label: 'Top 5', action: () => {
+                  const sorted = [...behaviors].sort((a, b) => a.name.localeCompare(b.name));
+                  onChange({ ...filters, selectedBehaviors: sorted.slice(0, 5).map(b => b.id) });
+                }},
+                { label: 'Unsafe Only', action: () => {
+                  const unsafe = behaviors.filter(b => 
+                    /aggress|elop|destruct|hit|kick|bite|throw|bolt|run/i.test(b.name)
+                  );
+                  onChange({ ...filters, selectedBehaviors: unsafe.map(b => b.id) });
+                }},
+                { label: 'Escape-Related', action: () => {
+                  const escape = behaviors.filter(b => 
+                    /escape|refusal|noncomplian|off.?task|elop|avoidance|protest|tantrum/i.test(b.name)
+                  );
+                  onChange({ ...filters, selectedBehaviors: escape.map(b => b.id) });
+                }},
+              ].map(preset => (
+                <Button key={preset.label} variant="outline" size="sm" className="text-[10px] h-5 px-2" onClick={preset.action}>
+                  {preset.label}
+                </Button>
+              ))}
             </div>
             <ScrollArea className="max-h-48">
               {behaviors.map(b => (

@@ -3,6 +3,7 @@ import { BarChart3, Settings2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { InsightsControlBar } from './InsightsControlBar';
+import { ActiveFilterChips } from './ActiveFilterChips';
 import { SummaryCardsRow } from './SummaryCardsRow';
 import { InsightBadgesRow } from './InsightBadges';
 import { SmartGraphPanel } from './SmartGraphPanel';
@@ -63,6 +64,13 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
             behaviors={behaviors.map(b => ({ id: b.id, name: b.name }))}
             onPrint={() => setPrintOpen(true)}
             onExport={() => setExportOpen(true)}
+          />
+
+          {/* Active Filter Chips */}
+          <ActiveFilterChips
+            filters={filters}
+            onChange={setFilters}
+            behaviorCount={behaviors.length}
           />
 
           {/* Template Builder Trigger */}
