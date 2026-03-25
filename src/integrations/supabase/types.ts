@@ -5417,6 +5417,13 @@ export type Database = {
             referencedRelation: "beacon_rewards"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "beacon_reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
+            referencedColumns: ["id"]
+          },
         ]
       }
       beacon_rewards: {
@@ -5427,6 +5434,7 @@ export type Database = {
           created_at: string
           description: string | null
           dynamic_pricing_enabled: boolean | null
+          emoji: string | null
           id: string
           image_url: string | null
           inventory_enabled: boolean | null
@@ -5439,6 +5447,7 @@ export type Database = {
           scope_type: string
           sort_order: number | null
           stock_count: number | null
+          tier: string | null
           time_sensitive_until: string | null
         }
         Insert: {
@@ -5448,6 +5457,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           dynamic_pricing_enabled?: boolean | null
+          emoji?: string | null
           id?: string
           image_url?: string | null
           inventory_enabled?: boolean | null
@@ -5460,6 +5470,7 @@ export type Database = {
           scope_type?: string
           sort_order?: number | null
           stock_count?: number | null
+          tier?: string | null
           time_sensitive_until?: string | null
         }
         Update: {
@@ -5469,6 +5480,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           dynamic_pricing_enabled?: boolean | null
+          emoji?: string | null
           id?: string
           image_url?: string | null
           inventory_enabled?: boolean | null
@@ -5481,6 +5493,7 @@ export type Database = {
           scope_type?: string
           sort_order?: number | null
           stock_count?: number | null
+          tier?: string | null
           time_sensitive_until?: string | null
         }
         Relationships: []
@@ -13104,6 +13117,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_contingencies_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
         ]
@@ -41358,6 +41378,7 @@ export type Database = {
           created_at: string
           demand_pricing_enabled: boolean
           dynamic_pricing_enabled: boolean
+          economy_mode: string
           id: string
           max_price: number
           min_price: number
@@ -41366,6 +41387,7 @@ export type Database = {
           reset_cycle: string
           scarcity_enabled: boolean
           settings_json: Json
+          underuse_discount_enabled: boolean
           underuse_price_decrease: number
           underuse_threshold: number
           updated_at: string
@@ -41378,6 +41400,7 @@ export type Database = {
           created_at?: string
           demand_pricing_enabled?: boolean
           dynamic_pricing_enabled?: boolean
+          economy_mode?: string
           id?: string
           max_price?: number
           min_price?: number
@@ -41386,6 +41409,7 @@ export type Database = {
           reset_cycle?: string
           scarcity_enabled?: boolean
           settings_json?: Json
+          underuse_discount_enabled?: boolean
           underuse_price_decrease?: number
           underuse_threshold?: number
           updated_at?: string
@@ -41398,6 +41422,7 @@ export type Database = {
           created_at?: string
           demand_pricing_enabled?: boolean
           dynamic_pricing_enabled?: boolean
+          economy_mode?: string
           id?: string
           max_price?: number
           min_price?: number
@@ -41406,6 +41431,7 @@ export type Database = {
           reset_cycle?: string
           scarcity_enabled?: boolean
           settings_json?: Json
+          underuse_discount_enabled?: boolean
           underuse_price_decrease?: number
           underuse_threshold?: number
           updated_at?: string
@@ -41458,6 +41484,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_effectiveness_observations_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
         ]
@@ -45250,6 +45283,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
           {
@@ -50477,6 +50517,13 @@ export type Database = {
             referencedRelation: "beacon_rewards"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "student_reinforcer_preferences_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
+            referencedColumns: ["id"]
+          },
         ]
       }
       student_reward_goals: {
@@ -50510,6 +50557,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reward_goals_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
         ]
@@ -69621,7 +69675,38 @@ export type Database = {
             referencedRelation: "beacon_rewards"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reward_effectiveness_observations_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      v_reward_store: {
+        Row: {
+          active: boolean | null
+          base_cost: number | null
+          cost: number | null
+          description: string | null
+          dynamic_pricing_enabled: boolean | null
+          emoji: string | null
+          id: string | null
+          inventory_enabled: boolean | null
+          is_limited: boolean | null
+          max_cost: number | null
+          metadata_json: Json | null
+          min_cost: number | null
+          name: string | null
+          quantity_available: number | null
+          reward_type: string | null
+          scope_id: string | null
+          scope_type: string | null
+          sort_order: number | null
+          tier: string | null
+        }
+        Relationships: []
       }
       v_school_comparison: {
         Row: {
@@ -70194,6 +70279,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsored_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
           {
@@ -72036,6 +72128,22 @@ export type Database = {
           },
         ]
       }
+      v_student_reward_history: {
+        Row: {
+          balance_after: number | null
+          balance_before: number | null
+          created_at: string | null
+          id: string | null
+          metadata_json: Json | null
+          point_cost: number | null
+          reward_emoji: string | null
+          reward_id: string | null
+          reward_name: string | null
+          student_id: string | null
+          transaction_type: string | null
+        }
+        Relationships: []
+      }
       v_student_reward_progress: {
         Row: {
           current_balance: number | null
@@ -72051,6 +72159,13 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "beacon_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reward_goals_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "v_reward_store"
             referencedColumns: ["id"]
           },
         ]
@@ -74685,13 +74800,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "canon_clients"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "canon_clients"
@@ -74701,7 +74809,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "clients"
+            referencedRelation: "canon_clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -74715,7 +74823,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "student_client_identity_v"
+            referencedRelation: "clients"
             referencedColumns: ["client_id"]
           },
           {
@@ -74730,7 +74838,7 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "student_client_identity_v"
-            referencedColumns: ["student_id"]
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -74743,8 +74851,8 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedRelation: "student_client_identity_v"
+            referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
@@ -74757,6 +74865,20 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_bops_admin_student_operations"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_bops_admin_student_operations"
             referencedColumns: ["student_id"]
           },
@@ -74764,7 +74886,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_bops_admin_student_operations"
+            referencedRelation: "v_bops_engine_roster"
             referencedColumns: ["student_id"]
           },
           {
@@ -74778,20 +74900,6 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_bops_engine_roster"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_ci_client_final_score"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
@@ -74799,7 +74907,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "v_ci_effective_thresholds"
+            referencedRelation: "v_ci_client_final_score"
             referencedColumns: ["client_id"]
           },
           {
@@ -74813,6 +74921,20 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "v_ci_effective_thresholds"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_classroom_control_panel"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "v_classroom_control_panel"
             referencedColumns: ["student_id"]
           },
@@ -74820,7 +74942,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_classroom_control_panel"
+            referencedRelation: "v_daily_student_snapshot_inputs"
             referencedColumns: ["student_id"]
           },
           {
@@ -74834,7 +74956,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_daily_student_snapshot_inputs"
+            referencedRelation: "v_student_risk_scores"
             referencedColumns: ["student_id"]
           },
           {
@@ -74848,7 +74970,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_student_risk_scores"
+            referencedRelation: "v_teacher_roster"
             referencedColumns: ["student_id"]
           },
           {
@@ -74862,7 +74984,7 @@ export type Database = {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "v_teacher_roster"
+            referencedRelation: "v_teacher_roster_sources"
             referencedColumns: ["student_id"]
           },
           {
@@ -74875,20 +74997,13 @@ export type Database = {
           {
             foreignKeyName: "student_assessments_student_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_teacher_roster_sources"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_unstaffed_students"
             referencedColumns: ["student_id"]
           },
           {
             foreignKeyName: "student_assessments_student_id_fkey"
-            columns: ["client_id"]
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_unstaffed_students"
             referencedColumns: ["student_id"]
@@ -77417,6 +77532,18 @@ export type Database = {
         Args: { p_model_key: string; p_selected_by?: string; p_student: string }
         Returns: undefined
       }
+      override_reward_price: {
+        Args: {
+          p_agency_id: string
+          p_classroom_id?: string
+          p_created_by?: string
+          p_new_price?: number
+          p_reason?: string
+          p_reward_id: string
+          p_student_id?: string
+        }
+        Returns: Json
+      }
       process_aba_import_staging: {
         Args: { p_staging_id: string }
         Returns: string
@@ -77833,6 +77960,16 @@ export type Database = {
           student_assessment_id: string
           student_id: string
         }[]
+      }
+      restock_reward_inventory: {
+        Args: {
+          p_agency_id: string
+          p_classroom_id?: string
+          p_created_by?: string
+          p_quantity?: number
+          p_reward_id: string
+        }
+        Returns: Json
       }
       review_parent_summary_packet: {
         Args: { _comment?: string; _decision: string; _packet_id: string }
