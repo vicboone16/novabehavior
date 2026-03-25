@@ -23,6 +23,8 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   deprecated: <AlertTriangle className="h-3 w-3" />,
   draft: <FileQuestion className="h-3 w-3" />,
   historical: <Clock className="h-3 w-3" />,
+  needs_mapping: <MapPin className="h-3 w-3" />,
+  detached_custom: <Puzzle className="h-3 w-3" />,
 };
 
 export function CanonicalStatusBadge({
