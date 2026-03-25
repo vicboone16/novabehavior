@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return 'viewer';
   };
 
-  const fetchUserDetails = async (userId: string) => {
+  const fetchUserDetails = useCallback(async (userId: string) => {
     setRoleLoading(true);
     try {
       // Fetch profile - explicitly exclude pin_hash for security
@@ -81,10 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setRoleLoading(false);
     }
-  };
+  }, []);
 
   // Explicit function to refresh role from database
-  const refreshRole = async () => {
+  const refreshRole = useCallback(async () => {
     if (!user) return;
     setRoleLoading(true);
     try {
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setRoleLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -152,17 +152,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     return { error };
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     // Clear any active session state before signing out so the timer
     // doesn't persist or auto-resume on the next login.
     try {
@@ -174,7 +174,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserRole(null);
     setRoleLoading(true);
     await supabase.auth.signOut();
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    user,
+    session,
+    profile,
+    userRole,
+    roleLoading,
+    loading,
+    signUp,
+    signIn,
+    signOut,
+    refreshRole,
+  }), [user, session, profile, userRole, roleLoading, loading, signUp, signIn, signOut, refreshRole]);
 
   // Clear session timer state only on genuine user SWITCH (different user ID),
   // NOT on token refreshes which briefly cycle user → null → user.
@@ -201,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, userRole, roleLoading, loading, signUp, signIn, signOut, refreshRole }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
