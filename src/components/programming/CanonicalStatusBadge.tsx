@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getStatusDisplay } from '@/hooks/useCanonicalBehaviors';
-import { Archive, GitMerge, AlertTriangle, FileQuestion, Clock } from 'lucide-react';
+import { Archive, GitMerge, AlertTriangle, FileQuestion, Clock, MapPin, Puzzle } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
