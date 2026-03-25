@@ -101,8 +101,10 @@ export function ProgrammingModule({
             />
           )}
 
-          {/* Behavior Insights & Reporting Module */}
-          <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
+          {/* Behavior Intelligence — visible for behaviors and both modes, hidden for skills-only */}
+          {(mode === 'behaviors' || mode === 'both') && (
+            <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
+          )}
         </>
       )}
     </div>

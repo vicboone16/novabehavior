@@ -85,11 +85,12 @@ function useDbAggregates(studentId: string, dateRange: { start: Date; end: Date 
 }
 
 export function useInsightsData(studentId: string, filters: InsightsFilters) {
-  const { students, frequencyEntries, durationEntries, abcEntries, sessions } = useDataStore(useShallow((state) => ({
+  const { students, frequencyEntries, durationEntries, abcEntries, intervalEntries, sessions } = useDataStore(useShallow((state) => ({
     students: state.students,
     frequencyEntries: state.frequencyEntries,
     durationEntries: state.durationEntries,
     abcEntries: state.abcEntries,
+    intervalEntries: state.intervalEntries,
     sessions: state.sessions,
   })));
   const student = students.find(s => s.id === studentId);
@@ -257,6 +258,45 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     }).sort((a, b) => b.totalCount - a.totalCount);
   }, [filteredData, dateRange]);
 
+  // Compute ABC and interval KPIs from Zustand store, filtered by date range
+  const abcAndIntervalKpis = useMemo(() => {
+    const studentAbc = abcEntries.filter(e => e.studentId === studentId);
+    const studentIntervals = (intervalEntries || []).filter((e: any) => e.studentId === studentId);
+
+    let filteredAbcCount = 0;
+    studentAbc.forEach(e => {
+      try {
+        const ts = new Date((e as any).timestamp);
+        if (isNaN(ts.getTime())) return;
+        const d = format(ts, 'yyyy-MM-dd');
+        const entryDate = parseISO(d);
+        if (isWithinInterval(entryDate, dateRange)) filteredAbcCount++;
+      } catch { /* skip */ }
+    });
+
+    let intervalOccurred = 0;
+    let intervalTotal = 0;
+    studentIntervals.forEach((e: any) => {
+      try {
+        const ts = new Date(e.timestamp);
+        if (isNaN(ts.getTime())) return;
+        const d = format(ts, 'yyyy-MM-dd');
+        const entryDate = parseISO(d);
+        if (!isWithinInterval(entryDate, dateRange)) return;
+        if (e.voided) return;
+        intervalTotal++;
+        if (e.occurred) intervalOccurred++;
+      } catch { /* skip */ }
+    });
+
+    const intervalPct = intervalTotal > 0 ? Math.round((intervalOccurred / intervalTotal) * 100) : 0;
+
+    return {
+      abcEntries: filteredAbcCount,
+      intervalOccurrence: intervalTotal > 0 ? `${intervalPct}%` : '—',
+    };
+  }, [abcEntries, intervalEntries, studentId, dateRange]);
+
   // KPI summary cards
   const kpis = useMemo(() => {
     const totalIncidents = summaryRows.reduce((s, r) => s + r.totalCount, 0);
@@ -285,8 +325,9 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
       completeness,
       lastRecorded: filteredData[filteredData.length - 1]?.date || null,
       priorityConcern: summaryRows.find(r => r.clinicalFlag === 'spike' || r.clinicalFlag === 'increasing') || null,
+      ...abcAndIntervalKpis,
     };
-  }, [summaryRows, filteredData, dateRange]);
+  }, [summaryRows, filteredData, dateRange, abcAndIntervalKpis]);
 
   // Insight badges
   const insights = useMemo((): InsightBadge[] => {

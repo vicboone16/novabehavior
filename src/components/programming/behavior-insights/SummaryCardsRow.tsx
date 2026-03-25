@@ -1,4 +1,4 @@
-import { Activity, TrendingUp, TrendingDown, Calendar, Clock, BarChart3, AlertTriangle, Target } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Calendar, Clock, BarChart3, AlertTriangle, Target, Hash, Timer } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import type { BehaviorSummaryRow } from './types';
@@ -13,6 +13,11 @@ interface SummaryCardsRowProps {
   completeness: number;
   lastRecorded: string | null;
   priorityConcern: BehaviorSummaryRow | null;
+  behaviorCount?: number;
+  avgPerDay?: number;
+  avgPerSession?: number;
+  abcEntries?: number;
+  intervalOccurrence?: string;
 }
 
 function KPICard({ icon: Icon, label, value, subtext, color }: {
@@ -39,28 +44,22 @@ export function SummaryCardsRow(props: SummaryCardsRowProps) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-      <KPICard icon={Activity} label="Total Incidents" value={props.totalIncidents} color="text-primary" />
-      <KPICard
-        icon={Target}
-        label="Top Behavior"
-        value={props.topBehavior?.behaviorName || '—'}
-        subtext={props.topBehavior ? `${props.topBehavior.pctOfTotal}%` : undefined}
-        color="text-orange-500"
-      />
-      <KPICard
-        icon={TrendingUp}
-        label="Biggest Increase"
-        value={props.biggestIncrease ? `+${props.biggestIncrease.trendPct}%` : '—'}
-        subtext={props.biggestIncrease?.behaviorName}
-        color="text-destructive"
-      />
-      <KPICard
-        icon={TrendingDown}
-        label="Biggest Decrease"
-        value={props.biggestDecrease ? `${props.biggestDecrease.trendPct}%` : '—'}
-        subtext={props.biggestDecrease?.behaviorName}
-        color="text-green-600"
-      />
+      {props.behaviorCount !== undefined && (
+        <KPICard icon={Activity} label="Behaviors" value={props.behaviorCount} color="text-primary" />
+      )}
+      <KPICard icon={Target} label="Total Incidents" value={props.totalIncidents} color="text-primary" />
+      {props.abcEntries !== undefined && (
+        <KPICard icon={Hash} label="ABC Entries" value={props.abcEntries} color="text-purple-500" />
+      )}
+      {props.intervalOccurrence !== undefined && (
+        <KPICard icon={Timer} label="Interval Occ." value={props.intervalOccurrence} color="text-amber-500" />
+      )}
+      {props.avgPerDay !== undefined && (
+        <KPICard icon={BarChart3} label="Avg/Day" value={props.avgPerDay} color="text-blue-500" />
+      )}
+      {props.avgPerSession !== undefined && (
+        <KPICard icon={BarChart3} label="Avg/Session" value={props.avgPerSession} color="text-cyan-500" />
+      )}
       <KPICard
         icon={Calendar}
         label="Peak Day"
@@ -71,18 +70,6 @@ export function SummaryCardsRow(props: SummaryCardsRowProps) {
         icon={Clock}
         label="Last Recorded"
         value={props.lastRecorded ? fmtDate(props.lastRecorded) : '—'}
-      />
-      <KPICard
-        icon={BarChart3}
-        label="Completeness"
-        value={`${props.completeness}%`}
-        color={props.completeness < 70 ? 'text-destructive' : 'text-green-600'}
-      />
-      <KPICard
-        icon={AlertTriangle}
-        label="Priority Concern"
-        value={props.priorityConcern?.behaviorName || 'None'}
-        color="text-orange-500"
       />
     </div>
   );

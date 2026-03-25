@@ -2,12 +2,30 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle, Edit2, Check, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { useDataStore } from '@/store/dataStore';
+import { CanonicalStatusBadge } from '@/components/programming/CanonicalStatusBadge';
 import type { BehaviorSummaryRow } from './types';
+import type { DataCollectionMethod } from '@/types/behavior';
+
+const METHOD_LABELS: Record<string, string> = {
+  frequency: 'Frequency',
+  duration: 'Duration',
+  interval: 'Interval',
+  abc: 'ABC',
+  latency: 'Latency',
+};
+
+const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
 
 interface IntelligentTableProps {
   rows: BehaviorSummaryRow[];
+  studentId?: string;
 }
 
 const FLAG_CONFIG: Record<string, { icon: React.ElementType; label: string; variant: 'destructive' | 'secondary' | 'default' }> = {
@@ -18,10 +36,20 @@ const FLAG_CONFIG: Record<string, { icon: React.ElementType; label: string; vari
   priority: { icon: AlertTriangle, label: 'Priority', variant: 'destructive' },
 };
 
-export function IntelligentTable({ rows }: IntelligentTableProps) {
+export function IntelligentTable({ rows, studentId }: IntelligentTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<'totalCount' | 'pctOfTotal' | 'avgPerDay' | 'trendPct'>('totalCount');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDef, setEditDef] = useState('');
+  const [editMethods, setEditMethods] = useState<DataCollectionMethod[]>([]);
+
+  const students = useDataStore(s => s.students);
+  const updateBehaviorDefinition = useDataStore(s => s.updateBehaviorDefinition);
+  const updateBehaviorMethods = useDataStore(s => s.updateBehaviorMethods);
+
+  const student = studentId ? students.find(s => s.id === studentId) : null;
 
   const sorted = [...rows].sort((a, b) => {
     const av = a[sortKey] ?? 0;
@@ -36,6 +64,32 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
 
   const fmtDate = (d: string) => {
     try { return format(parseISO(d), 'M/d/yy'); } catch { return d; }
+  };
+
+  const startEdit = (behaviorId: string) => {
+    const behavior = student?.behaviors.find(b => b.id === behaviorId);
+    if (!behavior) return;
+    setEditingId(behaviorId);
+    setEditName(behavior.name);
+    setEditDef(behavior.operationalDefinition || '');
+    setEditMethods(behavior.methods || [behavior.type]);
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !studentId) return;
+    updateBehaviorDefinition(studentId, editingId, editDef);
+    if (editMethods.length > 0) {
+      updateBehaviorMethods(studentId, editingId, editMethods);
+    }
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const toggleMethod = (method: DataCollectionMethod) => {
+    setEditMethods(prev =>
+      prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]
+    );
   };
 
   if (rows.length === 0) return null;
@@ -69,9 +123,12 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
           {sorted.map(row => {
             const expanded = expandedId === row.behaviorId;
             const flag = row.clinicalFlag ? FLAG_CONFIG[row.clinicalFlag] : null;
+            const behavior = student?.behaviors.find(b => b.id === row.behaviorId);
+            const isEditing = editingId === row.behaviorId;
+
             return (
               <React.Fragment key={row.behaviorId}>
-                <TableRow className="hover:bg-muted/40">
+                <TableRow className="hover:bg-muted/40 cursor-pointer" onClick={() => setExpandedId(expanded ? null : row.behaviorId)}>
                   <TableCell className="text-xs font-medium max-w-[140px] truncate">{row.behaviorName}</TableCell>
                   <TableCell className="text-xs font-semibold">{row.totalCount}</TableCell>
                   <TableCell className="text-xs">{row.pctOfTotal}%</TableCell>
@@ -93,7 +150,7 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setExpandedId(expanded ? null : row.behaviorId)}>
                       {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </Button>
@@ -108,7 +165,6 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                           <div className="bg-background rounded-lg p-2.5 border">
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Total Count</p>
                             <p className="text-sm font-bold text-foreground mt-0.5">{row.totalCount}</p>
-                            <p className="text-[10px] text-muted-foreground">incidents</p>
                           </div>
                           <div className="bg-background rounded-lg p-2.5 border">
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Peak Day</p>
@@ -127,7 +183,89 @@ export function IntelligentTable({ rows }: IntelligentTableProps) {
                           </div>
                         </div>
 
-                        {/* Row 2: Contextual breakdowns */}
+                        {/* Row 2: Operational Definition + Measurement Types */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Operational Definition</p>
+                              {behavior && !isEditing && studentId && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5"
+                                  onClick={(e) => { e.stopPropagation(); startEdit(row.behaviorId); }}
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <div className="space-y-2" onClick={e => e.stopPropagation()}>
+                                <Textarea
+                                  value={editDef}
+                                  onChange={e => setEditDef(e.target.value)}
+                                  rows={3}
+                                  className="text-xs"
+                                  placeholder="Operational definition..."
+                                />
+                                <div className="flex gap-1">
+                                  <Button size="sm" className="h-6 text-xs gap-1" onClick={saveEdit}>
+                                    <Check className="w-3 h-3" /> Save
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-6 text-xs gap-1" onClick={cancelEdit}>
+                                    <X className="w-3 h-3" /> Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-foreground leading-relaxed">
+                                {behavior?.operationalDefinition || 'No definition set'}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="bg-background rounded-lg p-2.5 border">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5">Measurement Types</p>
+                            {isEditing ? (
+                              <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
+                                {ALL_METHODS.map(method => (
+                                  <label key={method} className="flex items-center gap-1.5 cursor-pointer">
+                                    <Checkbox
+                                      checked={editMethods.includes(method)}
+                                      onCheckedChange={() => toggleMethod(method)}
+                                    />
+                                    <span className="text-xs">{METHOD_LABELS[method]}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-1">
+                                {(behavior?.methods || [behavior?.type].filter(Boolean)).map(method => (
+                                  <Badge key={method} variant="secondary" className="text-[10px]">
+                                    {METHOD_LABELS[method as string] || method}
+                                  </Badge>
+                                ))}
+                                {(!behavior?.methods || behavior.methods.length === 0) && !behavior?.type && (
+                                  <span className="text-xs text-muted-foreground">None configured</span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Status badge if applicable */}
+                            {behavior && (
+                              <div className="mt-2">
+                                <CanonicalStatusBadge
+                                  status={behavior.isMastered ? 'archived' : behavior.isArchived ? 'archived' : 'active'}
+                                  originalId={behavior.id}
+                                  effectiveId={behavior.baseBehaviorId || behavior.id}
+                                  size="sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Row 3: Context */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
                           <div className="bg-background rounded-lg p-2.5 border">
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5">Time of Day Pattern</p>

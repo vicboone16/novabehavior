@@ -48,7 +48,7 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
           <Button variant="ghost" className="w-full justify-between h-auto py-2 px-3 hover:bg-muted/50">
             <span className="flex items-center gap-2 text-sm font-semibold">
               <BarChart3 className="w-4 h-4 text-primary" />
-              Behavior Insights & Reporting
+              Behavior Intelligence
             </span>
             <span className="text-[10px] text-muted-foreground">
               {isOpen ? 'Collapse' : 'Expand'}
@@ -80,8 +80,21 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
             </Button>
           </div>
 
-          {/* Summary Cards */}
-          <SummaryCardsRow {...kpis} />
+          {/* Summary Cards — unified header with all KPIs */}
+          <SummaryCardsRow
+            {...kpis}
+            behaviorCount={behaviors.length}
+            avgPerDay={summaryRows.length > 0
+              ? Math.round(summaryRows.reduce((s, r) => s + r.avgPerDay, 0) * 10) / 10
+              : 0
+            }
+            avgPerSession={summaryRows.length > 0
+              ? Math.round(summaryRows.reduce((s, r) => s + r.avgPerSession, 0) / summaryRows.length * 10) / 10
+              : 0
+            }
+            abcEntries={kpis.abcEntries}
+            intervalOccurrence={kpis.intervalOccurrence}
+          />
 
           {/* Insight Badges */}
           <InsightBadgesRow badges={insights} />
@@ -96,8 +109,8 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
             />
           </div>
 
-          {/* Intelligent Table */}
-          <IntelligentTable rows={summaryRows} />
+          {/* Intelligent Table — with expandable behavior rows */}
+          <IntelligentTable rows={summaryRows} studentId={studentId} />
 
           {/* Behavior Breakdown Summary */}
           <BehaviorBreakdownSummary rows={summaryRows} studentName={studentName} />
