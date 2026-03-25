@@ -22,7 +22,7 @@ interface ExportCenterProps {
 }
 
 type ExportFormat = 'png' | 'pdf' | 'xlsx' | 'csv' | 'doc';
-type ExportBundle = 'graph' | 'table' | 'summary' | 'full' | 'teacher' | 'bcba' | 'fba_bip' | 'raw';
+type ExportBundle = 'graph' | 'table' | 'summary' | 'full' | 'teacher' | 'bcba' | 'fba_bip' | 'bip_packet' | 'raw';
 
 const FORMAT_OPTIONS: { value: ExportFormat; label: string; icon: React.ElementType }[] = [
   { value: 'png', label: 'PNG Image', icon: Image },
