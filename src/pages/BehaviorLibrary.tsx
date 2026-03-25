@@ -185,6 +185,9 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
 
+  // Canonical operations (archive/merge via RPCs)
+  const { archiveBehavior: canonicalArchive, mergeBehavior: canonicalMerge, operating: canonicalOperating } = useBehaviorOperations();
+
   // Tags system
   const {
     tags: allBxTags, fetchTags, getTagsForItem,
