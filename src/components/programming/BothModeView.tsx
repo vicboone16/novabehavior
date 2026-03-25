@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Target, Activity, Plus, Shield } from 'lucide-react';
+import { Target, Activity, Plus, Shield, Columns3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,11 +11,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
-import { ProgrammingIntelligenceBanner } from './ProgrammingIntelligenceBanner';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { cn } from '@/lib/utils';
+import type { ProgrammingMode } from './ProgrammingModule';
 
 type DetailView = 'skills' | 'behaviors';
 
@@ -22,9 +23,11 @@ interface BothModeViewProps {
   studentId: string;
   studentName: string;
   isAdmin?: boolean;
+  mode?: ProgrammingMode;
+  onModeChange?: (mode: ProgrammingMode) => void;
 }
 
-export function BothModeView({ studentId, studentName, isAdmin = false }: BothModeViewProps) {
+export function BothModeView({ studentId, studentName, isAdmin = false, mode, onModeChange }: BothModeViewProps) {
   const [detailView, setDetailView] = useState<DetailView>('skills');
 
   const students = useDataStore(useShallow((state) => state.students));
@@ -39,9 +42,6 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
 
   return (
     <div className="space-y-3 overflow-y-auto">
-      {/* Unified Intelligence Banner */}
-      <ProgrammingIntelligenceBanner studentId={studentId} />
-
       {/* Compact summary bar + view toggle */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
@@ -101,11 +101,15 @@ export function BothModeView({ studentId, studentName, isAdmin = false }: BothMo
           studentId={studentId}
           studentName={studentName}
           isAdmin={isAdmin}
+          mode={mode}
+          onModeChange={onModeChange}
         />
       ) : (
         <BehaviorsSuite
           studentId={studentId}
           studentName={studentName}
+          mode={mode}
+          onModeChange={onModeChange}
         />
       )}
     </div>

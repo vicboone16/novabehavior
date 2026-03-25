@@ -5,6 +5,7 @@ import { SkillsTabContainer } from '@/components/skills/SkillsTabContainer';
 import { BehaviorsSuite } from './BehaviorsSuite';
 import { BothModeView } from './BothModeView';
 import { BehaviorInsightsModule } from './behavior-insights/BehaviorInsightsModule';
+import { ProgrammingIntelligenceBanner } from './ProgrammingIntelligenceBanner';
 
 export type ProgrammingMode = 'skills' | 'behaviors' | 'both';
 
@@ -38,38 +39,8 @@ export function ProgrammingModule({
 
   return (
     <div className="space-y-3">
-      {/* Compact header with toggle */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">Programming</h2>
-        <ToggleGroup 
-          type="single" 
-          value={mode} 
-          onValueChange={(v) => v && setMode(v as ProgrammingMode)}
-          className="bg-muted rounded-lg p-0.5"
-        >
-          <ToggleGroupItem 
-            value="skills" 
-            className="gap-1.5 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3"
-          >
-            <Target className="w-3.5 h-3.5" />
-            Skills
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="behaviors" 
-            className="gap-1.5 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3"
-          >
-            <Activity className="w-3.5 h-3.5" />
-            Behaviors
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="both" 
-            className="gap-1.5 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3"
-          >
-            <Columns3 className="w-3.5 h-3.5" />
-            Both
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      {/* Programming Intelligence — ALWAYS visible across all modes */}
+      {ready && <ProgrammingIntelligenceBanner studentId={studentId} />}
 
       {!ready ? (
         <div className="flex justify-center py-12">
@@ -82,14 +53,18 @@ export function ProgrammingModule({
             <SkillsTabContainer 
               studentId={studentId} 
               studentName={studentName} 
-              isAdmin={isAdmin} 
+              isAdmin={isAdmin}
+              mode={mode}
+              onModeChange={setMode}
             />
           )}
 
           {mode === 'behaviors' && (
             <BehaviorsSuite 
               studentId={studentId} 
-              studentName={studentName} 
+              studentName={studentName}
+              mode={mode}
+              onModeChange={setMode}
             />
           )}
 
@@ -97,11 +72,13 @@ export function ProgrammingModule({
             <BothModeView 
               studentId={studentId} 
               studentName={studentName} 
-              isAdmin={isAdmin} 
+              isAdmin={isAdmin}
+              mode={mode}
+              onModeChange={setMode}
             />
           )}
 
-          {/* Behavior Intelligence — visible for behaviors and both modes, hidden for skills-only */}
+          {/* Behavior Intelligence — visible for behaviors and both modes */}
           {(mode === 'behaviors' || mode === 'both') && (
             <BehaviorInsightsModule studentId={studentId} studentName={studentName} />
           )}
