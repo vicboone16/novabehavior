@@ -168,6 +168,9 @@ export function BehaviorBank({
   // Sync behavior bank with DB on mount
   useBehaviorBankSync();
 
+  // Canonical operations
+  const { archiveBehavior: canonicalArchive } = useBehaviorOperations();
+
   // Get global behavior bank and overrides from store
   const globalBehaviorBank = useDataStore((state) => state.globalBehaviorBank);
   const addToBehaviorBank = useDataStore((state) => state.addToBehaviorBank);
