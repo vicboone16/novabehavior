@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ClassroomPresencePanel } from '@/components/intelligence/ClassroomPresencePanel';
+import { WhosHerePanel } from '@/components/presence/WhosHerePanel';
+import { useStaffPresence } from '@/hooks/useStaffPresence';
 
 const EVENT_STYLES: Record<string, { bg: string; icon: React.ReactNode }> = {
   frequency: { bg: 'bg-blue-500/15 text-blue-700 dark:text-blue-400', icon: <Activity className="w-3 h-3" /> },
@@ -49,16 +51,21 @@ export default function ClassroomToday() {
   const returnTo = searchParams.get('from') || '/intelligence';
 
   const [classroomName, setClassroomName] = useState('Classroom');
+  const [agencyId, setAgencyId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [autoScroll, setAutoScroll] = useState(true);
   const streamRef = useRef<HTMLDivElement>(null);
 
   const { snapshot, students, events, flags, loading, refresh } = useClassroomTodayDrilldown(classroomId || null);
+  const { staff, myPresence, loading: presenceLoading, checkIn, checkOut, setAvailability, moveStaff } = useStaffPresence(agencyId, classroomId);
 
   useEffect(() => {
     if (!classroomId) return;
-    supabase.from('classrooms').select('name').eq('id', classroomId).maybeSingle().then(({ data }) => {
-      if (data) setClassroomName(data.name);
+    supabase.from('classrooms').select('name, agency_id').eq('id', classroomId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setClassroomName(data.name);
+        setAgencyId(data.agency_id);
+      }
     });
   }, [classroomId]);
 
@@ -164,6 +171,18 @@ export default function ClassroomToday() {
 
       {/* Presence + Top Triggers Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {classroomId && (
+          <WhosHerePanel
+            staff={staff}
+            myPresence={myPresence}
+            loading={presenceLoading}
+            onCheckIn={checkIn}
+            onCheckOut={checkOut}
+            onSetAvailability={setAvailability}
+            onMoveStaff={moveStaff}
+            currentClassroomId={classroomId}
+          />
+        )}
         {classroomId && (
           <ClassroomPresencePanel classroomId={classroomId} studentNames={studentNameMap} />
         )}
