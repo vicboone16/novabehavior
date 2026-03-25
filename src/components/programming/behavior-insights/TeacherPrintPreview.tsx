@@ -102,7 +102,7 @@ export function TeacherPrintPreview({ open, onOpenChange, studentName, dateRange
     w.print();
   };
 
-  const isDetailed = mode === 'bcba' || mode === 'fba_bip' || mode === 'team_meeting';
+  const isDetailed = mode === 'bcba' || mode === 'fba_bip' || mode === 'team_meeting' || mode === 'bip_packet';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
