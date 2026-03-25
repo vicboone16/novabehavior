@@ -812,6 +812,7 @@ export default function Intelligence() {
           <LinkedSystemView 
             agencyId={effectiveAgencyId}
             students={caseloadRows.map(r => ({ id: r.client_id, name: r.client_name || r.client_id }))}
+            isAdmin={true}
           />
         </TabsContent>
       </Tabs>
