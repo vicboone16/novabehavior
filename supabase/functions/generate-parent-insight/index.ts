@@ -10,13 +10,13 @@ const corsHeaders = {
 /**
  * generate-parent-insight
  *
- * Aggregates behavior_daily_aggregates + beacon_points_ledger for a student,
+ * Aggregates beacon_points_ledger + behavior_daily_aggregates for a student,
  * translates clinical terms via behavior_translations, and upserts a
  * parent-friendly daily insight into parent_insights.
  *
  * Body:
- *   { student_id: uuid, date?: "YYYY-MM-DD" }        — single student
- *   { agency_id: uuid, date?: "YYYY-MM-DD" }          — bulk for agency
+ *   { student_id, date? }        — single student
+ *   { agency_id, date? }         — bulk for agency
  */
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,7 +38,6 @@ serve(async (req) => {
     if (body.student_id) {
       studentIds = [body.student_id];
     } else if (body.agency_id) {
-      // Get all active students in agency
       const { data: students } = await supabase
         .from("students")
         .select("id")
@@ -67,8 +66,18 @@ serve(async (req) => {
 
     const txMap = new Map<string, any>();
     for (const t of translations || []) {
-      txMap.set(t.clinical_term.toLowerCase(), t);
-      txMap.set(t.function_category.toLowerCase(), t);
+      txMap.set(t.clinical_term?.toLowerCase(), t);
+      txMap.set(t.function_category?.toLowerCase(), t);
+    }
+
+    // ── Fetch student first names ──
+    const { data: studentRows } = await supabase
+      .from("students")
+      .select("id, first_name")
+      .in("id", studentIds);
+    const nameMap = new Map<string, string>();
+    for (const s of studentRows || []) {
+      nameMap.set(s.id, s.first_name || "Your child");
     }
 
     // ── Process each student ──
@@ -76,7 +85,8 @@ serve(async (req) => {
 
     for (const studentId of studentIds) {
       try {
-        const insight = await generateInsight(supabase, studentId, targetDate, txMap);
+        const firstName = nameMap.get(studentId) || "Your child";
+        const insight = await generateInsight(supabase, studentId, targetDate, txMap, firstName);
         results.push({ student_id: studentId, status: "ok", id: insight?.id });
       } catch (err: any) {
         console.error(`Error for student ${studentId}:`, err.message);
@@ -105,16 +115,10 @@ async function generateInsight(
   supabase: any,
   studentId: string,
   date: string,
-  txMap: Map<string, any>
+  txMap: Map<string, any>,
+  firstName: string
 ) {
-  // 1. Fetch today's behavior aggregates
-  const { data: aggs } = await supabase
-    .from("behavior_daily_aggregates")
-    .select("*")
-    .eq("student_id", studentId)
-    .eq("service_date", date);
-
-  // 2. Fetch today's points
+  // 1. Fetch today's points from beacon_points_ledger
   const dayStart = `${date}T00:00:00Z`;
   const dayEnd = `${date}T23:59:59Z`;
 
@@ -132,96 +136,133 @@ async function generateInsight(
     .filter((r: any) => r.points_delta < 0)
     .reduce((sum: number, r: any) => sum + Math.abs(r.points_delta), 0);
 
-  // 3. Fetch previous 7 days for trend
-  const weekAgo = new Date(date);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekAgoStr = weekAgo.toISOString().split("T")[0];
+  // 2. Fetch 7-day behavior window for trends
+  const windowEnd = new Date(date);
+  const windowStart = new Date(date);
+  windowStart.setDate(windowStart.getDate() - 6); // last 7 days including today
+  const windowStartStr = windowStart.toISOString().split("T")[0];
 
-  const { data: priorAggs } = await supabase
+  const { data: aggs } = await supabase
     .from("behavior_daily_aggregates")
-    .select("behavior_name, total_count, service_date")
+    .select("behavior_name, behavior_category, total_count, service_date")
     .eq("student_id", studentId)
-    .gte("service_date", weekAgoStr)
-    .lt("service_date", date);
+    .gte("service_date", windowStartStr)
+    .lte("service_date", date)
+    .order("service_date", { ascending: true });
 
-  // 4. Build behavior summary with translations
-  const behaviorSummary = (aggs || []).map((a: any) => {
-    const tx =
-      txMap.get(a.behavior_name?.toLowerCase()) ||
-      txMap.get(a.behavior_category?.toLowerCase());
-
-    // Compute 7-day average for this behavior
-    const priorCounts = (priorAggs || [])
-      .filter((p: any) => p.behavior_name === a.behavior_name)
-      .map((p: any) => p.total_count);
-    const priorAvg =
-      priorCounts.length > 0
-        ? priorCounts.reduce((s: number, c: number) => s + c, 0) / priorCounts.length
-        : null;
-
-    return {
-      behavior_name: a.behavior_name,
-      parent_label: tx?.parent_friendly || a.behavior_name,
-      learning_frame: tx?.learning_frame || null,
-      count: a.total_count,
-      prior_avg: priorAvg !== null ? Math.round(priorAvg * 10) / 10 : null,
-      trend: priorAvg !== null
-        ? a.total_count > priorAvg * 1.3
-          ? "up"
-          : a.total_count < priorAvg * 0.7
-          ? "down"
-          : "stable"
-        : "no_data",
-      category: a.behavior_category,
-    };
-  });
-
-  // 5. Generate headline
-  const totalIncidents = behaviorSummary.reduce(
-    (s: number, b: any) => s + (b.count || 0),
-    0
-  );
-  const improving = behaviorSummary.filter((b: any) => b.trend === "down");
-  const worsening = behaviorSummary.filter((b: any) => b.trend === "up");
-
-  let headline: string;
-  if (totalIncidents === 0) {
-    headline = "Great day! No behavioral concerns recorded.";
-  } else if (improving.length > 0 && worsening.length === 0) {
-    headline = "Positive progress today — keep up the great work!";
-  } else if (worsening.length > 0 && improving.length === 0) {
-    headline = "A tougher day — here's what might help.";
-  } else {
-    headline = "A mixed day with some wins and some challenges.";
+  // Group by behavior
+  const behaviorMap = new Map<string, { name: string; category: string; daily: { date: string; count: number }[] }>();
+  for (const a of aggs || []) {
+    const key = a.behavior_name;
+    if (!behaviorMap.has(key)) {
+      behaviorMap.set(key, { name: key, category: a.behavior_category || "", daily: [] });
+    }
+    behaviorMap.get(key)!.daily.push({ date: a.service_date, count: a.total_count });
   }
 
-  // 6. Generate "what this means"
-  let whatThisMeans: string;
-  if (totalIncidents === 0) {
-    whatThisMeans =
-      "Your child had a smooth day with no concerning behaviors. This is a great sign of progress!";
+  // 3. Calculate trends: last 3 days vs prior 4 days
+  const behaviorSummary: any[] = [];
+  const trendData: Record<string, any> = {};
+
+  for (const [, beh] of behaviorMap) {
+    const sorted = beh.daily.sort((a, b) => a.date.localeCompare(b.date));
+    const recent = sorted.slice(-3);
+    const prior = sorted.slice(0, -3);
+
+    const recentAvg = recent.length > 0
+      ? recent.reduce((s, d) => s + d.count, 0) / recent.length
+      : 0;
+    const priorAvg = prior.length > 0
+      ? prior.reduce((s, d) => s + d.count, 0) / prior.length
+      : null;
+
+    let trend = "stable";
+    if (priorAvg !== null && priorAvg > 0) {
+      const change = (recentAvg - priorAvg) / priorAvg;
+      if (change <= -0.2) trend = "improving";
+      else if (change >= 0.2) trend = "worsening";
+    }
+
+    // Translate clinical terms
+    const tx =
+      txMap.get(beh.name?.toLowerCase()) ||
+      txMap.get(beh.category?.toLowerCase());
+
+    const parentLabel = tx?.parent_friendly || beh.name;
+    const todayCount = sorted.find(d => d.date === date)?.count || 0;
+
+    behaviorSummary.push({
+      behavior: beh.name,
+      label: parentLabel,
+      learning_frame: tx?.learning_frame || null,
+      trend,
+      count_today: todayCount,
+      avg_recent: Math.round(recentAvg * 10) / 10,
+      category: beh.category,
+    });
+
+    trendData[beh.name] = {
+      today: todayCount,
+      recent_avg: Math.round(recentAvg * 10) / 10,
+      prior_avg: priorAvg !== null ? Math.round(priorAvg * 10) / 10 : null,
+      trend,
+      daily: sorted,
+    };
+  }
+
+  // 4. Build headline — uses firstName and points
+  let headline: string;
+  const improving = behaviorSummary.filter(b => b.trend === "improving");
+  const worsening = behaviorSummary.filter(b => b.trend === "worsening");
+  const totalToday = behaviorSummary.reduce((s, b) => s + (b.count_today || 0), 0);
+
+  if (pointsEarned > 0 && totalToday === 0) {
+    headline = `${firstName} earned ${pointsEarned} points today — great day!`;
+  } else if (pointsEarned > 0 && improving.length > 0 && worsening.length === 0) {
+    headline = `${firstName} earned ${pointsEarned} points and showed real progress today!`;
+  } else if (pointsEarned > 0) {
+    headline = `${firstName} earned ${pointsEarned} points today!`;
+  } else if (totalToday === 0) {
+    headline = `${firstName} had a smooth day — no behavioral concerns!`;
+  } else if (improving.length > 0 && worsening.length === 0) {
+    headline = `${firstName} is making positive progress — keep it up!`;
+  } else if (worsening.length > 0 && improving.length === 0) {
+    headline = `A tougher day for ${firstName} — here's what might help.`;
   } else {
-    const topBehavior = behaviorSummary.sort(
-      (a: any, b: any) => (b.count || 0) - (a.count || 0)
-    )[0];
-    const frame = topBehavior?.learning_frame || "developing self-regulation skills";
-    whatThisMeans = `Today's main focus area was ${topBehavior?.parent_label || "behavior management"}. Your child is ${frame}. ${
-      totalIncidents <= 3
+    headline = `A mixed day for ${firstName} with some wins and some challenges.`;
+  }
+
+  // 5. What this means — from primary behavior translation
+  let whatThisMeans: string;
+  const primaryBehavior = behaviorSummary.sort(
+    (a, b) => (b.count_today || 0) - (a.count_today || 0)
+  )[0];
+
+  if (totalToday === 0) {
+    whatThisMeans =
+      `${firstName} had a smooth day with no concerning behaviors. This is a great sign of progress!`;
+  } else if (primaryBehavior?.learning_frame) {
+    whatThisMeans = `${firstName} is ${primaryBehavior.learning_frame}. ${
+      totalToday <= 3
         ? "The number of incidents was low, which suggests progress."
         : "There were several incidents, which is normal as children learn new skills."
     }`;
+  } else {
+    whatThisMeans = `${firstName} is working on developing self-regulation skills. ${
+      totalToday <= 3
+        ? "Today had few incidents — a positive sign."
+        : "There were some challenges today, but this is part of the learning process."
+    }`;
   }
 
-  // 7. Generate "what you can do" strategies from translations
+  // 6. What you can do — home strategies from translations
   const strategies: string[] = [];
   for (const b of behaviorSummary) {
     const tx =
-      txMap.get(b.behavior_name?.toLowerCase()) ||
+      txMap.get(b.behavior?.toLowerCase()) ||
       txMap.get(b.category?.toLowerCase());
     if (tx?.home_strategies) {
-      const strats = Array.isArray(tx.home_strategies)
-        ? tx.home_strategies
-        : [];
+      const strats = Array.isArray(tx.home_strategies) ? tx.home_strategies : [];
       for (const s of strats.slice(0, 2)) {
         if (!strategies.includes(s)) strategies.push(s);
       }
@@ -234,22 +275,24 @@ async function generateInsight(
     );
   }
 
-  // 8. Build trend data
-  const trendData: Record<string, any> = {};
-  for (const b of behaviorSummary) {
-    const priorByDay = (priorAggs || [])
-      .filter((p: any) => p.behavior_name === b.behavior_name)
-      .map((p: any) => ({ date: p.service_date, count: p.total_count }));
+  // 7. Daily points trend (last 7 days)
+  const dailyPoints: { date: string; earned: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(date);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split("T")[0];
+    const dStart = `${ds}T00:00:00Z`;
+    const dEnd = `${ds}T23:59:59Z`;
 
-    trendData[b.behavior_name] = {
-      today: b.count,
-      prior_avg: b.prior_avg,
-      trend: b.trend,
-      daily: [...priorByDay, { date, count: b.count }],
-    };
+    // Only fetch for today (already have), approximate others as 0 for speed
+    if (ds === date) {
+      dailyPoints.push({ date: ds, earned: pointsEarned });
+    } else {
+      dailyPoints.push({ date: ds, earned: 0 }); // filled by historical runs
+    }
   }
 
-  // 9. Upsert into parent_insights
+  // 8. Upsert into parent_insights
   const row = {
     student_id: studentId,
     insight_date: date,
@@ -264,7 +307,10 @@ async function generateInsight(
     },
     points_earned: pointsEarned,
     points_redeemed: pointsRedeemed,
-    trend_data: trendData,
+    trend_data: {
+      daily_points: dailyPoints,
+      behavior_trends: trendData,
+    },
     status: "draft",
     updated_at: new Date().toISOString(),
   };

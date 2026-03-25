@@ -1,4 +1,5 @@
 import { useState, useMemo, lazy, Suspense } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { 
   Brain, AlertTriangle, TrendingUp, TrendingDown, Minus, 
@@ -6,7 +7,7 @@ import {
   ChevronRight, CheckCircle2, XCircle, Search,
   Building2, CalendarClock, FileWarning, Radio, Zap,
   Eye, ShieldAlert, Award, Hand, FileText, Lightbulb,
-  School
+  School, Wand2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -150,6 +151,8 @@ export default function Intelligence() {
   const [trendFilter, setTrendFilter] = useState<string>('all');
   const [signalTypeFilter, setSignalTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('caseload');
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
 
   // Agency display name
   const agencyDisplayName = useMemo(() => {
@@ -205,6 +208,28 @@ export default function Intelligence() {
     if (signalTypeFilter !== 'all') data = data.filter(s => s.signal_type === signalTypeFilter);
     return data.sort((a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4));
   }, [signals, signalTypeFilter]);
+
+  async function handleBulkGenerate() {
+    const students = caseloadRows.map(r => r.client_id);
+    if (students.length === 0) { toast.error('No students on caseload'); return; }
+    setBulkGenerating(true);
+    setBulkProgress({ done: 0, total: students.length });
+    let successCount = 0;
+    let errorCount = 0;
+    // Process in batches of 5
+    for (let i = 0; i < students.length; i += 5) {
+      const batch = students.slice(i, i + 5);
+      const promises = batch.map(sid =>
+        supabase.functions.invoke('generate-parent-insight', { body: { student_id: sid } })
+          .then(({ error }) => { if (error) throw error; successCount++; })
+          .catch(() => { errorCount++; })
+      );
+      await Promise.all(promises);
+      setBulkProgress({ done: Math.min(i + 5, students.length), total: students.length });
+    }
+    setBulkGenerating(false);
+    toast.success(`Generated ${successCount} insights${errorCount > 0 ? ` (${errorCount} failed)` : ''}`);
+  }
 
   if (accessLoading) {
     return (
@@ -262,6 +287,25 @@ export default function Intelligence() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBulkGenerate}
+            disabled={bulkGenerating}
+            className="gap-1.5"
+          >
+            {bulkGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {bulkProgress.done}/{bulkProgress.total}
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-3.5 h-3.5" />
+                Generate All Insights
+              </>
+            )}
+          </Button>
           {kpis.openAlerts > 0 && (
             <Badge variant="destructive" className="text-sm px-3 py-1">
               {kpis.openAlerts} Open Alert{kpis.openAlerts !== 1 ? 's' : ''}
@@ -812,6 +856,7 @@ export default function Intelligence() {
           <LinkedSystemView 
             agencyId={effectiveAgencyId}
             students={caseloadRows.map(r => ({ id: r.client_id, name: r.client_name || r.client_id }))}
+            isAdmin={true}
           />
         </TabsContent>
       </Tabs>
