@@ -7755,6 +7755,60 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_translations: {
+        Row: {
+          agency_id: string | null
+          clinical_term: string
+          created_at: string
+          function_category: string
+          home_strategies: Json | null
+          id: string
+          is_default: boolean | null
+          learning_frame: string
+          parent_friendly: string
+          tone: string
+        }
+        Insert: {
+          agency_id?: string | null
+          clinical_term: string
+          created_at?: string
+          function_category: string
+          home_strategies?: Json | null
+          id?: string
+          is_default?: boolean | null
+          learning_frame: string
+          parent_friendly: string
+          tone?: string
+        }
+        Update: {
+          agency_id?: string | null
+          clinical_term?: string
+          created_at?: string
+          function_category?: string
+          home_strategies?: Json | null
+          id?: string
+          is_default?: boolean | null
+          learning_frame?: string
+          parent_friendly?: string
+          tone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_translations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "behavior_translations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "v_agency_overview"
+            referencedColumns: ["agency_id"]
+          },
+        ]
+      }
       behaviors: {
         Row: {
           created_at: string | null
