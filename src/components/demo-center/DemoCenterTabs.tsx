@@ -13,7 +13,6 @@ import { StudentPageTemplate } from './StudentPageTemplate';
 import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
 import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
-import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
 
 const ICON_MAP: Record<string, any> = {
   supervisor: UserCheck, school_consultant: School, midlevel: Users,
