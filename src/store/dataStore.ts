@@ -906,29 +906,42 @@ export const useDataStore = create<DataState>()(
         
         const finalName = useSourceName ? sourceName : targetName;
         
-        set((s) => ({
-          students: s.students.map((student) => ({
+        set((s) => {
+          // Check if the target behavior already exists on the student
+          const hasTarget = (student: any) => student.behaviors.some(
+            (b: any) => b.id === targetBehaviorId || b.baseBehaviorId === targetBehaviorId
+          );
+          
+          return {
+          students: s.students.map((student) => {
+            const studentHasTarget = hasTarget(student);
+            return {
             ...student,
-            behaviors: student.behaviors.map((behavior) => {
-              // If this behavior matches the source, merge it into target
-              if (behavior.id === sourceBehaviorId || behavior.baseBehaviorId === sourceBehaviorId) {
-                return {
-                  ...behavior,
-                  id: behavior.id, // Keep original ID for data integrity
-                  name: finalName,
-                  baseBehaviorId: targetBehaviorId,
-                };
-              }
-              // If this behavior is the target and we're using source name, rename it
-              if (useSourceName && (behavior.id === targetBehaviorId || behavior.baseBehaviorId === targetBehaviorId)) {
-                return {
-                  ...behavior,
-                  name: finalName,
-                };
-              }
-              return behavior;
-            }),
-          })),
+            behaviors: student.behaviors
+              .map((behavior) => {
+                // If this behavior matches the source, remap it to target
+                if (behavior.id === sourceBehaviorId || behavior.baseBehaviorId === sourceBehaviorId) {
+                  // If student already has the target behavior, we'll filter this out
+                  if (studentHasTarget) return null;
+                  return {
+                    ...behavior,
+                    id: targetBehaviorId, // Remap ID to target so data stays linked
+                    name: finalName,
+                    baseBehaviorId: targetBehaviorId,
+                  };
+                }
+                // If this behavior is the target and we're using source name, rename it
+                if (useSourceName && (behavior.id === targetBehaviorId || behavior.baseBehaviorId === targetBehaviorId)) {
+                  return {
+                    ...behavior,
+                    name: finalName,
+                  };
+                }
+                return behavior;
+              })
+              .filter(Boolean) as typeof student.behaviors,
+          };
+          }),
           // Update data entries to reference target behavior
           frequencyEntries: s.frequencyEntries.map((e) =>
             e.behaviorId === sourceBehaviorId ? { ...e, behaviorId: targetBehaviorId } : e
