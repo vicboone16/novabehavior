@@ -48,13 +48,7 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
     updateSection, removeSection, toggleSection, moveSection,
   } = useTemplateStore();
 
-  const selectedKey = useTemplateStore(s => {
-    // Use local UI state tracked via a simple approach — just pick the first one clicked
-    return null;
-  });
-
-  // Local selected key for right panel
-  const [localSelectedKey, setLocalSelectedKey] = __import_useState<string | null>(null);
+  const [localSelectedKey, setLocalSelectedKey] = useState<string | null>(null);
   const selectedSection = sections.find(s => s.key === localSelectedKey);
 
   const addSection = (key: string) => {
