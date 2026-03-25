@@ -489,13 +489,7 @@ export const useDataStore = create<DataState>()(
       updateStudentProfile: (id, updates) => {
         // Mark narrative notes as pending SYNCHRONOUSLY to protect from realtime overwrites
         if (updates.narrativeNotes) {
-          try {
-            const { markNarrativeNotesPending } = require('@/lib/pendingNarrativeGuard');
-            markNarrativeNotesPending(id);
-          } catch {
-            // Fallback: dynamic import (less reliable due to async timing)
-            import('@/lib/pendingNarrativeGuard').then(m => m.markNarrativeNotesPending(id)).catch(() => {});
-          }
+          markNarrativeNotesPending(id);
         }
         set((state) => ({
           students: state.students.map((s) =>
