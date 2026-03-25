@@ -811,7 +811,7 @@ export default function Intelligence() {
         <TabsContent value="linked-system" className="space-y-4">
           <LinkedSystemView 
             agencyId={effectiveAgencyId}
-            students={caseloadRows.map(r => ({ id: r.student_id, name: r.client_name || r.student_id }))}
+            students={caseloadRows.map(r => ({ id: r.client_id, name: r.client_name || r.client_id }))}
           />
         </TabsContent>
       </Tabs>
