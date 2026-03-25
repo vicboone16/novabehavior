@@ -25746,8 +25746,13 @@ export type Database = {
           event_type: string
           id: string
           impact_points: number | null
+          is_checkpoint: boolean
           metadata_json: Json
+          multiplier_applied: number
+          processed: boolean
+          streak_count: number
           student_id: string
+          zone_type: string | null
         }
         Insert: {
           agency_id: string
@@ -25757,8 +25762,13 @@ export type Database = {
           event_type: string
           id?: string
           impact_points?: number | null
+          is_checkpoint?: boolean
           metadata_json?: Json
+          multiplier_applied?: number
+          processed?: boolean
+          streak_count?: number
           student_id: string
+          zone_type?: string | null
         }
         Update: {
           agency_id?: string
@@ -25768,36 +25778,59 @@ export type Database = {
           event_type?: string
           id?: string
           impact_points?: number | null
+          is_checkpoint?: boolean
           metadata_json?: Json
+          multiplier_applied?: number
+          processed?: boolean
+          streak_count?: number
           student_id?: string
+          zone_type?: string | null
         }
         Relationships: []
       }
       game_modes: {
         Row: {
           active: boolean
+          checkpoint_rewards_enabled: boolean
+          comeback_config_json: Json
           created_at: string
           description: string | null
+          difficulty_scaling: string
+          game_speed: number
           id: string
+          max_daily_points: number | null
           mode_key: string
+          momentum_config_json: Json
           name: string
           settings_json: Json
         }
         Insert: {
           active?: boolean
+          checkpoint_rewards_enabled?: boolean
+          comeback_config_json?: Json
           created_at?: string
           description?: string | null
+          difficulty_scaling?: string
+          game_speed?: number
           id?: string
+          max_daily_points?: number | null
           mode_key: string
+          momentum_config_json?: Json
           name: string
           settings_json?: Json
         }
         Update: {
           active?: boolean
+          checkpoint_rewards_enabled?: boolean
+          comeback_config_json?: Json
           created_at?: string
           description?: string | null
+          difficulty_scaling?: string
+          game_speed?: number
           id?: string
+          max_daily_points?: number | null
           mode_key?: string
+          momentum_config_json?: Json
           name?: string
           settings_json?: Json
         }
@@ -25838,28 +25871,43 @@ export type Database = {
       }
       game_tracks: {
         Row: {
+          checkpoints_json: Json
           created_at: string | null
+          description: string | null
           id: string
+          is_active: boolean
           name: string
           nodes_json: Json
+          theme_id: string | null
           total_steps: number
           track_type: string | null
+          zones_json: Json
         }
         Insert: {
+          checkpoints_json?: Json
           created_at?: string | null
+          description?: string | null
           id?: string
+          is_active?: boolean
           name: string
           nodes_json: Json
+          theme_id?: string | null
           total_steps?: number
           track_type?: string | null
+          zones_json?: Json
         }
         Update: {
+          checkpoints_json?: Json
           created_at?: string | null
+          description?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           nodes_json?: Json
+          theme_id?: string | null
           total_steps?: number
           track_type?: string | null
+          zones_json?: Json
         }
         Relationships: []
       }
