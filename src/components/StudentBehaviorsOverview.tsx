@@ -507,8 +507,8 @@ export function StudentBehaviorsOverview({
       const toRekey: { oldId: string; newId: string; name: string }[] = [];
       orphanedBehaviors.forEach(orphan => {
         // Try matching by inferred name first
-        const normalized = normalize(orphan.inferredName.replace(/^Unlinked\s*\(|\)$/g, ''));
-        if (normalized && !normalized.startsWith('unlinked')) {
+        const normalized = normalize(orphan.inferredName.replace(/^Needs Mapping\s*\(|\)$/g, ''));
+        if (normalized && !normalized.startsWith('needs mapping')) {
           const matchId = behaviorsByName.get(normalized);
           if (matchId && matchId !== orphan.id) {
             toRekey.push({ oldId: orphan.id, newId: matchId, name: orphan.inferredName });
