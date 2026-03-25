@@ -149,9 +149,9 @@ export function BehaviorBreakdownSummary({
             <Users className="w-3.5 h-3.5" /> Staff Response Focus
           </p>
           <div className="space-y-1">
-            <div className="text-xs"><span className="font-semibold text-green-600 dark:text-green-400">Prevent:</span> {summary.staffResponse.prevent}</div>
-            <div className="text-xs"><span className="font-semibold text-blue-600 dark:text-blue-400">Teach:</span> {summary.staffResponse.teach}</div>
-            <div className="text-xs"><span className="font-semibold text-orange-600 dark:text-orange-400">Respond:</span> {summary.staffResponse.respond}</div>
+            <div className="text-xs"><span className="font-semibold text-primary">Prevent:</span> {summary.staffResponse.prevent}</div>
+            <div className="text-xs"><span className="font-semibold text-accent-foreground">Teach:</span> {summary.staffResponse.teach}</div>
+            <div className="text-xs"><span className="font-semibold text-secondary-foreground">Respond:</span> {summary.staffResponse.respond}</div>
           </div>
         </div>
 
