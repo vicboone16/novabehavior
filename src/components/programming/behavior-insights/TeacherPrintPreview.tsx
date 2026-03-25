@@ -270,7 +270,7 @@ export function TeacherPrintPreview({ open, onOpenChange, studentName, dateRange
               </div>
 
               {/* Staff Response — 3-card grid */}
-              {(mode === 'teacher' || mode === 'team_meeting' || mode === 'fba_bip') && (
+              {(mode === 'teacher' || mode === 'team_meeting' || mode === 'fba_bip' || mode === 'bip_packet') && (
                 <div className="section">
                   <h3 className="text-sm font-bold text-primary border-b-2 border-border pb-1.5 mb-3 uppercase tracking-wider">
                     Staff Response Focus
