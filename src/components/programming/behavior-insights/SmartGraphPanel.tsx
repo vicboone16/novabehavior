@@ -1,7 +1,7 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, Area, AreaChart,
+  ResponsiveContainer, Legend, Area, AreaChart, Cell,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,18 @@ const COLORS = [
   'hsl(120, 50%, 45%)',
 ];
 
+// Color scale for heatmap cells
+const HEATMAP_COLORS = [
+  '#f0f9ff', '#dbeafe', '#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a5f',
+];
+
+function getHeatColor(value: number, max: number): string {
+  if (max === 0 || value === 0) return HEATMAP_COLORS[0];
+  const ratio = Math.min(value / max, 1);
+  const idx = Math.min(Math.floor(ratio * (HEATMAP_COLORS.length - 1)), HEATMAP_COLORS.length - 1);
+  return HEATMAP_COLORS[idx];
+}
+
 interface SmartGraphPanelProps {
   chartData: Record<string, any>[];
   behaviorNames: string[];
@@ -28,8 +40,20 @@ interface SmartGraphPanelProps {
 }
 
 export function SmartGraphPanel({ chartData, behaviorNames, viewMode, recommendedView, title }: SmartGraphPanelProps) {
-  const chartRef = useRef<HTMLDivElement>(null);
   const showRecommendation = viewMode !== recommendedView && behaviorNames.length > 3;
+
+  // Compute max value for heatmap
+  const heatmapMax = useMemo(() => {
+    if (viewMode !== 'heatmap') return 0;
+    let max = 0;
+    chartData.forEach(row => {
+      behaviorNames.forEach(name => {
+        const v = Number(row[name]) || 0;
+        if (v > max) max = v;
+      });
+    });
+    return max;
+  }, [chartData, behaviorNames, viewMode]);
 
   if (chartData.length === 0) {
     return (
@@ -126,8 +150,64 @@ export function SmartGraphPanel({ chartData, behaviorNames, viewMode, recommende
     </div>
   );
 
+  const renderHeatmap = () => {
+    // Build a grid: rows = behaviors, columns = dates
+    const dates = chartData.map(d => String(d.date));
+    const maxLabelLen = Math.max(...behaviorNames.map(n => n.length));
+
+    return (
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px]">
+          {/* Date header */}
+          <div className="flex">
+            <div className="w-28 shrink-0" />
+            {dates.map(d => (
+              <div key={d} className="flex-1 text-center text-[9px] text-muted-foreground truncate px-0.5">
+                {d.slice(5)}
+              </div>
+            ))}
+          </div>
+          {/* Behavior rows */}
+          {behaviorNames.map(name => (
+            <div key={name} className="flex items-center h-7">
+              <div className="w-28 shrink-0 text-[10px] font-medium truncate pr-2 text-right text-foreground">
+                {name}
+              </div>
+              {chartData.map((row, ci) => {
+                const val = Number(row[name]) || 0;
+                return (
+                  <div
+                    key={ci}
+                    className="flex-1 mx-px rounded-sm flex items-center justify-center"
+                    style={{ backgroundColor: getHeatColor(val, heatmapMax), minHeight: 20 }}
+                    title={`${name}: ${val} on ${row.date}`}
+                  >
+                    {val > 0 && (
+                      <span className="text-[8px] font-bold" style={{ color: val > heatmapMax * 0.5 ? '#fff' : '#1e293b' }}>
+                        {val}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          {/* Legend */}
+          <div className="flex items-center gap-1 mt-2 ml-28">
+            <span className="text-[9px] text-muted-foreground">Low</span>
+            {HEATMAP_COLORS.map((c, i) => (
+              <div key={i} className="w-5 h-3 rounded-sm" style={{ backgroundColor: c }} />
+            ))}
+            <span className="text-[9px] text-muted-foreground">High</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderChart = () => {
     switch (viewMode) {
+      case 'heatmap': return renderHeatmap();
       case 'stacked': return renderStacked();
       case 'grouped':
       case 'top_behaviors': return renderGrouped();
@@ -151,7 +231,7 @@ export function SmartGraphPanel({ chartData, behaviorNames, viewMode, recommende
           </Badge>
         )}
       </CardHeader>
-      <CardContent className="px-2 pb-3" ref={chartRef}>
+      <CardContent className="px-2 pb-3">
         {renderChart()}
       </CardContent>
     </Card>

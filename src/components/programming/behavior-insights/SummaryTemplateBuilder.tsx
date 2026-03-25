@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Settings2, GripVertical, Eye, EyeOff, Trash2, Plus, Save, Copy } from 'lucide-react';
+import { useState } from 'react';
+import { Settings2, GripVertical, Eye, EyeOff, Trash2, Plus, Save, ArrowUp, ArrowDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,18 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-
-interface TemplateSection {
-  key: string;
-  label: string;
-  enabled: boolean;
-  required: boolean;
-  contentMode: 'auto_generated' | 'manual' | 'hybrid';
-  tone: string;
-  formatStyle: string;
-  promptInstructions: string;
-  fallbackText: string;
-}
+import { useTemplateStore, type TemplateSection } from './useTemplateStore';
+import type { ToneProfile } from './summaryEngine';
 
 interface SummaryTemplateBuilderProps {
   open: boolean;
@@ -50,53 +40,30 @@ const AVAILABLE_SECTIONS: { key: string; label: string }[] = [
   { key: 'custom_text', label: 'Custom Text Block' },
 ];
 
-const DEFAULT_SECTIONS: TemplateSection[] = [
-  { key: 'student_header', label: 'Student Header', enabled: true, required: true, contentMode: 'auto_generated', tone: 'teacher_friendly', formatStyle: 'card', promptInstructions: '', fallbackText: '' },
-  { key: 'behavior_percentages', label: 'Behavior %', enabled: true, required: false, contentMode: 'auto_generated', tone: 'teacher_friendly', formatStyle: 'bullets', promptInstructions: 'Show top behavior percentages.', fallbackText: 'No data.' },
-  { key: 'fba_summary', label: 'Data-Informed Summary', enabled: true, required: false, contentMode: 'hybrid', tone: 'clinical', formatStyle: 'paragraph', promptInstructions: 'Use cautious clinical phrasing.', fallbackText: 'No summary available.' },
-  { key: 'replacement_skills', label: 'Replacement Skills', enabled: true, required: false, contentMode: 'hybrid', tone: 'teacher_friendly', formatStyle: 'bullets', promptInstructions: 'List 2-5 priority skills.', fallbackText: '' },
-  { key: 'intervention_focus', label: 'Intervention Focus', enabled: true, required: false, contentMode: 'hybrid', tone: 'teacher_friendly', formatStyle: 'bullets', promptInstructions: 'Practical staff-facing interventions.', fallbackText: '' },
-];
-
 export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBuilderProps) {
-  const [templateName, setTemplateName] = useState('Custom Template');
-  const [audienceType, setAudienceType] = useState('teacher');
-  const [activeSections, setActiveSections] = useState<TemplateSection[]>(DEFAULT_SECTIONS);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const {
+    templateName, setTemplateName,
+    audienceType, setAudienceType,
+    sections, setSections,
+    updateSection, removeSection, toggleSection, moveSection,
+  } = useTemplateStore();
 
-  const selectedSection = activeSections.find(s => s.key === selectedKey);
+  const [localSelectedKey, setLocalSelectedKey] = useState<string | null>(null);
+  const selectedSection = sections.find(s => s.key === localSelectedKey);
 
   const addSection = (key: string) => {
     const def = AVAILABLE_SECTIONS.find(s => s.key === key);
-    if (!def || activeSections.some(s => s.key === key)) return;
-    setActiveSections(prev => [
-      ...prev,
-      { key, label: def.label, enabled: true, required: false, contentMode: 'hybrid', tone: 'clinical', formatStyle: 'paragraph', promptInstructions: '', fallbackText: '' },
-    ]);
-  };
-
-  const removeSection = (key: string) => {
-    setActiveSections(prev => prev.filter(s => s.key !== key));
-    if (selectedKey === key) setSelectedKey(null);
-  };
-
-  const toggleEnabled = (key: string) => {
-    setActiveSections(prev => prev.map(s => s.key === key ? { ...s, enabled: !s.enabled } : s));
-  };
-
-  const updateSection = (key: string, updates: Partial<TemplateSection>) => {
-    setActiveSections(prev => prev.map(s => s.key === key ? { ...s, ...updates } : s));
-  };
-
-  const moveSection = (key: string, dir: -1 | 1) => {
-    setActiveSections(prev => {
-      const idx = prev.findIndex(s => s.key === key);
-      if (idx < 0) return prev;
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= prev.length) return prev;
-      const next = [...prev];
-      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
-      return next;
+    if (!def || sections.some(s => s.key === key)) return;
+    useTemplateStore.getState().addSection({
+      key,
+      label: def.label,
+      enabled: true,
+      required: false,
+      contentMode: 'hybrid',
+      tone: 'clinical' as ToneProfile,
+      formatStyle: 'paragraph',
+      promptInstructions: '',
+      fallbackText: '',
     });
   };
 
@@ -105,7 +72,7 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
     onOpenChange(false);
   };
 
-  const unusedSections = AVAILABLE_SECTIONS.filter(s => !activeSections.some(a => a.key === s.key));
+  const unusedSections = AVAILABLE_SECTIONS.filter(s => !sections.some(a => a.key === s.key));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -147,18 +114,25 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
             <div className="text-xs font-semibold px-3 py-2 bg-muted/30 border-b">Active Sections</div>
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
-                {activeSections.map((section, i) => (
+                {sections.map((section, i) => (
                   <div
                     key={section.key}
                     className={`flex items-center gap-1.5 px-2 py-1.5 rounded border text-xs cursor-pointer transition-colors ${
-                      selectedKey === section.key ? 'border-primary bg-primary/5' : 'border-transparent hover:bg-muted/40'
+                      localSelectedKey === section.key ? 'border-primary bg-primary/5' : 'border-transparent hover:bg-muted/40'
                     } ${!section.enabled ? 'opacity-50' : ''}`}
-                    onClick={() => setSelectedKey(section.key)}
+                    onClick={() => setLocalSelectedKey(section.key)}
                   >
-                    <GripVertical className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-3 w-3 p-0" onClick={e => { e.stopPropagation(); moveSection(section.key, -1); }}>
+                        <ArrowUp className="w-2.5 h-2.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-3 w-3 p-0" onClick={e => { e.stopPropagation(); moveSection(section.key, 1); }}>
+                        <ArrowDown className="w-2.5 h-2.5" />
+                      </Button>
+                    </div>
                     <span className="flex-1 truncate font-medium">{section.label}</span>
                     {section.required && <Badge variant="secondary" className="text-[8px] px-1">Required</Badge>}
-                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); toggleEnabled(section.key); }}>
+                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); toggleSection(section.key); }}>
                       {section.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                     </Button>
                     {!section.required && (
@@ -171,7 +145,6 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
               </div>
             </ScrollArea>
 
-            {/* Add section */}
             {unusedSections.length > 0 && (
               <div className="border-t p-2">
                 <Select onValueChange={addSection}>
@@ -216,7 +189,7 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
                   </div>
                   <div>
                     <Label className="text-[10px]">Tone</Label>
-                    <Select value={selectedSection.tone} onValueChange={v => updateSection(selectedSection.key, { tone: v })}>
+                    <Select value={selectedSection.tone} onValueChange={v => updateSection(selectedSection.key, { tone: v as ToneProfile })}>
                       <SelectTrigger className="h-7 text-xs mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="clinical" className="text-xs">Clinical</SelectItem>
@@ -229,7 +202,7 @@ export function SummaryTemplateBuilder({ open, onOpenChange }: SummaryTemplateBu
                   </div>
                   <div>
                     <Label className="text-[10px]">Format</Label>
-                    <Select value={selectedSection.formatStyle} onValueChange={v => updateSection(selectedSection.key, { formatStyle: v })}>
+                    <Select value={selectedSection.formatStyle} onValueChange={v => updateSection(selectedSection.key, { formatStyle: v as TemplateSection['formatStyle'] })}>
                       <SelectTrigger className="h-7 text-xs mt-0.5"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="paragraph" className="text-xs">Paragraph</SelectItem>

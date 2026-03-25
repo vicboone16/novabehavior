@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Target, Lightbulb, AlertTriangle, Shield, TrendingUp, Users } from 'lucide-react';
 import type { BehaviorSummaryRow } from './types';
 import { generateFullSummary, type ToneProfile } from './summaryEngine';
+import { useTemplateStore } from './useTemplateStore';
 
 interface BehaviorBreakdownSummaryProps {
   rows: BehaviorSummaryRow[];
@@ -22,6 +23,9 @@ export function BehaviorBreakdownSummary({
   daysWithData = 20,
   tone = 'clinical',
 }: BehaviorBreakdownSummaryProps) {
+  const enabledKeys = useTemplateStore(s => s.sections.filter(sec => sec.enabled).map(sec => sec.key));
+  const isEnabled = (key: string) => enabledKeys.includes(key);
+
   const summary = useMemo(() => {
     if (rows.length === 0) return null;
     return generateFullSummary({
@@ -64,13 +68,15 @@ export function BehaviorBreakdownSummary({
       </CardHeader>
       <CardContent className="space-y-4 px-4 pb-4">
         {/* Student Header */}
-        <div>
-          <p className="text-xs font-semibold text-foreground">{studentName}</p>
-          <p className="text-[10px] text-muted-foreground">{dateRangeLabel}</p>
-        </div>
+        {isEnabled('student_header') && (
+          <div>
+            <p className="text-xs font-semibold text-foreground">{studentName}</p>
+            <p className="text-[10px] text-muted-foreground">{dateRangeLabel}</p>
+          </div>
+        )}
 
         {/* Behavior Percentages */}
-        {summary.behaviorPercentages.length > 0 && (
+        {isEnabled('behavior_percentages') && summary.behaviorPercentages.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-1.5">Behavior %</p>
             <div className="space-y-1">
@@ -91,7 +97,7 @@ export function BehaviorBreakdownSummary({
         )}
 
         {/* Data-Informed FBA Summary */}
-        {summary.fbaSummary && (
+        {isEnabled('fba_summary') && summary.fbaSummary && (
           <div className="bg-muted/40 rounded-lg p-3">
             <p className="text-xs font-semibold text-muted-foreground mb-1">Data-Informed Summary</p>
             <p className="text-xs text-foreground leading-relaxed">{summary.fbaSummary}</p>
@@ -99,7 +105,7 @@ export function BehaviorBreakdownSummary({
         )}
 
         {/* Escalation Chain */}
-        {summary.escalationChain && (
+        {isEnabled('escalation_chain') && summary.escalationChain && (
           <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
             <p className="text-xs font-semibold text-destructive mb-1 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Escalation Pattern
@@ -109,54 +115,70 @@ export function BehaviorBreakdownSummary({
         )}
 
         {/* Antecedents */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" /> Antecedents
-          </p>
-          <p className="text-xs text-foreground leading-relaxed">{summary.antecedents}</p>
-        </div>
+        {isEnabled('antecedents') && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" /> Antecedents
+            </p>
+            <p className="text-xs text-foreground leading-relaxed">{summary.antecedents}</p>
+          </div>
+        )}
+
+        {/* Consequences */}
+        {isEnabled('consequences') && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5">Consequences</p>
+            <p className="text-xs text-foreground leading-relaxed">{summary.consequences}</p>
+          </div>
+        )}
 
         {/* Replacement Skills */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-            <Target className="w-3.5 h-3.5" /> Priority Replacement Skills
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {summary.replacementSkills.map((s, i) => (
-              <Badge key={i} variant="secondary" className="text-[10px]">{s}</Badge>
-            ))}
+        {isEnabled('replacement_skills') && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Target className="w-3.5 h-3.5" /> Priority Replacement Skills
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {summary.replacementSkills.map((s, i) => (
+                <Badge key={i} variant="secondary" className="text-[10px]">{s}</Badge>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Intervention Focus */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-            <Lightbulb className="w-3.5 h-3.5" /> Intervention Focus
-          </p>
-          <ul className="space-y-0.5">
-            {summary.interventionFocus.map((s, i) => (
-              <li key={i} className="text-xs text-foreground flex items-start gap-1.5">
-                <span className="text-muted-foreground mt-0.5">•</span>
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
+        {isEnabled('intervention_focus') && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Lightbulb className="w-3.5 h-3.5" /> Intervention Focus
+            </p>
+            <ul className="space-y-0.5">
+              {summary.interventionFocus.map((s, i) => (
+                <li key={i} className="text-xs text-foreground flex items-start gap-1.5">
+                  <span className="text-muted-foreground mt-0.5">•</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Staff Response */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5" /> Staff Response Focus
-          </p>
-          <div className="space-y-1">
-            <div className="text-xs"><span className="font-semibold text-primary">Prevent:</span> {summary.staffResponse.prevent}</div>
-            <div className="text-xs"><span className="font-semibold text-accent-foreground">Teach:</span> {summary.staffResponse.teach}</div>
-            <div className="text-xs"><span className="font-semibold text-secondary-foreground">Respond:</span> {summary.staffResponse.respond}</div>
+        {isEnabled('staff_response') && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" /> Staff Response Focus
+            </p>
+            <div className="space-y-1">
+              <div className="text-xs"><span className="font-semibold text-primary">Prevent:</span> {summary.staffResponse.prevent}</div>
+              <div className="text-xs"><span className="font-semibold text-accent-foreground">Teach:</span> {summary.staffResponse.teach}</div>
+              <div className="text-xs"><span className="font-semibold text-secondary-foreground">Respond:</span> {summary.staffResponse.respond}</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Reinforcement */}
-        {summary.reinforcementNotes && (
+        {isEnabled('reinforcement_focus') && summary.reinforcementNotes && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
               <Shield className="w-3.5 h-3.5" /> Reinforcement Notes
@@ -166,7 +188,7 @@ export function BehaviorBreakdownSummary({
         )}
 
         {/* Data Completeness */}
-        {summary.dataCompletenessNote && (
+        {isEnabled('data_quality_note') && summary.dataCompletenessNote && (
           <div className="bg-muted/30 rounded-lg p-2">
             <p className="text-[10px] text-muted-foreground italic">{summary.dataCompletenessNote}</p>
           </div>
