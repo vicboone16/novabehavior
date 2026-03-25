@@ -491,10 +491,18 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
       console.error('[Merge] DB remap error (continuing with local merge):', dbErr);
     }
 
-    // 2. Remove the source from behavior bank DB
-    removeCustomBehaviorFromDB(sourceId);
+    // 2. Archive source from behavior bank (don't delete — preserve for historical resolution)
+    try {
+      await supabase
+        .from('behavior_bank_entries')
+        .update({ is_archived: true } as any)
+        .eq('behavior_id', sourceId);
+    } catch {
+      // Fallback: remove if archive column doesn't exist
+      removeCustomBehaviorFromDB(sourceId);
+    }
     
-    // 3. Update local store
+    // 3. Update local store — remaps student behavior IDs and data entries
     advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
     
     toast({ 
