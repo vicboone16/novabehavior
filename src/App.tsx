@@ -232,6 +232,13 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
+            <Route path="/parent-messages" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <ParentMessages />
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/admin" element={
               <ProtectedRoute>
                 <ApprovalCheck>
