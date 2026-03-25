@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, AlertTriangle, Target, Star, Camera, Settings2, GraduationCap } from "lucide-react";
+import { BarChart3, AlertTriangle, Target, Star, Camera, Settings2, GraduationCap, Scroll, Sparkles, Users } from "lucide-react";
 import { TeacherWeeklySummaryPanel } from "./TeacherWeeklySummaryPanel";
 import { TeacherABCLogsPanel } from "./TeacherABCLogsPanel";
 import { TeacherDataSessionsPanel } from "./TeacherDataSessionsPanel";
@@ -8,6 +8,9 @@ import { TeacherSummaries } from "@/components/TeacherSummaries";
 import { BeaconPointsPanel } from "./BeaconPointsPanel";
 import { ParentSnapshotPanel } from "./ParentSnapshotPanel";
 import { ParentReportConfigPanel } from "@/components/parent-comms/ParentReportConfigPanel";
+import { QuestBoard } from "@/components/quests/QuestBoard";
+import { CosmeticInventory } from "@/components/cosmetics/CosmeticInventory";
+import { TeacherParentEngagement } from "@/components/parent-loop/TeacherParentEngagement";
 
 interface TeacherDataHubProps {
   clientId: string;
@@ -56,6 +59,18 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
               <Settings2 className="w-3 h-3" />
               Parent Settings
             </TabsTrigger>
+            <TabsTrigger value="quests" className="gap-1 text-xs">
+              <Scroll className="w-3 h-3" />
+              Quests
+            </TabsTrigger>
+            <TabsTrigger value="cosmetics" className="gap-1 text-xs">
+              <Sparkles className="w-3 h-3" />
+              Unlocks
+            </TabsTrigger>
+            <TabsTrigger value="parent-engagement" className="gap-1 text-xs">
+              <Users className="w-3 h-3" />
+              Parent Loop
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="weekly">
@@ -78,6 +93,15 @@ export function TeacherDataHub({ clientId }: TeacherDataHubProps) {
           </TabsContent>
           <TabsContent value="parent-config">
             <ParentReportConfigPanel studentId={clientId} />
+          </TabsContent>
+          <TabsContent value="quests">
+            <QuestBoard studentId={clientId} agencyId="" isTeacher />
+          </TabsContent>
+          <TabsContent value="cosmetics">
+            <CosmeticInventory studentId={clientId} />
+          </TabsContent>
+          <TabsContent value="parent-engagement">
+            <TeacherParentEngagement studentId={clientId} />
           </TabsContent>
         </Tabs>
       </CardContent>

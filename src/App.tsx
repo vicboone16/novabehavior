@@ -112,6 +112,7 @@ const BopsAdminConsole = lazy(() => import("./pages/BopsAdminConsole"));
 const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
+const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -208,6 +209,7 @@ const App = () => {
             <Route path="/clinical-form/:token" element={<ClinicalFormPage />} />
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
+            <Route path="/launch-readiness" element={<LaunchReadiness />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
