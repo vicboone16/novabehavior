@@ -115,41 +115,57 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     frequencyEntries
       .filter(e => e.studentId === studentId)
       .forEach(e => {
-        const d = format(new Date(e.timestamp), 'yyyy-MM-dd');
-        const entryDate = parseISO(d);
-        if (!isWithinInterval(entryDate, dateRange)) return;
-        const key = `${d}|${e.behaviorId}`;
-        freqByKey.set(key, (freqByKey.get(key) || 0) + 1);
+        try {
+          const ts = new Date(e.timestamp);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          const entryDate = parseISO(d);
+          if (!isWithinInterval(entryDate, dateRange)) return;
+          const key = `${d}|${e.behaviorId}`;
+          freqByKey.set(key, (freqByKey.get(key) || 0) + 1);
+        } catch { /* skip invalid timestamps */ }
       });
 
     const durByKey = new Map<string, number>();
     durationEntries
       .filter(e => e.studentId === studentId)
       .forEach(e => {
-        const d = format(new Date(e.startTime), 'yyyy-MM-dd');
-        const entryDate = parseISO(d);
-        if (!isWithinInterval(entryDate, dateRange)) return;
-        const key = `${d}|${e.behaviorId}`;
-        durByKey.set(key, (durByKey.get(key) || 0) + (e.duration || 0));
+        try {
+          const ts = new Date(e.startTime);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          const entryDate = parseISO(d);
+          if (!isWithinInterval(entryDate, dateRange)) return;
+          const key = `${d}|${e.behaviorId}`;
+          durByKey.set(key, (durByKey.get(key) || 0) + (e.duration || 0));
+        } catch { /* skip invalid timestamps */ }
       });
 
     const abcByKey = new Map<string, number>();
     abcEntries
       .filter(e => e.studentId === studentId)
       .forEach(e => {
-        const d = format(new Date(e.timestamp), 'yyyy-MM-dd');
-        const entryDate = parseISO(d);
-        if (!isWithinInterval(entryDate, dateRange)) return;
-        const key = `${d}|${e.behaviorId}`;
-        abcByKey.set(key, (abcByKey.get(key) || 0) + 1);
+        try {
+          const ts = new Date(e.timestamp);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          const entryDate = parseISO(d);
+          if (!isWithinInterval(entryDate, dateRange)) return;
+          const key = `${d}|${e.behaviorId}`;
+          abcByKey.set(key, (abcByKey.get(key) || 0) + 1);
+        } catch { /* skip invalid timestamps */ }
       });
 
     const sessionsByDay = new Map<string, number>();
     sessions
       .filter(s => s.studentIds?.includes(studentId) && s.date)
       .forEach(s => {
-        const d = format(new Date(s.date), 'yyyy-MM-dd');
-        sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
+        try {
+          const ts = new Date(s.date);
+          if (isNaN(ts.getTime())) return;
+          const d = format(ts, 'yyyy-MM-dd');
+          sessionsByDay.set(d, (sessionsByDay.get(d) || 0) + 1);
+        } catch { /* skip invalid dates */ }
       });
 
     const allKeys = new Set([...freqByKey.keys(), ...durByKey.keys(), ...abcByKey.keys()]);
