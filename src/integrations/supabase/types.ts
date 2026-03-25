@@ -79566,6 +79566,10 @@ export type Database = {
         Args: { p_agency_id: string; p_minutes: number }
         Returns: number
       }
+      fn_backfill_behavior_daily_aggregates: {
+        Args: { p_student_id?: string }
+        Returns: number
+      }
       fn_calculate_pay_period: {
         Args: { p_agency_id: string; p_date: string }
         Returns: Json
