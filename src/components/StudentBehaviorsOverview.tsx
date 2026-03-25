@@ -1628,7 +1628,7 @@ export function StudentBehaviorsOverview({
                   className="gap-1"
                   onClick={() => {
                     setAdoptTarget({ id: orphan.id, inferredName: orphan.inferredName });
-                    setAdoptName(orphan.inferredName.startsWith('Unlinked') ? '' : orphan.inferredName);
+                    setAdoptName(orphan.inferredName.startsWith('Needs Mapping') ? '' : orphan.inferredName);
                     setAdoptDefinition('');
                     setAdoptMode(behaviors.length > 0 ? 'existing' : 'bank');
                     setAdoptExistingId('');
