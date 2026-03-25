@@ -473,49 +473,11 @@ export default function BehaviorLibrary({ embedded = false }: BehaviorLibraryPro
   };
 
   const handleAdvancedMerge = async (sourceId: string, targetId: string, useSourceName: boolean) => {
-    // 1. Update DB-side session_data and behavior_session_data to remap source -> target
-    try {
-      // Remap session_data rows
-      await supabase
-        .from('session_data')
-        .update({ behavior_id: targetId } as any)
-        .eq('behavior_id', sourceId);
-
-      // Remap behavior_session_data rows
-      await supabase
-        .from('behavior_session_data')
-        .update({ behavior_id: targetId } as any)
-        .eq('behavior_id', sourceId);
-
-      // Update student_behavior_map entries
-      await supabase
-        .from('student_behavior_map')
-        .update({ behavior_entry_id: targetId } as any)
-        .eq('behavior_entry_id', sourceId);
-
-      console.log(`[Merge] Remapped DB records from ${sourceId} -> ${targetId}`);
-    } catch (dbErr) {
-      console.error('[Merge] DB remap error (continuing with local merge):', dbErr);
-    }
-
-    // 2. Archive source from behavior bank (don't delete — preserve for historical resolution)
-    try {
-      await supabase
-        .from('behavior_bank_entries')
-        .update({ is_archived: true } as any)
-        .eq('behavior_id', sourceId);
-    } catch {
-      // Fallback: remove if archive column doesn't exist
-      removeCustomBehaviorFromDB(sourceId);
-    }
+    // Use canonical merge RPC — remaps assignments, sets successor, preserves all data
+    await canonicalMerge(sourceId, targetId, 'Library merge');
     
-    // 3. Update local store — remaps student behavior IDs and data entries
+    // Also update local store for immediate UI consistency
     advancedMergeBehaviors({ sourceBehaviorId: sourceId, targetBehaviorId: targetId, useSourceName });
-    
-    toast({ 
-      title: 'Behaviors merged', 
-      description: 'All data has been preserved and behaviors combined.' 
-    });
   };
 
   // Prepare behaviors for advanced merge dialog
