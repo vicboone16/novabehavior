@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { Plus, Users, BookOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -24,23 +23,49 @@ interface ProtocolAssignmentManagerProps {
 
 export function ProtocolAssignmentManager({ studentId }: ProtocolAssignmentManagerProps) {
   const { templates, assignments, assignProtocol, updateAssignment, fetchTemplates, fetchAssignments } = useProtocols();
-
-  // Fetch on mount
-  useState(() => { fetchTemplates(); fetchAssignments(studentId); });
   const [showAssign, setShowAssign] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
-  const studentAssignments = assignments.filter(a => a.student_id === studentId);
+  useEffect(() => {
+    void fetchTemplates();
+    void fetchAssignments(studentId);
+  }, [fetchAssignments, fetchTemplates, studentId]);
 
-  const handleAssign = () => {
+  const studentAssignments = assignments.filter((a) => a.student_id === studentId);
+
+  const handleAssign = async () => {
     if (!selectedTemplateId) {
       toast.error('Please select a protocol');
       return;
     }
-    assignProtocol({ student_id: studentId, protocol_template_id: selectedTemplateId, status: 'active', start_date: new Date().toISOString(), assigned_staff: [], customizations: {} });
-    setShowAssign(false);
-    setSelectedTemplateId('');
-    toast.success('Protocol assigned');
+
+    try {
+      await assignProtocol({
+        student_id: studentId,
+        protocol_template_id: selectedTemplateId,
+        status: 'active',
+        start_date: new Date().toISOString(),
+        assigned_staff: [],
+        customizations: {},
+      });
+      await fetchAssignments(studentId);
+      setShowAssign(false);
+      setSelectedTemplateId('');
+      toast.success('Protocol assigned');
+    } catch (error) {
+      console.error('Failed to assign protocol:', error);
+      toast.error('Failed to assign protocol');
+    }
+  };
+
+  const handleStatusChange = async (assignmentId: string, status: string) => {
+    try {
+      await updateAssignment(assignmentId, { status } as any);
+      await fetchAssignments(studentId);
+    } catch (error) {
+      console.error('Failed to update protocol assignment:', error);
+      toast.error('Failed to update assignment');
+    }
   };
 
   return (
@@ -86,7 +111,7 @@ export function ProtocolAssignmentManager({ studentId }: ProtocolAssignmentManag
                 <TableCell>
                   <Select
                     value={assignment.status}
-                    onValueChange={(v) => updateAssignment(assignment.id, { status: v } as any)}
+                    onValueChange={(value) => void handleStatusChange(assignment.id, value)}
                   >
                     <SelectTrigger className="w-[120px] h-8">
                       <SelectValue />
@@ -115,7 +140,7 @@ export function ProtocolAssignmentManager({ studentId }: ProtocolAssignmentManag
             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
               <SelectTrigger><SelectValue placeholder="Choose a protocol..." /></SelectTrigger>
               <SelectContent>
-                {templates.filter(t => t.status === 'active').map(t => (
+                {templates.filter((t) => t.status === 'active').map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.title} {t.curriculum_system ? `(${t.curriculum_system})` : ''}
                   </SelectItem>
@@ -125,7 +150,7 @@ export function ProtocolAssignmentManager({ studentId }: ProtocolAssignmentManag
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAssign(false)}>Cancel</Button>
-            <Button onClick={handleAssign}>Assign</Button>
+            <Button onClick={() => void handleAssign()}>Assign</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
