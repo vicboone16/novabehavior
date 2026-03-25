@@ -8,6 +8,8 @@ import {
   archiveBehaviorToDB,
   unarchiveBehaviorFromDB,
 } from '@/hooks/useBehaviorBankSync';
+import { useBehaviorOperations } from '@/hooks/useCanonicalBehaviors';
+import { CanonicalStatusBadge } from '@/components/programming/CanonicalStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
