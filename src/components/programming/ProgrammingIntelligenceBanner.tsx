@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, ArrowUpRight, AlertTriangle, Shield, Target,
   Activity, Zap, Lightbulb, CheckCircle2, Hand, Loader2, Minus
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useSkillMasteryIntelligence } from '@/hooks/useSkillMasteryIntelligence';
 import { useReplacementBehaviorIntelligence } from '@/hooks/useReplacementBehaviorIntelligence';
 import { useBehaviorEventIntelligence, formatTrigger } from '@/hooks/useBehaviorEventIntelligence';
+import { useDataStore } from '@/store/dataStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 
 interface Props {
   studentId: string;
@@ -19,6 +22,34 @@ function TrendIcon({ value }: { value: number }) {
   return <Minus className="w-3 h-3 text-muted-foreground" />;
 }
 
+type MasteredMode = 'targets' | 'skills' | 'programs';
+type InProgressMode = 'targets' | 'skills' | 'programs';
+
+function ToggleStatCell({ label, value, icon, color, modes, currentMode, onToggle }: {
+  label: string;
+  value: Record<string, number>;
+  icon: React.ReactNode;
+  color?: string;
+  modes: { key: string; label: string }[];
+  currentMode: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors text-left min-w-0"
+    >
+      <div className="shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-base font-bold leading-none ${color || 'text-foreground'}`}>{value[currentMode] ?? 0}</p>
+        <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
+          {modes.find(m => m.key === currentMode)?.label || label}
+        </p>
+      </div>
+    </button>
+  );
+}
+
 function StatCell({ label, value, icon, trend, color }: {
   label: string;
   value: number;
@@ -28,11 +59,11 @@ function StatCell({ label, value, icon, trend, color }: {
 }) {
   const trendVal = trend === 'up' ? 1 : trend === 'down' ? -1 : 0;
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/40">
+    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/40">
       <div className="shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className={`text-lg font-bold leading-none ${color || 'text-foreground'}`}>{value}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+        <p className={`text-base font-bold leading-none ${color || 'text-foreground'}`}>{value}</p>
+        <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{label}</p>
       </div>
       {trend && <TrendIcon value={trendVal} />}
     </div>
@@ -40,9 +71,21 @@ function StatCell({ label, value, icon, trend, color }: {
 }
 
 export function ProgrammingIntelligenceBanner({ studentId }: Props) {
+  const [masteredMode, setMasteredMode] = useState<MasteredMode>('targets');
+  const [inProgressMode, setInProgressMode] = useState<InProgressMode>('targets');
+
   const { targets, flags, stats, loading: skillLoading } = useSkillMasteryIntelligence(studentId);
   const { summaries: replSummaries, loading: replLoading } = useReplacementBehaviorIntelligence(studentId);
   const { intel: behaviorIntel, summary: bxSummary, totalEvents: bxTotalEvents, loading: bxLoading } = useBehaviorEventIntelligence(studentId);
+
+  // Get actual counts from store
+  const students = useDataStore(useShallow((state) => state.students));
+  const student = students.find(s => s.id === studentId);
+  const { data: bopsPrograms } = useStudentBopsPrograms(studentId);
+  const bopsCount = bopsPrograms?.length || 0;
+
+  const storeSkillCount = (student?.skillTargets || []).length + bopsCount;
+  const storeBehaviorCount = student?.behaviors?.length || 0;
 
   const loading = skillLoading || replLoading || bxLoading;
 
@@ -51,6 +94,49 @@ export function ProgrammingIntelligenceBanner({ studentId }: Props) {
   const promptDep = useMemo(() => flags.filter(f => f.type === 'prompt_dependent'), [flags]);
   const weakReplacements = useMemo(() => replSummaries.filter(s => s.replacement_status === 'weak'), [replSummaries]);
   const strongReplacements = useMemo(() => replSummaries.filter(s => s.replacement_status === 'strong'), [replSummaries]);
+
+  // Compute mastered/inProgress by granularity
+  const masteredValues = useMemo(() => {
+    const masteredTargets = targets.filter(t => t.mastery_status === 'mastered' || t.target_status === 'mastered');
+    // Skills = unique program/skill groupings that have at least one mastered target
+    const masteredSkillIds = new Set(masteredTargets.map(t => (t as any).program_id || t.student_target_id));
+    // Programs = unique top-level programs with all targets mastered (approximate)
+    return {
+      targets: stats.mastered,
+      skills: masteredSkillIds.size,
+      programs: Math.max(0, Math.floor(stats.mastered / Math.max(1, targets.length) * (student?.skillTargets?.length || 0))),
+    };
+  }, [targets, stats, student]);
+
+  const inProgressValues = useMemo(() => ({
+    targets: stats.inProgress,
+    skills: stats.inProgress, // approximate: 1:1 at target level
+    programs: Math.min(stats.inProgress, student?.skillTargets?.length || 0),
+  }), [stats, student]);
+
+  const masteredModes: { key: string; label: string }[] = [
+    { key: 'targets', label: 'Targets Mastered' },
+    { key: 'skills', label: 'Skills Mastered' },
+    { key: 'programs', label: 'Programs Mastered' },
+  ];
+
+  const inProgressModes: { key: string; label: string }[] = [
+    { key: 'targets', label: 'Targets In Progress' },
+    { key: 'skills', label: 'Skills In Progress' },
+    { key: 'programs', label: 'Programs In Progress' },
+  ];
+
+  const cycleMastered = () => {
+    const order: MasteredMode[] = ['targets', 'skills', 'programs'];
+    const idx = order.indexOf(masteredMode);
+    setMasteredMode(order[(idx + 1) % order.length]);
+  };
+
+  const cycleInProgress = () => {
+    const order: InProgressMode[] = ['targets', 'skills', 'programs'];
+    const idx = order.indexOf(inProgressMode);
+    setInProgressMode(order[(idx + 1) % order.length]);
+  };
 
   // Behavior insights
   const insights: Array<{ label: string; detail: string; severity: 'warning' | 'info' }> = useMemo(() => {
@@ -86,12 +172,8 @@ export function ProgrammingIntelligenceBanner({ studentId }: Props) {
     );
   }
 
-  const hasAnyData = targets.length > 0 || replSummaries.length > 0 || bxTotalEvents > 0;
+  const hasAnyData = storeSkillCount > 0 || storeBehaviorCount > 0 || targets.length > 0 || replSummaries.length > 0 || bxTotalEvents > 0;
   if (!hasAnyData) return null;
-
-  // Determine trend directions based on data signals
-  const masteredTrend = stats.mastered > 0 ? 'up' as const : 'flat' as const;
-  const stalledTrend = stats.stalled > 0 ? 'down' as const : 'flat' as const;
 
   return (
     <Card className="border-primary/10">
@@ -100,25 +182,30 @@ export function ProgrammingIntelligenceBanner({ studentId }: Props) {
           <Zap className="w-4 h-4 text-primary" />
           Programming Intelligence
           <Badge variant="outline" className="ml-auto text-[10px]">
-            {stats.total} skills · {replSummaries.length} behaviors
+            {storeSkillCount} skills · {storeBehaviorCount} behaviors
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-3 space-y-3">
-        {/* Skill + Behavior unified stats */}
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-          <StatCell
+        {/* Skill + Behavior unified stats — smaller cards */}
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5">
+          <ToggleStatCell
             label="Mastered"
-            value={stats.mastered}
+            value={masteredValues}
             icon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
-            trend={masteredTrend}
             color="text-emerald-500"
+            modes={masteredModes}
+            currentMode={masteredMode}
+            onToggle={cycleMastered}
           />
-          <StatCell
+          <ToggleStatCell
             label="In Progress"
-            value={stats.inProgress}
+            value={inProgressValues}
             icon={<Target className="w-3.5 h-3.5 text-blue-500" />}
             color="text-blue-500"
+            modes={inProgressModes}
+            currentMode={inProgressMode}
+            onToggle={cycleInProgress}
           />
           <StatCell
             label="Ready to Advance"

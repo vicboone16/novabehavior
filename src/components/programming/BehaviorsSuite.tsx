@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Activity, Lightbulb, BarChart3, ClipboardCheck, Clock, Plus } from 'lucide-react';
+import { Activity, Lightbulb, BarChart3, Clock, Target, Columns3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-// StudentBehaviorsOverview removed — now unified in BehaviorInsightsModule
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
 import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
@@ -14,17 +13,18 @@ import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { CanonicalStatusBadge } from './CanonicalStatusBadge';
 import { BopsTagChips } from './BopsTagChips';
-import { useEntityBopsTags } from '@/hooks/useBopsTags';
-import { useLearnerBehaviorAssignments } from '@/hooks/useCanonicalBehaviors';
+import type { ProgrammingMode } from './ProgrammingModule';
 
-type BehaviorTab = 'behaviors' | 'interventions' | 'data' | 'review' | 'context';
+type BehaviorTab = 'behaviors' | 'interventions' | 'data' | 'context';
 
 interface BehaviorsSuiteProps {
   studentId: string;
   studentName: string;
+  mode?: ProgrammingMode;
+  onModeChange?: (mode: ProgrammingMode) => void;
 }
 
-export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) {
+export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: BehaviorsSuiteProps) {
   const [activeTab, setActiveTab] = useState<BehaviorTab>('behaviors');
   
   const { 
@@ -66,107 +66,67 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as BehaviorTab)}>
-        <TabsList className="flex w-full gap-1 h-auto p-1 overflow-x-auto scrollbar-hide">
-          <TabsTrigger value="behaviors" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <Activity className="w-3.5 h-3.5" />
-            Behaviors & Goals
-          </TabsTrigger>
-          <TabsTrigger value="interventions" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <Lightbulb className="w-3.5 h-3.5" />
-            Interventions
-          </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <BarChart3 className="w-3.5 h-3.5" />
-            Data Entry
-          </TabsTrigger>
-          <TabsTrigger value="review" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <ClipboardCheck className="w-3.5 h-3.5" />
-            Progress Review
-          </TabsTrigger>
-          <TabsTrigger value="context" className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-            <Clock className="w-3.5 h-3.5" />
-            Context Log
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-2 w-full">
+          {/* Programming label */}
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">Programming</span>
+          
+          <TabsList className="flex flex-1 justify-center gap-1 h-auto p-1 overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="behaviors" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
+              <Activity className="w-3.5 h-3.5" />
+              Behaviors & Goals
+            </TabsTrigger>
+            <TabsTrigger value="interventions" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
+              <Lightbulb className="w-3.5 h-3.5" />
+              Interventions
+            </TabsTrigger>
+            <TabsTrigger value="data" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
+              <BarChart3 className="w-3.5 h-3.5" />
+              Data Entry
+            </TabsTrigger>
+            <TabsTrigger value="context" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
+              <Clock className="w-3.5 h-3.5" />
+              Context Log
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Skills / Behaviors / Both toggle on the right */}
+          {mode && onModeChange && (
+            <ToggleGroup 
+              type="single" 
+              value={mode} 
+              onValueChange={(v) => v && onModeChange(v as ProgrammingMode)}
+              className="bg-muted rounded-lg p-0.5 shrink-0"
+            >
+              <ToggleGroupItem value="skills" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
+                <Target className="w-3 h-3" />
+                Skills
+              </ToggleGroupItem>
+              <ToggleGroupItem value="behaviors" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
+                <Activity className="w-3 h-3" />
+                Behaviors
+              </ToggleGroupItem>
+              <ToggleGroupItem value="both" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
+                <Columns3 className="w-3 h-3" />
+                Both
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+        </div>
 
         <TabsContent value="behaviors" className="mt-4 space-y-4">
           {/* Goal Suggestion Engine */}
           <GoalSuggestionEnginePanel studentId={studentId} surface="programming" />
-        </TabsContent>
 
-        <TabsContent value="interventions" className="mt-4 space-y-4">
-          <StudentBxPlanView 
-            studentId={student.id}
-            studentName={student.name}
-          />
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Add from Library</CardTitle>
-              <CardDescription>
-                Search and add interventions directly to {studentName}'s profile
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BehaviorInterventionsPicker 
-                preSelectedStudentId={student.id}
-                compact
-                hideHeader
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="data" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <div />
-            <HistoricalDataManager studentId={student.id} />
-          </div>
-          <HistoricalDataEntry student={student} />
-          
-          {/* Data Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Data Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold text-primary">
-                    {studentFrequency.reduce((sum, e) => sum + e.count, 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Frequency Events</p>
-                </div>
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold text-primary">{studentABC.length}</p>
-                  <p className="text-xs text-muted-foreground">ABC Entries</p>
-                </div>
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold text-primary">{studentDuration.length}</p>
-                  <p className="text-xs text-muted-foreground">Duration Sessions</p>
-                </div>
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-2xl font-bold text-primary">{studentIntervals.length}</p>
-                  <p className="text-xs text-muted-foreground">Interval Records</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="review" className="mt-4 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Goals & Linked Interventions</CardTitle>
-              <CardDescription>
-                Behavior goals linked to their replacement behaviors and intervention strategies
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {studentGoals.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No behavior goals configured yet. Add goals from the Behaviors & Goals tab to track progress.
-                </p>
-              ) : (
+          {/* Goals & Linked Interventions — moved here from Progress Review */}
+          {studentGoals.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Goals & Linked Interventions</CardTitle>
+                <CardDescription>
+                  Behavior goals linked to their replacement behaviors and intervention strategies
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
                   {studentGoals.map((goal) => {
                     const behavior = student.behaviors.find(b => b.id === goal.behaviorId);
@@ -208,7 +168,69 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
                     );
                   })}
                 </div>
-              )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="interventions" className="mt-4 space-y-4">
+          <StudentBxPlanView 
+            studentId={student.id}
+            studentName={student.name}
+          />
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Add from Library</CardTitle>
+              <CardDescription>
+                Search and add interventions directly to {studentName}'s profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BehaviorInterventionsPicker 
+                preSelectedStudentId={student.id}
+                compact
+                hideHeader
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="data" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <div />
+            <HistoricalDataManager studentId={student.id} />
+          </div>
+          <HistoricalDataEntry student={student} />
+          
+          {/* Context Log — moved here under Data Entry */}
+          <TOILog studentId={studentId} studentName={studentName} isAdmin={false} />
+          
+          {/* Data Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Data Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">
+                    {studentFrequency.reduce((sum, e) => sum + e.count, 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Frequency Events</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{studentABC.length}</p>
+                  <p className="text-xs text-muted-foreground">ABC Entries</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{studentDuration.length}</p>
+                  <p className="text-xs text-muted-foreground">Duration Sessions</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold text-primary">{studentIntervals.length}</p>
+                  <p className="text-xs text-muted-foreground">Interval Records</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
