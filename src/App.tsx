@@ -110,6 +110,8 @@ const NovaCopilot = lazy(() => import("./pages/NovaCopilot"));
 const BopsEngine = lazy(() => import("./pages/BopsEngine"));
 const BopsAdminConsole = lazy(() => import("./pages/BopsAdminConsole"));
 const RewardStore = lazy(() => import("./pages/RewardStore"));
+const ParentView = lazy(() => import("./pages/ParentView"));
+const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
