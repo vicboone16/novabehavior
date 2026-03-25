@@ -28,6 +28,7 @@ import {
 } from '@/types/behavior';
 import { BehaviorDefinitionOverride, GlobalBankBehavior } from '@/types/behaviorBank';
 import { supabase } from '@/integrations/supabase/client';
+import { markNarrativeNotesPending } from '@/lib/pendingNarrativeGuard';
 import { emitHistoricalDataChanged } from '@/lib/historicalDataSync';
 
 // Direct save of historical data to database - bypasses sync debounce
@@ -486,9 +487,9 @@ export const useDataStore = create<DataState>()(
 
 
       updateStudentProfile: (id, updates) => {
-        // Mark narrative notes as pending to protect from realtime overwrites
+        // Mark narrative notes as pending SYNCHRONOUSLY to protect from realtime overwrites
         if (updates.narrativeNotes) {
-          import('@/lib/pendingNarrativeGuard').then(m => m.markNarrativeNotesPending(id)).catch(() => {});
+          markNarrativeNotesPending(id);
         }
         set((state) => ({
           students: state.students.map((s) =>
