@@ -336,6 +336,10 @@ export default function Intelligence() {
             <Building2 className="w-4 h-4 mr-1" />
             District & Agency
           </TabsTrigger>
+          <TabsTrigger value="linked-system">
+            <Eye className="w-4 h-4 mr-1" />
+            Linked System
+          </TabsTrigger>
         </TabsList>
 
         {/* Caseload Tab */}
