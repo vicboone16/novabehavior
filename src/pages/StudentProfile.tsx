@@ -801,13 +801,6 @@ export default function StudentProfile() {
           {/* Protocol Assignments — Library-based program assignment */}
           <ProtocolAssignmentManager studentId={student.id} />
 
-          {/* Clinical Progress Reference */}
-          <UIReferenceFrame
-            image={clinicalProgressRef}
-            alt="Clinical progress report layout"
-            label="Clinical Progress View"
-            caption="Clinical progress report with narrative summary, charts, and fidelity data table"
-          />
         </TabsContent>
 
         {/* ====== ASSESSMENTS TAB ====== */}
