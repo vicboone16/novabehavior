@@ -86,10 +86,6 @@ import { useClientProfile } from '@/hooks/useClientProfile';
 import { StudentIntelligencePanel } from '@/components/intelligence/StudentIntelligencePanel';
 import { ReplacementBehaviorCard } from '@/components/intelligence/ReplacementBehaviorCard';
 import { BehaviorIntelligenceSection } from '@/components/intelligence/BehaviorIntelligenceSection';
-import { UIReferenceFrame } from '@/components/demo-center/UIReferenceFrame';
-import { StudentPageTemplate } from '@/components/demo-center/StudentPageTemplate';
-import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
-import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import { SkillIntelligenceSection } from '@/components/intelligence/SkillIntelligenceSection';
 import { 
   ContactsTab, 
