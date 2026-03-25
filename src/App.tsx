@@ -109,6 +109,7 @@ const IntakeForms = lazy(() => import("./pages/IntakeForms"));
 const NovaCopilot = lazy(() => import("./pages/NovaCopilot"));
 const BopsEngine = lazy(() => import("./pages/BopsEngine"));
 const BopsAdminConsole = lazy(() => import("./pages/BopsAdminConsole"));
+const RewardStore = lazy(() => import("./pages/RewardStore"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -492,6 +493,7 @@ const App = () => {
               <Route path="/bops" element={<Navigate to="/clinical" replace />} />
               <Route path="/bops-admin" element={<Navigate to="/clinical" replace />} />
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
+              <Route path="/reward-store" element={<RewardStore />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
