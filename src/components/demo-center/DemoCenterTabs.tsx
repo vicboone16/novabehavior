@@ -9,7 +9,7 @@ import { DemoEcosystemViewer } from './DemoEcosystemViewer';
 import { DemoDashboardPanel } from './DemoDashboardPanel';
 import { DemoClinicalViewer } from './DemoClinicalViewer';
 import { UIReferenceFrame } from './UIReferenceFrame';
-import { StudentPageTemplate } from './StudentPageTemplate';
+
 import studentProfileRef from '@/assets/tour/student-profile-ref.jpg';
 import clinicalProgressRef from '@/assets/tour/clinical-progress-ref.jpg';
 import type { DemoLearner, DemoStaff } from '@/pages/DemoCenter';
