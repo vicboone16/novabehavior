@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Target, Lightbulb, AlertTriangle, Shield, TrendingUp, Users } from 'lucide-react';
 import type { BehaviorSummaryRow } from './types';
 import { generateFullSummary, type ToneProfile } from './summaryEngine';
+import { useTemplateStore } from './useTemplateStore';
 
 interface BehaviorBreakdownSummaryProps {
   rows: BehaviorSummaryRow[];
