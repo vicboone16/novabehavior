@@ -71,39 +71,116 @@ function buildCSV(rows: BehaviorSummaryRow[]): string {
   return [headers.join(','), ...csvRows.map(r => r.join(','))].join('\n');
 }
 
+/**
+ * Export-safe chart capture.
+ * 
+ * Strategy: Find the SVG inside the chart element and serialize it to an
+ * image via blob URL, avoiding html2canvas issues with cloned SVG elements
+ * (which cause the black-image bug). Falls back to html2canvas for non-SVG.
+ */
 async function captureChartAsCanvas(chartElement: HTMLElement): Promise<HTMLCanvasElement> {
-  const container = document.createElement('div');
-  container.style.cssText = `
-    position: fixed; left: -9999px; top: 0;
-    width: 800px; height: 400px;
-    background: white; padding: 16px;
-    font-family: system-ui, -apple-system, sans-serif;
-    z-index: -1; overflow: hidden;
-  `;
-  document.body.appendChild(container);
+  const WIDTH = 800;
+  const HEIGHT = 400;
+  const SCALE = 2;
 
-  const clone = chartElement.cloneNode(true) as HTMLElement;
-  clone.style.width = '100%';
-  clone.style.height = '100%';
-  clone.querySelectorAll('button, [role="button"], .cursor-pointer').forEach(el => {
-    (el as HTMLElement).style.display = 'none';
+  // Strategy 1: SVG serialization (Recharts renders SVG)
+  const svgEl = chartElement.querySelector('svg.recharts-surface') || chartElement.querySelector('svg');
+  if (svgEl) {
+    return captureSVGToCanvas(svgEl as SVGSVGElement, WIDTH, HEIGHT, SCALE);
+  }
+
+  // Strategy 2: html2canvas fallback — render in-place with white background
+  const origBg = chartElement.style.backgroundColor;
+  chartElement.style.backgroundColor = '#ffffff';
+  // Hide interactive elements
+  const hidden: HTMLElement[] = [];
+  chartElement.querySelectorAll('button, [role="button"]').forEach(el => {
+    const htmlEl = el as HTMLElement;
+    if (htmlEl.style.display !== 'none') {
+      hidden.push(htmlEl);
+      htmlEl.style.display = 'none';
+    }
   });
-  container.appendChild(clone);
-
-  await new Promise(r => setTimeout(r, 200));
 
   try {
-    return await html2canvas(container, {
+    const canvas = await html2canvas(chartElement, {
       backgroundColor: '#ffffff',
-      scale: 2,
+      scale: SCALE,
       useCORS: true,
       logging: false,
-      width: 800,
-      height: 400,
+      width: WIDTH,
+      height: HEIGHT,
+      windowWidth: WIDTH,
+      windowHeight: HEIGHT,
     });
+    return canvas;
   } finally {
-    document.body.removeChild(container);
+    chartElement.style.backgroundColor = origBg;
+    hidden.forEach(el => { el.style.display = ''; });
   }
+}
+
+/**
+ * Serialize an SVG element to a high-res canvas image.
+ * This avoids html2canvas entirely for SVG content.
+ */
+async function captureSVGToCanvas(
+  svgEl: SVGSVGElement,
+  width: number,
+  height: number,
+  scale: number,
+): Promise<HTMLCanvasElement> {
+  // Clone SVG and inline computed styles
+  const clone = svgEl.cloneNode(true) as SVGSVGElement;
+  clone.setAttribute('width', String(width));
+  clone.setAttribute('height', String(height));
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+  // Inline critical computed styles on all elements
+  const origElements = svgEl.querySelectorAll('*');
+  const cloneElements = clone.querySelectorAll('*');
+  const stylesToCopy = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'font-size', 'font-family', 'font-weight', 'opacity', 'text-anchor', 'dominant-baseline'];
+  
+  for (let i = 0; i < origElements.length && i < cloneElements.length; i++) {
+    const computed = window.getComputedStyle(origElements[i]);
+    const target = cloneElements[i] as SVGElement;
+    for (const prop of stylesToCopy) {
+      const val = computed.getPropertyValue(prop);
+      if (val && val !== 'none' && val !== 'normal' && val !== '0px') {
+        target.style.setProperty(prop, val);
+      }
+    }
+  }
+
+  // Serialize to blob
+  const svgData = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  // Draw to canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(scale, scale);
+
+  const img = new Image();
+  img.width = width;
+  img.height = height;
+
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve();
+    };
+    img.onerror = () => reject(new Error('SVG image rendering failed'));
+    img.src = url;
+  });
+
+  URL.revokeObjectURL(url);
+  return canvas;
 }
 
 function downloadBlob(blob: Blob, filename: string) {
