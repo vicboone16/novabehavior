@@ -85,11 +85,12 @@ function useDbAggregates(studentId: string, dateRange: { start: Date; end: Date 
 }
 
 export function useInsightsData(studentId: string, filters: InsightsFilters) {
-  const { students, frequencyEntries, durationEntries, abcEntries, sessions } = useDataStore(useShallow((state) => ({
+  const { students, frequencyEntries, durationEntries, abcEntries, intervalEntries, sessions } = useDataStore(useShallow((state) => ({
     students: state.students,
     frequencyEntries: state.frequencyEntries,
     durationEntries: state.durationEntries,
     abcEntries: state.abcEntries,
+    intervalEntries: state.intervalEntries,
     sessions: state.sessions,
   })));
   const student = students.find(s => s.id === studentId);
