@@ -15,6 +15,7 @@ interface SummarySection {
   content: string;
   isLocked: boolean;
   isEdited: boolean;
+  isHidden?: boolean;
 }
 
 interface ClinicalSummaryEditorProps {
