@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { Calendar, Filter, BarChart3, Printer, Download, RotateCcw, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, BarChart3, Printer, Download, RotateCcw, ChevronDown, Bookmark, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { InsightsFilters, DateRangePreset, ViewMode } from './types';
+import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import type { InsightsFilters, DateRangePreset, ViewMode, ComparisonMode, GroupBy } from './types';
 import { DEFAULT_FILTERS } from './types';
+import { useTemplateStore } from './useTemplateStore';
 
 interface Behavior {
   id: string;
@@ -35,6 +41,7 @@ const DATE_PRESETS: { value: DateRangePreset; label: string }[] = [
   { value: 'this_quarter', label: 'This Quarter' },
   { value: 'school_year', label: 'School Year' },
   { value: 'all_time', label: 'All Time' },
+  { value: 'custom', label: 'Custom Range' },
 ];
 
 const VIEW_MODES: { value: ViewMode; label: string }[] = [
@@ -49,8 +56,30 @@ const VIEW_MODES: { value: ViewMode; label: string }[] = [
   { value: 'raw', label: 'Raw All' },
 ];
 
+const COMPARISON_MODES: { value: ComparisonMode; label: string }[] = [
+  { value: 'none', label: 'No Comparison' },
+  { value: 'prev_equivalent', label: 'Prior Equivalent' },
+  { value: 'prev_week', label: 'Prior Week' },
+  { value: 'prev_month', label: 'Prior Month' },
+  { value: 'baseline_intervention', label: 'Baseline vs Intervention' },
+];
+
+const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
+  { value: 'none', label: 'No Grouping' },
+  { value: 'category', label: 'Category' },
+  { value: 'function', label: 'Function' },
+  { value: 'severity', label: 'Severity' },
+  { value: 'setting', label: 'Setting' },
+  { value: 'staff', label: 'Staff' },
+  { value: 'time_of_day', label: 'Time of Day' },
+];
+
 export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onExport }: InsightsControlBarProps) {
   const [behaviorOpen, setBehaviorOpen] = useState(false);
+  const [customDateOpen, setCustomDateOpen] = useState(false);
+  const [savedViewName, setSavedViewName] = useState('');
+  const [savedViewOpen, setSavedViewOpen] = useState(false);
+  const { savedViews, addSavedView, removeSavedView } = useTemplateStore();
 
   const toggleBehavior = (id: string) => {
     const next = filters.selectedBehaviors.includes(id)
@@ -62,18 +91,89 @@ export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onEx
   const selectAll = () => onChange({ ...filters, selectedBehaviors: behaviors.map(b => b.id) });
   const clearAll = () => onChange({ ...filters, selectedBehaviors: [] });
 
+  const handleDatePreset = (v: string) => {
+    if (v === 'custom') {
+      setCustomDateOpen(true);
+      onChange({ ...filters, dateRange: 'custom' });
+    } else {
+      onChange({ ...filters, dateRange: v as DateRangePreset });
+    }
+  };
+
+  const handleSaveView = () => {
+    if (!savedViewName.trim()) return;
+    addSavedView({
+      id: crypto.randomUUID(),
+      name: savedViewName,
+      filters: { ...filters },
+      createdAt: new Date().toISOString(),
+    });
+    setSavedViewName('');
+    toast.success(`View "${savedViewName}" saved`);
+  };
+
+  const handleLoadView = (view: { filters: Record<string, any> }) => {
+    onChange(view.filters as InsightsFilters);
+    toast.success('View loaded');
+  };
+
+  const customStart = filters.customStart ? new Date(filters.customStart) : undefined;
+  const customEnd = filters.customEnd ? new Date(filters.customEnd) : undefined;
+
   return (
     <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border border-border rounded-lg p-2 space-y-2">
+      {/* Row 1: Primary controls */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Date Range */}
-        <Select value={filters.dateRange} onValueChange={v => onChange({ ...filters, dateRange: v as DateRangePreset })}>
+        <Select value={filters.dateRange} onValueChange={handleDatePreset}>
           <SelectTrigger className="w-[140px] h-8 text-xs">
-            <Calendar className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+            <CalendarIcon className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {DATE_PRESETS.map(p => (
               <SelectItem key={p.value} value={p.value} className="text-xs">{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Custom Date Picker */}
+        {filters.dateRange === 'custom' && (
+          <Popover open={customDateOpen} onOpenChange={setCustomDateOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                <CalendarIcon className="w-3.5 h-3.5" />
+                {customStart && customEnd
+                  ? `${format(customStart, 'M/d')} – ${format(customEnd, 'M/d')}`
+                  : 'Pick dates'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={{ from: customStart, to: customEnd }}
+                onSelect={(range: any) => {
+                  onChange({
+                    ...filters,
+                    customStart: range?.from ? range.from.toISOString().slice(0, 10) : undefined,
+                    customEnd: range?.to ? range.to.toISOString().slice(0, 10) : undefined,
+                  });
+                }}
+                numberOfMonths={2}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Comparison */}
+        <Select value={filters.comparison} onValueChange={v => onChange({ ...filters, comparison: v as ComparisonMode })}>
+          <SelectTrigger className="w-[130px] h-8 text-xs">
+            <SelectValue placeholder="Compare" />
+          </SelectTrigger>
+          <SelectContent>
+            {COMPARISON_MODES.map(m => (
+              <SelectItem key={m.value} value={m.value} className="text-xs">{m.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -114,6 +214,19 @@ export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onEx
           </PopoverContent>
         </Popover>
 
+        {/* Group By */}
+        <Select value={filters.groupBy} onValueChange={v => onChange({ ...filters, groupBy: v as GroupBy })}>
+          <SelectTrigger className="w-[110px] h-8 text-xs">
+            <Layers className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
+            <SelectValue placeholder="Group" />
+          </SelectTrigger>
+          <SelectContent>
+            {GROUP_BY_OPTIONS.map(g => (
+              <SelectItem key={g.value} value={g.value} className="text-xs">{g.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* View Mode */}
         <Select value={filters.viewMode} onValueChange={v => onChange({ ...filters, viewMode: v as ViewMode })}>
           <SelectTrigger className="w-[130px] h-8 text-xs">
@@ -152,6 +265,48 @@ export function InsightsControlBar({ filters, onChange, behaviors, onPrint, onEx
         </Select>
 
         <div className="flex-1" />
+
+        {/* Saved Views */}
+        <Popover open={savedViewOpen} onOpenChange={setSavedViewOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+              <Bookmark className="w-3.5 h-3.5" />
+              Views
+              {savedViews.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1">{savedViews.length}</Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="end">
+            <div className="space-y-2">
+              <div className="flex gap-1">
+                <Input
+                  value={savedViewName}
+                  onChange={e => setSavedViewName(e.target.value)}
+                  placeholder="View name…"
+                  className="h-7 text-xs"
+                />
+                <Button variant="default" size="sm" className="h-7 text-xs px-2" onClick={handleSaveView}>
+                  Save
+                </Button>
+              </div>
+              {savedViews.length > 0 && (
+                <ScrollArea className="max-h-32">
+                  {savedViews.map(v => (
+                    <div key={v.id} className="flex items-center justify-between py-1 text-xs">
+                      <button className="hover:underline truncate text-left flex-1" onClick={() => handleLoadView(v)}>
+                        {v.name}
+                      </button>
+                      <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSavedView(v.id)}>
+                        <span className="text-[10px]">✕</span>
+                      </Button>
+                    </div>
+                  ))}
+                </ScrollArea>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Actions */}
         {onPrint && (
