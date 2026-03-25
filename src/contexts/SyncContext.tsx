@@ -39,21 +39,10 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
   const isProcessingRealtimeRef = useRef(false);
   
-  const students = useDataStore((state) => state.students);
-  const behaviorGoals = useDataStore((state) => state.behaviorGoals);
-  const sessions = useDataStore((state) => state.sessions);
-  const sessionNotes = useDataStore((state) => state.sessionNotes);
-  
-  // Live session data that needs real-time sync
-  const frequencyEntries = useDataStore((state) => state.frequencyEntries);
-  const durationEntries = useDataStore((state) => state.durationEntries);
-  const intervalEntries = useDataStore((state) => state.intervalEntries);
-  const abcEntries = useDataStore((state) => state.abcEntries);
-  const latencyEntries = useDataStore((state) => state.latencyEntries);
-  const currentSessionId = useDataStore((state) => state.currentSessionId);
-  const sessionStartTime = useDataStore((state) => state.sessionStartTime);
-  const selectedStudentIds = useDataStore((state) => state.selectedStudentIds);
-  const sessionLengthMinutes = useDataStore((state) => state.sessionLengthMinutes);
+  // IMPORTANT: Do NOT subscribe to individual Zustand selectors at the component level.
+  // Subscribing to many selectors causes cascading re-renders during store hydration/setState,
+  // leading to "Maximum update depth exceeded" (React Error #185).
+  // Instead, read values via useDataStore.getState() inside callbacks and effects.
 
   // Track live-session presence sync to support cross-device resume even before any data rows exist.
   const lastPresenceKeyRef = useRef<string>('');
