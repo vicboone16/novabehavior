@@ -93,9 +93,8 @@ function mergeRows(rows: any[], clientId: string) {
       id: `bsd-dur-${r.id}`,
       studentId: clientId,
       behaviorId: r.behavior_id,
-      durationMs: r.duration_seconds * 1000,
-      timestamp: getObservationDate(r),
-      notes: '',
+      duration: r.duration_seconds,
+      startTime: new Date(getObservationDate(r)),
     }));
 
   // Ensure student has the behavior in their behavior list
