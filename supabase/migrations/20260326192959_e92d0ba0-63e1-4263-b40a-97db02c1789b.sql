@@ -1,0 +1,1 @@
+UPDATE public.game_tracks SET is_active = true WHERE is_active = false;
