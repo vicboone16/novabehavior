@@ -26371,8 +26371,10 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          metadata_json: Json
           name: string
           nodes_json: Json
+          preview_emoji: string | null
           sort_order: number | null
           theme_id: string | null
           theme_json: Json | null
@@ -26387,8 +26389,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          metadata_json?: Json
           name: string
           nodes_json: Json
+          preview_emoji?: string | null
           sort_order?: number | null
           theme_id?: string | null
           theme_json?: Json | null
@@ -26403,8 +26407,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          metadata_json?: Json
           name?: string
           nodes_json?: Json
+          preview_emoji?: string | null
           sort_order?: number | null
           theme_id?: string | null
           theme_json?: Json | null
