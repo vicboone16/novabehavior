@@ -298,5 +298,6 @@ export function useRewardEconomy(agencyId: string | null) {
     rewards, settings, transactions, loading,
     loadAll, createReward, updateReward, overridePrice,
     restockInventory, redeemReward, saveSettings,
+    hideReward, archiveReward, restoreReward, softDeleteReward, hardDeleteReward,
   };
 }
