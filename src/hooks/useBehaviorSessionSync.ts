@@ -50,6 +50,14 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
   }, [clientId]);
 }
 
+function getObservationDate(r: any): string {
+  const session = (r as any).sessions;
+  // Prefer started_at (actual observation date) > start_time > created_at
+  if (session?.started_at) return session.started_at;
+  if (session?.start_time) return session.start_time;
+  return r.created_at;
+}
+
 function mergeRows(rows: any[], clientId: string) {
   const store = useDataStore.getState();
   const existingIds = new Set(
@@ -75,7 +83,7 @@ function mergeRows(rows: any[], clientId: string) {
       studentId: clientId,
       behaviorId: r.behavior_id,
       count: r.frequency,
-      timestamp: (r as any).sessions?.start_time || r.created_at,
+      timestamp: getObservationDate(r),
       notes: r.frequency === 0 ? 'observed_zero' : '',
     }));
 
@@ -86,7 +94,7 @@ function mergeRows(rows: any[], clientId: string) {
       studentId: clientId,
       behaviorId: r.behavior_id,
       durationMs: r.duration_seconds * 1000,
-      timestamp: (r as any).sessions?.start_time || r.created_at,
+      timestamp: getObservationDate(r),
       notes: '',
     }));
 
