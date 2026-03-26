@@ -22,6 +22,11 @@ export interface RewardItem {
   metadata_json: any;
   quantity_available: number | null;
   is_limited: boolean | null;
+  classroom_id: string | null;
+  is_hidden: boolean;
+  is_archived: boolean;
+  deleted_at: string | null;
+  created_by: string | null;
   // computed
   computed_price?: number;
   price_reason?: string;
@@ -156,19 +161,76 @@ export function useRewardEconomy(agencyId: string | null) {
     cost: number; reward_type?: string; tier?: string;
     dynamic_pricing_enabled?: boolean; inventory_enabled?: boolean;
     min_cost?: number; max_cost?: number;
+    classroom_id?: string | null;
   }) => {
     if (!agencyId) return;
     const { error } = await supabase
       .from("beacon_rewards" as any)
       .insert({
         ...reward,
-        scope_type: "agency",
-        scope_id: agencyId,
+        scope_type: reward.classroom_id ? "classroom" : "agency",
+        scope_id: reward.classroom_id || agencyId,
         base_cost: reward.cost,
         active: true,
+        is_hidden: false,
+        is_archived: false,
       } as any);
     if (error) { toast.error("Failed to create reward"); return; }
     toast.success("Reward created");
+    await fetchRewards();
+  };
+
+  const hideReward = async (id: string, hidden: boolean) => {
+    const { error } = await supabase
+      .from("beacon_rewards" as any)
+      .update({ is_hidden: hidden, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error("Failed to update visibility"); return; }
+    toast.success(hidden ? "Reward hidden from students" : "Reward visible to students");
+    await fetchRewards();
+  };
+
+  const archiveReward = async (id: string) => {
+    const { error } = await supabase
+      .from("beacon_rewards" as any)
+      .update({ is_archived: true, active: false, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error("Failed to archive"); return; }
+    toast.success("Reward archived");
+    await fetchRewards();
+  };
+
+  const restoreReward = async (id: string) => {
+    const { error } = await supabase
+      .from("beacon_rewards" as any)
+      .update({ is_archived: false, active: true, is_hidden: false, deleted_at: null, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error("Failed to restore"); return; }
+    toast.success("Reward restored");
+    await fetchRewards();
+  };
+
+  const softDeleteReward = async (id: string) => {
+    const { error } = await supabase
+      .from("beacon_rewards" as any)
+      .update({ deleted_at: new Date().toISOString(), active: false, updated_at: new Date().toISOString() } as any)
+      .eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    toast.success("Reward deleted (soft)");
+    await fetchRewards();
+  };
+
+  const hardDeleteReward = async (id: string) => {
+    // Only works if no redemptions/transactions reference it
+    const { error } = await supabase
+      .from("beacon_rewards" as any)
+      .delete()
+      .eq("id", id);
+    if (error) {
+      toast.error("Cannot delete — reward has history. Use archive instead.");
+      return;
+    }
+    toast.success("Reward permanently deleted");
     await fetchRewards();
   };
 
@@ -236,5 +298,6 @@ export function useRewardEconomy(agencyId: string | null) {
     rewards, settings, transactions, loading,
     loadAll, createReward, updateReward, overridePrice,
     restockInventory, redeemReward, saveSettings,
+    hideReward, archiveReward, restoreReward, softDeleteReward, hardDeleteReward,
   };
 }
