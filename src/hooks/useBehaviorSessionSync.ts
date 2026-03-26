@@ -18,7 +18,7 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
         // Fetch behavior_session_data with behavior name
         const { data: rows, error } = await supabase
           .from('behavior_session_data')
-          .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions!inner(start_time)')
+          .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions!inner(start_time, started_at)')
           .eq('student_id', clientId)
           .eq('data_state', 'measured')
           .order('created_at', { ascending: true })
