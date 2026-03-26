@@ -22,6 +22,11 @@ export interface RewardItem {
   metadata_json: any;
   quantity_available: number | null;
   is_limited: boolean | null;
+  classroom_id: string | null;
+  is_hidden: boolean;
+  is_archived: boolean;
+  deleted_at: string | null;
+  created_by: string | null;
   // computed
   computed_price?: number;
   price_reason?: string;
