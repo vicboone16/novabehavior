@@ -75,7 +75,7 @@ export function useRewardEconomy(agencyId: string | null) {
   const fetchRewards = useCallback(async () => {
     if (!agencyId) return;
     const { data, error } = await supabase
-      .from("v_reward_store" as any)
+      .from("v_beacon_rewards_admin" as any)
       .select("*")
       .order("sort_order", { ascending: true });
     if (error) {
@@ -181,56 +181,43 @@ export function useRewardEconomy(agencyId: string | null) {
   };
 
   const hideReward = async (id: string, hidden: boolean) => {
-    const { error } = await supabase
-      .from("beacon_rewards" as any)
-      .update({ is_hidden: hidden, updated_at: new Date().toISOString() } as any)
-      .eq("id", id);
+    const rpcName = hidden ? "hide_reward" : "unhide_reward";
+    const { error } = await supabase.rpc(rpcName as any, { p_reward_id: id });
     if (error) { toast.error("Failed to update visibility"); return; }
     toast.success(hidden ? "Reward hidden from students" : "Reward visible to students");
     await fetchRewards();
   };
 
   const archiveReward = async (id: string) => {
-    const { error } = await supabase
-      .from("beacon_rewards" as any)
-      .update({ is_archived: true, active: false, updated_at: new Date().toISOString() } as any)
-      .eq("id", id);
+    const { error } = await supabase.rpc("archive_reward" as any, { p_reward_id: id });
     if (error) { toast.error("Failed to archive"); return; }
     toast.success("Reward archived");
     await fetchRewards();
   };
 
   const restoreReward = async (id: string) => {
-    const { error } = await supabase
-      .from("beacon_rewards" as any)
-      .update({ is_archived: false, active: true, is_hidden: false, deleted_at: null, updated_at: new Date().toISOString() } as any)
-      .eq("id", id);
+    const { error } = await supabase.rpc("restore_reward" as any, { p_reward_id: id });
     if (error) { toast.error("Failed to restore"); return; }
     toast.success("Reward restored");
     await fetchRewards();
   };
 
   const softDeleteReward = async (id: string) => {
-    const { error } = await supabase
-      .from("beacon_rewards" as any)
-      .update({ deleted_at: new Date().toISOString(), active: false, updated_at: new Date().toISOString() } as any)
-      .eq("id", id);
+    const { error } = await supabase.rpc("soft_delete_reward" as any, { p_reward_id: id });
     if (error) { toast.error("Failed to delete"); return; }
-    toast.success("Reward deleted (soft)");
+    toast.success("Reward deleted");
     await fetchRewards();
   };
 
   const hardDeleteReward = async (id: string) => {
-    // Only works if no redemptions/transactions reference it
-    const { error } = await supabase
-      .from("beacon_rewards" as any)
-      .delete()
-      .eq("id", id);
-    if (error) {
-      toast.error("Cannot delete — reward has history. Use archive instead.");
-      return;
+    const { data, error } = await supabase.rpc("hard_delete_reward_if_unused" as any, { p_reward_id: id });
+    if (error) { toast.error("Failed to delete"); return; }
+    const result = data as any;
+    if (result?.action === "archived_instead") {
+      toast.info("Reward has history — archived instead of deleted");
+    } else {
+      toast.success("Reward permanently deleted");
     }
-    toast.success("Reward permanently deleted");
     await fetchRewards();
   };
 
