@@ -75,7 +75,7 @@ export function useRewardEconomy(agencyId: string | null) {
   const fetchRewards = useCallback(async () => {
     if (!agencyId) return;
     const { data, error } = await supabase
-      .from("v_reward_store" as any)
+      .from("v_beacon_rewards_admin" as any)
       .select("*")
       .order("sort_order", { ascending: true });
     if (error) {
