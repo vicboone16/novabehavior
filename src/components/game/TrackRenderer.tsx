@@ -195,9 +195,9 @@ export function TrackRenderer({ track, studentProgress = [], movementStyle = "gl
             Math.floor((s.progress / 100) * (nodes.length - 1)),
             nodes.length - 1
           );
-          const node = nodes[Math.max(0, nodeIdx)];
+          const node = nodes[Math.max(0, nodeIdx)] as any;
           if (!node) return null;
-          const scale = node.scale || 1;
+          const scale = (node as any).scale || 1;
           return (
             <g key={s.id} className={MOVEMENT_ANIM[movementStyle] || MOVEMENT_ANIM.glide}>
               {/* Shadow */}
