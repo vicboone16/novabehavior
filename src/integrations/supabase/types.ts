@@ -5450,6 +5450,7 @@ export type Database = {
       beacon_rewards: {
         Row: {
           active: boolean
+          agency_id: string | null
           base_cost: number | null
           classroom_id: string | null
           cost: number
@@ -5479,6 +5480,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          agency_id?: string | null
           base_cost?: number | null
           classroom_id?: string | null
           cost: number
@@ -5508,6 +5510,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          agency_id?: string | null
           base_cost?: number | null
           classroom_id?: string | null
           cost?: number
