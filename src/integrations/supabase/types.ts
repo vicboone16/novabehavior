@@ -5430,14 +5430,19 @@ export type Database = {
         Row: {
           active: boolean
           base_cost: number | null
+          classroom_id: string | null
           cost: number
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           dynamic_pricing_enabled: boolean | null
           emoji: string | null
           id: string
           image_url: string | null
           inventory_enabled: boolean | null
+          is_archived: boolean
+          is_hidden: boolean
           max_cost: number | null
           metadata_json: Json | null
           min_cost: number | null
@@ -5449,18 +5454,24 @@ export type Database = {
           stock_count: number | null
           tier: string | null
           time_sensitive_until: string | null
+          updated_at: string
         }
         Insert: {
           active?: boolean
           base_cost?: number | null
+          classroom_id?: string | null
           cost: number
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           dynamic_pricing_enabled?: boolean | null
           emoji?: string | null
           id?: string
           image_url?: string | null
           inventory_enabled?: boolean | null
+          is_archived?: boolean
+          is_hidden?: boolean
           max_cost?: number | null
           metadata_json?: Json | null
           min_cost?: number | null
@@ -5472,18 +5483,24 @@ export type Database = {
           stock_count?: number | null
           tier?: string | null
           time_sensitive_until?: string | null
+          updated_at?: string
         }
         Update: {
           active?: boolean
           base_cost?: number | null
+          classroom_id?: string | null
           cost?: number
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           dynamic_pricing_enabled?: boolean | null
           emoji?: string | null
           id?: string
           image_url?: string | null
           inventory_enabled?: boolean | null
+          is_archived?: boolean
+          is_hidden?: boolean
           max_cost?: number | null
           metadata_json?: Json | null
           min_cost?: number | null
@@ -5495,6 +5512,7 @@ export type Database = {
           stock_count?: number | null
           tier?: string | null
           time_sensitive_until?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -13630,6 +13648,7 @@ export type Database = {
         Row: {
           allow_student_specific_modes: boolean
           allow_team_mode: boolean
+          allow_track_selection: boolean | null
           animations_enabled: boolean
           classroom_id: string
           default_mode_id: string | null
@@ -13637,16 +13656,19 @@ export type Database = {
           game_mode: string | null
           id: string
           leaderboard_enabled: boolean
+          movement_style: string | null
           privacy_mode: string
           public_class_link_enabled: boolean
           student_portal_enabled: boolean
           track_id: string | null
+          track_theme: string | null
           updated_at: string
           use_shared_class_board: boolean
         }
         Insert: {
           allow_student_specific_modes?: boolean
           allow_team_mode?: boolean
+          allow_track_selection?: boolean | null
           animations_enabled?: boolean
           classroom_id: string
           default_mode_id?: string | null
@@ -13654,16 +13676,19 @@ export type Database = {
           game_mode?: string | null
           id?: string
           leaderboard_enabled?: boolean
+          movement_style?: string | null
           privacy_mode?: string
           public_class_link_enabled?: boolean
           student_portal_enabled?: boolean
           track_id?: string | null
+          track_theme?: string | null
           updated_at?: string
           use_shared_class_board?: boolean
         }
         Update: {
           allow_student_specific_modes?: boolean
           allow_team_mode?: boolean
+          allow_track_selection?: boolean | null
           animations_enabled?: boolean
           classroom_id?: string
           default_mode_id?: string | null
@@ -13671,10 +13696,12 @@ export type Database = {
           game_mode?: string | null
           id?: string
           leaderboard_enabled?: boolean
+          movement_style?: string | null
           privacy_mode?: string
           public_class_link_enabled?: boolean
           student_portal_enabled?: boolean
           track_id?: string | null
+          track_theme?: string | null
           updated_at?: string
           use_shared_class_board?: boolean
         }
@@ -26296,6 +26323,7 @@ export type Database = {
       }
       game_tracks: {
         Row: {
+          camera_style: string | null
           checkpoints_json: Json
           created_at: string | null
           description: string | null
@@ -26303,12 +26331,15 @@ export type Database = {
           is_active: boolean
           name: string
           nodes_json: Json
+          sort_order: number | null
           theme_id: string | null
+          theme_json: Json | null
           total_steps: number
           track_type: string | null
           zones_json: Json
         }
         Insert: {
+          camera_style?: string | null
           checkpoints_json?: Json
           created_at?: string | null
           description?: string | null
@@ -26316,12 +26347,15 @@ export type Database = {
           is_active?: boolean
           name: string
           nodes_json: Json
+          sort_order?: number | null
           theme_id?: string | null
+          theme_json?: Json | null
           total_steps?: number
           track_type?: string | null
           zones_json?: Json
         }
         Update: {
+          camera_style?: string | null
           checkpoints_json?: Json
           created_at?: string | null
           description?: string | null
@@ -26329,7 +26363,9 @@ export type Database = {
           is_active?: boolean
           name?: string
           nodes_json?: Json
+          sort_order?: number | null
           theme_id?: string | null
+          theme_json?: Json | null
           total_steps?: number
           track_type?: string | null
           zones_json?: Json
