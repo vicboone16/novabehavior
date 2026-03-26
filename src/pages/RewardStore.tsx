@@ -20,6 +20,7 @@ export default function RewardStore() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [sortBy, setSortBy] = useState("name");
 
   const [selectedReward, setSelectedReward] = useState<RewardItem | null>(null);
@@ -29,9 +30,28 @@ export default function RewardStore() {
 
   const filtered = useMemo(() => {
     let items = economy.rewards;
+
+    // Status filter
+    switch (statusFilter) {
+      case "active":
+        items = items.filter((r) => r.active && !r.is_archived && !r.deleted_at);
+        break;
+      case "hidden":
+        items = items.filter((r) => r.is_hidden && !r.deleted_at);
+        break;
+      case "archived":
+        items = items.filter((r) => r.is_archived);
+        break;
+      case "deleted":
+        items = items.filter((r) => !!r.deleted_at);
+        break;
+      // "all" shows everything
+    }
+
     if (search) items = items.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
     if (typeFilter !== "all") items = items.filter((r) => r.reward_type === typeFilter);
     if (tierFilter !== "all") items = items.filter((r) => r.tier === tierFilter);
+
     switch (sortBy) {
       case "price": items = [...items].sort((a, b) => (a.computed_price ?? a.cost) - (b.computed_price ?? b.cost)); break;
       case "popular": items = [...items].sort((a, b) => (b.recent_redemptions ?? 0) - (a.recent_redemptions ?? 0)); break;
@@ -39,7 +59,7 @@ export default function RewardStore() {
       default: items = [...items].sort((a, b) => a.name.localeCompare(b.name));
     }
     return items;
-  }, [economy.rewards, search, typeFilter, tierFilter, sortBy]);
+  }, [economy.rewards, search, typeFilter, tierFilter, statusFilter, sortBy]);
 
   if (economy.loading) {
     return (
@@ -79,6 +99,16 @@ export default function RewardStore() {
           <Input placeholder="Search rewards..." value={search} onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9" />
         </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[120px] h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="hidden">Hidden</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
           <SelectContent>
@@ -126,8 +156,12 @@ export default function RewardStore() {
               reward={r}
               onClick={() => setSelectedReward(r)}
               onRestock={() => economy.restockInventory(r.id, 5)}
-              onArchive={() => economy.updateReward(r.id, { active: false })}
+              onArchive={() => economy.archiveReward(r.id)}
               onOverride={() => setSelectedReward(r)}
+              onHide={(hidden) => economy.hideReward(r.id, hidden)}
+              onRestore={() => economy.restoreReward(r.id)}
+              onSoftDelete={() => economy.softDeleteReward(r.id)}
+              onHardDelete={() => economy.hardDeleteReward(r.id)}
             />
           ))}
         </div>
