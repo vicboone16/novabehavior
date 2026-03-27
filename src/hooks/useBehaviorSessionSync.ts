@@ -12,22 +12,8 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
   useEffect(() => {
     if (!clientId) return;
 
-    // Reset syncedRef when data is edited so we re-fetch
-    const handleEdited = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.studentId === clientId) {
-        syncedRef.current = null;
-        fetchAndMerge();
-      }
-    };
-    window.addEventListener('behavior-data-edited', handleEdited);
-
-    if (syncedRef.current === clientId) return;
-    syncedRef.current = clientId;
-
     const fetchAndMerge = async () => {
       try {
-        // Fetch behavior_session_data with behavior name
         const { data: rows, error } = await supabase
           .from('behavior_session_data')
           .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions!inner(start_time, started_at)')
@@ -37,7 +23,6 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
           .limit(500);
 
         if (error || !rows || rows.length === 0) {
-          // Fallback: try without inner join
           const { data: fallbackRows, error: fallbackError } = await supabase
             .from('behavior_session_data')
             .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at')
@@ -47,7 +32,6 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
             .limit(500);
           
           if (fallbackError || !fallbackRows || fallbackRows.length === 0) return;
-          
           mergeRows(fallbackRows, clientId);
           return;
         }
@@ -58,7 +42,24 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
       }
     };
 
-    fetchAndMerge();
+    // Listen for edits to re-fetch
+    const handleEdited = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.studentId === clientId) {
+        syncedRef.current = null;
+        fetchAndMerge();
+      }
+    };
+    window.addEventListener('behavior-data-edited', handleEdited);
+
+    if (syncedRef.current !== clientId) {
+      syncedRef.current = clientId;
+      fetchAndMerge();
+    }
+
+    return () => {
+      window.removeEventListener('behavior-data-edited', handleEdited);
+    };
   }, [clientId]);
 }
 
