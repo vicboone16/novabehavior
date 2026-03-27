@@ -10,6 +10,7 @@ import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
+import { BehaviorDataEditor } from './BehaviorDataEditor';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { CanonicalStatusBadge } from './CanonicalStatusBadge';
 import { BopsTagChips } from './BopsTagChips';
@@ -198,7 +199,10 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
         <TabsContent value="data" className="mt-4 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <div />
-            <HistoricalDataManager studentId={student.id} />
+            <div className="flex items-center gap-2">
+              <BehaviorDataEditor studentId={student.id} studentName={student.name} />
+              <HistoricalDataManager studentId={student.id} />
+            </div>
           </div>
           <HistoricalDataEntry student={student} />
           
