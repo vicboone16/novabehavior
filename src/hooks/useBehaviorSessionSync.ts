@@ -10,7 +10,19 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
   const syncedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!clientId || syncedRef.current === clientId) return;
+    if (!clientId) return;
+
+    // Reset syncedRef when data is edited so we re-fetch
+    const handleEdited = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.studentId === clientId) {
+        syncedRef.current = null;
+        fetchAndMerge();
+      }
+    };
+    window.addEventListener('behavior-data-edited', handleEdited);
+
+    if (syncedRef.current === clientId) return;
     syncedRef.current = clientId;
 
     const fetchAndMerge = async () => {
