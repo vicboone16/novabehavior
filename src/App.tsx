@@ -303,6 +303,8 @@ const App = () => {
               <Route path="clinical-collections/goal-banks/:domainSlug" element={<GoalBankDomainPage />} />
               <Route path="clinical-collections/goal-banks/:domainSlug/:goalId" element={<GoalDetailPage />} />
               <Route path="library-registry" element={<LibraryRegistryPage />} />
+              <Route path="goal-builder" element={<GoalBuilderPage />} />
+              <Route path="domain-migration" element={<DomainMigrationReviewPage />} />
             </Route>
             <Route path="/shared-library" element={
               <ProtectedRoute>
