@@ -40318,6 +40318,136 @@ export type Database = {
           },
         ]
       }
+      program_domain_migration_log: {
+        Row: {
+          confidence: string | null
+          created_at: string
+          id: string
+          migration_source: string | null
+          needs_review: boolean | null
+          new_domain_id: string | null
+          new_domain_name: string | null
+          new_subdomain_id: string | null
+          new_subdomain_name: string | null
+          old_domain_id: string | null
+          old_domain_name: string | null
+          program_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          tags_added: string[] | null
+        }
+        Insert: {
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          migration_source?: string | null
+          needs_review?: boolean | null
+          new_domain_id?: string | null
+          new_domain_name?: string | null
+          new_subdomain_id?: string | null
+          new_subdomain_name?: string | null
+          old_domain_id?: string | null
+          old_domain_name?: string | null
+          program_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tags_added?: string[] | null
+        }
+        Update: {
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          migration_source?: string | null
+          needs_review?: boolean | null
+          new_domain_id?: string | null
+          new_domain_name?: string | null
+          new_subdomain_id?: string | null
+          new_subdomain_name?: string | null
+          old_domain_id?: string | null
+          old_domain_name?: string | null
+          program_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tags_added?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_domain_migration_log_new_domain_id_fkey"
+            columns: ["new_domain_id"]
+            isOneToOne: false
+            referencedRelation: "program_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_domain_migration_log_new_subdomain_id_fkey"
+            columns: ["new_subdomain_id"]
+            isOneToOne: false
+            referencedRelation: "program_subdomains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_domain_migration_log_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "canon_goal_data"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_domain_migration_log_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "goal_data"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_domain_migration_log_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_domain_migration_log_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_domains: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       program_merge_map: {
         Row: {
           created_at: string
@@ -40585,6 +40715,172 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_subdomains: {
+        Row: {
+          created_at: string
+          description: string | null
+          domain_id: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          domain_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          domain_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_subdomains_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "program_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_tag_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      program_tag_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          program_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          program_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          program_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_tag_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "canon_goal_data"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_tag_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "goal_data"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_tag_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "program_tag_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "skill_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "program_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          tag_category_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          tag_category_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          tag_category_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_tags_tag_category_id_fkey"
+            columns: ["tag_category_id"]
+            isOneToOne: false
+            referencedRelation: "program_tag_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -46934,6 +47230,7 @@ export type Database = {
           description: string | null
           domain_id: string | null
           id: string
+          legacy_domain_name: string | null
           method: string
           name: string
           notes: string | null
@@ -46942,6 +47239,8 @@ export type Database = {
           status: string
           status_effective_date: string
           student_id: string
+          subdomain_id: string | null
+          top_level_domain_id: string | null
           updated_at: string
         }
         Insert: {
@@ -46956,6 +47255,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           id?: string
+          legacy_domain_name?: string | null
           method?: string
           name: string
           notes?: string | null
@@ -46964,6 +47264,8 @@ export type Database = {
           status?: string
           status_effective_date?: string
           student_id: string
+          subdomain_id?: string | null
+          top_level_domain_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -46978,6 +47280,7 @@ export type Database = {
           description?: string | null
           domain_id?: string | null
           id?: string
+          legacy_domain_name?: string | null
           method?: string
           name?: string
           notes?: string | null
@@ -46986,6 +47289,8 @@ export type Database = {
           status?: string
           status_effective_date?: string
           student_id?: string
+          subdomain_id?: string | null
+          top_level_domain_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -47100,6 +47405,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_unstaffed_students"
             referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "skill_programs_subdomain_id_fkey"
+            columns: ["subdomain_id"]
+            isOneToOne: false
+            referencedRelation: "program_subdomains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_programs_top_level_domain_id_fkey"
+            columns: ["top_level_domain_id"]
+            isOneToOne: false
+            referencedRelation: "program_domains"
+            referencedColumns: ["id"]
           },
         ]
       }
