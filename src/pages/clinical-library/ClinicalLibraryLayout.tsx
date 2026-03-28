@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen } from 'lucide-react';
+import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen, Target, GitMerge } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -181,6 +181,48 @@ export default function ClinicalLibraryLayout() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => navigate('/clinical-library/goal-builder')}
+            >
+              <CardContent className="p-6">
+                <div className="p-3 rounded-xl bg-primary/10 w-fit mb-4">
+                  <Target className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-lg font-bold mb-1">Goal Builder</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Guided goal creation with domain-specific templates & starter goals.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['Templates', 'Auto-Fill', 'Domain-Specific'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {isAdmin && (
+              <Card
+                className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+                onClick={() => navigate('/clinical-library/domain-migration')}
+              >
+                <CardContent className="p-6">
+                  <div className="p-3 rounded-xl bg-muted w-fit mb-4">
+                    <GitMerge className="w-7 h-7 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-lg font-bold mb-1">Domain Migration</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Review & audit domain remapping from legacy to canonical structure.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Audit', 'Review', 'Migration Log'].map(name => (
+                      <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         ) : (
           <Outlet />

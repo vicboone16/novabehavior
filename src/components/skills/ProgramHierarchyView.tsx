@@ -457,13 +457,12 @@ export function ProgramHierarchyView({
 
       {/* Move Program Dialog */}
       {moveProgram && (
-        <MoveProgramDialog
+         <MoveProgramDialog
           open={!!moveProgram}
           onOpenChange={(o) => !o && setMoveProgram(null)}
           programId={moveProgram.id}
           programName={moveProgram.name}
           currentDomainId={moveProgram.domainId}
-          domains={domains}
           onSuccess={onRefetch}
         />
       )}
