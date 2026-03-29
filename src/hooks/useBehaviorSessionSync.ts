@@ -74,10 +74,16 @@ function getObservationDate(r: any): string {
 
 function mergeRows(rows: any[], clientId: string) {
   const store = useDataStore.getState();
-  const existingIds = new Set(
-    store.frequencyEntries
-      .filter(e => e.studentId === clientId)
-      .map(e => e.id)
+
+  // IMPORTANT: Always clear previous bsd- entries for this student first,
+  // then re-add with correct observation dates. This ensures that if timestamps
+  // were previously wrong (e.g., used created_at instead of session.started_at),
+  // they get corrected on every sync.
+  const cleanedFreq = store.frequencyEntries.filter(
+    e => !(e.id.startsWith('bsd-') && e.studentId === clientId)
+  );
+  const cleanedDur = store.durationEntries.filter(
+    e => !(e.id.startsWith('bsd-dur-') && e.studentId === clientId)
   );
 
   // Get behavior names from student_behavior_map or behaviors
@@ -89,9 +95,9 @@ function mergeRows(rows: any[], clientId: string) {
     }
   }
 
-  // Also fetch behavior names from behavior_id mapping
+  // Build fresh entries using observation date (session.started_at), never created_at
   const newFrequencyEntries = rows
-    .filter(r => r.frequency != null && !existingIds.has(`bsd-${r.id}`))
+    .filter(r => r.frequency != null)
     .map(r => ({
       id: `bsd-${r.id}`,
       studentId: clientId,
