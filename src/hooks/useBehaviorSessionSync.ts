@@ -157,17 +157,16 @@ function mergeRows(rows: any[], clientId: string) {
     }
   }
 
-  if (newFrequencyEntries.length > 0) {
-    useDataStore.setState(state => ({
-      frequencyEntries: [...state.frequencyEntries, ...newFrequencyEntries],
-    } as any));
-    console.log(`[BehaviorSessionSync] Merged ${newFrequencyEntries.length} frequency entries for client ${clientId}`);
-  }
+  // Replace (not append) store entries for this student
+  useDataStore.setState({
+    frequencyEntries: [...cleanedFreq, ...newFrequencyEntries],
+    durationEntries: [...cleanedDur, ...newDurationEntries],
+  } as any);
 
+  if (newFrequencyEntries.length > 0) {
+    console.log(`[BehaviorSessionSync] Synced ${newFrequencyEntries.length} frequency entries for client ${clientId} (using observation dates)`);
+  }
   if (newDurationEntries.length > 0) {
-    useDataStore.setState(state => ({
-      durationEntries: [...state.durationEntries, ...newDurationEntries],
-    } as any));
-    console.log(`[BehaviorSessionSync] Merged ${newDurationEntries.length} duration entries for client ${clientId}`);
+    console.log(`[BehaviorSessionSync] Synced ${newDurationEntries.length} duration entries for client ${clientId} (using observation dates)`);
   }
 }
