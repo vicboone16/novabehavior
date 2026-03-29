@@ -74,10 +74,16 @@ function getObservationDate(r: any): string {
 
 function mergeRows(rows: any[], clientId: string) {
   const store = useDataStore.getState();
-  const existingIds = new Set(
-    store.frequencyEntries
-      .filter(e => e.studentId === clientId)
-      .map(e => e.id)
+
+  // IMPORTANT: Always clear previous bsd- entries for this student first,
+  // then re-add with correct observation dates. This ensures that if timestamps
+  // were previously wrong (e.g., used created_at instead of session.started_at),
+  // they get corrected on every sync.
+  const cleanedFreq = store.frequencyEntries.filter(
+    e => !(e.id.startsWith('bsd-') && e.studentId === clientId)
+  );
+  const cleanedDur = store.durationEntries.filter(
+    e => !(e.id.startsWith('bsd-dur-') && e.studentId === clientId)
   );
 
   // Get behavior names from student_behavior_map or behaviors
@@ -89,9 +95,9 @@ function mergeRows(rows: any[], clientId: string) {
     }
   }
 
-  // Also fetch behavior names from behavior_id mapping
+  // Build fresh entries using observation date (session.started_at), never created_at
   const newFrequencyEntries = rows
-    .filter(r => r.frequency != null && !existingIds.has(`bsd-${r.id}`))
+    .filter(r => r.frequency != null)
     .map(r => ({
       id: `bsd-${r.id}`,
       studentId: clientId,
@@ -151,17 +157,16 @@ function mergeRows(rows: any[], clientId: string) {
     }
   }
 
-  if (newFrequencyEntries.length > 0) {
-    useDataStore.setState(state => ({
-      frequencyEntries: [...state.frequencyEntries, ...newFrequencyEntries],
-    } as any));
-    console.log(`[BehaviorSessionSync] Merged ${newFrequencyEntries.length} frequency entries for client ${clientId}`);
-  }
+  // Replace (not append) store entries for this student
+  useDataStore.setState({
+    frequencyEntries: [...cleanedFreq, ...newFrequencyEntries],
+    durationEntries: [...cleanedDur, ...newDurationEntries],
+  } as any);
 
+  if (newFrequencyEntries.length > 0) {
+    console.log(`[BehaviorSessionSync] Synced ${newFrequencyEntries.length} frequency entries for client ${clientId} (using observation dates)`);
+  }
   if (newDurationEntries.length > 0) {
-    useDataStore.setState(state => ({
-      durationEntries: [...state.durationEntries, ...newDurationEntries],
-    } as any));
-    console.log(`[BehaviorSessionSync] Merged ${newDurationEntries.length} duration entries for client ${clientId}`);
+    console.log(`[BehaviorSessionSync] Synced ${newDurationEntries.length} duration entries for client ${clientId} (using observation dates)`);
   }
 }
