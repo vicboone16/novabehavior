@@ -209,7 +209,7 @@ export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEdito
     setSaving(true);
 
     try {
-      // Build the update payload
+      // Build the update payload for behavior_session_data
       const updates: Record<string, any> = {
         frequency: editFrequency,
         duration_seconds: editDuration,
@@ -219,9 +219,9 @@ export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEdito
         updated_at: new Date().toISOString(),
       };
 
-      // Update the created_at to reflect the new observation date
-      const newDate = new Date(editDate + 'T12:00:00Z').toISOString();
-      updates.created_at = newDate;
+      // The observation date lives on the SESSION (started_at), NOT on created_at.
+      // created_at is when the record was inserted — never change it.
+      const newObservationDate = new Date(editDate + 'T12:00:00Z').toISOString();
 
       const { error } = await supabase
         .from('behavior_session_data')
@@ -230,18 +230,18 @@ export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEdito
 
       if (error) throw error;
 
-      // Also update the session's started_at if we changed the date
+      // Update the session's started_at to reflect the correct observation date
       if (editingRow.session_id) {
         await supabase
           .from('sessions')
-          .update({ started_at: newDate })
+          .update({ started_at: newObservationDate, start_time: newObservationDate })
           .eq('id', editingRow.session_id);
       }
 
-      // Update local state
+      // Update local state — observation date is session_started_at, not created_at
       setRows(prev => prev.map(r =>
         r.id === editingRow.id
-          ? { ...r, ...updates, created_at: newDate, session_started_at: newDate }
+          ? { ...r, ...updates, session_started_at: newObservationDate, session_start_time: newObservationDate }
           : r
       ));
 
