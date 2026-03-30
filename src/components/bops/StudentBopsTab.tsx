@@ -78,6 +78,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const sessionId = d.latest_scored_session_id;
 
   return (
+    <>
     <ScrollArea className="h-[calc(100vh-200px)]">
       <div className="space-y-4 pr-4">
         {/* Section 1: Status */}
@@ -384,6 +385,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </DialogContent>
       </Dialog>
     )}
+  </>
   );
 }
 
