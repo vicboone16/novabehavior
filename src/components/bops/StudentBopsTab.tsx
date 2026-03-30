@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
   useStudentBopsDashboard, useToggleBops, useRunCfi, useGenerateRecommendations,
   useAcceptAndActivate, useActivateProgramming, useDeactivateProgramming,
@@ -370,7 +371,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
     <ManualBopsScoreEntry studentId={studentId} open={showManualEntry} onOpenChange={setShowManualEntry} />
 
     {activeReportId && (
-      <Dialog open={!!activeReportId} onOpenChange={o => !o && setActiveReportId(null)}>
+      <Dialog open onOpenChange={o => !o && setActiveReportId(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
           <div className="p-4 flex-1 min-h-0 overflow-auto">
             <BopsReportWorkspace
