@@ -20,6 +20,9 @@ import {
 import { useStudentBopsPrograms } from '@/hooks/useBopsData';
 import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
 import { useNavigate } from 'react-router-dom';
+import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
+import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
+import { useGenerateBopsReport, useBopsReports } from '@/hooks/useBopsReports';
 
 const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
@@ -63,6 +66,10 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const [planNotes, setPlanNotes] = useState('');
   const [activeSection, setActiveSection] = useState<string>('programs');
   const navigate = useNavigate();
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const generateReport = useGenerateBopsReport();
+  const { data: reports } = useBopsReports(studentId);
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>;
 
@@ -93,6 +100,26 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
               <StatusBadge label="Profile" value={d.bops_profile_saved ? 'Saved' : 'Pending'} variant={d.bops_profile_saved} />
               <StatusBadge label="Programming" value={d.bops_programming_active ? 'Active' : d.bops_programming_available ? 'Available' : 'Locked'} variant={d.bops_programming_active} />
               {d.assessment_date && <span className="text-xs text-muted-foreground">Last scored: {d.assessment_date}</span>}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => setShowManualEntry(true)}>
+                <Brain className="w-3 h-3" /> Enter Scores Manually
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1 text-xs"
+                disabled={generateReport.isPending}
+                onClick={() => generateReport.mutate({ studentId }, { onSuccess: (id) => setActiveReportId(id) })}
+              >
+                {generateReport.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
+                Generate Report
+              </Button>
+              {reports && reports.length > 0 && (
+                <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => setActiveReportId(reports[0].id)}>
+                  Open Latest Report
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -339,6 +366,23 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         </Card>
       </div>
     </ScrollArea>
+
+    <ManualBopsScoreEntry studentId={studentId} open={showManualEntry} onOpenChange={setShowManualEntry} />
+
+    {activeReportId && (
+      <Dialog open={!!activeReportId} onOpenChange={o => !o && setActiveReportId(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+          <div className="p-4 flex-1 min-h-0 overflow-auto">
+            <BopsReportWorkspace
+              reportId={activeReportId}
+              studentId={studentId}
+              studentName={d.student_name || 'Student'}
+              onBack={() => setActiveReportId(null)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    )}
   );
 }
 

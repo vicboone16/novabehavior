@@ -15,12 +15,28 @@ import { ReportBrandingEditor } from '@/components/reports';
 import { InsuranceReportGenerator } from '@/components/reports/InsuranceReportGenerator';
 import { ReportGoalInclusionManager } from '@/components/reports/ReportGoalInclusionManager';
 import { NovaAILauncher } from '@/components/nova-ai/NovaAILauncher';
-import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart, Building2, BookOpen } from 'lucide-react';
+import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Target, Palette, FileBarChart, Building2, BookOpen, Brain } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
+import { useGenerateBopsReport } from '@/hooks/useBopsReports';
+import { useDataStore } from '@/store/dataStore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export default function Reports() {
   const [showBrandingEditor, setShowBrandingEditor] = useState(false);
+  const [bopsStudentId, setBopsStudentId] = useState<string>('');
+  const [bopsReportId, setBopsReportId] = useState<string | null>(null);
+  const generateReport = useGenerateBopsReport();
+  const students = useDataStore(s => s.students);
+
+  const handleGenerateBopsReport = () => {
+    if (!bopsStudentId) return;
+    generateReport.mutate({ studentId: bopsStudentId }, {
+      onSuccess: (id) => setBopsReportId(id),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -201,7 +217,49 @@ export default function Reports() {
           </p>
           <InsuranceReportGenerator />
         </div>
+
+        {/* BOPS Report */}
+        <div className="bg-card border-2 border-primary/20 rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <Brain className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold">BOPS Behavioral Intelligence Report</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Generate an editable report workspace with section-level editing, imports, and version history
+          </p>
+          <div className="flex gap-2">
+            <Select value={bopsStudentId} onValueChange={setBopsStudentId}>
+              <SelectTrigger className="w-[200px] h-9">
+                <SelectValue placeholder="Select student" />
+              </SelectTrigger>
+              <SelectContent>
+                {students.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" disabled={!bopsStudentId || generateReport.isPending} onClick={handleGenerateBopsReport}>
+              Generate Report
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {/* BOPS Report Workspace Modal */}
+      {bopsReportId && (
+        <Dialog open={!!bopsReportId} onOpenChange={o => !o && setBopsReportId(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+            <div className="p-4 flex-1 min-h-0 overflow-auto">
+              <BopsReportWorkspace
+                reportId={bopsReportId}
+                studentId={bopsStudentId}
+                studentName={students.find(s => s.id === bopsStudentId)?.name || 'Student'}
+                onBack={() => setBopsReportId(null)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <ReportBrandingEditor
         open={showBrandingEditor}
