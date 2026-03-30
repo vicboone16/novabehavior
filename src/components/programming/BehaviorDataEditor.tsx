@@ -448,7 +448,7 @@ export function BehaviorDataEditor({
                             <Badge variant="secondary" className="text-xs">{row.data_state}</Badge>
                           )}
                           {row.created_by_ai && (
-                            <Badge variant="secondary" className="text-xs bg-violet-100 text-violet-700">AI</Badge>
+                            <Badge variant="secondary" className="text-xs">AI</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-sm">
