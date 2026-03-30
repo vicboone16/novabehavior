@@ -10,7 +10,7 @@ import { format, parseISO } from 'date-fns';
 import {
   Database, Search, Pencil, Trash2, Save, X, RefreshCw,
   ChevronDown, ChevronUp, Filter, ArrowUpDown, Calendar,
-  TrendingUp, Clock, AlertCircle, Check, Loader2
+  TrendingUp, Clock, AlertCircle, Check, Loader2, type LucideIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
@@ -53,12 +53,19 @@ interface BehaviorSessionRow {
 interface BehaviorDataEditorProps {
   studentId: string;
   studentName: string;
+  triggerLabel?: string;
+  TriggerIcon?: LucideIcon;
 }
 
 type SortField = 'date' | 'behavior' | 'frequency' | 'duration';
 type SortDir = 'asc' | 'desc';
 
-export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEditorProps) {
+export function BehaviorDataEditor({
+  studentId,
+  studentName,
+  triggerLabel = 'Edit All Data',
+  TriggerIcon = Database,
+}: BehaviorDataEditorProps) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<BehaviorSessionRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -331,8 +338,8 @@ export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEdito
         onClick={() => setOpen(true)}
         className="gap-2"
       >
-        <Database className="w-4 h-4" />
-        Edit All Data
+        <TriggerIcon className="w-4 h-4" />
+        {triggerLabel}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -441,7 +448,7 @@ export function BehaviorDataEditor({ studentId, studentName }: BehaviorDataEdito
                             <Badge variant="secondary" className="text-xs">{row.data_state}</Badge>
                           )}
                           {row.created_by_ai && (
-                            <Badge variant="secondary" className="text-xs bg-violet-100 text-violet-700">AI</Badge>
+                            <Badge variant="secondary" className="text-xs">AI</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-sm">
