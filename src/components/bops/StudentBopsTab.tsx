@@ -354,7 +354,7 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           studentId={studentId}
           onGenerateReport={(sessionId) => {
             generateReport.mutate(
-              { studentId, reportType: 'bops_behavioral_intelligence' },
+              { studentId },
               { onSuccess: (id) => setActiveReportId(id) },
             );
           }}
