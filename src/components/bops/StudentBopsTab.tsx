@@ -23,6 +23,7 @@ import { BopsProgramsSection } from '@/components/programming/BopsProgramsSectio
 import { useNavigate } from 'react-router-dom';
 import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
+import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
 import { useGenerateBopsReport, useBopsReports } from '@/hooks/useBopsReports';
 
 const dayStateColors: Record<string, string> = {
@@ -348,7 +349,18 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           </Card>
         )}
 
-        {/* Section 9: MTSS Snapshot */}
+        {/* Section 9: Session History */}
+        <BopsSessionHistory
+          studentId={studentId}
+          onGenerateReport={(sessionId) => {
+            generateReport.mutate(
+              { studentId },
+              { onSuccess: (id) => setActiveReportId(id) },
+            );
+          }}
+        />
+
+        {/* Section 10: MTSS Snapshot */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">MTSS Snapshot</CardTitle>
