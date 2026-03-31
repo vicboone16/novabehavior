@@ -81,7 +81,7 @@ export function useCreateBopsReport() {
   });
 }
 
-// ─── Generate full report ───
+// ─── Generate full report (active session) ───
 export function useGenerateBopsReport() {
   const qc = useQueryClient();
   return useMutation({
@@ -97,6 +97,43 @@ export function useGenerateBopsReport() {
       toast.success('Report generated');
     },
     onError: (err: any) => toast.error('Failed to generate report: ' + err.message),
+  });
+}
+
+// ─── Generate report for a specific session ───
+export function useGenerateBopsReportForSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ studentId, sessionId }: { studentId: string; sessionId: string }) => {
+      const { data, error } = await db.rpc('generate_bops_full_report_for_session', {
+        p_student_id: studentId,
+        p_session_id: sessionId,
+      });
+      if (error) throw error;
+      return data as string; // report_id
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: QK.reports(vars.studentId) });
+      toast.success('Report generated from session');
+    },
+    onError: (err: any) => toast.error('Failed to generate report: ' + err.message),
+  });
+}
+
+// ─── Fetch session history for a student (for session picker) ───
+export function useBopsSessionList(studentId: string | undefined) {
+  return useQuery({
+    queryKey: ['bops-session-list', studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('v_student_bops_session_history')
+        .select('*')
+        .eq('student_id', studentId!)
+        .order('assessment_date', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
   });
 }
 

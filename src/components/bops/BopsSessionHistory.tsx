@@ -231,7 +231,7 @@ export function BopsSessionHistory({ studentId, onGenerateReport }: Props) {
                           {isCompareBase ? 'Cancel Compare' : 'Compare'}
                         </Button>
                       )}
-                      {onGenerateReport && (
+                      {onGenerateReport && s.status === 'completed' && (
                         <Button
                           size="sm"
                           variant="outline"
