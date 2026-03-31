@@ -29,15 +29,26 @@ import { format } from 'date-fns';
 export default function Reports() {
   const [showBrandingEditor, setShowBrandingEditor] = useState(false);
   const [bopsStudentId, setBopsStudentId] = useState<string>('');
+  const [bopsSessionId, setBopsSessionId] = useState<string>('');
   const [bopsReportId, setBopsReportId] = useState<string | null>(null);
   const generateReport = useGenerateBopsReport();
+  const generateForSession = useGenerateBopsReportForSession();
   const students = useDataStore(s => s.students);
+  const { data: sessions } = useBopsSessionList(bopsStudentId || undefined);
 
   const handleGenerateBopsReport = () => {
     if (!bopsStudentId) return;
-    generateReport.mutate({ studentId: bopsStudentId }, {
-      onSuccess: (id) => setBopsReportId(id),
-    });
+    if (bopsSessionId) {
+      generateForSession.mutate(
+        { studentId: bopsStudentId, sessionId: bopsSessionId },
+        { onSuccess: (id) => setBopsReportId(id) },
+      );
+    } else {
+      generateReport.mutate(
+        { studentId: bopsStudentId },
+        { onSuccess: (id) => setBopsReportId(id) },
+      );
+    }
   };
 
   return (
