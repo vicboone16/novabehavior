@@ -19,10 +19,12 @@ import { FileText, Users, Download, BarChart3, ClipboardCheck, Shield, Heart, Ta
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
-import { useGenerateBopsReport } from '@/hooks/useBopsReports';
+import { useGenerateBopsReport, useGenerateBopsReportForSession, useBopsSessionList } from '@/hooks/useBopsReports';
 import { useDataStore } from '@/store/dataStore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 export default function Reports() {
   const [showBrandingEditor, setShowBrandingEditor] = useState(false);
