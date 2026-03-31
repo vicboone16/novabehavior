@@ -349,7 +349,18 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           </Card>
         )}
 
-        {/* Section 9: MTSS Snapshot */}
+        {/* Section 9: Session History */}
+        <BopsSessionHistory
+          studentId={studentId}
+          onGenerateReport={(sessionId) => {
+            generateReport.mutate(
+              { studentId, reportType: 'bops_behavioral_intelligence' },
+              { onSuccess: (id) => setActiveReportId(id) },
+            );
+          }}
+        />
+
+        {/* Section 10: MTSS Snapshot */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">MTSS Snapshot</CardTitle>
