@@ -23,6 +23,7 @@ import { BopsProgramsSection } from '@/components/programming/BopsProgramsSectio
 import { useNavigate } from 'react-router-dom';
 import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
+import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
 import { useGenerateBopsReport, useBopsReports } from '@/hooks/useBopsReports';
 
 const dayStateColors: Record<string, string> = {
