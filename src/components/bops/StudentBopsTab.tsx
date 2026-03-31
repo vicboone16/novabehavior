@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
 import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
-import { useGenerateBopsReport, useBopsReports } from '@/hooks/useBopsReports';
+import { useGenerateBopsReport, useGenerateBopsReportForSession, useBopsReports } from '@/hooks/useBopsReports';
 
 const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
