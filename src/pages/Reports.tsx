@@ -240,20 +240,44 @@ export default function Reports() {
           <p className="text-sm text-muted-foreground">
             Generate an editable report workspace with section-level editing, imports, and version history
           </p>
-          <div className="flex gap-2">
-            <Select value={bopsStudentId} onValueChange={setBopsStudentId}>
-              <SelectTrigger className="w-[200px] h-9">
-                <SelectValue placeholder="Select student" />
-              </SelectTrigger>
-              <SelectContent>
-                {students.map(s => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button size="sm" disabled={!bopsStudentId || generateReport.isPending} onClick={handleGenerateBopsReport}>
-              Generate Report
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Select value={bopsStudentId} onValueChange={(v) => { setBopsStudentId(v); setBopsSessionId(''); }}>
+                <SelectTrigger className="w-[200px] h-9">
+                  <SelectValue placeholder="Select student" />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                disabled={!bopsStudentId || generateReport.isPending || generateForSession.isPending}
+                onClick={handleGenerateBopsReport}
+              >
+                Generate Report
+              </Button>
+            </div>
+            {bopsStudentId && sessions && sessions.length > 0 && (
+              <Select value={bopsSessionId} onValueChange={setBopsSessionId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Use active session (default)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map((s: any) => (
+                    <SelectItem key={s.session_id} value={s.session_id}>
+                      <span className="flex items-center gap-1.5">
+                        {s.assessment_date ? format(new Date(s.assessment_date + 'T00:00:00'), 'MMM d, yyyy') : 'No date'}
+                        {s.entry_mode === 'manual_scores' && <Badge variant="outline" className="text-[9px] h-4">Manual</Badge>}
+                        {s.is_active_session && <Badge className="text-[9px] h-4 bg-primary text-primary-foreground">Active</Badge>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>

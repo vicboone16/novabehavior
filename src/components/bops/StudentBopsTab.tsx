@@ -354,8 +354,8 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         <BopsSessionHistory
           studentId={studentId}
           onGenerateReport={(sessionId) => {
-            generateReport.mutate(
-              { studentId },
+            generateForSession.mutate(
+              { studentId, sessionId },
               { onSuccess: (id) => setActiveReportId(id) },
             );
           }}
