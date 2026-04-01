@@ -44,7 +44,7 @@ export function useStudentBopsDashboard(studentId: string | undefined) {
     enabled: !!studentId,
     queryFn: async () => {
       const { data, error } = await db
-        .from('v_student_behavior_intelligence_dashboard')
+        .from('v_student_bops_dashboard')
         .select('*')
         .eq('student_id', studentId!)
         .maybeSingle();
