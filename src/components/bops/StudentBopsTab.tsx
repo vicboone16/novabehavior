@@ -126,6 +126,28 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
                 {generateReport.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
                 Generate Report
               </Button>
+              <Button
+                size="sm"
+                className="gap-1 text-xs"
+                disabled={generateMaster.isPending}
+                onClick={() => generateMaster.mutate({ studentId, reportType: 'master_clinical' }, {
+                  onSuccess: (result) => {
+                    if (result?.report_id) setActiveReportId(result.report_id);
+                  },
+                })}
+              >
+                {generateMaster.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+                Generate Master Report
+              </Button>
+              <Button
+                size="sm"
+                variant={showRecommendations ? 'default' : 'outline'}
+                className="gap-1 text-xs"
+                onClick={() => setShowRecommendations(!showRecommendations)}
+              >
+                <BookOpen className="w-3 h-3" />
+                {showRecommendations ? 'Hide' : 'View'} Recommendations
+              </Button>
               {reports && reports.length > 0 && (
                 <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => setActiveReportId(reports[0].id)}>
                   Open Latest Report
