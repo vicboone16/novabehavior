@@ -29,14 +29,27 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [showBrandingEditor, setShowBrandingEditor] = useState(false);
   const [bopsStudentId, setBopsStudentId] = useState<string>('');
   const [bopsSessionId, setBopsSessionId] = useState<string>('');
   const [bopsReportId, setBopsReportId] = useState<string | null>(null);
+  const [nydoeStudentId, setNydoeStudentId] = useState<string>('');
   const generateReport = useGenerateBopsReport();
   const generateForSession = useGenerateBopsReportForSession();
+  const { createReport: createNydoeReport } = useCreateNydoeReport();
+  const { reports: nydoeReports, loading: nydoeLoading } = useStudentNydoeReports(nydoeStudentId || undefined);
   const students = useDataStore(s => s.students);
   const { data: sessions } = useBopsSessionList(bopsStudentId || undefined);
+
+  const handleCreateNydoeReport = async () => {
+    if (!nydoeStudentId) return;
+    const student = students.find(s => s.id === nydoeStudentId);
+    const reportId = await createNydoeReport(nydoeStudentId, student?.name || 'Student');
+    if (reportId) {
+      navigate(`/reports/nydoe/${reportId}`);
+    }
+  };
 
   const handleGenerateBopsReport = () => {
     if (!bopsStudentId) return;
