@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers, Check, Copy, Trash2, Star, Power } from 'lucide-react';
+import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers, Check, Copy, Trash2, Star, Power, FileText, BookOpen } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,9 @@ import { useNavigate } from 'react-router-dom';
 import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
 import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
+import { BopsRecommendationViewer } from '@/components/bops/BopsRecommendationViewer';
 import { useGenerateBopsReport, useGenerateBopsReportForSession, useBopsReports } from '@/hooks/useBopsReports';
+import { useGenerateMasterReport } from '@/hooks/useClinicalNarrative';
 
 const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
@@ -72,7 +74,9 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const generateReport = useGenerateBopsReport();
   const generateForSession = useGenerateBopsReportForSession();
+  const generateMaster = useGenerateMasterReport();
   const { data: reports } = useBopsReports(studentId);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>;
 
@@ -122,6 +126,28 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
                 {generateReport.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart3 className="w-3 h-3" />}
                 Generate Report
               </Button>
+              <Button
+                size="sm"
+                className="gap-1 text-xs"
+                disabled={generateMaster.isPending}
+                onClick={() => generateMaster.mutate({ studentId, reportType: 'master_clinical' }, {
+                  onSuccess: (result) => {
+                    if (result?.report_id) setActiveReportId(result.report_id);
+                  },
+                })}
+              >
+                {generateMaster.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+                Generate Master Report
+              </Button>
+              <Button
+                size="sm"
+                variant={showRecommendations ? 'default' : 'outline'}
+                className="gap-1 text-xs"
+                onClick={() => setShowRecommendations(!showRecommendations)}
+              >
+                <BookOpen className="w-3 h-3" />
+                {showRecommendations ? 'Hide' : 'View'} Recommendations
+              </Button>
               {reports && reports.length > 0 && (
                 <Button size="sm" variant="ghost" className="gap-1 text-xs" onClick={() => setActiveReportId(reports[0].id)}>
                   Open Latest Report
@@ -130,6 +156,11 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Recommendation Viewer Panel */}
+        {showRecommendations && (
+          <BopsRecommendationViewer studentId={studentId} />
+        )}
 
         {/* Section 2: Profile Summary */}
         {d.calculated_training_name && (
