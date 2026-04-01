@@ -6,6 +6,12 @@ import {
   Import, StickyNote, X, Lock, Settings2, AlertTriangle,
   Star, BarChart3, Table2, FileDown, FileType, Copy,
   ListChecks, Type, Image, Clipboard, Brain, Shield,
+  Activity, BookOpen, MessageSquare, Paperclip, Grid3X3, Wand2,
+  FileText, Pencil, RefreshCw, Undo2, Plus, History, Save,
+  Check, Loader2, ArrowLeft, Download, ChevronDown, ChevronUp,
+  Import, StickyNote, X, Lock, Settings2, AlertTriangle,
+  Star, BarChart3, Table2, FileDown, FileType, Copy,
+  ListChecks, Type, Image, Clipboard, Brain, Shield,
   Activity, BookOpen, MessageSquare, Paperclip, Grid3X3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
