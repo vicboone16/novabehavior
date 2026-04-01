@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import {
   FileText, Pencil, RefreshCw, Undo2, Plus, History, Save,
   Check, Loader2, ArrowLeft, Download, ChevronDown, ChevronUp,
-  Import, StickyNote, X,
+  Import, StickyNote, X, Lock, Settings2, AlertTriangle,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +16,18 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/alert-dialog-confirm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  useBopsReportWorkspace, useSaveBopsReportSection,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  useBopsReportWorkspace, useBopsReportMeta, useSaveBopsReportSection,
   useRevertBopsReportSection, useBopsReportSectionVersions,
-  useImportIntoBopsSection,
+  useImportIntoBopsSection, useRegenerateBopsSection, useRegenerateBopsFullReport,
+  useChangeBopsReportSourceSession, useBopsSessionList,
 } from '@/hooks/useBopsReports';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,11 +40,21 @@ interface Props {
   onBack: () => void;
 }
 
+const entryModeLabel: Record<string, string> = {
+  full_assessment: 'Full Assessment',
+  manual_scores: 'Manual Entry',
+};
+
 export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }: Props) {
   const { data: sections, isLoading } = useBopsReportWorkspace(reportId);
+  const { data: reportMeta } = useBopsReportMeta(reportId);
+  const { data: sessionList } = useBopsSessionList(studentId);
   const saveMut = useSaveBopsReportSection();
   const revertMut = useRevertBopsReportSection();
   const importMut = useImportIntoBopsSection();
+  const regenSection = useRegenerateBopsSection();
+  const regenFull = useRegenerateBopsFullReport();
+  const changeSession = useChangeBopsReportSourceSession();
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -47,7 +62,12 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
   const [revertTarget, setRevertTarget] = useState<string | null>(null);
   const [versionsSectionId, setVersionsSectionId] = useState<string | null>(null);
   const [importSectionId, setImportSectionId] = useState<string | null>(null);
+  const [showRegenDialog, setShowRegenDialog] = useState<{ type: 'section' | 'full'; sectionKey?: string } | null>(null);
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Find source session info
+  const sourceSession = sessionList?.find((s: any) => s.session_id === reportMeta?.source_session_id);
 
   // Auto-save with debounce
   const autoSave = useCallback((sectionId: string, text: string) => {
@@ -92,6 +112,21 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
     setRevertTarget(null);
   };
 
+  const handleRegenerate = (replaceExisting: boolean) => {
+    if (!showRegenDialog) return;
+    if (showRegenDialog.type === 'section' && showRegenDialog.sectionKey) {
+      regenSection.mutate({ reportId, sectionKey: showRegenDialog.sectionKey, replaceExisting });
+    } else {
+      regenFull.mutate({ reportId, replaceExisting });
+    }
+    setShowRegenDialog(null);
+  };
+
+  const handleChangeSession = (sessionId: string) => {
+    changeSession.mutate({ reportId, sessionId });
+    setShowSessionPicker(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -105,7 +140,7 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onBack}>
+          <Button variant="ghost" size="sm" type="button" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
           <div>
@@ -133,8 +168,69 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
         </div>
       </div>
 
+      {/* Session Context Header */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Lock className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Source Session:</span>
+              {sourceSession ? (
+                <>
+                  <span className="text-sm text-foreground">
+                    {sourceSession.assessment_date
+                      ? format(new Date(sourceSession.assessment_date + 'T00:00:00'), 'MMM d, yyyy')
+                      : '—'}
+                  </span>
+                  <Badge variant="outline" className="text-xs">
+                    {entryModeLabel[sourceSession.entry_mode] || sourceSession.entry_mode || 'Assessment'}
+                  </Badge>
+                  {sourceSession.calculated_training_name && (
+                    <Badge variant="secondary" className="text-xs">{sourceSession.calculated_training_name}</Badge>
+                  )}
+                  {sourceSession.is_active_session && (
+                    <Badge className="text-xs bg-primary text-primary-foreground gap-1">
+                      <Star className="w-3 h-3" /> Active Session
+                    </Badge>
+                  )}
+                </>
+              ) : reportMeta?.source_session_id ? (
+                <span className="text-xs text-muted-foreground">Session {reportMeta.source_session_id.slice(0, 8)}…</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">No source session linked</span>
+              )}
+              <Badge variant="outline" className="text-xs gap-1 border-primary/30">
+                <Lock className="w-3 h-3" /> Locked to Session
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                type="button"
+                onClick={() => setShowSessionPicker(true)}
+              >
+                <Settings2 className="w-3 h-3" /> Change Session
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                type="button"
+                disabled={regenFull.isPending}
+                onClick={() => setShowRegenDialog({ type: 'full' })}
+              >
+                {regenFull.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                Regenerate All
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Sections */}
-      <ScrollArea className="h-[calc(100vh-240px)]">
+      <ScrollArea className="h-[calc(100vh-320px)]">
         <div className="space-y-4 pr-4">
           {(sections || []).map((section: any) => {
             const sectionId = section.section_id || section.id;
@@ -153,22 +249,29 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
                     </CardTitle>
                     <div className="flex items-center gap-1">
                       {!isEditing ? (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => startEdit(section)}>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => startEdit(section)}>
                           <Pencil className="w-3 h-3" /> Edit
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={finishEdit}>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={finishEdit}>
                           <Check className="w-3 h-3" /> Done
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setImportSectionId(sectionId)}>
+                      <Button
+                        variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button"
+                        disabled={regenSection.isPending}
+                        onClick={() => setShowRegenDialog({ type: 'section', sectionKey: section.section_key || section.section_title })}
+                      >
+                        <RefreshCw className="w-3 h-3" /> Regen
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => setImportSectionId(sectionId)}>
                         <Import className="w-3 h-3" /> Import
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setVersionsSectionId(sectionId)}>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => setVersionsSectionId(sectionId)}>
                         <History className="w-3 h-3" />
                       </Button>
                       {section.is_edited && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" onClick={() => setRevertTarget(sectionId)}>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-destructive" type="button" onClick={() => setRevertTarget(sectionId)}>
                           <Undo2 className="w-3 h-3" /> Revert
                         </Button>
                       )}
@@ -194,6 +297,109 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
           })}
         </div>
       </ScrollArea>
+
+      {/* Regenerate Dialog with Replace / Append / Compare */}
+      <Dialog open={!!showRegenDialog} onOpenChange={o => !o && setShowRegenDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+              Regenerate {showRegenDialog?.type === 'full' ? 'Entire Report' : 'Section'}
+            </DialogTitle>
+            <DialogDescription>
+              This will regenerate content from the report's source session. Choose how to handle existing edits.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Button
+              className="w-full justify-start gap-2"
+              variant="destructive"
+              type="button"
+              disabled={regenSection.isPending || regenFull.isPending}
+              onClick={() => handleRegenerate(true)}
+            >
+              <RefreshCw className="w-4 h-4" /> Replace — overwrite edits with fresh content
+            </Button>
+            <Button
+              className="w-full justify-start gap-2"
+              variant="outline"
+              type="button"
+              disabled={regenSection.isPending || regenFull.isPending}
+              onClick={() => handleRegenerate(false)}
+            >
+              <Plus className="w-4 h-4" /> Append — keep edits and add new content below
+            </Button>
+            <Button
+              className="w-full justify-start gap-2"
+              variant="ghost"
+              type="button"
+              onClick={() => setShowRegenDialog(null)}
+            >
+              <X className="w-4 h-4" /> Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Picker Dialog */}
+      <Dialog open={showSessionPicker} onOpenChange={setShowSessionPicker}>
+        <DialogContent className="max-w-lg max-h-[70vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4" /> Change Source Session
+            </DialogTitle>
+            <DialogDescription>
+              Explicitly switch this report to use a different BOPS session. This will NOT automatically regenerate content.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[50vh]">
+            {sessionList && sessionList.length > 0 ? (
+              <div className="space-y-2">
+                {sessionList.map((s: any) => {
+                  const isCurrent = s.session_id === reportMeta?.source_session_id;
+                  return (
+                    <div
+                      key={s.session_id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${isCurrent ? 'border-primary bg-primary/5' : 'hover:bg-accent/30'}`}
+                      onClick={() => !isCurrent && handleChangeSession(s.session_id)}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">
+                          {s.assessment_date
+                            ? format(new Date(s.assessment_date + 'T00:00:00'), 'MMM d, yyyy')
+                            : '—'}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {entryModeLabel[s.entry_mode] || s.entry_mode || 'Assessment'}
+                        </Badge>
+                        {s.is_active_session && (
+                          <Badge className="text-xs bg-primary text-primary-foreground gap-1">
+                            <Star className="w-3 h-3" /> Active
+                          </Badge>
+                        )}
+                        {isCurrent && (
+                          <Badge variant="secondary" className="text-xs">Current Source</Badge>
+                        )}
+                      </div>
+                      {s.calculated_training_name && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {s.calculated_training_name}
+                          {s.calculated_clinical_name ? ` • ${s.calculated_clinical_name}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No sessions available</p>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => setShowSessionPicker(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Drawer */}
       <ImportDrawer
@@ -356,13 +562,13 @@ function ImportDrawer({
         </Tabs>
 
         <div className="flex gap-2 mt-4 pt-4 border-t">
-          <Button size="sm" disabled={selected.size === 0} onClick={() => handleInsert('append')}>
+          <Button size="sm" disabled={selected.size === 0} type="button" onClick={() => handleInsert('append')}>
             Append to Section
           </Button>
-          <Button size="sm" variant="outline" disabled={selected.size === 0} onClick={() => handleInsert('bullet_list')}>
+          <Button size="sm" variant="outline" disabled={selected.size === 0} type="button" onClick={() => handleInsert('bullet_list')}>
             Insert as Bullets
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button size="sm" variant="ghost" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
         </div>
       </SheetContent>
     </Sheet>
@@ -411,7 +617,7 @@ function VersionHistoryDialog({
           )}
         </ScrollArea>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
