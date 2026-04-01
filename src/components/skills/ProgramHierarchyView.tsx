@@ -97,9 +97,10 @@ export function ProgramHierarchyView({
   const noDomain: SkillProgram[] = [];
 
   for (const p of programs) {
-    if (p.domain_id) {
-      if (!grouped.has(p.domain_id)) grouped.set(p.domain_id, []);
-      grouped.get(p.domain_id)!.push(p);
+    const effectiveDomainId = p.top_level_domain_id || p.domain_id;
+    if (effectiveDomainId) {
+      if (!grouped.has(effectiveDomainId)) grouped.set(effectiveDomainId, []);
+      grouped.get(effectiveDomainId)!.push(p);
     } else {
       noDomain.push(p);
     }
