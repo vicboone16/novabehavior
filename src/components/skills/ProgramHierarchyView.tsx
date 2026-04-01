@@ -397,7 +397,9 @@ export function ProgramHierarchyView({
   };
 
   const renderDomainGroup = (domainId: string, domainPrograms: SkillProgram[]) => {
-    const domain = domains.find(d => d.id === domainId);
+    const legacyDomain = domains.find(d => d.id === domainId);
+    const firstProg = domainPrograms[0];
+    const domainName = firstProg?.top_level_domain?.name || legacyDomain?.name || 'Unassigned';
     const isExpanded = expandedDomains.has(domainId);
 
     return (
