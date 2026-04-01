@@ -33682,6 +33682,507 @@ export type Database = {
         }
         Relationships: []
       }
+      nova_assessment_domains: {
+        Row: {
+          assessment_id: string
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_profile_driving: boolean
+          name: string
+          priority_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_profile_driving?: boolean
+          name: string
+          priority_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_profile_driving?: boolean
+          name?: string
+          priority_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_domains_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessment_items: {
+        Row: {
+          archetype_code: string | null
+          assessment_id: string
+          created_at: string
+          display_order: number
+          domain_id: string | null
+          id: string
+          is_active: boolean
+          item_code: string
+          item_number: number
+          item_text: string
+          max_score: number
+          min_score: number
+          reverse_scored: boolean
+          scoring_notes: string | null
+          subdomain_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          archetype_code?: string | null
+          assessment_id: string
+          created_at?: string
+          display_order?: number
+          domain_id?: string | null
+          id?: string
+          is_active?: boolean
+          item_code: string
+          item_number: number
+          item_text: string
+          max_score?: number
+          min_score?: number
+          reverse_scored?: boolean
+          scoring_notes?: string | null
+          subdomain_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archetype_code?: string | null
+          assessment_id?: string
+          created_at?: string
+          display_order?: number
+          domain_id?: string | null
+          id?: string
+          is_active?: boolean
+          item_code?: string
+          item_number?: number
+          item_text?: string
+          max_score?: number
+          min_score?: number
+          reverse_scored?: boolean
+          scoring_notes?: string | null
+          subdomain_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_items_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_assessment_items_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_assessment_items_subdomain_id_fkey"
+            columns: ["subdomain_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_subdomains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessment_ratings: {
+        Row: {
+          comments: string | null
+          created_at: string
+          id: string
+          item_id: string
+          normalized_score: number | null
+          raw_score: number
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          normalized_score?: number | null
+          raw_score: number
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          normalized_score?: number | null
+          raw_score?: number
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_ratings_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nova_assessment_ratings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessment_results: {
+        Row: {
+          avg_score: number | null
+          band_label: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          is_secondary: boolean
+          raw_total: number | null
+          result_json: Json
+          result_key: string
+          result_label: string
+          result_scope: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          avg_score?: number | null
+          band_label?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          is_secondary?: boolean
+          raw_total?: number | null
+          result_json?: Json
+          result_key: string
+          result_label: string
+          result_scope: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          avg_score?: number | null
+          band_label?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          is_secondary?: boolean
+          raw_total?: number | null
+          result_json?: Json
+          result_key?: string
+          result_label?: string
+          result_scope?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessment_sessions: {
+        Row: {
+          administration_date: string
+          assessment_id: string
+          confidence_level: number | null
+          created_at: string
+          evaluator_user_id: string | null
+          id: string
+          notes: string | null
+          rater_name: string | null
+          rater_role: string | null
+          setting_name: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          administration_date?: string
+          assessment_id: string
+          confidence_level?: number | null
+          created_at?: string
+          evaluator_user_id?: string | null
+          id?: string
+          notes?: string | null
+          rater_name?: string | null
+          rater_role?: string | null
+          setting_name?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          administration_date?: string
+          assessment_id?: string
+          confidence_level?: number | null
+          created_at?: string
+          evaluator_user_id?: string | null
+          id?: string
+          notes?: string | null
+          rater_name?: string | null
+          rater_role?: string | null
+          setting_name?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_sessions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessment_subdomains: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          domain_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          domain_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          domain_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_assessment_subdomains_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessment_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_assessments: {
+        Row: {
+          assessment_type: string
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          scoring_model: string
+          short_name: string | null
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          assessment_type: string
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          scoring_model: string
+          short_name?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          assessment_type?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          scoring_model?: string
+          short_name?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      nova_profile_definitions: {
+        Row: {
+          assessment_id: string
+          clinical_meaning: string | null
+          created_at: string
+          description: string | null
+          id: string
+          intervention_priority: string | null
+          profile_code: string
+          profile_name: string
+          profile_type: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id: string
+          clinical_meaning?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_priority?: string | null
+          profile_code: string
+          profile_name: string
+          profile_type: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string
+          clinical_meaning?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          intervention_priority?: string | null
+          profile_code?: string
+          profile_name?: string
+          profile_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_profile_definitions_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_report_snippets: {
+        Row: {
+          assessment_id: string | null
+          created_at: string
+          id: string
+          snippet_key: string
+          snippet_label: string
+          snippet_text: string
+          snippet_type: string
+          updated_at: string
+        }
+        Insert: {
+          assessment_id?: string | null
+          created_at?: string
+          id?: string
+          snippet_key: string
+          snippet_label: string
+          snippet_text: string
+          snippet_type: string
+          updated_at?: string
+        }
+        Update: {
+          assessment_id?: string | null
+          created_at?: string
+          id?: string
+          snippet_key?: string
+          snippet_label?: string
+          snippet_text?: string
+          snippet_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_report_snippets_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nova_score_bands: {
+        Row: {
+          assessment_id: string
+          band_scope: string
+          color_token: string | null
+          display_order: number
+          id: string
+          interpretation: string | null
+          label: string
+          max_value: number
+          min_value: number
+        }
+        Insert: {
+          assessment_id: string
+          band_scope: string
+          color_token?: string | null
+          display_order?: number
+          id?: string
+          interpretation?: string | null
+          label: string
+          max_value: number
+          min_value: number
+        }
+        Update: {
+          assessment_id?: string
+          band_scope?: string
+          color_token?: string | null
+          display_order?: number
+          id?: string
+          interpretation?: string | null
+          label?: string
+          max_value?: number
+          min_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nova_score_bands_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "nova_assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       novatrack_table_map: {
         Row: {
           detected_at: string | null
@@ -79890,6 +80391,15 @@ export type Database = {
         Returns: string
       }
       normalize_sdc_snapshot_json: { Args: { p_input: Json }; Returns: Json }
+      nova_compute_normalized_score: {
+        Args: {
+          p_max_score: number
+          p_min_score: number
+          p_raw_score: number
+          p_reverse_scored: boolean
+        }
+        Returns: number
+      }
       nt_archive_behavior: {
         Args: { p_archived_by?: string; p_behavior_id: string }
         Returns: undefined
