@@ -4,11 +4,14 @@ import {
   FileText, Pencil, RefreshCw, Undo2, Plus, History, Save,
   Check, Loader2, ArrowLeft, Download, ChevronDown, ChevronUp,
   Import, StickyNote, X, Lock, Settings2, AlertTriangle,
-  Star,
+  Star, BarChart3, Table2, FileDown, FileType, Copy,
+  ListChecks, Type, Image, Clipboard, Brain, Shield,
+  Activity, BookOpen, MessageSquare, Paperclip, Grid3X3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -24,12 +27,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
   useBopsReportWorkspace, useBopsReportMeta, useSaveBopsReportSection,
   useRevertBopsReportSection, useBopsReportSectionVersions,
   useImportIntoBopsSection, useRegenerateBopsSection, useRegenerateBopsFullReport,
   useChangeBopsReportSourceSession, useBopsSessionList,
 } from '@/hooks/useBopsReports';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const db = supabase as any;
 
@@ -44,6 +52,44 @@ const entryModeLabel: Record<string, string> = {
   full_assessment: 'Full Assessment',
   manual_scores: 'Manual Entry',
 };
+
+// ─── Import Source Configuration ───
+const IMPORT_SOURCES = [
+  { key: 'programs', label: 'Programs', icon: BookOpen },
+  { key: 'targets', label: 'Targets', icon: ListChecks },
+  { key: 'behavior', label: 'Behavior Data', icon: Activity },
+  { key: 'abc', label: 'ABC / Interval', icon: Grid3X3 },
+  { key: 'assessments', label: 'Assessments', icon: Brain },
+  { key: 'reports', label: 'Reports / Text', icon: FileText },
+  { key: 'notes', label: 'Notes', icon: StickyNote },
+  { key: 'graphs', label: 'Graphs / Charts', icon: BarChart3 },
+  { key: 'placement', label: 'Placement / CFI', icon: Shield },
+  { key: 'genome', label: 'Classroom Genome', icon: Grid3X3 },
+  { key: 'attachments', label: 'Attachments', icon: Paperclip },
+] as const;
+
+// ─── Section-specific suggested import sources ───
+const SECTION_SOURCE_MAP: Record<string, string[]> = {
+  behavioral_overview: ['behavior', 'abc', 'graphs', 'notes'],
+  interventions: ['programs', 'targets', 'assessments'],
+  placement: ['placement', 'genome'],
+  classroom_analysis: ['genome', 'placement', 'graphs'],
+  social_profile: ['assessments', 'behavior', 'notes'],
+  executive_functioning: ['assessments', 'behavior', 'notes'],
+  archetype_profile: ['assessments', 'notes'],
+  skill_profile: ['assessments', 'targets', 'programs'],
+  recommendations: ['programs', 'targets', 'assessments', 'notes'],
+};
+
+// ─── Insert Mode Options ───
+const INSERT_MODES = [
+  { key: 'append', label: 'Append to Section', icon: Plus },
+  { key: 'bullet_list', label: 'Insert as Bullet List', icon: ListChecks },
+  { key: 'paragraph', label: 'Insert as Paragraph', icon: Type },
+  { key: 'table', label: 'Insert as Table', icon: Table2 },
+  { key: 'figure', label: 'Insert as Figure with Caption', icon: Image },
+  { key: 'replace', label: 'Replace Selected Text', icon: Copy },
+] as const;
 
 export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }: Props) {
   const { data: sections, isLoading } = useBopsReportWorkspace(reportId);
@@ -62,11 +108,14 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
   const [revertTarget, setRevertTarget] = useState<string | null>(null);
   const [versionsSectionId, setVersionsSectionId] = useState<string | null>(null);
   const [importSectionId, setImportSectionId] = useState<string | null>(null);
+  const [importSectionKey, setImportSectionKey] = useState<string | null>(null);
   const [showRegenDialog, setShowRegenDialog] = useState<{ type: 'section' | 'full'; sectionKey?: string } | null>(null);
   const [showSessionPicker, setShowSessionPicker] = useState(false);
+  const [noteDrawerSectionId, setNoteDrawerSectionId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [exporting, setExporting] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Find source session info
   const sourceSession = sessionList?.find((s: any) => s.session_id === reportMeta?.source_session_id);
 
   // Auto-save with debounce
@@ -127,6 +176,101 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
     setShowSessionPicker(false);
   };
 
+  const handleAddNote = (sectionId: string) => {
+    if (!noteText.trim()) return;
+    importMut.mutate({
+      sectionId,
+      reportId,
+      sourceType: 'manual_note',
+      sourceRecordId: 'manual',
+      insertedText: noteText.trim(),
+      importMode: 'append',
+    });
+    setNoteText('');
+    setNoteDrawerSectionId(null);
+  };
+
+  // ─── Non-destructive Export ───
+  const handleExport = async (format: 'docx' | 'pdf' | 'text') => {
+    setExporting(true);
+    try {
+      const allSections = sections || [];
+      const textContent = allSections
+        .map((s: any) => `## ${s.section_title}\n\n${s.edited_text || s.generated_text || '(No content)'}`)
+        .join('\n\n---\n\n');
+
+      if (format === 'text') {
+        const blob = new Blob(
+          [`# BOPS Report — ${studentName}\n\nGenerated: ${new Date().toLocaleDateString()}\n\n${textContent}`],
+          { type: 'text/plain' }
+        );
+        downloadBlob(blob, `BOPS_Report_${studentName.replace(/\s/g, '_')}.txt`);
+        toast.success('Text export downloaded');
+      } else if (format === 'docx') {
+        try {
+          const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+          const children: any[] = [
+            new Paragraph({
+              heading: HeadingLevel.TITLE,
+              children: [new TextRun({ text: `BOPS Behavioral Intelligence Report`, bold: true })],
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: `Student: ${studentName}  •  Date: ${new Date().toLocaleDateString()}`, italics: true })],
+              spacing: { after: 300 },
+            }),
+          ];
+          allSections.forEach((s: any) => {
+            children.push(
+              new Paragraph({
+                heading: HeadingLevel.HEADING_1,
+                children: [new TextRun({ text: s.section_title, bold: true })],
+                spacing: { before: 400 },
+              }),
+            );
+            const content = s.edited_text || s.generated_text || '';
+            content.split('\n').forEach((line: string) => {
+              children.push(new Paragraph({ children: [new TextRun(line)] }));
+            });
+          });
+          const doc = new Document({
+            sections: [{ properties: { page: { size: { width: 12240, height: 15840 } } }, children }],
+          });
+          const buffer = await Packer.toBlob(doc);
+          downloadBlob(buffer, `BOPS_Report_${studentName.replace(/\s/g, '_')}.docx`);
+          toast.success('Word document downloaded');
+        } catch {
+          toast.error('DOCX generation failed — try text export');
+        }
+      } else {
+        // PDF fallback: use text export
+        const blob = new Blob(
+          [`BOPS Report — ${studentName}\n\n${textContent}`],
+          { type: 'text/plain' }
+        );
+        downloadBlob(blob, `BOPS_Report_${studentName.replace(/\s/g, '_')}.txt`);
+        toast.success('Report exported as text (PDF requires server-side generation)');
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const openImport = (section: any) => {
+    setImportSectionId(section.section_id || section.id);
+    setImportSectionKey(section.section_key || section.section_title?.toLowerCase().replace(/[^a-z_]/g, '_') || null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -165,6 +309,29 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
             </Badge>
           )}
           <Badge variant="outline">Draft</Badge>
+
+          {/* Export Dropdown — non-destructive, stays in workspace */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="gap-1" disabled={exporting}>
+                {exporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-xs">Export without leaving workspace</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport('docx')} className="gap-2">
+                <FileType className="w-4 h-4" /> Export to Word (.docx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2">
+                <FileDown className="w-4 h-4" /> Export to PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('text')} className="gap-2">
+                <Clipboard className="w-4 h-4" /> Export Text Only
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -205,19 +372,13 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
             </div>
             <div className="flex items-center gap-2">
               <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1"
-                type="button"
+                size="sm" variant="outline" className="h-7 text-xs gap-1" type="button"
                 onClick={() => setShowSessionPicker(true)}
               >
                 <Settings2 className="w-3 h-3" /> Change Session
               </Button>
               <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1"
-                type="button"
+                size="sm" variant="outline" className="h-7 text-xs gap-1" type="button"
                 disabled={regenFull.isPending}
                 onClick={() => setShowRegenDialog({ type: 'full' })}
               >
@@ -247,7 +408,8 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
                         <Badge variant="secondary" className="text-[10px]">Edited</Badge>
                       )}
                     </CardTitle>
-                    <div className="flex items-center gap-1">
+                    {/* Section Action Bar */}
+                    <div className="flex items-center gap-1 flex-wrap">
                       {!isEditing ? (
                         <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => startEdit(section)}>
                           <Pencil className="w-3 h-3" /> Edit
@@ -264,8 +426,12 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
                       >
                         <RefreshCw className="w-3 h-3" /> Regen
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => setImportSectionId(sectionId)}>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => openImport(section)}>
                         <Import className="w-3 h-3" /> Import
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button"
+                        onClick={() => { setNoteDrawerSectionId(sectionId); setNoteText(''); }}>
+                        <StickyNote className="w-3 h-3" /> Note
                       </Button>
                       <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" type="button" onClick={() => setVersionsSectionId(sectionId)}>
                         <History className="w-3 h-3" />
@@ -298,7 +464,7 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
         </div>
       </ScrollArea>
 
-      {/* Regenerate Dialog with Replace / Append / Compare */}
+      {/* Regenerate Dialog */}
       <Dialog open={!!showRegenDialog} onOpenChange={o => !o && setShowRegenDialog(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -312,29 +478,20 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
           </DialogHeader>
           <div className="space-y-2">
             <Button
-              className="w-full justify-start gap-2"
-              variant="destructive"
-              type="button"
+              className="w-full justify-start gap-2" variant="destructive" type="button"
               disabled={regenSection.isPending || regenFull.isPending}
               onClick={() => handleRegenerate(true)}
             >
               <RefreshCw className="w-4 h-4" /> Replace — overwrite edits with fresh content
             </Button>
             <Button
-              className="w-full justify-start gap-2"
-              variant="outline"
-              type="button"
+              className="w-full justify-start gap-2" variant="outline" type="button"
               disabled={regenSection.isPending || regenFull.isPending}
               onClick={() => handleRegenerate(false)}
             >
               <Plus className="w-4 h-4" /> Append — keep edits and add new content below
             </Button>
-            <Button
-              className="w-full justify-start gap-2"
-              variant="ghost"
-              type="button"
-              onClick={() => setShowRegenDialog(null)}
-            >
+            <Button className="w-full justify-start gap-2" variant="ghost" type="button" onClick={() => setShowRegenDialog(null)}>
               <X className="w-4 h-4" /> Cancel
             </Button>
           </div>
@@ -349,7 +506,7 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
               <Settings2 className="w-4 h-4" /> Change Source Session
             </DialogTitle>
             <DialogDescription>
-              Explicitly switch this report to use a different BOPS session. This will NOT automatically regenerate content.
+              Switch this report to a different BOPS session. This will NOT automatically regenerate content.
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[50vh]">
@@ -401,15 +558,42 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
         </DialogContent>
       </Dialog>
 
-      {/* Import Drawer */}
+      {/* Enhanced Import Drawer */}
       <ImportDrawer
         open={!!importSectionId}
-        onOpenChange={open => !open && setImportSectionId(null)}
+        onOpenChange={open => { if (!open) { setImportSectionId(null); setImportSectionKey(null); } }}
         sectionId={importSectionId}
+        sectionKey={importSectionKey}
         reportId={reportId}
         studentId={studentId}
         onImport={importMut.mutate}
       />
+
+      {/* Add Note Drawer */}
+      <Sheet open={!!noteDrawerSectionId} onOpenChange={open => !open && setNoteDrawerSectionId(null)}>
+        <SheetContent className="w-[380px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <StickyNote className="w-4 h-4" /> Add Note
+            </SheetTitle>
+            <SheetDescription>Add a manual note to this section.</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            <Textarea
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              placeholder="Type your note here..."
+              className="min-h-[120px]"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => noteDrawerSectionId && handleAddNote(noteDrawerSectionId)} disabled={!noteText.trim()}>
+                Add Note
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setNoteDrawerSectionId(null)}>Cancel</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Version History Dialog */}
       <VersionHistoryDialog
@@ -432,13 +616,14 @@ export function BopsReportWorkspace({ reportId, studentId, studentName, onBack }
   );
 }
 
-// ─── Import Drawer ───
+// ─── Enhanced Import Drawer with all data sources ───
 function ImportDrawer({
-  open, onOpenChange, sectionId, reportId, studentId, onImport,
+  open, onOpenChange, sectionId, sectionKey, reportId, studentId, onImport,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sectionId: string | null;
+  sectionKey: string | null;
   reportId: string;
   studentId: string;
   onImport: (args: any) => void;
@@ -447,6 +632,10 @@ function ImportDrawer({
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [insertMode, setInsertMode] = useState<string>('append');
+
+  // Get suggested sources for this section
+  const suggestedSources = sectionKey ? SECTION_SOURCE_MAP[sectionKey] || [] : [];
 
   useEffect(() => {
     if (!open || !studentId) return;
@@ -461,26 +650,118 @@ function ImportDrawer({
       switch (source) {
         case 'programs': {
           const res = await db.from('v_student_bops_program_bank_summary').select('*').eq('student_id', studentId);
-          data = (res.data || []).map((r: any) => ({ id: r.program_id || r.id, title: r.program_name || r.title, source: 'BOPS Program', text: r.program_name }));
+          data = (res.data || []).map((r: any) => ({
+            id: r.program_id || r.id || crypto.randomUUID(),
+            title: r.program_name || r.title || 'Program',
+            source: 'BOPS Program',
+            text: r.program_description || r.program_name || '',
+            preview: r.program_name,
+          }));
+          break;
+        }
+        case 'targets': {
+          const res = await db.from('skill_targets').select('id, target_name, status, current_phase, domain').eq('student_id', studentId).order('created_at', { ascending: false }).limit(30);
+          data = (res.data || []).map((r: any) => ({
+            id: r.id,
+            title: r.target_name,
+            source: 'Skill Target',
+            text: `Status: ${r.status || 'active'} • Phase: ${r.current_phase || 'N/A'} • Domain: ${r.domain || 'N/A'}`,
+            preview: r.target_name,
+          }));
           break;
         }
         case 'behavior': {
-          const res = await db.from('behavior_session_data').select('id, behavior_id, frequency, duration_seconds, created_at, sessions(started_at)').eq('student_id', studentId).order('created_at', { ascending: false }).limit(20);
-          data = (res.data || []).map((r: any) => ({ id: r.id, title: `Behavior ${r.behavior_id?.slice(0,8)} — freq: ${r.frequency || 0}`, source: 'Behavior Data', text: `Frequency: ${r.frequency || 0}, Duration: ${r.duration_seconds || 0}s` }));
+          const res = await db.from('behavior_session_data').select('id, behavior_id, frequency, duration_seconds, created_at').eq('student_id', studentId).order('created_at', { ascending: false }).limit(20);
+          data = (res.data || []).map((r: any) => ({
+            id: r.id,
+            title: `Behavior ${r.behavior_id?.slice(0, 8)} — freq: ${r.frequency || 0}`,
+            source: 'Behavior Data',
+            text: `Frequency: ${r.frequency || 0}, Duration: ${r.duration_seconds || 0}s`,
+            preview: `freq: ${r.frequency || 0}, dur: ${r.duration_seconds || 0}s`,
+          }));
+          break;
+        }
+        case 'abc': {
+          const res = await db.from('abc_logs').select('id, antecedent, behavior, consequence, logged_at').eq('client_id', studentId).order('logged_at', { ascending: false }).limit(20);
+          data = (res.data || []).map((r: any) => ({
+            id: r.id,
+            title: `ABC: ${(r.behavior || '').slice(0, 40)}`,
+            source: 'ABC Log',
+            text: `A: ${r.antecedent || 'N/A'}\nB: ${r.behavior || 'N/A'}\nC: ${r.consequence || 'N/A'}`,
+            preview: `${r.antecedent?.slice(0, 30)} → ${r.behavior?.slice(0, 30)}`,
+          }));
+          break;
+        }
+        case 'assessments': {
+          // Pull from Nova assessments
+          const res = await db.from('v_nova_assessment_report').select('*').eq('student_id', studentId).order('administration_date', { ascending: false }).limit(10);
+          data = (res.data || []).map((r: any) => ({
+            id: r.session_id,
+            title: `${r.assessment_name || 'Assessment'} — ${r.administration_date || ''}`,
+            source: r.assessment_code || 'Assessment',
+            text: r.domain_results ? JSON.stringify(r.domain_results).slice(0, 200) : 'No scored results',
+            preview: `${r.assessment_code} ${r.administration_date}`,
+          }));
+          // Also pull BOPS sessions
+          const bres = await db.from('v_student_bops_session_history').select('*').eq('student_id', studentId).order('assessment_date', { ascending: false }).limit(10);
+          const bopsItems = (bres.data || []).map((r: any) => ({
+            id: r.session_id,
+            title: `BOPS Session — ${r.assessment_date || ''}`,
+            source: 'BOPS',
+            text: `${r.calculated_training_name || ''} ${r.entry_mode || ''}`,
+            preview: `BOPS ${r.assessment_date}`,
+          }));
+          data = [...data, ...bopsItems];
+          break;
+        }
+        case 'reports': {
+          const res = await db.from('v_bops_reports').select('*').eq('student_id', studentId).order('created_at', { ascending: false }).limit(10);
+          data = (res.data || []).map((r: any) => ({
+            id: r.id || r.report_id,
+            title: `Report: ${r.title || 'Untitled'} — ${r.created_at ? format(new Date(r.created_at), 'MMM d, yyyy') : ''}`,
+            source: 'Prior Report',
+            text: r.status || 'draft',
+            preview: r.title,
+          }));
+          break;
+        }
+        case 'notes': {
+          data = [{ id: 'manual_note', title: 'Add a manual note', source: 'Note', text: '', preview: 'Type your own note' }];
+          break;
+        }
+        case 'graphs': {
+          data = [
+            { id: 'behavior_trend', title: 'Behavior Trend Graph', source: 'Chart', text: 'Frequency/duration trends over time', preview: 'behavior trend' },
+            { id: 'interval_occurrence', title: 'Interval Occurrence Graph', source: 'Chart', text: 'Time-sampling analysis', preview: 'interval occurrence' },
+            { id: 'placement_fit', title: 'Placement Fit Chart', source: 'Chart', text: 'CFI placement analysis', preview: 'placement fit' },
+            { id: 'classroom_volatility', title: 'Classroom Volatility Chart', source: 'Chart', text: 'Genome-based volatility', preview: 'volatility chart' },
+          ];
           break;
         }
         case 'placement': {
           const res = await db.from('v_student_bops_selected_placement').select('*').eq('student_id', studentId);
-          data = (res.data || []).map((r: any) => ({ id: r.student_id, title: `Placement: ${r.classroom_type_name || 'Unknown'}`, source: 'Placement', text: `Fit: ${r.fit_band || 'N/A'}, Score: ${r.fit_score || 'N/A'}` }));
+          data = (res.data || []).map((r: any) => ({
+            id: r.student_id,
+            title: `Placement: ${r.classroom_type_name || 'Unknown'}`,
+            source: 'Placement / CFI',
+            text: `Fit: ${r.fit_band || 'N/A'}, Score: ${r.fit_score || 'N/A'}`,
+            preview: `${r.classroom_type_name} — ${r.fit_band}`,
+          }));
           break;
         }
         case 'genome': {
           const res = await db.from('v_bops_classroom_genome').select('*').limit(10);
-          data = (res.data || []).map((r: any) => ({ id: r.classroom_id || r.id, title: `Classroom: ${r.classroom_name || r.id}`, source: 'Genome', text: `Volatility: ${r.volatility_score || 'N/A'}` }));
+          data = (res.data || []).map((r: any) => ({
+            id: r.classroom_id || r.id || crypto.randomUUID(),
+            title: `Classroom: ${r.classroom_name || 'Unknown'}`,
+            source: 'Genome',
+            text: `Volatility: ${r.volatility_score || 'N/A'}`,
+            preview: r.classroom_name,
+          }));
           break;
         }
-        case 'notes': {
-          data = [{ id: 'manual', title: 'Add manual note', source: 'Note', text: '' }];
+        case 'attachments': {
+          data = [{ id: 'upload_placeholder', title: 'Upload attachment (coming soon)', source: 'Attachment', text: 'File upload support will be available in a future update', preview: '' }];
           break;
         }
       }
@@ -501,47 +782,86 @@ function ImportDrawer({
     });
   };
 
-  const handleInsert = (mode: string) => {
+  const handleInsert = () => {
     if (!sectionId) return;
     const selectedItems = items.filter(i => selected.has(i.id));
-    const text = selectedItems.map(i => `• ${i.title}: ${i.text}`).join('\n');
+    let text = '';
+
+    switch (insertMode) {
+      case 'bullet_list':
+        text = selectedItems.map(i => `• ${i.title}: ${i.text}`).join('\n');
+        break;
+      case 'table':
+        text = '| Item | Details |\n|---|---|\n' + selectedItems.map(i => `| ${i.title} | ${i.text} |`).join('\n');
+        break;
+      case 'figure':
+        text = selectedItems.map(i => `[Figure: ${i.title}]\n${i.text}\nCaption: ${i.preview || i.title}`).join('\n\n');
+        break;
+      case 'paragraph':
+        text = selectedItems.map(i => `${i.title}. ${i.text}`).join('\n\n');
+        break;
+      default:
+        text = selectedItems.map(i => `${i.title}: ${i.text}`).join('\n');
+    }
+
     onImport({
       sectionId,
       reportId,
       sourceType: tab,
       sourceRecordId: selectedItems.map(i => i.id).join(','),
       insertedText: text,
-      importMode: mode,
+      importMode: insertMode,
     });
     onOpenChange(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[420px] sm:w-[480px]">
+      <SheetContent className="w-[480px] sm:w-[540px] flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Import className="w-4 h-4" /> Import into Section
           </SheetTitle>
-          <SheetDescription>Select content to insert into the active report section.</SheetDescription>
+          <SheetDescription>Select content to insert. The report stays open.</SheetDescription>
         </SheetHeader>
 
-        <Tabs value={tab} onValueChange={setTab} className="mt-4">
-          <TabsList className="w-full flex-wrap h-auto gap-1">
-            <TabsTrigger value="programs" className="text-xs">Programs</TabsTrigger>
-            <TabsTrigger value="behavior" className="text-xs">Behavior Data</TabsTrigger>
-            <TabsTrigger value="placement" className="text-xs">Placement</TabsTrigger>
-            <TabsTrigger value="genome" className="text-xs">Genome</TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs">Notes</TabsTrigger>
+        {/* Suggested sources hint */}
+        {suggestedSources.length > 0 && (
+          <div className="mt-2 flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground">Suggested:</span>
+            {suggestedSources.map(s => {
+              const src = IMPORT_SOURCES.find(is => is.key === s);
+              return src ? (
+                <Badge
+                  key={s}
+                  variant={tab === s ? 'default' : 'outline'}
+                  className="text-[10px] cursor-pointer"
+                  onClick={() => setTab(s)}
+                >
+                  {src.label}
+                </Badge>
+              ) : null;
+            })}
+          </div>
+        )}
+
+        <Tabs value={tab} onValueChange={setTab} className="mt-3 flex-1 flex flex-col min-h-0">
+          <TabsList className="w-full flex-wrap h-auto gap-1 justify-start">
+            {IMPORT_SOURCES.map(src => (
+              <TabsTrigger key={src.key} value={src.key} className="text-[10px] gap-1 px-2 py-1">
+                <src.icon className="w-3 h-3" />
+                {src.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <ScrollArea className="h-[400px] mt-3">
+          <ScrollArea className="flex-1 mt-3 min-h-0" style={{ maxHeight: '340px' }}>
             {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="animate-spin" /></div>
             ) : items.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No items found</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 pr-2">
                 {items.map(item => (
                   <div
                     key={item.id}
@@ -550,10 +870,10 @@ function ImportDrawer({
                   >
                     <div className="flex items-center gap-2">
                       <input type="checkbox" checked={selected.has(item.id)} readOnly className="rounded" />
-                      <span className="text-sm font-medium">{item.title}</span>
+                      <span className="text-sm font-medium text-foreground">{item.title}</span>
                       <Badge variant="secondary" className="text-[10px] ml-auto">{item.source}</Badge>
                     </div>
-                    {item.text && <p className="text-xs text-muted-foreground mt-1 ml-6">{item.text}</p>}
+                    {item.text && <p className="text-xs text-muted-foreground mt-1 ml-6 line-clamp-2">{item.text}</p>}
                   </div>
                 ))}
               </div>
@@ -561,14 +881,29 @@ function ImportDrawer({
           </ScrollArea>
         </Tabs>
 
-        <div className="flex gap-2 mt-4 pt-4 border-t">
-          <Button size="sm" disabled={selected.size === 0} type="button" onClick={() => handleInsert('append')}>
-            Append to Section
-          </Button>
-          <Button size="sm" variant="outline" disabled={selected.size === 0} type="button" onClick={() => handleInsert('bullet_list')}>
-            Insert as Bullets
-          </Button>
-          <Button size="sm" variant="ghost" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+        {/* Insert Mode + Actions */}
+        <div className="pt-4 border-t space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Insert as:</span>
+            <Select value={insertMode} onValueChange={setInsertMode}>
+              <SelectTrigger className="h-8 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {INSERT_MODES.map(m => (
+                  <SelectItem key={m.key} value={m.key} className="text-xs">
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={selected.size === 0} type="button" onClick={handleInsert}>
+              Insert ({selected.size})
+            </Button>
+            <Button size="sm" variant="ghost" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
