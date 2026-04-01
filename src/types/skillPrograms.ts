@@ -4,6 +4,8 @@ export interface SkillProgram {
   id: string;
   student_id: string;
   domain_id: string | null;
+  top_level_domain_id: string | null;
+  subdomain_id: string | null;
   name: string;
   description: string | null;
   method: SkillMethod;
@@ -22,6 +24,8 @@ export interface SkillProgram {
   updated_at: string;
   // Joined
   domain?: { id: string; name: string };
+  top_level_domain?: { id: string; name: string };
+  subdomain?: { id: string; name: string };
   targets?: SkillTarget[];
   status_history?: ProgramStatusEntry[];
 }

@@ -97,9 +97,10 @@ export function ProgramHierarchyView({
   const noDomain: SkillProgram[] = [];
 
   for (const p of programs) {
-    if (p.domain_id) {
-      if (!grouped.has(p.domain_id)) grouped.set(p.domain_id, []);
-      grouped.get(p.domain_id)!.push(p);
+    const effectiveDomainId = p.top_level_domain_id || p.domain_id;
+    if (effectiveDomainId) {
+      if (!grouped.has(effectiveDomainId)) grouped.set(effectiveDomainId, []);
+      grouped.get(effectiveDomainId)!.push(p);
     } else {
       noDomain.push(p);
     }
@@ -338,7 +339,7 @@ export function ProgramHierarchyView({
                   <DropdownMenuItem onClick={() => onEditProgram(program)}>
                     <Pencil className="w-3 h-3 mr-2" /> Edit Program
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setMoveProgram({ id: program.id, name: program.name, domainId: program.domain_id })}>
+                  <DropdownMenuItem onClick={() => setMoveProgram({ id: program.id, name: program.name, domainId: program.top_level_domain_id || program.domain_id })}>
                     <FolderInput className="w-3 h-3 mr-2" /> Move to Domain
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
@@ -396,7 +397,9 @@ export function ProgramHierarchyView({
   };
 
   const renderDomainGroup = (domainId: string, domainPrograms: SkillProgram[]) => {
-    const domain = domains.find(d => d.id === domainId);
+    const legacyDomain = domains.find(d => d.id === domainId);
+    const firstProg = domainPrograms[0];
+    const domainName = firstProg?.top_level_domain?.name || legacyDomain?.name || 'Unassigned';
     const isExpanded = expandedDomains.has(domainId);
 
     return (
@@ -405,7 +408,7 @@ export function ProgramHierarchyView({
           <CollapsibleTrigger className="w-full">
             <CardContent className="py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30">
               {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-              <h3 className="font-semibold text-sm">{domain?.name || 'Unassigned'}</h3>
+              <h3 className="font-semibold text-sm">{domainName}</h3>
               <Badge variant="secondary" className="text-xs">
                 {domainPrograms.length} program{domainPrograms.length !== 1 ? 's' : ''}
               </Badge>

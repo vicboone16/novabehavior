@@ -21,7 +21,7 @@ export function useSkillPrograms(studentId: string) {
 
     const { data, error } = await supabase
       .from('skill_programs')
-      .select('*, domain:domains(id, name)')
+      .select('*, domain:domains(id, name), top_level_domain:program_domains(id, name), subdomain:program_subdomains(id, name)')
       .eq('student_id', studentId)
       .eq('active', true)
       .order('created_at', { ascending: false });
