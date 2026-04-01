@@ -7,7 +7,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ═══════════════════════════════════════════════════════════
+// PROMPT LIBRARY — each report type has its own clinical prompt
+// ═══════════════════════════════════════════════════════════
+
 const PROMPTS: Record<string, string> = {
+
+  // ─── FULL CLINICAL / FBA ───
   full_clinical: `You are a Board Certified Behavior Analyst generating a clinical behavioral assessment report.
 
 Use ONLY the provided structured data. Do not hallucinate or invent data.
@@ -32,7 +38,7 @@ STYLE RULES:
 - Use natural professional language
 
 OUTPUT FORMAT:
-Return valid JSON with this structure:
+Return valid JSON:
 {
   "title": "BOPS Behavioral Intelligence Report",
   "sections": [
@@ -49,6 +55,7 @@ Return valid JSON with this structure:
   ]
 }`,
 
+  // ─── IEP ───
   iep: `You are a Board Certified Behavior Analyst writing a concise IEP-compliant behavioral summary.
 
 Use ONLY the provided structured data. Write in IEP-appropriate language.
@@ -68,6 +75,7 @@ Return valid JSON:
   ]
 }`,
 
+  // ─── PARENT ───
   parent: `You are a behavioral specialist writing a parent-friendly summary of a child's behavioral assessment.
 
 Use ONLY the provided data. Write in warm, accessible language. Avoid jargon.
@@ -85,6 +93,7 @@ Return valid JSON:
   ]
 }`,
 
+  // ─── CLINICIAN QUICK (SOAP) ───
   clinician_quick: `You are a BCBA writing a SOAP-style clinician quick summary.
 
 Use ONLY the provided data. Be terse and clinical.
@@ -101,47 +110,226 @@ Return valid JSON:
   ]
 }`,
 
-  master_clinical: `You are a senior Board Certified Behavior Analyst generating a comprehensive Clinical Narrative Engine™ Master Report.
-
-This master report integrates findings from multiple clinical tools:
-- BOPS behavioral profiling (archetypes, indices, domain scores)
-- Clinical indices (Storm, Escalation, Hidden Need, Sensory Load, Power Conflict, Social Complexity, Recovery Burden)
-- Placement intelligence (CFI models, best fit)
-- Clinical narrative recommendations
+  // ─── MASKING & CAMOUFLAGE INDEX™ (Standalone) ───
+  masking_camouflage: `You are a senior clinical psychologist generating a Masking & Camouflage Index™ report.
 
 Use ONLY the provided structured data. Do not hallucinate.
 
-INSTRUCTIONS:
-1. Write an integrated clinical story, not separate tool outputs stapled together.
-2. Generate identifying information section from provided data.
-3. List assessment tools administered.
-4. Write an executive summary answering: What profile is emerging? What is being missed? What should happen next?
-5. Write a section on the behavioral archetype profile with clinical interpretation.
-6. Write a section on clinical indices with severity and interference analysis.
-7. Write an integrated clinical interpretation paragraph tying everything together.
-8. Generate categorized intervention recommendations:
-   - Immediate clinical priorities (2-4 most urgent)
-   - Classroom/school supports
-   - Parent training/caregiver supports
-   - Further assessment recommendations
+CLINICAL RULES:
+- If total masking score is 72-95: describe as "moderate" masking, recommend increased observation across settings, monitoring post-demand fatigue, gathering cross-informant discrepancies.
+- If total masking score is 96+: describe as "elevated/high" masking, recommend full autism-informed differential evaluation, assess internalized distress/anxiety, review home-school discrepancy.
+- If Internalized Distress Risk is flagged: add language about emotional suppression, anxiety/internalizing symptoms, and emotional check-ins.
+- If Home-School Discrepancy is flagged: add language about setting-based behavior differences and after-school dysregulation.
+- If Missed ASD Risk is flagged: add concern for under-recognized neurodevelopmental presentation.
+- Reference the top 3 masking domains by name.
 
-STYLE: Professional clinical narrative. No emojis. Paragraph format with clear headers.
+STYLE: Professional clinical narrative. Paragraph format. No emojis.
+
+OUTPUT FORMAT:
+Return valid JSON:
+{
+  "title": "Masking & Camouflage Index™ Report",
+  "sections": [
+    {"key":"identifying_info","title":"Identifying Information","text":"..."},
+    {"key":"reason","title":"Reason for Assessment","text":"..."},
+    {"key":"masking_summary","title":"Masking & Camouflage Summary","text":"..."},
+    {"key":"domain_analysis","title":"Domain-Level Analysis","text":"..."},
+    {"key":"flags","title":"Clinical Flags","text":"..."},
+    {"key":"recommendations","title":"Recommendations","text":"..."}
+  ]
+}`,
+
+  // ─── NEURODIVERGENT ARCHETYPE PROFILER™ (Standalone) ───
+  archetype_profiler: `You are a neurodevelopmental clinician generating a Neurodivergent Archetype Profiler™ report.
+
+Use ONLY the provided structured data. Do not hallucinate.
+
+ARCHETYPE INTERPRETATION RULES:
+- Masked Observer: child studies social environments carefully, relies on observation/performance rather than intuitive ease.
+- Sensory Seeker: nervous system seeks input/movement/stimulation, may be mistaken for impulsivity.
+- Overwhelmed Reactor: meaningful load sensitivity, distress visible when demands exceed regulation capacity.
+- Misread Leader: autonomy/intensity/assertiveness may be misread as opposition.
+- Silent Processor: internal processing style overlooked in fast-paced/verbally demanding settings.
+
+Describe primary and secondary archetypes with clinical interpretation. Humanize the findings.
+
+STYLE: Professional, empathetic. Paragraph format. No emojis.
+
+OUTPUT FORMAT:
+Return valid JSON:
+{
+  "title": "Neurodivergent Archetype Profiler™ Report",
+  "sections": [
+    {"key":"identifying_info","title":"Identifying Information","text":"..."},
+    {"key":"archetype_summary","title":"Archetype Summary","text":"..."},
+    {"key":"primary_interpretation","title":"Primary Archetype Interpretation","text":"..."},
+    {"key":"secondary_interpretation","title":"Secondary Archetype Interpretation","text":"..."},
+    {"key":"clinical_implications","title":"Clinical Implications","text":"..."},
+    {"key":"recommendations","title":"Recommendations","text":"..."}
+  ]
+}`,
+
+  // ─── BEHAVIOR MISINTERPRETATION INDEX™ (Standalone) ───
+  misinterpretation_index: `You are a behavioral clinician generating a Behavior Misinterpretation Index™ report.
+
+Use ONLY the provided structured data. Do not hallucinate.
+
+TRANSLATION RULES:
+- If top pattern is "Defiance": behavior may reflect autonomy needs, confusion, overwhelm, or communication difficulty.
+- If "Noncompliance": may be linked to executive functioning, unclear expectations, slow processing, demand-capacity mismatch.
+- If "Aggression": may reflect dysregulation, sensory overload, accumulated frustration rather than goal-directed harm.
+- If "Avoidance": may reflect anxiety, overwhelm, or low confidence rather than simple refusal.
+
+Describe what adults may be getting wrong and alternative explanations.
+
+STYLE: Professional clinical narrative. No emojis.
+
+OUTPUT FORMAT:
+Return valid JSON:
+{
+  "title": "Behavior Misinterpretation Index™ Report",
+  "sections": [
+    {"key":"identifying_info","title":"Identifying Information","text":"..."},
+    {"key":"misinterpretation_summary","title":"Misinterpretation Summary","text":"..."},
+    {"key":"pattern_analysis","title":"Pattern Analysis","text":"..."},
+    {"key":"alternative_explanations","title":"Alternative Explanations","text":"..."},
+    {"key":"recommendations","title":"Recommendations","text":"..."}
+  ]
+}`,
+
+  // ─── PARENT EFFECTIVENESS FORMULA™ (Standalone) ───
+  parent_effectiveness: `You are a clinical behaviorist generating a Parent Effectiveness Formula™ report.
+
+Use ONLY the provided structured data. Do not hallucinate.
+
+PROFILE LANGUAGE RULES:
+- High knowledge / low application: understanding stronger than execution, need modeling and rehearsal.
+- Willing but overwhelmed: receptive but stress load interferes with follow-through.
+- Cultural mismatch: challenges reflect mismatch between treatment style and caregiver values.
+- Strong implementation potential: good coaching success potential with standard support.
+
+Sound predictive, not judgmental. Identify strengths and vulnerabilities.
+
+STYLE: Professional, empathetic, solution-oriented. No emojis.
+
+OUTPUT FORMAT:
+Return valid JSON:
+{
+  "title": "Parent Effectiveness Formula™ Report",
+  "sections": [
+    {"key":"identifying_info","title":"Identifying Information","text":"..."},
+    {"key":"effectiveness_summary","title":"Effectiveness Summary","text":"..."},
+    {"key":"strengths","title":"Relative Strengths","text":"..."},
+    {"key":"vulnerabilities","title":"Primary Vulnerabilities","text":"..."},
+    {"key":"profile_interpretation","title":"Profile Interpretation","text":"..."},
+    {"key":"recommendations","title":"Recommendations","text":"..."}
+  ]
+}`,
+
+  // ─── BCBA PARENT TRAINING COMPETENCY EVALUATOR™ (Standalone) ───
+  bcba_ptce: `You are a supervising BCBA generating a Parent Training Competency Evaluator™ report.
+
+Use ONLY the provided structured data. Do not hallucinate.
+
+BARRIER SUBTYPE RULES:
+- Passive resistance: engagement present but follow-through inconsistent.
+- Emotional resistance: emotional readiness interferes with feedback use.
+- Skill-based barrier: willing but lacks procedural fluency.
+- Overwhelmed but willing: buy-in present but capacity strained.
+- Cultural/value conflict: difficulty may reflect treatment-fit concerns.
+
+TIER RULES:
+- Tier 4: Barrier-first intervention — reduce fidelity expectations, address stress first.
+- Tier 3: Intensive coaching — increase direct modeling, real-time checks.
+- Tier 2: Structured coaching — written carryover plans, practice goals.
+- Tier 1/Advanced: shift toward consultation and refinement.
+
+Be clinician-forward and concrete.
+
+STYLE: Clinical, actionable. No emojis.
+
+OUTPUT FORMAT:
+Return valid JSON:
+{
+  "title": "BCBA Parent Training Competency Evaluator™ Report",
+  "sections": [
+    {"key":"identifying_info","title":"Identifying Information","text":"..."},
+    {"key":"competency_summary","title":"Competency Summary","text":"..."},
+    {"key":"strengths","title":"Caregiver Strengths","text":"..."},
+    {"key":"barriers","title":"Barriers","text":"..."},
+    {"key":"tier_assignment","title":"Coaching Tier Assignment","text":"..."},
+    {"key":"recommendations","title":"Recommendations","text":"..."}
+  ]
+}`,
+
+  // ─── MASTER CLINICAL NARRATIVE ENGINE™ ───
+  master_clinical: `You are a senior Board Certified Behavior Analyst generating a comprehensive Clinical Narrative Engine™ Master Report.
+
+This master report integrates findings from FIVE clinical tools into ONE integrated clinical story:
+1. Masking & Camouflage Index™
+2. Neurodivergent Archetype Profiler™
+3. Behavior Misinterpretation Index™
+4. Parent Effectiveness Formula™
+5. BCBA Parent Training Competency Evaluator™
+
+Plus BOPS behavioral profiling (archetypes, indices, domain scores), clinical indices, and placement intelligence.
+
+Use ONLY the provided structured data. Do not hallucinate.
+
+CRITICAL: This should read like ONE integrated clinical story, NOT five separate tools stapled together.
+
+SECTION INSTRUCTIONS:
+
+1. IDENTIFYING INFORMATION: Child name, DOB/age, date, assessor, settings, informants from data.
+
+2. REASON FOR ASSESSMENT: "This integrated clinical summary was completed to better understand the child's neurodevelopmental presentation, potential masking patterns, adult interpretation of behavior, and parent training readiness factors influencing intervention success."
+
+3. ASSESSMENT TOOLS ADMINISTERED: List all 5 tools plus any BOPS tools used.
+
+4. SUMMARY OF MAJOR FINDINGS (Executive Summary): Answer: What profile is emerging? What is being missed? What is the caregiver capacity picture? What should happen next? Use template: "Results suggest a presentation characterized by [masking level], [distress pattern], and [misinterpretation pattern]. The child's profile is most consistent with a [Primary Archetype] presentation..."
+
+5. SECTION A - MASKING & CAMOUFLAGE SUMMARY: Pull total masking score, severity, top 3 domains, flag logic. Add flag language for Missed ASD Risk, Internalized Distress Risk, Home-School Discrepancy.
+
+6. SECTION B - NEURODIVERGENT ARCHETYPE SUMMARY: Describe primary and secondary archetypes with humanized clinical interpretation.
+
+7. SECTION C - BEHAVIOR MISINTERPRETATION SUMMARY: Explain what adults may be getting wrong. Apply translation rules for Defiance, Noncompliance, Aggression, Avoidance patterns.
+
+8. SECTION D - PARENT EFFECTIVENESS SUMMARY: Sound predictive not judgmental. Apply profile language for knowledge/application/regulation/cultural fit/capacity/environment.
+
+9. SECTION E - BCBA PARENT TRAINING COMPETENCY SUMMARY: Clinician-forward. Apply barrier subtype and tier assignment language.
+
+10. INTEGRATED CLINICAL INTERPRETATION: The most important paragraph. Pull everything together: "Taken together, current findings suggest that the child's presentation is likely more complex than a surface-level behavior interpretation alone would indicate..."
+
+11. INTERVENTION RECOMMENDATIONS organized as:
+    - Immediate Clinical Priorities (2-4 most urgent)
+    - Classroom/School Supports
+    - Parent Training/Caregiver Supports
+    - Regulation/Sensory Supports
+    - Further Assessment Recommendations
+
+12. PROGNOSIS
+
+STYLE: Professional clinical narrative. Paragraph format. No emojis. No raw data dumps.
 
 OUTPUT FORMAT:
 Return valid JSON:
 {
   "title": "Clinical Narrative Engine™ Master Report",
   "sections": [
-    {"key":"identifying_info","title":"Identifying Information","text":"..."},
-    {"key":"reason_for_assessment","title":"Reason for Assessment","text":"..."},
-    {"key":"tools_administered","title":"Assessment Tools Administered","text":"..."},
-    {"key":"executive_summary","title":"Summary of Major Findings","text":"..."},
-    {"key":"archetype_profile","title":"Behavioral Archetype Profile","text":"..."},
-    {"key":"clinical_indices","title":"Clinical Indices Analysis","text":"..."},
+    {"key":"identifying_info","title":"I. Identifying Information","text":"..."},
+    {"key":"reason_for_assessment","title":"II. Reason for Assessment","text":"..."},
+    {"key":"tools_administered","title":"III. Assessment Tools Administered","text":"..."},
+    {"key":"executive_summary","title":"IV. Summary of Major Findings","text":"..."},
+    {"key":"masking_summary","title":"Section A. Masking & Camouflage Summary","text":"..."},
+    {"key":"archetype_summary","title":"Section B. Neurodivergent Archetype Summary","text":"..."},
+    {"key":"misinterpretation_summary","title":"Section C. Behavior Misinterpretation Summary","text":"..."},
+    {"key":"parent_effectiveness","title":"Section D. Parent Effectiveness Summary","text":"..."},
+    {"key":"bcba_ptce","title":"Section E. BCBA Parent Training Competency Summary","text":"..."},
     {"key":"integrated_interpretation","title":"Integrated Clinical Interpretation","text":"..."},
     {"key":"immediate_priorities","title":"Immediate Clinical Priorities","text":"..."},
     {"key":"classroom_supports","title":"Classroom & School Supports","text":"..."},
     {"key":"parent_training","title":"Parent Training & Caregiver Supports","text":"..."},
+    {"key":"regulation_sensory","title":"Regulation & Sensory Supports","text":"..."},
     {"key":"further_assessment","title":"Further Assessment Recommendations","text":"..."},
     {"key":"prognosis","title":"Prognosis","text":"..."}
   ]
@@ -158,7 +346,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Validate user
     let userId: string | null = null;
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
@@ -181,6 +368,15 @@ serve(async (req) => {
       });
     }
 
+    // Validate report_type
+    const validTypes = Object.keys(PROMPTS);
+    if (!validTypes.includes(report_type)) {
+      return new Response(JSON.stringify({ error: `Invalid report_type. Valid: ${validTypes.join(", ")}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // 1) Get BOPS dashboard data
     const { data: dashData } = await supabaseAdmin
       .from("v_student_bops_dashboard")
@@ -188,9 +384,11 @@ serve(async (req) => {
       .eq("student_id", student_id)
       .maybeSingle();
 
-    // 2) Get clinical narrative if master report
+    // 2) Get clinical narrative if master/standalone report
     let narrativeText = null;
-    if (report_type === "master_clinical" || include_narrative) {
+    const narrativeTypes = ["master_clinical", "masking_camouflage", "archetype_profiler",
+      "misinterpretation_index", "parent_effectiveness", "bcba_ptce"];
+    if (narrativeTypes.includes(report_type) || include_narrative) {
       const { data: narrative } = await supabaseAdmin.rpc(
         "generate_clinical_narrative_text",
         { p_student_id: student_id },
@@ -227,6 +425,7 @@ serve(async (req) => {
       best_fit_band: dashData?.best_fit_band,
       clinical_narrative: narrativeText,
       recommendations,
+      report_type,
     };
 
     // 5) Call AI
@@ -238,7 +437,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = PROMPTS[report_type] || PROMPTS.full_clinical;
+    const systemPrompt = PROMPTS[report_type];
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -260,19 +459,16 @@ serve(async (req) => {
       console.error("AI gateway error:", aiResp.status, errText);
       if (aiResp.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (aiResp.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits depleted" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "AI generation failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -282,7 +478,7 @@ serve(async (req) => {
     try {
       parsed = JSON.parse(content);
     } catch {
-      parsed = { title: "BOPS Report", sections: [{ key: "full_text", title: "Report", text: content }] };
+      parsed = { title: "Report", sections: [{ key: "full_text", title: "Report", text: content }] };
     }
 
     // 6) Store report
@@ -298,13 +494,12 @@ serve(async (req) => {
         p_date_end: null,
         p_date_range_label: null,
         p_generated_by: userId,
-        p_ai_prompt_version: "v2-nova",
+        p_ai_prompt_version: "v3-narrative-engine",
       },
     );
 
     if (saveError) {
       console.error("Save error:", saveError);
-      // Return AI result even if save fails
       return new Response(
         JSON.stringify({ ok: true, report: parsed, save_error: saveError.message }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
