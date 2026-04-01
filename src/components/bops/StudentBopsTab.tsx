@@ -188,8 +188,11 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
               </div>
             )}
             {sessionId && (
-              <Button size="sm" variant="outline" disabled={runCfi.isPending}
-                onClick={() => runCfi.mutate({ studentId, sessionId })}>
+              <Button size="sm" variant="outline" type="button" disabled={runCfi.isPending}
+                onClick={() => {
+                  console.log('[BOPS] Run CFI:', studentId, sessionId);
+                  runCfi.mutate({ studentId, sessionId });
+                }}>
                 {runCfi.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5 mr-1" />}
                 Run CFI
               </Button>
