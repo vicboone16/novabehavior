@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers, Check, Copy, Trash2, Star, Power } from 'lucide-react';
+import { Loader2, Play, Pause, RefreshCw, BarChart3, Zap, ChevronDown, Shield, Brain, Target, Layers, Check, Copy, Trash2, Star, Power, FileText, BookOpen } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,9 @@ import { useNavigate } from 'react-router-dom';
 import { ManualBopsScoreEntry } from '@/components/bops/ManualBopsScoreEntry';
 import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
 import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
+import { BopsRecommendationViewer } from '@/components/bops/BopsRecommendationViewer';
 import { useGenerateBopsReport, useGenerateBopsReportForSession, useBopsReports } from '@/hooks/useBopsReports';
+import { useGenerateMasterReport } from '@/hooks/useClinicalNarrative';
 
 const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
