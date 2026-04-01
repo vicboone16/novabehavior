@@ -10,6 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
   useStudentBopsDashboard, useToggleBops, useRunCfi, useGenerateRecommendations,
   useAcceptAndActivate, useActivateProgramming, useDeactivateProgramming,
   useSetDayStateAndPlan, useScoreAssessment, useFinalizeAndUnlock,
@@ -26,7 +30,7 @@ import { BopsReportWorkspace } from '@/components/bops/BopsReportWorkspace';
 import { BopsSessionHistory } from '@/components/bops/BopsSessionHistory';
 import { BopsRecommendationViewer } from '@/components/bops/BopsRecommendationViewer';
 import { useGenerateBopsReport, useGenerateBopsReportForSession, useBopsReports } from '@/hooks/useBopsReports';
-import { useGenerateMasterReport } from '@/hooks/useClinicalNarrative';
+import { useGenerateMasterReport, REPORT_TYPES } from '@/hooks/useClinicalNarrative';
 
 const dayStateColors: Record<string, string> = {
   red: 'bg-red-500 text-white',
