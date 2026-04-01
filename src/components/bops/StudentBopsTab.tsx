@@ -204,27 +204,27 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
         <Card>
           <CardContent className="pt-4">
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => navigate('/bops')}>
+              <Button size="sm" variant="outline" type="button" onClick={() => navigate('/bops')}>
                 Open Full Assessment
               </Button>
               {sessionId && (
                 <>
-                  <Button size="sm" variant="outline" disabled={scoreAssessment.isPending}
+                  <Button size="sm" variant="outline" type="button" disabled={scoreAssessment.isPending}
                     onClick={() => scoreAssessment.mutate({ studentId, sessionId })}>
                     {scoreAssessment.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
                     Re-score
                   </Button>
-                  <Button size="sm" variant="outline" disabled={finalizeUnlock.isPending}
+                  <Button size="sm" variant="outline" type="button" disabled={finalizeUnlock.isPending}
                     onClick={() => finalizeUnlock.mutate({ studentId, sessionId })}>
                     {finalizeUnlock.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Power className="w-3.5 h-3.5 mr-1" />}
                     Finalize + Unlock
                   </Button>
-                  <Button size="sm" variant="outline" disabled={genRecs.isPending}
+                  <Button size="sm" variant="outline" type="button" disabled={genRecs.isPending}
                     onClick={() => genRecs.mutate({ studentId, sessionId })}>
                     {genRecs.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Zap className="w-3.5 h-3.5 mr-1" />}
                     Generate Recommendations
                   </Button>
-                  <Button size="sm" disabled={acceptActivate.isPending}
+                  <Button size="sm" type="button" disabled={acceptActivate.isPending}
                     onClick={() => acceptActivate.mutate({ studentId, sessionId })}>
                     {acceptActivate.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1" />}
                     Accept + Activate
