@@ -34623,6 +34623,101 @@ export type Database = {
           },
         ]
       }
+      nydoe_report_templates: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sections: Json
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sections?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sections?: Json
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      nydoe_reports: {
+        Row: {
+          agency_id: string | null
+          branding: Json | null
+          created_at: string
+          created_by: string | null
+          header_data: Json
+          id: string
+          last_edited_by: string | null
+          report_type: string
+          sections_data: Json
+          status: string
+          student_id: string
+          template_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          branding?: Json | null
+          created_at?: string
+          created_by?: string | null
+          header_data?: Json
+          id?: string
+          last_edited_by?: string | null
+          report_type?: string
+          sections_data?: Json
+          status?: string
+          student_id: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          branding?: Json | null
+          created_at?: string
+          created_by?: string | null
+          header_data?: Json
+          id?: string
+          last_edited_by?: string | null
+          report_type?: string
+          sections_data?: Json
+          status?: string
+          student_id?: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nydoe_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "nydoe_report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objective_merge_map: {
         Row: {
           created_at: string
