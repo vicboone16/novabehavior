@@ -4,6 +4,22 @@ import { toast } from 'sonner';
 
 const db = supabase as any;
 
+// ─── Report type definitions ───
+export const REPORT_TYPES = [
+  { key: 'master_clinical', label: 'Master Clinical Report', description: 'Integrated narrative across all 5 tools', icon: 'brain' },
+  { key: 'full_clinical', label: 'Full Clinical / FBA', description: 'Comprehensive behavioral assessment', icon: 'file-text' },
+  { key: 'iep', label: 'IEP Summary', description: 'Condensed IEP-compliant format', icon: 'graduation-cap' },
+  { key: 'parent', label: 'Parent Summary', description: 'Warm, accessible parent version', icon: 'heart' },
+  { key: 'clinician_quick', label: 'Clinician Quick (SOAP)', description: 'Terse SOAP-style summary', icon: 'stethoscope' },
+  { key: 'masking_camouflage', label: 'Masking & Camouflage Index™', description: 'Standalone masking report', icon: 'eye-off' },
+  { key: 'archetype_profiler', label: 'Neurodivergent Archetype Profiler™', description: 'Standalone archetype report', icon: 'users' },
+  { key: 'misinterpretation_index', label: 'Behavior Misinterpretation Index™', description: 'Standalone misinterpretation report', icon: 'alert-triangle' },
+  { key: 'parent_effectiveness', label: 'Parent Effectiveness Formula™', description: 'Standalone parent effectiveness report', icon: 'home' },
+  { key: 'bcba_ptce', label: 'BCBA Parent Training Competency™', description: 'Standalone PTCE report', icon: 'clipboard-check' },
+] as const;
+
+export type ClinicalReportType = typeof REPORT_TYPES[number]['key'];
+
 // ─── Get clinical narrative text (server-generated) ───
 export function useClinicalNarrativeText(studentId: string | undefined) {
   return useQuery({
@@ -51,7 +67,7 @@ export function useClinicalNarrativeMasterReport(studentId: string | undefined) 
   });
 }
 
-// ─── Generate AI-powered master report via edge function ───
+// ─── Generate any report type via edge function ───
 export function useGenerateMasterReport() {
   const qc = useQueryClient();
   return useMutation({
@@ -60,7 +76,7 @@ export function useGenerateMasterReport() {
       reportType = 'master_clinical',
     }: {
       studentId: string;
-      reportType?: string;
+      reportType?: ClinicalReportType | string;
     }) => {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
@@ -95,13 +111,13 @@ export function useGenerateMasterReport() {
         throw new Error(err.error || 'Report generation failed');
       }
 
-      const result = await resp.json();
-      return result;
+      return await resp.json();
     },
     onSuccess: (result, vars) => {
       qc.invalidateQueries({ queryKey: ['bops-reports', vars.studentId] });
       qc.invalidateQueries({ queryKey: ['clinical-narrative-text', vars.studentId] });
-      toast.success('Master report generated');
+      const typeLabel = REPORT_TYPES.find(r => r.key === vars.reportType)?.label || 'Report';
+      toast.success(`${typeLabel} generated`);
     },
     onError: (err: any) => {
       if (!err.message?.includes('Rate limited') && !err.message?.includes('Credits depleted')) {
