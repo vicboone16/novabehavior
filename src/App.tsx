@@ -61,6 +61,7 @@ const IEPLibrary = lazy(() => import("./pages/IEPLibrary"));
 const BehaviorLibraryFull = lazy(() => import("./pages/BehaviorLibraryFull"));
 const Academy = lazy(() => import("./pages/Academy"));
 const InterventionBuilder = lazy(() => import("./pages/InterventionBuilder"));
+const NydoeReportEditor = lazy(() => import("./components/reports/NydoeReportEditor"));
 const ClinicalLibraryLayout = lazy(() => import("./pages/clinical-library/ClinicalLibraryLayout"));
 const ClinicalCollectionsPage = lazy(() => import("./pages/clinical-library/ClinicalCollectionsPage"));
 const GoalBanksPage = lazy(() => import("./pages/clinical-library/GoalBanksPage"));
@@ -483,6 +484,7 @@ const App = () => {
               <Route path="/students" element={<Students />} />
               <Route path="/students/:studentId" element={<StudentProfile />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/nydoe/:reportId" element={<NydoeReportEditor />} />
               <Route path="/assessment" element={<AssessmentDashboard />} />
               <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
