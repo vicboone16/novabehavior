@@ -8,6 +8,7 @@ const QK = {
   reports: (studentId?: string) => ['bops-reports', studentId],
   workspace: (reportId?: string) => ['bops-report-workspace', reportId],
   versions: (sectionId?: string) => ['bops-report-versions', sectionId],
+  reportMeta: (reportId?: string) => ['bops-report-meta', reportId],
 };
 
 // ─── List reports for a student ───
@@ -23,6 +24,23 @@ export function useBopsReports(studentId: string | undefined) {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as any[];
+    },
+  });
+}
+
+// ─── Load report metadata (including source_session_id) ───
+export function useBopsReportMeta(reportId: string | undefined) {
+  return useQuery({
+    queryKey: QK.reportMeta(reportId),
+    enabled: !!reportId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('bops_reports')
+        .select('id, student_id, source_session_id, lock_to_source_session, report_type, status, created_at, updated_at')
+        .eq('id', reportId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
     },
   });
 }
@@ -71,7 +89,7 @@ export function useCreateBopsReport() {
         p_title: title || 'BOPS Behavioral Intelligence Report',
       });
       if (error) throw error;
-      return data as string; // report_id
+      return data as string;
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: QK.reports(vars.studentId) });
@@ -90,7 +108,7 @@ export function useGenerateBopsReport() {
         p_student_id: studentId,
       });
       if (error) throw error;
-      return data as string; // report_id
+      return data as string;
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: QK.reports(vars.studentId) });
@@ -110,13 +128,83 @@ export function useGenerateBopsReportForSession() {
         p_session_id: sessionId,
       });
       if (error) throw error;
-      return data as string; // report_id
+      return data as string;
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: QK.reports(vars.studentId) });
       toast.success('Report generated from session');
     },
     onError: (err: any) => toast.error('Failed to generate report: ' + err.message),
+  });
+}
+
+// ─── Regenerate a single section from report's source session ───
+export function useRegenerateBopsSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, sectionKey, replaceExisting }: {
+      reportId: string; sectionKey: string; replaceExisting: boolean;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await db.rpc('regenerate_bops_report_section', {
+        p_report_id: reportId,
+        p_section_key: sectionKey,
+        p_replace_existing: replaceExisting,
+        p_current_user_id: user?.id || null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: QK.workspace(vars.reportId) });
+      toast.success('Section regenerated');
+    },
+    onError: (err: any) => toast.error('Regeneration failed: ' + err.message),
+  });
+}
+
+// ─── Regenerate full report from its source session ───
+export function useRegenerateBopsFullReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, replaceExisting }: { reportId: string; replaceExisting: boolean }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await db.rpc('regenerate_bops_full_report_from_source_session', {
+        p_report_id: reportId,
+        p_replace_existing: replaceExisting,
+        p_current_user_id: user?.id || null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: QK.workspace(vars.reportId) });
+      toast.success('Full report regenerated from source session');
+    },
+    onError: (err: any) => toast.error('Regeneration failed: ' + err.message),
+  });
+}
+
+// ─── Change the source session of an existing report ───
+export function useChangeBopsReportSourceSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, sessionId }: { reportId: string; sessionId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await db.rpc('change_bops_report_source_session', {
+        p_report_id: reportId,
+        p_session_id: sessionId,
+        p_current_user_id: user?.id || null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: QK.workspace(vars.reportId) });
+      qc.invalidateQueries({ queryKey: QK.reportMeta(vars.reportId) });
+      toast.success('Source session changed');
+    },
+    onError: (err: any) => toast.error('Failed to change source session: ' + err.message),
   });
 }
 
@@ -253,7 +341,7 @@ export function useInsertManualBopsScores() {
         p_overwrite_existing_manual: overwriteExistingManual || false,
       });
       if (error) throw error;
-      return data as string; // session_id
+      return data as string;
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['bops-intelligence-dashboard', vars.studentId] });
