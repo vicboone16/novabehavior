@@ -113,7 +113,7 @@ export async function exportNydoeDocx(
   }
 
   children.push(p(header.reportSubtitle || 'Initial Assessment Summary', {
-    heading: HeadingLevel.HEADING_2, size: 13, alignment: AlignmentType.CENTER,
+    size: 13, alignment: AlignmentType.CENTER,
     spacing: { after: 200 },
   }));
 
