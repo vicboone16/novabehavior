@@ -408,7 +408,7 @@ export function ProgramHierarchyView({
           <CollapsibleTrigger className="w-full">
             <CardContent className="py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30">
               {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-              <h3 className="font-semibold text-sm">{domain?.name || 'Unassigned'}</h3>
+              <h3 className="font-semibold text-sm">{domainName}</h3>
               <Badge variant="secondary" className="text-xs">
                 {domainPrograms.length} program{domainPrograms.length !== 1 ? 's' : ''}
               </Badge>
