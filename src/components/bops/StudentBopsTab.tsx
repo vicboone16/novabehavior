@@ -97,7 +97,10 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
                 <Switch
                   checked={!!d.bops_enabled}
                   disabled={toggleBops.isPending}
-                  onCheckedChange={c => toggleBops.mutate({ studentId, enable: c })}
+                  onCheckedChange={c => {
+                    console.log('[BOPS] Toggle:', c, 'studentId:', studentId);
+                    toggleBops.mutate({ studentId, enable: c });
+                  }}
                 />
               </div>
               <StatusBadge label="Assessment" value={d.bops_assessment_status} />
