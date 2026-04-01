@@ -145,7 +145,7 @@ export function useStudentNydoeReports(studentId?: string) {
     if (!error && data) {
       setReports(data.map(d => ({
         ...d,
-        header_data: d.header_data as NydoeHeaderData,
+        header_data: d.header_data as unknown as NydoeHeaderData,
         sections_data: (d.sections_data || []) as { key: string; content: string }[],
       })) as NydoeReport[]);
     }

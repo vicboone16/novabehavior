@@ -137,7 +137,7 @@ export async function exportNydoeDocx(
 
     // Section heading
     children.push(p(section.title, {
-      heading: HeadingLevel.HEADING_2, bold: true, size: 12,
+      bold: true, size: 12,
       spacing: { before: 200, after: 100 },
     }));
 
