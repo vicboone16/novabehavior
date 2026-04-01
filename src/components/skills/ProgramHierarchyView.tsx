@@ -339,7 +339,7 @@ export function ProgramHierarchyView({
                   <DropdownMenuItem onClick={() => onEditProgram(program)}>
                     <Pencil className="w-3 h-3 mr-2" /> Edit Program
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setMoveProgram({ id: program.id, name: program.name, domainId: program.domain_id })}>
+                  <DropdownMenuItem onClick={() => setMoveProgram({ id: program.id, name: program.name, domainId: program.top_level_domain_id || program.domain_id })}>
                     <FolderInput className="w-3 h-3 mr-2" /> Move to Domain
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
