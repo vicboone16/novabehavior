@@ -157,6 +157,11 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
           </CardContent>
         </Card>
 
+        {/* Recommendation Viewer Panel */}
+        {showRecommendations && (
+          <BopsRecommendationViewer studentId={studentId} />
+        )}
+
         {/* Section 2: Profile Summary */}
         {d.calculated_training_name && (
           <Card>
