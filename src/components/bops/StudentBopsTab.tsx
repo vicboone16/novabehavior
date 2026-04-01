@@ -74,7 +74,9 @@ export function StudentBopsTab({ studentId }: { studentId: string }) {
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const generateReport = useGenerateBopsReport();
   const generateForSession = useGenerateBopsReportForSession();
+  const generateMaster = useGenerateMasterReport();
   const { data: reports } = useBopsReports(studentId);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>;
 
