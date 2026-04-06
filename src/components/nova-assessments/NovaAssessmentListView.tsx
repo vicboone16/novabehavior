@@ -61,6 +61,7 @@ export function NovaAssessmentListView({
   onStartSession,
   onViewReport,
   onViewMasterReport,
+  onViewMasterGenerator,
 }: Props) {
   const { data: catalog, isLoading: catalogLoading } = useNovaAssessmentCatalog();
   const { data: sessions, isLoading: sessionsLoading } = useNovaStudentSessions(studentId);
