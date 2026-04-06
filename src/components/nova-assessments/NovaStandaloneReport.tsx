@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Brain, BarChart3, AlertTriangle, CheckCircle2, FileText,
   Users, Zap, Shield, Heart, Eye
