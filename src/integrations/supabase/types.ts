@@ -81842,6 +81842,14 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: undefined
       }
+      nova_assign_mci_profile: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      nova_assign_ptce_profile: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       nova_assign_sbrds_profile: {
         Args: { p_session_id: string }
         Returns: undefined
