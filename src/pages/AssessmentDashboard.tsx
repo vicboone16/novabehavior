@@ -46,7 +46,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 import BopsEngine from '@/pages/BopsEngine';
-import { Shield } from 'lucide-react';
+import { Shield, Sparkles } from 'lucide-react';
+import { NovaAssessmentsDashboard } from '@/components/nova-assessments/NovaAssessmentsDashboard';
 
 // FBA Workflow Steps
 const FBA_WORKFLOW_STEPS = [
