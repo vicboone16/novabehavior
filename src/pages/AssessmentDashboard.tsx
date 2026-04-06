@@ -533,6 +533,10 @@ export default function AssessmentDashboard() {
               <Shield className="w-3 h-3" />
               BOPS
             </TabsTrigger>
+            <TabsTrigger value="nova" className="gap-1 text-xs">
+              <Sparkles className="w-3 h-3" />
+              Nova
+            </TabsTrigger>
           </TabsList>
 
           {/* Workflow Tab */}
