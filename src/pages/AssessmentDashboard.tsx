@@ -46,7 +46,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ComprehensiveAssessmentExport } from '@/components/ComprehensiveAssessmentExport';
 import { Student, FUNCTION_OPTIONS, BehaviorFunction } from '@/types/behavior';
 import BopsEngine from '@/pages/BopsEngine';
-import { Shield } from 'lucide-react';
+import { Shield, Sparkles } from 'lucide-react';
+import { NovaAssessmentsDashboard } from '@/components/nova-assessments/NovaAssessmentsDashboard';
 
 // FBA Workflow Steps
 const FBA_WORKFLOW_STEPS = [
@@ -531,6 +532,10 @@ export default function AssessmentDashboard() {
             <TabsTrigger value="bops" className="gap-1 text-xs">
               <Shield className="w-3 h-3" />
               BOPS
+            </TabsTrigger>
+            <TabsTrigger value="nova" className="gap-1 text-xs">
+              <Sparkles className="w-3 h-3" />
+              Nova
             </TabsTrigger>
           </TabsList>
 
@@ -1057,6 +1062,14 @@ export default function AssessmentDashboard() {
           </TabsContent>
           <TabsContent value="bops" className="space-y-4">
             <BopsEngine />
+          </TabsContent>
+          <TabsContent value="nova" className="space-y-4">
+            {selectedStudent && (
+              <NovaAssessmentsDashboard
+                studentId={selectedStudent.id}
+                studentName={selectedStudent.name}
+              />
+            )}
           </TabsContent>
         </Tabs>
       )}
