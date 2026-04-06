@@ -1063,6 +1063,14 @@ export default function AssessmentDashboard() {
           <TabsContent value="bops" className="space-y-4">
             <BopsEngine />
           </TabsContent>
+          <TabsContent value="nova" className="space-y-4">
+            {selectedStudent && (
+              <NovaAssessmentsDashboard
+                studentId={selectedStudent.id}
+                studentName={selectedStudent.name}
+              />
+            )}
+          </TabsContent>
         </Tabs>
       )}
     </div>
