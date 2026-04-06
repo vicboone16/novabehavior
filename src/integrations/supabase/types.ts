@@ -35057,6 +35057,7 @@ export type Database = {
       nova_report_snippets: {
         Row: {
           assessment_id: string | null
+          audience: string | null
           created_at: string
           id: string
           snippet_key: string
@@ -35067,6 +35068,7 @@ export type Database = {
         }
         Insert: {
           assessment_id?: string | null
+          audience?: string | null
           created_at?: string
           id?: string
           snippet_key: string
@@ -35077,6 +35079,7 @@ export type Database = {
         }
         Update: {
           assessment_id?: string | null
+          audience?: string | null
           created_at?: string
           id?: string
           snippet_key?: string
@@ -81863,17 +81866,49 @@ export type Database = {
         }
         Returns: number
       }
+      nova_generate_abrse_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
       nova_generate_assessment_summary: {
         Args: { p_session_id: string }
+        Returns: string
+      }
+      nova_generate_efdp_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
+      nova_generate_full_narrative: {
+        Args: { p_audience?: string; p_session_id: string }
         Returns: string
       }
       nova_generate_master_summary: {
         Args: { p_student_id: string }
         Returns: string
       }
+      nova_generate_mci_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
+      nova_generate_nap_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
+      nova_generate_ptce_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
       nova_generate_recommendations_for_session: {
         Args: { p_session_id: string; p_setting_type?: string }
         Returns: undefined
+      }
+      nova_generate_sbrds_v2: {
+        Args: { p_audience?: string; p_session_id: string }
+        Returns: string
+      }
+      nova_get_snippets: {
+        Args: { p_session_id: string; p_snippet_type: string }
+        Returns: string
       }
       nova_score_domain_assessment: {
         Args: { p_session_id: string }
