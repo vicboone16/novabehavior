@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   useNovaAssessmentReport,
   useNovaAbrseRecommendations,
@@ -17,7 +18,6 @@ import {
 } from '@/hooks/useNovaAssessments';
 import { NovaRecommendationPanel } from './NovaRecommendationPanel';
 import { NovaGoalsPanel } from './NovaGoalsPanel';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface Props {
   sessionId: string;
@@ -32,7 +32,6 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
   );
   const { data: fullNarrative } = useNovaFullNarrative(sessionId);
 
-  // Parse full narrative into sections
   const narrativeSections = useMemo(() => {
     if (!fullNarrative) return [];
     const sections: { title: string; content: string }[] = [];
@@ -77,8 +76,6 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
       </Card>
     );
   }
-
-  // narrativeSections already computed above
 
   return (
     <div className="space-y-4 max-w-4xl">
@@ -130,3 +127,146 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
         </TabsList>
 
         <TabsContent value="summary" className="space-y-4">
+          {narrativeSections.length > 0 ? (
+            narrativeSections.map((section, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    {section.title.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed">{section.content}</p>
+                </CardContent>
+              </Card>
+            ))
+          ) : report.summary_text ? (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Clinical Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed">{report.summary_text}</p>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {domainResults.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Domain Scores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {domainResults.map((d: any, i: number) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{d.domain_name || d.domain_code}</span>
+                        <div className="flex items-center gap-2">
+                          {d.band_label && <Badge variant="outline" className="text-[10px]">{d.band_label}</Badge>}
+                          <span className="font-mono">{d.avg_score?.toFixed(2) ?? 'N/A'}</span>
+                        </div>
+                      </div>
+                      <Progress value={d.avg_score ? (d.avg_score / 3) * 100 : 0} className="h-2" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {profiles.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  {assessmentCode === 'NAP' ? 'Archetypes' : 'Profile Classification'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {profiles.map((p: any, i: number) => (
+                    <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                      <Badge variant={p.is_primary ? 'default' : 'secondary'} className="text-xs">
+                        {p.is_primary ? 'Primary' : 'Secondary'}
+                      </Badge>
+                      <span className="text-sm font-medium">{p.profile_name}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {flags.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                  Clinical Flags
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {flags.map((f: any, i: number) => (
+                    <Badge key={i} variant="destructive" className="text-xs">
+                      {f.flag_name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {abrseRecs && abrseRecs.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Replacement Targets
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {abrseRecs.filter(r => r.target_code).map((rec, i) => (
+                    <div key={i} className="p-3 bg-muted/30 rounded-lg border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{rec.target_label}</span>
+                        <Badge variant="outline" className="text-[10px] capitalize">{rec.behavior_function}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Low item:</strong> {rec.item_text} (Score: {rec.raw_score})
+                      </p>
+                      <p className="text-xs">{rec.replacement_behavior}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="goals">
+          <NovaGoalsPanel sessionId={sessionId} assessmentSlug={assessmentCode} />
+        </TabsContent>
+
+        <TabsContent value="recommendations">
+          {report.student_id && (
+            <NovaRecommendationPanel
+              sessionId={sessionId}
+              studentId={report.student_id}
+              assessmentCode={assessmentCode}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
