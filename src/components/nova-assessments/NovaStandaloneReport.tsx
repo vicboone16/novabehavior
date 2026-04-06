@@ -76,29 +76,7 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
     );
   }
 
-  // Parse full narrative into sections
-  const narrativeSections = useMemo(() => {
-    if (!fullNarrative) return [];
-    const sections: { title: string; content: string }[] = [];
-    const parts = fullNarrative.split(/\n\n/);
-    let currentTitle = '';
-    let currentContent = '';
-    for (const part of parts) {
-      const lines = part.split('\n');
-      const firstLine = lines[0]?.trim();
-      if (['CLINICAL SUMMARY', 'DOMAIN ANALYSIS', 'PATTERN INSIGHTS', 'CLINICAL RECOMMENDATIONS',
-           'ARCHETYPE ANALYSIS', 'CLINICAL FLAGS', 'REPLACEMENT SKILL PRIORITIES',
-           'FIDELITY RISK', 'CULTURAL CONTEXT'].includes(firstLine)) {
-        if (currentTitle) sections.push({ title: currentTitle, content: currentContent.trim() });
-        currentTitle = firstLine;
-        currentContent = lines.slice(1).join(' ');
-      } else {
-        currentContent += ' ' + part;
-      }
-    }
-    if (currentTitle) sections.push({ title: currentTitle, content: currentContent.trim() });
-    return sections;
-  }, [fullNarrative]);
+  // narrativeSections already computed above
 
   return (
     <div className="space-y-4 max-w-4xl">
