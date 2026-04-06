@@ -117,12 +117,20 @@ export function NovaAssessmentListView({
             Proprietary clinical instruments for {studentName}
           </p>
         </div>
-        {onViewMasterReport && (
-          <Button variant="outline" size="sm" onClick={onViewMasterReport}>
-            <FileText className="w-3 h-3 mr-1" />
-            Master Report
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {onViewMasterReport && (
+            <Button variant="outline" size="sm" onClick={onViewMasterReport}>
+              <FileText className="w-3 h-3 mr-1" />
+              Master Report
+            </Button>
+          )}
+          {onViewMasterGenerator && (
+            <Button size="sm" onClick={onViewMasterGenerator}>
+              <FileText className="w-3 h-3 mr-1" />
+              Generate Report
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Assessment Cards */}
