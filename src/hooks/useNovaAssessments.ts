@@ -859,16 +859,3 @@ export function useUpdateMasterReportSection() {
     },
   });
 }
-  return useQuery({
-    queryKey: ['nova-full-narrative', sessionId, audience],
-    enabled: !!sessionId,
-    queryFn: async () => {
-      const { data, error } = await db.rpc('nova_generate_full_narrative', {
-        p_session_id: sessionId,
-        p_audience: audience,
-      });
-      if (error) throw error;
-      return data as string;
-    },
-  });
-}
