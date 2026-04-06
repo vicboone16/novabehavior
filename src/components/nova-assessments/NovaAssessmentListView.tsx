@@ -19,6 +19,7 @@ interface Props {
   onStartSession: (sessionId: string, assessmentCode: string, assessmentName: string, assessmentId: string) => void;
   onViewReport?: (sessionId: string, assessmentCode: string) => void;
   onViewMasterReport?: () => void;
+  onViewMasterGenerator?: () => void;
 }
 
 const ASSESSMENT_META: Record<string, { icon: any; color: string; shortDesc: string }> = {
