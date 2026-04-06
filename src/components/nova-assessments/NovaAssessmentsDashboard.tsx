@@ -3,19 +3,22 @@ import { NovaAssessmentListView } from './NovaAssessmentListView';
 import { NovaAssessmentForm } from './NovaAssessmentForm';
 import { NovaStandaloneReport } from './NovaStandaloneReport';
 import { NovaMasterReportView } from './NovaMasterReportView';
+import { NovaMasterReportGenerator } from './NovaMasterReportGenerator';
 
 interface Props {
   studentId: string;
   studentName: string;
+  agencyId?: string;
 }
 
 type View =
   | { type: 'list' }
   | { type: 'form'; sessionId: string; assessmentCode: string; assessmentName: string; assessmentId: string }
   | { type: 'report'; sessionId: string; assessmentCode: string }
-  | { type: 'master' };
+  | { type: 'master' }
+  | { type: 'master-generator' };
 
-export function NovaAssessmentsDashboard({ studentId, studentName }: Props) {
+export function NovaAssessmentsDashboard({ studentId, studentName, agencyId }: Props) {
   const [view, setView] = useState<View>({ type: 'list' });
 
   const handleStartSession = useCallback(
@@ -31,6 +34,10 @@ export function NovaAssessmentsDashboard({ studentId, studentName }: Props) {
 
   const handleViewMasterReport = useCallback(() => {
     setView({ type: 'master' });
+  }, []);
+
+  const handleViewMasterGenerator = useCallback(() => {
+    setView({ type: 'master-generator' });
   }, []);
 
   const handleBack = useCallback(() => {
@@ -69,6 +76,15 @@ export function NovaAssessmentsDashboard({ studentId, studentName }: Props) {
           onViewReport={handleViewReport}
         />
       );
+    case 'master-generator':
+      return (
+        <NovaMasterReportGenerator
+          studentId={studentId}
+          studentName={studentName}
+          agencyId={agencyId}
+          onBack={handleBack}
+        />
+      );
     default:
       return (
         <NovaAssessmentListView
@@ -77,6 +93,7 @@ export function NovaAssessmentsDashboard({ studentId, studentName }: Props) {
           onStartSession={handleStartSession}
           onViewReport={handleViewReport}
           onViewMasterReport={handleViewMasterReport}
+          onViewMasterGenerator={handleViewMasterGenerator}
         />
       );
   }
