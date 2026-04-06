@@ -126,6 +126,26 @@ export interface AbrseRecommendation {
   reinforcement_template: string | null;
 }
 
+export interface NovaGeneratedRecommendation {
+  id: string;
+  student_id: string;
+  session_id: string;
+  assessment_code: string;
+  source_result_key: string | null;
+  recommendation_type: string;
+  setting_type: string;
+  option_group: string | null;
+  option_rank: number;
+  title: string;
+  generated_text: string;
+  original_text: string | null;
+  rationale_text: string | null;
+  status: string;
+  converted_from: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── List available assessments ───
 export function useNovaAssessmentCatalog() {
   return useQuery({
