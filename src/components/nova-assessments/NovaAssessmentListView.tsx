@@ -19,6 +19,7 @@ interface Props {
   onStartSession: (sessionId: string, assessmentCode: string, assessmentName: string, assessmentId: string) => void;
   onViewReport?: (sessionId: string, assessmentCode: string) => void;
   onViewMasterReport?: () => void;
+  onViewMasterGenerator?: () => void;
 }
 
 const ASSESSMENT_META: Record<string, { icon: any; color: string; shortDesc: string }> = {
@@ -60,6 +61,7 @@ export function NovaAssessmentListView({
   onStartSession,
   onViewReport,
   onViewMasterReport,
+  onViewMasterGenerator,
 }: Props) {
   const { data: catalog, isLoading: catalogLoading } = useNovaAssessmentCatalog();
   const { data: sessions, isLoading: sessionsLoading } = useNovaStudentSessions(studentId);
@@ -115,12 +117,20 @@ export function NovaAssessmentListView({
             Proprietary clinical instruments for {studentName}
           </p>
         </div>
-        {onViewMasterReport && (
-          <Button variant="outline" size="sm" onClick={onViewMasterReport}>
-            <FileText className="w-3 h-3 mr-1" />
-            Master Report
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {onViewMasterReport && (
+            <Button variant="outline" size="sm" onClick={onViewMasterReport}>
+              <FileText className="w-3 h-3 mr-1" />
+              Master Report
+            </Button>
+          )}
+          {onViewMasterGenerator && (
+            <Button size="sm" onClick={onViewMasterGenerator}>
+              <FileText className="w-3 h-3 mr-1" />
+              Generate Report
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Assessment Cards */}

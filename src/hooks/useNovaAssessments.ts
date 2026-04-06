@@ -575,3 +575,287 @@ export function useNovaFullNarrative(sessionId: string | undefined, audience: st
     },
   });
 }
+
+// ─── Instance Goals ───
+export interface InstanceGeneratedGoal {
+  id: string;
+  session_id: string;
+  source_goal_id: string | null;
+  goal_type: string;
+  goal_domain: string | null;
+  title: string;
+  goal_text: string;
+  measurable_text: string | null;
+  mastery_criteria: string | null;
+  progress_monitoring: string | null;
+  implementation_notes: string | null;
+  is_selected: boolean;
+  is_custom: boolean;
+  status: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useInstanceGoals(sessionId: string | undefined) {
+  return useQuery({
+    queryKey: ['instance-goals', sessionId],
+    enabled: !!sessionId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('instance_generated_goals')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('goal_type, sort_order');
+      if (error) throw error;
+      return (data || []) as InstanceGeneratedGoal[];
+    },
+  });
+}
+
+export function useGenerateInstanceGoals() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { sessionId: string; assessmentSlug: string }) => {
+      // Fetch matching goals from the bank
+      const { data: bankGoals, error: bankErr } = await db
+        .from('generated_goal_bank')
+        .select('*')
+        .eq('assessment_slug', params.assessmentSlug);
+      if (bankErr) throw bankErr;
+      if (!bankGoals || bankGoals.length === 0) return 0;
+
+      // Insert goals not already generated
+      const { data: existing } = await db
+        .from('instance_generated_goals')
+        .select('source_goal_id')
+        .eq('session_id', params.sessionId);
+      const existingIds = new Set((existing || []).map((e: any) => e.source_goal_id));
+
+      const newGoals = (bankGoals as any[])
+        .filter(g => !existingIds.has(g.id))
+        .map((g, i) => ({
+          session_id: params.sessionId,
+          source_goal_id: g.id,
+          goal_type: g.goal_type,
+          goal_domain: g.goal_domain,
+          title: g.title,
+          goal_text: g.goal_text,
+          measurable_text: g.measurable_text,
+          mastery_criteria: g.mastery_criteria,
+          progress_monitoring: g.progress_monitoring,
+          implementation_notes: g.implementation_notes,
+          is_selected: true,
+          is_custom: false,
+          status: 'draft',
+          sort_order: i,
+        }));
+
+      if (newGoals.length > 0) {
+        const { error } = await db.from('instance_generated_goals').insert(newGoals);
+        if (error) throw error;
+      }
+      return newGoals.length;
+    },
+    onSuccess: (count, vars) => {
+      qc.invalidateQueries({ queryKey: ['instance-goals', vars.sessionId] });
+      toast.success(`${count} goals generated`);
+    },
+    onError: (err: any) => {
+      toast.error('Failed to generate goals: ' + err.message);
+    },
+  });
+}
+
+export function useUpdateInstanceGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      sessionId: string;
+      updates: Partial<Omit<InstanceGeneratedGoal, 'id' | 'session_id' | 'created_at' | 'updated_at'>>;
+    }) => {
+      const { error } = await db
+        .from('instance_generated_goals')
+        .update({ ...params.updates, updated_at: new Date().toISOString() })
+        .eq('id', params.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['instance-goals', vars.sessionId] });
+    },
+  });
+}
+
+export function useAddCustomGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      sessionId: string;
+      goalType: string;
+      goalDomain: string;
+      title: string;
+      goalText: string;
+      measurableText?: string;
+      masteryCriteria?: string;
+    }) => {
+      const { error } = await db
+        .from('instance_generated_goals')
+        .insert({
+          session_id: params.sessionId,
+          goal_type: params.goalType,
+          goal_domain: params.goalDomain,
+          title: params.title,
+          goal_text: params.goalText,
+          measurable_text: params.measurableText || null,
+          mastery_criteria: params.masteryCriteria || null,
+          is_selected: true,
+          is_custom: true,
+          status: 'draft',
+          sort_order: 999,
+        });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['instance-goals', vars.sessionId] });
+      toast.success('Custom goal added');
+    },
+  });
+}
+
+export function useDuplicateGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { goal: InstanceGeneratedGoal }) => {
+      const { id, created_at, updated_at, ...rest } = params.goal;
+      const { error } = await db
+        .from('instance_generated_goals')
+        .insert({ ...rest, is_custom: true, title: rest.title + ' (copy)', sort_order: rest.sort_order + 1 });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['instance-goals', vars.goal.session_id] });
+      toast.success('Goal duplicated');
+    },
+  });
+}
+
+// ─── Master Report Instances ───
+export interface MasterReportInstance {
+  id: string;
+  student_id: string;
+  agency_id: string;
+  title: string;
+  tone: string;
+  report_length: string;
+  include_iep_language: boolean;
+  include_parent_friendly: boolean;
+  status: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MasterReportSection {
+  id: string;
+  master_report_id: string;
+  section_key: string;
+  section_title: string | null;
+  generated_text: string | null;
+  sort_order: number;
+}
+
+export function useMasterReportInstances(studentId: string | undefined) {
+  return useQuery({
+    queryKey: ['master-report-instances', studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('master_report_instances')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as MasterReportInstance[];
+    },
+  });
+}
+
+export function useMasterReportSections(reportId: string | undefined) {
+  return useQuery({
+    queryKey: ['master-report-sections', reportId],
+    enabled: !!reportId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('master_report_sections')
+        .select('*')
+        .eq('master_report_id', reportId)
+        .order('sort_order');
+      if (error) throw error;
+      return (data || []) as MasterReportSection[];
+    },
+  });
+}
+
+export function useCreateMasterReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      studentId: string;
+      agencyId: string;
+      tone: string;
+      reportLength: string;
+      includeIepLanguage: boolean;
+      includeParentFriendly: boolean;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await db
+        .from('master_report_instances')
+        .insert({
+          student_id: params.studentId,
+          agency_id: params.agencyId,
+          tone: params.tone,
+          report_length: params.reportLength,
+          include_iep_language: params.includeIepLanguage,
+          include_parent_friendly: params.includeParentFriendly,
+          created_by: user?.id || null,
+          status: 'draft',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as MasterReportInstance;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['master-report-instances', vars.studentId] });
+      toast.success('Master report created');
+    },
+  });
+}
+
+export function useUpdateMasterReportSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      reportId: string;
+      sectionKey: string;
+      sectionTitle: string;
+      generatedText: string;
+      sortOrder: number;
+    }) => {
+      const { error } = await db
+        .from('master_report_sections')
+        .upsert({
+          master_report_id: params.reportId,
+          section_key: params.sectionKey,
+          section_title: params.sectionTitle,
+          generated_text: params.generatedText,
+          sort_order: params.sortOrder,
+        }, { onConflict: 'master_report_id,section_key' });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['master-report-sections', vars.reportId] });
+    },
+  });
+}
