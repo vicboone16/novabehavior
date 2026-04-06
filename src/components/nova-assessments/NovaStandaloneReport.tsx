@@ -18,6 +18,8 @@ import {
 import { NovaRecommendationPanel } from './NovaRecommendationPanel';
 import { NovaGoalsPanel } from './NovaGoalsPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+interface Props {
   sessionId: string;
   assessmentCode: string;
   onBack?: () => void;
