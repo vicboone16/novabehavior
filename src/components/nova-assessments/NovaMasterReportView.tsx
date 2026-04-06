@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useNovaMasterReport, useNovaAbrseRecommendations } from '@/hooks/useNovaAssessments';
+import { useNovaMasterReport, useNovaAbrseRecommendations, useNovaStudentRecommendations } from '@/hooks/useNovaAssessments';
+import { NovaRecommendationPanel } from './NovaRecommendationPanel';
 
 interface Props {
   studentId: string;
@@ -24,6 +25,7 @@ const TOOL_META: Record<string, { icon: any; color: string; label: string }> = {
 export function NovaMasterReportView({ studentId, studentName, onBack, onViewReport }: Props) {
   const { data: report, isLoading } = useNovaMasterReport(studentId);
   const { data: abrseRecs } = useNovaAbrseRecommendations(report?.abrse_session_id || undefined);
+  const { data: acceptedRecs } = useNovaStudentRecommendations(studentId);
 
   if (isLoading) {
     return (
@@ -170,6 +172,45 @@ export function NovaMasterReportView({ studentId, studentName, onBack, onViewRep
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Accepted Recommendations Summary */}
+      {acceptedRecs && acceptedRecs.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Accepted Goal & Recommendation Package
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {acceptedRecs.length} accepted recommendations across all assessments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {acceptedRecs.map((rec, i) => (
+                <div key={i} className="p-2 bg-muted/30 rounded border text-xs flex items-start gap-2">
+                  <Badge variant="outline" className="text-[10px] flex-shrink-0 mt-0.5">
+                    {rec.recommendation_type.replace(/_/g, ' ')}
+                  </Badge>
+                  <div>
+                    <p className="font-medium">{rec.title}</p>
+                    <p className="text-muted-foreground mt-0.5">{rec.generated_text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Per-session recommendation panels for latest ABRSE */}
+      {report.abrse_session_id && (
+        <NovaRecommendationPanel
+          sessionId={report.abrse_session_id}
+          studentId={studentId}
+          assessmentCode="ABRSE"
+        />
       )}
     </div>
   );
