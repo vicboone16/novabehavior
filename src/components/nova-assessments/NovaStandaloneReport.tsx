@@ -16,8 +16,8 @@ import {
   NovaReportData,
 } from '@/hooks/useNovaAssessments';
 import { NovaRecommendationPanel } from './NovaRecommendationPanel';
-
-interface Props {
+import { NovaGoalsPanel } from './NovaGoalsPanel';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
   sessionId: string;
   assessmentCode: string;
   onBack?: () => void;
