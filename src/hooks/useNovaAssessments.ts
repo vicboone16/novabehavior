@@ -444,3 +444,134 @@ export function useUpdateNovaSession() {
     },
   });
 }
+
+// ─── Get generated recommendations for a session ───
+export function useNovaRecommendations(sessionId: string | undefined) {
+  return useQuery({
+    queryKey: ['nova-recommendations', sessionId],
+    enabled: !!sessionId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('nova_generated_recommendations')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('recommendation_type, option_group, option_rank');
+      if (error) throw error;
+      return (data || []) as NovaGeneratedRecommendation[];
+    },
+  });
+}
+
+// ─── Get all recommendations for a student (across sessions) ───
+export function useNovaStudentRecommendations(studentId: string | undefined) {
+  return useQuery({
+    queryKey: ['nova-student-recommendations', studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await db
+        .from('nova_generated_recommendations')
+        .select('*')
+        .eq('student_id', studentId)
+        .in('status', ['accepted', 'edited', 'manual'])
+        .order('assessment_code, recommendation_type, title');
+      if (error) throw error;
+      return (data || []) as NovaGeneratedRecommendation[];
+    },
+  });
+}
+
+// ─── Generate recommendations for a session ───
+export function useGenerateNovaRecommendations() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { sessionId: string; settingType?: string }) => {
+      const { error } = await db.rpc('nova_generate_recommendations_for_session', {
+        p_session_id: params.sessionId,
+        p_setting_type: params.settingType || 'school',
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['nova-recommendations', vars.sessionId] });
+      toast.success('Recommendations generated');
+    },
+    onError: (err: any) => {
+      toast.error('Failed to generate recommendations: ' + err.message);
+    },
+  });
+}
+
+// ─── Update a recommendation (accept/edit/reject/swap/convert) ───
+export function useUpdateNovaRecommendation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      sessionId: string;
+      updates: Partial<Pick<NovaGeneratedRecommendation, 'status' | 'generated_text' | 'recommendation_type' | 'converted_from' | 'setting_type'>>;
+    }) => {
+      const { error } = await db
+        .from('nova_generated_recommendations')
+        .update({ ...params.updates, updated_at: new Date().toISOString() })
+        .eq('id', params.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['nova-recommendations', vars.sessionId] });
+    },
+  });
+}
+
+// ─── Add a custom recommendation ───
+export function useAddCustomRecommendation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      studentId: string;
+      sessionId: string;
+      assessmentCode: string;
+      recommendationType: string;
+      settingType: string;
+      title: string;
+      text: string;
+      rationale?: string;
+    }) => {
+      const { error } = await db
+        .from('nova_generated_recommendations')
+        .insert({
+          student_id: params.studentId,
+          session_id: params.sessionId,
+          assessment_code: params.assessmentCode,
+          recommendation_type: params.recommendationType,
+          setting_type: params.settingType,
+          title: params.title,
+          generated_text: params.text,
+          original_text: params.text,
+          rationale_text: params.rationale || null,
+          status: 'manual',
+          option_rank: 1,
+        });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['nova-recommendations', vars.sessionId] });
+      toast.success('Custom recommendation added');
+    },
+  });
+}
+
+// ─── Get full narrative for a session ───
+export function useNovaFullNarrative(sessionId: string | undefined, audience: string = 'clinical') {
+  return useQuery({
+    queryKey: ['nova-full-narrative', sessionId, audience],
+    enabled: !!sessionId,
+    queryFn: async () => {
+      const { data, error } = await db.rpc('nova_generate_full_narrative', {
+        p_session_id: sessionId,
+        p_audience: audience,
+      });
+      if (error) throw error;
+      return data as string;
+    },
+  });
+}
