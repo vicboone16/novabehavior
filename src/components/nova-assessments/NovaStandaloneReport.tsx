@@ -12,8 +12,10 @@ import { Progress } from '@/components/ui/progress';
 import {
   useNovaAssessmentReport,
   useNovaAbrseRecommendations,
+  useNovaFullNarrative,
   NovaReportData,
 } from '@/hooks/useNovaAssessments';
+import { NovaRecommendationPanel } from './NovaRecommendationPanel';
 
 interface Props {
   sessionId: string;
@@ -26,6 +28,35 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
   const { data: abrseRecs } = useNovaAbrseRecommendations(
     assessmentCode === 'ABRSE' ? sessionId : undefined
   );
+  const { data: fullNarrative } = useNovaFullNarrative(sessionId);
+
+  // Parse full narrative into sections
+  const narrativeSections = useMemo(() => {
+    if (!fullNarrative) return [];
+    const sections: { title: string; content: string }[] = [];
+    const parts = fullNarrative.split(/\n\n/);
+    let currentTitle = '';
+    let currentContent = '';
+    for (const part of parts) {
+      const lines = part.split('\n');
+      const firstLine = lines[0]?.trim();
+      if (['CLINICAL SUMMARY', 'DOMAIN ANALYSIS', 'PATTERN INSIGHTS', 'CLINICAL RECOMMENDATIONS',
+           'ARCHETYPE ANALYSIS', 'CLINICAL FLAGS', 'REPLACEMENT SKILL PRIORITIES',
+           'FIDELITY RISK', 'CULTURAL CONTEXT'].includes(firstLine)) {
+        if (currentTitle) sections.push({ title: currentTitle, content: currentContent.trim() });
+        currentTitle = firstLine;
+        currentContent = lines.slice(1).join(' ');
+      } else {
+        currentContent += ' ' + part;
+      }
+    }
+    if (currentTitle) sections.push({ title: currentTitle, content: currentContent.trim() });
+    return sections;
+  }, [fullNarrative]);
+
+  const domainResults = report?.domain_results || [];
+  const profiles = report?.profiles || [];
+  const flags = report?.flags || [];
 
   if (isLoading) {
     return (
@@ -45,9 +76,7 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
     );
   }
 
-  const domainResults = report.domain_results || [];
-  const profiles = report.profiles || [];
-  const flags = report.flags || [];
+  // narrativeSections already computed above
 
   return (
     <div className="space-y-4 max-w-4xl">
@@ -90,18 +119,34 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
         </CardContent>
       </Card>
 
-      {/* Summary */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Clinical Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-relaxed">{report.summary_text}</p>
-        </CardContent>
-      </Card>
+      {/* Full Narrative Sections */}
+      {narrativeSections.length > 0 ? (
+        narrativeSections.map((section, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {section.title.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-relaxed">{section.content}</p>
+            </CardContent>
+          </Card>
+        ))
+      ) : report.summary_text ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Clinical Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed">{report.summary_text}</p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Domain Results */}
       {domainResults.length > 0 && (
@@ -211,6 +256,15 @@ export function NovaStandaloneReport({ sessionId, assessmentCode, onBack }: Prop
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Recommendations Panel */}
+      {report.student_id && (
+        <NovaRecommendationPanel
+          sessionId={sessionId}
+          studentId={report.student_id}
+          assessmentCode={assessmentCode}
+        />
       )}
     </div>
   );
