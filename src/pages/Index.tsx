@@ -39,6 +39,7 @@ const Index = () => {
     <div className="space-y-4">
       {/* Quick Tools Bar */}
       <div className="flex gap-1 md:gap-2 items-center overflow-x-auto scrollbar-hide pb-1">
+        <LocalDataCloudSync />
         <TrashRecovery />
         <BehaviorGoalsManager />
         <ScatterplotAnalysis />

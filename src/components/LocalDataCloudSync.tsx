@@ -505,7 +505,7 @@ export function LocalDataCloudSync() {
           <div className="flex justify-end gap-2">
             {done ? (
               <Button variant="outline" onClick={() => setOpen(false)} className="gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
                 Done
               </Button>
             ) : (
