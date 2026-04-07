@@ -201,6 +201,7 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
           <div className="flex items-center justify-between mb-2">
             <div />
             <div className="flex items-center gap-2">
+              <StudentBehaviorMerge studentId={student.id} studentName={student.name} />
               <BehaviorDataEditor studentId={student.id} studentName={student.name} />
               <HistoricalDataManager studentId={student.id} />
             </div>
