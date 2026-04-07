@@ -16,6 +16,7 @@ import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { DataExportManager } from '@/components/DataExportManager';
 import { TrashRecovery } from '@/components/TrashRecovery';
+import { LocalDataCloudSync } from '@/components/LocalDataCloudSync';
 import { useDataStore } from '@/store/dataStore';
 import { useDemoFilteredStudents } from '@/hooks/useDemoFilteredStudents';
 
@@ -38,6 +39,7 @@ const Index = () => {
     <div className="space-y-4">
       {/* Quick Tools Bar */}
       <div className="flex gap-1 md:gap-2 items-center overflow-x-auto scrollbar-hide pb-1">
+        <LocalDataCloudSync />
         <TrashRecovery />
         <BehaviorGoalsManager />
         <ScatterplotAnalysis />
