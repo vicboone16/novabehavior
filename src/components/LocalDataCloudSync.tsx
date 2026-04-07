@@ -156,7 +156,7 @@ export function LocalDataCloudSync() {
 
         if (mappedStudentIds.length === 0) continue;
 
-        const startTime = new Date(session.date || session.startTime || new Date());
+        const startTime = new Date(session.date || new Date());
 
         const { data: created, error } = await supabase
           .from('sessions')
@@ -166,8 +166,7 @@ export function LocalDataCloudSync() {
             name: `Session ${session.id.slice(0, 6)}`,
             start_time: startTime.toISOString(),
             started_at: startTime.toISOString(),
-            end_time: session.endTime ? new Date(session.endTime).toISOString() : null,
-            session_length_minutes: session.sessionLength || 30,
+            session_length_minutes: session.sessionLengthMinutes || 30,
             student_ids: mappedStudentIds,
             status: 'completed',
             has_data: true,
