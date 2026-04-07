@@ -11,6 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { BehaviorDataEditor } from './BehaviorDataEditor';
+import { StudentBehaviorMerge } from './StudentBehaviorMerge';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { CanonicalStatusBadge } from './CanonicalStatusBadge';
 import { BopsTagChips } from './BopsTagChips';
