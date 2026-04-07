@@ -83096,6 +83096,15 @@ export type Database = {
         Returns: string
       }
       safe_int: { Args: { p_value: Json }; Returns: number }
+      safe_merge_behavior: {
+        Args: {
+          p_created_by?: string
+          p_merge_reason?: string
+          p_new_behavior_id: string
+          p_old_behavior_id: string
+        }
+        Returns: Json
+      }
       save_bip_refinement: {
         Args: {
           p_created_by?: string
