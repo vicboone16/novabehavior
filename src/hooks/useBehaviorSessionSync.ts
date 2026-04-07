@@ -8,6 +8,9 @@ import { useDataStore } from '@/store/dataStore';
  */
 export function useBehaviorSessionSync(clientId: string | undefined) {
   const syncedRef = useRef<string | null>(null);
+  const studentLoaded = useDataStore(state =>
+    clientId ? state.students.some(student => student.id === clientId) : false
+  );
 
   useEffect(() => {
     if (!clientId) return;
@@ -23,7 +26,6 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
           .limit(500);
 
         if (error || !rows || rows.length === 0) {
-          // Fallback: fetch without inner join but still get session dates via left join
           const { data: fallbackRows, error: fallbackError } = await supabase
             .from('behavior_session_data')
             .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions(start_time, started_at)')
@@ -33,17 +35,16 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
             .limit(500);
           
           if (fallbackError || !fallbackRows || fallbackRows.length === 0) return;
-          mergeRows(fallbackRows, clientId);
+          await mergeRows(fallbackRows, clientId);
           return;
         }
 
-        mergeRows(rows, clientId);
+        await mergeRows(rows, clientId);
       } catch (err) {
         console.warn('[BehaviorSessionSync] Failed:', err);
       }
     };
 
-    // Listen for edits to re-fetch
     const handleEdited = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.studentId === clientId) {
@@ -53,15 +54,16 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
     };
     window.addEventListener('behavior-data-edited', handleEdited);
 
-    if (syncedRef.current !== clientId) {
-      syncedRef.current = clientId;
+    const syncKey = `${clientId}:${studentLoaded ? 'loaded' : 'pending'}`;
+    if (syncedRef.current !== syncKey) {
+      syncedRef.current = syncKey;
       fetchAndMerge();
     }
 
     return () => {
       window.removeEventListener('behavior-data-edited', handleEdited);
     };
-  }, [clientId]);
+  }, [clientId, studentLoaded]);
 }
 
 function getObservationDate(r: any): string {
