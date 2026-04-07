@@ -185,15 +185,15 @@ export function useBehaviorOperations() {
     setOperating(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.rpc('nt_merge_behavior', {
+      const { data, error } = await supabase.rpc('safe_merge_behavior' as any, {
         p_old_behavior_id: oldBehaviorId,
         p_new_behavior_id: newBehaviorId,
         p_merge_reason: reason || null,
         p_created_by: user?.id || null,
-        p_migrate_active_assignments: migrateAssignments,
       });
       if (error) throw error;
-      toast.success('Behavior merged successfully');
+      const result = data as any;
+      toast.success(`Merged "${result?.merged_from}" → "${result?.merged_into}" (${result?.bsd_repointed || 0} data points moved)`);
     } catch (err) {
       toast.error(`Merge failed: ${err}`);
     } finally {
