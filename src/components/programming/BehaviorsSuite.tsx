@@ -11,6 +11,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
 import { HistoricalDataManager } from '@/components/HistoricalDataManager';
 import { BehaviorDataEditor } from './BehaviorDataEditor';
+import { StudentBehaviorMerge } from './StudentBehaviorMerge';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { CanonicalStatusBadge } from './CanonicalStatusBadge';
 import { BopsTagChips } from './BopsTagChips';
@@ -200,6 +201,7 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
           <div className="flex items-center justify-between mb-2">
             <div />
             <div className="flex items-center gap-2">
+              <StudentBehaviorMerge studentId={student.id} studentName={student.name} />
               <BehaviorDataEditor studentId={student.id} studentName={student.name} />
               <HistoricalDataManager studentId={student.id} />
             </div>
