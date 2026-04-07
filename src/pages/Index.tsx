@@ -16,6 +16,7 @@ import { QuickABCCustomizer } from '@/components/QuickABCCustomizer';
 import { SessionFocusMode } from '@/components/SessionFocusMode';
 import { DataExportManager } from '@/components/DataExportManager';
 import { TrashRecovery } from '@/components/TrashRecovery';
+import { LocalDataCloudSync } from '@/components/LocalDataCloudSync';
 import { useDataStore } from '@/store/dataStore';
 import { useDemoFilteredStudents } from '@/hooks/useDemoFilteredStudents';
 
