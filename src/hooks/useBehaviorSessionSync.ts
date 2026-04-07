@@ -8,6 +8,9 @@ import { useDataStore } from '@/store/dataStore';
  */
 export function useBehaviorSessionSync(clientId: string | undefined) {
   const syncedRef = useRef<string | null>(null);
+  const studentLoaded = useDataStore(state =>
+    clientId ? state.students.some(student => student.id === clientId) : false
+  );
 
   useEffect(() => {
     if (!clientId) return;
@@ -42,7 +45,6 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
       }
     };
 
-    // Listen for edits to re-fetch
     const handleEdited = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.studentId === clientId) {
@@ -52,15 +54,16 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
     };
     window.addEventListener('behavior-data-edited', handleEdited);
 
-    if (syncedRef.current !== clientId) {
-      syncedRef.current = clientId;
+    const syncKey = `${clientId}:${studentLoaded ? 'loaded' : 'pending'}`;
+    if (syncedRef.current !== syncKey) {
+      syncedRef.current = syncKey;
       fetchAndMerge();
     }
 
     return () => {
       window.removeEventListener('behavior-data-edited', handleEdited);
     };
-  }, [clientId]);
+  }, [clientId, studentLoaded]);
 }
 
 function getObservationDate(r: any): string {

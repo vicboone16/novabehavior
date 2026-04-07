@@ -53,8 +53,28 @@ export function BehaviorTrendCharts() {
         if (error || !rows || rows.length === 0) return;
 
         const store = useDataStore.getState();
+        const studentMap = new Map(store.students.map(student => [student.id, student]));
+        const unresolvedBehaviorIds = Array.from(new Set(
+          rows
+            .filter(row => !studentMap.get(row.student_id)?.behaviors.some(behavior => behavior.id === row.behavior_id))
+            .map(row => row.behavior_id)
+        ));
+        const behaviorNames = new Map<string, string>();
 
-        // Build frequency & duration entries grouped by student
+        if (unresolvedBehaviorIds.length > 0) {
+          const { data: behaviorRows } = await supabase
+            .from('behaviors')
+            .select('id, name')
+            .in('id', unresolvedBehaviorIds);
+
+          (behaviorRows || []).forEach((behavior: any) => {
+            if (behavior?.id && behavior?.name) {
+              behaviorNames.set(behavior.id, behavior.name);
+            }
+          });
+        }
+
+        const missingBehaviorsByStudent = new Map<string, Array<{ id: string; name: string }>>();
         const newFreq: any[] = [];
         const newDur: any[] = [];
         const existingFreqIds = new Set(store.frequencyEntries.map(e => e.id));
@@ -63,6 +83,18 @@ export function BehaviorTrendCharts() {
         for (const r of rows) {
           const session = (r as any).sessions;
           const obsDate = session?.started_at || session?.start_time || r.created_at;
+          const student = studentMap.get(r.student_id);
+
+          if (student && !student.behaviors.some(behavior => behavior.id === r.behavior_id)) {
+            const name = behaviorNames.get(r.behavior_id);
+            if (name) {
+              const existing = missingBehaviorsByStudent.get(r.student_id) || [];
+              if (!existing.some(behavior => behavior.id === r.behavior_id)) {
+                existing.push({ id: r.behavior_id, name });
+                missingBehaviorsByStudent.set(r.student_id, existing);
+              }
+            }
+          }
 
           if (r.frequency != null) {
             const fId = `bsd-${r.id}`;
@@ -91,10 +123,28 @@ export function BehaviorTrendCharts() {
           }
         }
 
-        if (newFreq.length > 0 || newDur.length > 0) {
+        if (newFreq.length > 0 || newDur.length > 0 || missingBehaviorsByStudent.size > 0) {
           useDataStore.setState(state => ({
             frequencyEntries: [...state.frequencyEntries, ...newFreq],
             durationEntries: [...state.durationEntries, ...newDur],
+            students: state.students.map(student => {
+              const missingBehaviors = missingBehaviorsByStudent.get(student.id) || [];
+              if (missingBehaviors.length === 0) return student;
+
+              const existingIds = new Set(student.behaviors.map(behavior => behavior.id));
+              const behaviorsToAdd = missingBehaviors
+                .filter(behavior => !existingIds.has(behavior.id))
+                .map(behavior => ({
+                  id: behavior.id,
+                  name: behavior.name,
+                  type: 'frequency',
+                  methods: ['frequency'],
+                }));
+
+              return behaviorsToAdd.length > 0
+                ? { ...student, behaviors: [...student.behaviors, ...behaviorsToAdd as any] }
+                : student;
+            }),
           } as any));
           console.log(`[BehaviorTrendCharts] Bulk-synced ${newFreq.length} freq + ${newDur.length} dur entries`);
         }
