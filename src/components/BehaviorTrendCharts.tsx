@@ -27,7 +27,7 @@ const CHART_COLORS = [
 type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
 
 export function BehaviorTrendCharts() {
-  const { sessions, students, frequencyEntries, addHistoricalFrequency } = useDataStore();
+  const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
   const [showRatePerHour, setShowRatePerHour] = useState(false);
