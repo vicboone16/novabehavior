@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { format, subMonths, subDays, isAfter, parseISO, isValid, startOfDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -28,6 +29,80 @@ type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
 
 export function BehaviorTrendCharts() {
   const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
+  const syncedIdsRef = useRef<Set<string>>(new Set());
+
+  // Bulk-sync behavior_session_data for ALL students so the global chart shows all historical data
+  useEffect(() => {
+    const unsyncedIds = students
+      .filter(s => !s.isArchived && !syncedIdsRef.current.has(s.id))
+      .map(s => s.id);
+    if (unsyncedIds.length === 0) return;
+
+    unsyncedIds.forEach(id => syncedIdsRef.current.add(id));
+
+    (async () => {
+      try {
+        const { data: rows, error } = await supabase
+          .from('behavior_session_data')
+          .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, student_id, sessions(start_time, started_at)')
+          .in('student_id', unsyncedIds)
+          .eq('data_state', 'measured')
+          .order('created_at', { ascending: true })
+          .limit(2000);
+
+        if (error || !rows || rows.length === 0) return;
+
+        const store = useDataStore.getState();
+
+        // Build frequency & duration entries grouped by student
+        const newFreq: any[] = [];
+        const newDur: any[] = [];
+        const existingFreqIds = new Set(store.frequencyEntries.map(e => e.id));
+        const existingDurIds = new Set(store.durationEntries.map(e => e.id));
+
+        for (const r of rows) {
+          const session = (r as any).sessions;
+          const obsDate = session?.started_at || session?.start_time || r.created_at;
+
+          if (r.frequency != null) {
+            const fId = `bsd-${r.id}`;
+            if (!existingFreqIds.has(fId)) {
+              newFreq.push({
+                id: fId,
+                studentId: r.student_id,
+                behaviorId: r.behavior_id,
+                count: r.frequency,
+                timestamp: obsDate,
+                notes: r.frequency === 0 ? 'observed_zero' : '',
+              });
+            }
+          }
+          if (r.duration_seconds != null && r.duration_seconds > 0) {
+            const dId = `bsd-dur-${r.id}`;
+            if (!existingDurIds.has(dId)) {
+              newDur.push({
+                id: dId,
+                studentId: r.student_id,
+                behaviorId: r.behavior_id,
+                duration: r.duration_seconds,
+                startTime: new Date(obsDate),
+              });
+            }
+          }
+        }
+
+        if (newFreq.length > 0 || newDur.length > 0) {
+          useDataStore.setState(state => ({
+            frequencyEntries: [...state.frequencyEntries, ...newFreq],
+            durationEntries: [...state.durationEntries, ...newDur],
+          } as any));
+          console.log(`[BehaviorTrendCharts] Bulk-synced ${newFreq.length} freq + ${newDur.length} dur entries`);
+        }
+      } catch (err) {
+        console.warn('[BehaviorTrendCharts] Bulk sync failed:', err);
+      }
+    })();
+  }, [students]);
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
   const [showRatePerHour, setShowRatePerHour] = useState(false);
