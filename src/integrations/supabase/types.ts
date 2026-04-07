@@ -82058,6 +82058,15 @@ export type Database = {
         Args: { p_package_instance_id: string }
         Returns: number
       }
+      merge_student_behavior: {
+        Args: {
+          p_performed_by?: string
+          p_source_behavior_id: string
+          p_student_id: string
+          p_target_behavior_id: string
+        }
+        Returns: Json
+      }
       move_staff_to_classroom: {
         Args: {
           p_agency_id: string
