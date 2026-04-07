@@ -27,7 +27,7 @@ const CHART_COLORS = [
 type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
 
 export function BehaviorTrendCharts() {
-  const { sessions, students, frequencyEntries, addHistoricalFrequency } = useDataStore();
+  const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterBehavior, setFilterBehavior] = useState<string>('all');
   const [showRatePerHour, setShowRatePerHour] = useState(false);
@@ -162,7 +162,49 @@ export function BehaviorTrendCharts() {
       });
     });
 
-    // Process historical data from students
+    // Process synced Supabase data (bsd-* entries from useBehaviorSessionSync)
+    // These are in store.frequencyEntries/durationEntries but NOT in session objects
+    const sessionFreqIds = new Set<string>();
+    sessions.forEach(s => s.frequencyEntries.forEach(e => sessionFreqIds.add(e.id)));
+
+    frequencyEntries
+      .filter(e => e.id.startsWith('bsd-') && !sessionFreqIds.has(e.id))
+      .forEach(freqEntry => {
+        if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
+        if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
+
+        const entryDate = new Date(freqEntry.timestamp);
+        if (!isInDateRange(entryDate)) return;
+
+        const dateKey = format(entryDate, 'yyyy-MM-dd');
+        const entry = getOrCreateDateEntry(dateKey);
+        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+
+        if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
+          entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
+          const ratePerHour = freqEntry.count / 0.5; // default 30min session
+          entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
+        }
+      });
+
+    durationEntries
+      .filter(e => e.id.startsWith('bsd-dur-'))
+      .forEach(durEntry => {
+        if (filterStudent !== 'all' && durEntry.studentId !== filterStudent) return;
+        if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
+
+        const entryDate = new Date(durEntry.startTime);
+        if (!isInDateRange(entryDate)) return;
+
+        const dateKey = format(entryDate, 'yyyy-MM-dd');
+        const entry = getOrCreateDateEntry(dateKey);
+        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
+        const key = behavior?.name || 'Unknown';
+        entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
+      });
+
+
     students.forEach(student => {
       if (filterStudent !== 'all' && student.id !== filterStudent) return;
       if (!student.historicalData) return;
@@ -237,7 +279,7 @@ export function BehaviorTrendCharts() {
 
     // Sort by date
     return chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, dateRange]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {

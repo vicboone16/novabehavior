@@ -112,7 +112,7 @@ export function StudentBehaviorsOverview({
   dataCollectionStartDate,
   behaviorGoals = [],
 }: StudentBehaviorsOverviewProps) {
-  const [dateRangePreset, setDateRangePreset] = useState<string>('last30');
+  const [dateRangePreset, setDateRangePreset] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
   const [selectedBehavior, setSelectedBehavior] = useState<string>('all');
