@@ -279,7 +279,7 @@ export function BehaviorTrendCharts() {
 
     // Sort by date
     return chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, dateRange]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
