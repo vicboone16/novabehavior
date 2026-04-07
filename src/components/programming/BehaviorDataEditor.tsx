@@ -6,7 +6,7 @@
  * and syncs changes back to both DB and local Zustand store for graph refresh.
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import {
   Database, Search, Pencil, Trash2, Save, X, RefreshCw,
   ChevronDown, ChevronUp, Filter, ArrowUpDown, Calendar,
@@ -75,8 +75,11 @@ export function BehaviorDataEditor({
   const [searchText, setSearchText] = useState('');
   const [filterBehavior, setFilterBehavior] = useState('all');
   const [filterDataType, setFilterDataType] = useState<'all' | 'frequency' | 'duration'>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [groupByDate, setGroupByDate] = useState(true);
 
   // Edit state
   const [editingRow, setEditingRow] = useState<BehaviorSessionRow | null>(null);
@@ -110,12 +113,12 @@ export function BehaviorDataEditor({
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // Use LEFT join (no !inner) so records without sessions still appear
       const { data, error } = await supabase
         .from('behavior_session_data')
-        .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai, sessions!inner(started_at, start_time)')
+        .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai, sessions(started_at, start_time)')
         .eq('student_id', studentId)
-        .order('created_at', { ascending: false })
-        .limit(1000);
+        .order('created_at', { ascending: false });
 
       if (error) {
         // Fallback without join
@@ -123,8 +126,7 @@ export function BehaviorDataEditor({
           .from('behavior_session_data')
           .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai')
           .eq('student_id', studentId)
-          .order('created_at', { ascending: false })
-          .limit(1000);
+          .order('created_at', { ascending: false });
 
         if (fallbackErr) throw fallbackErr;
         setRows((fallback || []).map(r => ({ ...r, session_started_at: null, session_start_time: null })));
@@ -164,12 +166,21 @@ export function BehaviorDataEditor({
     } else if (filterDataType === 'duration') {
       filtered = filtered.filter(r => r.duration_seconds != null && r.duration_seconds > 0);
     }
+    if (filterDateFrom) {
+      const from = startOfDay(new Date(filterDateFrom + 'T00:00:00'));
+      filtered = filtered.filter(r => new Date(getObservationDate(r)) >= from);
+    }
+    if (filterDateTo) {
+      const to = endOfDay(new Date(filterDateTo + 'T23:59:59'));
+      filtered = filtered.filter(r => new Date(getObservationDate(r)) <= to);
+    }
     if (searchText.trim()) {
       const q = searchText.toLowerCase();
       filtered = filtered.filter(r => {
         const name = getBehaviorName(r.behavior_id).toLowerCase();
         const notes = (r.notes || '').toLowerCase();
-        return name.includes(q) || notes.includes(q);
+        const dateStr = format(parseISO(getObservationDate(r)), 'MMM d, yyyy').toLowerCase();
+        return name.includes(q) || notes.includes(q) || dateStr.includes(q);
       });
     }
 
@@ -193,7 +204,21 @@ export function BehaviorDataEditor({
     });
 
     return sorted;
-  }, [rows, filterBehavior, filterDataType, searchText, sortField, sortDir, getBehaviorName]);
+  }, [rows, filterBehavior, filterDataType, filterDateFrom, filterDateTo, searchText, sortField, sortDir, getBehaviorName]);
+
+  // Group rows by date
+  const groupedByDate = useMemo(() => {
+    if (!groupByDate) return null;
+    const groups = new Map<string, BehaviorSessionRow[]>();
+    for (const row of displayRows) {
+      const dateKey = format(parseISO(getObservationDate(row)), 'yyyy-MM-dd');
+      if (!groups.has(dateKey)) groups.set(dateKey, []);
+      groups.get(dateKey)!.push(row);
+    }
+    // Sort date keys descending
+    const sorted = Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    return sorted;
+  }, [displayRows, groupByDate]);
 
   const uniqueBehaviors = useMemo(() => {
     const ids = new Set(rows.map(r => r.behavior_id));
@@ -216,7 +241,6 @@ export function BehaviorDataEditor({
     setSaving(true);
 
     try {
-      // Build the update payload for behavior_session_data
       const updates: Record<string, any> = {
         frequency: editFrequency,
         duration_seconds: editDuration,
@@ -226,8 +250,6 @@ export function BehaviorDataEditor({
         updated_at: new Date().toISOString(),
       };
 
-      // The observation date lives on the SESSION (started_at), NOT on created_at.
-      // created_at is when the record was inserted — never change it.
       const newObservationDate = new Date(editDate + 'T12:00:00Z').toISOString();
 
       const { error } = await supabase
@@ -237,7 +259,6 @@ export function BehaviorDataEditor({
 
       if (error) throw error;
 
-      // Update the session's started_at to reflect the correct observation date
       if (editingRow.session_id) {
         await supabase
           .from('sessions')
@@ -245,16 +266,13 @@ export function BehaviorDataEditor({
           .eq('id', editingRow.session_id);
       }
 
-      // Update local state — observation date is session_started_at, not created_at
       setRows(prev => prev.map(r =>
         r.id === editingRow.id
           ? { ...r, ...updates, session_started_at: newObservationDate, session_start_time: newObservationDate }
           : r
       ));
 
-      // Refresh the Zustand store entries so graphs update
       refreshLocalStore();
-
       toast.success('Data updated successfully — graphs will refresh');
       setEditingRow(null);
     } catch (err: any) {
@@ -289,12 +307,7 @@ export function BehaviorDataEditor({
     }
   };
 
-  /**
-   * After any DB edit, re-fetch behavior_session_data and rebuild the
-   * local Zustand store entries so graphs auto-update.
-   */
   const refreshLocalStore = useCallback(() => {
-    // Force re-sync by clearing bsd-prefixed entries and re-running the sync
     const state = useDataStore.getState();
     const cleanedFreq = state.frequencyEntries.filter(
       e => !(e.id.startsWith('bsd-') && e.studentId === studentId)
@@ -307,8 +320,6 @@ export function BehaviorDataEditor({
       durationEntries: cleanedDur,
     } as any);
 
-    // The useBehaviorSessionSync hook will re-fetch on next render
-    // Force it by toggling a key or just wait for next mount
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
     }, 200);
@@ -330,6 +341,72 @@ export function BehaviorDataEditor({
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
   };
 
+  const renderRow = (row: BehaviorSessionRow) => {
+    const obsDate = getObservationDate(row);
+    return (
+      <div
+        key={row.id}
+        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+      >
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs font-medium">
+              {getBehaviorName(row.behavior_id)}
+            </Badge>
+            {!groupByDate && (
+              <span className="text-xs text-muted-foreground">
+                {format(parseISO(obsDate), 'MMM d, yyyy')}
+              </span>
+            )}
+            {row.data_state !== 'measured' && (
+              <Badge variant="secondary" className="text-xs">{row.data_state}</Badge>
+            )}
+            {row.created_by_ai && (
+              <Badge variant="secondary" className="text-xs">AI</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            {row.frequency != null && (
+              <span className="flex items-center gap-1 font-medium">
+                <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                {row.frequency} count
+              </span>
+            )}
+            {row.duration_seconds != null && row.duration_seconds > 0 && (
+              <span className="flex items-center gap-1 font-medium">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                {formatDuration(row.duration_seconds)}
+              </span>
+            )}
+            {row.latency_seconds != null && row.latency_seconds > 0 && (
+              <span className="text-xs text-muted-foreground">
+                Latency: {formatDuration(row.latency_seconds)}
+              </span>
+            )}
+          </div>
+          {row.notes && (
+            <p className="text-xs text-muted-foreground truncate max-w-[400px]">
+              {row.notes}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => startEdit(row)}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            onClick={() => setDeleteTarget(row)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Button
@@ -343,7 +420,7 @@ export function BehaviorDataEditor({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Database className="w-5 h-5 text-primary" />
@@ -355,11 +432,11 @@ export function BehaviorDataEditor({
           </DialogHeader>
 
           {/* Toolbar */}
-          <div className="flex flex-wrap gap-2 pb-3 border-b">
+          <div className="flex flex-wrap gap-2 pb-3 border-b shrink-0">
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search behaviors or notes..."
+                placeholder="Search behaviors, notes, or dates..."
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
                 className="pl-9 h-9"
@@ -394,8 +471,43 @@ export function BehaviorDataEditor({
             </Badge>
           </div>
 
+          {/* Date range filters */}
+          <div className="flex flex-wrap items-center gap-2 pb-2 border-b shrink-0">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">From:</span>
+            <Input
+              type="date"
+              value={filterDateFrom}
+              onChange={e => setFilterDateFrom(e.target.value)}
+              className="h-8 w-[140px] text-xs"
+            />
+            <span className="text-xs text-muted-foreground">To:</span>
+            <Input
+              type="date"
+              value={filterDateTo}
+              onChange={e => setFilterDateTo(e.target.value)}
+              className="h-8 w-[140px] text-xs"
+            />
+            {(filterDateFrom || filterDateTo) && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs px-2" onClick={() => { setFilterDateFrom(''); setFilterDateTo(''); }}>
+                <X className="w-3 h-3 mr-1" /> Clear
+              </Button>
+            )}
+            <div className="ml-auto">
+              <Button
+                variant={groupByDate ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-8 text-xs px-2 gap-1"
+                onClick={() => setGroupByDate(!groupByDate)}
+              >
+                <Calendar className="w-3 h-3" />
+                Group by Date
+              </Button>
+            </div>
+          </div>
+
           {/* Sort bar */}
-          <div className="flex gap-1 text-xs">
+          <div className="flex gap-1 text-xs shrink-0">
             {(['date', 'behavior', 'frequency', 'duration'] as SortField[]).map(field => (
               <Button
                 key={field}
@@ -416,8 +528,8 @@ export function BehaviorDataEditor({
             ))}
           </div>
 
-          {/* Data list */}
-          <ScrollArea className="flex-1 min-h-0">
+          {/* Data list - scrollable */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {loading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -427,85 +539,44 @@ export function BehaviorDataEditor({
                 <Database className="w-10 h-10 mx-auto mb-2 opacity-40" />
                 <p>No data records found</p>
               </div>
-            ) : (
-              <div className="space-y-1.5 py-2 pr-4">
-                {displayRows.map(row => {
-                  const obsDate = getObservationDate(row);
-                  return (
-                    <div
-                      key={row.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-xs font-medium">
-                            {getBehaviorName(row.behavior_id)}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {format(parseISO(obsDate), 'MMM d, yyyy')}
-                          </span>
-                          {row.data_state !== 'measured' && (
-                            <Badge variant="secondary" className="text-xs">{row.data_state}</Badge>
-                          )}
-                          {row.created_by_ai && (
-                            <Badge variant="secondary" className="text-xs">AI</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          {row.frequency != null && (
-                            <span className="flex items-center gap-1 font-medium">
-                              <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                              {row.frequency} count
-                            </span>
-                          )}
-                          {row.duration_seconds != null && row.duration_seconds > 0 && (
-                            <span className="flex items-center gap-1 font-medium">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
-                              {formatDuration(row.duration_seconds)}
-                            </span>
-                          )}
-                          {row.latency_seconds != null && row.latency_seconds > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              Latency: {formatDuration(row.latency_seconds)}
-                            </span>
-                          )}
-                        </div>
-                        {row.notes && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[400px]">
-                            {row.notes}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => startEdit(row)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(row)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+            ) : groupByDate && groupedByDate ? (
+              <div className="space-y-4 py-2 pr-2">
+                {groupedByDate.map(([dateKey, dateRows]) => (
+                  <div key={dateKey}>
+                    <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-1.5 px-2 mb-1.5 border-b">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span className="font-semibold text-sm">
+                          {format(parseISO(dateKey), 'EEEE, MMMM d, yyyy')}
+                        </span>
+                        <Badge variant="outline" className="text-xs ml-auto">
+                          {dateRows.length} {dateRows.length === 1 ? 'entry' : 'entries'}
+                        </Badge>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="space-y-1.5 pl-2">
+                      {dateRows.map(renderRow)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1.5 py-2 pr-2">
+                {displayRows.map(renderRow)}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog - scrollable */}
       <Dialog open={!!editingRow} onOpenChange={o => !o && setEditingRow(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="w-4 h-4" />
               Edit Data Entry
@@ -513,7 +584,7 @@ export function BehaviorDataEditor({
           </DialogHeader>
 
           {editingRow && (
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
               <div className="space-y-2">
                 <Label>Behavior</Label>
                 <Input value={getBehaviorName(editingRow.behavior_id)} disabled className="bg-muted" />
@@ -593,7 +664,7 @@ export function BehaviorDataEditor({
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => setEditingRow(null)} disabled={saving}>
               Cancel
             </Button>
