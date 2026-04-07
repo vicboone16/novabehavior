@@ -23,7 +23,6 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
           .limit(500);
 
         if (error || !rows || rows.length === 0) {
-          // Fallback: fetch without inner join but still get session dates via left join
           const { data: fallbackRows, error: fallbackError } = await supabase
             .from('behavior_session_data')
             .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions(start_time, started_at)')
@@ -33,11 +32,11 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
             .limit(500);
           
           if (fallbackError || !fallbackRows || fallbackRows.length === 0) return;
-          mergeRows(fallbackRows, clientId);
+          await mergeRows(fallbackRows, clientId);
           return;
         }
 
-        mergeRows(rows, clientId);
+        await mergeRows(rows, clientId);
       } catch (err) {
         console.warn('[BehaviorSessionSync] Failed:', err);
       }
