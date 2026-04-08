@@ -589,14 +589,19 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
   if (!programs || programs.length === 0) return null;
 
   return (
+    <Collapsible defaultOpen={false}>
     <Card>
       <CardHeader className="pb-2">
+        <CollapsibleTrigger className="w-full">
         <CardTitle className="text-sm flex items-center gap-2">
           <Shield className="w-4 h-4 text-primary" />
-          BOPS Programs
+          BOPS Recommendations &amp; Tags
           <Badge variant="secondary" className="text-[10px] ml-1">{consolidatedPrograms.length}</Badge>
+          <span className="text-[10px] text-muted-foreground font-normal ml-auto">Click to expand • Send items to Programs</span>
         </CardTitle>
+        </CollapsibleTrigger>
       </CardHeader>
+      <CollapsibleContent>
       <CardContent className="space-y-4">
         {Object.entries(groupedByDomain).map(([domain, domainPrograms]) => {
           const isCollapsed = collapsedDomains[domain];
