@@ -273,7 +273,35 @@ export function ProgramHierarchyView({
                 <MoreHorizontal className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                const newName = window.prompt('Rename target:', target.name);
+                if (newName && newName.trim() && newName.trim() !== target.name) {
+                  updateTarget(target.id, { name: newName.trim() } as any);
+                }
+              }}>
+                <Pencil className="w-3 h-3 mr-2" /> Rename Target
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                const newDef = window.prompt('Operational definition:', target.operational_definition || '');
+                if (newDef !== null) {
+                  updateTarget(target.id, { operational_definition: newDef || null } as any);
+                }
+              }}>
+                <Info className="w-3 h-3 mr-2" /> Edit Definition
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                setEditingTargetForPhase(target);
+              }}>
+                <Clock className="w-3 h-3 mr-2" /> Change Phase
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setEditingTargetForStatus(target);
+              }}>
+                <Clock className="w-3 h-3 mr-2" /> Change Status
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setMoveTarget({ id: target.id, name: target.name, programId: program.id })}>
                 <ArrowRight className="w-3 h-3 mr-2" /> Move to Program
               </DropdownMenuItem>
