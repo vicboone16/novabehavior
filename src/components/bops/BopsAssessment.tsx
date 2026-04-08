@@ -50,7 +50,7 @@ export function BopsAssessment({ studentId }: { studentId: string }) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base">BOPS Assessment</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">136-item behavioral profile questionnaire</p>
+            <p className="text-xs text-muted-foreground mt-1">104-item behavioral profile questionnaire</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{answered}/{questions.length}</Badge>
