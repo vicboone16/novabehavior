@@ -92,6 +92,10 @@ export function ProgramHierarchyView({
   const [moveTarget, setMoveTarget] = useState<{ id: string; name: string; programId: string } | null>(null);
   const [moveProgram, setMoveProgram] = useState<{ id: string; name: string; domainId: string | null } | null>(null);
 
+  // Target phase/status change
+  const [editingTargetForPhase, setEditingTargetForPhase] = useState<SkillTarget | null>(null);
+  const [editingTargetForStatus, setEditingTargetForStatus] = useState<SkillTarget | null>(null);
+
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
   const noDomain: SkillProgram[] = [];
@@ -273,7 +277,35 @@ export function ProgramHierarchyView({
                 <MoreHorizontal className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                const newName = window.prompt('Rename target:', target.name);
+                if (newName && newName.trim() && newName.trim() !== target.name) {
+                  updateTarget(target.id, { name: newName.trim() } as any);
+                }
+              }}>
+                <Pencil className="w-3 h-3 mr-2" /> Rename Target
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                const newDef = window.prompt('Operational definition:', target.operational_definition || '');
+                if (newDef !== null) {
+                  updateTarget(target.id, { operational_definition: newDef || null } as any);
+                }
+              }}>
+                <Info className="w-3 h-3 mr-2" /> Edit Definition
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                setEditingTargetForPhase(target);
+              }}>
+                <Clock className="w-3 h-3 mr-2" /> Change Phase
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setEditingTargetForStatus(target);
+              }}>
+                <Clock className="w-3 h-3 mr-2" /> Change Status
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setMoveTarget({ id: target.id, name: target.name, programId: program.id })}>
                 <ArrowRight className="w-3 h-3 mr-2" /> Move to Program
               </DropdownMenuItem>
@@ -504,6 +536,86 @@ export function ProgramHierarchyView({
           <DialogFooter>
             <Button variant="outline" onClick={() => setStatusChangeProgram(null)}>Cancel</Button>
             <Button onClick={handleStatusChange}>Change Status</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Target Phase Change Dialog */}
+      <Dialog open={!!editingTargetForPhase} onOpenChange={(o) => !o && setEditingTargetForPhase(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Target Phase</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Target:</span>{' '}
+              <span className="font-medium">{editingTargetForPhase?.name}</span>
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Current Phase:</span>{' '}
+              <Badge className={`${PHASE_COLORS[(editingTargetForPhase?.phase as TargetPhase) || 'baseline']} text-white text-xs`}>
+                {PHASE_LABELS[(editingTargetForPhase?.phase as TargetPhase) || 'baseline']}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">New Phase</label>
+              <Select
+                defaultValue={editingTargetForPhase?.phase || 'baseline'}
+                onValueChange={async (v) => {
+                  if (editingTargetForPhase) {
+                    await updateTarget(editingTargetForPhase.id, { phase: v } as any);
+                    setEditingTargetForPhase(null);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PHASE_LABELS).map(([k, label]) => (
+                    <SelectItem key={k} value={k}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTargetForPhase(null)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Target Status Change Dialog */}
+      <Dialog open={!!editingTargetForStatus} onOpenChange={(o) => !o && setEditingTargetForStatus(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Target Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Target:</span>{' '}
+              <span className="font-medium">{editingTargetForStatus?.name}</span>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">New Status</label>
+              <Select
+                defaultValue={editingTargetForStatus?.status || 'not_started'}
+                onValueChange={async (v) => {
+                  if (editingTargetForStatus) {
+                    await updateTarget(editingTargetForStatus.id, { status: v } as any);
+                    setEditingTargetForStatus(null);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TARGET_STATUS_LABELS).map(([k, label]) => (
+                    <SelectItem key={k} value={k}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTargetForStatus(null)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

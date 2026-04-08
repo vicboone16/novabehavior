@@ -74,7 +74,7 @@ export function AddProgramDialog({
 
   useEffect(() => {
     if (editingProgram) {
-      setDomainId(editingProgram.domain_id || '');
+      setDomainId(editingProgram.top_level_domain_id || editingProgram.domain_id || '');
       setProgramName(editingProgram.name);
       setMethod(editingProgram.method as SkillMethod);
       setStatus(editingProgram.status as ProgramStatus);
@@ -128,7 +128,7 @@ export function AddProgramDialog({
       if (editingProgram) {
         await updateProgram(editingProgram.id, {
           name: programName,
-          domain_id: domainId || null,
+          top_level_domain_id: domainId || null,
           method,
           status,
           status_effective_date: statusDate,
