@@ -647,7 +647,8 @@ export function BopsProgramsSection({ studentId, onAllocated }: BopsProgramsSect
             </div>
           );
         })}
-      </CardContent>
+      </CollapsibleContent>
     </Card>
+    </Collapsible>
   );
 }
