@@ -92,6 +92,10 @@ export function ProgramHierarchyView({
   const [moveTarget, setMoveTarget] = useState<{ id: string; name: string; programId: string } | null>(null);
   const [moveProgram, setMoveProgram] = useState<{ id: string; name: string; domainId: string | null } | null>(null);
 
+  // Target phase/status change
+  const [editingTargetForPhase, setEditingTargetForPhase] = useState<SkillTarget | null>(null);
+  const [editingTargetForStatus, setEditingTargetForStatus] = useState<SkillTarget | null>(null);
+
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
   const noDomain: SkillProgram[] = [];
