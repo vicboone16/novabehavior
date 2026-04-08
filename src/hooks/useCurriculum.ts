@@ -19,15 +19,23 @@ export function useDomains() {
 
   useEffect(() => {
     const fetchDomains = async () => {
+      // Use the canonical 8 program_domains instead of the legacy domains table
       const { data, error } = await supabase
-        .from('domains')
+        .from('program_domains')
         .select('*')
-        .order('display_order');
+        .eq('is_active', true)
+        .order('sort_order');
       
       if (error) {
         console.error('Error fetching domains:', error);
       } else {
-        setDomains((data || []) as Domain[]);
+        // Map program_domains shape to Domain shape for backward compat
+        setDomains((data || []).map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          display_order: d.sort_order,
+          status: 'active',
+        })) as Domain[]);
       }
       setLoading(false);
     };

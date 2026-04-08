@@ -45,8 +45,8 @@ export function GoalTemplateManager() {
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
   useEffect(() => {
-    supabase.from('domains').select('*').eq('status', 'active').order('name')
-      .then(({ data }) => setDomains((data || []) as Domain[]));
+    supabase.from('program_domains').select('*').eq('is_active', true).order('sort_order')
+      .then(({ data }) => setDomains((data || []).map((d: any) => ({ id: d.id, name: d.name, display_order: d.sort_order, status: 'active' })) as Domain[]));
   }, []);
 
   const filtered = templates.filter(t =>
