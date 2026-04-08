@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+const db = supabase as any;
+
 const behaviorNameCache = new Map<string, Map<string, string>>();
 const inflightRequests = new Map<string, Promise<Map<string, string>>>();
 
@@ -18,25 +20,36 @@ export async function getStudentBehaviorNameMap(studentId: string): Promise<Map<
   const request = (async () => {
     const map = new Map<string, string>();
 
-    const [{ data: behaviorRows }, { data: mapRows }] = await Promise.all([
-      supabase
-        .from('behavior_session_data')
-        .select('behavior_id, behaviors(name)')
-        .eq('student_id', studentId)
-        .limit(1000),
-      supabase
-        .from('student_behavior_map')
-        .select('behavior_entry_id, behavior_subtype')
-        .eq('student_id', studentId)
-        .eq('active', true),
-    ]);
+    // 1) Get distinct behavior_ids from session data for this student
+    const { data: sessionRows } = await db
+      .from('behavior_session_data')
+      .select('behavior_id')
+      .eq('student_id', studentId)
+      .limit(1000);
 
-    (behaviorRows || []).forEach((row: any) => {
-      const label = normalizeLabel(row?.behaviors?.name);
-      if (row?.behavior_id && label) {
-        map.set(row.behavior_id, label);
-      }
-    });
+    const behaviorIds = [...new Set((sessionRows || []).map((r: any) => r.behavior_id).filter(Boolean))] as string[];
+
+    // 2) Fetch names from behaviors table directly (no FK needed)
+    if (behaviorIds.length > 0) {
+      const { data: behaviorDefs } = await db
+        .from('behaviors')
+        .select('id, name')
+        .in('id', behaviorIds);
+
+      (behaviorDefs || []).forEach((row: any) => {
+        const label = normalizeLabel(row?.name);
+        if (row?.id && label) {
+          map.set(row.id, label);
+        }
+      });
+    }
+
+    // 3) Fallback: student_behavior_map subtype labels
+    const { data: mapRows } = await db
+      .from('student_behavior_map')
+      .select('behavior_entry_id, behavior_subtype')
+      .eq('student_id', studentId)
+      .eq('active', true);
 
     (mapRows || []).forEach((row: any) => {
       const label = normalizeLabel(row?.behavior_subtype);
