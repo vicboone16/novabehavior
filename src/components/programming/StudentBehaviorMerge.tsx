@@ -20,7 +20,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { clearStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+import { clearStudentBehaviorNameMap, getStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
 
 interface BehaviorOption {
   id: string;
@@ -50,38 +50,63 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
   async function loadBehaviors() {
     setLoading(true);
     try {
-      // Get all behavior mappings for this student
-      const { data: maps } = await supabase
-        .from('student_behavior_map')
-        .select('behavior_entry_id, behavior_subtype')
-        .eq('student_id', studentId);
+      const [{ data: maps, error: mapsError }, { data: counts, error: countsError }, resolvedNameMap] = await Promise.all([
+        supabase
+          .from('student_behavior_map')
+          .select('behavior_entry_id, behavior_subtype, active')
+          .eq('student_id', studentId),
+        supabase
+          .from('behavior_session_data')
+          .select('behavior_id')
+          .eq('student_id', studentId),
+        getStudentBehaviorNameMap(studentId),
+      ]);
 
-      // Get behavior names from behaviors table
-      const ids = (maps || []).map(m => m.behavior_entry_id).filter(Boolean);
-      const { data: behaviorDefs } = ids.length > 0
-        ? await supabase.from('behaviors').select('id, name').in('id', ids)
-        : { data: [] };
+      if (mapsError) throw mapsError;
+      if (countsError) throw countsError;
 
-      const nameMap = new Map((behaviorDefs || []).map(b => [b.id, b.name]));
+      const mappedIds = (maps || [])
+        .filter(m => m.active !== false)
+        .map(m => m.behavior_entry_id)
+        .filter(Boolean);
 
-      // Get data counts
-      const { data: counts } = await supabase
-        .from('behavior_session_data')
-        .select('behavior_id')
-        .eq('student_id', studentId);
+      const countedIds = (counts || []).map(c => c.behavior_id).filter(Boolean);
+      const allBehaviorIds = [...new Set([...mappedIds, ...countedIds])];
+
+      const { data: behaviorDefs, error: defsError } = allBehaviorIds.length > 0
+        ? await supabase.from('behaviors').select('id, name').in('id', allBehaviorIds)
+        : { data: [], error: null };
+
+      if (defsError) throw defsError;
+
+      const nameMap = new Map<string, string>();
+      (behaviorDefs || []).forEach(b => {
+        if (b?.id && b?.name?.trim()) nameMap.set(b.id, b.name.trim());
+      });
+      resolvedNameMap.forEach((name, id) => {
+        if (id && name?.trim() && !nameMap.has(id)) {
+          nameMap.set(id, name.trim());
+        }
+      });
+
+      const subtypeMap = new Map<string, string>();
+      (maps || []).forEach(m => {
+        if (m.behavior_entry_id && m.behavior_subtype?.trim() && !subtypeMap.has(m.behavior_entry_id)) {
+          subtypeMap.set(m.behavior_entry_id, m.behavior_subtype.trim());
+        }
+      });
 
       const countMap = new Map<string, number>();
       (counts || []).forEach(c => {
         countMap.set(c.behavior_id, (countMap.get(c.behavior_id) || 0) + 1);
       });
 
-      const options: BehaviorOption[] = (maps || []).map(m => ({
-        id: m.behavior_entry_id,
-        name: nameMap.get(m.behavior_entry_id) || m.behavior_subtype || m.behavior_entry_id,
-        dataCount: countMap.get(m.behavior_entry_id) || 0,
+      const options: BehaviorOption[] = allBehaviorIds.map(id => ({
+        id,
+        name: nameMap.get(id) || subtypeMap.get(id) || `Unlinked Behavior (${id.slice(0, 8)})`,
+        dataCount: countMap.get(id) || 0,
       }));
 
-      // Sort by name
       options.sort((a, b) => a.name.localeCompare(b.name));
       setBehaviors(options);
     } catch (err) {
@@ -106,6 +131,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
       toast.success(
         `Merged "${result.source_name}" → "${result.target_name}" (${result.bsd_moved} data points moved)`
       );
+      window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
       setOpen(false);
       setSourceId('');
       setTargetId('');
