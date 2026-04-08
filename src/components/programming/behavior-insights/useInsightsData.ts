@@ -1,13 +1,25 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { supabase } from '@/integrations/supabase/client';
+import { getStudentBehaviorNameMap, primeStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
 import {
   startOfDay, subDays, subWeeks, subMonths, startOfWeek, endOfWeek,
   startOfMonth, endOfMonth, startOfQuarter, isWithinInterval, format,
   parseISO, differenceInDays,
 } from 'date-fns';
 import type { InsightsFilters, BehaviorDayData, BehaviorSummaryRow, InsightBadge } from './types';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeBehaviorLabel(value?: string | null) {
+  return (value || '').trim();
+}
+
+function isUuidLike(value?: string | null) {
+  const normalized = normalizeBehaviorLabel(value);
+  return !!normalized && UUID_PATTERN.test(normalized);
+}
 
 function getDateRange(
   preset: InsightsFilters['dateRange'],
@@ -101,6 +113,60 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
   );
 
   const behaviors = useMemo(() => student?.behaviors || [], [student]);
+  const [resolvedBehaviorNames, setResolvedBehaviorNames] = useState<Map<string, string>>(new Map());
+
+  const behaviorSeed = useMemo(
+    () => behaviors.map(b => `${b.id}:${normalizeBehaviorLabel(b.name)}`).sort().join('|'),
+    [behaviors],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const seeded = new Map<string, string>();
+    behaviors.forEach(behavior => {
+      const name = normalizeBehaviorLabel(behavior.name);
+      if (behavior.id && name) seeded.set(behavior.id, name);
+    });
+
+    setResolvedBehaviorNames(seeded);
+
+    if (!studentId) return;
+
+    if (seeded.size > 0) {
+      primeStudentBehaviorNameMap(
+        studentId,
+        Array.from(seeded.entries()).map(([id, name]) => ({ id, name })),
+      );
+    }
+
+    getStudentBehaviorNameMap(studentId)
+      .then(map => {
+        if (cancelled) return;
+        const merged = new Map(map);
+        seeded.forEach((name, id) => merged.set(id, name));
+        setResolvedBehaviorNames(merged);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedBehaviorNames(seeded);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId, behaviorSeed, behaviors]);
+
+  const resolveBehaviorName = useCallback((behaviorId: string, fallback?: string | null) => {
+    const mapped = normalizeBehaviorLabel(resolvedBehaviorNames.get(behaviorId));
+    if (mapped) return mapped;
+
+    const fallbackLabel = normalizeBehaviorLabel(fallback);
+    if (fallbackLabel && fallbackLabel !== behaviorId && !isUuidLike(fallbackLabel)) {
+      return fallbackLabel;
+    }
+
+    return 'Unlinked Behavior';
+  }, [resolvedBehaviorNames]);
 
   // Fetch from DB aggregates
   const { dbRows, loaded: dbLoaded } = useDbAggregates(studentId, dateRange);
@@ -110,7 +176,6 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     if (!student) return [];
 
     const result: BehaviorDayData[] = [];
-    const behaviorMap = new Map(behaviors.map(b => [b.id, b.name]));
 
     const freqByKey = new Map<string, number>();
     frequencyEntries
@@ -178,7 +243,7 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
       result.push({
         date,
         behaviorId,
-        behaviorName: behaviorMap.get(behaviorId) || behaviorId,
+        behaviorName: resolveBehaviorName(behaviorId),
         count,
         duration,
         sessions: daySessions,
@@ -187,13 +252,25 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
     });
 
     return result.sort((a, b) => a.date.localeCompare(b.date));
-  }, [student, studentId, frequencyEntries, durationEntries, abcEntries, sessions, behaviors, dateRange]);
+  }, [student, studentId, frequencyEntries, durationEntries, abcEntries, sessions, dateRange, resolveBehaviorName]);
 
   // Merge: combine DB aggregates with Zustand data
   // DB rows take priority for matching date+behavior pairs; Zustand fills gaps
   const dailyData = useMemo(() => {
-    if (dbRows.length === 0) return zustandData;
-    if (zustandData.length === 0) return dbRows;
+    if (dbRows.length === 0) {
+      return zustandData.map(row => ({
+        ...row,
+        behaviorName: resolveBehaviorName(row.behaviorId, row.behaviorName),
+      }));
+    }
+    if (zustandData.length === 0) {
+      return dbRows
+        .map(row => ({
+          ...row,
+          behaviorName: resolveBehaviorName(row.behaviorId, row.behaviorName),
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    }
 
     // Build a set of date|behaviorId keys present in DB rows
     const dbKeys = new Set(dbRows.map(r => `${r.date}|${r.behaviorId}`));
@@ -202,8 +279,37 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
       ...dbRows,
       ...zustandData.filter(z => !dbKeys.has(`${z.date}|${z.behaviorId}`)),
     ];
-    return merged.sort((a, b) => a.date.localeCompare(b.date));
-  }, [dbRows, zustandData]);
+    return merged
+      .map(row => ({
+        ...row,
+        behaviorName: resolveBehaviorName(row.behaviorId, row.behaviorName),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [dbRows, zustandData, resolveBehaviorName]);
+
+  const availableBehaviors = useMemo(() => {
+    const behaviorMap = new Map<string, any>();
+
+    behaviors.forEach(behavior => {
+      behaviorMap.set(behavior.id, {
+        ...behavior,
+        name: resolveBehaviorName(behavior.id, behavior.name),
+      });
+    });
+
+    dailyData.forEach(row => {
+      if (!behaviorMap.has(row.behaviorId)) {
+        behaviorMap.set(row.behaviorId, {
+          id: row.behaviorId,
+          name: resolveBehaviorName(row.behaviorId, row.behaviorName),
+          type: 'frequency',
+          methods: ['frequency'],
+        });
+      }
+    });
+
+    return Array.from(behaviorMap.values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  }, [behaviors, dailyData, resolveBehaviorName]);
 
   // Filter by selected behaviors
   const filteredData = useMemo(() => {
@@ -367,7 +473,7 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
   }, [activeBehaviorNames]);
 
   return {
-    behaviors,
+    behaviors: availableBehaviors,
     dailyData: filteredData,
     summaryRows,
     kpis,
