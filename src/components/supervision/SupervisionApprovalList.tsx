@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Check, X, Clock } from 'lucide-react';
+import { PendingApprovalCard } from '@/components/ui/PendingApprovalCard';
 import { format } from 'date-fns';
 
 interface PendingLog {
@@ -151,6 +152,15 @@ export function SupervisionApprovalList() {
                   </div>
                   <Badge variant="outline">Pending</Badge>
                 </div>
+
+                {/* Contextual guidance for pending items */}
+                <PendingApprovalCard
+                  itemType="supervision log"
+                  submittedAt={log.supervision_date}
+                  pendingWith={log.supervisor_name}
+                  onViewDetails={() => {}}
+                  continueLabel="Continue to next"
+                />
 
                 {log.activities.length > 0 && (
                   <div className="flex flex-wrap gap-1">

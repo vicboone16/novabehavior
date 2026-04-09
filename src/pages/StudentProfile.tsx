@@ -4,6 +4,7 @@ import {
   ArrowLeft, User, Target, Activity, Plus, Trash2, Pencil, 
   Calendar, CheckCircle2, Clock, FileText, Save, X, Archive, AlertTriangle, Check, FolderOpen, Grid3X3, Info, StickyNote, ClipboardCheck, UserCheck, Brain, BrainCircuit, GraduationCap, Shield, Lightbulb, Heart, BookOpen, Layers, Zap, Mic, Package, BarChart3
 } from 'lucide-react';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -409,6 +410,8 @@ export default function StudentProfile() {
 
   return (
     <div className="space-y-6 max-sm:space-y-3">
+      {/* Breadcrumbs */}
+      <Breadcrumbs />
       {/* Header */}
       <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/students')}>

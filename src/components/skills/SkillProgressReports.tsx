@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import {
   Select,
   SelectContent,
@@ -63,7 +63,7 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
 
   const [dateRange, setDateRange] = useState('30');
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
-  const [activeTab, setActiveTab] = useState('overview');
+  
   const overviewChartRef = useRef<HTMLDivElement>(null);
   const domainChartRef = useRef<HTMLDivElement>(null);
 
@@ -491,15 +491,9 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
         </Card>
       </div>
 
-      {/* Charts */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="domains">Domain Analysis</TabsTrigger>
-          <TabsTrigger value="trends">Trend Analysis</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4 space-y-4">
+      {/* Overview Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Overview</h3>
           <div className="grid md:grid-cols-2 gap-4">
             {/* Progress Over Time */}
             <Card>
@@ -580,9 +574,10 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="domains" className="mt-4">
+      {/* Domain Analysis Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Domain Analysis</h3>
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Domain Progress</CardTitle>
@@ -606,9 +601,10 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               })}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="trends" className="mt-4">
+      {/* Trend Analysis Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Trend Analysis</h3>
           <div className="grid md:grid-cols-3 gap-4">
             <Card className="border-green-200">
               <CardHeader className="py-3">
@@ -673,8 +669,6 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

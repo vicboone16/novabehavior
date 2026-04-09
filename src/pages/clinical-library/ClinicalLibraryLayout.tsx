@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen, Target, GitMerge } from 'lucide-react';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -89,6 +90,7 @@ export default function ClinicalLibraryLayout() {
       </header>
 
       <div className="container py-6">
+        {!isRoot && <Breadcrumbs />}
         {libraryScope === 'personal' && (
           <div className="mb-4 p-3 rounded-lg border border-border bg-muted/30">
             <p className="text-xs text-muted-foreground">
