@@ -4,7 +4,7 @@ import {
   HardDrive, Briefcase, BrainCircuit, Target, GraduationCap,
   UserPlus, DollarSign, Shield, Building2, ClipboardCheck,
   BarChart3, FileText, CreditCard, LineChart, FolderOpen,
-  User, type LucideIcon,
+  User, Library, type LucideIcon,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -35,6 +35,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   LineChart,
   FolderOpen,
   User,
+  Library,
 };
 
 export function getNavIcon(iconName: string | null): LucideIcon | null {
