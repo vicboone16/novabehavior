@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, User, GraduationCap, School, X, Filter, 
   ChevronDown, Building2, Tag, BookOpen, MapPin, Calendar,
-  Users, Briefcase, Star, Clock, AlertCircle
+  Users, Briefcase, Star, Clock, AlertCircle, Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -601,13 +601,15 @@ export function GlobalSearch() {
         <ScrollArea className="max-h-[320px]">
           {isLoading ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              <Clock className="w-5 h-5 mx-auto mb-2 animate-spin" />
+              <Loader2 className="w-5 h-5 mx-auto mb-2 animate-spin" />
               Searching...
             </div>
           ) : results.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              {query.length < 2 && activeFilterCount === 0 ? (
-                <>Type to search or use filters</>
+              {query.length === 0 && activeFilterCount === 0 ? (
+                <>Type to search…</>
+              ) : query.length === 1 && activeFilterCount === 0 ? (
+                <>Keep typing… (minimum 2 characters)</>
               ) : (
                 <>No results found</>
               )}

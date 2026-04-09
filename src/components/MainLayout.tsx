@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, Menu, Smartphone } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -135,7 +136,7 @@ export default function MainLayout() {
       </header>
 
       {/* Tab Navigation – rendered from DB */}
-      <div className="border-b border-border bg-card/50 overflow-x-auto scrollbar-hide">
+      <TabOverflowWrapper>
         <div className="container px-3 md:px-4">
           <Tabs value={getActiveTab()} onValueChange={handleTabChange}>
             <TabsList className="h-10 md:h-12 bg-transparent border-none w-max min-w-full flex">
@@ -160,7 +161,7 @@ export default function MainLayout() {
             </TabsList>
           </Tabs>
         </div>
-      </div>
+      </TabOverflowWrapper>
 
       {/* Main Content */}
       <main className="container py-3 md:py-4 px-3 md:px-4">
@@ -178,6 +179,41 @@ export default function MainLayout() {
         </Button>
       )}
       <AskNovaButton />
+    </div>
+  );
+}
+
+/** Wraps the tab bar and shows a right-edge fade gradient when content overflows */
+function TabOverflowWrapper({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [showGradient, setShowGradient] = useState(false);
+
+  const check = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setShowGradient(el.scrollWidth > el.clientWidth + el.scrollLeft + 4);
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => {
+      el.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [check]);
+
+  return (
+    <div className="relative border-b border-border bg-card/50">
+      <div ref={ref} className="overflow-x-auto scrollbar-hide">
+        {children}
+      </div>
+      {showGradient && (
+        <div className="absolute right-0 top-0 bottom-0 w-10 pointer-events-none bg-gradient-to-l from-card/80 to-transparent" />
+      )}
     </div>
   );
 }

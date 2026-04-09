@@ -10,6 +10,7 @@ import {
   Send,
   Loader2
 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -353,6 +354,17 @@ export function SessionEndFlow({
     };
   };
 
+  const completedCount = studentNoteStatuses.filter(s => s.decision !== 'pending' || s.noteCompleted).length;
+
+  const renderProgressBar = () => (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground font-medium">
+        Student {Math.min(currentStudentIndex + 1, targetStudents.length)} of {targetStudents.length}
+      </p>
+      <Progress value={targetStudents.length > 0 ? (completedCount / targetStudents.length) * 100 : 0} className="h-1.5" />
+    </div>
+  );
+
   const renderConfirmStep = () => (
     <div className="space-y-4">
       <div className="flex items-center gap-3 p-4 bg-warning/10 rounded-lg border border-warning/20">
@@ -670,6 +682,8 @@ export function SessionEndFlow({
             )}
           </DialogTitle>
         </DialogHeader>
+
+        {targetStudents.length > 1 && step !== 'confirm' && step !== 'complete' && renderProgressBar()}
 
         {step === 'confirm' && renderConfirmStep()}
         {step === 'note_decision' && renderNoteDecisionStep()}

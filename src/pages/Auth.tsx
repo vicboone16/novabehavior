@@ -186,23 +186,11 @@ export default function Auth() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex-col gap-3">
-                    <div className="flex gap-2 w-full">
-                      <Button type="submit" className="flex-1 text-foreground font-bold" disabled={isLoading}>
-                        {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Sign In
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="secondary" 
-                        className="flex-1 text-foreground font-bold" 
-                        disabled={isLoading}
-                        onClick={(e) => handleLogin(e as unknown as React.FormEvent, true)}
-                      >
-                        {isLoading && teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Teacher Mode
-                      </Button>
-                    </div>
-                    <div className="flex flex-col items-center gap-2">
+                    <Button type="submit" className="w-full text-foreground font-bold" disabled={isLoading}>
+                      {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Sign In
+                    </Button>
+                    <div className="flex flex-col items-center gap-1">
                       <button
                         type="button"
                         className="text-sm text-primary hover:underline"
@@ -223,6 +211,16 @@ export default function Auth() {
                       >
                         Forgot password?
                       </button>
+                      <button
+                        type="button"
+                        className="text-sm text-muted-foreground hover:text-foreground"
+                        onClick={(e) => handleLogin(e as unknown as React.FormEvent, true)}
+                        disabled={isLoading}
+                      >
+                        {isLoading && teacherMode ? <Loader2 className="w-3 h-3 mr-1 inline animate-spin" /> : null}
+                        Log in as a Teacher →
+                      </button>
+                      <span className="text-xs text-muted-foreground">For classroom staff with limited access</span>
                       <button
                         type="button"
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"

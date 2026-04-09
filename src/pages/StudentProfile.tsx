@@ -411,7 +411,7 @@ export default function StudentProfile() {
     <div className="space-y-6 max-sm:space-y-3">
       {/* Header */}
       <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/students')}>
+        <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/students')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div
@@ -589,7 +589,7 @@ export default function StudentProfile() {
           <BeaconAISuggestionsPanel scopeType="student" scopeId={student.id} />
           
           {/* Team & Assignments */}
-          <Collapsible defaultOpen={false}>
+          <Collapsible defaultOpen={true}>
             <Card>
               <CollapsibleTrigger asChild>
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -613,7 +613,7 @@ export default function StudentProfile() {
           </Collapsible>
 
           {/* Contacts */}
-          <Collapsible defaultOpen={false}>
+          <Collapsible defaultOpen={true}>
             <Card>
               <CollapsibleTrigger asChild>
                 <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
