@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp, MoreVertical, BookOpen, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -11,10 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useProgramDomains, useProgramSubdomains, useProgramTags } from '@/hooks/useProgramDomains';
 import { ProgramTagManager } from './ProgramTagManager';
+import { MoveProgramDialog, type MoveProgramTarget } from './MoveProgramDialog';
+import { EmptyState } from './EmptyState';
 import { useLibraryPrograms, useLibraryProgramCount } from '@/hooks/useLibraryPrograms';
 import type { LibraryProgramFilters } from '@/hooks/useLibraryPrograms';
+import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
+import { toast } from 'sonner';
 
 const DOMAIN_BADGE_COLORS: Record<string, string> = {
   'communication': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
@@ -37,6 +48,9 @@ export function LibraryProgramSearch() {
   const [subdomainId, setSubdomainId] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveTarget, setMoveTarget] = useState<MoveProgramTarget | MoveProgramTarget[] | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   const { data: domains = [] } = useProgramDomains();
   const { data: subdomains = [] } = useProgramSubdomains(domainId || undefined);
@@ -50,7 +64,7 @@ export function LibraryProgramSearch() {
     tagIds: selectedTags.length > 0 ? selectedTags : undefined,
   };
 
-  const { data: programs = [], isLoading } = useLibraryPrograms(filters);
+  const { data: programs = [], isLoading, refetch } = useLibraryPrograms(filters);
 
   const hasFilters = !!search || !!domainId || !!subdomainId || selectedTags.length > 0;
 
@@ -65,6 +79,39 @@ export function LibraryProgramSearch() {
     setSelectedTags(prev =>
       prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
     );
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedPrograms = useMemo(() =>
+    programs.filter(p => selectedIds.has(p.id)).map(p => ({
+      id: p.id,
+      name: p.name,
+      domain_id: p.domain_id,
+      subdomain_id: p.subdomain_id,
+      domain_name: p.domain_name,
+      subdomain_name: p.subdomain_name,
+    })),
+    [programs, selectedIds]
+  );
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const result = await seedCanonicalLibrary();
+      toast.success(`Library seeded: ${result.domainsInserted} domains, ${result.subdomainsInserted} subdomains, ${result.programsInserted} programs`);
+      refetch();
+    } catch (e: any) {
+      toast.error('Seed failed: ' + e.message);
+    } finally {
+      setSeeding(false);
+    }
   };
 
   return (
@@ -150,67 +197,142 @@ export function LibraryProgramSearch() {
       {/* Results */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground text-sm">Loading programs…</div>
+      ) : totalCount === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No programs in the library yet"
+          description="Seed the canonical library to populate 172 ABA programs across 8 domains, or add programs manually."
+          action={{ label: seeding ? 'Seeding…' : 'Seed Canonical Library', onClick: handleSeed }}
+        />
       ) : programs.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Search className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">No programs match your filters</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Try broadening your search or add a new program.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Search}
+          title="No programs match your filters"
+          description="Try broadening your search, removing filters, or check a different domain."
+          action={{ label: 'Clear All Filters', onClick: clearFilters }}
+        />
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {programs.map(prog => {
             const slug = domainSlug(prog.domain_name);
             const colorClass = DOMAIN_BADGE_COLORS[slug] || 'bg-muted text-muted-foreground';
             const isExpanded = expandedId === prog.id;
+            const isSelected = selectedIds.has(prog.id);
 
             return (
               <Card
                 key={prog.id}
-                className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
-                onClick={() => setExpandedId(isExpanded ? null : prog.id)}
+                className={`hover:shadow-md hover:border-primary/30 transition-all ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
               >
                 <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-sm leading-tight">{prog.name}</p>
-                    {isExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <Badge className={`text-[10px] border-0 ${colorClass}`}>
-                      {prog.domain_name}
-                    </Badge>
-                    {prog.subdomain_name && (
-                      <span className="text-[10px] text-muted-foreground">{prog.subdomain_name}</span>
-                    )}
-                    {prog.action_status && (
-                      <Badge variant="outline" className="text-[10px]">{prog.action_status}</Badge>
-                    )}
-                  </div>
-
-                  {isExpanded && (
-                    <div className="mt-3 pt-2 border-t space-y-1.5">
-                      {prog.description ? (
-                        <p className="text-xs text-muted-foreground">{prog.description}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">No description yet.</p>
-                      )}
-                      <div className="pt-1">
-                        <ProgramTagManager programId={prog.id} programName={prog.name} />
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleSelect(prog.id)}
+                      className="mt-0.5 shrink-0"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => setExpandedId(isExpanded ? null : prog.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium text-sm leading-tight">{prog.name}</p>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}>
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={e => {
+                                e.stopPropagation();
+                                setMoveTarget({
+                                  id: prog.id,
+                                  name: prog.name,
+                                  domain_id: prog.domain_id,
+                                  subdomain_id: prog.subdomain_id,
+                                  domain_name: prog.domain_name,
+                                  subdomain_name: prog.subdomain_name,
+                                });
+                              }}>
+                                <ArrowRightLeft className="w-3.5 h-3.5 mr-2" />
+                                Move to Domain
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {isExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <Badge className={`text-[10px] border-0 ${colorClass}`}>
+                          {prog.domain_name}
+                        </Badge>
+                        {prog.subdomain_name && (
+                          <span className="text-[10px] text-muted-foreground">{prog.subdomain_name}</span>
+                        )}
+                        {prog.action_status && (
+                          <Badge variant="outline" className="text-[10px]">{prog.action_status}</Badge>
+                        )}
+                      </div>
+
+                      {isExpanded && (
+                        <div className="mt-3 pt-2 border-t space-y-1.5">
+                          {prog.description ? (
+                            <p className="text-xs text-muted-foreground">{prog.description}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">No description yet.</p>
+                          )}
+                          <div className="pt-1">
+                            <ProgramTagManager programId={prog.id} programName={prog.name} />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+      )}
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg shadow-lg px-4 py-2.5 flex items-center gap-3">
+          <Badge variant="secondary" className="text-xs">{selectedIds.size} selected</Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setMoveTarget(selectedPrograms)}
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5" /> Move
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
+      {/* Move dialog */}
+      {moveTarget && (
+        <MoveProgramDialog
+          program={moveTarget}
+          open={!!moveTarget}
+          onOpenChange={open => { if (!open) setMoveTarget(null); }}
+          onMoved={() => { setSelectedIds(new Set()); refetch(); }}
+        />
       )}
     </div>
   );

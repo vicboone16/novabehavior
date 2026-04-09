@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { EmptyState } from './EmptyState';
+import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
 import { Search, BookOpen, FlaskConical, Layers, Target, ChevronRight, Settings2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +66,15 @@ export function LibraryRegistryBrowser() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Loading libraries…</p>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No libraries found.</p>
+            <EmptyState
+              icon={BookOpen}
+              title="No libraries registered"
+              description="Clinical libraries like VB-MAPP, ABLLS-R, and AFLS will appear here once they are set up. Seed the canonical library to get started."
+              action={{ label: 'Seed Canonical Library', onClick: async () => {
+                const r = await seedCanonicalLibrary();
+                toast('Library seeded: ' + r.domainsInserted + ' domains, ' + r.programsInserted + ' programs');
+              }}}
+            />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map(lib => {
