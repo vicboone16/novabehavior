@@ -172,11 +172,42 @@ export function AddProgramDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingProgram ? 'Edit Program' : 'Add Skill Program + Targets'}
+            {editingProgram ? 'Edit Program' : step === 'library' ? 'Choose from Library or Create Custom' : 'Add Skill Program + Targets'}
           </DialogTitle>
         </DialogHeader>
 
+        {/* Library Browser Step */}
+        {step === 'library' && !editingProgram && (
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Select a domain and subdomain from the canonical library, or create a custom program.
+            </p>
+            <CanonicalLibraryBrowser
+              onSelect={(domain, subdomain, progName) => {
+                // Match canonical domain to the legacy domains list
+                const legacyDomain = domains.find(d => d.name === domain.name);
+                if (legacyDomain) {
+                  setDomainId(legacyDomain.id);
+                } else {
+                  // Try matching by the canonical domain id (top_level_domain_id)
+                  setDomainId(domain.id);
+                }
+                setProgramName(progName);
+                setStep('form');
+              }}
+              onCreateCustom={() => setStep('form')}
+            />
+          </div>
+        )}
+
+        {/* Form Step */}
+        {(step === 'form' || editingProgram) && (
         <div className="space-y-5 py-2">
+          {!editingProgram && (
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setStep('library')}>
+              <Library className="w-3.5 h-3.5 mr-1" /> ← Back to Library
+            </Button>
+          )}
           {/* Step A: Program Setup */}
           <div className="space-y-4 border rounded-lg p-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
