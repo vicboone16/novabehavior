@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Loader2, RefreshCw, UserPlus, Link, ArrowDownToLine } from 'lucide-react';
+import { Loader2, RefreshCw, UserPlus, Link, ArrowDownToLine, BookOpen, Check } from 'lucide-react';
+import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
+import { toast } from 'sonner';
 
 export function BopsAdminTools() {
   const refreshAll = useRefreshAllViews();
@@ -17,6 +19,8 @@ export function BopsAdminTools() {
   const [studentIdTarget, setStudentIdTarget] = useState('');
   const [studentIdProg, setStudentIdProg] = useState('');
   const [seedOpen, setSeedOpen] = useState(false);
+  const [seedingLibrary, setSeedingLibrary] = useState(false);
+  const [librarySeeded, setLibrarySeeded] = useState(false);
   const [seedForm, setSeedForm] = useState({
     p_student: '', p_training_name: '', p_clinical_name: '', p_profile_type: 'dual',
     p_primary: '', p_secondary: '', p_tertiary: '',
@@ -24,6 +28,20 @@ export function BopsAdminTools() {
     p_sensory_load_index: 0, p_power_conflict_index: 0,
     p_social_complexity_index: 0, p_recovery_burden_index: 0,
   });
+
+  const handleSeedLibrary = async () => {
+    setSeedingLibrary(true);
+    try {
+      const result = await seedCanonicalLibrary();
+      toast.success(`Library seeded: ${result.domainsInserted} domains, ${result.subdomainsInserted} subdomains, ${result.frameworkTagsInserted} framework tags`);
+      setLibrarySeeded(true);
+    } catch (err) {
+      toast.error('Failed to seed library');
+      console.error(err);
+    } finally {
+      setSeedingLibrary(false);
+    }
+  };
 
   const tools = [
     {
@@ -92,6 +110,19 @@ export function BopsAdminTools() {
           </CardHeader>
           <CardContent>
             <Button size="sm" onClick={() => setSeedOpen(true)}>Open Form</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><BookOpen className="w-4 h-4" />Seed Canonical Library</CardTitle>
+            <CardDescription className="text-xs">Populate domains, subdomains, and framework tags</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" disabled={seedingLibrary || librarySeeded} onClick={handleSeedLibrary}>
+              {seedingLibrary ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : librarySeeded ? <Check className="w-3.5 h-3.5 mr-1" /> : null}
+              {librarySeeded ? 'Library Seeded ✓' : 'Seed Library'}
+            </Button>
           </CardContent>
         </Card>
       </div>
