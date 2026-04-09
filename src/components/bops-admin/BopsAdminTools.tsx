@@ -112,6 +112,19 @@ export function BopsAdminTools() {
             <Button size="sm" onClick={() => setSeedOpen(true)}>Open Form</Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><BookOpen className="w-4 h-4" />Seed Canonical Library</CardTitle>
+            <CardDescription className="text-xs">Populate domains, subdomains, and framework tags</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" disabled={seedingLibrary || librarySeeded} onClick={handleSeedLibrary}>
+              {seedingLibrary ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : librarySeeded ? <Check className="w-3.5 h-3.5 mr-1" /> : null}
+              {librarySeeded ? 'Library Seeded ✓' : 'Seed Library'}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Dialog open={seedOpen} onOpenChange={setSeedOpen}>
