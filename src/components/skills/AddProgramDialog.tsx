@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { Plus, Trash2, Info, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDomains } from '@/hooks/useCurriculum';
+import { useProgramDomains, useProgramSubdomains } from '@/hooks/useProgramDomains';
 import { useSkillPrograms, useSkillProgramActions } from '@/hooks/useSkillPrograms';
+import { CanonicalLibraryBrowser } from '@/components/programs/CanonicalLibraryBrowser';
 import {
   SKILL_METHOD_LABELS,
   PROGRAM_STATUS_LABELS,
