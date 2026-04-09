@@ -12,6 +12,8 @@ export function BopsAdminQA() {
   const syncTargets = useSyncTargets();
   const syncProg = useSyncProgramming();
   const refreshAll = useRefreshAllViews();
+  const studentIds = useMemo(() => (issues || []).map((q: any) => q.student_id).filter(Boolean), [issues]);
+  const { getName: getStudentName } = useClientNameResolver(studentIds);
 
   if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
