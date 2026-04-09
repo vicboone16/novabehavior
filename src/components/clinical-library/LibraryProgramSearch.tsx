@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProgramDomains, useProgramSubdomains, useProgramTags } from '@/hooks/useProgramDomains';
+import { ProgramTagManager } from './ProgramTagManager';
 import { useLibraryPrograms, useLibraryProgramCount } from '@/hooks/useLibraryPrograms';
 import type { LibraryProgramFilters } from '@/hooks/useLibraryPrograms';
 
@@ -200,6 +201,9 @@ export function LibraryProgramSearch() {
                       ) : (
                         <p className="text-xs text-muted-foreground italic">No description yet.</p>
                       )}
+                      <div className="pt-1">
+                        <ProgramTagManager programId={prog.id} programName={prog.name} />
+                      </div>
                     </div>
                   )}
                 </CardContent>
