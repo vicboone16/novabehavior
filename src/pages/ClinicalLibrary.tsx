@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2, Brain, Library, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2, Brain, Library, Loader2, Check, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { UnifiedDomainsBrowser } from '@/components/clinical-library/UnifiedDoma
 import { CanonicalLibraryBrowser } from '@/components/programs/CanonicalLibraryBrowser';
 import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
 import { useProgramDomains } from '@/hooks/useProgramDomains';
+import { useLibraryProgramCount } from '@/hooks/useLibraryPrograms';
 import { toast } from 'sonner';
 
 type LibraryScope = 'personal' | 'organization';
@@ -27,6 +28,7 @@ export default function ClinicalLibrary() {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
   const { data: domains } = useProgramDomains();
+  const { data: programCount = 0 } = useLibraryProgramCount();
   const [seedingLibrary, setSeedingLibrary] = useState(false);
   const [librarySeeded, setLibrarySeeded] = useState(false);
 
@@ -233,15 +235,21 @@ export default function ClinicalLibrary() {
         {/* Program Library drill-down */}
         {activeSection === 'program_library' && (
           <div className="space-y-4">
-            {isAdmin && (!domains || domains.length === 0) && !librarySeeded && (
+            {isAdmin && !librarySeeded && (
               <div className="p-4 rounded-lg border border-border bg-muted/30 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">No canonical domains found</p>
-                  <p className="text-xs text-muted-foreground">Seed the library with 8 domains, 49 subdomains, and framework tags.</p>
+                  <p className="text-sm font-medium">
+                    {programCount === 0 ? 'Seed Canonical Library' : 'Re-sync Library'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {programCount === 0
+                      ? 'Seed the library with 8 domains, 49 subdomains, and 160+ programs.'
+                      : `${programCount} programs loaded. Re-sync to add any missing items (existing data won't be duplicated).`}
+                  </p>
                 </div>
                 <Button size="sm" disabled={seedingLibrary} onClick={handleSeedLibrary}>
-                  {seedingLibrary ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-                  Seed Canonical Library
+                  {seedingLibrary ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+                  {programCount === 0 ? 'Seed Canonical Library' : 'Re-sync'}
                 </Button>
               </div>
             )}
