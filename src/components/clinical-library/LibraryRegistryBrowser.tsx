@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { EmptyState } from './EmptyState';
 import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
 import { Search, BookOpen, FlaskConical, Layers, Target, ChevronRight, Settings2 } from 'lucide-react';
