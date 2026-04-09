@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, Download, FileText, 
   Calendar, Target, CheckCircle2, Clock, Award
@@ -491,15 +491,9 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
         </Card>
       </div>
 
-      {/* Charts */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="domains">Domain Analysis</TabsTrigger>
-          <TabsTrigger value="trends">Trend Analysis</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4 space-y-4">
+      {/* Overview Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Overview</h3>
           <div className="grid md:grid-cols-2 gap-4">
             {/* Progress Over Time */}
             <Card>
