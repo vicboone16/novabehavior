@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, ChevronRight, ChevronDown, Plus, Check, Layers, FolderOpen } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, Plus, Check, Layers, FolderOpen, Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -143,6 +143,27 @@ function DomainSection({
   const { data: subdomains = [] } = useProgramSubdomains(expanded ? domain.id : undefined);
   const colorClass = DOMAIN_COLORS[domain.slug] || 'border-l-primary';
 
+  // Load program counts per subdomain
+  const { data: programCounts = new Map<string, number>() } = useQuery({
+    queryKey: ['library-program-counts', domain.id],
+    enabled: expanded,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('library_programs')
+        .select('subdomain_id')
+        .eq('domain_id', domain.id)
+        .eq('is_active', true);
+      const counts = new Map<string, number>();
+      (data || []).forEach((r: any) => {
+        const key = r.subdomain_id || 'none';
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return counts;
+    },
+  });
+
+  const totalPrograms = Array.from(programCounts.values()).reduce((a, b) => a + b, 0);
+
   const filteredSubs = useMemo(() => {
     if (!search.trim()) return subdomains;
     const q = search.toLowerCase();
@@ -160,9 +181,16 @@ function DomainSection({
           <Layers className="w-4 h-4 text-primary" />
           <span className="font-medium text-sm">{highlightMatch(domain.name, search)}</span>
         </div>
-        <Badge variant="secondary" className="text-[10px]">
-          {filteredSubs.length} subdomains
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          {totalPrograms > 0 && (
+            <Badge variant="outline" className="text-[10px]">
+              {totalPrograms} programs
+            </Badge>
+          )}
+          <Badge variant="secondary" className="text-[10px]">
+            {filteredSubs.length} subdomains
+          </Badge>
+        </div>
       </button>
 
       {expanded && (
@@ -174,6 +202,7 @@ function DomainSection({
               subdomain={sub}
               search={search}
               onSelect={onSelect}
+              programCount={programCounts.get(sub.id) || 0}
             />
           ))}
           <AddSubdomainInline domainId={domain.id} />
@@ -188,36 +217,88 @@ function SubdomainRow({
   subdomain,
   search,
   onSelect,
+  programCount,
 }: {
   domain: ProgramDomain;
   subdomain: ProgramSubdomain;
   search: string;
   onSelect?: CanonicalLibraryBrowserProps['onSelect'];
+  programCount: number;
 }) {
   const [expanded, setExpanded] = useState(!!search.trim());
   const [addingProgram, setAddingProgram] = useState(false);
   const [newProgName, setNewProgName] = useState('');
 
-  // For now, programs within subdomains come from skill_programs library or
-  // can be added inline. We show the subdomain as selectable.
+  // Load programs when expanded
+  const { data: programs = [] } = useQuery({
+    queryKey: ['library-programs-subdomain', subdomain.id],
+    enabled: expanded,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('library_programs')
+        .select('id, name, slug, action_status, sort_order')
+        .eq('subdomain_id', subdomain.id)
+        .eq('is_active', true)
+        .order('sort_order');
+      return data || [];
+    },
+  });
+
   return (
     <div className="ml-6">
-      <div className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30 transition-colors">
+      <div
+        className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30 transition-colors cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
         <div className="flex items-center gap-2 flex-1 min-w-0">
+          {expanded ? <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" /> : <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />}
           <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <span className="text-sm">{highlightMatch(subdomain.name, search)}</span>
+          {programCount > 0 && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+              {programCount}
+            </Badge>
+          )}
         </div>
         {onSelect && (
           <Button
             variant="ghost"
             size="sm"
             className="h-7 text-xs"
-            onClick={() => onSelect(domain, subdomain, subdomain.name)}
+            onClick={e => { e.stopPropagation(); onSelect(domain, subdomain, subdomain.name); }}
           >
             <Check className="w-3 h-3 mr-1" /> Select
           </Button>
         )}
       </div>
+
+      {/* Programs list */}
+      {expanded && programs.length > 0 && (
+        <div className="ml-6 space-y-0.5 py-1">
+          {programs.map((prog: any) => (
+            <div key={prog.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Target className="w-3 h-3 text-muted-foreground shrink-0" />
+                <span className="text-xs">{highlightMatch(prog.name, search)}</span>
+              </div>
+              {onSelect && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  onClick={() => onSelect(domain, subdomain, prog.name)}
+                >
+                  Select
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {expanded && programs.length === 0 && programCount === 0 && (
+        <p className="ml-6 text-[10px] text-muted-foreground py-1 px-2">No programs seeded yet</p>
+      )}
 
       {/* Add Program inline */}
       {addingProgram ? (
