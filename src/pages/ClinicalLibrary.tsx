@@ -32,6 +32,13 @@ export default function ClinicalLibrary() {
   const [seedingLibrary, setSeedingLibrary] = useState(false);
   const [librarySeeded, setLibrarySeeded] = useState(false);
 
+  // Auto-seed if domains exist but no programs (seed was never fully run)
+  useEffect(() => {
+    if (domains && domains.length > 0 && programCount === 0 && !seedingLibrary && !librarySeeded && isAdmin) {
+      handleSeedLibrary();
+    }
+  }, [domains, programCount]);
+
   const handleSeedLibrary = async () => {
     setSeedingLibrary(true);
     try {
