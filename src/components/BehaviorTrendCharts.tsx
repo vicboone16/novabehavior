@@ -247,12 +247,12 @@ export function BehaviorTrendCharts() {
     students.forEach(student => {
       student.behaviors.forEach(b => {
         if (!behaviors.find(x => x.id === b.id)) {
-          behaviors.push({ id: b.id, name: b.name });
+          behaviors.push({ id: b.id, name: resolveName(b.id, b.name) });
         }
       });
     });
     return behaviors;
-  }, [students]);
+  }, [students, resolveName]);
 
   // Process data for charts - combine session data AND historical data
   const chartData = useMemo(() => {
