@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { EmptyState } from './EmptyState';
+import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
 import { Plus, Edit2, Archive, ArchiveRestore, Search, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +38,16 @@ export function DomainManager() {
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-8 text-center text-muted-foreground">No domains found</CardContent></Card>
+        <EmptyState
+          icon={Layers}
+          title="No canonical domains set up"
+          description="Domains organize your clinical programs into top-level categories like Communication, Behavior & Regulation, and Adaptive Living."
+          action={{ label: 'Seed Canonical Library', onClick: async () => {
+            const r = await seedCanonicalLibrary();
+            toast.success(`Seeded ${r.domainsInserted} domains`);
+            refetch();
+          }}}
+        />
       ) : (
         <div className="grid gap-2">
           {filtered.map(d => (

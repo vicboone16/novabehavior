@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { GitBranch } from 'lucide-react';
+import { EmptyState } from './EmptyState';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,11 +81,19 @@ export function DomainMigrationReview() {
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading migration log...</div>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {logs.length === 0 ? 'No migration records yet. Programs will appear here when domains are migrated.' : 'No matching records.'}
-          </CardContent>
-        </Card>
+        {logs.length === 0 ? (
+          <EmptyState
+            icon={GitBranch}
+            title="No migration records yet"
+            description="When programs are moved between domains, a full audit trail appears here. Move a program to see it logged."
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No matching records.
+            </CardContent>
+          </Card>
+        )}
       ) : (
         <div className="grid gap-2">
           {filtered.map(log => (
