@@ -50,9 +50,6 @@ export function Breadcrumbs() {
 
   const segments = location.pathname.split('/').filter(Boolean);
 
-  // Don't render for shallow routes (0 or 1 segment)
-  if (segments.length < 2) return null;
-
   // Resolve UUIDs to entity names
   useEffect(() => {
     const uuids = segments.filter(s => UUID_RE.test(s));
