@@ -63,11 +63,11 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           .from('student_behavior_map')
           .select('behavior_entry_id, behavior_subtype, active')
           .eq('student_id', studentId),
-        supabase
+        (supabase as any)
           .from('behavior_session_data')
-          .select('behavior_id, service_date')
+          .select('behavior_id, created_at')
           .eq('student_id', studentId)
-          .order('service_date', { ascending: true }),
+          .order('created_at', { ascending: true }),
         getStudentBehaviorNameMap(studentId),
       ]);
 
@@ -75,27 +75,28 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
       if (bsdError) throw bsdError;
 
       const mappedIds = (maps || [])
-        .filter(m => m.active !== false)
-        .map(m => m.behavior_entry_id)
+        .filter((m: any) => m.active !== false)
+        .map((m: any) => m.behavior_entry_id)
         .filter(Boolean);
 
-      const bsdData = bsdRows || [];
-      const bsdIds = bsdData.map(c => c.behavior_id).filter(Boolean);
+      const bsdData = (bsdRows || []) as any[];
+      const bsdIds = bsdData.map((c: any) => c.behavior_id).filter(Boolean);
       const allBehaviorIds = [...new Set([...mappedIds, ...bsdIds])];
 
       // Build count + date range per behavior
       const countMap = new Map<string, number>();
       const firstDateMap = new Map<string, string>();
       const lastDateMap = new Map<string, string>();
-      bsdData.forEach(r => {
+      bsdData.forEach((r: any) => {
         const id = r.behavior_id;
+        const date = r.created_at ? r.created_at.slice(0, 10) : null;
         countMap.set(id, (countMap.get(id) || 0) + 1);
-        if (r.service_date) {
-          if (!firstDateMap.has(id) || r.service_date < firstDateMap.get(id)!) {
-            firstDateMap.set(id, r.service_date);
+        if (date) {
+          if (!firstDateMap.has(id) || date < firstDateMap.get(id)!) {
+            firstDateMap.set(id, date);
           }
-          if (!lastDateMap.has(id) || r.service_date > lastDateMap.get(id)!) {
-            lastDateMap.set(id, r.service_date);
+          if (!lastDateMap.has(id) || date > lastDateMap.get(id)!) {
+            lastDateMap.set(id, date);
           }
         }
       });
