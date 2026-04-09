@@ -188,7 +188,8 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
           const entryDate = parseISO(d);
           if (!isWithinInterval(entryDate, dateRange)) return;
           const key = `${d}|${e.behaviorId}`;
-          freqByKey.set(key, (freqByKey.get(key) || 0) + 1);
+          // Sum actual frequency count, not row count
+          freqByKey.set(key, (freqByKey.get(key) || 0) + (e.count || 1));
         } catch { /* skip invalid timestamps */ }
       });
 
@@ -429,6 +430,7 @@ export function useInsightsData(studentId: string, filters: InsightsFilters) {
       peakDay,
       peakCount,
       completeness,
+      daysWithData,
       lastRecorded: filteredData[filteredData.length - 1]?.date || null,
       priorityConcern: summaryRows.find(r => r.clinicalFlag === 'spike' || r.clinicalFlag === 'increasing') || null,
       ...abcAndIntervalKpis,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Merge, Loader2, ArrowRight, AlertTriangle } from 'lucide-react';
+import { useDataStore } from '@/store/dataStore';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -183,6 +184,16 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
 
       // Collapse any duplicate rows that now share the same session + target behavior
       await (supabase as any).rpc('deduplicate_behavior_session_data', { p_student_id: studentId });
+
+      // Rebuild daily aggregates so Avg/Day and trend data reflect the consolidated state
+      await (supabase as any).rpc('rebuild_behavior_daily_aggregates', { p_student_id: studentId })
+        .catch(() => { /* non-critical — aggregates will rebuild on next trigger */ });
+
+      // Remove merged-away behaviors from the Zustand store so they stop appearing in the list
+      const removeBehavior = useDataStore.getState().removeBehavior;
+      sourceIds.forEach(sourceId => {
+        try { removeBehavior(studentId, sourceId); } catch { /* ignore if already missing */ }
+      });
 
       clearStudentBehaviorNameMap(studentId);
       const primaryName = behaviors.find(b => b.id === primaryId)?.name || 'target behavior';
