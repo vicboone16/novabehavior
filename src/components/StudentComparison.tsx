@@ -103,7 +103,7 @@ export function StudentComparison() {
       studentFreq.forEach(entry => {
         const dateStr = format(new Date(entry.timestamp), 'MMM dd');
         const existing = dateMap.get(dateStr) || { date: dateStr };
-        existing[student.name] = ((existing[student.name] as number) || 0) + entry.count;
+        existing[student.displayName || student.name] = ((existing[student.displayName || student.name] as number) || 0) + entry.count;
         dateMap.set(dateStr, existing);
       });
     });
@@ -171,7 +171,7 @@ export function StudentComparison() {
 
       return {
         id,
-        name: student.name,
+        name: student.displayName || student.name,
         color: student.color,
         totalFrequency,
         totalDuration,
