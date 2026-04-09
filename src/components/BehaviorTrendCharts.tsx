@@ -34,6 +34,51 @@ export function BehaviorTrendCharts() {
   const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
   const syncedIdsRef = useRef<Set<string>>(new Set());
 
+  // Async-resolved behavior name map: behaviorId → display name
+  const [resolvedNames, setResolvedNames] = useState<Map<string, string>>(new Map());
+
+  // Fetch name maps for all active students
+  useEffect(() => {
+    const studentIds = students.filter(s => !s.isArchived).map(s => s.id);
+    if (studentIds.length === 0) return;
+    let cancelled = false;
+
+    Promise.all(studentIds.map(sid => getStudentBehaviorNameMap(sid)))
+      .then(maps => {
+        if (cancelled) return;
+        const merged = new Map<string, string>();
+        maps.forEach(m => m.forEach((name, id) => merged.set(id, name)));
+        // Also add names from Zustand store behaviors
+        students.forEach(s => s.behaviors.forEach(b => {
+          if (b.id && b.name && !UUID_RE.test(b.name)) {
+            merged.set(b.id, b.name);
+          }
+        }));
+        setResolvedNames(merged);
+      });
+
+    return () => { cancelled = true; };
+  }, [students]);
+
+  // Robust behavior name resolver — never returns a UUID
+  const resolveName = useCallback((behaviorId: string, fallbackName?: string): string => {
+    // 1. Check async-resolved map
+    const resolved = resolvedNames.get(behaviorId);
+    if (resolved && !UUID_RE.test(resolved)) return resolved;
+
+    // 2. Check Zustand store
+    for (const s of students) {
+      const b = s.behaviors.find(b => b.id === behaviorId);
+      if (b?.name && !UUID_RE.test(b.name)) return b.name;
+    }
+
+    // 3. Fallback name if not a UUID
+    if (fallbackName && !UUID_RE.test(fallbackName)) return fallbackName;
+
+    // 4. Never show raw UUID
+    return `Behavior #${behaviorId.slice(0, 4)}`;
+  }, [resolvedNames, students]);
+
   // Bulk-sync behavior_session_data for ALL students so the global chart shows all historical data
   useEffect(() => {
     const unsyncedIds = students
