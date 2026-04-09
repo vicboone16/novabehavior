@@ -683,6 +683,8 @@ export function SessionEndFlow({
           </DialogTitle>
         </DialogHeader>
 
+        {targetStudents.length > 1 && step !== 'confirm' && step !== 'complete' && renderProgressBar()}
+
         {step === 'confirm' && renderConfirmStep()}
         {step === 'note_decision' && renderNoteDecisionStep()}
         {step === 'note_type_select' && renderNoteTypeSelectStep()}
