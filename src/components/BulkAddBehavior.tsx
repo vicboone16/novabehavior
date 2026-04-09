@@ -682,7 +682,7 @@ export function BulkAddBehavior() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: student.color }}
                         />
-                        <span>{student.name}</span>
+                        <span>{student.displayName || student.name}</span>
                       </div>
                     ))}
                   </div>
@@ -852,7 +852,7 @@ export function BulkAddBehavior() {
                             className="w-2 h-2 rounded-full"
                             style={{ backgroundColor: student.color }}
                           />
-                          <span>{student.name}</span>
+                          <span>{student.displayName || student.name}</span>
                           {hasBehavior && (
                             <Badge variant="outline" className="text-xs px-1">
                               has behavior

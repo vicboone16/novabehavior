@@ -237,7 +237,7 @@ export function BxInterventionLibrary({ onSelectForStudent }: BxInterventionLibr
                       }
                     }}
                   />
-                  <span className="text-sm">{student.name}</span>
+                  <span className="text-sm">{student.displayName || student.name}</span>
                 </label>
               ))
             )}

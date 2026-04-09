@@ -291,7 +291,7 @@ export function HistoricalIntervalEntry({ student, open, onOpenChange }: Histori
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Grid3X3 className="w-5 h-5" />
-            Add Historical Interval Data for {student.name}
+            Add Historical Interval Data for {student.displayName || student.name}
           </DialogTitle>
           <DialogDescription>
             {step === 'config' 

@@ -220,7 +220,7 @@ export function ClinicalFormsPanel() {
                             {sub.template?.form_name || 'Form'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {student?.name && `${student.name} · `}
+                            {student?.name && `${student.displayName || student.name} · `}
                             {sub.respondent_name && `${sub.respondent_name} · `}
                             {new Date(sub.created_at).toLocaleDateString()}
                           </p>

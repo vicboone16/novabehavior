@@ -239,7 +239,7 @@ export function SkillAcquisitionExport({
     })).filter(g => g.studentTargets.length > 0);
 
     studentGroups.forEach(({ student, studentTargets }) => {
-      summary += `\n${student.name}\n`;
+      summary += `\n${student.displayName || student.name}\n`;
       summary += `  Targets: ${studentTargets.length}\n`;
       
       studentTargets.forEach(target => {

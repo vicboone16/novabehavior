@@ -74,9 +74,9 @@ export function LocalDataCloudSync() {
 
           if (byName) {
             studentMap.set(student.id, byName.id);
-            appendLog(`↔ Matched "${student.name}" to existing backend record`);
+            appendLog(`↔ Matched "${student.displayName || student.name}" to existing backend record`);
           } else {
-            appendLog(`⚠ Student "${student.name}" (${student.id}) not found in backend — skipping`);
+            appendLog(`⚠ Student "${student.displayName || student.name}" (${student.id}) not found in backend — skipping`);
             continue;
           }
         }

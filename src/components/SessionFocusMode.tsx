@@ -153,7 +153,7 @@ export function SessionFocusMode() {
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: student.color }}
                             />
-                            <span className="font-medium">{student.name}</span>
+                            <span className="font-medium">{student.displayName || student.name}</span>
                             <Badge variant="outline" className="text-xs">
                               {counts.active}/{counts.total} active
                             </Badge>

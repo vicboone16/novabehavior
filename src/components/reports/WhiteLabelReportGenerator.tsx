@@ -83,7 +83,7 @@ export function WhiteLabelReportGenerator({
       : format(new Date(), 'yyyy-MM-dd');
 
     const content: ReportContent = {
-      title: `${REPORT_TYPE_LABELS[formData.report_type].label} for ${student.name}`,
+      title: `${REPORT_TYPE_LABELS[formData.report_type].label} for ${student.displayName || student.name}`,
       sections: [
         {
           id: '1',
@@ -119,12 +119,12 @@ export function WhiteLabelReportGenerator({
       const sections: Array<{ heading: string; content: string }> = [];
       sections.push({
         heading: 'Student Information',
-        content: `Name: ${student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${dateRangeStart} – ${dateRangeEnd}`,
+        content: `Name: ${student.displayName || student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${dateRangeStart} – ${dateRangeEnd}`,
       });
       if (formData.include_narrative) {
         sections.push({
           heading: 'Narrative Summary',
-          content: `${student.name} was monitored during the period ${dateRangeStart} to ${dateRangeEnd}. ${student.behaviors.length} target behaviors were tracked across sessions.`,
+          content: `${student.displayName || student.name} was monitored during the period ${dateRangeStart} to ${dateRangeEnd}. ${student.behaviors.length} target behaviors were tracked across sessions.`,
         });
       }
       if (formData.include_recommendations) {
@@ -170,7 +170,7 @@ export function WhiteLabelReportGenerator({
                   {student.name.charAt(0)}
                 </div>
                 <div>
-                  <p className="font-medium">{student.name}</p>
+                  <p className="font-medium">{student.displayName || student.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {student.behaviors.length} behaviors tracked
                   </p>

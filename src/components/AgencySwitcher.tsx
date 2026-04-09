@@ -475,7 +475,7 @@ export function AgencySwitcher() {
                             }}
                           />
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium">{student.name}</span>
+                            <span className="text-sm font-medium">{student.displayName || student.name}</span>
                             {isInOtherAgency && (
                               <p className="text-xs text-muted-foreground">
                                 Currently in: {otherAgency || 'Another agency'}

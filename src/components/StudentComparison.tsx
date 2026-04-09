@@ -258,7 +258,7 @@ export function StudentComparison() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: student.color }}
                   />
-                  <span className="text-sm font-medium">{student.name}</span>
+                  <span className="text-sm font-medium">{student.displayName || student.name}</span>
                 </div>
               ))}
             </div>
@@ -359,8 +359,8 @@ export function StudentComparison() {
                             {selectedStudents.map(student => (
                               <Radar
                                 key={student.id}
-                                name={student.name}
-                                dataKey={student.name}
+                                name={student.displayName || student.name}
+                                dataKey={student.displayName || student.name}
                                 stroke={student.color}
                                 fill={student.color}
                                 fillOpacity={0.2}
@@ -404,7 +404,7 @@ export function StudentComparison() {
                                   <Line
                                     key={student.id}
                                     type="monotone"
-                                    dataKey={student.name}
+                                    dataKey={student.displayName || student.name}
                                     stroke={student.color}
                                     strokeWidth={2}
                                     dot={{ fill: student.color }}
@@ -419,7 +419,7 @@ export function StudentComparison() {
                                 <Tooltip />
                                 <Legend />
                                 {selectedStudents.map(student => (
-                                  <Bar key={student.id} dataKey={student.name} fill={student.color} />
+                                  <Bar key={student.id} dataKey={student.displayName || student.name} fill={student.color} />
                                 ))}
                               </BarChart>
                             )}

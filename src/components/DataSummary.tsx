@@ -274,7 +274,7 @@ export function DataSummary() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: student.color }}
                         />
-                        <h4 className="font-semibold">{student.name}</h4>
+                        <h4 className="font-semibold">{student.displayName || student.name}</h4>
                       </div>
 
                       {studentFreq.length > 0 && (
@@ -475,13 +475,13 @@ export function DataSummary() {
               <StudentSessionNotes
                 sessionId={currentSessionId}
                 studentId={student.id}
-                studentName={student.name}
+                studentName={student.displayName || student.name}
                 compact={selectedStudents.length > 1}
               />
               <div className="flex items-center gap-2 pl-2">
                 <AddTimelineEntryButton
                   studentId={student.id}
-                  studentName={student.name}
+                  studentName={student.displayName || student.name}
                   compact
                 />
               </div>

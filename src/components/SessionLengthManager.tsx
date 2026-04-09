@@ -94,7 +94,7 @@ export function SessionLengthManager() {
                         {student && (
                           <Badge variant="outline" className="gap-1">
                             <User className="w-3 h-3" />
-                            {student.name}
+                            {student.displayName || student.name}
                           </Badge>
                         )}
                         {behavior && (

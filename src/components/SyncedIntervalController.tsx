@@ -295,7 +295,7 @@ export function SyncedIntervalController() {
                                 className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: student.color }}
                               />
-                              <span className="text-sm font-medium">{student.name}</span>
+                              <span className="text-sm font-medium">{student.displayName || student.name}</span>
                               {hasJoined && (
                                 <Badge variant="outline" className="text-xs">
                                   Joined at #{status.joinedAtInterval! + 1}
@@ -356,7 +356,7 @@ export function SyncedIntervalController() {
                                 className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: student.color }}
                               />
-                              <span className="text-sm font-medium">{student.name}</span>
+                              <span className="text-sm font-medium">{student.displayName || student.name}</span>
                               {hasDeparted && (
                                 <Badge variant="outline" className="text-xs text-destructive">
                                   Left at #{status.departedAtInterval! + 1}
@@ -612,7 +612,7 @@ export function SyncedIntervalController() {
                   className="text-xs"
                   style={{ borderColor: student.color, color: student.color }}
                 >
-                  {student.name}: 
+                  {student.displayName || student.name}: 
                   {status.joinedAtInterval !== undefined && status.joinedAtInterval > 0 && 
                     ` Late (${status.joinedAtInterval})`}
                   {status.departedAtInterval !== undefined && 

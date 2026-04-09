@@ -29,7 +29,7 @@ export function NotesHub({ student, studentAccess, addNarrativeNote, updateNarra
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Client Notes</h2>
-          <p className="text-sm text-muted-foreground">All documentation for {student.name}</p>
+          <p className="text-sm text-muted-foreground">All documentation for {student.displayName || student.name}</p>
         </div>
         <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowVoiceRecorder(true)}>
           <Mic className="w-4 h-4" />
@@ -69,13 +69,13 @@ export function NotesHub({ student, studentAccess, addNarrativeNote, updateNarra
           <div className="flex items-center justify-end">
             <ShareWithTeacherButton
               studentId={student.id}
-              studentName={student.name}
+              studentName={student.displayName || student.name}
               variant="button"
               messageType="data_share"
-              prefillSubject={`Session notes for ${student.name}`}
+              prefillSubject={`Session notes for ${student.displayName || student.name}`}
             />
           </div>
-          <SessionNotesTab studentId={student.id} studentName={student.name} />
+          <SessionNotesTab studentId={student.id} studentName={student.displayName || student.name} />
         </TabsContent>
 
         <TabsContent value="narrative" className="space-y-4 mt-4">
@@ -131,7 +131,7 @@ export function NotesHub({ student, studentAccess, addNarrativeNote, updateNarra
 
         <TabsContent value="summaries" className="space-y-4 mt-4">
           <TeacherSummaries clientId={student.id} />
-          <StaffMessageThread studentId={student.id} studentName={student.name} />
+          <StaffMessageThread studentId={student.id} studentName={student.displayName || student.name} />
         </TabsContent>
       </Tabs>
 

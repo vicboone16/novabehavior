@@ -116,7 +116,7 @@ export function CreateRequestDialog({
               >
                 {student.name.charAt(0)}
               </div>
-              <span className="font-medium">{student.name}</span>
+              <span className="font-medium">{student.displayName || student.name}</span>
             </div>
           </div>
 

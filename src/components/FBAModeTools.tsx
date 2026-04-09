@@ -230,7 +230,7 @@ export function FBAModeTools({ student }: FBAModeToolsProps) {
     
     const behaviorNames = student.behaviors.map(b => b.name).join(', ');
 
-    return `When ${topAntecedent.toLowerCase()}, ${student.name} engages in ${behaviorNames || 'target behavior(s)'} in order to obtain ${functionLabel.toLowerCase()}. The behavior is maintained by ${topConsequence.toLowerCase()}.`;
+    return `When ${topAntecedent.toLowerCase()}, ${student.displayName || student.name} engages in ${behaviorNames || 'target behavior(s)'} in order to obtain ${functionLabel.toLowerCase()}. The behavior is maintained by ${topConsequence.toLowerCase()}.`;
   }, [patternAnalysis, student]);
 
   // Function color coding

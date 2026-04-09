@@ -652,7 +652,7 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
         onComplete={() => {
           toast({
             title: 'Session Ended',
-            description: `Session for ${student.name} has been completed.`,
+            description: `Session for ${student.displayName || student.name} has been completed.`,
           });
         }}
       />

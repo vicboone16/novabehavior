@@ -186,7 +186,7 @@ export function EnhancedExportOptions({ studentId }: EnhancedExportOptionsProps)
 
     sections.push({
       heading: 'Student Information',
-      content: `Name: ${student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${format(dateRange.from, 'MMM d, yyyy')} – ${format(dateRange.to, 'MMM d, yyyy')}`,
+      content: `Name: ${student.displayName || student.name}\nBehaviors Tracked: ${student.behaviors.length}\nDate Range: ${format(dateRange.from, 'MMM d, yyyy')} – ${format(dateRange.to, 'MMM d, yyyy')}`,
     });
 
     sections.push({
@@ -204,7 +204,7 @@ export function EnhancedExportOptions({ studentId }: EnhancedExportOptionsProps)
     if (options.includeNarrative) {
       sections.push({
         heading: 'Narrative Summary',
-        content: `During the reporting period, ${student.name} participated in ${relevantSessions.length} sessions. ${student.behaviors.length} behaviors were monitored.`,
+        content: `During the reporting period, ${student.displayName || student.name} participated in ${relevantSessions.length} sessions. ${student.behaviors.length} behaviors were monitored.`,
       });
     }
 
@@ -229,7 +229,7 @@ export function EnhancedExportOptions({ studentId }: EnhancedExportOptionsProps)
       });
       toast({
         title: 'Report Downloaded',
-        description: `${reportTypeLabels[reportType].label} for ${student.name} has been downloaded.`,
+        description: `${reportTypeLabels[reportType].label} for ${student.displayName || student.name} has been downloaded.`,
       });
     } catch {
       toast({ title: 'Export Failed', description: 'Could not generate the report.', variant: 'destructive' });

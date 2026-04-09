@@ -160,7 +160,7 @@ export function SessionEndFlow({
             });
           } catch (e) {
             console.error('[SessionEnd] student_session_status upsert failed:', e);
-            errors.push(`Status for ${student.name}`);
+            errors.push(`Status for ${student.displayName || student.name}`);
           }
 
           // Handle appointment linking
@@ -208,7 +208,7 @@ export function SessionEndFlow({
             }
           } catch (e) {
             console.error('[SessionEnd] appointment handling failed:', e);
-            errors.push(`Appointment for ${student.name}`);
+            errors.push(`Appointment for ${student.displayName || student.name}`);
           }
         }
       }
@@ -396,7 +396,7 @@ export function SessionEndFlow({
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: student.color }}
                   />
-                  <span className="text-sm font-medium">{student.name}</span>
+                  <span className="text-sm font-medium">{student.displayName || student.name}</span>
                 </div>
                 {requirement?.isRequired && (
                   <Badge variant="outline" className="text-xs">

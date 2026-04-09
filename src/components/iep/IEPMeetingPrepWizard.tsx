@@ -216,7 +216,7 @@ export function IEPMeetingPrepWizard({
             </div>
 
             <div className="bg-muted/50 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Student: {student.name}</h4>
+              <h4 className="font-medium mb-2">Student: {student.displayName || student.name}</h4>
               <p className="text-sm text-muted-foreground">
                 This wizard will help you prepare for the {MEETING_TYPES[meetingType]?.label || meetingType} meeting
                 scheduled for {format(new Date(meetingDate), 'MMMM d, yyyy')}.
@@ -430,7 +430,7 @@ export function IEPMeetingPrepWizard({
         <DialogHeader>
           <DialogTitle>IEP Meeting Preparation</DialogTitle>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{student.name}</span>
+            <span>{student.displayName || student.name}</span>
             <span>•</span>
             <span>Step {currentStep + 1} of {WIZARD_STEPS.length}</span>
           </div>
@@ -499,7 +499,7 @@ export function IEPMeetingPrepWizard({
                 onClick={async () => {
                   try {
                     const sections = [
-                      { heading: 'Meeting Details', content: `Date: ${format(new Date(meetingDate), 'MMMM d, yyyy')}\nType: ${MEETING_TYPES[meetingType]?.label || meetingType}\nStudent: ${student.name}` },
+                      { heading: 'Meeting Details', content: `Date: ${format(new Date(meetingDate), 'MMMM d, yyyy')}\nType: ${MEETING_TYPES[meetingType]?.label || meetingType}\nStudent: ${student.displayName || student.name}` },
                       { heading: 'Behaviors Tracked', content: student.behaviors.map(b => `• ${b.name}`).join('\n') || 'None' },
                       { heading: 'Recommendations', content: recommendations.length > 0 ? recommendations.map(r => `[${r.type.toUpperCase()}] ${r.text}`).join('\n') : 'None added' },
                       { heading: 'Documents Checklist', content: documents.filter(d => d.included).map(d => `✓ ${d.document}`).join('\n') || 'None selected' },
@@ -507,7 +507,7 @@ export function IEPMeetingPrepWizard({
                     ];
                     await generateGenericDocxReport({
                       title: 'IEP Meeting Preparation',
-                      subtitle: `${student.name} — ${format(new Date(meetingDate), 'MMMM d, yyyy')}`,
+                      subtitle: `${student.displayName || student.name} — ${format(new Date(meetingDate), 'MMMM d, yyyy')}`,
                       sections,
                       fileName: `IEP_Prep_${student.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.docx`,
                     });
