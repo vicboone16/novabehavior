@@ -108,10 +108,10 @@
                {[1,2,3,4].map(n => (
                  <div key={n} className="space-y-2">
                    <Label>Modifier {n}</Label>
-                   <Select value={(formData.modifiers[`modifier_${n}` as keyof typeof formData.modifiers] as string | null) || ''} onValueChange={(v) => setFormData({...formData, modifiers: {...formData.modifiers, [`modifier_${n}`]: v || null}})}>
+                    <Select value={(formData.modifiers[`modifier_${n}` as keyof typeof formData.modifiers] as string | null) || '__none__'} onValueChange={(v) => setFormData({...formData, modifiers: {...formData.modifiers, [`modifier_${n}`]: v === '__none__' ? null : v}})}>
                      <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                      <SelectContent>
-                       <SelectItem value="">None</SelectItem>
+                       <SelectItem value="__none__">None</SelectItem>
                        {COMMON_MODIFIERS.map(m => <SelectItem key={m.code} value={m.code}>{m.code} - {m.description}</SelectItem>)}
                      </SelectContent>
                    </Select>

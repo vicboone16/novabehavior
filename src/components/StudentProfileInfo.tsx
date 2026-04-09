@@ -609,12 +609,12 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
                     <UserCheck className="w-4 h-4" />
                     Supervising BCBA
                   </Label>
-                  <Select value={primarySupervisorStaffId} onValueChange={setPrimarySupervisorStaffId}>
+                  <Select value={primarySupervisorStaffId || "__none__"} onValueChange={(v) => setPrimarySupervisorStaffId(v === "__none__" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select BCBA supervisor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="__none__">None</SelectItem>
                       {bcbaStaff.map((s) => (
                         <SelectItem key={s.user_id} value={s.user_id}>
                           {s.display_name || `${s.first_name} ${s.last_name}`} ({s.credentials.join(', ')})
@@ -628,12 +628,12 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
                     <Users className="w-4 h-4" />
                     Mid-Tier Supervisor
                   </Label>
-                  <Select value={midTierSupervisorStaffId} onValueChange={setMidTierSupervisorStaffId}>
+                  <Select value={midTierSupervisorStaffId || "__none__"} onValueChange={(v) => setMidTierSupervisorStaffId(v === "__none__" ? "" : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Lead RBT / BCaBA (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="__none__">None</SelectItem>
                       {allStaff.filter(s => s.user_id !== primarySupervisorStaffId).map((s) => (
                         <SelectItem key={s.user_id} value={s.user_id}>
                           {s.display_name || `${s.first_name} ${s.last_name}`}

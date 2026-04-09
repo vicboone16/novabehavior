@@ -209,14 +209,14 @@ export function WhiteLabelReportGenerator({
               Report Branding
             </Label>
             <Select
-              value={formData.branding_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, branding_id: value }))}
+              value={formData.branding_id || "__none__"}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, branding_id: value === "__none__" ? "" : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select branding (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No branding</SelectItem>
+                <SelectItem value="__none__">No branding</SelectItem>
                 {brandings.map(branding => (
                   <SelectItem key={branding.id} value={branding.id}>
                     <div className="flex items-center gap-2">

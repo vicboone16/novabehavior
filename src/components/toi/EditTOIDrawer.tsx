@@ -189,12 +189,12 @@ export function EditTOIDrawer({
 
           <div className="grid gap-2">
             <Label>Location</Label>
-            <Select value={location} onValueChange={(v) => setLocation(v as TOILocation)}>
+            <Select value={location || "__none__"} onValueChange={(v) => setLocation((v === "__none__" ? "" : v) as TOILocation)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {Object.entries(TOI_LOCATION_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
@@ -206,12 +206,12 @@ export function EditTOIDrawer({
 
           <div className="grid gap-2">
             <Label>Suspected Contributor</Label>
-            <Select value={contributor} onValueChange={(v) => setContributor(v as TOIContributor)}>
+            <Select value={contributor || "__none__"} onValueChange={(v) => setContributor((v === "__none__" ? "" : v) as TOIContributor)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select contributor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {Object.entries(TOI_CONTRIBUTOR_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
