@@ -57,6 +57,7 @@ export function AddProgramDialog({
   const { programs } = useSkillPrograms(studentId);
   const { addProgram, updateProgram } = useSkillProgramActions(studentId, onSuccess);
 
+  const [step, setStep] = useState<'library' | 'form'>('library');
   const [domainId, setDomainId] = useState('');
   const [programName, setProgramName] = useState('');
   const [existingProgramId, setExistingProgramId] = useState('');
@@ -70,6 +71,9 @@ export function AddProgramDialog({
   const [targets, setTargets] = useState<TargetDraft[]>([{ name: '', operational_definition: '', mastery_criteria: '' }]);
   const [taSteps, setTaSteps] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Canonical library data for domain resolution
+  const { data: canonicalDomains = [] } = useProgramDomains();
 
   // Filter programs by selected domain
   const domainPrograms = programs.filter(p => p.domain_id === domainId);
