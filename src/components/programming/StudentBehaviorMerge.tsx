@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Merge, Loader2, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Merge, Loader2, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -65,9 +65,11 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           .eq('student_id', studentId),
         (supabase as any)
           .from('behavior_session_data')
-          .select('behavior_id, created_at')
+          .select('behavior_id, frequency, data_state, sessions(started_at, start_time), created_at')
           .eq('student_id', studentId)
-          .order('created_at', { ascending: true }),
+          .not('data_state', 'eq', 'no_data')
+          .order('created_at', { ascending: true })
+          .limit(2000),
         getStudentBehaviorNameMap(studentId),
       ]);
 
@@ -83,14 +85,19 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
       const bsdIds = bsdData.map((c: any) => c.behavior_id).filter(Boolean);
       const allBehaviorIds = [...new Set([...mappedIds, ...bsdIds])];
 
-      // Build count + date range per behavior
+      // Build frequency sum + date range per behavior using session observation date
       const countMap = new Map<string, number>();
       const firstDateMap = new Map<string, string>();
       const lastDateMap = new Map<string, string>();
       bsdData.forEach((r: any) => {
         const id = r.behavior_id;
-        const date = r.created_at ? r.created_at.slice(0, 10) : null;
-        countMap.set(id, (countMap.get(id) || 0) + 1);
+        // Sum actual frequency counts (not row count)
+        const freq = r.data_state === 'observed_zero' ? 0 : (r.frequency ?? 1);
+        countMap.set(id, (countMap.get(id) || 0) + freq);
+        // Use session observation date, fall back to created_at
+        const session = r.sessions;
+        const obsDate = session?.started_at || session?.start_time || r.created_at;
+        const date = obsDate ? obsDate.slice(0, 10) : null;
         if (date) {
           if (!firstDateMap.has(id) || date < firstDateMap.get(id)!) {
             firstDateMap.set(id, date);
@@ -174,9 +181,12 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
         totalMoved += (data as any)?.bsd_moved || 0;
       }
 
+      // Collapse any duplicate rows that now share the same session + target behavior
+      await (supabase as any).rpc('deduplicate_behavior_session_data', { p_student_id: studentId });
+
       clearStudentBehaviorNameMap(studentId);
       const primaryName = behaviors.find(b => b.id === primaryId)?.name || 'target behavior';
-      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} data points moved)`);
+      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} events consolidated)`);
       window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
       setOpen(false);
       onMerged?.();
@@ -185,6 +195,27 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
     } finally {
       setMerging(false);
     }
+  }
+
+  // Auto-detect behaviors with identical normalized names (likely duplicates)
+  const suggestedDuplicateGroups = useMemo(() => {
+    const normalize = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const grouped = new Map<string, BehaviorOption[]>();
+    behaviors.forEach(b => {
+      if (b.name.startsWith('Unlinked Behavior')) return;
+      const key = normalize(b.name);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(b);
+    });
+    return Array.from(grouped.values()).filter(group => group.length >= 2);
+  }, [behaviors]);
+
+  function selectDuplicateGroup(group: BehaviorOption[]) {
+    const ids = new Set(group.map(b => b.id));
+    setSelectedIds(ids);
+    // Default primary = the one with the most data
+    const best = [...group].sort((a, b) => b.dataCount - a.dataCount)[0];
+    setPrimaryId(best.id);
   }
 
   const selectedBehaviors = behaviors.filter(b => selectedIds.has(b.id));
@@ -216,6 +247,29 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           <p className="text-sm text-muted-foreground py-4">This student needs at least 2 behaviors to merge.</p>
         ) : (
           <div className="flex-1 overflow-y-auto space-y-3 py-2">
+            {/* Suggested duplicate groups */}
+            {suggestedDuplicateGroups.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Detected Duplicates — click to auto-select for merge:
+                </p>
+                {suggestedDuplicateGroups.map((group, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => selectDuplicateGroup(group)}
+                    className="w-full text-left text-xs p-2 rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 transition-colors"
+                  >
+                    <span className="font-medium text-amber-800">{group[0].name}</span>
+                    <span className="text-amber-600 ml-1">
+                      ({group.length} copies — {group.reduce((s, b) => s + b.dataCount, 0)} total events)
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Behavior checklist */}
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -241,7 +295,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
-                      <span>{b.dataCount} data points</span>
+                      <span>{b.dataCount} total events</span>
                       {b.firstDate && b.lastDate && (
                         <span>{b.firstDate} → {b.lastDate}</span>
                       )}
@@ -285,7 +339,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
                     </div>
                   ))}
                   <div className="pt-1 text-muted-foreground">
-                    {totalDataPoints} total data points will be consolidated. Source behaviors will be deactivated. This cannot be undone.
+                    {totalDataPoints} total events will be consolidated. Source behaviors will be deactivated. This cannot be undone.
                   </div>
                 </AlertDescription>
               </Alert>
