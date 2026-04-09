@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2, Brain } from 'lucide-react';
+import { ArrowLeft, BookOpen, Layers, Settings2, User, Building2, Brain, Library, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,9 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CurriculumSystemManager } from '@/components/clinical-library/CurriculumSystemManager';
 import { ClinicalCollectionsLanding } from '@/components/clinical-library/ClinicalCollectionsLanding';
 import { UnifiedDomainsBrowser } from '@/components/clinical-library/UnifiedDomainsBrowser';
+import { CanonicalLibraryBrowser } from '@/components/programs/CanonicalLibraryBrowser';
+import { seedCanonicalLibrary } from '@/utils/seedCanonicalLibrary';
+import { useProgramDomains } from '@/hooks/useProgramDomains';
+import { toast } from 'sonner';
 
 type LibraryScope = 'personal' | 'organization';
-type ActiveSection = null | 'curriculum_systems' | 'clinical_collections' | 'unified_domains';
+type ActiveSection = null | 'curriculum_systems' | 'clinical_collections' | 'unified_domains' | 'program_library';
 
 export default function ClinicalLibrary() {
   const navigate = useNavigate();
@@ -22,6 +26,23 @@ export default function ClinicalLibrary() {
   );
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const { domains } = useProgramDomains();
+  const [seedingLibrary, setSeedingLibrary] = useState(false);
+  const [librarySeeded, setLibrarySeeded] = useState(false);
+
+  const handleSeedLibrary = async () => {
+    setSeedingLibrary(true);
+    try {
+      const result = await seedCanonicalLibrary();
+      toast.success(`Library seeded: ${result.domainsInserted} domains, ${result.subdomainsInserted} subdomains, ${result.frameworkTagsInserted} framework tags`);
+      setLibrarySeeded(true);
+    } catch (err) {
+      toast.error('Failed to seed library');
+      console.error(err);
+    } finally {
+      setSeedingLibrary(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,6 +68,8 @@ export default function ClinicalLibrary() {
                     ? 'Goal banks, interventions, templates & custom programs'
                     : activeSection === 'unified_domains'
                     ? 'Cross-framework clinical domain alignment system'
+                    : activeSection === 'program_library'
+                    ? 'Canonical ABA program domains, subdomains & program templates'
                     : 'Curriculum systems, goal banks, interventions & clinical resources'}
                 </p>
               </div>
@@ -167,6 +190,28 @@ export default function ClinicalLibrary() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+              onClick={() => setActiveSection('program_library')}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Library className="w-7 h-7 text-primary" />
+                  </div>
+                </div>
+                <h2 className="text-lg font-bold mb-1">Program Library</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Canonical ABA domains, subdomains & program templates for skill acquisition.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['8 Domains', '49 Subdomains', 'Framework Tags', 'Programs'].map(name => (
+                    <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -183,6 +228,31 @@ export default function ClinicalLibrary() {
         {/* Unified Clinical Domains drill-down */}
         {activeSection === 'unified_domains' && (
           <UnifiedDomainsBrowser onBack={() => setActiveSection(null)} />
+        )}
+
+        {/* Program Library drill-down */}
+        {activeSection === 'program_library' && (
+          <div className="space-y-4">
+            {isAdmin && (!domains || domains.length === 0) && !librarySeeded && (
+              <div className="p-4 rounded-lg border border-border bg-muted/30 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">No canonical domains found</p>
+                  <p className="text-xs text-muted-foreground">Seed the library with 8 domains, 49 subdomains, and framework tags.</p>
+                </div>
+                <Button size="sm" disabled={seedingLibrary} onClick={handleSeedLibrary}>
+                  {seedingLibrary ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                  Seed Canonical Library
+                </Button>
+              </div>
+            )}
+            {librarySeeded && (
+              <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <p className="text-sm text-primary">Library seeded successfully</p>
+              </div>
+            )}
+            <CanonicalLibraryBrowser onSelect={() => {}} />
+          </div>
         )}
       </div>
     </div>
