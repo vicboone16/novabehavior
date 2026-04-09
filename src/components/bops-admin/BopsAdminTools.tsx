@@ -19,6 +19,8 @@ export function BopsAdminTools() {
   const [studentIdTarget, setStudentIdTarget] = useState('');
   const [studentIdProg, setStudentIdProg] = useState('');
   const [seedOpen, setSeedOpen] = useState(false);
+  const [seedingLibrary, setSeedingLibrary] = useState(false);
+  const [librarySeeded, setLibrarySeeded] = useState(false);
   const [seedForm, setSeedForm] = useState({
     p_student: '', p_training_name: '', p_clinical_name: '', p_profile_type: 'dual',
     p_primary: '', p_secondary: '', p_tertiary: '',
@@ -26,6 +28,20 @@ export function BopsAdminTools() {
     p_sensory_load_index: 0, p_power_conflict_index: 0,
     p_social_complexity_index: 0, p_recovery_burden_index: 0,
   });
+
+  const handleSeedLibrary = async () => {
+    setSeedingLibrary(true);
+    try {
+      const result = await seedCanonicalLibrary();
+      toast.success(`Library seeded: ${result.domainsInserted} domains, ${result.subdomainsInserted} subdomains, ${result.frameworkTagsInserted} framework tags`);
+      setLibrarySeeded(true);
+    } catch (err) {
+      toast.error('Failed to seed library');
+      console.error(err);
+    } finally {
+      setSeedingLibrary(false);
+    }
+  };
 
   const tools = [
     {
