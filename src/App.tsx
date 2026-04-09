@@ -73,6 +73,7 @@ const BehaviorBankPage = lazy(() => import("./pages/clinical-library/BehaviorBan
 const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryRegistryPage"));
 const GoalBuilderPage = lazy(() => import("./pages/clinical-library/GoalBuilderPage"));
 const DomainMigrationReviewPage = lazy(() => import("./pages/clinical-library/DomainMigrationReviewPage"));
+const TagManagementPage = lazy(() => import("./pages/clinical-library/TagManagementPage"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
@@ -306,6 +307,7 @@ const App = () => {
               <Route path="library-registry" element={<LibraryRegistryPage />} />
               <Route path="goal-builder" element={<GoalBuilderPage />} />
               <Route path="domain-migration" element={<DomainMigrationReviewPage />} />
+              <Route path="tag-management" element={<TagManagementPage />} />
             </Route>
             <Route path="/shared-library" element={
               <ProtectedRoute>
