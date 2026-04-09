@@ -210,7 +210,7 @@ export function IEPDashboard() {
                                 <span className="text-[10px] font-bold text-white">{student.name.charAt(0)}</span>
                               </div>
                               <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                                {student.name}
+                                {student.displayName || student.name}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">

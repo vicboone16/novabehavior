@@ -105,7 +105,7 @@ export function ExpandedStudentView({ student, onClose }: ExpandedStudentViewPro
         </div>
         
         <div className="flex-1">
-          <h1 className="text-lg font-bold">{student.name}</h1>
+          <h1 className="text-lg font-bold">{student.displayName || student.name}</h1>
           <p className="text-xs text-muted-foreground">
             {student.behaviors.length} behaviors • {skillTargets.length} skill targets
           </p>

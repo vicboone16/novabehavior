@@ -1617,7 +1617,7 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
                       <Input className="h-8 text-sm" value={schoolFields.school} onChange={e => setSchoolFields(p => ({ ...p, school: e.target.value }))} placeholder="School name" />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Student ID (SSID)</Label>
+                      <Label className="text-xs">School Student ID (SSID)</Label>
                       <Input className="h-8 text-sm" value={schoolFields.ssid} onChange={e => setSchoolFields(p => ({ ...p, ssid: e.target.value }))} placeholder="SSID" />
                     </div>
                     <div className="space-y-1">

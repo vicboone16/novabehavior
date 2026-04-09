@@ -178,7 +178,7 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
         <TabsContent value="interventions" className="mt-4 space-y-4">
           <StudentBxPlanView 
             studentId={student.id}
-            studentName={student.name}
+            studentName={student.displayName || student.name}
           />
           <Card>
             <CardHeader className="pb-2">
@@ -201,8 +201,8 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
           <div className="flex items-center justify-between mb-2">
             <div />
             <div className="flex items-center gap-2">
-              <StudentBehaviorMerge studentId={student.id} studentName={student.name} />
-              <BehaviorDataEditor studentId={student.id} studentName={student.name} />
+              <StudentBehaviorMerge studentId={student.id} studentName={student.displayName || student.name} />
+              <BehaviorDataEditor studentId={student.id} studentName={student.displayName || student.name} />
               <HistoricalDataManager studentId={student.id} />
             </div>
           </div>

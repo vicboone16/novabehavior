@@ -824,7 +824,7 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
     
     // Summary section
     const summaryRows = [
-      `Daily Summary for ${student.name} - ${format(new Date(), 'MMMM d, yyyy')}`,
+      `Daily Summary for ${student.displayName || student.name} - ${format(new Date(), 'MMMM d, yyyy')}`,
       '',
       'BEHAVIOR TOTALS',
       'Behavior,Total Frequency,Total Duration,ABC Entries',
@@ -866,7 +866,7 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${student.name}_${format(new Date(), 'yyyy-MM-dd')}_summary.csv`;
+    a.download = `${student.displayName || student.name}_${format(new Date(), 'yyyy-MM-dd')}_summary.csv`;
     a.click();
     URL.revokeObjectURL(url);
     
@@ -891,7 +891,7 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
               <User className="w-6 h-6" style={{ color: student.color }} />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold">{student.name}</h2>
+              <h2 className="text-lg font-bold">{student.displayName || student.name}</h2>
               <p className="text-xs text-muted-foreground">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
@@ -912,7 +912,7 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
       {isTeacherMode && (
         <TeacherStudentProfileEditor
           studentId={student.id}
-          studentName={student.name}
+          studentName={student.displayName || student.name}
         />
       )}
 
@@ -1490,7 +1490,7 @@ export function TeacherFriendlyView({ student, isTeacherMode = false, onClose }:
           open={showSaveCloseDialog}
           onOpenChange={setShowSaveCloseDialog}
           studentId={student.id}
-          studentName={student.name}
+          studentName={student.displayName || student.name}
           dataCount={totals.totalEntries}
           onComplete={() => onClose?.()}
         />

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { SearchablePersonPicker } from '@/components/ui/searchable-person-picker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,8 +72,8 @@ export function AdminAssignmentsTab({ assignments, modules, isLoading, onRefresh
             <TableHeader>
               <TableRow>
                 <TableHead>Module</TableHead>
-                <TableHead>Parent User ID</TableHead>
-                <TableHead>Learner ID</TableHead>
+                <TableHead>Parent Name</TableHead>
+                <TableHead>Learner</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Assigned</TableHead>
@@ -86,8 +87,8 @@ export function AdminAssignmentsTab({ assignments, modules, isLoading, onRefresh
               ) : assignments.map(a => (
                 <TableRow key={a.assignment_id}>
                   <TableCell className="font-medium">{a.module_title || a.module_id.slice(0, 8)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{getParentName(a.parent_user_id) || a.parent_user_id.slice(0, 8) + '…'}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{getClientName(a.client_id) || a.client_id.slice(0, 8) + '…'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getParentName(a.parent_user_id) || 'Unknown'}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getClientName(a.client_id) || 'Unknown'}</TableCell>
                   <TableCell><Badge variant={statusColor(a.status) as any}>{a.status}</Badge></TableCell>
                   <TableCell>{a.due_at ? format(new Date(a.due_at), 'MMM d, yyyy') : '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{format(new Date(a.created_at), 'MMM d')}</TableCell>
@@ -113,8 +114,8 @@ export function AdminAssignmentsTab({ assignments, modules, isLoading, onRefresh
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Parent User ID</Label><Input value={form.parent_user_id} onChange={e => setForm(f => ({ ...f, parent_user_id: e.target.value }))} placeholder="UUID of parent user" /></div>
-            <div><Label>Learner / Client ID</Label><Input value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} placeholder="UUID of learner" /></div>
+            <div><Label>Parent / Caregiver</Label><SearchablePersonPicker type="profile" value={form.parent_user_id} onChange={v => setForm(f => ({ ...f, parent_user_id: v }))} placeholder="Select caregiver…" /></div>
+            <div><Label>Learner</Label><SearchablePersonPicker type="student" value={form.client_id} onChange={v => setForm(f => ({ ...f, client_id: v }))} placeholder="Select learner…" /></div>
             <div><Label>Due Date (optional)</Label><Input type="date" value={form.due_at} onChange={e => setForm(f => ({ ...f, due_at: e.target.value }))} /></div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>

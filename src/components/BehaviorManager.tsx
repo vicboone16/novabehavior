@@ -326,7 +326,7 @@ export function BehaviorManager() {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: student.color }}
                   />
-                  <h4 className="font-semibold">{student.name}</h4>
+                  <h4 className="font-semibold">{student.displayName || student.name}</h4>
                   <Badge variant="outline" className="ml-auto">
                     {activeBehaviors.length} active
                   </Badge>
@@ -422,7 +422,7 @@ export function BehaviorManager() {
                             className="w-full min-h-[80px] p-2 text-sm border border-border rounded-md bg-background resize-y"
                           />
                           <p className="text-xs text-muted-foreground">
-                            This definition is specific to {student.name} and won't affect the library.
+                            This definition is specific to {student.displayName || student.name} and won't affect the library.
                           </p>
                         </div>
                       ) : (

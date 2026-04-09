@@ -1,4 +1,5 @@
 import { ArrowLeft, Copy, Check, FileText, Plus } from 'lucide-react';
+import { SearchablePersonPicker } from '@/components/ui/searchable-person-picker';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -158,12 +159,12 @@ export function LibraryGoalDetail({ goal, libraryName, onBack, clientId }: Props
             </div>
             {!clientId && (
               <div>
-                <p className="text-xs font-medium mb-1">Client ID</p>
-                <Input
-                  placeholder="Enter client UUID..."
+                <p className="text-xs font-medium mb-1">Learner</p>
+                <SearchablePersonPicker
+                  type="student"
                   value={draftClientId}
-                  onChange={e => setDraftClientId(e.target.value)}
-                  className="h-9"
+                  onChange={setDraftClientId}
+                  placeholder="Select learner…"
                 />
               </div>
             )}

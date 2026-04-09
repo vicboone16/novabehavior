@@ -286,7 +286,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
           label: 'Undo',
           onClick: () => {
             removeBehavior(student.id, newBehavior.id);
-            toast.info(`"${savedName}" removed from ${student.name}`);
+            toast.info(`"${savedName}" removed from ${student.displayName || student.name}`);
           },
         } : undefined,
       });

@@ -496,6 +496,17 @@ export const useDataStore = create<DataState>()(
             s.id === id ? { ...s, ...updates } : s
           ),
         }));
+
+        // Sync displayName to profiles table if changed
+        if (updates.displayName !== undefined) {
+          import('@/integrations/supabase/client').then(({ supabase }) => {
+            supabase
+              .from('profiles')
+              .update({ display_name: updates.displayName || null })
+              .eq('user_id', id)
+              .then(() => {});
+          });
+        }
       },
 
       archiveStudent: (id) => {

@@ -558,7 +558,7 @@ export function ComprehensiveAssessmentExport({ student }: ComprehensiveAssessme
           const fnLabel = FUNCTION_OPTIONS.find(f => f.value === topFunction[0])?.label || topFunction[0];
           children.push(new Paragraph({
             children: [new TextRun({
-              text: `When ${topAntecedent[0].toLowerCase()}, ${student.name} engages in ${behaviorNames || 'target behavior(s)'} in order to obtain ${fnLabel.toLowerCase()}. The behavior is maintained by ${topConsequence[0].toLowerCase()}.`,
+              text: `When ${topAntecedent[0].toLowerCase()}, ${student.displayName || student.name} engages in ${behaviorNames || 'target behavior(s)'} in order to obtain ${fnLabel.toLowerCase()}. The behavior is maintained by ${topConsequence[0].toLowerCase()}.`,
               italics: true,
             })],
           }));

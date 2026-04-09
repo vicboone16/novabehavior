@@ -226,7 +226,7 @@ export function HistoricalSessionEditor({ student, session, open, onOpenChange }
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="w-5 h-5" />
-              Edit Historical Session - {student.name}
+              Edit Historical Session - {student.displayName || student.name}
             </DialogTitle>
             <DialogDescription>
               Session from {format(new Date(session.date), 'PPP p')}

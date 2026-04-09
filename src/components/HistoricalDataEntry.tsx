@@ -255,7 +255,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
       baseBehaviorId: behavior.id,
     });
 
-    toast.success(`Added "${behavior.name}" to ${student.name}'s behaviors`);
+    toast.success(`Added "${behavior.name}" to ${student.displayName || student.name}'s behaviors`);
     setShowPickFromBank(false);
     setBankSearchQuery('');
   };
@@ -1137,7 +1137,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
               Pick from Behavior Bank
             </DialogTitle>
             <DialogDescription>
-              Add a behavior from the library to {student.name}'s chart
+              Add a behavior from the library to {student.displayName || student.name}'s chart
             </DialogDescription>
           </DialogHeader>
           
@@ -1208,7 +1208,7 @@ export function HistoricalDataEntry({ student }: HistoricalDataEntryProps) {
             </ScrollArea>
             
             <p className="text-xs text-muted-foreground">
-              Click a behavior to add it to {student.name}'s chart, then you can select it for data entry.
+              Click a behavior to add it to {student.displayName || student.name}'s chart, then you can select it for data entry.
             </p>
           </div>
 

@@ -381,7 +381,7 @@ export function StudentProfileInfo({ student, onUpdate }: StudentProfileInfoProp
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     Display Name
-                    <span className="text-xs text-muted-foreground">(for data collection)</span>
+                    <span className="text-xs text-muted-foreground">(shown in data collection — does not affect legal name)</span>
                   </Label>
                   <Input
                     value={displayName}

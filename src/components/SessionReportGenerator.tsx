@@ -648,7 +648,7 @@ export function SessionReportGenerator() {
                                     className="w-3 h-3 rounded-full"
                                     style={{ backgroundColor: student.color }}
                                   />
-                                  <span className="font-medium">{student.name}:</span>
+                                  <span className="font-medium">{student.displayName || student.name}:</span>
                                   {status.joinedAtInterval !== undefined && status.joinedAtInterval > 0 && (
                                     <Badge variant="outline" className="gap-1">
                                       <UserPlus className="w-3 h-3" />

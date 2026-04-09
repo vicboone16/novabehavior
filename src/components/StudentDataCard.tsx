@@ -165,7 +165,7 @@ export function StudentDataCard({ student }: StudentDataCardProps) {
           <User className="w-5 h-5" style={{ color: student.color }} />
         </div>
         <div>
-          <h3 className="font-semibold text-foreground">{student.name}</h3>
+          <h3 className="font-semibold text-foreground">{student.displayName || student.name}</h3>
           <p className="text-xs text-muted-foreground">
             {student.behaviors.length} behaviors configured
           </p>

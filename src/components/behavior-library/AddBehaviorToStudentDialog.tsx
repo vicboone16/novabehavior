@@ -144,7 +144,7 @@ export function AddBehaviorToStudentDialog({ behavior, isOpen, onClose }: AddBeh
                     onCheckedChange={() => toggleStudent(student.id)}
                     disabled={alreadyHas}
                   />
-                  <span className="text-sm flex-1">{student.name}</span>
+                  <span className="text-sm flex-1">{student.displayName || student.name}</span>
                   {alreadyHas && (
                     <span className="text-xs text-muted-foreground">Already assigned</span>
                   )}

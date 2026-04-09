@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SearchablePersonPicker } from '@/components/ui/searchable-person-picker';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,13 +131,13 @@ export function PTReportsTab({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label className="text-xs">Client ID *</Label>
-              <Input value={clientId} onChange={e => setClientId(e.target.value)} placeholder="UUID" className="text-sm" />
+              <Label className="text-xs">Learner *</Label>
+              <SearchablePersonPicker type="student" value={clientId} onChange={setClientId} placeholder="Select learner…" />
             </div>
             {needsCaregiver && (
               <div>
-                <Label className="text-xs">Caregiver ID *</Label>
-                <Input value={caregiverId} onChange={e => setCaregiverId(e.target.value)} placeholder="UUID" className="text-sm" />
+                <Label className="text-xs">Caregiver *</Label>
+                <SearchablePersonPicker type="profile" value={caregiverId} onChange={setCaregiverId} placeholder="Select caregiver…" />
               </div>
             )}
             {needsDates && (

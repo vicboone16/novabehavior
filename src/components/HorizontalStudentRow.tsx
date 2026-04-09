@@ -401,7 +401,7 @@ export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true
         onComplete={() => {
           toast({
             title: 'Session Ended',
-            description: `Session for ${student.name} has been completed.`,
+            description: `Session for ${student.displayName || student.name} has been completed.`,
           });
         }}
       />
