@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { format, subMonths, subDays, isAfter, parseISO, isValid, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -15,6 +15,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
+import { getStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const CHART_COLORS = [
   'hsl(199, 89%, 48%)',
@@ -30,6 +33,51 @@ type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
 export function BehaviorTrendCharts() {
   const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
   const syncedIdsRef = useRef<Set<string>>(new Set());
+
+  // Async-resolved behavior name map: behaviorId → display name
+  const [resolvedNames, setResolvedNames] = useState<Map<string, string>>(new Map());
+
+  // Fetch name maps for all active students
+  useEffect(() => {
+    const studentIds = students.filter(s => !s.isArchived).map(s => s.id);
+    if (studentIds.length === 0) return;
+    let cancelled = false;
+
+    Promise.all(studentIds.map(sid => getStudentBehaviorNameMap(sid)))
+      .then(maps => {
+        if (cancelled) return;
+        const merged = new Map<string, string>();
+        maps.forEach(m => m.forEach((name, id) => merged.set(id, name)));
+        // Also add names from Zustand store behaviors
+        students.forEach(s => s.behaviors.forEach(b => {
+          if (b.id && b.name && !UUID_RE.test(b.name)) {
+            merged.set(b.id, b.name);
+          }
+        }));
+        setResolvedNames(merged);
+      });
+
+    return () => { cancelled = true; };
+  }, [students]);
+
+  // Robust behavior name resolver — never returns a UUID
+  const resolveName = useCallback((behaviorId: string, fallbackName?: string): string => {
+    // 1. Check async-resolved map
+    const resolved = resolvedNames.get(behaviorId);
+    if (resolved && !UUID_RE.test(resolved)) return resolved;
+
+    // 2. Check Zustand store
+    for (const s of students) {
+      const b = s.behaviors.find(b => b.id === behaviorId);
+      if (b?.name && !UUID_RE.test(b.name)) return b.name;
+    }
+
+    // 3. Fallback name if not a UUID
+    if (fallbackName && !UUID_RE.test(fallbackName)) return fallbackName;
+
+    // 4. Never show raw UUID
+    return `Behavior #${behaviorId.slice(0, 4)}`;
+  }, [resolvedNames, students]);
 
   // Bulk-sync behavior_session_data for ALL students so the global chart shows all historical data
   useEffect(() => {
@@ -199,12 +247,12 @@ export function BehaviorTrendCharts() {
     students.forEach(student => {
       student.behaviors.forEach(b => {
         if (!behaviors.find(x => x.id === b.id)) {
-          behaviors.push({ id: b.id, name: b.name });
+          behaviors.push({ id: b.id, name: resolveName(b.id, b.name) });
         }
       });
     });
     return behaviors;
-  }, [students]);
+  }, [students, resolveName]);
 
   // Process data for charts - combine session data AND historical data
   const chartData = useMemo(() => {
@@ -249,8 +297,8 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(freqEntry.behaviorId);
         
         const wasDataCollected = freqEntry.count > 0 || (freqEntry as any).dataCollected === true;
         if (wasDataCollected) {
@@ -267,8 +315,8 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && intEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && intEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === intEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(intEntry.behaviorId);
         
         if (!entry.intervalByBehavior[key]) entry.intervalByBehavior[key] = { occurred: 0, total: 0 };
         entry.intervalByBehavior[key].total++;
@@ -280,8 +328,8 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && durEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(durEntry.behaviorId);
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
@@ -303,8 +351,8 @@ export function BehaviorTrendCharts() {
 
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(freqEntry.behaviorId);
 
         if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
@@ -324,8 +372,8 @@ export function BehaviorTrendCharts() {
 
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(durEntry.behaviorId);
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
 
@@ -344,8 +392,8 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(histEntry.behaviorId);
         
         entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
         
@@ -365,8 +413,8 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(histEntry.behaviorId);
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + histEntry.durationSeconds;
       });
@@ -404,7 +452,7 @@ export function BehaviorTrendCharts() {
 
     // Sort by date
     return chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, dateRange]);
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, dateRange, resolveName]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
@@ -425,8 +473,8 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(entry.behaviorId);
         totals[key] = (totals[key] || 0) + entry.count;
       });
     });
@@ -440,8 +488,8 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && histEntry.behaviorId !== filterBehavior) return;
         if (!isInDateRange(new Date(histEntry.timestamp))) return;
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
-        const key = behavior?.name || 'Unknown';
+        // behavior name resolved via resolveName
+        const key = resolveName(histEntry.behaviorId);
         totals[key] = (totals[key] || 0) + histEntry.count;
       });
     });
@@ -451,7 +499,7 @@ export function BehaviorTrendCharts() {
       value,
       color: CHART_COLORS[idx % CHART_COLORS.length],
     }));
-  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
+  }, [sessions, students, filterStudent, filterBehavior, dateRange, resolveName]);
 
   // Get unique behavior names for chart keys
   const behaviorNames = useMemo(() => {
