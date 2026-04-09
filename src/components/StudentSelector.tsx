@@ -227,7 +227,7 @@ export function StudentSelector() {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: student.color }}
               />
-              <span className="font-medium text-sm">{student.displayName || student.name}</span>
+              <span className="font-medium text-sm">{student.name}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -309,7 +309,7 @@ export function StudentSelector() {
                           className="w-3 h-3 rounded-full shrink-0"
                           style={{ backgroundColor: student.color }}
                         />
-                        <span className="text-sm font-medium">{student.displayName || student.name}</span>
+                        <span className="text-sm font-medium">{student.name}</span>
                       </button>
                     ))}
                   </div>
