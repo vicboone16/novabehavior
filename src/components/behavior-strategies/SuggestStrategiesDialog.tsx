@@ -76,10 +76,10 @@ export function SuggestStrategiesDialog({ open, onClose, onRecommend, strategies
 
           <div>
             <label className="text-xs font-medium">Environment (optional)</label>
-            <Select value={environment} onValueChange={setEnvironment}>
+            <Select value={environment || "__none__"} onValueChange={(v) => setEnvironment(v === "__none__" ? "" : v)}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Any environment" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any</SelectItem>
+                <SelectItem value="__none__">Any</SelectItem>
                 {ENVIRONMENTS.map(e => <SelectItem key={e} value={e} className="capitalize">{e}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -87,10 +87,10 @@ export function SuggestStrategiesDialog({ open, onClose, onRecommend, strategies
 
           <div>
             <label className="text-xs font-medium">Escalation Level (optional filter)</label>
-            <Select value={escalationFilter} onValueChange={setEscalationFilter}>
+            <Select value={escalationFilter || "__none__"} onValueChange={(v) => setEscalationFilter(v === "__none__" ? "" : v)}>
               <SelectTrigger className="mt-1"><SelectValue placeholder="Any level" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any</SelectItem>
+                <SelectItem value="__none__">Any</SelectItem>
                 {ESCALATIONS.map(e => <SelectItem key={e} value={e} className="capitalize">{e}</SelectItem>)}
               </SelectContent>
             </Select>

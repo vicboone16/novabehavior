@@ -329,10 +329,10 @@ export default function IncidentLogs() {
               </div>
               <div>
                 <Label>Student (optional)</Label>
-                <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
+                <Select value={form.client_id || "__none__"} onValueChange={v => setForm(f => ({ ...f, client_id: v === "__none__" ? "" : v }))}>
                   <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {students.map(s => <SelectItem key={s.id} value={s.id}>{s.display_name || s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>

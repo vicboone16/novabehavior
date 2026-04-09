@@ -216,7 +216,7 @@ export function WhiteLabelReportGenerator({
                 <SelectValue placeholder="Select branding (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No branding</SelectItem>
+                <SelectItem value="__none__">No branding</SelectItem>
                 {brandings.map(branding => (
                   <SelectItem key={branding.id} value={branding.id}>
                     <div className="flex items-center gap-2">

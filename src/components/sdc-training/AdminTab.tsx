@@ -476,10 +476,10 @@ export function AdminTab({ modules, resources, allStaffProgress, onCreateModule,
                   </div>
                   <div>
                     <label className="text-sm font-medium text-foreground">Module (optional)</label>
-                    <Select value={resModuleId} onValueChange={setResModuleId}>
+                    <Select value={resModuleId || "__none__"} onValueChange={(v) => setResModuleId(v === "__none__" ? "" : v)}>
                       <SelectTrigger><SelectValue placeholder="General" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">General</SelectItem>
+                        <SelectItem value="__none__">General</SelectItem>
                         {modules.map(m => (
                           <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>
                         ))}
