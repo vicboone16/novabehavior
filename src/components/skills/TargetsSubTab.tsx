@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
@@ -107,16 +107,14 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Tabs value={view} onValueChange={v => setView(v as any)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="programs" className="text-xs h-7 px-3">
-                <FolderTree className="w-3 h-3 mr-1" /> Programs
-              </TabsTrigger>
-              <TabsTrigger value="legacy" className="text-xs h-7 px-3">
-                <ListChecks className="w-3 h-3 mr-1" /> Individual Targets
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <ToggleGroup type="single" value={view} onValueChange={v => v && setView(v as any)} className="h-8">
+            <ToggleGroupItem value="programs" className="text-xs h-7 px-3 gap-1">
+              <FolderTree className="w-3 h-3" /> Programs
+            </ToggleGroupItem>
+            <ToggleGroupItem value="legacy" className="text-xs h-7 px-3 gap-1">
+              <ListChecks className="w-3 h-3" /> Individual Targets
+            </ToggleGroupItem>
+          </ToggleGroup>
           <Badge variant="outline" className="text-xs">
             {programs.length} programs
           </Badge>
