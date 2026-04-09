@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { SearchablePersonPicker } from '@/components/ui/searchable-person-picker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,8 +97,8 @@ export function PTAssignedTrainingTab({ assignments, modules, isLoading, onRefre
                 <SelectContent>{modules.filter(m => m.status === 'active').map(m => <SelectItem key={m.module_id} value={m.module_id}>{m.title}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Caregiver User ID</Label><Input value={form.parent_user_id} onChange={e => setForm(f => ({ ...f, parent_user_id: e.target.value }))} placeholder="UUID" /></div>
-            <div><Label>Client / Learner ID</Label><Input value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} placeholder="UUID" /></div>
+            <div><Label>Caregiver</Label><SearchablePersonPicker type="profile" value={form.parent_user_id} onChange={v => setForm(f => ({ ...f, parent_user_id: v }))} placeholder="Select caregiver…" /></div>
+            <div><Label>Learner</Label><SearchablePersonPicker type="student" value={form.client_id} onChange={v => setForm(f => ({ ...f, client_id: v }))} placeholder="Select learner…" /></div>
             <div><Label>Due Date (optional)</Label><Input type="date" value={form.due_at} onChange={e => setForm(f => ({ ...f, due_at: e.target.value }))} /></div>
             <p className="text-xs text-muted-foreground">Library goals for this module will be auto-attached on assignment.</p>
             <div className="flex justify-end gap-2">

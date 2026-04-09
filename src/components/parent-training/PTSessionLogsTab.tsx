@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { SearchablePersonPicker } from '@/components/ui/searchable-person-picker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,8 +90,8 @@ export function PTSessionLogsTab({ sessionLogs, modules, isLoading, onRefresh, o
           <DialogHeader><DialogTitle>Log Parent Training Session</DialogTitle></DialogHeader>
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Caregiver User ID</Label><Input value={form.parent_user_id} onChange={e => setForm(f => ({ ...f, parent_user_id: e.target.value }))} placeholder="UUID" /></div>
-              <div><Label>Client ID</Label><Input value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))} placeholder="UUID" /></div>
+              <div><Label>Caregiver</Label><SearchablePersonPicker type="profile" value={form.parent_user_id} onChange={v => setForm(f => ({ ...f, parent_user_id: v }))} placeholder="Select caregiver…" /></div>
+              <div><Label>Learner</Label><SearchablePersonPicker type="student" value={form.client_id} onChange={v => setForm(f => ({ ...f, client_id: v }))} placeholder="Select learner…" /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div><Label>Date</Label><Input type="date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} /></div>

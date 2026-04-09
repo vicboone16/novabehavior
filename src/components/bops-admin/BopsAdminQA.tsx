@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { useBopsSystemQA, useRepairStudent, useSyncTargets, useSyncProgramming, useRefreshAllViews } from '@/hooks/useBopsAdmin';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, Wrench, Link, ArrowDownToLine } from 'lucide-react';
+import { useClientNameResolver } from '@/hooks/useProfileNameResolver';
 
 export function BopsAdminQA() {
   const { data: issues, isLoading } = useBopsSystemQA();
@@ -26,7 +28,7 @@ export function BopsAdminQA() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student ID</TableHead>
+              <TableHead>Student</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Programs</TableHead>
               <TableHead>Targets</TableHead>
@@ -37,7 +39,7 @@ export function BopsAdminQA() {
           <TableBody>
             {(issues || []).map((q: any) => (
               <TableRow key={q.student_id} className="bg-destructive/5">
-                <TableCell className="font-mono text-xs">{q.student_id?.slice(0, 8)}</TableCell>
+                <TableCell className="text-xs font-medium">{getStudentName(q.student_id) || 'Unknown'}</TableCell>
                 <TableCell className="text-xs">{q.bops_assessment_status}</TableCell>
                 <TableCell>{q.active_bops_program_count}</TableCell>
                 <TableCell>{q.bops_target_count}</TableCell>
