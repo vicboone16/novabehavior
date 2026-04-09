@@ -81,7 +81,7 @@ export function DomainMigrationReview() {
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Loading migration log...</div>
       ) : filtered.length === 0 ? (
-        {logs.length === 0 ? (
+        logs.length === 0 ? (
           <EmptyState
             icon={GitBranch}
             title="No migration records yet"
@@ -93,7 +93,7 @@ export function DomainMigrationReview() {
               No matching records.
             </CardContent>
           </Card>
-        )}
+        )
       ) : (
         <div className="grid gap-2">
           {filtered.map(log => (
