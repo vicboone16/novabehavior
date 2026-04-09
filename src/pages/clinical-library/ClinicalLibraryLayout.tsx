@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen, Target, GitMerge } from 'lucide-react';
+import { ArrowLeft, Settings2, Layers, User, Building2, Shield, BookOpen, Target, GitMerge, Tags } from 'lucide-react';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -219,6 +219,28 @@ export default function ClinicalLibraryLayout() {
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {['Audit', 'Review', 'Migration Log'].map(name => (
+                      <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {isAdmin && (
+              <Card
+                className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all group"
+                onClick={() => navigate('/clinical-library/tag-management')}
+              >
+                <CardContent className="p-6">
+                  <div className="p-3 rounded-xl bg-muted w-fit mb-4">
+                    <Tags className="w-7 h-7 text-muted-foreground" />
+                  </div>
+                  <h2 className="text-lg font-bold mb-1">Tag Management</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Manage framework tags, source categories & labels across the library.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['VB-MAPP', 'ABLLS-R', 'AFLS', 'Framework'].map(name => (
                       <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
                     ))}
                   </div>
