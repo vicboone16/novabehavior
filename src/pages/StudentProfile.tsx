@@ -410,6 +410,8 @@ export default function StudentProfile() {
 
   return (
     <div className="space-y-6 max-sm:space-y-3">
+      {/* Breadcrumbs */}
+      <Breadcrumbs />
       {/* Header */}
       <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/students')}>
