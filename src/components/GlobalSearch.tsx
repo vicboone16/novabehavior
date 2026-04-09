@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { getZodiacSign, ZODIAC_LABELS, ZODIAC_SYMBOLS, ZodiacSign } from '@/types/behavior';
 
@@ -58,6 +59,8 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const CASE_TYPES = ['ABA', 'Consultation', 'Assessment Only', 'School-Based', 'Home-Based', 'Telehealth'];
 const ZODIAC_SIGNS: ZodiacSign[] = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
 
+const ZODIAC_PREF_KEY = 'showZodiacFilter';
+
 export function GlobalSearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -81,6 +84,19 @@ export function GlobalSearch() {
     status: 'active',
     zodiacSign: 'all',
   });
+  const [showZodiac, setShowZodiac] = useState(() => {
+    const stored = localStorage.getItem(ZODIAC_PREF_KEY);
+    return stored === null ? true : stored === 'true';
+  });
+
+  const toggleZodiac = () => {
+    setShowZodiac(prev => {
+      const next = !prev;
+      localStorage.setItem(ZODIAC_PREF_KEY, String(next));
+      if (!next) setFilters(f => ({ ...f, zodiacSign: 'all' }));
+      return next;
+    });
+  };
 
   // Check if user is admin
   useEffect(() => {
@@ -571,27 +587,33 @@ export function GlobalSearch() {
                 </Select>
               </div>
 
-              {/* Zodiac Sign Filter */}
+              {/* Zodiac Sign Filter — toggleable */}
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <label className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer select-none" onClick={toggleZodiac}>
+                  {showZodiac ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                   ✨ Zodiac
                 </label>
-                <Select
-                  value={filters.zodiacSign}
-                  onValueChange={(v) => setFilters(f => ({ ...f, zodiacSign: v }))}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Any sign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Any sign</SelectItem>
-                    {ZODIAC_SIGNS.map(sign => (
-                      <SelectItem key={sign} value={sign}>
-                        {ZODIAC_SYMBOLS[sign]} {ZODIAC_LABELS[sign]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className={cn(
+                  "transition-all duration-200 overflow-hidden",
+                  showZodiac ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
+                )}>
+                  <Select
+                    value={filters.zodiacSign}
+                    onValueChange={(v) => setFilters(f => ({ ...f, zodiacSign: v }))}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Any sign" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any sign</SelectItem>
+                      {ZODIAC_SIGNS.map(sign => (
+                        <SelectItem key={sign} value={sign}>
+                          {ZODIAC_SYMBOLS[sign]} {ZODIAC_LABELS[sign]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
