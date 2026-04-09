@@ -320,7 +320,7 @@ export function DocumentPreview({ document, onUpdate, onClose }: DocumentPreview
                     >
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        {student.displayName || student.name}
+                        {student.name}
                       </div>
                     </div>
                   ))}

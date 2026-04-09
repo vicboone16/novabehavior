@@ -394,7 +394,7 @@ export function BulkStudentManager({ availableTags, onDataChange }: BulkStudentM
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{student.displayName || student.name}</p>
+                      <p className="font-medium text-sm">{student.name}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {student.tags.length === 0 && (
                           <span className="text-xs text-muted-foreground">No tags</span>

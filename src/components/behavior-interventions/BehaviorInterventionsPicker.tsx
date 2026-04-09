@@ -334,7 +334,7 @@ export function BehaviorInterventionsPicker({
                         }
                       }}
                     />
-                    <span className="text-sm">{student.displayName || student.name}</span>
+                    <span className="text-sm">{student.name}</span>
                   </label>
                 ))
               )}

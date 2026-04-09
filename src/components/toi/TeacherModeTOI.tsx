@@ -168,7 +168,7 @@ export function TeacherModeTOI({ students }: TeacherModeTOIProps) {
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: student.color || '#888' }}
                   />
-                  {student.displayName || student.name}
+                  {student.name}
                 </Button>
               ))}
               {filteredStudents.length === 0 && (

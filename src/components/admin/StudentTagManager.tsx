@@ -188,7 +188,7 @@ export function StudentTagManager({ availableTags, onTagsChange }: StudentTagMan
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{student.displayName || student.name}</p>
+                      <p className="font-medium text-sm">{student.name}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {student.tags.length === 0 && (
                           <span className="text-xs text-muted-foreground">No tags assigned</span>

@@ -195,7 +195,7 @@ export function SessionStartConfirmation({
         
         toast({
           title: 'Continuing Session',
-          description: `Continuing existing session for ${student.displayName || student.name}`,
+          description: `Continuing existing session for ${student.name}`,
         });
         
       } else if (startOption === 'link' && matchingAppointment) {
@@ -242,7 +242,7 @@ export function SessionStartConfirmation({
           action: adjustAppointmentTime ? 'session_time_adjusted' : 'session_late_start',
           resource_type: 'appointment',
           resource_id: extendedMatchAppointment.id,
-          resource_name: `Session for ${student.displayName || student.name}`,
+          resource_name: `Session for ${student.name}`,
           details: {
             student_id: student.id,
             student_name: student.name,
@@ -299,7 +299,7 @@ export function SessionStartConfirmation({
       if (startOption !== 'continue' && startOption !== 'link-extended') {
         toast({
           title: 'Session Started',
-          description: `Started session for ${student.displayName || student.name}${linkedAppointmentId ? ' (linked to appointment)' : ''}`,
+          description: `Started session for ${student.name}${linkedAppointmentId ? ' (linked to appointment)' : ''}`,
         });
       }
       
@@ -349,7 +349,7 @@ export function SessionStartConfirmation({
               />
             </div>
             <div>
-              <p className="font-medium">{student.displayName || student.name}</p>
+              <p className="font-medium">{student.name}</p>
               <p className="text-sm text-muted-foreground">
                 {format(new Date(), 'EEEE, MMMM d, yyyy')}
               </p>
