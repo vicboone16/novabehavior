@@ -574,9 +574,10 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
 
-        <TabsContent value="domains" className="mt-4">
+      {/* Domain Analysis Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Domain Analysis</h3>
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Domain Progress</CardTitle>
@@ -600,9 +601,10 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               })}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="trends" className="mt-4">
+      {/* Trend Analysis Section */}
+      <Separator className="my-2" />
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Trend Analysis</h3>
           <div className="grid md:grid-cols-3 gap-4">
             <Card className="border-green-200">
               <CardHeader className="py-3">
@@ -667,8 +669,6 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
