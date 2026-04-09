@@ -96,6 +96,7 @@ export function AddProgramDialog({
   }, [editingProgram, open]);
 
   const resetForm = () => {
+    setStep(editingProgram ? 'form' : 'library');
     setDomainId('');
     setProgramName('');
     setExistingProgramId('');
