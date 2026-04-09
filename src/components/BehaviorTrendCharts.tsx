@@ -297,7 +297,7 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && freqEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         
         const wasDataCollected = freqEntry.count > 0 || (freqEntry as any).dataCollected === true;
@@ -315,7 +315,7 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && intEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && intEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === intEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         
         if (!entry.intervalByBehavior[key]) entry.intervalByBehavior[key] = { occurred: 0, total: 0 };
@@ -328,7 +328,7 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && durEntry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
@@ -351,7 +351,7 @@ export function BehaviorTrendCharts() {
 
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === freqEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
 
         if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
@@ -372,7 +372,7 @@ export function BehaviorTrendCharts() {
 
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === durEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
@@ -392,7 +392,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         
         entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
@@ -413,7 +413,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + histEntry.durationSeconds;
@@ -473,7 +473,7 @@ export function BehaviorTrendCharts() {
         if (filterStudent !== 'all' && entry.studentId !== filterStudent) return;
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
         
-        const behavior = students.flatMap(s => s.behaviors).find(b => b.id === entry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         totals[key] = (totals[key] || 0) + entry.count;
       });
@@ -488,7 +488,7 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && histEntry.behaviorId !== filterBehavior) return;
         if (!isInDateRange(new Date(histEntry.timestamp))) return;
         
-        const behavior = student.behaviors.find(b => b.id === histEntry.behaviorId);
+        // behavior name resolved via resolveName
         const key = behavior?.name || 'Unknown';
         totals[key] = (totals[key] || 0) + histEntry.count;
       });
