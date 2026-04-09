@@ -499,7 +499,7 @@ export function BehaviorTrendCharts() {
       value,
       color: CHART_COLORS[idx % CHART_COLORS.length],
     }));
-  }, [sessions, students, filterStudent, filterBehavior, dateRange]);
+  }, [sessions, students, filterStudent, filterBehavior, dateRange, resolveName]);
 
   // Get unique behavior names for chart keys
   const behaviorNames = useMemo(() => {
