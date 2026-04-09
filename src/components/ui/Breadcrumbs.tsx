@@ -93,10 +93,12 @@ export function Breadcrumbs() {
     resolve();
   }, [location.pathname]);
 
+  // Don't render for shallow routes (0 or 1 segment)
+  if (segments.length < 2) return null;
+
   const getLabel = (segment: string): string => {
     if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment];
     if (UUID_RE.test(segment)) return resolvedNames[segment] || segment.slice(0, 8) + '…';
-    // Convert kebab-case to Title Case
     return segment.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
