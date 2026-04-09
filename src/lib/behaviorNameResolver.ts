@@ -5,8 +5,14 @@ const db = supabase as any;
 const behaviorNameCache = new Map<string, Map<string, string>>();
 const inflightRequests = new Map<string, Promise<Map<string, string>>>();
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function normalizeLabel(value?: string | null) {
   return (value || '').trim();
+}
+
+function isValidName(label: string): boolean {
+  return !!label && !UUID_RE.test(label);
 }
 
 export async function getStudentBehaviorNameMap(studentId: string): Promise<Map<string, string>> {
@@ -38,7 +44,8 @@ export async function getStudentBehaviorNameMap(studentId: string): Promise<Map<
 
       (behaviorDefs || []).forEach((row: any) => {
         const label = normalizeLabel(row?.name);
-        if (row?.id && label) {
+        // Only use the name if it's not itself a UUID
+        if (row?.id && isValidName(label)) {
           map.set(row.id, label);
         }
       });
@@ -53,10 +60,26 @@ export async function getStudentBehaviorNameMap(studentId: string): Promise<Map<
 
     (mapRows || []).forEach((row: any) => {
       const label = normalizeLabel(row?.behavior_subtype);
-      if (row?.behavior_entry_id && label && !map.has(row.behavior_entry_id)) {
+      if (row?.behavior_entry_id && isValidName(label) && !map.has(row.behavior_entry_id)) {
         map.set(row.behavior_entry_id, label);
       }
     });
+
+    // 4) For any behavior IDs still unresolved, try nt_behaviors canonical table
+    const unresolvedIds = behaviorIds.filter(id => !map.has(id));
+    if (unresolvedIds.length > 0) {
+      const { data: ntRows } = await db
+        .from('nt_behaviors')
+        .select('id, name')
+        .in('id', unresolvedIds);
+
+      (ntRows || []).forEach((row: any) => {
+        const label = normalizeLabel(row?.name);
+        if (row?.id && isValidName(label)) {
+          map.set(row.id, label);
+        }
+      });
+    }
 
     behaviorNameCache.set(studentId, map);
     inflightRequests.delete(studentId);
