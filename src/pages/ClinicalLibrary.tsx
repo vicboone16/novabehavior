@@ -26,7 +26,7 @@ export default function ClinicalLibrary() {
   );
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const { domains } = useProgramDomains();
+  const { data: domains } = useProgramDomains();
   const [seedingLibrary, setSeedingLibrary] = useState(false);
   const [librarySeeded, setLibrarySeeded] = useState(false);
 
