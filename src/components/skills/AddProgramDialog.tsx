@@ -443,15 +443,18 @@ export function AddProgramDialog({
             </div>
           )}
         </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={saving || (!programName.trim() && !existingProgramId) || !domainId}
-          >
-            {editingProgram ? 'Save Changes' : existingProgramId ? 'Add Targets to Program' : 'Create Program + Targets'}
-          </Button>
+          {step === 'form' || editingProgram ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={saving || (!programName.trim() && !existingProgramId) || !domainId}
+            >
+              {editingProgram ? 'Save Changes' : existingProgramId ? 'Add Targets to Program' : 'Create Program + Targets'}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
