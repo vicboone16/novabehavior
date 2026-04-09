@@ -352,7 +352,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         // behavior name resolved via resolveName
-        const key = resolveName('unknown');
+        const key = resolveName(freqEntry.behaviorId);
 
         if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
