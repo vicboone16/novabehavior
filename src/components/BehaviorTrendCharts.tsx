@@ -298,7 +298,7 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && freqEntry.behaviorId !== filterBehavior) return;
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName(freqEntry.behaviorId);
         
         const wasDataCollected = freqEntry.count > 0 || (freqEntry as any).dataCollected === true;
         if (wasDataCollected) {
@@ -316,7 +316,7 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && intEntry.behaviorId !== filterBehavior) return;
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName(intEntry.behaviorId);
         
         if (!entry.intervalByBehavior[key]) entry.intervalByBehavior[key] = { occurred: 0, total: 0 };
         entry.intervalByBehavior[key].total++;
@@ -329,7 +329,7 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && durEntry.behaviorId !== filterBehavior) return;
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName(durEntry.behaviorId);
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
@@ -352,7 +352,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName('unknown');
 
         if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
@@ -373,7 +373,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName('unknown');
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
 
@@ -393,7 +393,7 @@ export function BehaviorTrendCharts() {
         const entry = getOrCreateDateEntry(dateKey);
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName('unknown');
         
         entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
         
@@ -414,7 +414,7 @@ export function BehaviorTrendCharts() {
         const entry = getOrCreateDateEntry(dateKey);
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName('unknown');
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + histEntry.durationSeconds;
       });
@@ -474,7 +474,7 @@ export function BehaviorTrendCharts() {
         if (filterBehavior !== 'all' && entry.behaviorId !== filterBehavior) return;
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName(entry.behaviorId);
         totals[key] = (totals[key] || 0) + entry.count;
       });
     });
@@ -489,7 +489,7 @@ export function BehaviorTrendCharts() {
         if (!isInDateRange(new Date(histEntry.timestamp))) return;
         
         // behavior name resolved via resolveName
-        const key = behavior?.name || 'Unknown';
+        const key = resolveName(histEntry.behaviorId);
         totals[key] = (totals[key] || 0) + histEntry.count;
       });
     });
