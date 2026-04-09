@@ -90,6 +90,7 @@ export default function ClinicalLibraryLayout() {
       </header>
 
       <div className="container py-6">
+        {!isRoot && <Breadcrumbs />}
         {libraryScope === 'personal' && (
           <div className="mb-4 p-3 rounded-lg border border-border bg-muted/30">
             <p className="text-xs text-muted-foreground">
