@@ -373,7 +373,7 @@ export function BehaviorTrendCharts() {
         const dateKey = format(entryDate, 'yyyy-MM-dd');
         const entry = getOrCreateDateEntry(dateKey);
         // behavior name resolved via resolveName
-        const key = resolveName('unknown');
+        const key = resolveName(durEntry.behaviorId);
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + durEntry.duration;
       });
 
@@ -393,7 +393,7 @@ export function BehaviorTrendCharts() {
         const entry = getOrCreateDateEntry(dateKey);
         
         // behavior name resolved via resolveName
-        const key = resolveName('unknown');
+        const key = resolveName(histEntry.behaviorId);
         
         entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
         
@@ -414,7 +414,7 @@ export function BehaviorTrendCharts() {
         const entry = getOrCreateDateEntry(dateKey);
         
         // behavior name resolved via resolveName
-        const key = resolveName('unknown');
+        const key = resolveName(histEntry.behaviorId);
         
         entry.durationByBehavior[key] = (entry.durationByBehavior[key] || 0) + histEntry.durationSeconds;
       });
