@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, X, Clock, AlertTriangle, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, X, Clock, AlertTriangle, Pencil, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -30,7 +30,6 @@ export function SMSBehaviorQueue() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [edits, setEdits] = useState<Record<string, EditState>>({});
 
-  // Fetch pending entries
   const { data: entries, isLoading } = useQuery({
     queryKey: ["sms-behavior-log"],
     queryFn: async () => {
@@ -44,7 +43,6 @@ export function SMSBehaviorQueue() {
     },
   });
 
-  // Fetch students for dropdown
   const { data: students } = useQuery({
     queryKey: ["sms-students-list"],
     queryFn: async () => {
@@ -58,7 +56,6 @@ export function SMSBehaviorQueue() {
     },
   });
 
-  // Fetch behaviors for dropdown
   const { data: behaviors } = useQuery({
     queryKey: ["sms-behaviors-list"],
     queryFn: async () => {
@@ -90,11 +87,74 @@ export function SMSBehaviorQueue() {
   };
 
   const approveMutation = useMutation({
-    mutationFn: async ({ id, edit }: { id: string; edit: EditState }) => {
+    mutationFn: async ({ id, edit, entry }: { id: string; edit: EditState; entry: any }) => {
       if (!edit.student_id) throw new Error("Please select a student");
       if (!edit.behavior_id) throw new Error("Please select a behavior");
 
-      const { error } = await supabase
+      const loggedDate = new Date(edit.logged_at);
+      const dayStart = new Date(loggedDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(loggedDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      // Find existing session for this student on this day
+      const { data: existingSessions } = await supabase
+        .from("sessions")
+        .select("id, student_ids")
+        .gte("start_time", dayStart.toISOString())
+        .lte("start_time", dayEnd.toISOString())
+        .contains("student_ids", [edit.student_id])
+        .limit(1);
+
+      let sessionId: string;
+
+      if (existingSessions && existingSessions.length > 0) {
+        sessionId = existingSessions[0].id;
+      } else {
+        // Get current user for session creation
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("You must be logged in to approve entries");
+
+        const { data: newSession, error: sessionError } = await supabase
+          .from("sessions")
+          .insert({
+            user_id: entry.staff_id || user.id,
+            name: `SMS Session – ${format(loggedDate, "MMM d, yyyy")}`,
+            start_time: loggedDate.toISOString(),
+            session_length_minutes: 60,
+            interval_length_seconds: 300,
+            student_ids: [edit.student_id],
+            status: "completed",
+            has_data: true,
+          })
+          .select("id")
+          .single();
+
+        if (sessionError) throw sessionError;
+        sessionId = newSession.id;
+      }
+
+      // Insert behavior_session_data row
+      const { data: bsdRow, error: bsdError } = await supabase
+        .from("behavior_session_data")
+        .insert({
+          session_id: sessionId,
+          student_id: edit.student_id,
+          behavior_id: edit.behavior_id,
+          frequency: edit.count ?? 0,
+          duration_seconds: edit.duration_seconds,
+          data_state: "final",
+          created_by_ai: false,
+          raw_source_text: entry.raw_body,
+          notes: `SMS entry from ${entry.from_phone}`,
+        })
+        .select("id")
+        .single();
+
+      if (bsdError) throw bsdError;
+
+      // Update the sms_behavior_log entry
+      const { error: updateError } = await supabase
         .from("sms_behavior_log")
         .update({
           student_id: edit.student_id,
@@ -104,13 +164,16 @@ export function SMSBehaviorQueue() {
           logged_at: edit.logged_at,
           status: "approved",
           approved_at: new Date().toISOString(),
+          session_id: sessionId,
+          bsd_row_id: bsdRow.id,
         })
         .eq("id", id);
-      if (error) throw error;
+
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sms-behavior-log"] });
-      toast.success("Entry approved and saved");
+      toast.success("Approved — data committed to session & graphs");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -163,7 +226,6 @@ export function SMSBehaviorQueue() {
             className={`transition-all ${entry.status === "needs_student" ? "border-l-4 border-l-destructive" : "border-l-4 border-l-primary"}`}
           >
             <CardContent className="p-4 space-y-2">
-              {/* Header row */}
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1 flex-1 min-w-0">
                   <p className="text-sm font-medium">{entry.raw_body}</p>
@@ -212,11 +274,9 @@ export function SMSBehaviorQueue() {
                 </Button>
               </div>
 
-              {/* Expanded edit form */}
               {isExpanded && (
                 <div className="pt-2 border-t space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Student picker */}
                     <div>
                       <Label className="text-xs mb-1 block">Student</Label>
                       <Select
@@ -236,7 +296,6 @@ export function SMSBehaviorQueue() {
                       </Select>
                     </div>
 
-                    {/* Behavior picker */}
                     <div>
                       <Label className="text-xs mb-1 block">Behavior</Label>
                       <Select
@@ -256,7 +315,6 @@ export function SMSBehaviorQueue() {
                       </Select>
                     </div>
 
-                    {/* Count */}
                     <div>
                       <Label className="text-xs mb-1 block">Count</Label>
                       <Input
@@ -272,7 +330,6 @@ export function SMSBehaviorQueue() {
                       />
                     </div>
 
-                    {/* Duration */}
                     <div>
                       <Label className="text-xs mb-1 block">Duration (sec)</Label>
                       <Input
@@ -289,7 +346,6 @@ export function SMSBehaviorQueue() {
                       />
                     </div>
 
-                    {/* Logged at */}
                     <div className="col-span-2">
                       <Label className="text-xs mb-1 block">Date / Time</Label>
                       <Input
@@ -311,7 +367,6 @@ export function SMSBehaviorQueue() {
                     </div>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex gap-2 justify-end pt-1">
                     <Button
                       variant="outline"
@@ -324,7 +379,8 @@ export function SMSBehaviorQueue() {
                     <Button
                       size="sm"
                       className="h-8 text-xs gap-1"
-                      onClick={() => approveMutation.mutate({ id: entry.id, edit })}
+                      disabled={approveMutation.isPending}
+                      onClick={() => approveMutation.mutate({ id: entry.id, edit, entry })}
                     >
                       <Check className="w-3.5 h-3.5" /> Approve
                     </Button>
@@ -332,7 +388,6 @@ export function SMSBehaviorQueue() {
                 </div>
               )}
 
-              {/* Collapsed action buttons */}
               {!isExpanded && (
                 <div className="flex gap-1.5 justify-end">
                   <Button
