@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Check, X, MessageSquare, Clock, User, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useDataStore } from '@/store/dataStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -390,7 +389,7 @@ function QueueCard({
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function SMSBehaviorQueue() {
-  const students = useDataStore(s => s.students).map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName }));
+  const [students, setStudents] = useState<StudentOpt[]>([]);
   const [entries, setEntries] = useState<SmsEntry[]>([]);
   const [staffList, setStaffList] = useState<StaffOpt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -399,13 +398,22 @@ export function SMSBehaviorQueue() {
   const load = useCallback(async () => {
     setLoading(true);
     const statuses = showHistory ? ['pending', 'needs_student', 'approved', 'rejected'] : ['pending', 'needs_student'];
-    const [entriesRes, staffRes] = await Promise.all([
+    const [entriesRes, staffRes, studentsRes] = await Promise.all([
       supabase.from('sms_behavior_log').select('*')
         .in('status', statuses).order('received_at', { ascending: false }).limit(60),
       supabase.from('profiles').select('id, full_name').order('full_name'),
+      supabase.from('students').select('id, first_name, last_name')
+        .eq('is_archived', false).order('first_name'),
     ]);
     setEntries((entriesRes.data ?? []) as SmsEntry[]);
     setStaffList((staffRes.data ?? []) as StaffOpt[]);
+    setStudents(
+      (studentsRes.data ?? []).map((s: any) => ({
+        id: s.id,
+        firstName: s.first_name ?? '',
+        lastName: s.last_name ?? '',
+      }))
+    );
     setLoading(false);
   }, [showHistory]);
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useDataStore } from '@/store/dataStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +20,11 @@ interface Shortcode {
 
 interface BehaviorOpt { id: string; name: string }
 
+interface StudentOpt { id: string; firstName: string; lastName: string }
+
 export function SMSShortcodeSettings() {
   const { user } = useAuth();
-  const students = useDataStore(s => s.students);
+  const [students, setStudents] = useState<StudentOpt[]>([]);
   const [codes, setCodes] = useState<Shortcode[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCode, setNewCode] = useState('');
@@ -35,11 +36,22 @@ export function SMSShortcodeSettings() {
 
   async function load() {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from('sms_behavior_shortcodes')
-      .select('id, code, label, behavior_id, student_id, behaviors(name), students(first_name, last_name)')
-      .order('code');
-    setCodes((data ?? []) as Shortcode[]);
+    const [codesRes, studentsRes] = await Promise.all([
+      (supabase as any)
+        .from('sms_behavior_shortcodes')
+        .select('id, code, label, behavior_id, student_id, behaviors(name), students(first_name, last_name)')
+        .order('code'),
+      supabase.from('students').select('id, first_name, last_name')
+        .eq('is_archived', false).order('first_name'),
+    ]);
+    setCodes((codesRes.data ?? []) as Shortcode[]);
+    setStudents(
+      (studentsRes.data ?? []).map((s: any) => ({
+        id: s.id,
+        firstName: s.first_name ?? '',
+        lastName: s.last_name ?? '',
+      }))
+    );
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -122,6 +134,7 @@ export function SMSShortcodeSettings() {
                 {students.map(s => (
                   <SelectItem key={s.id} value={s.id} className="text-xs">{s.firstName} {s.lastName}</SelectItem>
                 ))}
+
               </SelectContent>
             </Select>
           </div>
