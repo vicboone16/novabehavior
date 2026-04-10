@@ -52,18 +52,26 @@ function parseSMS(body: string): ParsedSMS {
     return { entryType: "no_behaviors", studentCode: code, loggedAt };
   }
 
-  // Free-form ABC: 5+ words
-  if (parts.length >= 5) {
-    // Try to extract student code as first token if it's short and uppercase-ish
-    const first = parts[0];
-    const studentCode = first.length <= 10 && /^[A-Za-z]+$/.test(first) ? first.toUpperCase() : undefined;
-    return { entryType: "abc", studentCode, loggedAt };
+  // STUDENT BEHAVIOR COUNT DURATION — 4 parts
+  if (parts.length === 4) {
+    const studentCode = parts[0].toUpperCase();
+    const behaviorCode = parts[1].toUpperCase();
+    const count = parseInt(parts[2]);
+    const dur = parts[3].match(/^(\d+)\s*(min|m|mins|minutes?)$/i);
+    if (!isNaN(count) && dur) {
+      return {
+        entryType: "duration",
+        studentCode,
+        behaviorCode,
+        count,
+        durationSeconds: parseInt(dur[1]) * 60,
+        loggedAt,
+      };
+    }
   }
 
-  // STUDENT BEHAVIOR COUNT [DURATION]
-  // or BEHAVIOR COUNT (no student)
-  if (parts.length >= 2) {
-    // Check for duration suffix like "30min" or "30m"
+  // STUDENT BEHAVIOR COUNT or BEHAVIOR COUNT [DURATION]
+  if (parts.length >= 2 && parts.length <= 3) {
     const lastPart = parts[parts.length - 1];
     const durMatch = lastPart.match(/^(\d+)\s*(min|m|mins|minutes?)$/i);
     let durationSeconds: number | undefined;
@@ -74,7 +82,6 @@ function parseSMS(body: string): ParsedSMS {
     }
 
     if (effectiveParts.length === 3) {
-      // STUDENT BEHAVIOR COUNT
       const studentCode = effectiveParts[0].toUpperCase();
       const behaviorCode = effectiveParts[1].toUpperCase();
       const count = parseInt(effectiveParts[2]);
@@ -87,8 +94,6 @@ function parseSMS(body: string): ParsedSMS {
     if (effectiveParts.length === 2) {
       const maybeCount = parseInt(effectiveParts[1]);
       if (!isNaN(maybeCount)) {
-        // Could be BEHAVIOR COUNT (no student) or STUDENT BEHAVIOR
-        // Treat first token as behavior code if count is a number
         return {
           entryType: maybeCount === 0 ? "observed_zero" : durationSeconds ? "duration" : "frequency",
           behaviorCode: effectiveParts[0].toUpperCase(),
@@ -98,24 +103,13 @@ function parseSMS(body: string): ParsedSMS {
         };
       }
     }
+  }
 
-    // STUDENT BEHAVIOR COUNT DURATION — 4 parts
-    if (parts.length === 4 && !durMatch) {
-      const studentCode = parts[0].toUpperCase();
-      const behaviorCode = parts[1].toUpperCase();
-      const count = parseInt(parts[2]);
-      const dur2 = parts[3].match(/^(\d+)\s*(min|m|mins|minutes?)$/i);
-      if (!isNaN(count) && dur2) {
-        return {
-          entryType: "duration",
-          studentCode,
-          behaviorCode,
-          count,
-          durationSeconds: parseInt(dur2[1]) * 60,
-          loggedAt,
-        };
-      }
-    }
+  // Free-form ABC: 5+ words
+  if (parts.length >= 5) {
+    const first = parts[0];
+    const studentCode = first.length <= 10 && /^[A-Za-z]+$/.test(first) ? first.toUpperCase() : undefined;
+    return { entryType: "abc", studentCode, loggedAt };
   }
 
   return { entryType: "unknown", loggedAt };
@@ -155,12 +149,54 @@ serve(async (req) => {
       .or(`phone.ilike.%${normalizedPhone},secondary_phone.ilike.%${normalizedPhone}`)
       .limit(1);
 
-    let staffId = profileRows?.[0]?.id || Deno.env.get("SMS_OWNER_USER_ID") || null;
+    const staffId = profileRows?.[0]?.id || Deno.env.get("SMS_OWNER_USER_ID") || null;
     const staffName = profileRows?.[0]
       ? `${profileRows[0].first_name || ""} ${profileRows[0].last_name || ""}`.trim()
       : "Unknown";
 
-    // Parse the SMS
+    // ── STEP 0: Check if this is a student-code reply for a waiting entry ──
+    // If the entire message is a single short token, check if it's a student code
+    // reply to a previous "needs_student" entry from this phone number.
+    const trimmedBody = body.trim().toUpperCase();
+    const isSingleToken = /^[A-Za-z0-9]{1,15}$/.test(trimmedBody);
+
+    if (isSingleToken) {
+      const { data: waiting } = await supabase
+        .from("sms_behavior_log")
+        .select("id")
+        .eq("from_phone", from)
+        .eq("status", "needs_student")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (waiting) {
+        // Try to resolve the body as a student code
+        const { data: sc } = await supabase
+          .from("sms_student_codes")
+          .select("student_id")
+          .eq("code", trimmedBody)
+          .maybeSingle();
+
+        if (sc) {
+          await supabase
+            .from("sms_behavior_log")
+            .update({ student_id: sc.student_id, status: "pending" })
+            .eq("id", waiting.id);
+
+          const { data: stu } = await supabase
+            .from("students")
+            .select("first_name, last_name")
+            .eq("id", sc.student_id)
+            .maybeSingle();
+          const name = stu ? `${stu.first_name || ""} ${stu.last_name || ""}`.trim() : "student";
+          return twiml(`Got it! Updated previous entry for ${name}.`);
+        }
+        // If it didn't resolve as a student code, fall through to normal parsing
+      }
+    }
+
+    // ── STEP 1: Parse the SMS ──
     const parsed = parseSMS(body);
 
     // If unknown/unparseable, store as ABC
@@ -168,7 +204,7 @@ serve(async (req) => {
       parsed.entryType = "abc" as any;
     }
 
-    // Resolve student
+    // ── STEP 2: Resolve student ──
     let studentId: string | null = null;
     let studentName: string | null = null;
     if (parsed.studentCode) {
@@ -180,7 +216,6 @@ serve(async (req) => {
         .maybeSingle();
       if (sc) {
         studentId = sc.student_id;
-        // Fetch student name
         const { data: stu } = await supabase
           .from("students")
           .select("first_name, last_name")
@@ -190,18 +225,18 @@ serve(async (req) => {
       }
     }
 
-    // Resolve behavior
+    // ── STEP 3: Resolve behavior ──
     let behaviorId: string | null = null;
     let behaviorLabel: string | null = null;
     if (parsed.behaviorCode) {
       // Try student-specific first
-      let query = supabase
-        .from("sms_behavior_shortcodes")
-        .select("behavior_id, label")
-        .eq("code", parsed.behaviorCode);
-
       if (studentId) {
-        const { data: specific } = await query.eq("student_id", studentId).maybeSingle();
+        const { data: specific } = await supabase
+          .from("sms_behavior_shortcodes")
+          .select("behavior_id, label")
+          .eq("code", parsed.behaviorCode)
+          .eq("student_id", studentId)
+          .maybeSingle();
         if (specific) {
           behaviorId = specific.behavior_id;
           behaviorLabel = specific.label;
@@ -222,83 +257,15 @@ serve(async (req) => {
       }
     }
 
-    // Handle "needs_student" flow: behavior resolved but student didn't
+    // ── STEP 4: Determine status ──
     let status = "pending";
-    if (parsed.behaviorCode && behaviorId && !studentId && parsed.studentCode) {
-      // studentCode didn't resolve — maybe they replied with a student code to a waiting entry
-      const { data: waiting } = await supabase
-        .from("sms_behavior_log")
-        .select("id")
-        .eq("from_phone", from)
-        .eq("status", "needs_student")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
 
-      if (waiting) {
-        // Try to look up the entire body as a student code
-        const { data: sc2 } = await supabase
-          .from("sms_student_codes")
-          .select("student_id")
-          .eq("code", body.trim().toUpperCase())
-          .maybeSingle();
-
-        if (sc2) {
-          await supabase
-            .from("sms_behavior_log")
-            .update({ student_id: sc2.student_id, status: "pending" })
-            .eq("id", waiting.id);
-
-          const { data: stu2 } = await supabase
-            .from("students")
-            .select("first_name, last_name")
-            .eq("id", sc2.student_id)
-            .maybeSingle();
-          const name = stu2 ? `${stu2.first_name || ""} ${stu2.last_name || ""}`.trim() : "student";
-          return twiml(`Got it! Updated previous entry for ${name}.`);
-        }
-      }
+    // If behavior resolved but no student → needs_student
+    if (behaviorId && !studentId && parsed.entryType !== "no_behaviors" && parsed.entryType !== "abc") {
+      status = "needs_student";
     }
 
-    if (!studentId && parsed.entryType !== "no_behaviors" && parsed.entryType !== "abc") {
-      if (behaviorId && !parsed.studentCode) {
-        status = "needs_student";
-      } else if (parsed.studentCode && !studentId) {
-        // Student code didn't resolve — check if this IS a student code reply for a waiting entry
-        const { data: waiting2 } = await supabase
-          .from("sms_behavior_log")
-          .select("id")
-          .eq("from_phone", from)
-          .eq("status", "needs_student")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (waiting2) {
-          // The entire message might be a student code
-          const { data: sc3 } = await supabase
-            .from("sms_student_codes")
-            .select("student_id")
-            .eq("code", body.trim().toUpperCase())
-            .maybeSingle();
-          if (sc3) {
-            await supabase
-              .from("sms_behavior_log")
-              .update({ student_id: sc3.student_id, status: "pending" })
-              .eq("id", waiting2.id);
-            const { data: stu3 } = await supabase
-              .from("students")
-              .select("first_name, last_name")
-              .eq("id", sc3.student_id)
-              .maybeSingle();
-            const name = stu3 ? `${stu3.first_name || ""} ${stu3.last_name || ""}`.trim() : "student";
-            return twiml(`Got it! Updated previous entry for ${name}.`);
-          }
-        }
-      }
-    }
-
-    // Insert the log row
+    // ── STEP 5: Insert the log row ──
     const { error: insertErr } = await supabase.from("sms_behavior_log").insert({
       raw_body: body,
       from_phone: from,
@@ -322,26 +289,26 @@ serve(async (req) => {
       return twiml("Error saving entry. Please try again.");
     }
 
-    // Build confirmation message
+    // ── STEP 6: Build confirmation TwiML ──
     if (status === "needs_student") {
       return twiml(`Got ${behaviorLabel || parsed.behaviorCode} ×${parsed.count ?? 0}. Which student? Reply with their code.`);
     }
 
-    const parts: string[] = [];
+    const msgParts: string[] = [];
     if (parsed.entryType === "no_behaviors") {
-      parts.push(`No behaviors recorded${studentName ? ` for ${studentName}` : ""}.`);
+      msgParts.push(`No behaviors recorded${studentName ? ` for ${studentName}` : ""}.`);
     } else if (parsed.entryType === "abc") {
-      parts.push(`ABC note queued for review${studentName ? ` (${studentName})` : ""}.`);
+      msgParts.push(`ABC note queued for review${studentName ? ` (${studentName})` : ""}.`);
     } else {
       const bLabel = behaviorLabel || parsed.behaviorCode || "behavior";
       const sLabel = studentName || parsed.studentCode || "student";
       const countStr = parsed.count !== undefined ? ` ×${parsed.count}` : "";
       const durStr = parsed.durationSeconds ? ` (${parsed.durationSeconds / 60}min)` : "";
-      parts.push(`Queued for review: ${sLabel}, ${bLabel}${countStr}${durStr}.`);
+      msgParts.push(`Queued for review: ${sLabel}, ${bLabel}${countStr}${durStr}.`);
     }
-    parts.push(`Logged by ${staffName}.`);
+    msgParts.push(`Logged by ${staffName}.`);
 
-    return twiml(parts.join(" "));
+    return twiml(msgParts.join(" "));
   } catch (e) {
     console.error("sms-behavior-intake error:", e);
     return twiml("Something went wrong. Please try again.");
