@@ -21,18 +21,18 @@ export function useBehaviorSessionSync(clientId: string | undefined) {
           .from('behavior_session_data')
           .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions!inner(start_time, started_at)')
           .eq('student_id', clientId)
-          .eq('data_state', 'measured')
+          .not('data_state', 'eq', 'no_data')
           .order('created_at', { ascending: true })
-          .limit(500);
+          .limit(2000);
 
         if (error || !rows || rows.length === 0) {
           const { data: fallbackRows, error: fallbackError } = await supabase
             .from('behavior_session_data')
             .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, sessions(start_time, started_at)')
             .eq('student_id', clientId)
-            .eq('data_state', 'measured')
+            .not('data_state', 'eq', 'no_data')
             .order('created_at', { ascending: true })
-            .limit(500);
+            .limit(2000);
           
           if (fallbackError || !fallbackRows || fallbackRows.length === 0) return;
           await mergeRows(fallbackRows, clientId);
@@ -99,14 +99,14 @@ function mergeRows(rows: any[], clientId: string) {
 
   // Build fresh entries using observation date (session.started_at), never created_at
   const newFrequencyEntries = rows
-    .filter(r => r.frequency != null)
+    .filter(r => r.frequency != null || r.data_state === 'observed_zero')
     .map(r => ({
       id: `bsd-${r.id}`,
       studentId: clientId,
       behaviorId: r.behavior_id,
-      count: r.frequency,
+      count: r.data_state === 'observed_zero' ? 0 : (r.frequency ?? 0),
       timestamp: getObservationDate(r),
-      notes: r.frequency === 0 ? 'observed_zero' : '',
+      notes: (r.data_state === 'observed_zero' || r.frequency === 0) ? 'observed_zero' : '',
     }));
 
   const newDurationEntries = rows
