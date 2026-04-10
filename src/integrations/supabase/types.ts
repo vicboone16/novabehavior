@@ -49039,6 +49039,126 @@ export type Database = {
           },
         ]
       }
+      sms_behavior_log: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          behavior_id: string | null
+          bsd_row_id: string | null
+          count: number | null
+          created_at: string
+          duration_seconds: number | null
+          entry_type: string
+          from_phone: string
+          id: string
+          logged_at: string
+          parsed_behavior_code: string | null
+          parsed_count: number | null
+          parsed_duration_seconds: number | null
+          parsed_student_code: string | null
+          raw_body: string
+          session_id: string | null
+          staff_id: string | null
+          status: string
+          student_id: string | null
+          twilio_message_sid: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          behavior_id?: string | null
+          bsd_row_id?: string | null
+          count?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          entry_type?: string
+          from_phone: string
+          id?: string
+          logged_at?: string
+          parsed_behavior_code?: string | null
+          parsed_count?: number | null
+          parsed_duration_seconds?: number | null
+          parsed_student_code?: string | null
+          raw_body: string
+          session_id?: string | null
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          twilio_message_sid?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          behavior_id?: string | null
+          bsd_row_id?: string | null
+          count?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          entry_type?: string
+          from_phone?: string
+          id?: string
+          logged_at?: string
+          parsed_behavior_code?: string | null
+          parsed_count?: number | null
+          parsed_duration_seconds?: number | null
+          parsed_student_code?: string | null
+          raw_body?: string
+          session_id?: string | null
+          staff_id?: string | null
+          status?: string
+          student_id?: string | null
+          twilio_message_sid?: string | null
+        }
+        Relationships: []
+      }
+      sms_behavior_shortcodes: {
+        Row: {
+          behavior_id: string | null
+          code: string
+          created_at: string
+          id: string
+          label: string
+          student_id: string | null
+        }
+        Insert: {
+          behavior_id?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          label: string
+          student_id?: string | null
+        }
+        Update: {
+          behavior_id?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          label?: string
+          student_id?: string | null
+        }
+        Relationships: []
+      }
+      sms_student_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       snapshot_tokens: {
         Row: {
           created_at: string
