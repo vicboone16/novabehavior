@@ -495,7 +495,7 @@ const App = () => {
               <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
-              <Route path="/notes-review" element={<NotesReview />} />
+              <Route path="/review-queue" element={<ReviewQueue />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/incident-logs" element={<IncidentLogs />} />
