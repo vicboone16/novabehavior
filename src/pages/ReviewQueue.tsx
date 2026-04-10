@@ -9,7 +9,7 @@ import { SMSBehaviorQueue } from "@/components/sms/SMSBehaviorQueue.tsx";
 import { SMSShortcodeSettings } from "@/components/sms/SMSShortcodeSettings.tsx";
 import { SMSStudentCodeSettings } from "@/components/sms/SMSStudentCodeSettings.tsx";
 
-export default function NotesReview() {
+export default function ReviewQueue() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("notes");
 
