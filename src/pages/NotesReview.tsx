@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SupervisorReviewDashboard } from "@/components/admin/SupervisorReviewDashboard";
-import { SMSBehaviorQueue } from "@/components/sms/SMSBehaviorQueue";
-import { SMSShortcodeSettings } from "@/components/sms/SMSShortcodeSettings";
-import { SMSStudentCodeSettings } from "@/components/sms/SMSStudentCodeSettings";
+import { SMSBehaviorQueue } from "@/components/sms/SMSBehaviorQueue.tsx";
+import { SMSShortcodeSettings } from "@/components/sms/SMSShortcodeSettings.tsx";
+import { SMSStudentCodeSettings } from "@/components/sms/SMSStudentCodeSettings.tsx";
 
 export default function NotesReview() {
   const navigate = useNavigate();
