@@ -26,7 +26,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const AssessmentDashboard = lazy(() => import("./pages/AssessmentDashboard"));
 const Clinical = lazy(() => import("./pages/Clinical"));
 const SkillAcquisition = lazy(() => import("./pages/SkillAcquisition"));
-const NotesReview = lazy(() => import("./pages/NotesReview"));
+const ReviewQueue = lazy(() => import("./pages/ReviewQueue"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PostLoginRouter = lazy(() => import("./pages/PostLoginRouter"));
@@ -495,7 +495,7 @@ const App = () => {
               <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
-              <Route path="/notes-review" element={<NotesReview />} />
+              <Route path="/review-queue" element={<ReviewQueue />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/incident-logs" element={<IncidentLogs />} />
