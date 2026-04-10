@@ -117,6 +117,7 @@ const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
 
 const PageLoader = () => (
@@ -215,6 +216,7 @@ const App = () => {
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
