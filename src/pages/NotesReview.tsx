@@ -1,22 +1,92 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ClipboardCheck, MessageSquare, Settings2, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SupervisorReviewDashboard } from '@/components/admin/SupervisorReviewDashboard';
-import { ClipboardCheck } from 'lucide-react';
+import { SMSBehaviorQueue } from '@/components/sms/SMSBehaviorQueue';
+import { SMSShortcodeSettings } from '@/components/sms/SMSShortcodeSettings';
+import { SMSStudentCodeSettings } from '@/components/sms/SMSStudentCodeSettings';
 
 export default function NotesReview() {
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClipboardCheck className="h-6 w-6" />
-            Notes Review
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Review and approve clinical session notes
-          </p>
-        </div>
-      </div>
+  const navigate = useNavigate();
+  const [tab, setTab] = useState('notes');
 
-      <SupervisorReviewDashboard />
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card border-b border-border sticky top-0 z-20">
+        <div className="container py-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-primary" />
+                Review Queue
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Session notes, SMS behavior entries, and data approvals
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container py-4 max-w-3xl">
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="w-full">
+            <TabsTrigger value="notes" className="flex-1 text-xs gap-1.5">
+              <ClipboardCheck className="w-3.5 h-3.5" /> Session Notes
+            </TabsTrigger>
+            <TabsTrigger value="sms" className="flex-1 text-xs gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5" /> SMS Entries
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 text-xs gap-1.5">
+              <Settings2 className="w-3.5 h-3.5" /> SMS Settings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Session Notes */}
+          <TabsContent value="notes" className="mt-4">
+            <SupervisorReviewDashboard />
+          </TabsContent>
+
+          {/* SMS Behavior Queue */}
+          <TabsContent value="sms" className="mt-4 space-y-4">
+            <Alert>
+              <Info className="w-4 h-4" />
+              <AlertDescription className="text-xs space-y-1">
+                <p><strong>Supported SMS formats (text your Twilio number):</strong></p>
+                <ul className="space-y-0.5 mt-1">
+                  <li><code className="bg-muted px-1 rounded">KALEL PA 3</code> — student + behavior + count</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL TANTRUM 2 30min</code> — with duration (behavior duration)</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL PA 0</code> — observed zero for one behavior</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL no behaviors today</code> — observed zero for all behaviors</li>
+                  <li><code className="bg-muted px-1 rounded">PA 3</code> — no student: system replies asking which student</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL pushed peer after told to stop…</code> — free-text → ABC draft</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL PA 3 2:30PM</code> — with explicit time</li>
+                  <li><code className="bg-muted px-1 rounded">KALEL PA 3 2024-12-01</code> — historical date entry</li>
+                </ul>
+                <p className="text-muted-foreground mt-1">
+                  All entries land here first. Review, edit if needed, then approve to commit to student data.
+                </p>
+              </AlertDescription>
+            </Alert>
+            <SMSBehaviorQueue />
+          </TabsContent>
+
+          {/* SMS Settings */}
+          <TabsContent value="settings" className="mt-4 space-y-6">
+            <SMSShortcodeSettings />
+            <div className="border-t pt-4">
+              <SMSStudentCodeSettings />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
