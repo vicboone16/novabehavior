@@ -143,7 +143,7 @@ export function SMSBehaviorQueue() {
           behavior_id: edit.behavior_id,
           frequency: edit.count ?? 0,
           duration_seconds: edit.duration_seconds,
-          data_state: "final",
+          data_state: "measured",
           created_by_ai: false,
           raw_source_text: entry.raw_body,
           notes: `SMS entry from ${entry.from_phone}`,
