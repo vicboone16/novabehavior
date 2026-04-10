@@ -118,6 +118,7 @@ const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
 
 const PageLoader = () => (
@@ -217,6 +218,7 @@ const App = () => {
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
