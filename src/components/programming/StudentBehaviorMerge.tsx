@@ -59,7 +59,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
   async function loadBehaviors() {
     setLoading(true);
     try {
-      const [{ data: maps, error: mapsError }, { data: bsdRows, error: bsdError }, resolvedNameMap] = await Promise.all([
+      const [{ data: maps, error: mapsError }, { data: bsdRows, error: bsdError }, { data: aggRows, error: aggError }, resolvedNameMap] = await Promise.all([
         supabase
           .from('student_behavior_map')
           .select('behavior_entry_id, behavior_subtype, active')
@@ -71,11 +71,16 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           .not('data_state', 'eq', 'no_data')
           .order('created_at', { ascending: true })
           .limit(2000),
+        supabase
+          .from('behavior_daily_aggregates')
+          .select('behavior_id, behavior_name, service_date, total_count')
+          .eq('student_id', studentId),
         getStudentBehaviorNameMap(studentId),
       ]);
 
       if (mapsError) throw mapsError;
       if (bsdError) throw bsdError;
+      // aggError is non-critical — graph data is best-effort
 
       const mappedIds = (maps || [])
         .filter((m: any) => m.active !== false)
@@ -84,7 +89,12 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
 
       const bsdData = (bsdRows || []) as any[];
       const bsdIds = bsdData.map((c: any) => c.behavior_id).filter(Boolean);
-      const allBehaviorIds = [...new Set([...mappedIds, ...bsdIds])];
+
+      // Include behavior_ids from daily aggregates so merge dialog matches the graph
+      const aggData = (aggRows || []) as any[];
+      const aggIds = aggData.map((r: any) => r.behavior_id).filter(Boolean);
+
+      const allBehaviorIds = [...new Set([...mappedIds, ...bsdIds, ...aggIds])];
 
       // Build frequency sum + date range per behavior using session observation date
       const countMap = new Map<string, number>();
@@ -106,6 +116,22 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           if (!lastDateMap.has(id) || date > lastDateMap.get(id)!) {
             lastDateMap.set(id, date);
           }
+        }
+      });
+
+      // Fill in counts + date ranges from aggregates for behaviors not covered by BSD query
+      // (e.g. behaviors from sessions older than the 2000-row BSD limit)
+      const aggCountMap = new Map<string, number>();
+      const aggFirstDateMap = new Map<string, string>();
+      const aggLastDateMap = new Map<string, string>();
+      aggData.forEach((r: any) => {
+        const id = r.behavior_id;
+        const cnt = r.total_count ?? 0;
+        aggCountMap.set(id, (aggCountMap.get(id) || 0) + cnt);
+        const date = r.service_date ? String(r.service_date).slice(0, 10) : null;
+        if (date) {
+          if (!aggFirstDateMap.has(id) || date < aggFirstDateMap.get(id)!) aggFirstDateMap.set(id, date);
+          if (!aggLastDateMap.has(id) || date > aggLastDateMap.get(id)!) aggLastDateMap.set(id, date);
         }
       });
 
@@ -132,14 +158,26 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
           nameMap.set(m.behavior_entry_id, m.behavior_subtype.trim());
         }
       });
+      // Overlay behavior_name stored in aggregates as last-resort fallback
+      aggData.forEach((r: any) => {
+        if (r.behavior_id && r.behavior_name?.trim() && !UUID_RE.test(r.behavior_name.trim()) && !nameMap.has(r.behavior_id)) {
+          nameMap.set(r.behavior_id, r.behavior_name.trim());
+        }
+      });
 
-      const options: BehaviorOption[] = allBehaviorIds.map(id => ({
-        id,
-        name: nameMap.get(id) || `Unlinked Behavior (${id.slice(0, 8)})`,
-        dataCount: countMap.get(id) || 0,
-        firstDate: firstDateMap.get(id) || null,
-        lastDate: lastDateMap.get(id) || null,
-      }));
+      const options: BehaviorOption[] = allBehaviorIds.map(id => {
+        // Use BSD-derived counts when available (more accurate); fall back to agg counts
+        const dataCount = countMap.has(id) ? (countMap.get(id) || 0) : (aggCountMap.get(id) || 0);
+        const firstDate = firstDateMap.get(id) || aggFirstDateMap.get(id) || null;
+        const lastDate = lastDateMap.get(id) || aggLastDateMap.get(id) || null;
+        return {
+          id,
+          name: nameMap.get(id) || `Unlinked Behavior (${id.slice(0, 8)})`,
+          dataCount,
+          firstDate,
+          lastDate,
+        };
+      });
 
       options.sort((a, b) => a.name.localeCompare(b.name));
       setBehaviors(options);
