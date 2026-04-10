@@ -1497,6 +1497,7 @@ export type Database = {
           antecedent: string
           behavior: string
           behavior_category: string | null
+          bsd_row_id: string | null
           client_id: string
           consequence: string
           created_at: string
@@ -1515,6 +1516,7 @@ export type Database = {
           antecedent: string
           behavior: string
           behavior_category?: string | null
+          bsd_row_id?: string | null
           client_id: string
           consequence: string
           created_at?: string
@@ -1533,6 +1535,7 @@ export type Database = {
           antecedent?: string
           behavior?: string
           behavior_category?: string | null
+          bsd_row_id?: string | null
           client_id?: string
           consequence?: string
           created_at?: string
@@ -1548,6 +1551,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "abc_logs_bsd_row_id_fkey"
+            columns: ["bsd_row_id"]
+            isOneToOne: false
+            referencedRelation: "behavior_session_data"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "abc_logs_client_id_fkey"
             columns: ["client_id"]
@@ -7531,6 +7541,7 @@ export type Database = {
       }
       behavior_session_data: {
         Row: {
+          abc_log_id: string | null
           behavior_id: string
           created_at: string | null
           created_by_ai: boolean
@@ -7548,6 +7559,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          abc_log_id?: string | null
           behavior_id: string
           created_at?: string | null
           created_by_ai?: boolean
@@ -7565,6 +7577,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          abc_log_id?: string | null
           behavior_id?: string
           created_at?: string | null
           created_by_ai?: boolean
@@ -7582,6 +7595,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "behavior_session_data_abc_log_id_fkey"
+            columns: ["abc_log_id"]
+            isOneToOne: false
+            referencedRelation: "abc_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "behavior_session_data_behavior_id_fkey"
             columns: ["behavior_id"]

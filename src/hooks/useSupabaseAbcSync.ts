@@ -40,7 +40,15 @@ export function useSupabaseAbcSync(clientId: string | undefined) {
         );
 
         const newEntries = logs
-          .filter(log => !existing.has(log.id) && (!log.source_request_id || !existingSourceIds.has(log.source_request_id)))
+          .filter(log => {
+            // Skip if already in local store
+            if (existing.has(log.id)) return false;
+            if (log.source_request_id && existingSourceIds.has(log.source_request_id)) return false;
+            // Skip if this ABC log is already linked to a behavior_session_data row
+            // (it will appear via the BSD sync instead, avoiding double-count)
+            if ((log as any).bsd_row_id) return false;
+            return true;
+          })
           .map(log => ({
             id: log.id,
             studentId: log.client_id,

@@ -1,16 +1,17 @@
 /**
  * BehaviorDataEditor
  * 
- * Full CRUD editor for all behavior_session_data records.
- * Fetches directly from DB, allows editing date/frequency/duration/notes,
- * and syncs changes back to both DB and local Zustand store for graph refresh.
+ * Unified CRUD editor for all behavior data — both behavior_session_data (frequency/duration)
+ * and abc_logs (incident records). Shows both sources in a single view without duplication.
+ * ABC entries linked to a BSD row show as one unified record.
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import {
   Database, Search, Pencil, Trash2, Save, X, RefreshCw,
   ChevronDown, ChevronUp, Filter, ArrowUpDown, Calendar,
-  TrendingUp, Clock, AlertCircle, Check, Loader2, type LucideIcon
+  TrendingUp, Clock, AlertCircle, Check, Loader2, FileText,
+  type LucideIcon
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useDataStore } from '@/store/dataStore';
@@ -48,6 +49,49 @@ interface BehaviorSessionRow {
   // Joined session data
   session_started_at?: string | null;
   session_start_time?: string | null;
+  // ABC link
+  abc_log_id?: string | null;
+}
+
+interface AbcLogRow {
+  id: string;
+  behavior: string;
+  behavior_category: string | null;
+  antecedent: string;
+  consequence: string;
+  logged_at: string;
+  notes: string | null;
+  duration_seconds: number | null;
+  intensity: number | null;
+  created_by_ai: boolean;
+  bsd_row_id: string | null;
+}
+
+/** Unified display row combining BSD and standalone ABC data */
+interface UnifiedRow {
+  source: 'bsd' | 'abc';
+  id: string;
+  behaviorId: string;
+  behaviorName: string;
+  frequency: number | null;
+  durationSeconds: number | null;
+  observationDate: string;
+  notes: string | null;
+  dataState: string;
+  createdByAi: boolean;
+  // ABC-specific fields
+  antecedent?: string;
+  consequence?: string;
+  intensity?: number | null;
+  abcBehaviorLabel?: string;
+  // BSD-specific
+  latencySeconds?: number | null;
+  sessionId?: string;
+  // Original rows for editing
+  bsdRow?: BehaviorSessionRow;
+  abcRow?: AbcLogRow;
+  // Whether this BSD row has a linked ABC
+  hasLinkedAbc?: boolean;
 }
 
 interface BehaviorDataEditorProps {
@@ -67,21 +111,22 @@ export function BehaviorDataEditor({
   TriggerIcon = Database,
 }: BehaviorDataEditorProps) {
   const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<BehaviorSessionRow[]>([]);
+  const [bsdRows, setBsdRows] = useState<BehaviorSessionRow[]>([]);
+  const [abcRows, setAbcRows] = useState<AbcLogRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Filters
   const [searchText, setSearchText] = useState('');
   const [filterBehavior, setFilterBehavior] = useState('all');
-  const [filterDataType, setFilterDataType] = useState<'all' | 'frequency' | 'duration'>('all');
+  const [filterDataType, setFilterDataType] = useState<'all' | 'frequency' | 'duration' | 'abc'>('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [groupByDate, setGroupByDate] = useState(true);
 
-  // Edit state
+  // Edit state (BSD only for now)
   const [editingRow, setEditingRow] = useState<BehaviorSessionRow | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editFrequency, setEditFrequency] = useState<number | null>(null);
@@ -91,7 +136,10 @@ export function BehaviorDataEditor({
   const [editDataState, setEditDataState] = useState('measured');
 
   // Delete
-  const [deleteTarget, setDeleteTarget] = useState<BehaviorSessionRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UnifiedRow | null>(null);
+
+  // Expanded ABC detail
+  const [expandedAbcId, setExpandedAbcId] = useState<string | null>(null);
 
   const students = useDataStore(s => s.students);
   const student = students.find(s => s.id === studentId);
@@ -113,31 +161,40 @@ export function BehaviorDataEditor({
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Use LEFT join (no !inner) so records without sessions still appear
-      const { data, error } = await supabase
+      // Fetch BSD rows
+      const { data: bsdData, error: bsdError } = await supabase
         .from('behavior_session_data')
-        .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai, sessions(started_at, start_time)')
+        .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai, abc_log_id, sessions(started_at, start_time)')
         .eq('student_id', studentId)
         .order('created_at', { ascending: false });
 
-      if (error) {
+      if (bsdError) {
         // Fallback without join
-        const { data: fallback, error: fallbackErr } = await supabase
+        const { data: fallback } = await supabase
           .from('behavior_session_data')
-          .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai')
+          .select('id, session_id, student_id, behavior_id, frequency, duration_seconds, latency_seconds, observation_minutes, data_state, notes, created_at, updated_at, created_by_ai, abc_log_id')
           .eq('student_id', studentId)
           .order('created_at', { ascending: false });
 
-        if (fallbackErr) throw fallbackErr;
-        setRows((fallback || []).map(r => ({ ...r, session_started_at: null, session_start_time: null })));
-        return;
+        setBsdRows((fallback || []).map(r => ({ ...r, session_started_at: null, session_start_time: null })));
+      } else {
+        setBsdRows((bsdData || []).map((r: any) => ({
+          ...r,
+          session_started_at: r.sessions?.started_at || null,
+          session_start_time: r.sessions?.start_time || null,
+        })));
       }
 
-      setRows((data || []).map((r: any) => ({
-        ...r,
-        session_started_at: r.sessions?.started_at || null,
-        session_start_time: r.sessions?.start_time || null,
-      })));
+      // Fetch ABC logs
+      const { data: abcData, error: abcError } = await supabase
+        .from('abc_logs')
+        .select('id, behavior, behavior_category, antecedent, consequence, logged_at, notes, duration_seconds, intensity, created_by_ai, bsd_row_id')
+        .eq('client_id', studentId)
+        .order('logged_at', { ascending: false });
+
+      if (!abcError) {
+        setAbcRows((abcData || []) as AbcLogRow[]);
+      }
     } catch (err) {
       console.error('[BehaviorDataEditor] Fetch failed:', err);
       toast.error('Failed to load data');
@@ -154,33 +211,105 @@ export function BehaviorDataEditor({
     return row.session_started_at || row.session_start_time || row.created_at || new Date().toISOString();
   };
 
+  // Build unified rows: BSD rows + standalone ABC logs (not already linked to a BSD row)
+  const unifiedRows = useMemo(() => {
+    const rows: UnifiedRow[] = [];
+    const linkedAbcIds = new Set(bsdRows.filter(r => r.abc_log_id).map(r => r.abc_log_id!));
+    const abcByBsdId = new Map<string, AbcLogRow>();
+    
+    for (const abc of abcRows) {
+      if (abc.bsd_row_id) {
+        abcByBsdId.set(abc.bsd_row_id, abc);
+      }
+    }
+
+    // Add BSD rows
+    for (const bsd of bsdRows) {
+      const linkedAbc = bsd.abc_log_id ? abcRows.find(a => a.id === bsd.abc_log_id) : abcByBsdId.get(bsd.id);
+      rows.push({
+        source: 'bsd',
+        id: bsd.id,
+        behaviorId: bsd.behavior_id,
+        behaviorName: getBehaviorName(bsd.behavior_id),
+        frequency: bsd.frequency,
+        durationSeconds: bsd.duration_seconds,
+        observationDate: getObservationDate(bsd),
+        notes: bsd.notes,
+        dataState: bsd.data_state,
+        createdByAi: bsd.created_by_ai,
+        latencySeconds: bsd.latency_seconds,
+        sessionId: bsd.session_id,
+        bsdRow: bsd,
+        abcRow: linkedAbc || undefined,
+        hasLinkedAbc: !!linkedAbc,
+        antecedent: linkedAbc?.antecedent,
+        consequence: linkedAbc?.consequence,
+        intensity: linkedAbc?.intensity,
+        abcBehaviorLabel: linkedAbc?.behavior,
+      });
+    }
+
+    // Add standalone ABC logs (not linked to any BSD row)
+    for (const abc of abcRows) {
+      if (abc.bsd_row_id && bsdRows.some(b => b.id === abc.bsd_row_id)) continue;
+      if (linkedAbcIds.has(abc.id)) continue;
+
+      const behaviorId = abc.behavior_category
+        ? abc.behavior_category.toLowerCase().replace(/\s+/g, '-')
+        : 'unknown-behavior';
+
+      rows.push({
+        source: 'abc',
+        id: abc.id,
+        behaviorId,
+        behaviorName: abc.behavior_category || abc.behavior || 'Unknown',
+        frequency: 1, // Each ABC entry = 1 occurrence
+        durationSeconds: abc.duration_seconds,
+        observationDate: abc.logged_at,
+        notes: abc.notes,
+        dataState: 'measured',
+        createdByAi: abc.created_by_ai,
+        antecedent: abc.antecedent,
+        consequence: abc.consequence,
+        intensity: abc.intensity,
+        abcBehaviorLabel: abc.behavior,
+        abcRow: abc,
+      });
+    }
+
+    return rows;
+  }, [bsdRows, abcRows, getBehaviorName]);
+
   // Filtered + sorted rows
   const displayRows = useMemo(() => {
-    let filtered = rows;
+    let filtered = unifiedRows;
 
     if (filterBehavior !== 'all') {
-      filtered = filtered.filter(r => r.behavior_id === filterBehavior);
+      filtered = filtered.filter(r => r.behaviorId === filterBehavior || r.behaviorName === filterBehavior);
     }
     if (filterDataType === 'frequency') {
-      filtered = filtered.filter(r => r.frequency != null);
+      filtered = filtered.filter(r => r.source === 'bsd' && r.frequency != null);
     } else if (filterDataType === 'duration') {
-      filtered = filtered.filter(r => r.duration_seconds != null && r.duration_seconds > 0);
+      filtered = filtered.filter(r => r.durationSeconds != null && (r.durationSeconds ?? 0) > 0);
+    } else if (filterDataType === 'abc') {
+      filtered = filtered.filter(r => r.source === 'abc' || r.hasLinkedAbc);
     }
     if (filterDateFrom) {
       const from = startOfDay(new Date(filterDateFrom + 'T00:00:00'));
-      filtered = filtered.filter(r => new Date(getObservationDate(r)) >= from);
+      filtered = filtered.filter(r => new Date(r.observationDate) >= from);
     }
     if (filterDateTo) {
       const to = endOfDay(new Date(filterDateTo + 'T23:59:59'));
-      filtered = filtered.filter(r => new Date(getObservationDate(r)) <= to);
+      filtered = filtered.filter(r => new Date(r.observationDate) <= to);
     }
     if (searchText.trim()) {
       const q = searchText.toLowerCase();
       filtered = filtered.filter(r => {
-        const name = getBehaviorName(r.behavior_id).toLowerCase();
+        const name = r.behaviorName.toLowerCase();
         const notes = (r.notes || '').toLowerCase();
-        const dateStr = format(parseISO(getObservationDate(r)), 'MMM d, yyyy').toLowerCase();
-        return name.includes(q) || notes.includes(q) || dateStr.includes(q);
+        const abc = `${r.antecedent || ''} ${r.consequence || ''} ${r.abcBehaviorLabel || ''}`.toLowerCase();
+        const dateStr = format(parseISO(r.observationDate), 'MMM d, yyyy').toLowerCase();
+        return name.includes(q) || notes.includes(q) || dateStr.includes(q) || abc.includes(q);
       });
     }
 
@@ -188,52 +317,60 @@ export function BehaviorDataEditor({
       let cmp = 0;
       switch (sortField) {
         case 'date':
-          cmp = new Date(getObservationDate(a)).getTime() - new Date(getObservationDate(b)).getTime();
+          cmp = new Date(a.observationDate).getTime() - new Date(b.observationDate).getTime();
           break;
         case 'behavior':
-          cmp = getBehaviorName(a.behavior_id).localeCompare(getBehaviorName(b.behavior_id));
+          cmp = a.behaviorName.localeCompare(b.behaviorName);
           break;
         case 'frequency':
           cmp = (a.frequency || 0) - (b.frequency || 0);
           break;
         case 'duration':
-          cmp = (a.duration_seconds || 0) - (b.duration_seconds || 0);
+          cmp = (a.durationSeconds || 0) - (b.durationSeconds || 0);
           break;
       }
       return sortDir === 'desc' ? -cmp : cmp;
     });
 
     return sorted;
-  }, [rows, filterBehavior, filterDataType, filterDateFrom, filterDateTo, searchText, sortField, sortDir, getBehaviorName]);
+  }, [unifiedRows, filterBehavior, filterDataType, filterDateFrom, filterDateTo, searchText, sortField, sortDir]);
 
   // Group rows by date
   const groupedByDate = useMemo(() => {
     if (!groupByDate) return null;
-    const groups = new Map<string, BehaviorSessionRow[]>();
+    const groups = new Map<string, UnifiedRow[]>();
     for (const row of displayRows) {
-      const dateKey = format(parseISO(getObservationDate(row)), 'yyyy-MM-dd');
+      const dateKey = format(parseISO(row.observationDate), 'yyyy-MM-dd');
       if (!groups.has(dateKey)) groups.set(dateKey, []);
       groups.get(dateKey)!.push(row);
     }
-    // Sort date keys descending
     const sorted = Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
     return sorted;
   }, [displayRows, groupByDate]);
 
   const uniqueBehaviors = useMemo(() => {
-    const ids = new Set(rows.map(r => r.behavior_id));
-    return Array.from(ids).map(id => ({ id, name: getBehaviorName(id) })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows, getBehaviorName]);
+    const map = new Map<string, string>();
+    for (const r of unifiedRows) {
+      if (!map.has(r.behaviorId)) map.set(r.behaviorId, r.behaviorName);
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [unifiedRows]);
 
-  const startEdit = (row: BehaviorSessionRow) => {
-    setEditingRow(row);
-    const obsDate = getObservationDate(row);
+  const startEdit = (row: UnifiedRow) => {
+    if (row.source === 'abc' && !row.bsdRow) {
+      toast.info('ABC-only entries are read-only in this editor. Edit frequency data to modify counts.');
+      return;
+    }
+    if (!row.bsdRow) return;
+    const bsd = row.bsdRow;
+    setEditingRow(bsd);
+    const obsDate = getObservationDate(bsd);
     setEditDate(format(parseISO(obsDate), 'yyyy-MM-dd'));
-    setEditFrequency(row.frequency);
-    setEditDuration(row.duration_seconds);
-    setEditLatency(row.latency_seconds);
-    setEditNotes(row.notes || '');
-    setEditDataState(row.data_state || 'measured');
+    setEditFrequency(bsd.frequency);
+    setEditDuration(bsd.duration_seconds);
+    setEditLatency(bsd.latency_seconds);
+    setEditNotes(bsd.notes || '');
+    setEditDataState(bsd.data_state || 'measured');
   };
 
   const handleSaveEdit = async () => {
@@ -266,7 +403,7 @@ export function BehaviorDataEditor({
           .eq('id', editingRow.session_id);
       }
 
-      setRows(prev => prev.map(r =>
+      setBsdRows(prev => prev.map(r =>
         r.id === editingRow.id
           ? { ...r, ...updates, session_started_at: newObservationDate, session_start_time: newObservationDate }
           : r
@@ -288,14 +425,22 @@ export function BehaviorDataEditor({
     setSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('behavior_session_data')
-        .delete()
-        .eq('id', deleteTarget.id);
+      if (deleteTarget.source === 'bsd' && deleteTarget.bsdRow) {
+        const { error } = await supabase
+          .from('behavior_session_data')
+          .delete()
+          .eq('id', deleteTarget.bsdRow.id);
+        if (error) throw error;
+        setBsdRows(prev => prev.filter(r => r.id !== deleteTarget.bsdRow!.id));
+      } else if (deleteTarget.source === 'abc' && deleteTarget.abcRow) {
+        const { error } = await supabase
+          .from('abc_logs')
+          .delete()
+          .eq('id', deleteTarget.abcRow.id);
+        if (error) throw error;
+        setAbcRows(prev => prev.filter(r => r.id !== deleteTarget.abcRow!.id));
+      }
 
-      if (error) throw error;
-
-      setRows(prev => prev.filter(r => r.id !== deleteTarget.id));
       refreshLocalStore();
       toast.success('Entry deleted — graphs will refresh');
       setDeleteTarget(null);
@@ -341,71 +486,119 @@ export function BehaviorDataEditor({
     return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
   };
 
-  const renderRow = (row: BehaviorSessionRow) => {
-    const obsDate = getObservationDate(row);
+  const renderRow = (row: UnifiedRow) => {
+    const isExpanded = expandedAbcId === row.id;
+    const hasAbcDetail = !!(row.antecedent || row.consequence);
+
     return (
-      <div
-        key={row.id}
-        className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
-      >
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className="text-xs font-medium">
-              {getBehaviorName(row.behavior_id)}
-            </Badge>
-            {!groupByDate && (
-              <span className="text-xs text-muted-foreground">
-                {format(parseISO(obsDate), 'MMM d, yyyy')}
-              </span>
-            )}
-            {row.data_state !== 'measured' && (
-              <Badge variant="secondary" className="text-xs">{row.data_state}</Badge>
-            )}
-            {row.created_by_ai && (
-              <Badge variant="secondary" className="text-xs">AI</Badge>
+      <div key={`${row.source}-${row.id}`}>
+        <div
+          className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+        >
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="text-xs font-medium">
+                {row.behaviorName}
+              </Badge>
+              {row.source === 'abc' && (
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  ABC
+                </Badge>
+              )}
+              {row.hasLinkedAbc && (
+                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                  Freq + ABC
+                </Badge>
+              )}
+              {!groupByDate && (
+                <span className="text-xs text-muted-foreground">
+                  {format(parseISO(row.observationDate), 'MMM d, yyyy')}
+                </span>
+              )}
+              {row.dataState !== 'measured' && (
+                <Badge variant="secondary" className="text-xs">{row.dataState}</Badge>
+              )}
+              {row.createdByAi && (
+                <Badge variant="secondary" className="text-xs">AI</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              {row.frequency != null && (
+                <span className="flex items-center gap-1 font-medium">
+                  <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                  {row.frequency} count
+                </span>
+              )}
+              {row.durationSeconds != null && row.durationSeconds > 0 && (
+                <span className="flex items-center gap-1 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  {formatDuration(row.durationSeconds)}
+                </span>
+              )}
+              {row.latencySeconds != null && row.latencySeconds > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Latency: {formatDuration(row.latencySeconds)}
+                </span>
+              )}
+              {row.intensity != null && (
+                <span className="text-xs text-muted-foreground">
+                  Intensity: {row.intensity}/5
+                </span>
+              )}
+            </div>
+            {row.notes && (
+              <p className="text-xs text-muted-foreground truncate max-w-[400px]">
+                {row.notes}
+              </p>
             )}
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            {row.frequency != null && (
-              <span className="flex items-center gap-1 font-medium">
-                <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                {row.frequency} count
-              </span>
+          <div className="flex items-center gap-1 shrink-0">
+            {hasAbcDetail && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setExpandedAbcId(isExpanded ? null : row.id)}
+                title="View ABC details"
+              >
+                <FileText className="w-4 h-4 text-amber-600" />
+              </Button>
             )}
-            {row.duration_seconds != null && row.duration_seconds > 0 && (
-              <span className="flex items-center gap-1 font-medium">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-                {formatDuration(row.duration_seconds)}
-              </span>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => startEdit(row)}>
+              <Pencil className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              onClick={() => setDeleteTarget(row)}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        {/* Expanded ABC detail */}
+        {isExpanded && hasAbcDetail && (
+          <div className="ml-4 mt-1 mb-2 p-3 rounded-md border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 text-sm space-y-1">
+            {row.antecedent && (
+              <p><span className="font-medium text-amber-700 dark:text-amber-400">A:</span> {row.antecedent}</p>
             )}
-            {row.latency_seconds != null && row.latency_seconds > 0 && (
-              <span className="text-xs text-muted-foreground">
-                Latency: {formatDuration(row.latency_seconds)}
-              </span>
+            {row.abcBehaviorLabel && (
+              <p><span className="font-medium text-amber-700 dark:text-amber-400">B:</span> {row.abcBehaviorLabel}</p>
+            )}
+            {row.consequence && (
+              <p><span className="font-medium text-amber-700 dark:text-amber-400">C:</span> {row.consequence}</p>
             )}
           </div>
-          {row.notes && (
-            <p className="text-xs text-muted-foreground truncate max-w-[400px]">
-              {row.notes}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => startEdit(row)}>
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            onClick={() => setDeleteTarget(row)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
+        )}
       </div>
     );
   };
+
+  // Stats
+  const totalBsd = bsdRows.length;
+  const totalAbc = abcRows.filter(a => !a.bsd_row_id || !bsdRows.some(b => b.id === a.bsd_row_id)).length;
+  const linkedCount = abcRows.filter(a => a.bsd_row_id && bsdRows.some(b => b.id === a.bsd_row_id)).length;
 
   return (
     <>
@@ -427,16 +620,25 @@ export function BehaviorDataEditor({
               Behavior Data Editor — {studentName}
             </DialogTitle>
             <DialogDescription>
-              View, edit, and delete all recorded behavior data. Changes automatically update graphs.
+              All behavior data in one place: frequency counts, duration, and ABC incident logs. Linked entries appear as one record.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Summary stats */}
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground shrink-0">
+            <Badge variant="secondary" className="text-xs">{totalBsd} frequency/duration</Badge>
+            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{totalAbc} standalone ABC</Badge>
+            {linkedCount > 0 && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{linkedCount} linked (freq+ABC)</Badge>
+            )}
+          </div>
 
           {/* Toolbar */}
           <div className="flex flex-wrap gap-2 pb-3 border-b shrink-0">
             <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search behaviors, notes, or dates..."
+                placeholder="Search behaviors, notes, ABC details..."
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
                 className="pl-9 h-9"
@@ -461,6 +663,7 @@ export function BehaviorDataEditor({
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="frequency">Frequency</SelectItem>
                 <SelectItem value="duration">Duration</SelectItem>
+                <SelectItem value="abc">ABC Entries</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="ghost" size="sm" onClick={fetchData} disabled={loading} className="h-9 px-2">
@@ -573,7 +776,7 @@ export function BehaviorDataEditor({
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog - scrollable */}
+      {/* Edit Dialog */}
       <Dialog open={!!editingRow} onOpenChange={o => !o && setEditingRow(null)}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader className="shrink-0">
@@ -683,7 +886,7 @@ export function BehaviorDataEditor({
         title="Delete Data Entry"
         description={
           deleteTarget
-            ? `Delete ${getBehaviorName(deleteTarget.behavior_id)} data from ${format(parseISO(getObservationDate(deleteTarget)), 'MMM d, yyyy')}? This cannot be undone and will update all graphs.`
+            ? `Delete ${deleteTarget.behaviorName} data from ${format(parseISO(deleteTarget.observationDate), 'MMM d, yyyy')}? This cannot be undone and will update all graphs.`
             : ''
         }
         confirmLabel="Delete"
