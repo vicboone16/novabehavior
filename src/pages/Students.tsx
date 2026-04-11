@@ -130,9 +130,9 @@ export default function Students() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center">
-        {/* Search bar */}
-        <div className="relative flex-1 min-w-0">
+      <div className="flex flex-col gap-2">
+        {/* Search bar — full width on all screens */}
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search students..."
@@ -142,36 +142,41 @@ export default function Students() {
           />
         </div>
 
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Student
-        </Button>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span tabIndex={0}>
-              <Button
-                variant="outline"
-                onClick={() => setShowDuplicateDialog(true)}
-                disabled={studentsWithBehaviors.length === 0}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Duplicate Config
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {studentsWithBehaviors.length === 0 && (
-            <TooltipContent>Add behaviors to at least one student first</TooltipContent>
-          )}
-        </Tooltip>
-        <BulkAddBehavior />
-        <StudentComparison />
-        <Button
-          variant="outline"
-          onClick={() => setShowBulkDataEntry(true)}
-        >
-          <ClipboardList className="w-4 h-4 mr-2" />
-          Bulk Data Entry
-        </Button>
+        {/* Action buttons — wrap on mobile, row on larger screens */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button onClick={() => setShowAddDialog(true)} className="flex-1 sm:flex-none">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Student
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="flex-1 sm:flex-none">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowDuplicateDialog(true)}
+                  disabled={studentsWithBehaviors.length === 0}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplicate Config
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {studentsWithBehaviors.length === 0 && (
+              <TooltipContent>Add behaviors to at least one student first</TooltipContent>
+            )}
+          </Tooltip>
+          <BulkAddBehavior />
+          <StudentComparison />
+          <Button
+            variant="outline"
+            onClick={() => setShowBulkDataEntry(true)}
+            className="flex-1 sm:flex-none"
+          >
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Bulk Data Entry
+          </Button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
