@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 import type {
   SkillProgram,
   SkillTarget,
+  SkillProgramObjective,
+  TargetBenchmark,
   PromptLevel,
   ProgramStatus,
   TargetStatus,
