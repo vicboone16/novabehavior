@@ -264,6 +264,9 @@ export function ProgramHierarchyView({
                 {PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}
               </Badge>
             )}
+            <span className="shrink-0" onClick={e => e.stopPropagation()}>
+              <TargetSparkline key={`${target.id}-${sparklineKey}`} targetId={target.id} />
+            </span>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
