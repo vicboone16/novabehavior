@@ -2752,6 +2752,8 @@ export const useDataStore = create<DataState>()(
           );
         });
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         // Only clear current session entries, preserve everything else
         set({
           frequencyEntries: otherFrequency,
