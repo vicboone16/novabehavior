@@ -12,7 +12,12 @@ import {
   Info,
   ArrowRight,
   FolderInput,
+  Play,
+  BarChart3,
 } from 'lucide-react';
+import { TargetDataCollectionPanel } from './TargetDataCollectionPanel';
+import { TargetGraphView } from './TargetGraphView';
+import { TargetSparkline } from './TargetSparkline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
