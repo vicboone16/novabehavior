@@ -253,10 +253,12 @@ export function SkillSessionRunner({
           {/* Task Analysis */}
           {isTaskAnalysis && sessionId && (
             <TaskAnalysisCollector
-              targetId={activeState.target.id}
+              target={activeState.target}
+              program={activeState.program}
               sessionId={sessionId}
-              taStepResults={activeState.taStepResults}
-              onRecordStep={onRecordTAStep}
+              onRecordStep={async (stepId, outcome, promptLevelId) => {
+                await onRecordTAStep(activeState.target.id, stepId, outcome, promptLevelId);
+              }}
             />
           )}
 
