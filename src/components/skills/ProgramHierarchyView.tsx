@@ -112,6 +112,11 @@ export function ProgramHierarchyView({
   const [graphTarget, setGraphTarget] = useState<{ target: SkillTarget; program: SkillProgram } | null>(null);
   const [sparklineKey, setSparklineKey] = useState(0);
 
+  // Session-level skill acquisition
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+  const [showUnifiedView, setShowUnifiedView] = useState(false);
+  const sessionCollection = useSessionTargetCollection(studentId);
+
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
   const noDomain: SkillProgram[] = [];
