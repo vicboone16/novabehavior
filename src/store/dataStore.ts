@@ -2091,6 +2091,8 @@ export const useDataStore = create<DataState>()(
           if (savedSessionIds.has(e.sessionId)) return false;
           return true;
         };
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         
         set({ 
           sessionStartTime: null,
@@ -2626,6 +2628,8 @@ export const useDataStore = create<DataState>()(
           ? state.abcEntries.filter(e => e.sessionId !== sessionId)
           : state.abcEntries;
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         set({
           sessionStartTime: null,
           currentSessionId: null,
@@ -2666,6 +2670,7 @@ export const useDataStore = create<DataState>()(
         if (hasBeenSaved) {
           // Current session data was saved - just reset UI state, keep ALL entries
           // (the saved entries will be reloaded from cloud on next sync)
+          try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
           set({
             sessionNotes: '',
             currentSessionId: null,
@@ -2748,6 +2753,8 @@ export const useDataStore = create<DataState>()(
           );
         });
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         // Only clear current session entries, preserve everything else
         set({
           frequencyEntries: otherFrequency,
