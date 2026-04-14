@@ -715,6 +715,34 @@ export function SyncProvider({ children }: SyncProviderProps) {
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
 
+        // Check if user explicitly ended a session on this device recently.
+        // If so, do NOT auto-resume — close the stale DB session instead.
+        let sessionExplicitlyEnded = false;
+        try {
+          const endedAt = localStorage.getItem('nova_session_explicitly_ended');
+          if (endedAt) {
+            const elapsedSinceEnd = Date.now() - parseInt(endedAt, 10);
+            // Consider the flag valid for 5 minutes (handles page reloads right after ending)
+            if (elapsedSinceEnd < 5 * 60 * 1000) {
+              sessionExplicitlyEnded = true;
+            }
+            localStorage.removeItem('nova_session_explicitly_ended');
+          }
+        } catch {}
+
+        if (sessionExplicitlyEnded) {
+          console.log('[Sync] User explicitly ended session — closing stale DB session:', activeSessionData.id);
+          await supabase
+            .from('sessions')
+            .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+            .eq('id', activeSessionData.id);
+          setLastSyncTime(new Date());
+          setSyncStatus('success');
+          hasFetched.current = true;
+          setIsLoading(false);
+          return;
+        }
+
         // Staleness check: auto-close sessions older than 4 hours to prevent
         // ghost sessions from persisting across logins indefinitely.
         const sessionAge = Date.now() - new Date(activeSessionData.start_time).getTime();
