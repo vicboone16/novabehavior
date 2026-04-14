@@ -24,7 +24,7 @@ export function BopsStudentHub() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('students')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, display_name')
         .order('last_name');
       if (error) throw error;
       return data;
@@ -50,7 +50,7 @@ export function BopsStudentHub() {
               ) : (
                 students?.map(s => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.first_name} {s.last_name}
+                    {(s as any).display_name || `${s.first_name} ${s.last_name}`}
                   </SelectItem>
                 ))
               )}

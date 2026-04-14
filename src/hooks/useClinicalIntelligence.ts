@@ -185,13 +185,13 @@ export function useCICaseloadFeed(agencyId: string | null) {
           const clientIds = (metricsData as any[]).map((m: any) => m.client_id);
           const { data: studentsData } = await supabase
             .from('students')
-            .select('id, first_name, last_name')
+            .select('id, first_name, last_name, display_name')
             .in('id', clientIds);
           
           const nameMap = new Map<string, string>();
           if (studentsData) {
             for (const s of studentsData as any[]) {
-              nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+              nameMap.set(s.id, s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
             }
           }
 
