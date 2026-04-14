@@ -34,7 +34,7 @@ export function useTargetGraph(targetId: string, dateRange: DateRange = '30') {
     setLoading(true);
 
     const { data: plData } = await (supabase as any).from('prompt_levels').select('*');
-    const plMap = new Map((plData || []).map((pl: any) => [pl.id, pl]));
+    const plMap = new Map<string, any>((plData || []).map((pl: any) => [pl.id as string, pl]));
     setPromptLevels(plMap);
 
     let query = (supabase as any)
