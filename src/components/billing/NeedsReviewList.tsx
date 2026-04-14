@@ -96,7 +96,7 @@ export function NeedsReviewList() {
       if (!selectedEntry?.student_id) return null;
       const { data } = await supabase
         .from('students')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, display_name')
         .eq('id', selectedEntry.student_id)
         .maybeSingle();
       return data;
@@ -250,7 +250,7 @@ export function NeedsReviewList() {
                     <p>Date: {format(new Date(selectedEntry.started_at), 'MMM d, yyyy · h:mm a')}</p>
                     <p>Duration: {selectedEntry.duration_minutes ?? '—'} min</p>
                     <p>Kind: {selectedEntry.entry_kind}</p>
-                    {student && <p>Client: {student.first_name} {student.last_name}</p>}
+                    {student && <p>Client: {student.display_name || `${student.first_name} ${student.last_name}`}</p>}
                   </div>
                 </div>
 

@@ -64,11 +64,11 @@ export function useWeeklySnapshotReview() {
         const clientIds = [...new Set(packets.map(p => p.client_id))];
         const { data: students } = await supabase
           .from('students')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, display_name')
           .in('id', clientIds);
 
         const clientMap = new Map(
-          (students || []).map(s => [s.id, `${s.first_name} ${s.last_name}`])
+          (students || []).map((s: any) => [s.id, s.display_name || `${s.first_name} ${s.last_name}`.trim() || 'Unknown'])
         );
 
         packets.forEach(p => {

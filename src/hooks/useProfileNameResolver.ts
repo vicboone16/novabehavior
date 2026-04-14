@@ -50,12 +50,12 @@ export function useClientNameResolver(clientIds: string[]) {
 
     supabase
       .from('students' as any)
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, display_name')
       .in('id', ids)
       .then(({ data }) => {
         const map = new Map<string, string>();
         (data || []).forEach((s: any) => {
-          map.set(s.id, [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown');
+          map.set(s.id, s.display_name || [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown');
         });
         setNameMap(map);
       });
