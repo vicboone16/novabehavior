@@ -3,6 +3,7 @@ import {
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
   ListChecks, FolderTree, Activity, Shield, ChevronDown, ChevronRight, ArrowRight,
+  Target as TargetIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,10 @@ import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
 import { ProgramHierarchyView } from './ProgramHierarchyView';
+import { SessionTargetPicker } from './SessionTargetPicker';
+import { SkillSessionRunner } from './SkillSessionRunner';
 import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
+import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
 import type { StudentTarget } from '@/types/curriculum';
 import type { SkillProgram } from '@/types/skillPrograms';
 
@@ -84,6 +88,9 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const [editingProgram, setEditingProgram] = useState<SkillProgram | null>(null);
   const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+
+  const sessionCollection = useSessionTargetCollection(studentId);
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => {
@@ -124,6 +131,12 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {!sessionCollection.isSessionActive && programs.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => setShowSessionPicker(true)}>
+              <Play className="w-4 h-4 mr-1" />
+              Start Session
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm">
@@ -153,6 +166,37 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Session Runner */}
+      {sessionCollection.isSessionActive && (
+        <SkillSessionRunner
+          targetList={sessionCollection.targetList}
+          activeTargetId={sessionCollection.activeTargetId}
+          activeIndex={sessionCollection.activeIndex}
+          sessionId={sessionCollection.sessionId}
+          sessionStartTime={sessionCollection.sessionStartTime}
+          onRecordTrial={sessionCollection.recordTrial}
+          onUndoTrial={sessionCollection.undoLastTrial}
+          onSaveFrequency={sessionCollection.saveFrequency}
+          onSaveDuration={sessionCollection.saveDuration}
+          onRecordTAStep={sessionCollection.recordTAStep}
+          onSetFrequencyCount={sessionCollection.setFrequencyCount}
+          onSetTimerState={sessionCollection.setTimerState}
+          onSetActiveTarget={sessionCollection.setActiveTargetId}
+          onNextTarget={sessionCollection.nextTarget}
+          onPrevTarget={sessionCollection.prevTarget}
+          onEndSession={sessionCollection.endSession}
+          onDataRecorded={refetchPrograms}
+        />
+      )}
+
+      {/* Session Target Picker */}
+      <SessionTargetPicker
+        open={showSessionPicker}
+        onOpenChange={setShowSessionPicker}
+        programs={programs}
+        onStart={(selected, linkedId) => sessionCollection.startSession(selected, linkedId)}
+      />
 
       {view === 'programs' && (
         loading ? (
