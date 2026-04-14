@@ -101,6 +101,11 @@ export function ProgramHierarchyView({
   const [editingTargetForPhase, setEditingTargetForPhase] = useState<SkillTarget | null>(null);
   const [editingTargetForStatus, setEditingTargetForStatus] = useState<SkillTarget | null>(null);
 
+  // Data collection & graphing
+  const [recordingTarget, setRecordingTarget] = useState<{ target: SkillTarget; program: SkillProgram } | null>(null);
+  const [graphTarget, setGraphTarget] = useState<{ target: SkillTarget; program: SkillProgram } | null>(null);
+  const [sparklineKey, setSparklineKey] = useState(0);
+
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
   const noDomain: SkillProgram[] = [];
