@@ -532,6 +532,57 @@ export function ProgramHierarchyView({
 
   return (
     <div className="space-y-2">
+      {/* Session-level controls */}
+      <div className="flex items-center gap-2 flex-wrap pb-2">
+        {!sessionCollection.isSessionActive ? (
+          <>
+            <Button onClick={() => setShowSessionPicker(true)} className="gap-2" size="sm">
+              <Zap className="h-4 w-4" /> Start Session
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowUnifiedView(!showUnifiedView)} className="gap-2">
+              <Layers className="h-4 w-4" /> {showUnifiedView ? 'Hide' : 'View'} Session Data
+            </Button>
+          </>
+        ) : (
+          <Badge variant="default" className="text-xs">
+            Session Active — {sessionCollection.targetCount} targets
+          </Badge>
+        )}
+      </div>
+
+      <SessionTargetPicker
+        open={showSessionPicker}
+        onOpenChange={setShowSessionPicker}
+        programs={programs}
+        onStart={(selectedTargets, linkedSessionId) => sessionCollection.startSession(selectedTargets, linkedSessionId)}
+      />
+
+      {sessionCollection.isSessionActive && (
+        <SkillSessionRunner
+          targetList={sessionCollection.targetList}
+          activeTargetId={sessionCollection.activeTargetId}
+          activeIndex={sessionCollection.activeIndex}
+          sessionId={sessionCollection.sessionId}
+          sessionStartTime={sessionCollection.sessionStartTime}
+          onRecordTrial={sessionCollection.recordTrial}
+          onUndoTrial={sessionCollection.undoLastTrial}
+          onSaveFrequency={sessionCollection.saveFrequency}
+          onSaveDuration={sessionCollection.saveDuration}
+          onRecordTAStep={sessionCollection.recordTAStep}
+          onSetFrequencyCount={sessionCollection.setFrequencyCount}
+          onSetTimerState={sessionCollection.setTimerState}
+          onSetActiveTarget={sessionCollection.setActiveTargetId}
+          onNextTarget={sessionCollection.nextTarget}
+          onPrevTarget={sessionCollection.prevTarget}
+          onEndSession={sessionCollection.endSession}
+          onDataRecorded={() => { setSparklineKey(k => k + 1); onRefetch(); }}
+        />
+      )}
+
+      {showUnifiedView && !sessionCollection.isSessionActive && (
+        <UnifiedSessionView studentId={studentId} />
+      )}
+
       {Array.from(grouped.entries()).map(([domainId, progs]) =>
         renderDomainGroup(domainId, progs)
       )}
