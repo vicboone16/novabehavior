@@ -2091,6 +2091,8 @@ export const useDataStore = create<DataState>()(
           if (savedSessionIds.has(e.sessionId)) return false;
           return true;
         };
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         
         set({ 
           sessionStartTime: null,
@@ -2626,6 +2628,8 @@ export const useDataStore = create<DataState>()(
           ? state.abcEntries.filter(e => e.sessionId !== sessionId)
           : state.abcEntries;
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         set({
           sessionStartTime: null,
           currentSessionId: null,
