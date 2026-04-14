@@ -14,8 +14,16 @@ import {
   FolderInput,
   Play,
   BarChart3,
+  Zap,
+  Layers,
 } from 'lucide-react';
 import { TargetDataCollectionPanel } from './TargetDataCollectionPanel';
+import { TargetGraphView } from './TargetGraphView';
+import { TargetSparkline } from './TargetSparkline';
+import { SessionTargetPicker } from './SessionTargetPicker';
+import { SkillSessionRunner } from './SkillSessionRunner';
+import { UnifiedSessionView } from './UnifiedSessionView';
+import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
 import { TargetGraphView } from './TargetGraphView';
 import { TargetSparkline } from './TargetSparkline';
 import { Badge } from '@/components/ui/badge';
