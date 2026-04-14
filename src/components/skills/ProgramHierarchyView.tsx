@@ -14,10 +14,16 @@ import {
   FolderInput,
   Play,
   BarChart3,
+  Zap,
+  Layers,
 } from 'lucide-react';
 import { TargetDataCollectionPanel } from './TargetDataCollectionPanel';
 import { TargetGraphView } from './TargetGraphView';
 import { TargetSparkline } from './TargetSparkline';
+import { SessionTargetPicker } from './SessionTargetPicker';
+import { SkillSessionRunner } from './SkillSessionRunner';
+import { UnifiedSessionView } from './UnifiedSessionView';
+import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -105,6 +111,11 @@ export function ProgramHierarchyView({
   const [recordingTarget, setRecordingTarget] = useState<{ target: SkillTarget; program: SkillProgram } | null>(null);
   const [graphTarget, setGraphTarget] = useState<{ target: SkillTarget; program: SkillProgram } | null>(null);
   const [sparklineKey, setSparklineKey] = useState(0);
+
+  // Session-level skill acquisition
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+  const [showUnifiedView, setShowUnifiedView] = useState(false);
+  const sessionCollection = useSessionTargetCollection(studentId);
 
   // Group programs by domain
   const grouped = new Map<string, SkillProgram[]>();
@@ -521,6 +532,57 @@ export function ProgramHierarchyView({
 
   return (
     <div className="space-y-2">
+      {/* Session-level controls */}
+      <div className="flex items-center gap-2 flex-wrap pb-2">
+        {!sessionCollection.isSessionActive ? (
+          <>
+            <Button onClick={() => setShowSessionPicker(true)} className="gap-2" size="sm">
+              <Zap className="h-4 w-4" /> Start Session
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowUnifiedView(!showUnifiedView)} className="gap-2">
+              <Layers className="h-4 w-4" /> {showUnifiedView ? 'Hide' : 'View'} Session Data
+            </Button>
+          </>
+        ) : (
+          <Badge variant="default" className="text-xs">
+            Session Active — {sessionCollection.targetCount} targets
+          </Badge>
+        )}
+      </div>
+
+      <SessionTargetPicker
+        open={showSessionPicker}
+        onOpenChange={setShowSessionPicker}
+        programs={programs}
+        onStart={(selectedTargets, linkedSessionId) => sessionCollection.startSession(selectedTargets, linkedSessionId)}
+      />
+
+      {sessionCollection.isSessionActive && (
+        <SkillSessionRunner
+          targetList={sessionCollection.targetList}
+          activeTargetId={sessionCollection.activeTargetId}
+          activeIndex={sessionCollection.activeIndex}
+          sessionId={sessionCollection.sessionId}
+          sessionStartTime={sessionCollection.sessionStartTime}
+          onRecordTrial={sessionCollection.recordTrial}
+          onUndoTrial={sessionCollection.undoLastTrial}
+          onSaveFrequency={sessionCollection.saveFrequency}
+          onSaveDuration={sessionCollection.saveDuration}
+          onRecordTAStep={sessionCollection.recordTAStep}
+          onSetFrequencyCount={sessionCollection.setFrequencyCount}
+          onSetTimerState={sessionCollection.setTimerState}
+          onSetActiveTarget={sessionCollection.setActiveTargetId}
+          onNextTarget={sessionCollection.nextTarget}
+          onPrevTarget={sessionCollection.prevTarget}
+          onEndSession={sessionCollection.endSession}
+          onDataRecorded={() => { setSparklineKey(k => k + 1); onRefetch(); }}
+        />
+      )}
+
+      {showUnifiedView && !sessionCollection.isSessionActive && (
+        <UnifiedSessionView studentId={studentId} />
+      )}
+
       {Array.from(grouped.entries()).map(([domainId, progs]) =>
         renderDomainGroup(domainId, progs)
       )}
