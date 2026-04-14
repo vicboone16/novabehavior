@@ -152,7 +152,7 @@ export function useSessionTargetCollection(studentId: string) {
 
     const { data, error } = await supabase
       .from('target_trials')
-      .insert(insertRow)
+      .insert(insertRow as any)
       .select()
       .single();
 
@@ -268,7 +268,7 @@ export function useSessionTargetCollection(studentId: string) {
     };
     Object.keys(insertRow).forEach(k => { if (insertRow[k] === undefined) delete insertRow[k]; });
 
-    const { error } = await supabase.from('task_analysis_step_data').insert(insertRow);
+    const { error } = await supabase.from('task_analysis_step_data').insert(insertRow as any);
 
     if (error) {
       console.error('Error recording TA step:', error);
