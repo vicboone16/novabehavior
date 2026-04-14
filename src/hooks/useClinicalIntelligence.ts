@@ -274,10 +274,10 @@ export function useCIAlertFeed(agencyId: string | null) {
           const clientIds = (alertsData as any[]).filter((a: any) => a.client_id).map((a: any) => a.client_id);
           const nameMap = new Map<string, string>();
           if (clientIds.length > 0) {
-            const { data: studentsData } = await supabase.from('students').select('id, first_name, last_name').in('id', clientIds);
+            const { data: studentsData } = await supabase.from('students').select('id, first_name, last_name, display_name').in('id', clientIds);
             if (studentsData) {
               for (const s of studentsData as any[]) {
-                nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+                nameMap.set(s.id, s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
               }
             }
           }

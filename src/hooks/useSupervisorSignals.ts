@@ -58,10 +58,10 @@ export function useSupervisorSignals(agencyId: string | null) {
       const clientIds = rows.filter(r => r.client_id).map(r => r.client_id);
       const nameMap = new Map<string, string>();
       if (clientIds.length > 0) {
-        const { data: students } = await supabase.from('students').select('id, first_name, last_name').in('id', clientIds);
+        const { data: students } = await supabase.from('students').select('id, first_name, last_name, display_name').in('id', clientIds);
         if (students) {
           for (const s of students as any[]) {
-            nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+            nameMap.set(s.id, s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
           }
         }
       }
