@@ -2670,6 +2670,7 @@ export const useDataStore = create<DataState>()(
         if (hasBeenSaved) {
           // Current session data was saved - just reset UI state, keep ALL entries
           // (the saved entries will be reloaded from cloud on next sync)
+          try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
           set({
             sessionNotes: '',
             currentSessionId: null,
