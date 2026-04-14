@@ -88,6 +88,9 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const [editingProgram, setEditingProgram] = useState<SkillProgram | null>(null);
   const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+
+  const sessionCollection = useSessionTargetCollection(studentId);
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => {
