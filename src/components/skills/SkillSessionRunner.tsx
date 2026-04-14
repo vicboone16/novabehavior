@@ -141,7 +141,7 @@ export function SkillSessionRunner({
 
   const isIndependent = (promptId: string) => {
     const pl = promptLevels.find(p => p.id === promptId);
-    return pl?.abbreviation === 'I' || pl?.counts_as_prompted === false;
+    return pl?.abbreviation === 'I' || (pl as any)?.counts_as_prompted === false;
   };
 
   const formatTime = (seconds: number) => {
