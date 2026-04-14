@@ -24,8 +24,6 @@ import { SessionTargetPicker } from './SessionTargetPicker';
 import { SkillSessionRunner } from './SkillSessionRunner';
 import { UnifiedSessionView } from './UnifiedSessionView';
 import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
-import { TargetGraphView } from './TargetGraphView';
-import { TargetSparkline } from './TargetSparkline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
