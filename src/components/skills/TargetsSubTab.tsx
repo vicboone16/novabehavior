@@ -202,7 +202,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         onStart={(selected, linkedId) => sessionCollection.startSession(selected, linkedId)}
       />
 
-      {view === 'programs' && (
+      {(view === 'tree' || view === 'grid') && (
         loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading programs...</div>
         ) : (
@@ -214,16 +214,27 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 refetchTargets();
               }}
             />
-            <ProgramHierarchyView
-              programs={programs}
-              domains={domains}
-              studentId={studentId}
-              onRefetch={refetchPrograms}
-              onEditProgram={(p) => {
-                setEditingProgram(p);
-                setShowProgramDialog(true);
-              }}
-            />
+            {view === 'tree' && (
+              <ProgramHierarchyView
+                programs={programs}
+                domains={domains}
+                studentId={studentId}
+                onRefetch={refetchPrograms}
+                onEditProgram={(p) => {
+                  setEditingProgram(p);
+                  setShowProgramDialog(true);
+                }}
+              />
+            )}
+            {view === 'grid' && (
+              <ProgramGridView
+                programs={programs}
+                domains={domains}
+                studentId={studentId}
+                onRefetch={refetchPrograms}
+                sparklineKey={0}
+              />
+            )}
           </div>
         )
       )}
