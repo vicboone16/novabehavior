@@ -781,12 +781,12 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         // Only resume if user is an active participant in this session.
         // Supervisors/admins who are not participating should NOT have their timer started.
-        // IMPORTANT: On fresh page load, sessionStartTime is always null (not persisted).
-        // Only resume if we already have a local active session for the SAME session ID,
-        // OR if the cloud session has live data entries worth resuming.
-        // Never auto-resume an empty cloud session onto a cold device — this prevents
-        // the "ghost session" problem where ended sessions keep reappearing.
-        const shouldResumeCloudSession = userIsParticipant && (isSameSession || (hasLocalActiveSession && !isSameSession === false));
+        // CRITICAL FIX: On a cold page load, sessionStartTime is always null (not persisted),
+        // so hasLocalActiveSession is always false. We must NOT auto-resume empty cloud sessions
+        // onto a cold device — this caused the "ghost session" infinite restart loop.
+        // Only resume if: (a) we already have this session active locally (warm resume), OR
+        // (b) the cloud session has live data entries worth preserving.
+        const shouldResumeCloudSession = userIsParticipant && isSameSession;
 
         // Load live session data entries (may be empty for a freshly-started session)
         const { data: liveEntries, error: liveEntriesError } = await supabase
