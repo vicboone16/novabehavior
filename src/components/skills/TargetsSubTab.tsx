@@ -3,6 +3,7 @@ import {
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
   ListChecks, FolderTree, Activity, Shield, ChevronDown, ChevronRight, ArrowRight,
+  Target as TargetIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,10 @@ import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
 import { ProgramHierarchyView } from './ProgramHierarchyView';
+import { SessionTargetPicker } from './SessionTargetPicker';
+import { SkillSessionRunner } from './SkillSessionRunner';
 import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
+import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
 import type { StudentTarget } from '@/types/curriculum';
 import type { SkillProgram } from '@/types/skillPrograms';
 
