@@ -1,8 +1,16 @@
-import { useState, useCallback, useMemo } from 'react';
+/**
+ * useSessionTargetCollection
+ * 
+ * Session-level hook that manages collecting data on MULTIPLE targets at once.
+ * Integrates with the existing `sessions` table so target_trials share a session_id
+ * with behavior_session_data — enabling the unified session view.
+ */
+
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { SkillProgram, SkillTarget } from '@/types/skillPrograms';
+import type { SkillProgram, SkillTarget, TaskAnalysisStep } from '@/types/skillPrograms';
 
 export interface TargetTrialEntry {
   id: string;
@@ -52,6 +60,7 @@ export function getTargetStats(state: TargetSessionState): TargetSessionStats {
 
 export function useSessionTargetCollection(studentId: string) {
   const { user } = useAuth();
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
@@ -63,10 +72,11 @@ export function useSessionTargetCollection(studentId: string) {
     linkedSessionId?: string,
   ) => {
     if (!user) return;
+
     let sId = linkedSessionId || null;
 
     if (!sId) {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('sessions')
         .insert({
           name: `Skill Acquisition - ${new Date().toLocaleDateString()}`,
@@ -93,8 +103,13 @@ export function useSessionTargetCollection(studentId: string) {
     const states = new Map<string, TargetSessionState>();
     for (const { target, program } of selectedTargets) {
       states.set(target.id, {
-        target, program, trials: [],
-        frequencyCount: 0, timerSeconds: 0, timerRunning: false, taStepResults: {},
+        target,
+        program,
+        trials: [],
+        frequencyCount: 0,
+        timerSeconds: 0,
+        timerRunning: false,
+        taStepResults: {},
       });
     }
 
@@ -102,7 +117,9 @@ export function useSessionTargetCollection(studentId: string) {
     setTargetStates(states);
     setIsSessionActive(true);
     setSessionStartTime(new Date());
-    if (selectedTargets.length > 0) setActiveTargetId(selectedTargets[0].target.id);
+    if (selectedTargets.length > 0) {
+      setActiveTargetId(selectedTargets[0].target.id);
+    }
   }, [user, studentId]);
 
   const recordTrial = useCallback(async (
@@ -123,16 +140,17 @@ export function useSessionTargetCollection(studentId: string) {
       session_id: sessionId,
       trial_index: trialIndex,
       outcome,
+      prompt_level_id: promptLevelId || undefined,
       prompt_success: isIndependent,
       recorded_at: now,
+      recorded_by: user?.id || undefined,
       session_type: state.program.method || 'discrete_trial',
       data_state: 'final',
+      notes: notes || undefined,
     };
-    if (promptLevelId) insertRow.prompt_level_id = promptLevelId;
-    if (user?.id) insertRow.recorded_by = user.id;
-    if (notes) insertRow.notes = notes;
+    Object.keys(insertRow).forEach(k => { if (insertRow[k] === undefined) delete insertRow[k]; });
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('target_trials')
       .insert(insertRow)
       .select()
@@ -146,8 +164,13 @@ export function useSessionTargetCollection(studentId: string) {
 
     const entry: TargetTrialEntry = {
       id: data?.id || crypto.randomUUID(),
-      targetId, outcome, promptLevelId, promptSuccess: isIndependent,
-      recordedAt: now, trialIndex, notes: notes || null,
+      targetId,
+      outcome,
+      promptLevelId: promptLevelId,
+      promptSuccess: isIndependent,
+      recordedAt: now,
+      trialIndex,
+      notes: notes || null,
     };
 
     setTargetStates(prev => {
@@ -164,8 +187,11 @@ export function useSessionTargetCollection(studentId: string) {
     if (!state || state.trials.length === 0) return;
 
     const last = state.trials[state.trials.length - 1];
-    const { error } = await (supabase as any).from('target_trials').delete().eq('id', last.id);
-    if (error) { toast.error('Failed to undo'); return; }
+    const { error } = await supabase.from('target_trials').delete().eq('id', last.id);
+    if (error) {
+      toast.error('Failed to undo');
+      return;
+    }
 
     setTargetStates(prev => {
       const next = new Map(prev);
@@ -178,46 +204,85 @@ export function useSessionTargetCollection(studentId: string) {
 
   const saveFrequency = useCallback(async (targetId: string, count: number) => {
     if (!sessionId) return;
-    const { error } = await (supabase as any).from('target_trials').insert({
-      target_id: targetId, session_id: sessionId, trial_index: 0,
-      outcome: 'correct', recorded_at: new Date().toISOString(),
-      recorded_by: user?.id, session_type: 'frequency', data_state: 'final',
+    const state = targetStates.get(targetId);
+    if (!state) return;
+
+    const { error } = await supabase.from('target_trials').insert({
+      target_id: targetId,
+      session_id: sessionId,
+      trial_index: 0,
+      outcome: 'correct',
+      recorded_at: new Date().toISOString(),
+      recorded_by: user?.id,
+      session_type: 'frequency',
+      data_state: 'final',
       notes: JSON.stringify({ type: 'frequency', value: count }),
     });
-    if (error) { toast.error('Failed to save frequency'); return; }
+
+    if (error) {
+      toast.error('Failed to save frequency');
+      return;
+    }
     toast.success(`Frequency recorded: ${count}`);
-  }, [sessionId, user?.id]);
+  }, [sessionId, targetStates, user?.id]);
 
   const saveDuration = useCallback(async (targetId: string, seconds: number, measureType: 'duration' | 'latency') => {
     if (!sessionId) return;
-    const { error } = await (supabase as any).from('target_trials').insert({
-      target_id: targetId, session_id: sessionId, trial_index: 0,
-      outcome: 'correct', recorded_at: new Date().toISOString(),
-      recorded_by: user?.id, session_type: measureType, data_state: 'final',
+
+    const { error } = await supabase.from('target_trials').insert({
+      target_id: targetId,
+      session_id: sessionId,
+      trial_index: 0,
+      outcome: 'correct',
+      recorded_at: new Date().toISOString(),
+      recorded_by: user?.id,
+      session_type: measureType,
+      data_state: 'final',
       notes: JSON.stringify({ type: measureType, value: seconds }),
     });
-    if (error) { toast.error(`Failed to save ${measureType}`); return; }
+
+    if (error) {
+      toast.error(`Failed to save ${measureType}`);
+      return;
+    }
     toast.success(`${measureType === 'duration' ? 'Duration' : 'Latency'} recorded: ${Math.floor(seconds / 60)}m ${seconds % 60}s`);
   }, [sessionId, user?.id]);
 
   const recordTAStep = useCallback(async (
-    targetId: string, stepId: string, outcome: string, promptLevelId: string | null,
+    targetId: string,
+    stepId: string,
+    outcome: string,
+    promptLevelId: string | null,
   ) => {
     if (!sessionId) return;
-    const insertRow: Record<string, any> = {
-      step_id: stepId, session_id: sessionId, outcome,
-      recorded_at: new Date().toISOString(), session_type: 'task_analysis', data_state: 'final',
-    };
-    if (promptLevelId) insertRow.prompt_level_id = promptLevelId;
-    if (user?.id) insertRow.recorded_by = user.id;
 
-    const { error } = await (supabase as any).from('task_analysis_step_data').insert(insertRow);
-    if (error) { console.error('Error recording TA step:', error); toast.error('Failed to save step data'); return; }
+    const insertRow: Record<string, any> = {
+      step_id: stepId,
+      session_id: sessionId,
+      outcome,
+      prompt_level_id: promptLevelId || undefined,
+      recorded_at: new Date().toISOString(),
+      recorded_by: user?.id,
+      session_type: 'task_analysis',
+      data_state: 'final',
+    };
+    Object.keys(insertRow).forEach(k => { if (insertRow[k] === undefined) delete insertRow[k]; });
+
+    const { error } = await supabase.from('task_analysis_step_data').insert(insertRow);
+
+    if (error) {
+      console.error('Error recording TA step:', error);
+      toast.error('Failed to save step data');
+      return;
+    }
 
     setTargetStates(prev => {
       const next = new Map(prev);
       const s = { ...next.get(targetId)! };
-      s.taStepResults = { ...s.taStepResults, [stepId]: { outcome, promptLevelId } };
+      s.taStepResults = {
+        ...s.taStepResults,
+        [stepId]: { outcome, promptLevelId },
+      };
       next.set(targetId, s);
       return next;
     });
@@ -226,6 +291,7 @@ export function useSessionTargetCollection(studentId: string) {
   const finalizeTATarget = useCallback(async (targetId: string) => {
     const state = targetStates.get(targetId);
     if (!state || !sessionId) return;
+
     const results = Object.values(state.taStepResults);
     if (results.length === 0) return;
 
@@ -233,11 +299,16 @@ export function useSessionTargetCollection(studentId: string) {
     const total = results.length;
     const pct = Math.round((correct / total) * 100);
 
-    await (supabase as any).from('target_trials').insert({
-      target_id: targetId, session_id: sessionId, trial_index: 0,
-      outcome: pct >= 80 ? 'correct' : 'incorrect', prompt_success: pct >= 80,
-      recorded_at: new Date().toISOString(), recorded_by: user?.id,
-      session_type: 'task_analysis', data_state: 'final',
+    await supabase.from('target_trials').insert({
+      target_id: targetId,
+      session_id: sessionId,
+      trial_index: 0,
+      outcome: pct >= 80 ? 'correct' : 'incorrect',
+      prompt_success: pct >= 80,
+      recorded_at: new Date().toISOString(),
+      recorded_by: user?.id,
+      session_type: 'task_analysis',
+      data_state: 'final',
       notes: JSON.stringify({ type: 'task_analysis', stepsCorrect: correct, stepsTotal: total, percentCorrect: pct }),
     });
   }, [targetStates, sessionId, user?.id]);
@@ -266,13 +337,17 @@ export function useSessionTargetCollection(studentId: string) {
   const nextTarget = useCallback(() => {
     const keys = Array.from(targetStates.keys());
     const idx = activeTargetId ? keys.indexOf(activeTargetId) : -1;
-    if (idx < keys.length - 1) setActiveTargetId(keys[idx + 1]);
+    if (idx < keys.length - 1) {
+      setActiveTargetId(keys[idx + 1]);
+    }
   }, [targetStates, activeTargetId]);
 
   const prevTarget = useCallback(() => {
     const keys = Array.from(targetStates.keys());
     const idx = activeTargetId ? keys.indexOf(activeTargetId) : -1;
-    if (idx > 0) setActiveTargetId(keys[idx - 1]);
+    if (idx > 0) {
+      setActiveTargetId(keys[idx - 1]);
+    }
   }, [targetStates, activeTargetId]);
 
   const endSession = useCallback(async () => {
@@ -284,13 +359,22 @@ export function useSessionTargetCollection(studentId: string) {
       }
     }
 
-    await (supabase as any).from('sessions').update({
-      status: 'completed', ended_at: new Date().toISOString(), end_time: new Date().toISOString(),
-    }).eq('id', sessionId);
+    await supabase
+      .from('sessions')
+      .update({
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+        end_time: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
 
+    let totalTargets = targetStates.size;
     let totalTrials = 0;
-    for (const state of targetStates.values()) totalTrials += state.trials.length;
-    toast.success(`Session complete: ${targetStates.size} targets, ${totalTrials} total trials`);
+    for (const state of targetStates.values()) {
+      totalTrials += state.trials.length;
+    }
+
+    toast.success(`Session complete: ${totalTargets} targets, ${totalTrials} total trials`);
 
     setSessionId(null);
     setTargetStates(new Map());
@@ -305,12 +389,27 @@ export function useSessionTargetCollection(studentId: string) {
   const activeIndex = activeTargetId ? targetIds.indexOf(activeTargetId) : -1;
 
   return {
-    sessionId, isSessionActive, sessionStartTime,
-    targetStates, targetList, activeTargetId, activeState, activeIndex,
+    sessionId,
+    isSessionActive,
+    sessionStartTime,
+    targetStates,
+    targetList,
+    activeTargetId,
+    activeState,
+    activeIndex,
     targetCount: targetStates.size,
-    startSession, endSession, recordTrial, undoLastTrial,
-    saveFrequency, saveDuration, recordTAStep, finalizeTATarget,
-    setFrequencyCount, setTimerState,
-    setActiveTargetId, nextTarget, prevTarget,
+    startSession,
+    endSession,
+    recordTrial,
+    undoLastTrial,
+    saveFrequency,
+    saveDuration,
+    recordTAStep,
+    finalizeTATarget,
+    setFrequencyCount,
+    setTimerState,
+    setActiveTargetId,
+    nextTarget,
+    prevTarget,
   };
 }
