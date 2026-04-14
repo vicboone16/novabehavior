@@ -31,11 +31,13 @@ export function useSkillPrograms(studentId: string) {
     if (error) {
       console.error('Error fetching skill programs:', error);
     } else {
-      // Fetch targets for each program
       const programIds = (data || []).map((p: any) => p.id);
       let targetsMap: Record<string, SkillTarget[]> = {};
+      let objectivesMap: Record<string, SkillProgramObjective[]> = {};
+      let benchmarksMap: Record<string, TargetBenchmark[]> = {};
 
       if (programIds.length > 0) {
+        // Fetch targets
         const { data: targetsData } = await supabase
           .from('skill_targets')
           .select('*')
@@ -43,10 +45,58 @@ export function useSkillPrograms(studentId: string) {
           .eq('active', true)
           .order('display_order');
 
+        const targetIds: string[] = [];
         if (targetsData) {
           for (const t of targetsData) {
+            targetIds.push(t.id);
             if (!targetsMap[t.program_id]) targetsMap[t.program_id] = [];
             targetsMap[t.program_id].push(t as unknown as SkillTarget);
+          }
+        }
+
+        // Fetch objectives
+        const { data: objectivesData } = await supabase
+          .from('skill_program_objectives')
+          .select('*')
+          .in('program_id', programIds)
+          .eq('is_active', true)
+          .order('sort_order');
+
+        if (objectivesData) {
+          for (const o of objectivesData) {
+            if (!objectivesMap[(o as any).program_id]) objectivesMap[(o as any).program_id] = [];
+            objectivesMap[(o as any).program_id].push(o as unknown as SkillProgramObjective);
+          }
+        }
+
+        // Fetch benchmarks for all targets
+        if (targetIds.length > 0) {
+          const { data: benchmarksData } = await supabase
+            .from('benchmarks')
+            .select('*')
+            .in('target_id', targetIds)
+            .eq('is_active', true)
+            .order('sort_order');
+
+          if (benchmarksData) {
+            for (const b of benchmarksData) {
+              if (!benchmarksMap[(b as any).target_id]) benchmarksMap[(b as any).target_id] = [];
+              benchmarksMap[(b as any).target_id].push(b as unknown as TargetBenchmark);
+            }
+          }
+        }
+
+        // Attach benchmarks to targets
+        for (const programTargets of Object.values(targetsMap)) {
+          for (const t of programTargets) {
+            t.benchmarks = benchmarksMap[t.id] || [];
+          }
+        }
+
+        // Attach targets to objectives
+        for (const [programId, objectives] of Object.entries(objectivesMap)) {
+          for (const obj of objectives) {
+            obj.targets = (targetsMap[programId] || []).filter(t => t.objective_id === obj.id);
           }
         }
       }
@@ -54,6 +104,7 @@ export function useSkillPrograms(studentId: string) {
       const enriched = (data || []).map((p: any) => ({
         ...p,
         targets: targetsMap[p.id] || [],
+        objectives: objectivesMap[p.id] || [],
       })) as SkillProgram[];
 
       setPrograms(enriched);
