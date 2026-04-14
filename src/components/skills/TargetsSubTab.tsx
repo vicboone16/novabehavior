@@ -131,6 +131,12 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {!sessionCollection.isSessionActive && programs.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => setShowSessionPicker(true)}>
+              <Play className="w-4 h-4 mr-1" />
+              Start Session
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm">
@@ -160,6 +166,37 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Session Runner */}
+      {sessionCollection.isSessionActive && (
+        <SkillSessionRunner
+          targetList={sessionCollection.targetList}
+          activeTargetId={sessionCollection.activeTargetId}
+          activeIndex={sessionCollection.activeIndex}
+          sessionId={sessionCollection.sessionId}
+          sessionStartTime={sessionCollection.sessionStartTime}
+          onRecordTrial={sessionCollection.recordTrial}
+          onUndoTrial={sessionCollection.undoLastTrial}
+          onSaveFrequency={sessionCollection.saveFrequency}
+          onSaveDuration={sessionCollection.saveDuration}
+          onRecordTAStep={sessionCollection.recordTAStep}
+          onSetFrequencyCount={sessionCollection.setFrequencyCount}
+          onSetTimerState={sessionCollection.setTimerState}
+          onSetActiveTarget={sessionCollection.setActiveTargetId}
+          onNextTarget={sessionCollection.nextTarget}
+          onPrevTarget={sessionCollection.prevTarget}
+          onEndSession={sessionCollection.endSession}
+          onDataRecorded={refetchPrograms}
+        />
+      )}
+
+      {/* Session Target Picker */}
+      <SessionTargetPicker
+        open={showSessionPicker}
+        onOpenChange={setShowSessionPicker}
+        programs={programs}
+        onStart={(selected, linkedId) => sessionCollection.startSession(selected, linkedId)}
+      />
 
       {view === 'programs' && (
         loading ? (
