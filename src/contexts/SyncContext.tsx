@@ -786,7 +786,8 @@ export function SyncProvider({ children }: SyncProviderProps) {
         // onto a cold device — this caused the "ghost session" infinite restart loop.
         // Only resume if: (a) we already have this session active locally (warm resume), OR
         // (b) the cloud session has live data entries worth preserving.
-        const shouldResumeCloudSession = userIsParticipant && isSameSession;
+        // We'll decide shouldResume AFTER loading live entries — so we can check if there's data.
+        let shouldResumeCloudSession = userIsParticipant && isSameSession;
 
         // Load live session data entries (may be empty for a freshly-started session)
         const { data: liveEntries, error: liveEntriesError } = await supabase
@@ -797,6 +798,25 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         if (liveEntriesError) {
           console.error('[Sync] Error loading live session entries:', liveEntriesError);
+        }
+
+        // Cross-device resume: if we're a participant and the cloud session has actual data,
+        // resume even on a cold device. But NEVER resume an empty session on a cold device
+        // because that's the "ghost session" loop — ended sessions that were never marked
+        // completed in the DB keep getting picked up.
+        if (!shouldResumeCloudSession && userIsParticipant && !hasLocalActiveSession) {
+          const hasCloudData = liveEntries && liveEntries.length > 0;
+          if (hasCloudData) {
+            shouldResumeCloudSession = true;
+            console.log('[Sync] Cross-device resume: cloud session has data, resuming');
+          } else {
+            // Empty cloud session on a cold device — close it instead of resuming
+            console.log('[Sync] Empty cloud session on cold device — auto-closing:', activeSessionData.id);
+            await supabase
+              .from('sessions')
+              .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+              .eq('id', activeSessionData.id);
+          }
         }
 
         if (shouldResumeCloudSession) {
