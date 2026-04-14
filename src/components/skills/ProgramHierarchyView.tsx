@@ -284,64 +284,100 @@ export function ProgramHierarchyView({
               </TooltipContent>
             </Tooltip>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => e.stopPropagation()}>
-                <MoreHorizontal className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => {
-                const newName = window.prompt('Rename target:', target.name);
-                if (newName && newName.trim() && newName.trim() !== target.name) {
-                  updateTarget(target.id, { name: newName.trim() } as any);
-                }
-              }}>
-                <Pencil className="w-3 h-3 mr-2" /> Rename Target
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                const newDef = window.prompt('Operational definition:', target.operational_definition || '');
-                if (newDef !== null) {
-                  updateTarget(target.id, { operational_definition: newDef || null } as any);
-                }
-              }}>
-                <Info className="w-3 h-3 mr-2" /> Edit Definition
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {
-                setEditingTargetForPhase(target);
-              }}>
-                <Clock className="w-3 h-3 mr-2" /> Change Phase
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                setEditingTargetForStatus(target);
-              }}>
-                <Clock className="w-3 h-3 mr-2" /> Change Status
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setMoveTarget({ id: target.id, name: target.name, programId: program.id })}>
-                <ArrowRight className="w-3 h-3 mr-2" /> Move to Program
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                const current = target.prompt_counts_as_correct;
-                const next = current === null ? true : current === true ? false : null;
-                updateTarget(target.id, { prompt_counts_as_correct: next } as any);
-              }}>
-                <Info className="w-3 h-3 mr-2" />
-                {target.prompt_counts_as_correct === null
-                  ? 'Set: Prompted = Correct'
-                  : target.prompt_counts_as_correct
-                    ? 'Set: Prompted = Incorrect'
-                    : 'Reset to inherit'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
-                <Trash2 className="w-3 h-3 mr-2" /> Archive Target
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => setRecordingTarget({ target, program })}>
+                  <Play className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">Record Data</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setGraphTarget({ target, program })}>
+                  <BarChart3 className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p className="text-xs">View Graph</p></TooltipContent>
+            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <MoreHorizontal className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setRecordingTarget({ target, program })}>
+                  <Play className="w-3 h-3 mr-2" /> Record Data
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setGraphTarget({ target, program })}>
+                  <BarChart3 className="w-3 h-3 mr-2" /> View Graph
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  const newName = window.prompt('Rename target:', target.name);
+                  if (newName && newName.trim() && newName.trim() !== target.name) {
+                    updateTarget(target.id, { name: newName.trim() } as any);
+                  }
+                }}>
+                  <Pencil className="w-3 h-3 mr-2" /> Rename Target
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const newDef = window.prompt('Operational definition:', target.operational_definition || '');
+                  if (newDef !== null) {
+                    updateTarget(target.id, { operational_definition: newDef || null } as any);
+                  }
+                }}>
+                  <Info className="w-3 h-3 mr-2" /> Edit Definition
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setEditingTargetForPhase(target)}>
+                  <Clock className="w-3 h-3 mr-2" /> Change Phase
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEditingTargetForStatus(target)}>
+                  <Clock className="w-3 h-3 mr-2" /> Change Status
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setMoveTarget({ id: target.id, name: target.name, programId: program.id })}>
+                  <ArrowRight className="w-3 h-3 mr-2" /> Move to Program
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const current = target.prompt_counts_as_correct;
+                  const next = current === null ? true : current === true ? false : null;
+                  updateTarget(target.id, { prompt_counts_as_correct: next } as any);
+                }}>
+                  <Info className="w-3 h-3 mr-2" />
+                  {target.prompt_counts_as_correct === null
+                    ? 'Set: Prompted = Correct'
+                    : target.prompt_counts_as_correct
+                      ? 'Set: Prompted = Incorrect'
+                      : 'Reset to inherit'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive" onClick={() => deleteTarget(target.id)}>
+                  <Trash2 className="w-3 h-3 mr-2" /> Archive Target
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         {isExpanded && renderTargetDetails(target)}
+        {recordingTarget?.target.id === target.id && (
+          <TargetDataCollectionPanel
+            target={target}
+            program={program}
+            onClose={() => setRecordingTarget(null)}
+            onDataRecorded={() => { setSparklineKey(k => k + 1); onRefetch(); }}
+          />
+        )}
+        {graphTarget?.target.id === target.id && (
+          <TargetGraphView
+            target={target}
+            program={program}
+            onClose={() => setGraphTarget(null)}
+          />
+        )}
       </div>
     );
   };
