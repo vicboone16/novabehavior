@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Activity, Lightbulb, BarChart3, Clock, Target, Columns3 } from 'lucide-react';
+import { Activity, BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
-import { TOILog } from '@/components/toi/TOILog';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
@@ -14,41 +12,35 @@ import { BehaviorDataEditor } from './BehaviorDataEditor';
 import { StudentBehaviorMerge } from './StudentBehaviorMerge';
 import { GoalSuggestionEnginePanel } from '@/components/optimization/GoalSuggestionEnginePanel';
 import { CanonicalStatusBadge } from './CanonicalStatusBadge';
-import { BopsTagChips } from './BopsTagChips';
-import type { ProgrammingMode } from './ProgrammingModule';
 
-type BehaviorTab = 'behaviors' | 'interventions' | 'data' | 'context';
+type BehaviorTab = 'behaviors' | 'history';
 
 interface BehaviorsSuiteProps {
   studentId: string;
   studentName: string;
-  mode?: ProgrammingMode;
-  onModeChange?: (mode: ProgrammingMode) => void;
 }
 
-export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: BehaviorsSuiteProps) {
+export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) {
   const [activeTab, setActiveTab] = useState<BehaviorTab>('behaviors');
-  
-  const { 
-    students, 
-    frequencyEntries, 
-    durationEntries, 
-    abcEntries, 
-    intervalEntries, 
-    sessions,
-    behaviorGoals 
+
+  const {
+    students,
+    frequencyEntries,
+    durationEntries,
+    abcEntries,
+    intervalEntries,
+    behaviorGoals
   } = useDataStore(useShallow((state) => ({
     students: state.students,
     frequencyEntries: state.frequencyEntries,
     durationEntries: state.durationEntries,
     abcEntries: state.abcEntries,
     intervalEntries: state.intervalEntries,
-    sessions: state.sessions,
     behaviorGoals: state.behaviorGoals,
   })));
-  
+
   const student = students.find(s => s.id === studentId);
-  
+
   if (!student) {
     return (
       <Card>
@@ -68,68 +60,33 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as BehaviorTab)}>
-        <div className="flex items-center gap-2 w-full">
-          {/* Programming label */}
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">Programming</span>
-          
-          <TabsList className="flex flex-1 justify-center gap-1 h-auto p-1 overflow-x-auto scrollbar-hide">
-            <TabsTrigger value="behaviors" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
-              <Activity className="w-3.5 h-3.5" />
-              Behaviors & Goals
-            </TabsTrigger>
-            <TabsTrigger value="interventions" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
-              <Lightbulb className="w-3.5 h-3.5" />
-              Interventions
-            </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
-              <BarChart3 className="w-3.5 h-3.5" />
-              Data Entry
-            </TabsTrigger>
-            <TabsTrigger value="context" className="flex items-center gap-1 text-xs whitespace-nowrap px-2">
-              <Clock className="w-3.5 h-3.5" />
-              Context Log
-            </TabsTrigger>
-          </TabsList>
+        <TabsList className="h-9 p-1">
+          <TabsTrigger value="behaviors" className="flex items-center gap-1.5 text-xs px-3">
+            <Activity className="w-3.5 h-3.5" />
+            Behaviors &amp; Goals
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs px-3">
+            <BarChart3 className="w-3.5 h-3.5" />
+            Data History
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Skills / Behaviors / Both toggle on the right */}
-          {mode && onModeChange && (
-            <ToggleGroup 
-              type="single" 
-              value={mode} 
-              onValueChange={(v) => v && onModeChange(v as ProgrammingMode)}
-              className="bg-muted rounded-lg p-0.5 shrink-0"
-            >
-              <ToggleGroupItem value="skills" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
-                <Target className="w-3 h-3" />
-                Skills
-              </ToggleGroupItem>
-              <ToggleGroupItem value="behaviors" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
-                <Activity className="w-3 h-3" />
-                Behaviors
-              </ToggleGroupItem>
-              <ToggleGroupItem value="both" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-2">
-                <Columns3 className="w-3 h-3" />
-                Both
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )}
-        </div>
-
+        {/* ── Behaviors & Goals tab ── */}
         <TabsContent value="behaviors" className="mt-4 space-y-4">
-          {/* Goal Suggestion Engine */}
+          {/* AI goal suggestions */}
           <GoalSuggestionEnginePanel studentId={studentId} surface="programming" />
 
-          {/* Goals & Linked Interventions — moved here from Progress Review */}
+          {/* Active goals */}
           {studentGoals.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Goals & Linked Interventions</CardTitle>
+                <CardTitle className="text-base">Goals</CardTitle>
                 <CardDescription>
-                  Behavior goals linked to their replacement behaviors and intervention strategies
+                  Behavior goals with direction and mastery status
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {studentGoals.map((goal) => {
                     const behavior = student.behaviors.find(b => b.id === goal.behaviorId);
                     return (
@@ -140,7 +97,7 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
                               <div>
                                 <p className="font-medium text-sm">{behavior?.name || 'Unknown Behavior'}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                  Goal: {goal.direction === 'increase' ? '↑ Increase' : goal.direction === 'decrease' ? '↓ Decrease' : '→ Maintain'}{' '}
+                                  {goal.direction === 'increase' ? '↑ Increase' : goal.direction === 'decrease' ? '↓ Decrease' : '→ Maintain'}{' '}
                                   {goal.metric}{goal.targetValue !== undefined ? ` to ${goal.targetValue}` : ''}
                                   {goal.baseline !== undefined ? ` (baseline: ${goal.baseline})` : ''}
                                 </p>
@@ -157,12 +114,7 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
                           </div>
                           {behavior?.operationalDefinition && (
                             <p className="text-xs text-muted-foreground mt-2 italic border-t pt-2">
-                              Definition: {behavior.operationalDefinition}
-                            </p>
-                          )}
-                          {goal.notes && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Notes: {goal.notes}
+                              {behavior.operationalDefinition}
                             </p>
                           )}
                         </CardContent>
@@ -173,22 +125,22 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
               </CardContent>
             </Card>
           )}
-        </TabsContent>
 
-        <TabsContent value="interventions" className="mt-4 space-y-4">
-          <StudentBxPlanView 
+          {/* Behavior plan + interventions — always shown in this tab */}
+          <StudentBxPlanView
             studentId={student.id}
             studentName={student.displayName || student.name}
           />
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Add from Library</CardTitle>
+              <CardTitle className="text-base">Interventions</CardTitle>
               <CardDescription>
-                Search and add interventions directly to {studentName}'s profile
+                Add interventions from the library to {studentName}'s profile
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <BehaviorInterventionsPicker 
+              <BehaviorInterventionsPicker
                 preSelectedStudentId={student.id}
                 compact
                 hideHeader
@@ -197,23 +149,19 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
           </Card>
         </TabsContent>
 
-        <TabsContent value="data" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <div />
-            <div className="flex items-center gap-2">
-              <StudentBehaviorMerge studentId={student.id} studentName={student.displayName || student.name} />
-              <BehaviorDataEditor studentId={student.id} studentName={student.displayName || student.name} />
-              <HistoricalDataManager studentId={student.id} />
-            </div>
+        {/* ── Data History tab ── */}
+        <TabsContent value="history" className="mt-4 space-y-4">
+          <div className="flex items-center justify-end gap-2">
+            <StudentBehaviorMerge studentId={student.id} studentName={student.displayName || student.name} />
+            <BehaviorDataEditor studentId={student.id} studentName={student.displayName || student.name} />
+            <HistoricalDataManager studentId={student.id} />
           </div>
+
           <HistoricalDataEntry student={student} />
-          
-          {/* Context Log — moved here under Data Entry */}
-          <TOILog studentId={studentId} studentName={studentName} isAdmin={false} />
-          
-          {/* Data Summary */}
+
+          {/* Summary counts */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-base">Data Summary</CardTitle>
             </CardHeader>
             <CardContent>
@@ -239,10 +187,6 @@ export function BehaviorsSuite({ studentId, studentName, mode, onModeChange }: B
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="context" className="mt-4">
-          <TOILog studentId={studentId} studentName={studentName} isAdmin={false} />
         </TabsContent>
       </Tabs>
     </div>

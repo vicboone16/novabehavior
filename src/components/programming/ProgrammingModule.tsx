@@ -22,11 +22,11 @@ interface ProgrammingModuleProps {
  * caused by dozens of bare useDataStore() selectors in the subtree
  * firing cascading re-renders during Zustand store hydration.
  */
-export function ProgrammingModule({ 
-  studentId, 
-  studentName, 
+export function ProgrammingModule({
+  studentId,
+  studentName,
   isAdmin = false,
-  defaultMode = 'both' 
+  defaultMode = 'both'
 }: ProgrammingModuleProps) {
   const [mode, setMode] = useState<ProgrammingMode>(defaultMode);
   const [ready, setReady] = useState(false);
@@ -48,33 +48,50 @@ export function ProgrammingModule({
         </div>
       ) : (
         <>
+          {/* Mode toggle — single location, top of module */}
+          <div className="flex items-center justify-end">
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => v && setMode(v as ProgrammingMode)}
+              className="bg-muted rounded-lg p-0.5"
+            >
+              <ToggleGroupItem value="skills" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3 h-7">
+                <Target className="w-3 h-3" />
+                Skills
+              </ToggleGroupItem>
+              <ToggleGroupItem value="behaviors" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3 h-7">
+                <Activity className="w-3 h-3" />
+                Behaviors
+              </ToggleGroupItem>
+              <ToggleGroupItem value="both" className="gap-1 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm px-3 h-7">
+                <Columns3 className="w-3 h-3" />
+                Both
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+
           {/* Content */}
           {mode === 'skills' && (
-            <SkillsTabContainer 
-              studentId={studentId} 
-              studentName={studentName} 
+            <SkillsTabContainer
+              studentId={studentId}
+              studentName={studentName}
               isAdmin={isAdmin}
-              mode={mode}
-              onModeChange={setMode}
             />
           )}
 
           {mode === 'behaviors' && (
-            <BehaviorsSuite 
-              studentId={studentId} 
+            <BehaviorsSuite
+              studentId={studentId}
               studentName={studentName}
-              mode={mode}
-              onModeChange={setMode}
             />
           )}
 
           {mode === 'both' && (
-            <BothModeView 
-              studentId={studentId} 
-              studentName={studentName} 
+            <BothModeView
+              studentId={studentId}
+              studentName={studentName}
               isAdmin={isAdmin}
-              mode={mode}
-              onModeChange={setMode}
             />
           )}
 

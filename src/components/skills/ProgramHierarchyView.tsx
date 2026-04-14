@@ -58,8 +58,6 @@ import {
   PROGRAM_STATUS_COLORS,
   SKILL_METHOD_LABELS,
   TARGET_STATUS_LABELS,
-  resolvePromptCountsAsCorrect,
-  getPromptCorrectnessSource,
 } from '@/types/skillPrograms';
 import { PHASE_LABELS, PHASE_COLORS, type TargetPhase } from '@/types/criteriaEngine';
 import type { Domain } from '@/types/curriculum';
@@ -219,6 +217,12 @@ export function ProgramHierarchyView({
           <span className="font-semibold text-foreground">Status:</span>{' '}
           <span className="text-muted-foreground">{TARGET_STATUS_LABELS[target.status] || target.status}</span>
         </div>
+        {target.prompt_counts_as_correct !== null && (
+          <div>
+            <span className="font-semibold text-foreground">Prompted counts as:</span>{' '}
+            <span className="text-muted-foreground">{target.prompt_counts_as_correct ? 'Correct' : 'Incorrect'}</span>
+          </div>
+        )}
       </div>
       {target.ta_steps && target.ta_steps.length > 0 && (
         <div>
@@ -235,15 +239,17 @@ export function ProgramHierarchyView({
 
   const renderTarget = (target: SkillTarget, program: SkillProgram) => {
     const isExpanded = expandedTargets.has(target.id);
-    const promptSetting = resolvePromptCountsAsCorrect(
-      target.prompt_counts_as_correct,
-      program.prompt_counts_as_correct,
-      undefined
-    );
-    const promptSource = getPromptCorrectnessSource(
-      target.prompt_counts_as_correct,
-      program.prompt_counts_as_correct,
-      undefined
+
+    // Derive a single color dot for status + phase
+    const phaseColor = (target as any).phase
+      ? PHASE_COLORS[(target as any).phase as TargetPhase] || 'bg-slate-400'
+      : null;
+    const statusDot = phaseColor || (
+      target.status === 'mastered' ? 'bg-green-500' :
+      target.status === 'in_progress' ? 'bg-blue-500' :
+      target.status === 'on_hold' ? 'bg-yellow-500' :
+      target.status === 'discontinued' ? 'bg-gray-400' :
+      'bg-slate-300'
     );
 
     return (
@@ -254,35 +260,22 @@ export function ProgramHierarchyView({
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {isExpanded ? <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" /> : <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />}
-            <Target className="w-3 h-3 text-muted-foreground shrink-0" />
-            <span className="truncate font-medium">{target.name}</span>
-            <Badge variant="outline" className="text-[10px] shrink-0">
-              {TARGET_STATUS_LABELS[target.status] || target.status}
-            </Badge>
-            {(target as any).phase && (
-              <Badge className={`${PHASE_COLORS[(target as any).phase as TargetPhase] || 'bg-slate-500'} text-white text-[10px] shrink-0`}>
-                {PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}
-              </Badge>
-            )}
-            <span className="shrink-0" onClick={e => e.stopPropagation()}>
-              <TargetSparkline key={`${target.id}-${sparklineKey}`} targetId={target.id} />
-            </span>
+            {/* Single color dot replaces status + phase badges */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] shrink-0 cursor-help ${promptSetting ? 'border-amber-500 text-amber-600' : 'border-muted-foreground/30'}`}
-                >
-                  {promptSetting ? 'P=✓' : 'P=✗'}
-                </Badge>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot}`} />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="text-xs">
-                  Prompted = {promptSetting ? 'Correct' : 'Incorrect'}
-                  <span className="text-muted-foreground"> (from {promptSource})</span>
+                  {TARGET_STATUS_LABELS[target.status] || target.status}
+                  {(target as any).phase ? ` · ${PHASE_LABELS[(target as any).phase as TargetPhase] || (target as any).phase}` : ''}
                 </p>
               </TooltipContent>
             </Tooltip>
+            <span className="truncate font-medium">{target.name}</span>
+            <span className="shrink-0" onClick={e => e.stopPropagation()}>
+              <TargetSparkline key={`${target.id}-${sparklineKey}`} targetId={target.id} />
+            </span>
           </div>
           <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
             <Tooltip>
