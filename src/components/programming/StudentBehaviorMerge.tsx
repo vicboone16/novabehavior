@@ -187,8 +187,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
       // Strip the source behaviors from the student record AND remap any in-memory
       // frequency/duration entries to the primary so historical chart bars don't vanish.
       try {
-        const store = useDataStore.getState() as any;
-        store.set?.((state: any) => ({
+        useDataStore.setState((state: any) => ({
           students: state.students.map((s: any) =>
             s.id === studentId
               ? {
