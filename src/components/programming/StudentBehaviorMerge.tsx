@@ -172,18 +172,51 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
     try {
       let totalMoved = 0;
       for (const sourceId of sourceIds) {
-        const { data, error } = await supabase.rpc('merge_student_behavior' as any, {
+        // Use v2 with chosen mode (delete = hide entirely; archive = keep history visible in Archived tab)
+        const { data, error } = await supabase.rpc('merge_student_behavior_v2' as any, {
           p_student_id: studentId,
           p_source_behavior_id: sourceId,
           p_target_behavior_id: primaryId,
+          p_mode: mode,
         });
         if (error) throw error;
         totalMoved += (data as any)?.bsd_moved || 0;
       }
 
+      // CRITICAL: Update local store so charts immediately drop the merged sources.
+      // Strip the source behaviors from the student record AND remap any in-memory
+      // frequency/duration entries to the primary so historical chart bars don't vanish.
+      try {
+        const store = useDataStore.getState() as any;
+        store.set?.((state: any) => ({
+          students: state.students.map((s: any) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.filter((b: any) => !sourceIds.includes(b.id)),
+                }
+              : s
+          ),
+          frequencyEntries: state.frequencyEntries.map((e: any) =>
+            e.studentId === studentId && sourceIds.includes(e.behaviorId)
+              ? { ...e, behaviorId: primaryId }
+              : e
+          ),
+          durationEntries: state.durationEntries.map((e: any) =>
+            e.studentId === studentId && sourceIds.includes(e.behaviorId)
+              ? { ...e, behaviorId: primaryId }
+              : e
+          ),
+        }));
+      } catch (cleanupErr) {
+        // Fallback: at minimum strip the behaviors from the student
+        sourceIds.forEach((id) => removeBehavior(studentId, id));
+      }
+
       clearStudentBehaviorNameMap(studentId);
       const primaryName = behaviors.find(b => b.id === primaryId)?.name || 'target behavior';
-      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} data points moved)`);
+      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} data points moved${mode === 'archive' ? ', sources archived' : ''})`);
+      window.dispatchEvent(new CustomEvent('behavior-merged', { detail: { studentId, removedIds: sourceIds, targetId: primaryId } }));
       window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
       setOpen(false);
       onMerged?.();
