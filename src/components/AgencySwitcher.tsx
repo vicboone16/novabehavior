@@ -260,7 +260,7 @@ export function AgencySwitcher() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 max-w-[240px] border-dashed" disabled={switching} title={currentAlias ? `Working as ${currentAlias}` : currentAgency?.name || 'Select Agency'}>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 max-w-[200px] md:max-w-[240px] border-primary/40 bg-primary/5 hover:bg-primary/10 shrink-0" disabled={switching} title={currentAlias ? `Working as ${currentAlias}` : currentAgency?.name || 'Select Agency'}>
             {switching ? (
               <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             ) : (
