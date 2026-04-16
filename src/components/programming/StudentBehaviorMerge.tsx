@@ -20,9 +20,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { clearStudentBehaviorNameMap, getStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+import { useDataStore } from '@/store/dataStore';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -47,11 +50,15 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
   const [primaryId, setPrimaryId] = useState('');
   const [loading, setLoading] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [mode, setMode] = useState<'delete' | 'archive'>('delete');
+  const removeBehavior = useDataStore((s) => s.removeBehavior);
+  
 
   useEffect(() => {
     if (!open) return;
     setSelectedIds(new Set());
     setPrimaryId('');
+    setMode('delete');
     loadBehaviors();
   }, [open, studentId]);
 
@@ -165,18 +172,50 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
     try {
       let totalMoved = 0;
       for (const sourceId of sourceIds) {
-        const { data, error } = await supabase.rpc('merge_student_behavior' as any, {
+        // Use v2 with chosen mode (delete = hide entirely; archive = keep history visible in Archived tab)
+        const { data, error } = await supabase.rpc('merge_student_behavior_v2' as any, {
           p_student_id: studentId,
           p_source_behavior_id: sourceId,
           p_target_behavior_id: primaryId,
+          p_mode: mode,
         });
         if (error) throw error;
         totalMoved += (data as any)?.bsd_moved || 0;
       }
 
+      // CRITICAL: Update local store so charts immediately drop the merged sources.
+      // Strip the source behaviors from the student record AND remap any in-memory
+      // frequency/duration entries to the primary so historical chart bars don't vanish.
+      try {
+        useDataStore.setState((state: any) => ({
+          students: state.students.map((s: any) =>
+            s.id === studentId
+              ? {
+                  ...s,
+                  behaviors: s.behaviors.filter((b: any) => !sourceIds.includes(b.id)),
+                }
+              : s
+          ),
+          frequencyEntries: state.frequencyEntries.map((e: any) =>
+            e.studentId === studentId && sourceIds.includes(e.behaviorId)
+              ? { ...e, behaviorId: primaryId }
+              : e
+          ),
+          durationEntries: state.durationEntries.map((e: any) =>
+            e.studentId === studentId && sourceIds.includes(e.behaviorId)
+              ? { ...e, behaviorId: primaryId }
+              : e
+          ),
+        }));
+      } catch (cleanupErr) {
+        // Fallback: at minimum strip the behaviors from the student
+        sourceIds.forEach((id) => removeBehavior(studentId, id));
+      }
+
       clearStudentBehaviorNameMap(studentId);
       const primaryName = behaviors.find(b => b.id === primaryId)?.name || 'target behavior';
-      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} data points moved)`);
+      toast.success(`Merged ${sourceIds.length} behavior(s) into "${primaryName}" (${totalMoved} data points moved${mode === 'archive' ? ', sources archived' : ''})`);
+      window.dispatchEvent(new CustomEvent('behavior-merged', { detail: { studentId, removedIds: sourceIds, targetId: primaryId } }));
       window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
       setOpen(false);
       onMerged?.();
@@ -269,6 +308,31 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Mode picker — applies after merge to source behaviors */}
+            {selectedIds.size >= 2 && primaryId && (
+              <div className="space-y-2 pt-2 border-t">
+                <label className="text-xs font-medium text-muted-foreground">
+                  After merging, what should happen to source behaviors?
+                </label>
+                <RadioGroup value={mode} onValueChange={(v) => setMode(v as 'delete' | 'archive')} className="gap-2">
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    <RadioGroupItem value="delete" id="merge-mode-delete" className="mt-0.5" />
+                    <Label htmlFor="merge-mode-delete" className="cursor-pointer text-xs leading-tight font-normal">
+                      <div className="font-medium">Merge & remove sources</div>
+                      <div className="text-muted-foreground">All data moves to the primary; sources disappear from this student's list and graphs.</div>
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    <RadioGroupItem value="archive" id="merge-mode-archive" className="mt-0.5" />
+                    <Label htmlFor="merge-mode-archive" className="cursor-pointer text-xs leading-tight font-normal">
+                      <div className="font-medium">Merge & archive sources</div>
+                      <div className="text-muted-foreground">Data moves to the primary; sources are kept (hidden but visible in Archived) for audit history.</div>
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
             )}
 

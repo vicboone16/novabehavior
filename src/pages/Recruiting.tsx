@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 export default function Recruiting() {
   const navigate = useNavigate();
-  const { postings, applicants, templates, tasks, mentorAssignments, isLoading, fetchPostings, fetchApplicants, createPosting, addApplicant, updateApplicantStatus } = useRecruiting();
+  const { postings, applicants, templates, tasks, mentorAssignments, isLoading, fetchPostings, fetchApplicants, createPosting, addApplicant, updateApplicantStatus, fetchOnboardingTemplates, fetchTasks, fetchMentorAssignments } = useRecruiting();
   const [showNewPosting, setShowNewPosting] = useState(false);
   const [showNewApplicant, setShowNewApplicant] = useState(false);
   const [postingTitle, setPostingTitle] = useState('');
@@ -32,7 +32,14 @@ export default function Recruiting() {
   const [applicantSource, setApplicantSource] = useState<ApplicantSource>('website');
   const [applicantPostingId, setApplicantPostingId] = useState('');
 
-  useEffect(() => { fetchPostings(); fetchApplicants(); }, []);
+  useEffect(() => {
+    fetchPostings();
+    fetchApplicants();
+    fetchOnboardingTemplates();
+    fetchTasks();
+    fetchMentorAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreatePosting = async () => {
     if (!postingTitle.trim()) { toast.error('Title required'); return; }

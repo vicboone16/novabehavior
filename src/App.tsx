@@ -16,6 +16,8 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { Loader2 } from "lucide-react";
+import { SubdomainRedirect } from "@/components/SubdomainRedirect";
+import { getRouterBasename } from "@/lib/domainRouting";
 
 // Lazy-loaded page components for code splitting
 const MainLayout = lazy(() => import("./components/MainLayout"));
@@ -194,11 +196,14 @@ const App = () => {
         <Toaster />
         <Sonner />
         <SessionTimeoutWarning />
-        <BrowserRouter>
+        <BrowserRouter basename={getRouterBasename()}>
+        <SubdomainRedirect />
         <FloatingCaptureButton />
         <Suspense fallback={<PageLoader />}>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* /login is an alias of /auth, primarily used on data.novabehavior.com/login */}
+            <Route path="/login" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/post-login" element={
               <ProtectedRoute>
