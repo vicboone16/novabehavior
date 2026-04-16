@@ -1,6 +1,7 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText, Zap, Shield } from 'lucide-react';
+import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText, Zap, Shield, Sparkles } from 'lucide-react';
+import { SessionWorkspace } from '@/components/session-workspace/SessionWorkspace';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -142,6 +143,22 @@ function SessionsView() {
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const [activeTabStudentId, setActiveTabStudentId] = useState<string | null>(null);
   const [showMobileMode, setShowMobileMode] = useState(false);
+  const [useNewWorkspace, setUseNewWorkspace] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('nova_use_new_workspace') === '1';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('nova_use_new_workspace', useNewWorkspace ? '1' : '0');
+  }, [useNewWorkspace]);
+
+  if (useNewWorkspace) {
+    return (
+      <div className="space-y-3">
+        <SessionWorkspace onClose={() => setUseNewWorkspace(false)} />
+      </div>
+    );
+  }
 
   const hasIntervalBehaviors = selectedStudents.some(s => 
     s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
