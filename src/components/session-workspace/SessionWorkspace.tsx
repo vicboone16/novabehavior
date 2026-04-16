@@ -46,6 +46,8 @@ interface StudentPaneProps {
 
 function StudentPane({ student, studentColor, layout, filter, withHeading }: StudentPaneProps) {
   const behaviors = activeBehaviorsFor(student);
+  const showBehaviors = filter !== 'skills';
+  const showSkills = filter !== 'behaviors';
   return (
     <div className="rounded-md">
       {withHeading && (
@@ -63,7 +65,7 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
+          showBehaviors={showBehaviors}
         />
       )}
       {layout === 'list' && (
@@ -71,7 +73,7 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
+          showBehaviors={showBehaviors}
         />
       )}
       {layout === 'split' && (
@@ -79,13 +81,13 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
-          showSkills={filter !== 'behaviors'}
+          showBehaviors={showBehaviors}
+          showSkills={showSkills}
         />
       )}
       {layout !== 'split' && filter === 'skills' && (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          Skill targets land in the unified workspace in the next phase.
+        <div className="text-center py-6 text-xs text-muted-foreground border rounded-md bg-muted/30 mt-2">
+          Switch to the <span className="font-semibold">Split</span> layout to view skill targets alongside behaviors.
         </div>
       )}
     </div>
