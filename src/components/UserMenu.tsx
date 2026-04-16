@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, ShieldCheck, BookOpen, User, Users } from 'lucide-react';
+import { LogOut, RefreshCw, Cloud, CloudOff, Loader2, Shield, ShieldCheck, BookOpen, User, Users, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -186,6 +186,15 @@ export function UserMenu() {
           >
             <BookOpen className="mr-2 h-4 w-4" />
             LMS / Training
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              navigate('/help-center');
+            }}
+          >
+            <HelpCircle className="mr-2 h-4 w-4" />
+            Help Center
           </DropdownMenuItem>
           {isAdmin && (
             <>
