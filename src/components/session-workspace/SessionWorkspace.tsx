@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
 import { SessionStatsHeader } from './SessionStatsHeader';
 import { GridLayout } from './layouts/GridLayout';
+import { ListLayout } from './layouts/ListLayout';
+import { SplitLayout } from './layouts/SplitLayout';
+import { WorkspaceLayoutToggle, WorkspaceLayout } from './WorkspaceLayoutToggle';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
