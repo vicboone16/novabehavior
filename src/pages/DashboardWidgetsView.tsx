@@ -39,7 +39,7 @@ function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
   return width;
 }
 
-export default function Dashboard() {
+export default function DashboardWidgetsView() {
   const { userRole } = useAuth();
   const role = userRole || 'viewer';
   const containerRef = useRef<HTMLDivElement>(null);
