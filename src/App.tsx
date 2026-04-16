@@ -117,6 +117,9 @@ const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const WelcomeFeatures = lazy(() => import("./pages/WelcomeFeatures"));
+const WelcomeAddOns = lazy(() => import("./pages/WelcomeAddOns"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
@@ -217,6 +220,10 @@ const App = () => {
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
+            {/* Public welcome / marketing pages */}
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/welcome/features" element={<WelcomeFeatures />} />
+            <Route path="/welcome/add-ons" element={<WelcomeAddOns />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             {/* Public demo routes - no auth required */}
