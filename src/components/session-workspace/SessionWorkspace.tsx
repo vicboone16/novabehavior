@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
@@ -15,6 +15,8 @@ import { QuickTallyBar } from './QuickTallyBar';
 import { QuickAddFab } from './QuickAddFab';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 import { useWorkspacePreferences } from '@/hooks/useWorkspacePreferences';
+import { MobileDataMode } from '@/components/mobile';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
 
@@ -116,6 +118,7 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const [activeId, setActiveId] = useState<string>(() => activeStudents[0]?.id ?? 'all');
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<FilterChip>('all');
+  const [focusOpen, setFocusOpen] = useState(false);
 
   const layout = prefs.layout;
 
@@ -244,9 +247,27 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
               Split-screen · 2 clients
             </Badge>
           )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => setFocusOpen(true)}
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span className="hidden sm:inline">Focus</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>One-behavior-at-a-time mobile view</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
         </div>
       </div>
+
+      {focusOpen && <MobileDataMode onClose={() => setFocusOpen(false)} />}
 
       {/* Workspace body */}
       <div className="p-3 pb-24">
