@@ -3,7 +3,7 @@ import { isLegacyDataHost } from '@/lib/domainRouting';
 
 /**
  * Behavior on data.novabehavior.com:
- *  - "/"            → stays here, shows the public Welcome page
+ *  - "/"            → redirected to /welcome (public marketing page)
  *  - "/login"       → stays here, shows the Auth page
  *  - "/welcome/*"   → stays here (marketing pages)
  *  - "/privacy-policy", "/terms-and-conditions" → stay here (legal pages)
@@ -20,9 +20,14 @@ export function SubdomainRedirect() {
 
     const { pathname, search, hash } = window.location;
 
+    // Root on the legacy host should land on the public Welcome page.
+    if (pathname === '/' || pathname === '') {
+      window.location.replace(`/welcome${search}${hash}`);
+      return;
+    }
+
     // Public/auth pages that should remain on data.novabehavior.com.
     const keepExact = new Set<string>([
-      '/',
       '/login',
       '/auth',
       '/reset-password',
