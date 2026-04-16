@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 export default function Recruiting() {
   const navigate = useNavigate();
-  const { postings, applicants, templates, tasks, mentorAssignments, isLoading, fetchPostings, fetchApplicants, createPosting, addApplicant, updateApplicantStatus } = useRecruiting();
+  const { postings, applicants, templates, tasks, mentorAssignments, isLoading, fetchPostings, fetchApplicants, createPosting, addApplicant, updateApplicantStatus, fetchOnboardingTemplates, fetchTasks, fetchMentorAssignments } = useRecruiting();
   const [showNewPosting, setShowNewPosting] = useState(false);
   const [showNewApplicant, setShowNewApplicant] = useState(false);
   const [postingTitle, setPostingTitle] = useState('');
