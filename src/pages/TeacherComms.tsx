@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 // ── Pending Changes Section ──
-function PendingChangesPanel() {
+export function PendingChangesPanel() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -305,7 +305,7 @@ const typeLabels: Record<string, string> = {
   summary: "Summary",
 };
 
-function MessagesInboxPanel() {
+export function MessagesInboxPanel() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

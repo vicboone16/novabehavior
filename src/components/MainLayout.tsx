@@ -81,13 +81,15 @@ export default function MainLayout() {
       <header className="bg-card border-b border-border sticky top-0 z-20" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="container py-2 md:py-3 px-3 md:px-4">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-4 shrink-0">
+            <div className="flex items-center gap-2 md:gap-4 shrink-0 order-1">
               <AgencySwitcher />
             </div>
-            <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1 justify-end">
-              <GlobalSearch />
-              {/* Desktop header buttons – rendered from DB */}
-              <div className="hidden lg:flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1 justify-end order-2">
+              <div className="min-w-0 max-w-[180px] md:max-w-[260px] xl:max-w-none xl:flex-1">
+                <GlobalSearch />
+              </div>
+              {/* Desktop header buttons – rendered from DB. Use xl: to give the agency switcher room. */}
+              <div className="hidden xl:flex items-center gap-2 shrink-0">
                 {headerButtons.map(item => {
                   const Icon = getNavIcon(item.icon);
                   return (
@@ -104,8 +106,8 @@ export default function MainLayout() {
                   );
                 })}
               </div>
-              {/* Mobile dropdown – rendered from DB */}
-              <div className="flex lg:hidden">
+              {/* Mobile/medium dropdown – rendered from DB (shown below xl) */}
+              <div className="flex xl:hidden">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
