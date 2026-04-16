@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/store/dataStore';
 import { DataCollectionMethod, METHOD_LABELS, Behavior, BehaviorDefinition, BEHAVIOR_CATEGORIES } from '@/types/behavior';
 import { BehaviorInterventionsPicker } from '@/components/behavior-interventions';
+import { BehaviorActionsMenu } from '@/components/behaviors/BehaviorActionsMenu';
 import { toast } from 'sonner';
 
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc', 'latency'];
@@ -471,12 +472,11 @@ export function BehaviorManager() {
                             >
                               <Edit2 className="w-3 h-3" />
                             </Button>
-                            <button
-                              onClick={() => removeBehavior(student.id, behavior.id)}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <BehaviorActionsMenu
+                              studentId={student.id}
+                              behaviorId={behavior.id}
+                              behaviorName={behavior.name}
+                            />
                           </div>
                           {behavior.operationalDefinition && (
                             <p className="text-xs text-muted-foreground pl-1 line-clamp-2">
