@@ -203,6 +203,12 @@ function SessionsView() {
             Mobile Mode
           </Button>
         )}
+        {selectedStudentIds.length > 0 && (
+          <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            Try New Workspace
+          </Button>
+        )}
       </div>
 
       {showMobileMode && <MobileDataMode onClose={() => setShowMobileMode(false)} />}
