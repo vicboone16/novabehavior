@@ -144,8 +144,11 @@ function SessionsView() {
   const [activeTabStudentId, setActiveTabStudentId] = useState<string | null>(null);
   const [showMobileMode, setShowMobileMode] = useState(false);
   const [useNewWorkspace, setUseNewWorkspace] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('nova_use_new_workspace') === '1';
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('nova_use_new_workspace');
+    // Default to NEW workspace for any user who hasn't explicitly opted out.
+    if (stored === null) return true;
+    return stored !== '0';
   });
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -203,12 +206,14 @@ function SessionsView() {
             Mobile Mode
           </Button>
         )}
-        {selectedStudentIds.length > 0 && (
-          <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
-            <Sparkles className="w-4 h-4" />
-            Try New Workspace
-          </Button>
-        )}
+        <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
+          <Sparkles className="w-4 h-4" />
+          Back to New Workspace
+        </Button>
+      </div>
+
+      <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        You're using <span className="font-medium text-foreground">Classic mode</span>. The new unified Session Workspace is now the default — Classic will be retired in an upcoming release.
       </div>
 
       {showMobileMode && <MobileDataMode onClose={() => setShowMobileMode(false)} />}
