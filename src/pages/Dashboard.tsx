@@ -4,40 +4,39 @@ import { Loader2, LayoutDashboard, Brain, Briefcase } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClinicalIntelligenceAccess } from '@/hooks/useClinicalIntelligence';
-import { hasPermission, PERMISSIONS, type PermissionContext } from '@/lib/permissions';
 import DashboardWidgetsView from './DashboardWidgetsView';
 
 const Intelligence = lazy(() => import('./Intelligence'));
 const Operations = lazy(() => import('./Operations'));
 
+const OPERATIONS_ROLES = new Set([
+  'admin',
+  'super_admin',
+  'agency_admin',
+  'bcba',
+  'supervisor',
+  'manager',
+  'billing',
+  'scheduler',
+]);
+
 /**
  * Dashboard shell with view-switcher tabs:
- *   - Widgets (always available)
+ *   - Widgets (always)
  *   - Intelligence (gated by Clinical Intelligence access)
- *   - Operations (gated by ops/billing/scheduling permissions)
+ *   - Operations (gated by role)
  *
- * The user's role determines which tabs render. Selection is reflected in
- * `?view=` so it can be deep-linked.
+ * Selection is persisted in `?view=` for deep-linking. If only Widgets is
+ * available, the tab bar is hidden.
  */
 export default function Dashboard() {
-  const { user, userRole } = useAuth();
+  const { userRole } = useAuth();
   const { hasCIDAccess } = useClinicalIntelligenceAccess();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const permContext: PermissionContext = useMemo(
-    () => ({ userRole: userRole as any, userId: user?.id || null }),
-    [userRole, user?.id]
-  );
-
-  // Operations is broadly an admin/scheduling/billing area.
   const canSeeOperations = useMemo(
-    () =>
-      hasPermission(PERMISSIONS.VIEW_BILLING, permContext) ||
-      hasPermission(PERMISSIONS.VIEW_SCHEDULES, permContext) ||
-      userRole === 'admin' ||
-      userRole === 'super_admin' ||
-      userRole === 'agency_admin',
-    [permContext, userRole]
+    () => OPERATIONS_ROLES.has((userRole as string) || ''),
+    [userRole]
   );
 
   const view = searchParams.get('view') || 'widgets';
