@@ -52,7 +52,7 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
   const [merging, setMerging] = useState(false);
   const [mode, setMode] = useState<'delete' | 'archive'>('delete');
   const removeBehavior = useDataStore((s) => s.removeBehavior);
-  const removeFrequencyEntries = useDataStore((s) => (s as any).removeFrequencyEntriesByBehavior);
+  
 
   useEffect(() => {
     if (!open) return;
@@ -308,6 +308,31 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {/* Mode picker — applies after merge to source behaviors */}
+            {selectedIds.size >= 2 && primaryId && (
+              <div className="space-y-2 pt-2 border-t">
+                <label className="text-xs font-medium text-muted-foreground">
+                  After merging, what should happen to source behaviors?
+                </label>
+                <RadioGroup value={mode} onValueChange={(v) => setMode(v as 'delete' | 'archive')} className="gap-2">
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    <RadioGroupItem value="delete" id="merge-mode-delete" className="mt-0.5" />
+                    <Label htmlFor="merge-mode-delete" className="cursor-pointer text-xs leading-tight font-normal">
+                      <div className="font-medium">Merge & remove sources</div>
+                      <div className="text-muted-foreground">All data moves to the primary; sources disappear from this student's list and graphs.</div>
+                    </Label>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    <RadioGroupItem value="archive" id="merge-mode-archive" className="mt-0.5" />
+                    <Label htmlFor="merge-mode-archive" className="cursor-pointer text-xs leading-tight font-normal">
+                      <div className="font-medium">Merge & archive sources</div>
+                      <div className="text-muted-foreground">Data moves to the primary; sources are kept (hidden but visible in Archived) for audit history.</div>
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
             )}
 
