@@ -26444,6 +26444,60 @@ export type Database = {
           },
         ]
       }
+      framework_domain_crosswalk: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          framework_domain: string
+          framework_source: string
+          framework_subdomain: string | null
+          id: string
+          notes: string | null
+          unified_domain_id: string
+          unified_subdomain_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          framework_domain: string
+          framework_source: string
+          framework_subdomain?: string | null
+          id?: string
+          notes?: string | null
+          unified_domain_id: string
+          unified_subdomain_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          framework_domain?: string
+          framework_source?: string
+          framework_subdomain?: string | null
+          id?: string
+          notes?: string | null
+          unified_domain_id?: string
+          unified_subdomain_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_domain_crosswalk_unified_domain_id_fkey"
+            columns: ["unified_domain_id"]
+            isOneToOne: false
+            referencedRelation: "unified_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "framework_domain_crosswalk_unified_subdomain_id_fkey"
+            columns: ["unified_subdomain_id"]
+            isOneToOne: false
+            referencedRelation: "unified_subdomains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_events: {
         Row: {
           agency_id: string
@@ -31131,6 +31185,9 @@ export type Database = {
           baseline_value: string | null
           created_at: string
           description: string | null
+          framework_metadata: Json | null
+          framework_source: string | null
+          framework_source_id: string | null
           generalization_criteria: Json | null
           id: string
           is_active: boolean
@@ -31151,6 +31208,9 @@ export type Database = {
           baseline_value?: string | null
           created_at?: string
           description?: string | null
+          framework_metadata?: Json | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           generalization_criteria?: Json | null
           id?: string
           is_active?: boolean
@@ -31171,6 +31231,9 @@ export type Database = {
           baseline_value?: string | null
           created_at?: string
           description?: string | null
+          framework_metadata?: Json | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           generalization_criteria?: Json | null
           id?: string
           is_active?: boolean
@@ -31208,6 +31271,9 @@ export type Database = {
           archived_at: string | null
           created_at: string
           description: string | null
+          framework_metadata: Json | null
+          framework_source: string | null
+          framework_source_id: string | null
           id: string
           is_active: boolean
           is_archived: boolean
@@ -31224,6 +31290,9 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
+          framework_metadata?: Json | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -31240,6 +31309,9 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
           description?: string | null
+          framework_metadata?: Json | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -31275,6 +31347,11 @@ export type Database = {
           created_at: string
           description: string | null
           domain_id: string
+          framework_metadata: Json | null
+          framework_native_domain: string | null
+          framework_native_subdomain: string | null
+          framework_source: string | null
+          framework_source_id: string | null
           id: string
           is_active: boolean
           is_archived: boolean
@@ -31292,6 +31369,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           domain_id: string
+          framework_metadata?: Json | null
+          framework_native_domain?: string | null
+          framework_native_subdomain?: string | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -31309,6 +31391,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           domain_id?: string
+          framework_metadata?: Json | null
+          framework_native_domain?: string | null
+          framework_native_subdomain?: string | null
+          framework_source?: string | null
+          framework_source_id?: string | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -60416,6 +60503,45 @@ export type Database = {
           },
         ]
       }
+      unified_domains: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       unified_goal_framework_links: {
         Row: {
           alignment_type: string
@@ -60471,6 +60597,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curricula_vbmapp"
             referencedColumns: ["goal_id"]
+          },
+        ]
+      }
+      unified_subdomains: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          unified_domain_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          unified_domain_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          unified_domain_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_subdomains_unified_domain_id_fkey"
+            columns: ["unified_domain_id"]
+            isOneToOne: false
+            referencedRelation: "unified_domains"
+            referencedColumns: ["id"]
           },
         ]
       }
