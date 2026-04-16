@@ -206,12 +206,14 @@ function SessionsView() {
             Mobile Mode
           </Button>
         )}
-        {selectedStudentIds.length > 0 && (
-          <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
-            <Sparkles className="w-4 h-4" />
-            Try New Workspace
-          </Button>
-        )}
+        <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
+          <Sparkles className="w-4 h-4" />
+          Back to New Workspace
+        </Button>
+      </div>
+
+      <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        You're using <span className="font-medium text-foreground">Classic mode</span>. The new unified Session Workspace is now the default — Classic will be retired in an upcoming release.
       </div>
 
       {showMobileMode && <MobileDataMode onClose={() => setShowMobileMode(false)} />}
