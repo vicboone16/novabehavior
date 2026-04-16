@@ -213,12 +213,12 @@ export default function ClinicalLibraryLayout() {
                   <div className="p-3 rounded-xl bg-muted w-fit mb-4">
                     <GitMerge className="w-7 h-7 text-muted-foreground" />
                   </div>
-                  <h2 className="text-lg font-bold mb-1">Domain Migration</h2>
+                  <h2 className="text-lg font-bold mb-1">Reorganize Programs</h2>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Review & audit domain remapping from legacy to canonical structure.
+                    Move, edit, and drag programs from any assessment or curriculum into the correct domain or subdomain.
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Audit', 'Review', 'Migration Log'].map(name => (
+                    {['Move', 'Reassign', 'Bulk Edit', 'Audit Log'].map(name => (
                       <Badge key={name} variant="outline" className="text-[10px]">{name}</Badge>
                     ))}
                   </div>
