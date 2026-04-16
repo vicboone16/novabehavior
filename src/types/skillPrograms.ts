@@ -1,4 +1,4 @@
-// Skill Programs hierarchy types: Domain → Program → Target
+// Skill Programs hierarchy types: Domain → Subdomain → Program → (Objective) → Target → (Benchmark)
 
 export interface SkillProgram {
   id: string;
@@ -13,10 +13,11 @@ export interface SkillProgram {
   status_effective_date: string;
   benchmark_enabled: boolean;
   benchmark_definition: Record<string, any>;
+  objectives_enabled: boolean;
   default_mastery_criteria: string | null;
   default_mastery_percent: number | null;
   default_mastery_consecutive_sessions: number | null;
-  prompt_counts_as_correct: boolean | null; // null = inherit from student
+  prompt_counts_as_correct: boolean | null;
   active: boolean;
   notes: string | null;
   created_by: string | null;
@@ -27,21 +28,55 @@ export interface SkillProgram {
   top_level_domain?: { id: string; name: string };
   subdomain?: { id: string; name: string };
   targets?: SkillTarget[];
+  objectives?: SkillProgramObjective[];
   status_history?: ProgramStatusEntry[];
+}
+
+export interface SkillProgramObjective {
+  id: string;
+  program_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  targets?: SkillTarget[];
+}
+
+export interface TargetBenchmark {
+  id: string;
+  target_id: string;
+  name: string;
+  description: string | null;
+  criteria: Record<string, any> | null;
+  sort_order: number;
+  is_active: boolean;
+  phase: string;
+  mastery_percent: number | null;
+  mastery_consecutive_sessions: number | null;
+  prompt_level_expectations: string | null;
+  reinforcement_schedule: string | null;
+  generalization_requirements: string | null;
+  is_current: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SkillTarget {
   id: string;
   program_id: string;
+  objective_id: string | null;
   name: string;
   operational_definition: string | null;
   mastery_criteria: string | null;
   mastery_percent: number | null;
   mastery_consecutive_sessions: number | null;
-  prompt_counts_as_correct: boolean | null; // null = inherit from program
+  prompt_counts_as_correct: boolean | null;
   status: TargetStatus;
   status_effective_date: string;
-  phase: string; // baseline | acquisition | probe | generalization | maintenance | closed
+  phase: string;
   display_order: number;
   active: boolean;
   notes: string | null;
@@ -52,6 +87,7 @@ export interface SkillTarget {
   updated_at: string;
   // Joined
   ta_steps?: TaskAnalysisStep[];
+  benchmarks?: TargetBenchmark[];
 }
 
 export interface PromptLevel {

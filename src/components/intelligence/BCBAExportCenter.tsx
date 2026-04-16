@@ -39,7 +39,7 @@ export function BCBAExportCenter({ agencyId }: Props) {
     const load = async () => {
       if (!agencyId) return;
       setStudentsLoading(true);
-      let query = supabase.from('students').select('id, first_name, last_name');
+      let query = supabase.from('students').select('id, first_name, last_name, display_name');
       if (agencyId !== 'all') {
         query = query.eq('agency_id', agencyId);
       }
@@ -47,7 +47,7 @@ export function BCBAExportCenter({ agencyId }: Props) {
       if (data) {
         setStudents(data.map((s: any) => ({
           id: s.id,
-          name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown',
+          name: s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown',
         })));
       }
       setStudentsLoading(false);

@@ -78,7 +78,7 @@ export function useStaffAssignments() {
         supabase.from('profiles').select('id, email, display_name, first_name, last_name').limit(500),
         supabase.from('agencies').select('id, name').eq('status', 'active').limit(200),
         supabase.from('classrooms').select('id, name').limit(200),
-        supabase.from('students').select('id, first_name, last_name').limit(500),
+        supabase.from('students').select('id, first_name, last_name, display_name').limit(500),
       ]);
       setProfiles(profilesRes.data || []);
       setAgencies(agenciesRes.data || []);

@@ -108,11 +108,25 @@ export function ProgrammingIntelligenceBanner({ studentId }: Props) {
     };
   }, [targets, stats, student]);
 
-  const inProgressValues = useMemo(() => ({
-    targets: stats.inProgress,
-    skills: stats.inProgress, // approximate: 1:1 at target level
-    programs: Math.min(stats.inProgress, student?.skillTargets?.length || 0),
-  }), [stats, student]);
+  const inProgressValues = useMemo(() => {
+    // Use actual target data: count targets with not_started status that belong to active programs
+    // as "in progress" since the programs are in acquisition
+    const actualInProgress = stats.inProgress;
+    // If mastery engine returned 0 in-progress but we have active targets, use those
+    const storeTargetCount = (student?.skillTargets || []).filter(
+      (t: any) => t.status !== 'mastered' && t.status !== 'discontinued' && t.lifecycle_status !== 'closed'
+    ).length;
+    const effectiveInProgress = actualInProgress > 0 ? actualInProgress : storeTargetCount;
+    return {
+      targets: effectiveInProgress,
+      skills: effectiveInProgress,
+      programs: new Set(
+        (student?.skillTargets || [])
+          .filter((t: any) => t.status !== 'mastered' && t.status !== 'discontinued')
+          .map((t: any) => t.program_id)
+      ).size || 0,
+    };
+  }, [stats, student]);
 
   const masteredModes: { key: string; label: string }[] = [
     { key: 'targets', label: 'Targets Mastered' },

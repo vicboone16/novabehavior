@@ -106,7 +106,7 @@ export function SessionNotesTab({ studentId, studentName }: SessionNotesTabProps
   };
 
   const getStatusBadge = (status: NoteStatus) => {
-    const config = STATUS_CONFIG[status];
+    const config = STATUS_CONFIG[status] || { label: status || 'Unknown', color: 'bg-muted text-muted-foreground', icon: Clock };
     const Icon = config.icon;
     return (
       <Badge className={`${config.color} text-xs gap-1`}>

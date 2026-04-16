@@ -155,7 +155,7 @@ export function CollectionBrowser({ collectionId, collectionTitle, onBack }: Pro
   const [selectedItems, setSelectedItems] = useState<SelectedLevel[]>([]);
   const [addDestination, setAddDestination] = useState<'skill_program' | 'behavior_goal'>('skill_program');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
-  const [studentResults, setStudentResults] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+  const [studentResults, setStudentResults] = useState<{ id: string; first_name: string; last_name: string; display_name?: string }[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [searchingStudents, setSearchingStudents] = useState(false);
   const [addingToStudent, setAddingToStudent] = useState(false);
@@ -289,8 +289,8 @@ export function CollectionBrowser({ collectionId, collectionTitle, onBack }: Pro
     if (q.length < 2) { setStudentResults([]); return; }
     setSearchingStudents(true);
     const { data } = await supabase.from('students')
-      .select('id, first_name, last_name')
-      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+      .select('id, first_name, last_name, display_name')
+      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,display_name.ilike.%${q}%`)
       .limit(10);
     setStudentResults((data || []) as any);
     setSearchingStudents(false);
@@ -951,14 +951,14 @@ export function CollectionBrowser({ collectionId, collectionTitle, onBack }: Pro
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors ${selectedStudentId === s.id ? 'bg-primary/10 text-primary font-medium' : ''}`}
                         onClick={() => setSelectedStudentId(s.id)}
                       >
-                        {s.first_name} {s.last_name}
+                        {s.display_name || `${s.first_name} ${s.last_name}`}
                       </button>
                     ))}
                   </div>
                 )}
                 {selectedStudentId && (
                   <p className="text-xs text-green-600 mt-1">
-                    ✓ Student selected: {studentResults.find(s => s.id === selectedStudentId)?.first_name} {studentResults.find(s => s.id === selectedStudentId)?.last_name}
+                    ✓ Student selected: {(() => { const s = studentResults.find(s => s.id === selectedStudentId); return s?.display_name || `${s?.first_name} ${s?.last_name}`; })()}
                   </p>
                 )}
               </div>

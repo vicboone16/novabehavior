@@ -26,7 +26,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const AssessmentDashboard = lazy(() => import("./pages/AssessmentDashboard"));
 const Clinical = lazy(() => import("./pages/Clinical"));
 const SkillAcquisition = lazy(() => import("./pages/SkillAcquisition"));
-const NotesReview = lazy(() => import("./pages/NotesReview"));
+const ReviewQueue = lazy(() => import("./pages/ReviewQueue"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PostLoginRouter = lazy(() => import("./pages/PostLoginRouter"));
@@ -117,6 +117,11 @@ const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const WelcomeFeatures = lazy(() => import("./pages/WelcomeFeatures"));
+const WelcomeAddOns = lazy(() => import("./pages/WelcomeAddOns"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
 
 const PageLoader = () => (
@@ -215,6 +220,12 @@ const App = () => {
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
+            {/* Public welcome / marketing pages */}
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/welcome/features" element={<WelcomeFeatures />} />
+            <Route path="/welcome/add-ons" element={<WelcomeAddOns />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
@@ -491,7 +502,7 @@ const App = () => {
               <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
-              <Route path="/notes-review" element={<NotesReview />} />
+              <Route path="/review-queue" element={<ReviewQueue />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/incident-logs" element={<IncidentLogs />} />
