@@ -46,6 +46,8 @@ interface StudentPaneProps {
 
 function StudentPane({ student, studentColor, layout, filter, withHeading }: StudentPaneProps) {
   const behaviors = activeBehaviorsFor(student);
+  const showBehaviors = filter !== 'skills';
+  const showSkills = filter !== 'behaviors';
   return (
     <div className="rounded-md">
       {withHeading && (
@@ -63,7 +65,7 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
+          showBehaviors={showBehaviors}
         />
       )}
       {layout === 'list' && (
@@ -71,7 +73,7 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
+          showBehaviors={showBehaviors}
         />
       )}
       {layout === 'split' && (
@@ -79,13 +81,13 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
           studentId={student.id}
           studentColor={studentColor}
           behaviors={behaviors}
-          showBehaviors={filter !== 'skills'}
-          showSkills={filter !== 'behaviors'}
+          showBehaviors={showBehaviors}
+          showSkills={showSkills}
         />
       )}
       {layout !== 'split' && filter === 'skills' && (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          Skill targets land in the unified workspace in the next phase.
+        <div className="text-center py-6 text-xs text-muted-foreground border rounded-md bg-muted/30 mt-2">
+          Switch to the <span className="font-semibold">Split</span> layout to view skill targets alongside behaviors.
         </div>
       )}
     </div>
@@ -97,7 +99,7 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const selectedStudentIds = useDataStore((s) => s.selectedStudentIds);
 
   const activeStudentsRaw = useMemo(
-    () => students.filter((s) => selectedStudentIds.includes(s.id)),
+    () => students.filter((s) => selectedStudentIds.includes(s.id) && !s.isArchived),
     [students, selectedStudentIds],
   );
 
@@ -213,20 +215,26 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
         />
       )}
 
-      {/* Filter chips + layout toggle */}
+      {/* View filter chips + layout toggle */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b">
-        <div className="flex gap-1.5 flex-wrap">
-          {(['all', 'behaviors', 'skills'] as FilterChip[]).map((chip) => (
+        <div className="flex gap-1.5 flex-wrap" role="tablist" aria-label="Data collection view">
+          {([
+            { key: 'all', label: 'All' },
+            { key: 'behaviors', label: 'Behaviors only' },
+            { key: 'skills', label: 'Skills only' },
+          ] as { key: FilterChip; label: string }[]).map((chip) => (
             <button
-              key={chip}
-              onClick={() => setFilter(chip)}
+              key={chip.key}
+              role="tab"
+              aria-selected={filter === chip.key}
+              onClick={() => setFilter(chip.key)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                filter === chip
+                filter === chip.key
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
-              {chip[0].toUpperCase() + chip.slice(1)}
+              {chip.label}
             </button>
           ))}
         </div>
@@ -236,9 +244,6 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
               Split-screen · 2 clients
             </Badge>
           )}
-          <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">
-            Phase D
-          </Badge>
           <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
         </div>
       </div>
