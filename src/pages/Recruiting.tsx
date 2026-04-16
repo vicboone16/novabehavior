@@ -32,7 +32,14 @@ export default function Recruiting() {
   const [applicantSource, setApplicantSource] = useState<ApplicantSource>('website');
   const [applicantPostingId, setApplicantPostingId] = useState('');
 
-  useEffect(() => { fetchPostings(); fetchApplicants(); }, []);
+  useEffect(() => {
+    fetchPostings();
+    fetchApplicants();
+    fetchOnboardingTemplates();
+    fetchTasks();
+    fetchMentorAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreatePosting = async () => {
     if (!postingTitle.trim()) { toast.error('Title required'); return; }

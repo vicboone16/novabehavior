@@ -142,10 +142,15 @@ export function useRecruiting() {
   }, []);
 
   const assignMentor = useCallback(async (assignment: Partial<MentorAssignment>) => {
-    const { data, error } = await supabase.from('mentor_assignments').insert(assignment as any).select().single();
-    if (error) throw error;
-    toast.success('Mentor assigned');
-    return data;
+    try {
+      const { data, error } = await supabase.from('mentor_assignments').insert(assignment as any).select().single();
+      if (error) throw error;
+      toast.success('Mentor assigned');
+      return data;
+    } catch (err: any) {
+      toast.error('Failed to assign mentor: ' + (err.message || err));
+      return null;
+    }
   }, []);
 
   return {
