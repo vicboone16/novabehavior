@@ -50,11 +50,15 @@ export function StudentBehaviorMerge({ studentId, studentName, onMerged }: Stude
   const [primaryId, setPrimaryId] = useState('');
   const [loading, setLoading] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [mode, setMode] = useState<'delete' | 'archive'>('delete');
+  const removeBehavior = useDataStore((s) => s.removeBehavior);
+  const removeFrequencyEntries = useDataStore((s) => (s as any).removeFrequencyEntriesByBehavior);
 
   useEffect(() => {
     if (!open) return;
     setSelectedIds(new Set());
     setPrimaryId('');
+    setMode('delete');
     loadBehaviors();
   }, [open, studentId]);
 
