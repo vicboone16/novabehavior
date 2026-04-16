@@ -2,8 +2,16 @@ import { useEffect } from 'react';
 import { isLegacyDataHost } from '@/lib/domainRouting';
 
 /**
- * If we're on data.novabehavior.com, redirect everything except /login (and its subpaths)
- * to the canonical novabehavior.com/data{path}. Mounted once near the top of the tree.
+ * Behavior on data.novabehavior.com:
+ *  - "/"            → stays here, shows the public Welcome page
+ *  - "/login"       → stays here, shows the Auth page
+ *  - "/welcome/*"   → stays here (marketing pages)
+ *  - "/privacy-policy", "/terms-and-conditions" → stay here (legal pages)
+ *  - "/auth", "/reset-password" → stay here (auth aliases)
+ *  - everything else (the authenticated app) → redirected to
+ *    https://novabehavior.com/data{path}
+ *
+ * Mounted once near the top of the tree.
  */
 export function SubdomainRedirect() {
   useEffect(() => {
@@ -12,14 +20,23 @@ export function SubdomainRedirect() {
 
     const { pathname, search, hash } = window.location;
 
-    // Keep /login (and aliases /auth, /reset-password) on data.novabehavior.com so the
-    // login page can live there per request.
-    const keepOnLegacy = ['/login', '/auth', '/reset-password'];
-    if (keepOnLegacy.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
-      return;
-    }
+    // Public/auth pages that should remain on data.novabehavior.com.
+    const keepExact = new Set<string>([
+      '/',
+      '/login',
+      '/auth',
+      '/reset-password',
+      '/privacy-policy',
+      '/terms-and-conditions',
+    ]);
+    const keepPrefixes = ['/welcome', '/login/', '/auth/', '/reset-password/'];
 
-    const target = `https://novabehavior.com/data${pathname === '/' ? '' : pathname}${search}${hash}`;
+    if (keepExact.has(pathname)) return;
+    if (keepPrefixes.some((p) => pathname.startsWith(p))) return;
+
+    // Everything else (authenticated app surface) lives on the canonical apex
+    // under the /data basename.
+    const target = `https://novabehavior.com/data${pathname}${search}${hash}`;
     window.location.replace(target);
   }, []);
 
