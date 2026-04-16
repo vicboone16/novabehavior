@@ -5,10 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
 import { Behavior, DataCollectionMethod } from '@/types/behavior';
-import { MobileFrequencyTally } from '@/components/mobile/MobileFrequencyTally';
-import { MobileDurationTracker } from '@/components/mobile/MobileDurationTracker';
+import { CompactFrequencyTally } from './CompactFrequencyTally';
+import { CompactDurationTracker } from './CompactDurationTracker';
+import { CompactIntervalTracker } from './CompactIntervalTracker';
 import { MobileLatencyTracker } from '@/components/mobile/MobileLatencyTracker';
-import { MobileIntervalTracker } from '@/components/mobile/MobileIntervalTracker';
 
 interface BehaviorCardProps {
   studentId: string;
@@ -81,20 +81,20 @@ export function BehaviorCard({
 
       <div className="pt-1">
         {method === 'frequency' && (
-          <MobileFrequencyTally studentId={studentId} behavior={behavior} studentColor={studentColor} />
+          <CompactFrequencyTally studentId={studentId} behavior={behavior} studentColor={studentColor} />
         )}
         {method === 'duration' && (
-          <MobileDurationTracker studentId={studentId} behavior={behavior} studentColor={studentColor} />
+          <CompactDurationTracker studentId={studentId} behavior={behavior} studentColor={studentColor} />
         )}
         {method === 'latency' && (
           <MobileLatencyTracker studentId={studentId} behavior={behavior} studentColor={studentColor} />
         )}
         {method === 'interval' && (
-          <MobileIntervalTracker studentId={studentId} behavior={behavior} studentColor={studentColor} />
+          <CompactIntervalTracker studentId={studentId} behavior={behavior} studentColor={studentColor} />
         )}
         {method === 'abc' && (
           <div className="text-xs text-muted-foreground py-2">
-            Use the <span className="font-semibold">+ ABC</span> action to log an entry.
+            Use the <span className="font-semibold">+ ABC</span> action to log an entry below.
           </div>
         )}
       </div>

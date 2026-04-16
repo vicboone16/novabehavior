@@ -88,8 +88,8 @@ export default function MainLayout() {
               <div className="min-w-0 max-w-[180px] md:max-w-[260px] xl:max-w-none xl:flex-1">
                 <GlobalSearch />
               </div>
-              {/* Desktop header buttons – rendered from DB. Use xl: to give the agency switcher room. */}
-              <div className="hidden xl:flex items-center gap-2 shrink-0">
+              {/* Desktop header buttons – only show at 2xl+ to guarantee the agency switcher always has room. */}
+              <div className="hidden 2xl:flex items-center gap-2 shrink-0">
                 {headerButtons.map(item => {
                   const Icon = getNavIcon(item.icon);
                   return (
@@ -106,8 +106,8 @@ export default function MainLayout() {
                   );
                 })}
               </div>
-              {/* Mobile/medium dropdown – rendered from DB (shown below xl) */}
-              <div className="flex xl:hidden">
+              {/* Compact dropdown – shown below 2xl so the agency switcher is never hidden behind buttons. */}
+              <div className="flex 2xl:hidden">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
