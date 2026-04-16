@@ -3,11 +3,14 @@ import { ArrowLeft, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
+import { Student } from '@/types/behavior';
 import { SessionStatsHeader } from './SessionStatsHeader';
 import { GridLayout } from './layouts/GridLayout';
 import { ListLayout } from './layouts/ListLayout';
 import { SplitLayout } from './layouts/SplitLayout';
 import { WorkspaceLayoutToggle, WorkspaceLayout } from './WorkspaceLayoutToggle';
+import { ClientSwitcher } from './ClientSwitcher';
+import { AllClientsOverview } from './AllClientsOverview';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
@@ -26,6 +29,67 @@ const STUDENT_COLORS = [
   'hsl(50 85% 50%)',
 ];
 
+function activeBehaviorsFor(student: Student) {
+  return student.behaviors.filter((b) => !b.isArchived && !b.isMastered);
+}
+
+interface StudentPaneProps {
+  student: Student;
+  studentColor: string;
+  layout: WorkspaceLayout;
+  filter: FilterChip;
+  /** When true, render a small heading bar above the body (used in dual-pane mode) */
+  withHeading?: boolean;
+}
+
+function StudentPane({ student, studentColor, layout, filter, withHeading }: StudentPaneProps) {
+  const behaviors = activeBehaviorsFor(student);
+  return (
+    <div className="rounded-md">
+      {withHeading && (
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <span
+            className="w-2.5 h-2.5 rounded-full"
+            style={{ backgroundColor: studentColor }}
+            aria-hidden
+          />
+          <span className="font-semibold text-sm truncate">{student.name}</span>
+        </div>
+      )}
+      {layout === 'grid' && (
+        <GridLayout
+          studentId={student.id}
+          studentColor={studentColor}
+          behaviors={behaviors}
+          showBehaviors={filter !== 'skills'}
+        />
+      )}
+      {layout === 'list' && (
+        <ListLayout
+          studentId={student.id}
+          studentColor={studentColor}
+          behaviors={behaviors}
+          showBehaviors={filter !== 'skills'}
+        />
+      )}
+      {layout === 'split' && (
+        <SplitLayout
+          studentId={student.id}
+          studentColor={studentColor}
+          behaviors={behaviors}
+          showBehaviors={filter !== 'skills'}
+          showSkills={filter !== 'behaviors'}
+        />
+      )}
+      {layout !== 'split' && filter === 'skills' && (
+        <div className="text-center py-12 text-sm text-muted-foreground">
+          Skill targets land in the unified workspace in the next phase.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const students = useDataStore((s) => s.students);
   const selectedStudentIds = useDataStore((s) => s.selectedStudentIds);
@@ -35,9 +99,9 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     [students, selectedStudentIds],
   );
 
-  const [activeStudentId, setActiveStudentId] = useState<string | null>(
-    activeStudents[0]?.id ?? null,
-  );
+  // activeId: a student id, or "all"
+  const [activeId, setActiveId] = useState<string>(() => activeStudents[0]?.id ?? 'all');
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<FilterChip>('all');
   const [layout, setLayout] = useState<WorkspaceLayout>(() => {
     if (typeof window === 'undefined') return 'grid';
@@ -49,20 +113,42 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     localStorage.setItem('nova_workspace_layout', layout);
   }, [layout]);
 
-  // Keep activeStudentId valid as selection changes
-  const activeStudent =
-    activeStudents.find((s) => s.id === activeStudentId) ?? activeStudents[0] ?? null;
+  // Track viewport width (for split-screen pinning eligibility)
+  const [isWide, setIsWide] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setIsWide(window.innerWidth >= 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
-  const studentColor = useMemo(() => {
-    if (!activeStudent) return STUDENT_COLORS[0];
-    const idx = activeStudents.findIndex((s) => s.id === activeStudent.id);
-    return STUDENT_COLORS[idx % STUDENT_COLORS.length];
-  }, [activeStudent, activeStudents]);
+  // Drop pins for students no longer in the active selection.
+  useEffect(() => {
+    setPinnedIds((prev) => prev.filter((id) => activeStudents.some((s) => s.id === id)));
+  }, [activeStudents]);
 
-  const behaviors = useMemo(() => {
-    if (!activeStudent) return [];
-    return activeStudent.behaviors.filter((b) => !b.isArchived && !b.isMastered);
-  }, [activeStudent]);
+  // If the activeId becomes invalid, fall back.
+  const validActiveId = useMemo(() => {
+    if (activeId === 'all') return 'all';
+    return activeStudents.some((s) => s.id === activeId)
+      ? activeId
+      : activeStudents[0]?.id ?? 'all';
+  }, [activeId, activeStudents]);
+
+  const colorFor = (studentId: string) => {
+    const idx = activeStudents.findIndex((s) => s.id === studentId);
+    return STUDENT_COLORS[(idx >= 0 ? idx : 0) % STUDENT_COLORS.length];
+  };
+
+  const togglePin = (studentId: string) => {
+    setPinnedIds((prev) => {
+      if (prev.includes(studentId)) return prev.filter((id) => id !== studentId);
+      if (prev.length >= 2) return prev;
+      return [...prev, studentId];
+    });
+  };
 
   if (activeStudents.length === 0) {
     return (
@@ -82,6 +168,15 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     );
   }
 
+  const showAll = validActiveId === 'all';
+  const focusedStudent = !showAll
+    ? activeStudents.find((s) => s.id === validActiveId) ?? null
+    : null;
+
+  // Split-screen renders both pinned students stacked side-by-side
+  // (only when 2 are pinned, the viewport is wide, and we're not on "All").
+  const useDualPane = !showAll && isWide && pinnedIds.length === 2;
+
   return (
     <div className="rounded-lg border bg-background overflow-hidden">
       <SessionStatsHeader
@@ -99,32 +194,16 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
         }
       />
 
-      {/* Client switcher (only when more than one student) */}
       {activeStudents.length > 1 && (
-        <div className="flex gap-1.5 px-3 py-2 border-b overflow-x-auto">
-          {activeStudents.map((s, idx) => {
-            const color = STUDENT_COLORS[idx % STUDENT_COLORS.length];
-            const active = s.id === activeStudent?.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setActiveStudentId(s.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors shrink-0 ${
-                  active
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background hover:bg-muted border-border'
-                }`}
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: color }}
-                  aria-hidden
-                />
-                <span className="font-medium truncate max-w-[10rem]">{s.name}</span>
-              </button>
-            );
-          })}
-        </div>
+        <ClientSwitcher
+          students={activeStudents}
+          activeId={validActiveId}
+          onChange={setActiveId}
+          colorFor={colorFor}
+          pinnedIds={pinnedIds}
+          onTogglePin={togglePin}
+          allowPinning={isWide}
+        />
       )}
 
       {/* Filter chips + layout toggle */}
@@ -145,8 +224,13 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
           ))}
         </div>
         <div className="flex items-center gap-2">
+          {useDualPane && (
+            <Badge variant="secondary" className="text-[10px]">
+              Split-screen · 2 clients
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">
-            Phase B
+            Phase C
           </Badge>
           <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
         </div>
@@ -154,40 +238,40 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
 
       {/* Workspace body */}
       <div className="p-3">
-        {activeStudent && (
-          <>
-            {layout === 'grid' && (
-              <GridLayout
-                studentId={activeStudent.id}
-                studentColor={studentColor}
-                behaviors={behaviors}
-                showBehaviors={filter !== 'skills'}
-              />
-            )}
-            {layout === 'list' && (
-              <ListLayout
-                studentId={activeStudent.id}
-                studentColor={studentColor}
-                behaviors={behaviors}
-                showBehaviors={filter !== 'skills'}
-              />
-            )}
-            {layout === 'split' && (
-              <SplitLayout
-                studentId={activeStudent.id}
-                studentColor={studentColor}
-                behaviors={behaviors}
-                showBehaviors={filter !== 'skills'}
-                showSkills={filter !== 'behaviors'}
-              />
-            )}
-            {layout !== 'split' && filter === 'skills' && (
-              <div className="text-center py-12 text-sm text-muted-foreground">
-                Skill targets land in the unified workspace in the next phase. Use the Skills tab
-                in the meantime.
-              </div>
-            )}
-          </>
+        {showAll && (
+          <AllClientsOverview
+            students={activeStudents}
+            colorFor={colorFor}
+            onFocusStudent={(id) => setActiveId(id)}
+          />
+        )}
+
+        {!showAll && useDualPane && (
+          <div className="grid grid-cols-2 gap-3">
+            {pinnedIds.map((id) => {
+              const s = activeStudents.find((x) => x.id === id);
+              if (!s) return null;
+              return (
+                <StudentPane
+                  key={s.id}
+                  student={s}
+                  studentColor={colorFor(s.id)}
+                  layout={layout}
+                  filter={filter}
+                  withHeading
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {!showAll && !useDualPane && focusedStudent && (
+          <StudentPane
+            student={focusedStudent}
+            studentColor={colorFor(focusedStudent.id)}
+            layout={layout}
+            filter={filter}
+          />
         )}
       </div>
     </div>
