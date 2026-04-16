@@ -144,8 +144,11 @@ function SessionsView() {
   const [activeTabStudentId, setActiveTabStudentId] = useState<string | null>(null);
   const [showMobileMode, setShowMobileMode] = useState(false);
   const [useNewWorkspace, setUseNewWorkspace] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('nova_use_new_workspace') === '1';
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('nova_use_new_workspace');
+    // Default to NEW workspace for any user who hasn't explicitly opted out.
+    if (stored === null) return true;
+    return stored !== '0';
   });
   useEffect(() => {
     if (typeof window === 'undefined') return;
