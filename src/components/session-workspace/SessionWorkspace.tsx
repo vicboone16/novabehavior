@@ -11,7 +11,10 @@ import { SplitLayout } from './layouts/SplitLayout';
 import { WorkspaceLayoutToggle, WorkspaceLayout } from './WorkspaceLayoutToggle';
 import { ClientSwitcher } from './ClientSwitcher';
 import { AllClientsOverview } from './AllClientsOverview';
+import { QuickTallyBar } from './QuickTallyBar';
+import { QuickAddFab } from './QuickAddFab';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
+import { useWorkspacePreferences } from '@/hooks/useWorkspacePreferences';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
 
@@ -38,7 +41,6 @@ interface StudentPaneProps {
   studentColor: string;
   layout: WorkspaceLayout;
   filter: FilterChip;
-  /** When true, render a small heading bar above the body (used in dual-pane mode) */
   withHeading?: boolean;
 }
 
@@ -94,24 +96,26 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const students = useDataStore((s) => s.students);
   const selectedStudentIds = useDataStore((s) => s.selectedStudentIds);
 
-  const activeStudents = useMemo(
+  const activeStudentsRaw = useMemo(
     () => students.filter((s) => selectedStudentIds.includes(s.id)),
     [students, selectedStudentIds],
   );
 
-  // activeId: a student id, or "all"
+  const { prefs, setLayout, setClientTabOrder, orderClientIds, getPinnedBehaviorIds } =
+    useWorkspacePreferences();
+
+  // Apply saved tab order to the active selection.
+  const activeStudents = useMemo(() => {
+    const orderedIds = orderClientIds(activeStudentsRaw.map((s) => s.id));
+    const byId = new Map(activeStudentsRaw.map((s) => [s.id, s]));
+    return orderedIds.map((id) => byId.get(id)!).filter(Boolean);
+  }, [activeStudentsRaw, orderClientIds]);
+
   const [activeId, setActiveId] = useState<string>(() => activeStudents[0]?.id ?? 'all');
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [filter, setFilter] = useState<FilterChip>('all');
-  const [layout, setLayout] = useState<WorkspaceLayout>(() => {
-    if (typeof window === 'undefined') return 'grid';
-    const saved = localStorage.getItem('nova_workspace_layout') as WorkspaceLayout | null;
-    return saved && ['grid', 'list', 'split'].includes(saved) ? saved : 'grid';
-  });
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('nova_workspace_layout', layout);
-  }, [layout]);
+
+  const layout = prefs.layout;
 
   // Track viewport width (for split-screen pinning eligibility)
   const [isWide, setIsWide] = useState<boolean>(() =>
@@ -129,7 +133,6 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     setPinnedIds((prev) => prev.filter((id) => activeStudents.some((s) => s.id === id)));
   }, [activeStudents]);
 
-  // If the activeId becomes invalid, fall back.
   const validActiveId = useMemo(() => {
     if (activeId === 'all') return 'all';
     return activeStudents.some((s) => s.id === activeId)
@@ -173,12 +176,15 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     ? activeStudents.find((s) => s.id === validActiveId) ?? null
     : null;
 
-  // Split-screen renders both pinned students stacked side-by-side
-  // (only when 2 are pinned, the viewport is wide, and we're not on "All").
   const useDualPane = !showAll && isWide && pinnedIds.length === 2;
 
+  // Quick tally bar uses the focused student (or first pinned in split mode)
+  const tallyStudent = focusedStudent ?? (useDualPane
+    ? activeStudents.find((s) => s.id === pinnedIds[0]) ?? null
+    : null);
+
   return (
-    <div className="rounded-lg border bg-background overflow-hidden">
+    <div className="rounded-lg border bg-background overflow-hidden relative">
       <SessionStatsHeader
         studentIds={activeStudents.map((s) => s.id)}
         endAction={
@@ -203,6 +209,7 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
           pinnedIds={pinnedIds}
           onTogglePin={togglePin}
           allowPinning={isWide}
+          onReorder={setClientTabOrder}
         />
       )}
 
@@ -230,14 +237,14 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
             </Badge>
           )}
           <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">
-            Phase C
+            Phase D
           </Badge>
           <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
         </div>
       </div>
 
       {/* Workspace body */}
-      <div className="p-3">
+      <div className="p-3 pb-24">
         {showAll && (
           <AllClientsOverview
             students={activeStudents}
@@ -274,6 +281,19 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
           />
         )}
       </div>
+
+      {/* Quick-tally bar (per active student, hidden on "All") */}
+      {tallyStudent && (
+        <QuickTallyBar
+          studentId={tallyStudent.id}
+          behaviors={activeBehaviorsFor(tallyStudent)}
+          pinnedIds={getPinnedBehaviorIds(tallyStudent.id)}
+          studentColor={colorFor(tallyStudent.id)}
+        />
+      )}
+
+      {/* Quick-add FAB (uses focused student; null when on "All") */}
+      <QuickAddFab studentId={focusedStudent?.id ?? null} />
     </div>
   );
 }
