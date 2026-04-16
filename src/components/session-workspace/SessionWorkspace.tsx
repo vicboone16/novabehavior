@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
 import { SessionStatsHeader } from './SessionStatsHeader';
 import { GridLayout } from './layouts/GridLayout';
+import { ListLayout } from './layouts/ListLayout';
+import { SplitLayout } from './layouts/SplitLayout';
+import { WorkspaceLayoutToggle, WorkspaceLayout } from './WorkspaceLayoutToggle';
 import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
@@ -36,6 +39,15 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
     activeStudents[0]?.id ?? null,
   );
   const [filter, setFilter] = useState<FilterChip>('all');
+  const [layout, setLayout] = useState<WorkspaceLayout>(() => {
+    if (typeof window === 'undefined') return 'grid';
+    const saved = localStorage.getItem('nova_workspace_layout') as WorkspaceLayout | null;
+    return saved && ['grid', 'list', 'split'].includes(saved) ? saved : 'grid';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('nova_workspace_layout', layout);
+  }, [layout]);
 
   // Keep activeStudentId valid as selection changes
   const activeStudent =
@@ -115,9 +127,9 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
         </div>
       )}
 
-      {/* Filter chips */}
+      {/* Filter chips + layout toggle */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b">
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {(['all', 'behaviors', 'skills'] as FilterChip[]).map((chip) => (
             <button
               key={chip}
@@ -132,26 +144,47 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
             </button>
           ))}
         </div>
-        <Badge variant="outline" className="text-[10px]">
-          Phase A · Grid
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">
+            Phase B
+          </Badge>
+          <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
+        </div>
       </div>
 
       {/* Workspace body */}
       <div className="p-3">
         {activeStudent && (
           <>
-            {filter !== 'skills' && (
+            {layout === 'grid' && (
               <GridLayout
                 studentId={activeStudent.id}
                 studentColor={studentColor}
                 behaviors={behaviors}
+                showBehaviors={filter !== 'skills'}
               />
             )}
-            {filter === 'skills' && (
+            {layout === 'list' && (
+              <ListLayout
+                studentId={activeStudent.id}
+                studentColor={studentColor}
+                behaviors={behaviors}
+                showBehaviors={filter !== 'skills'}
+              />
+            )}
+            {layout === 'split' && (
+              <SplitLayout
+                studentId={activeStudent.id}
+                studentColor={studentColor}
+                behaviors={behaviors}
+                showBehaviors={filter !== 'skills'}
+                showSkills={filter !== 'behaviors'}
+              />
+            )}
+            {layout !== 'split' && filter === 'skills' && (
               <div className="text-center py-12 text-sm text-muted-foreground">
-                Skill targets land in the unified workspace in Phase B. Use the Skills tab for
-                now.
+                Skill targets land in the unified workspace in the next phase. Use the Skills tab
+                in the meantime.
               </div>
             )}
           </>
