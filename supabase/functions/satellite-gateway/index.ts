@@ -412,8 +412,11 @@ Deno.serve(async (req) => {
       }
 
       // ── Generic CRUD ──
+      // Accepts BOTH shapes:
+      //   { action:"query", params:{ table, operation, ... } }   (legacy / Behavior Decoded)
+      //   { action:"query", table, operation, ... }              (Nova Parents / flat)
       case "query": {
-        const params = body.params;
+        const params = body.params ?? body;
         if (!params?.table || !params?.operation) return json({ error: "missing table or operation" }, 400);
 
         const config = TABLE_CONFIG[params.table];
@@ -428,6 +431,19 @@ Deno.serve(async (req) => {
 
         const selectCols = params.select_columns || "*";
 
+        // Apply range_filters (gte/lte/gt/lt) — supported on select/update/delete
+        const applyRangeFilters = (q: any) => {
+          if (params.range_filters && Array.isArray(params.range_filters)) {
+            for (const f of params.range_filters) {
+              if (f.op === "gte") q = q.gte(f.col, f.val);
+              else if (f.op === "lte") q = q.lte(f.col, f.val);
+              else if (f.op === "gt") q = q.gt(f.col, f.val);
+              else if (f.op === "lt") q = q.lt(f.col, f.val);
+            }
+          }
+          return q;
+        };
+
         if (params.operation === "select") {
           let q = admin.from(params.table).select(selectCols);
           if (config.userCol && !config.readAll) {
@@ -436,6 +452,7 @@ Deno.serve(async (req) => {
           }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
           if (params.in_filters) for (const f of params.in_filters) q = q.in(f.col, f.vals);
+          q = applyRangeFilters(q);
           if (params.order) for (const o of params.order) q = q.order(o.col, { ascending: o.ascending ?? true });
           if (params.limit) q = q.limit(params.limit);
           if (params.single) { const { data, error } = await q.single(); return error ? json({ error: error.message }, 400) : json({ data }); }
@@ -446,10 +463,13 @@ Deno.serve(async (req) => {
 
         if (params.operation === "insert") {
           let rowData = params.data;
-          if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
+          // Force user_id override on parent-app self-write tables (security invariant #3)
+          if (config.userCol === "user_id") {
+            if (Array.isArray(rowData)) rowData = rowData.map((r: any) => ({ ...r, user_id: userId }));
+            else if (rowData) rowData = { ...rowData, user_id: userId };
+          } else if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
             rowData = { ...rowData, [config.userCol]: userId };
-          }
-          if (config.userCol && Array.isArray(rowData)) {
+          } else if (config.userCol && Array.isArray(rowData)) {
             rowData = rowData.map((r: any) => config.userCol! in r ? r : { ...r, [config.userCol!]: userId });
           }
           const q = admin.from(params.table).insert(rowData as any).select(selectCols);
@@ -462,13 +482,18 @@ Deno.serve(async (req) => {
           let q = admin.from(params.table).update(params.data as any);
           if (config.userCol) { const isAdm = await isAdminUser(admin, userId); if (!isAdm) q = q.eq(config.userCol, userId); }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
+          q = applyRangeFilters(q);
           const { data, error } = await q.select(selectCols);
           return error ? json({ error: error.message }, 400) : json({ data });
         }
 
         if (params.operation === "upsert") {
           let rowData = params.data;
-          if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
+          // Force user_id override on parent-app self-write tables
+          if (config.userCol === "user_id") {
+            if (Array.isArray(rowData)) rowData = rowData.map((r: any) => ({ ...r, user_id: userId }));
+            else if (rowData) rowData = { ...rowData, user_id: userId };
+          } else if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
             rowData = { ...rowData, [config.userCol]: userId };
           }
           const { data, error } = await admin.from(params.table)
@@ -480,6 +505,7 @@ Deno.serve(async (req) => {
           let q = admin.from(params.table).delete();
           if (config.userCol) { const isAdm = await isAdminUser(admin, userId); if (!isAdm) q = q.eq(config.userCol, userId); }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
+          q = applyRangeFilters(q);
           const { error } = await q;
           return error ? json({ error: error.message }, 400) : json({ success: true });
         }
@@ -489,11 +515,31 @@ Deno.serve(async (req) => {
 
       // ── RPC ──
       case "rpc": {
-        const { rpc_name, rpc_params } = body;
+        const { rpc_name } = body;
+        let rpc_params = body.rpc_params || {};
         if (!rpc_name) return json({ error: "missing rpc_name" }, 400);
         if (!ALLOWED_RPCS.has(rpc_name)) return json({ error: `rpc_not_allowed: ${rpc_name}` }, 403);
-        const { data, error } = await admin.rpc(rpc_name, rpc_params || {});
-        return error ? json({ error: error.message }, 400) : json({ data });
+
+        // Security invariant: override user-id parameter with verified JWT subject
+        const overrideKey = RPC_USER_ID_OVERRIDE[rpc_name];
+        if (overrideKey) rpc_params = { ...rpc_params, [overrideKey]: userId };
+
+        const { data, error } = await admin.rpc(rpc_name, rpc_params);
+        if (error) {
+          // Friendly mapping for recover_streak exceptions
+          const msg = error.message || "";
+          const errorMap: Record<string, string> = {
+            no_streak_found:          "No streak record found for this user.",
+            streak_not_broken:        "Your streak is still active — no recovery needed.",
+            recovery_window_expired:  "The 24-hour recovery window has passed.",
+            insufficient_xp:          "Not enough XP to recover your streak.",
+          };
+          for (const key of Object.keys(errorMap)) {
+            if (msg.includes(key)) return json({ error: errorMap[key] }, 400);
+          }
+          return json({ error: msg }, 400);
+        }
+        return json({ data });
       }
 
       default:
