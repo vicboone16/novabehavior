@@ -131,6 +131,14 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   students:                   { readAll: true, readOnly: true },
   user_app_access:            { userCol: "user_id", readOnly: true },
   student_app_visibility:     { readAll: true, readOnly: true },
+  // ── Nova Parents surfaces ──
+  parent_insights:                       { readAll: true, adminOps: ["insert", "update", "upsert", "delete"] },
+  abc_logs:                              { userCol: "user_id" },
+  coach_engagement_events:               { userCol: "user_id" },
+  v_beacon_student_available_rewards:    { readAll: true, readOnly: true },
+  v_beacon_student_reward_summary:       { readAll: true, readOnly: true },
+  behavior_translations:                 { readAll: true, readOnly: true },
+  agency_feature_flags:                  { readAll: true, readOnly: true },
 };
 
 // ─── Allowed RPCs ────────────────────────────────────────
@@ -139,7 +147,13 @@ const ALLOWED_RPCS = new Set([
   "redeem_agency_invite_code",
   "has_role",
   "has_app_access",
+  "recover_streak",
 ]);
+
+// RPCs whose user-id parameter must be overridden with the verified JWT subject
+const RPC_USER_ID_OVERRIDE: Record<string, string> = {
+  recover_streak: "p_user_id",
+};
 
 // ─── Main handler ────────────────────────────────────────
 Deno.serve(async (req) => {
