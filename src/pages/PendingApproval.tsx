@@ -28,8 +28,8 @@ export default function PendingApproval() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('approval_status')
-        .eq('id', user.id)
+        .select('is_approved')
+        .eq('user_id', user.id)
         .maybeSingle();
 
       setLastChecked(new Date());
@@ -41,7 +41,7 @@ export default function PendingApproval() {
         return;
       }
 
-      if (data?.approval_status === 'approved') {
+      if (data?.is_approved) {
         toast({ title: 'Approved!', description: 'Welcome aboard. Loading your workspace…' });
         navigate('/', { replace: true });
         return;
