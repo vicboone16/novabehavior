@@ -69,11 +69,11 @@ export default function Clinical() {
           </TabsTrigger>
           <TabsTrigger value="assessments" className="gap-1.5">
             <List className="w-3.5 h-3.5" />
-            Assessments
+            Assessment Library
           </TabsTrigger>
           <TabsTrigger value="iep" className="gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            IEP
+            IEP Hub
           </TabsTrigger>
           <TabsTrigger value="optimization" className="gap-1.5">
             <BrainCircuit className="w-3.5 h-3.5" />
