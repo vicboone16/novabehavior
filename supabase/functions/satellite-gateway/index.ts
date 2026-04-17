@@ -342,20 +342,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ── Legacy alias ──
-      case "check_app_access": {
-        const { data: accessRows } = await admin
-          .from("user_app_access").select("role, agency_id, is_active")
-          .eq("user_id", userId).eq("app_slug", "behavior_decoded").eq("is_active", true);
-        if (accessRows?.length) return json({ hasAccess: true, role: accessRows[0]?.role ?? null });
-        const isAdm = await isAdminUser(admin, userId);
-        if (isAdm) {
-          const { data: rr } = await admin.from("user_roles").select("role").eq("user_id", userId).limit(1).maybeSingle();
-          return json({ hasAccess: true, role: rr?.role ?? "admin" });
-        }
-        return json({ hasAccess: false, role: null });
-      }
-
       // ── Legacy alias (extended with enabled_features) ──
       case "check_app_access": {
         const { data: accessRows } = await admin
