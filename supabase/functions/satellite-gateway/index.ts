@@ -356,6 +356,53 @@ Deno.serve(async (req) => {
         return json({ hasAccess: false, role: null });
       }
 
+      // ── Legacy alias (extended with enabled_features) ──
+      case "check_app_access": {
+        const { data: accessRows } = await admin
+          .from("user_app_access").select("role, agency_id, is_active")
+          .eq("user_id", userId).eq("app_slug", "behavior_decoded").eq("is_active", true);
+
+        let hasAccess = !!(accessRows?.length);
+        let role: string | null = accessRows?.[0]?.role ?? null;
+
+        if (!hasAccess) {
+          const isAdm = await isAdminUser(admin, userId);
+          if (isAdm) {
+            const { data: rr } = await admin.from("user_roles")
+              .select("role").eq("user_id", userId).limit(1).maybeSingle();
+            hasAccess = true;
+            role = rr?.role ?? "admin";
+          }
+        }
+
+        // Resolve agency → feature flags → enabled_features array
+        let enabledFeatures: string[] = [];
+        try {
+          const agencyId =
+            accessRows?.[0]?.agency_id ??
+            (await admin.from("user_agency_access")
+              .select("agency_id").eq("user_id", userId).limit(1).maybeSingle()).data?.agency_id;
+
+          if (agencyId) {
+            const { data: flagRow } = await admin
+              .from("agency_feature_flags")
+              .select("parent_beacon_rewards_enabled, parent_behavior_logs_enabled, parent_progress_chart_enabled, parent_messaging_enabled")
+              .eq("agency_id", agencyId)
+              .maybeSingle();
+
+            if (flagRow?.parent_beacon_rewards_enabled) enabledFeatures.push("beacon_rewards");
+            if (flagRow?.parent_behavior_logs_enabled ?? true) enabledFeatures.push("behavior_logs");
+            if (flagRow?.parent_progress_chart_enabled ?? true) enabledFeatures.push("progress_chart");
+            if (flagRow?.parent_messaging_enabled) enabledFeatures.push("messaging");
+          } else {
+            // No agency yet: safe defaults — show non-rewards surfaces
+            enabledFeatures = ["behavior_logs", "progress_chart"];
+          }
+        } catch (_) { /* non-fatal */ }
+
+        return json({ hasAccess, role, enabled_features: enabledFeatures });
+      }
+
       // ── Get my clients ──
       case "get_my_clients": {
         const appSlug = resolveSlug(body.app_slug || "behavior_decoded");
