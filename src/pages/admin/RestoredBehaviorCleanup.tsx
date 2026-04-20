@@ -23,6 +23,8 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { clearStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -59,6 +61,40 @@ interface StudentBehaviorOption {
 }
 
 const RESTORED_PREFIX = 'Restored Behavior';
+
+function syncLocalBehaviorRename(behaviorId: string, newName: string) {
+  useDataStore.setState((state: any) => ({
+    students: state.students.map((student: any) => ({
+      ...student,
+      behaviors: student.behaviors.map((behavior: any) =>
+        behavior.id === behaviorId ? { ...behavior, name: newName } : behavior
+      ),
+    })),
+  }));
+}
+
+function syncLocalBehaviorMerge(studentId: string, sourceBehaviorId: string, targetBehaviorId: string) {
+  useDataStore.setState((state: any) => ({
+    students: state.students.map((student: any) =>
+      student.id === studentId
+        ? {
+            ...student,
+            behaviors: student.behaviors.filter((behavior: any) => behavior.id !== sourceBehaviorId),
+          }
+        : student
+    ),
+    frequencyEntries: state.frequencyEntries.map((entry: any) =>
+      entry.studentId === studentId && entry.behaviorId === sourceBehaviorId
+        ? { ...entry, behaviorId: targetBehaviorId }
+        : entry
+    ),
+    durationEntries: state.durationEntries.map((entry: any) =>
+      entry.studentId === studentId && entry.behaviorId === sourceBehaviorId
+        ? { ...entry, behaviorId: targetBehaviorId }
+        : entry
+    ),
+  }));
+}
 
 export default function RestoredBehaviorCleanup() {
   const navigate = useNavigate();
@@ -215,7 +251,11 @@ export default function RestoredBehaviorCleanup() {
         await (supabase as any).rpc('fn_rebuild_student_behavior_daily_aggregates', {
           p_student_id: renameRow.student_id,
         });
+        clearStudentBehaviorNameMap(renameRow.student_id);
+        window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId: renameRow.student_id } }));
       }
+
+      syncLocalBehaviorRename(renameRow.behavior_id, newName);
 
       toast.success(`Renamed to "${newName}"`);
       setRenameRow(null);
@@ -308,6 +348,13 @@ export default function RestoredBehaviorCleanup() {
       await (supabase as any).rpc('fn_rebuild_student_behavior_daily_aggregates', {
         p_student_id: mergeRow.student_id,
       });
+
+      syncLocalBehaviorMerge(mergeRow.student_id, mergeRow.behavior_id, mergeTargetId);
+      clearStudentBehaviorNameMap(mergeRow.student_id);
+      window.dispatchEvent(new CustomEvent('behavior-merged', {
+        detail: { studentId: mergeRow.student_id, removedIds: [mergeRow.behavior_id], targetId: mergeTargetId },
+      }));
+      window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId: mergeRow.student_id } }));
 
       const moved = (data as any)?.bsd_moved ?? 0;
       const merged = (data as any)?.aggregates_merged_on_collision ?? 0;
