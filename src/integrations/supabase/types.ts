@@ -83064,6 +83064,10 @@ export type Database = {
         Args: { p_agency_id: string; p_user_id: string }
         Returns: Json
       }
+      fn_rebuild_student_behavior_daily_aggregates: {
+        Args: { p_student_id: string }
+        Returns: Json
+      }
       fn_round_minutes: {
         Args: { p_minutes: number; p_round_to: number }
         Returns: number
