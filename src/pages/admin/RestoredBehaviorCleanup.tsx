@@ -452,6 +452,7 @@ export default function RestoredBehaviorCleanup() {
         p_student_id: mergeRow.student_id,
       });
 
+      await persistStudentMergeCleanup(mergeRow.student_id, mergeRow.behavior_id, mergeTargetId);
       syncLocalBehaviorMerge(mergeRow.student_id, mergeRow.behavior_id, mergeTargetId);
       clearStudentBehaviorNameMap(mergeRow.student_id);
       window.dispatchEvent(new CustomEvent('behavior-merged', {
