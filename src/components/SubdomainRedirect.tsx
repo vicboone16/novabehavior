@@ -26,13 +26,15 @@ export function SubdomainRedirect() {
       return;
     }
 
-    // Public/auth pages that should remain on data.novabehavior.com.
+    // Public/auth pages and approved utility routes that should remain on
+    // data.novabehavior.com.
     const keepExact = new Set<string>([
       '/login',
       '/auth',
       '/reset-password',
       '/privacy-policy',
       '/terms-and-conditions',
+      '/admin/restored-behavior-cleanup',
     ]);
     const keepPrefixes = ['/welcome', '/login/', '/auth/', '/reset-password/'];
 
