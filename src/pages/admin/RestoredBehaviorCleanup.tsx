@@ -62,6 +62,55 @@ interface StudentBehaviorOption {
 
 const RESTORED_PREFIX = 'Restored Behavior';
 
+function mergeHistoricalFrequencyEntries(entries: any[] = [], sourceBehaviorId: string, targetBehaviorId: string) {
+  const merged = new Map<string, any>();
+
+  for (const entry of entries) {
+    const behaviorId = entry?.behaviorId === sourceBehaviorId ? targetBehaviorId : entry?.behaviorId;
+    const timestamp = entry?.timestamp ? new Date(entry.timestamp).toISOString() : null;
+    const observationDurationMinutes = entry?.observationDurationMinutes ?? null;
+    const key = `${behaviorId || ''}::${timestamp || ''}::${observationDurationMinutes ?? ''}`;
+    const existing = merged.get(key);
+
+    if (existing) {
+      existing.count = Number(existing.count || 0) + Number(entry?.count || 0);
+      continue;
+    }
+
+    merged.set(key, {
+      ...entry,
+      behaviorId,
+      ...(timestamp ? { timestamp } : {}),
+    });
+  }
+
+  return Array.from(merged.values());
+}
+
+function mergeHistoricalDurationEntries(entries: any[] = [], sourceBehaviorId: string, targetBehaviorId: string) {
+  const merged = new Map<string, any>();
+
+  for (const entry of entries) {
+    const behaviorId = entry?.behaviorId === sourceBehaviorId ? targetBehaviorId : entry?.behaviorId;
+    const timestamp = entry?.timestamp ? new Date(entry.timestamp).toISOString() : null;
+    const key = `${behaviorId || ''}::${timestamp || ''}`;
+    const existing = merged.get(key);
+
+    if (existing) {
+      existing.durationSeconds = Number(existing.durationSeconds || 0) + Number(entry?.durationSeconds || 0);
+      continue;
+    }
+
+    merged.set(key, {
+      ...entry,
+      behaviorId,
+      ...(timestamp ? { timestamp } : {}),
+    });
+  }
+
+  return Array.from(merged.values());
+}
+
 function syncLocalBehaviorRename(behaviorId: string, newName: string) {
   useDataStore.setState((state: any) => ({
     students: state.students.map((student: any) => ({
@@ -80,6 +129,21 @@ function syncLocalBehaviorMerge(studentId: string, sourceBehaviorId: string, tar
         ? {
             ...student,
             behaviors: student.behaviors.filter((behavior: any) => behavior.id !== sourceBehaviorId),
+            historicalData: student.historicalData
+              ? {
+                  ...student.historicalData,
+                  frequencyEntries: mergeHistoricalFrequencyEntries(
+                    student.historicalData.frequencyEntries || [],
+                    sourceBehaviorId,
+                    targetBehaviorId,
+                  ),
+                  durationEntries: mergeHistoricalDurationEntries(
+                    student.historicalData.durationEntries || [],
+                    sourceBehaviorId,
+                    targetBehaviorId,
+                  ),
+                }
+              : student.historicalData,
           }
         : student
     ),
@@ -94,6 +158,45 @@ function syncLocalBehaviorMerge(studentId: string, sourceBehaviorId: string, tar
         : entry
     ),
   }));
+}
+
+async function persistStudentMergeCleanup(studentId: string, sourceBehaviorId: string, targetBehaviorId: string) {
+  const { data: studentRow, error } = await supabase
+    .from('students')
+    .select('behaviors, historical_data')
+    .eq('id', studentId)
+    .single();
+
+  if (error) throw error;
+
+  const behaviors = Array.isArray(studentRow?.behaviors)
+    ? studentRow.behaviors.filter((behavior: any) => behavior?.id !== sourceBehaviorId)
+    : [];
+
+  const historicalData = (studentRow?.historical_data as any) || {};
+  const updatedHistoricalData = {
+    frequencyEntries: mergeHistoricalFrequencyEntries(
+      historicalData.frequencyEntries || [],
+      sourceBehaviorId,
+      targetBehaviorId,
+    ),
+    durationEntries: mergeHistoricalDurationEntries(
+      historicalData.durationEntries || [],
+      sourceBehaviorId,
+      targetBehaviorId,
+    ),
+  };
+
+  const { error: updateError } = await supabase
+    .from('students')
+    .update({
+      behaviors: behaviors as any,
+      historical_data: updatedHistoricalData as any,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', studentId);
+
+  if (updateError) throw updateError;
 }
 
 export default function RestoredBehaviorCleanup() {
