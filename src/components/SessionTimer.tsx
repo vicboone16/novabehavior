@@ -52,7 +52,6 @@ export function SessionTimer() {
   const [elapsed, setElapsed] = useState(0);
   const [showEndFlow, setShowEndFlow] = useState(false);
   const [showLeaveOrEnd, setShowLeaveOrEnd] = useState(false);
-  
   const isRunning = !!sessionStartTime && !isPaused;
 
   // Count active students (not already ended)
@@ -315,13 +314,13 @@ export function SessionTimer() {
                     </Button>
                   </AlertDialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Clear Data</TooltipContent>
+                <TooltipContent>Clear all session data</TooltipContent>
               </Tooltip>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear All Session Data?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete all session data for this session. This action cannot be undone.
+                    This will permanently delete all data collected in the current session — frequency counts, duration recordings, interval entries, and ABC data. This cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -373,6 +372,7 @@ export function SessionTimer() {
         mode="all"
         onComplete={handleEndFlowComplete}
       />
+
     </>
   );
 }
