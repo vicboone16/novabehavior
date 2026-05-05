@@ -715,6 +715,34 @@ export function SyncProvider({ children }: SyncProviderProps) {
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
 
+        // Check if user explicitly ended a session on this device recently.
+        // If so, do NOT auto-resume — close the stale DB session instead.
+        let sessionExplicitlyEnded = false;
+        try {
+          const endedAt = localStorage.getItem('nova_session_explicitly_ended');
+          if (endedAt) {
+            const elapsedSinceEnd = Date.now() - parseInt(endedAt, 10);
+            // Consider the flag valid for 5 minutes (handles page reloads right after ending)
+            if (elapsedSinceEnd < 5 * 60 * 1000) {
+              sessionExplicitlyEnded = true;
+            }
+            localStorage.removeItem('nova_session_explicitly_ended');
+          }
+        } catch {}
+
+        if (sessionExplicitlyEnded) {
+          console.log('[Sync] User explicitly ended session — closing stale DB session:', activeSessionData.id);
+          await supabase
+            .from('sessions')
+            .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+            .eq('id', activeSessionData.id);
+          setLastSyncTime(new Date());
+          setSyncStatus('success');
+          hasFetched.current = true;
+          setIsLoading(false);
+          return;
+        }
+
         // Staleness check: auto-close sessions older than 4 hours to prevent
         // ghost sessions from persisting across logins indefinitely.
         const sessionAge = Date.now() - new Date(activeSessionData.start_time).getTime();
@@ -753,7 +781,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         // Only resume if user is an active participant in this session.
         // Supervisors/admins who are not participating should NOT have their timer started.
-        const shouldResumeCloudSession = userIsParticipant && (!hasLocalActiveSession || isSameSession);
+        // CRITICAL FIX: On a cold page load, sessionStartTime is always null (not persisted),
+        // so hasLocalActiveSession is always false. We must NOT auto-resume empty cloud sessions
+        // onto a cold device — this caused the "ghost session" infinite restart loop.
+        // Only resume if: (a) we already have this session active locally (warm resume), OR
+        // (b) the cloud session has live data entries worth preserving.
+        // We'll decide shouldResume AFTER loading live entries — so we can check if there's data.
+        let shouldResumeCloudSession = userIsParticipant && isSameSession;
 
         // Load live session data entries (may be empty for a freshly-started session)
         const { data: liveEntries, error: liveEntriesError } = await supabase
@@ -764,6 +798,25 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         if (liveEntriesError) {
           console.error('[Sync] Error loading live session entries:', liveEntriesError);
+        }
+
+        // Cross-device resume: if we're a participant and the cloud session has actual data,
+        // resume even on a cold device. But NEVER resume an empty session on a cold device
+        // because that's the "ghost session" loop — ended sessions that were never marked
+        // completed in the DB keep getting picked up.
+        if (!shouldResumeCloudSession && userIsParticipant && !hasLocalActiveSession) {
+          const hasCloudData = liveEntries && liveEntries.length > 0;
+          if (hasCloudData) {
+            shouldResumeCloudSession = true;
+            console.log('[Sync] Cross-device resume: cloud session has data, resuming');
+          } else {
+            // Empty cloud session on a cold device — close it instead of resuming
+            console.log('[Sync] Empty cloud session on cold device — auto-closing:', activeSessionData.id);
+            await supabase
+              .from('sessions')
+              .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+              .eq('id', activeSessionData.id);
+          }
         }
 
         if (shouldResumeCloudSession) {

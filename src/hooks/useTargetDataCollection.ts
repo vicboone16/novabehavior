@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { PromptLevel } from '@/types/skillPrograms';
 
 export interface TrialEntry {
   id: string;
@@ -57,24 +58,29 @@ export function useTargetDataCollection(targetId: string, method: string) {
     notes?: string,
   ) => {
     if (!targetId) return;
+
     const trialIndex = trials.length;
     const now = new Date().toISOString();
 
-    const insertRow: Record<string, any> = {
+    const insertRow: any = {
       target_id: targetId,
+      session_id: sessionIdRef.current || undefined,
       trial_index: trialIndex,
       outcome,
+      prompt_level_id: promptLevelId || undefined,
       prompt_success: isIndependent,
       recorded_at: now,
+      recorded_by: user?.id || undefined,
       session_type: method || 'discrete_trial',
       data_state: 'final',
+      notes: notes || undefined,
     };
-    if (sessionIdRef.current) insertRow.session_id = sessionIdRef.current;
-    if (promptLevelId) insertRow.prompt_level_id = promptLevelId;
-    if (user?.id) insertRow.recorded_by = user.id;
-    if (notes) insertRow.notes = notes;
 
-    const { data, error } = await (supabase as any)
+    Object.keys(insertRow).forEach(k => {
+      if (insertRow[k] === undefined) delete insertRow[k];
+    });
+
+    const { data, error } = await supabase
       .from('target_trials')
       .insert(insertRow)
       .select()
@@ -105,18 +111,26 @@ export function useTargetDataCollection(targetId: string, method: string) {
   const undoLastTrial = useCallback(async () => {
     if (trials.length === 0) return;
     const last = trials[trials.length - 1];
-    const { error } = await (supabase as any).from('target_trials').delete().eq('id', last.id);
+
+    const { error } = await supabase
+      .from('target_trials')
+      .delete()
+      .eq('id', last.id);
+
     if (error) {
       console.error('Error undoing trial:', error);
       toast.error('Failed to undo');
       return;
     }
+
     setTrials(prev => prev.slice(0, -1));
   }, [trials]);
 
   const endSession = useCallback(() => {
     if (trials.length > 0) {
-      toast.success(`Session saved: ${stats.correct}/${stats.total} correct (${stats.percentCorrect}%)`);
+      toast.success(
+        `Session saved: ${stats.correct}/${stats.total} correct (${stats.percentCorrect}%)`
+      );
     }
     setTrials([]);
     sessionIdRef.current = null;
@@ -128,26 +142,45 @@ export function useTargetDataCollection(targetId: string, method: string) {
     measureType: 'frequency' | 'duration' | 'latency',
   ) => {
     if (!targetId) return;
+
     const now = new Date().toISOString();
-    const insertRow: Record<string, any> = {
+    const insertRow: any = {
       target_id: targetId,
       trial_index: 0,
       outcome: 'correct',
       recorded_at: now,
+      recorded_by: user?.id || undefined,
       session_type: measureType,
       data_state: 'final',
       notes: JSON.stringify({ type: measureType, value }),
     };
-    if (user?.id) insertRow.recorded_by = user.id;
 
-    const { error } = await (supabase as any).from('target_trials').insert(insertRow);
+    Object.keys(insertRow).forEach(k => {
+      if (insertRow[k] === undefined) delete insertRow[k];
+    });
+
+    const { error } = await supabase
+      .from('target_trials')
+      .insert(insertRow);
+
     if (error) {
       console.error(`Error recording ${measureType}:`, error);
       toast.error(`Failed to save ${measureType} data`);
       return;
     }
+
     toast.success(`${measureType.charAt(0).toUpperCase() + measureType.slice(1)} recorded: ${value}`);
   }, [targetId, user?.id]);
 
-  return { trials, stats, isRecording, saving, startSession, recordTrial, undoLastTrial, endSession, recordMeasurement };
+  return {
+    trials,
+    stats,
+    isRecording,
+    saving,
+    startSession,
+    recordTrial,
+    undoLastTrial,
+    endSession,
+    recordMeasurement,
+  };
 }

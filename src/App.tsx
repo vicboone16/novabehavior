@@ -16,6 +16,8 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { Loader2 } from "lucide-react";
+import { SubdomainRedirect } from "@/components/SubdomainRedirect";
+import { getRouterBasename } from "@/lib/domainRouting";
 
 // Lazy-loaded page components for code splitting
 const MainLayout = lazy(() => import("./components/MainLayout"));
@@ -74,6 +76,7 @@ const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryR
 const GoalBuilderPage = lazy(() => import("./pages/clinical-library/GoalBuilderPage"));
 const DomainMigrationReviewPage = lazy(() => import("./pages/clinical-library/DomainMigrationReviewPage"));
 const TagManagementPage = lazy(() => import("./pages/clinical-library/TagManagementPage"));
+const RestoredBehaviorCleanup = lazy(() => import("./pages/admin/RestoredBehaviorCleanup"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
@@ -117,6 +120,9 @@ const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const WelcomeFeatures = lazy(() => import("./pages/WelcomeFeatures"));
+const WelcomeAddOns = lazy(() => import("./pages/WelcomeAddOns"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
@@ -191,11 +197,14 @@ const App = () => {
         <Toaster />
         <Sonner />
         <SessionTimeoutWarning />
-        <BrowserRouter>
+        <BrowserRouter basename={getRouterBasename()}>
+        <SubdomainRedirect />
         <FloatingCaptureButton />
         <Suspense fallback={<PageLoader />}>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* /login is an alias of /auth, primarily used on data.novabehavior.com/login */}
+            <Route path="/login" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/post-login" element={
               <ProtectedRoute>
@@ -217,6 +226,10 @@ const App = () => {
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
+            {/* Public welcome / marketing pages */}
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/welcome/features" element={<WelcomeFeatures />} />
+            <Route path="/welcome/add-ons" element={<WelcomeAddOns />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             {/* Public demo routes - no auth required */}
@@ -341,6 +354,15 @@ const App = () => {
               </ProtectedRoute>
             } />
             <Route path="/behaviors" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
+            <Route path="/admin/restored-behavior-cleanup" element={
+              <ProtectedRoute>
+                <ApprovalCheck>
+                  <SyncProvider>
+                    <RestoredBehaviorCleanup />
+                  </SyncProvider>
+                </ApprovalCheck>
+              </ProtectedRoute>
+            } />
             <Route path="/supervision" element={
               <ProtectedRoute>
                 <ApprovalCheck>

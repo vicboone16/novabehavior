@@ -587,35 +587,58 @@ export function GlobalSearch() {
                 </Select>
               </div>
 
-              {/* Zodiac Sign Filter — toggleable */}
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer select-none" onClick={toggleZodiac}>
-                  {showZodiac ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  ✨ Zodiac
-                </label>
-                <div className={cn(
-                  "transition-all duration-200 overflow-hidden",
-                  showZodiac ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
-                )}>
-                  <Select
-                    value={filters.zodiacSign}
-                    onValueChange={(v) => setFilters(f => ({ ...f, zodiacSign: v }))}
+            </div>
+
+            {/* More filters — non-clinical extras tucked away */}
+            {showZodiac && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-muted-foreground">More filters</span>
+                  <button
+                    type="button"
+                    onClick={toggleZodiac}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                   >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Any sign" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any sign</SelectItem>
-                      {ZODIAC_SIGNS.map(sign => (
-                        <SelectItem key={sign} value={sign}>
-                          {ZODIAC_SYMBOLS[sign]} {ZODIAC_LABELS[sign]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <EyeOff className="w-3 h-3" /> Hide
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground flex items-center gap-1">
+                      ✨ Zodiac
+                    </label>
+                    <Select
+                      value={filters.zodiacSign}
+                      onValueChange={(v) => setFilters(f => ({ ...f, zodiacSign: v }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Any sign" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any sign</SelectItem>
+                        {ZODIAC_SIGNS.map(sign => (
+                          <SelectItem key={sign} value={sign}>
+                            {ZODIAC_SYMBOLS[sign]} {ZODIAC_LABELS[sign]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {!showZodiac && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={toggleZodiac}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                >
+                  <Eye className="w-3 h-3" /> More filters
+                </button>
+              </div>
+            )}
           </div>
         )}
 

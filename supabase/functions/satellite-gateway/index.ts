@@ -131,6 +131,14 @@ const TABLE_CONFIG: Record<string, TableConfig> = {
   students:                   { readAll: true, readOnly: true },
   user_app_access:            { userCol: "user_id", readOnly: true },
   student_app_visibility:     { readAll: true, readOnly: true },
+  // ── Nova Parents surfaces ──
+  parent_insights:                       { readAll: true, adminOps: ["insert", "update", "upsert", "delete"] },
+  abc_logs:                              { userCol: "user_id" },
+  coach_engagement_events:               { userCol: "user_id" },
+  v_beacon_student_available_rewards:    { readAll: true, readOnly: true },
+  v_beacon_student_reward_summary:       { readAll: true, readOnly: true },
+  behavior_translations:                 { readAll: true, readOnly: true },
+  agency_feature_flags:                  { readAll: true, readOnly: true },
 };
 
 // ─── Allowed RPCs ────────────────────────────────────────
@@ -139,7 +147,13 @@ const ALLOWED_RPCS = new Set([
   "redeem_agency_invite_code",
   "has_role",
   "has_app_access",
+  "recover_streak",
 ]);
+
+// RPCs whose user-id parameter must be overridden with the verified JWT subject
+const RPC_USER_ID_OVERRIDE: Record<string, string> = {
+  recover_streak: "p_user_id",
+};
 
 // ─── Main handler ────────────────────────────────────────
 Deno.serve(async (req) => {
@@ -328,18 +342,51 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ── Legacy alias ──
+      // ── Legacy alias (extended with enabled_features) ──
       case "check_app_access": {
         const { data: accessRows } = await admin
           .from("user_app_access").select("role, agency_id, is_active")
           .eq("user_id", userId).eq("app_slug", "behavior_decoded").eq("is_active", true);
-        if (accessRows?.length) return json({ hasAccess: true, role: accessRows[0]?.role ?? null });
-        const isAdm = await isAdminUser(admin, userId);
-        if (isAdm) {
-          const { data: rr } = await admin.from("user_roles").select("role").eq("user_id", userId).limit(1).maybeSingle();
-          return json({ hasAccess: true, role: rr?.role ?? "admin" });
+
+        let hasAccess = !!(accessRows?.length);
+        let role: string | null = accessRows?.[0]?.role ?? null;
+
+        if (!hasAccess) {
+          const isAdm = await isAdminUser(admin, userId);
+          if (isAdm) {
+            const { data: rr } = await admin.from("user_roles")
+              .select("role").eq("user_id", userId).limit(1).maybeSingle();
+            hasAccess = true;
+            role = rr?.role ?? "admin";
+          }
         }
-        return json({ hasAccess: false, role: null });
+
+        // Resolve agency → feature flags → enabled_features array
+        let enabledFeatures: string[] = [];
+        try {
+          const agencyId =
+            accessRows?.[0]?.agency_id ??
+            (await admin.from("user_agency_access")
+              .select("agency_id").eq("user_id", userId).limit(1).maybeSingle()).data?.agency_id;
+
+          if (agencyId) {
+            const { data: flagRow } = await admin
+              .from("agency_feature_flags")
+              .select("parent_beacon_rewards_enabled, parent_behavior_logs_enabled, parent_progress_chart_enabled, parent_messaging_enabled")
+              .eq("agency_id", agencyId)
+              .maybeSingle();
+
+            if (flagRow?.parent_beacon_rewards_enabled) enabledFeatures.push("beacon_rewards");
+            if (flagRow?.parent_behavior_logs_enabled ?? true) enabledFeatures.push("behavior_logs");
+            if (flagRow?.parent_progress_chart_enabled ?? true) enabledFeatures.push("progress_chart");
+            if (flagRow?.parent_messaging_enabled) enabledFeatures.push("messaging");
+          } else {
+            // No agency yet: safe defaults — show non-rewards surfaces
+            enabledFeatures = ["behavior_logs", "progress_chart"];
+          }
+        } catch (_) { /* non-fatal */ }
+
+        return json({ hasAccess, role, enabled_features: enabledFeatures });
       }
 
       // ── Get my clients ──
@@ -365,8 +412,11 @@ Deno.serve(async (req) => {
       }
 
       // ── Generic CRUD ──
+      // Accepts BOTH shapes:
+      //   { action:"query", params:{ table, operation, ... } }   (legacy / Behavior Decoded)
+      //   { action:"query", table, operation, ... }              (Nova Parents / flat)
       case "query": {
-        const params = body.params;
+        const params = body.params ?? body;
         if (!params?.table || !params?.operation) return json({ error: "missing table or operation" }, 400);
 
         const config = TABLE_CONFIG[params.table];
@@ -381,6 +431,19 @@ Deno.serve(async (req) => {
 
         const selectCols = params.select_columns || "*";
 
+        // Apply range_filters (gte/lte/gt/lt) — supported on select/update/delete
+        const applyRangeFilters = (q: any) => {
+          if (params.range_filters && Array.isArray(params.range_filters)) {
+            for (const f of params.range_filters) {
+              if (f.op === "gte") q = q.gte(f.col, f.val);
+              else if (f.op === "lte") q = q.lte(f.col, f.val);
+              else if (f.op === "gt") q = q.gt(f.col, f.val);
+              else if (f.op === "lt") q = q.lt(f.col, f.val);
+            }
+          }
+          return q;
+        };
+
         if (params.operation === "select") {
           let q = admin.from(params.table).select(selectCols);
           if (config.userCol && !config.readAll) {
@@ -389,6 +452,7 @@ Deno.serve(async (req) => {
           }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
           if (params.in_filters) for (const f of params.in_filters) q = q.in(f.col, f.vals);
+          q = applyRangeFilters(q);
           if (params.order) for (const o of params.order) q = q.order(o.col, { ascending: o.ascending ?? true });
           if (params.limit) q = q.limit(params.limit);
           if (params.single) { const { data, error } = await q.single(); return error ? json({ error: error.message }, 400) : json({ data }); }
@@ -399,10 +463,13 @@ Deno.serve(async (req) => {
 
         if (params.operation === "insert") {
           let rowData = params.data;
-          if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
+          // Force user_id override on parent-app self-write tables (security invariant #3)
+          if (config.userCol === "user_id") {
+            if (Array.isArray(rowData)) rowData = rowData.map((r: any) => ({ ...r, user_id: userId }));
+            else if (rowData) rowData = { ...rowData, user_id: userId };
+          } else if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
             rowData = { ...rowData, [config.userCol]: userId };
-          }
-          if (config.userCol && Array.isArray(rowData)) {
+          } else if (config.userCol && Array.isArray(rowData)) {
             rowData = rowData.map((r: any) => config.userCol! in r ? r : { ...r, [config.userCol!]: userId });
           }
           const q = admin.from(params.table).insert(rowData as any).select(selectCols);
@@ -415,13 +482,18 @@ Deno.serve(async (req) => {
           let q = admin.from(params.table).update(params.data as any);
           if (config.userCol) { const isAdm = await isAdminUser(admin, userId); if (!isAdm) q = q.eq(config.userCol, userId); }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
+          q = applyRangeFilters(q);
           const { data, error } = await q.select(selectCols);
           return error ? json({ error: error.message }, 400) : json({ data });
         }
 
         if (params.operation === "upsert") {
           let rowData = params.data;
-          if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
+          // Force user_id override on parent-app self-write tables
+          if (config.userCol === "user_id") {
+            if (Array.isArray(rowData)) rowData = rowData.map((r: any) => ({ ...r, user_id: userId }));
+            else if (rowData) rowData = { ...rowData, user_id: userId };
+          } else if (config.userCol && rowData && !Array.isArray(rowData) && !(config.userCol in rowData)) {
             rowData = { ...rowData, [config.userCol]: userId };
           }
           const { data, error } = await admin.from(params.table)
@@ -433,6 +505,7 @@ Deno.serve(async (req) => {
           let q = admin.from(params.table).delete();
           if (config.userCol) { const isAdm = await isAdminUser(admin, userId); if (!isAdm) q = q.eq(config.userCol, userId); }
           if (params.eq_filters) for (const f of params.eq_filters) q = q.eq(f.col, f.val);
+          q = applyRangeFilters(q);
           const { error } = await q;
           return error ? json({ error: error.message }, 400) : json({ success: true });
         }
@@ -442,11 +515,31 @@ Deno.serve(async (req) => {
 
       // ── RPC ──
       case "rpc": {
-        const { rpc_name, rpc_params } = body;
+        const { rpc_name } = body;
+        let rpc_params = body.rpc_params || {};
         if (!rpc_name) return json({ error: "missing rpc_name" }, 400);
         if (!ALLOWED_RPCS.has(rpc_name)) return json({ error: `rpc_not_allowed: ${rpc_name}` }, 403);
-        const { data, error } = await admin.rpc(rpc_name, rpc_params || {});
-        return error ? json({ error: error.message }, 400) : json({ data });
+
+        // Security invariant: override user-id parameter with verified JWT subject
+        const overrideKey = RPC_USER_ID_OVERRIDE[rpc_name];
+        if (overrideKey) rpc_params = { ...rpc_params, [overrideKey]: userId };
+
+        const { data, error } = await admin.rpc(rpc_name, rpc_params);
+        if (error) {
+          // Friendly mapping for recover_streak exceptions
+          const msg = error.message || "";
+          const errorMap: Record<string, string> = {
+            no_streak_found:          "No streak record found for this user.",
+            streak_not_broken:        "Your streak is still active — no recovery needed.",
+            recovery_window_expired:  "The 24-hour recovery window has passed.",
+            insufficient_xp:          "Not enough XP to recover your streak.",
+          };
+          for (const key of Object.keys(errorMap)) {
+            if (msg.includes(key)) return json({ error: errorMap[key] }, 400);
+          }
+          return json({ error: msg }, 400);
+        }
+        return json({ data });
       }
 
       default:

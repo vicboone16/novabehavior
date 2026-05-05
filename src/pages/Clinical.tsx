@@ -1,6 +1,8 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText, Zap, Shield } from 'lucide-react';
+import { ClipboardList, LayoutGrid, List, Rows3, Smartphone, FileText, Zap, Shield, Sparkles, BrainCircuit } from 'lucide-react';
+import { SessionWorkspace } from '@/components/session-workspace/SessionWorkspace';
 import { StudentSelector } from '@/components/StudentSelector';
 import { CompactStudentCard } from '@/components/CompactStudentCard';
 import { HorizontalStudentRow } from '@/components/HorizontalStudentRow';
@@ -33,16 +35,33 @@ const BopsAdminStudents = lazy(() => import('@/components/bops-admin/BopsAdminSt
 const BopsAdminClassrooms = lazy(() => import('@/components/bops-admin/BopsAdminClassrooms').then(m => ({ default: m.BopsAdminClassrooms })));
 const BopsAdminCoverage = lazy(() => import('@/components/bops-admin/BopsAdminCoverage').then(m => ({ default: m.BopsAdminCoverage })));
 const BopsAdminTools = lazy(() => import('@/components/bops-admin/BopsAdminTools').then(m => ({ default: m.BopsAdminTools })));
+const GoalOptimization = lazy(() => import('@/pages/GoalOptimization'));
 
 type ViewMode = 'grid' | 'rows' | 'tabs';
 
 export default function Clinical() {
-  const [activeTab, setActiveTab] = useState('sessions');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'sessions');
   const { data: isAdmin } = useBopsAdminAccess();
+
+  // Sync URL ?tab= with local state (for nav links pointing here)
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) setActiveTab(tabParam);
+  }, [tabParam]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    if (val === 'sessions') {
+      setSearchParams({}, { replace: true });
+    } else {
+      setSearchParams({ tab: val }, { replace: true });
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="bg-muted/50 flex-wrap h-auto gap-0.5">
           <TabsTrigger value="sessions" className="gap-1.5">
             <ClipboardList className="w-3.5 h-3.5" />
@@ -50,11 +69,15 @@ export default function Clinical() {
           </TabsTrigger>
           <TabsTrigger value="assessments" className="gap-1.5">
             <List className="w-3.5 h-3.5" />
-            Assessments
+            Assessment Library
           </TabsTrigger>
           <TabsTrigger value="iep" className="gap-1.5">
             <FileText className="w-3.5 h-3.5" />
-            IEP
+            IEP Hub
+          </TabsTrigger>
+          <TabsTrigger value="optimization" className="gap-1.5">
+            <BrainCircuit className="w-3.5 h-3.5" />
+            Optimization
           </TabsTrigger>
           <TabsTrigger value="bops" className="gap-1.5">
             <Zap className="w-3.5 h-3.5" />
@@ -76,6 +99,11 @@ export default function Clinical() {
         </TabsContent>
         <TabsContent value="iep">
           <IEPDashboard />
+        </TabsContent>
+        <TabsContent value="optimization">
+          <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>}>
+            <GoalOptimization />
+          </Suspense>
         </TabsContent>
         <TabsContent value="bops">
           <BopsEngineContent />
@@ -142,6 +170,25 @@ function SessionsView() {
   const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const [activeTabStudentId, setActiveTabStudentId] = useState<string | null>(null);
   const [showMobileMode, setShowMobileMode] = useState(false);
+  const [useNewWorkspace, setUseNewWorkspace] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('nova_use_new_workspace');
+    // Default to NEW workspace for any user who hasn't explicitly opted out.
+    if (stored === null) return true;
+    return stored !== '0';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('nova_use_new_workspace', useNewWorkspace ? '1' : '0');
+  }, [useNewWorkspace]);
+
+  if (useNewWorkspace) {
+    return (
+      <div className="space-y-3">
+        <SessionWorkspace onClose={() => setUseNewWorkspace(false)} />
+      </div>
+    );
+  }
 
   const hasIntervalBehaviors = selectedStudents.some(s => 
     s.behaviors.some(b => (b.methods || [b.type]).includes('interval'))
@@ -186,6 +233,14 @@ function SessionsView() {
             Mobile Mode
           </Button>
         )}
+        <Button variant="default" size="sm" onClick={() => setUseNewWorkspace(true)} className="gap-2">
+          <Sparkles className="w-4 h-4" />
+          Back to New Workspace
+        </Button>
+      </div>
+
+      <div className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        You're using <span className="font-medium text-foreground">Classic mode</span>. The new unified Session Workspace is now the default — Classic will be retired in an upcoming release.
       </div>
 
       {showMobileMode && <MobileDataMode onClose={() => setShowMobileMode(false)} />}

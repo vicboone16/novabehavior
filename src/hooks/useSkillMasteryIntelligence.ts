@@ -124,9 +124,24 @@ export function useSkillMasteryIntelligence(studentId: string | null | undefined
   const flags = useMemo(() => computeMasteryFlags(targets), [targets]);
 
   const stats = useMemo(() => {
-    const mastered = targets.filter(t => t.mastery_status === 'mastered').length;
-    const inProgress = targets.filter(t => t.mastery_status === 'in_progress').length;
-    const notStarted = targets.filter(t => !t.mastery_status || t.mastery_status === 'not_started').length;
+    const mastered = targets.filter(t => t.mastery_status === 'mastered' || t.target_status === 'mastered').length;
+    // "In Progress" = mastery engine says in_progress OR target_status is in_progress OR
+    // target has an active status but mastery engine hasn't classified it yet (not_started with active target)
+    const inProgress = targets.filter(t => {
+      if (t.mastery_status === 'in_progress' || t.target_status === 'in_progress') return true;
+      // If mastery engine says not_started but the target is actually active (has a status other than mastered/discontinued)
+      if ((!t.mastery_status || t.mastery_status === 'not_started') && 
+          t.target_status && t.target_status !== 'mastered' && t.target_status !== 'discontinued' && t.target_status !== 'on_hold') {
+        return true;
+      }
+      return false;
+    }).length;
+    const notStarted = targets.filter(t => {
+      // Only truly "not started" if both mastery engine and target status agree
+      const masteryNotStarted = !t.mastery_status || t.mastery_status === 'not_started';
+      const targetNotActive = !t.target_status || t.target_status === 'not_started';
+      return masteryNotStarted && targetNotActive;
+    }).length;
     const stalled = flags.filter(f => f.type === 'stalled').length;
     const promptDependent = flags.filter(f => f.type === 'prompt_dependent').length;
     const readyToAdvance = flags.filter(f => f.type === 'ready_to_advance').length;
