@@ -379,7 +379,7 @@ export function GlobalSearch() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 text-muted-foreground min-w-[180px] justify-start"
+          className="gap-2 text-muted-foreground sm:min-w-[180px] justify-start"
         >
           <Search className="w-4 h-4" />
           <span className="hidden sm:inline flex-1 text-left">Search...</span>
@@ -389,8 +389,8 @@ export function GlobalSearch() {
         </Button>
       </PopoverTrigger>
       
-      <PopoverContent 
-        className="w-[420px] p-0 bg-background border shadow-lg" 
+      <PopoverContent
+        className="w-[min(420px,calc(100vw-1.5rem))] p-0 bg-background border shadow-lg"
         align="start"
         sideOffset={8}
       >

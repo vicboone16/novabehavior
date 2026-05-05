@@ -213,15 +213,63 @@
 @layer base {
   * {
     @apply border-border;
+    /* Remove iOS / Android blue tap flash on all interactive elements */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    /* Prevent horizontal scroll caused by overflowing children */
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+
+  /* Remove 300 ms tap delay and unwanted long-press callouts on touch devices */
+  a,
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  label {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  /*
+   * iOS Safari zooms the page when a focused input has font-size < 16 px.
+   * Force 16 px on small screens; md: breakpoint restores the design size.
+   */
+  @media (max-width: 767px) {
+    input:not([type="range"]),
+    textarea,
+    select {
+      font-size: max(16px, 1rem) !important;
+    }
+  }
+
+  /*
+   * Remove iOS native appearance that overrides our custom styles
+   * (rounded input borders, inner shadow, etc.)
+   */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
 
@@ -289,7 +337,7 @@
   }
 }
 
-/* Global mobile overflow prevention */
+/* ─── Global mobile overflow prevention ──────────────────────────────────── */
 @media (max-width: 767px) {
   html, body, #root {
     overflow-x: hidden;
@@ -298,6 +346,7 @@
     -webkit-overflow-scrolling: touch;
     -webkit-text-size-adjust: 100%;
   }
+
   .container {
     max-width: 100% !important;
     padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
@@ -337,23 +386,75 @@
     display: none;
   }
 
-  /* Grid cols fallback — force single column on mobile for common grids */
+  /* Grid cols fallback — single column on mobile for common grids */
   .grid-cols-12 {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
+
+  /* Dialogs / modals — ensure they don't overflow under the notch */
+  [role="dialog"] {
+    max-height: 100dvh;
+  }
+
+  /* Touch-friendly minimum tap target for small icon buttons */
+  button,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Popover / dropdown content must not exceed screen width on mobile */
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 1.5rem) !important;
+  }
 }
 
-/* Tablet breakpoint: 2-column grids */
+/* ─── Tablet breakpoint ───────────────────────────────────────────────────── */
 @media (min-width: 768px) and (max-width: 1023px) {
   .md\\:grid-cols-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
-/* Bottom safe area for fixed bottom elements */
+/* ─── iOS safe-area: fixed & sticky bottom elements ─────────────────────── */
+
+/* Generic helper – add pb-safe to any fixed/sticky footer */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .fixed.bottom-0,
-  .fixed.bottom-4 {
+  /* Sticky bottom bars */
+  .fixed.bottom-0 {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /*
+   * Floating action buttons use bottom-4 / bottom-6.
+   * Ensure they clear the iOS home indicator by adding safe-area on top of
+   * the existing offset via a CSS custom property.
+   */
+  .ios-fab-bottom {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ─── Momentum scrolling for scroll containers ───────────────────────────── */
+.scroll-momentum {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* ─── Prevent body rubber-band scroll when an overlay/modal is open ──────── */
+body.overflow-hidden {
+  overscroll-behavior: none;
+  /* Prevent the body itself from scrolling on iOS while keeping overlay scrollable */
+  touch-action: none;
+}
+
+/* ─── Landscape phone: give header a bit more top clearance ─────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  header.sticky {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.25rem);
   }
 }

@@ -165,15 +165,16 @@ export default function MainLayout() {
         </div>
       </TabOverflowWrapper>
 
-      {/* Main Content */}
-      <main className="container py-3 md:py-4 px-3 md:px-4">
+      {/* Main Content — extra bottom padding keeps content clear of FABs and home indicator */}
+      <main className="container py-3 md:py-4 px-3 md:px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
       </main>
 
       {showMobileButton && (
         <Button
           onClick={() => setMobilePreference('auto')}
-          className="fixed bottom-4 right-4 z-40 shadow-lg gap-2"
+          className="fixed right-4 z-40 shadow-lg gap-2"
+          style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
           size="sm"
         >
           <Smartphone className="w-4 h-4" />
