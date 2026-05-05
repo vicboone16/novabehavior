@@ -146,14 +146,24 @@ export default function Students() {
           <Plus className="w-4 h-4 mr-2" />
           Add Student
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => setShowDuplicateDialog(true)}
-          disabled={studentsWithBehaviors.length === 0}
-        >
-          <Copy className="w-4 h-4 mr-2" />
-          Duplicate Config
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {/* span wrapper required so tooltip works on a disabled button */}
+            <span tabIndex={studentsWithBehaviors.length === 0 ? 0 : undefined}>
+              <Button
+                variant="outline"
+                onClick={() => setShowDuplicateDialog(true)}
+                disabled={studentsWithBehaviors.length === 0}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Duplicate Config
+              </Button>
+            </span>
+          </TooltipTrigger>
+          {studentsWithBehaviors.length === 0 && (
+            <TooltipContent>Add behaviors to a student first</TooltipContent>
+          )}
+        </Tooltip>
         <BulkAddBehavior />
         <StudentComparison />
         <Button

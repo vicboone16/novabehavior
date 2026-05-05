@@ -633,6 +633,25 @@ export function SessionEndFlow({
     onOpenChange(isOpen);
   };
 
+  // Build a human-readable progress label for multi-student note steps
+  const noteStudentIndex = (() => {
+    if (!currentStudent) return null;
+    const allNoteStudents = targetStudents;
+    const idx = allNoteStudents.findIndex(s => s.id === currentStudent.id);
+    return idx >= 0 ? { current: idx + 1, total: allNoteStudents.length } : null;
+  })();
+
+  const stepLabel = (() => {
+    switch (step) {
+      case 'confirm': return 'Step 1 of 3 — Confirm';
+      case 'note_decision': return `Step 2 of 3 — Notes${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'note_type_select': return `Step 2 of 3 — Note Type${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'note_builder': return `Step 2 of 3 — Writing Note${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'complete': return 'Step 3 of 3 — Done';
+      default: return null;
+    }
+  })();
+
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -669,6 +688,11 @@ export function SessionEndFlow({
               </>
             )}
           </DialogTitle>
+          {stepLabel && (
+            <DialogDescription className="text-xs text-muted-foreground">
+              {stepLabel}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         {step === 'confirm' && renderConfirmStep()}

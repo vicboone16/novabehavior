@@ -186,20 +186,23 @@ export default function Auth() {
                     </div>
                   </CardContent>
                   <CardFooter className="flex-col gap-3">
-                    <div className="flex gap-2 w-full">
-                      <Button type="submit" className="flex-1 text-foreground font-bold" disabled={isLoading}>
-                        {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Sign In
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="secondary" 
-                        className="flex-1 text-foreground font-bold" 
+                    <Button type="submit" className="w-full text-foreground font-bold" disabled={isLoading}>
+                      {isLoading && !teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Sign In
+                    </Button>
+                    <div className="w-full border-t pt-3 space-y-2">
+                      <p className="text-xs text-muted-foreground text-center">
+                        Classroom staff with limited data-collection access?
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
                         disabled={isLoading}
                         onClick={(e) => handleLogin(e as unknown as React.FormEvent, true)}
                       >
                         {isLoading && teacherMode ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                        Teacher Mode
+                        Sign In as Teacher
                       </Button>
                     </div>
                     <div className="flex flex-col items-center gap-2">

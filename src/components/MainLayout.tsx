@@ -135,7 +135,10 @@ export default function MainLayout() {
       </header>
 
       {/* Tab Navigation – rendered from DB */}
-      <div className="border-b border-border bg-card/50 overflow-x-auto scrollbar-hide">
+      <div className="border-b border-border bg-card/50 relative">
+        {/* Fade indicator on trailing edge shows there are more tabs beyond the viewport */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card/90 to-transparent pointer-events-none z-10" aria-hidden="true" />
+        <div className="overflow-x-auto scrollbar-hide">
         <div className="container px-3 md:px-4">
           <Tabs value={getActiveTab()} onValueChange={handleTabChange}>
             <TabsList className="h-10 md:h-12 bg-transparent border-none w-max min-w-full flex">
@@ -159,6 +162,7 @@ export default function MainLayout() {
               })}
             </TabsList>
           </Tabs>
+        </div>
         </div>
       </div>
 

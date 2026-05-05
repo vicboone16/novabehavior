@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, LogOut } from 'lucide-react';
+import { Clock, LogOut, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PendingApproval() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [checking, setChecking] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -16,9 +19,34 @@ export default function PendingApproval() {
     navigate('/auth');
   };
 
-  const displayName = user?.user_metadata?.display_name || 
-                      user?.user_metadata?.first_name || 
-                      user?.email?.split('@')[0] || 
+  const handleCheckApproval = async () => {
+    setChecking(true);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (data?.is_approved) {
+        toast({ title: 'Account approved!', description: 'Redirecting you now…' });
+        navigate('/post-login');
+      } else {
+        toast({
+          title: 'Still pending',
+          description: 'Your account hasn\'t been approved yet. Try again later.',
+        });
+      }
+    } catch {
+      toast({ title: 'Could not check status', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const displayName = user?.user_metadata?.display_name ||
+                      user?.user_metadata?.first_name ||
+                      user?.email?.split('@')[0] ||
                       'there';
 
   return (
@@ -35,12 +63,20 @@ export default function PendingApproval() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
-            An administrator needs to approve your account before you can access the application. 
-            You'll be able to log in once your account is approved.
+            An administrator needs to approve your account before you can access the application.
+            You'll receive an email once your account is approved, or you can check your status below.
           </p>
           <p className="text-sm text-muted-foreground">
-            If you believe this is taking too long, please contact your administrator.
+            If approval is taking longer than expected, contact your administrator directly.
           </p>
+          <Button className="w-full" onClick={handleCheckApproval} disabled={checking}>
+            {checking ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            {checking ? 'Checking…' : 'Check Approval Status'}
+          </Button>
           <Button variant="outline" onClick={handleSignOut} className="w-full">
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out

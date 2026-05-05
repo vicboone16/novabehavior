@@ -3,6 +3,16 @@ import { Play, Pause, RotateCcw, Clock, Minimize2, Maximize2, Square, Users } fr
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useDataStore } from '@/store/dataStore';
 import { SessionEndFlow } from './SessionEndFlow';
 import { toast } from '@/hooks/use-toast';
@@ -41,6 +51,7 @@ export function SessionTimer() {
   const [elapsed, setElapsed] = useState(0);
   const [showEndFlow, setShowEndFlow] = useState(false);
   const [showLeaveOrEnd, setShowLeaveOrEnd] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const isRunning = !!sessionStartTime && !isPaused;
 
@@ -120,12 +131,17 @@ export function SessionTimer() {
   };
 
   const handleReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = () => {
     setIsPaused(false);
     setPausedTime(0);
     setPausedAt(null);
     setElapsed(0);
     // Use forceEndAllSessions to clear both session metadata AND data entries
     forceEndAllSessions();
+    setShowResetConfirm(false);
   };
 
   const handleEndSession = () => {
@@ -295,9 +311,14 @@ export function SessionTimer() {
                 {otherActiveParticipants.length > 0 ? 'Leave / End' : 'End Session'}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Clear all session data</TooltipContent>
+            </Tooltip>
             <Button 
               variant="ghost" 
               size="sm" 
@@ -336,6 +357,26 @@ export function SessionTimer() {
         mode="all"
         onComplete={handleEndFlowComplete}
       />
+
+      <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all session data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all data collected in the current session — frequency counts, duration recordings, interval entries, and ABC data. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmReset}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Clear Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
