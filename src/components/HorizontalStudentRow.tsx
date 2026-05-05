@@ -35,7 +35,7 @@ interface HorizontalStudentRowProps {
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
 export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true }: HorizontalStudentRowProps) {
-  const { 
+  const {
     syncedIntervalsRunning,
     sessionFocus,
     isSessionBehaviorActive,
@@ -48,6 +48,7 @@ export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true
     getStudentSessionStatus,
     resetStudentSessionStatus,
     addDTTSession,
+    getStudentTargetSelection,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
@@ -58,9 +59,11 @@ export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true
     t => t.status === 'acquisition' || t.status === 'maintenance'
   );
   const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || [])
-      .filter(t => t.status === 'acquisition' || t.status === 'maintenance')
-      .map(t => t.id)
+    () => {
+      const stored = getStudentTargetSelection(student.id);
+      if (stored !== undefined) return stored;
+      return skillTargets.map(t => t.id);
+    }
   );
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['behaviors', 'skills']));
   const dttSessions = student.dttSessions || [];

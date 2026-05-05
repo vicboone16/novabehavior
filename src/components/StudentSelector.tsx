@@ -53,6 +53,7 @@ export function StudentSelector() {
     startSession,
     currentSessionId,
     getStudentSessionStatus,
+    setStudentTargetSelection,
   } = useDataStore();
 
   const students = useDemoFilteredStudents();
@@ -139,9 +140,11 @@ export function StudentSelector() {
   const handleConfirmStart = (options: {
     linkedAppointmentId?: string;
     createAppointment: boolean;
+    selectedTargetIds: string[];
   }) => {
     if (!confirmStudent) return;
     toggleStudentSelection(confirmStudent.id);
+    setStudentTargetSelection(confirmStudent.id, options.selectedTargetIds);
     // Do NOT auto-start a session when selecting a student.
     // The session should only start when the user explicitly clicks "Start" on the SessionTimer.
     // Just store the linked appointment ID if one was selected so it's ready when the session does start.

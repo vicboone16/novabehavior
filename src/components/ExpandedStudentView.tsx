@@ -24,7 +24,7 @@ interface ExpandedStudentViewProps {
 }
 
 export function ExpandedStudentView({ student, onClose }: ExpandedStudentViewProps) {
-  const { 
+  const {
     syncedIntervalsRunning,
     sessionFocus,
     isSessionBehaviorActive,
@@ -35,6 +35,7 @@ export function ExpandedStudentView({ student, onClose }: ExpandedStudentViewPro
     isStudentSessionPaused,
     isStudentSessionEnded,
     addDTTSession,
+    getStudentTargetSelection,
   } = useDataStore();
   
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
@@ -44,9 +45,11 @@ export function ExpandedStudentView({ student, onClose }: ExpandedStudentViewPro
     t => t.status === 'acquisition' || t.status === 'maintenance'
   );
   const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || [])
-      .filter(t => t.status === 'acquisition' || t.status === 'maintenance')
-      .map(t => t.id)
+    () => {
+      const stored = getStudentTargetSelection(student.id);
+      if (stored !== undefined) return stored;
+      return skillTargets.map(t => t.id);
+    }
   );
 
   const isPaused = isStudentSessionPaused(student.id);
