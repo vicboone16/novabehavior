@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Clock, CheckCircle2, FileText, AlertTriangle } from 'lucide-react';
@@ -33,6 +33,7 @@ interface TimeEntry {
   status: string;
   note: any;
   entry_kind: string;
+  student_name?: string;
 }
 
 interface SessionNote {
@@ -44,10 +45,14 @@ interface SessionNote {
 }
 
 export function NeedsReviewList() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const queryClient = useQueryClient();
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  // Supervisors (admin/super_admin) see all agency entries; staff see their own
+  const isSupervisor = userRole === 'admin' || userRole === 'super_admin';
 
   // Editable fields for the detail drawer
   const [authId, setAuthId] = useState('');
@@ -56,17 +61,30 @@ export function NeedsReviewList() {
   const [forceBillable, setForceBillable] = useState<boolean | null>(null);
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ['needs-review-entries', user?.id],
+    queryKey: ['needs-review-entries', user?.id, isSupervisor, currentAgency?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('time_entries')
-        .select('*')
-        .eq('user_id', user!.id)
+        .select('*, students(first_name, last_name)')
         .in('status', ['draft', 'reserved'])
         .not('ended_at', 'is', null)
         .order('started_at', { ascending: false });
+
+      if (isSupervisor && currentAgency?.id) {
+        query = query.eq('agency_id', currentAgency.id);
+      } else {
+        query = query.eq('user_id', user!.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as TimeEntry[];
+
+      return ((data || []) as any[]).map(row => ({
+        ...row,
+        student_name: row.students
+          ? `${row.students.first_name ?? ''} ${row.students.last_name ?? ''}`.trim()
+          : null,
+      })) as TimeEntry[];
     },
     enabled: !!user,
   });
@@ -181,7 +199,7 @@ export function NeedsReviewList() {
             Needs Review
           </CardTitle>
           <CardDescription>
-            Time entries awaiting finalization and posting. {entries.length} item{entries.length !== 1 ? 's' : ''} pending.
+            {isSupervisor ? 'All staff entries' : 'Your entries'} awaiting finalization and posting. {entries.length} item{entries.length !== 1 ? 's' : ''} pending.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -213,7 +231,11 @@ export function NeedsReviewList() {
                     <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
                       <span>{format(new Date(entry.started_at), 'MMM d, yyyy · h:mm a')}</span>
                       <span>{entry.duration_minutes ?? '—'} min</span>
-                      {entry.student_id && <span className="truncate">Client: {entry.student_id.slice(0, 8)}…</span>}
+                      {entry.student_name
+                        ? <span className="truncate font-medium">{entry.student_name}</span>
+                        : entry.student_id && <span className="truncate text-muted-foreground">{entry.student_id.slice(0, 8)}…</span>
+                      }
+                      {entry.cpt_code && <span className="font-mono">{entry.cpt_code}</span>}
                     </div>
                     {entry.note && typeof entry.note === 'object' && (entry.note as any)?.quick_summary && (
                       <p className="text-xs text-muted-foreground mt-1 truncate">
