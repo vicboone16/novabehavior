@@ -76,11 +76,15 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
   const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || []).map(t => t.id)
+  // Only show targets in active phases during sessions — hides baseline, generalization, mastered
+  const skillTargets = (student.skillTargets || []).filter(
+    t => t.status === 'acquisition' || t.status === 'maintenance'
   );
-
-  const skillTargets = student.skillTargets || [];
+  const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
+    () => (student.skillTargets || [])
+      .filter(t => t.status === 'acquisition' || t.status === 'maintenance')
+      .map(t => t.id)
+  );
   const dttSessions = student.dttSessions || [];
 
   const isPaused = isStudentSessionPaused(student.id);

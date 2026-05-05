@@ -53,12 +53,16 @@ export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true
   
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // Only show targets in active phases during sessions — hides baseline, generalization, mastered
+  const skillTargets = (student.skillTargets || []).filter(
+    t => t.status === 'acquisition' || t.status === 'maintenance'
+  );
   const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || []).map(t => t.id)
+    () => (student.skillTargets || [])
+      .filter(t => t.status === 'acquisition' || t.status === 'maintenance')
+      .map(t => t.id)
   );
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['behaviors', 'skills']));
-
-  const skillTargets = student.skillTargets || [];
   const dttSessions = student.dttSessions || [];
 
   const isPaused = isStudentSessionPaused(student.id);

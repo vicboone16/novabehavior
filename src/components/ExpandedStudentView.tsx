@@ -39,14 +39,18 @@ export function ExpandedStudentView({ student, onClose }: ExpandedStudentViewPro
   
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
+  // Only show targets in active phases during sessions — hides baseline, generalization, mastered
+  const skillTargets = (student.skillTargets || []).filter(
+    t => t.status === 'acquisition' || t.status === 'maintenance'
+  );
   const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || []).map(t => t.id)
+    () => (student.skillTargets || [])
+      .filter(t => t.status === 'acquisition' || t.status === 'maintenance')
+      .map(t => t.id)
   );
 
   const isPaused = isStudentSessionPaused(student.id);
   const hasEnded = isStudentSessionEnded(student.id);
-
-  const skillTargets = student.skillTargets || [];
   const dttSessions = student.dttSessions || [];
 
   const getActiveBehaviorsForMethod = (method: DataCollectionMethod) => {

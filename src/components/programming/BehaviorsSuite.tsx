@@ -3,7 +3,7 @@ import { Activity, BarChart3 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StudentBxPlanView, BehaviorInterventionsPicker } from '@/components/behavior-interventions';
+import { StudentBxPlanView } from '@/components/behavior-interventions';
 import { useDataStore } from '@/store/dataStore';
 import { useShallow } from 'zustand/react/shallow';
 import { HistoricalDataEntry } from '@/components/HistoricalDataEntry';
@@ -126,27 +126,11 @@ export function BehaviorsSuite({ studentId, studentName }: BehaviorsSuiteProps) 
             </Card>
           )}
 
-          {/* Behavior plan + interventions — always shown in this tab */}
+          {/* Behavior plan */}
           <StudentBxPlanView
             studentId={student.id}
             studentName={student.displayName || student.name}
           />
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Interventions</CardTitle>
-              <CardDescription>
-                Add interventions from the library to {studentName}'s profile
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BehaviorInterventionsPicker
-                preSelectedStudentId={student.id}
-                compact
-                hideHeader
-              />
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* ── Data History tab ── */}
