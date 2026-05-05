@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, User, GraduationCap, School, X, Filter, 
+  Search, User, GraduationCap, School, X, Filter,
   ChevronDown, Building2, Tag, BookOpen, MapPin, Calendar,
   Users, Briefcase, Star, Clock, AlertCircle, Loader2
 } from 'lucide-react';
@@ -655,6 +655,7 @@ export function GlobalSearch() {
                 <>Type to search…</>
               ) : query.length === 1 && activeFilterCount === 0 ? (
                 <>Keep typing… (minimum 2 characters)</>
+
               ) : (
                 <>No results found</>
               )}
