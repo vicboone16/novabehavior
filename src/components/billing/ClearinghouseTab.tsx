@@ -89,7 +89,7 @@ export function ClearinghouseTab() {
       // Fetch agency/provider info
       const { data: agency } = await supabase
         .from('agencies')
-        .select('name, npi, tax_id, address')
+        .select('name, npi, tax_id, address_line1, billing_address_line1')
         .eq('id', batch.agency_id)
         .maybeSingle();
 
@@ -120,7 +120,7 @@ export function ClearinghouseTab() {
             billingProviderNpi: agency?.npi ?? '0000000000',
             billingProviderName: agency?.name ?? 'Provider',
             billingProviderTaxId: agency?.tax_id ?? '000000000',
-            billingProviderAddress: agency?.address ?? '123 Agency St',
+            billingProviderAddress: agency?.billing_address_line1 ?? agency?.address_line1 ?? '123 Agency St',
             diagnosisCodes: ['F84.0'],
             placeOfService: '11',
             serviceLines: [],
