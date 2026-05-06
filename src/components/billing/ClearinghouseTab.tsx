@@ -39,7 +39,7 @@ export function ClearinghouseTab() {
   const queryClient = useQueryClient();
   const [selectedBatch, setSelectedBatch] = useState<ClaimBatch | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [generatedFile, setGeneratedFile] = useState<{ content: string; filename: string } | null>(null);
+  const [generatedFile, setGeneratedFile] = useState<{ content: string; filename: string; batchId: string } | null>(null);
 
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ['claim-batches', currentAgency?.id],
@@ -162,13 +162,39 @@ export function ClearinghouseTab() {
       return { content: fnData.fileContent as string, filename: fnData.filename as string, claimCount: claims.length };
     },
     onSuccess: (result) => {
-      setGeneratedFile({ content: result.content, filename: result.filename });
+      setGeneratedFile({ content: result.content, filename: result.filename, batchId: batch.id });
       setConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ['claim-batches'] });
       toast.success(`837P generated: ${result.claimCount} claim${result.claimCount !== 1 ? 's' : ''}`);
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to generate 837P');
+    },
+  });
+
+  const submitToOfficeAlly = useMutation({
+    mutationFn: async ({ batchId, content, filename }: { batchId: string; content: string; filename: string }) => {
+      const { data, error } = await supabase.functions.invoke('submit-to-office-ally', {
+        body: { batchId, fileContent: content, filename },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error ?? 'Submission failed');
+      return data as { success: boolean; confirmationNumber?: string; claimCount?: number };
+    },
+    onSuccess: (result) => {
+      toast.success(
+        result.confirmationNumber
+          ? `Submitted to Office Ally — confirmation ${result.confirmationNumber}`
+          : 'Submitted to Office Ally'
+      );
+      setGeneratedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['claim-batches'] });
+    },
+    onError: (err: any) => {
+      // If credentials not set, show helpful message and keep file for manual upload
+      toast.error(err.message?.includes('OFFICE_ALLY_USERNAME')
+        ? 'Direct EDI not configured — download the 837P and upload manually to Office Ally.'
+        : (err.message || 'Submission failed'));
     },
   });
 
@@ -226,6 +252,17 @@ export function ClearinghouseTab() {
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={() => downloadFile(generatedFile.content, generatedFile.filename)} className="gap-1">
                 <Download className="h-3 w-3" /> Download 837P
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => submitToOfficeAlly.mutate({ batchId: generatedFile.batchId, content: generatedFile.content, filename: generatedFile.filename })}
+                disabled={submitToOfficeAlly.isPending}
+                className="gap-1"
+              >
+                {submitToOfficeAlly.isPending
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Send className="h-3 w-3" />}
+                Submit to Office Ally
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setGeneratedFile(null)}>Dismiss</Button>
             </div>
