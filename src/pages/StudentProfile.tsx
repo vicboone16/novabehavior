@@ -56,6 +56,7 @@ import { FBAWorkflowProgress } from '@/components/FBAWorkflowProgress';
 import { StudentBackgroundEditor } from '@/components/StudentBackgroundEditor';
 import { StudentTagSelector } from '@/components/StudentTagSelector';
 import { StudentAppointments } from '@/components/schedule/StudentAppointments';
+import { StudentPayerAssignments } from '@/components/billing/StudentPayerAssignments';
 import { StudentAttendanceDashboard } from '@/components/schedule/StudentAttendanceDashboard';
 
 import { FidelityDashboard } from '@/components/fidelity';
@@ -98,7 +99,7 @@ import {
   TagsCaseAttributesTab,
   CommunicationCombinedTab,
 } from '@/components/client-profile/tabs';
-import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag } from 'lucide-react';
+import { Phone, MapPin, Users, MessageSquare, HeartPulse, Tag, CreditCard } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StudentBopsTab } from '@/components/bops/StudentBopsTab';
 import { useSupabaseAbcSync } from '@/hooks/useSupabaseAbcSync';
@@ -571,6 +572,10 @@ export default function StudentProfile() {
             <Shield className="w-3.5 h-3.5" />
             BOPS
           </TabsTrigger>
+          <TabsTrigger value="billing" className="gap-1.5 text-xs whitespace-nowrap">
+            <CreditCard className="w-3.5 h-3.5" />
+            Billing
+          </TabsTrigger>
         </TabsList>
 
         {/* ====== OVERVIEW TAB ====== */}
@@ -1008,6 +1013,14 @@ export default function StudentProfile() {
         {/* ====== BOPS TAB ====== */}
         <TabsContent value="bops" className="space-y-4">
           <StudentBopsTab studentId={student.id} />
+        </TabsContent>
+
+        {/* ====== BILLING TAB ====== */}
+        <TabsContent value="billing" className="space-y-4">
+          <StudentPayerAssignments
+            studentId={student.id}
+            studentName={student.name}
+          />
         </TabsContent>
       </Tabs>
 
