@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Send, Download, Clock, FileText, Package, RefreshCw } from 'lucide-react';
+import { Send, Download, FileText, Package, AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface ClaimBatch {
   id: string;
@@ -37,9 +38,53 @@ export function ClearinghouseTab() {
   const { user } = useAuth();
   const { currentAgency } = useAgencyContext();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedBatch, setSelectedBatch] = useState<ClaimBatch | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [generatedFile, setGeneratedFile] = useState<{ content: string; filename: string; batchId: string } | null>(null);
+
+  // Check which students in recent postings are missing payer/member_id
+  const { data: missingPayerStudents = [] } = useQuery({
+    queryKey: ['missing-payer-students', currentAgency?.id],
+    queryFn: async () => {
+      // Get distinct student_ids from recent ready-for-claim or draft postings
+      const { data: postings } = await supabase
+        .from('session_postings')
+        .select('student_id')
+        .eq('agency_id', currentAgency!.id)
+        .in('post_status', ['ready_for_claim', 'pending'])
+        .not('student_id', 'is', null);
+
+      const studentIds = [...new Set((postings ?? []).map((p: any) => p.student_id as string))];
+      if (studentIds.length === 0) return [];
+
+      // Check which of those students have no active payer assignment with member_id
+      const { data: payers } = await supabase
+        .from('student_payers')
+        .select('student_id, member_id')
+        .in('student_id', studentIds)
+        .eq('is_active', true);
+
+      const payerMap = new Map<string, string | null>();
+      for (const p of (payers ?? [])) payerMap.set(p.student_id, p.member_id);
+
+      const missing = studentIds.filter(id => !payerMap.has(id) || !payerMap.get(id));
+
+      if (missing.length === 0) return [];
+
+      // Get student names for display
+      const { data: students } = await supabase
+        .from('students')
+        .select('id, first_name, last_name')
+        .in('id', missing);
+
+      return (students ?? []).map(s => ({
+        id: s.id,
+        name: `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim() || s.id.slice(0, 8),
+      }));
+    },
+    enabled: !!currentAgency?.id,
+  });
 
   const { data: batches = [], isLoading } = useQuery({
     queryKey: ['claim-batches', currentAgency?.id],
@@ -294,6 +339,42 @@ export function ClearinghouseTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Insurance readiness banner */}
+      {missingPayerStudents.length > 0 ? (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  {missingPayerStudents.length} client{missingPayerStudents.length > 1 ? 's' : ''} missing insurance info
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  {missingPayerStudents.map(s => s.name).join(', ')} — 837P will use placeholder payer data for these clients.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-1 border-amber-400 text-amber-700 hover:bg-amber-100"
+                onClick={() => navigate('/students')}
+              >
+                <ExternalLink className="h-3 w-3" /> Fix in Student Profiles
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : missingPayerStudents !== undefined && (
+        <Card className="border-green-300 bg-green-50 dark:bg-green-950/30">
+          <CardContent className="pt-3 pb-3">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 text-sm">
+              <CheckCircle2 className="h-4 w-4" />
+              All clients in current postings have insurance info — claims will generate cleanly.
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Generated file download bar */}
       {generatedFile && (
