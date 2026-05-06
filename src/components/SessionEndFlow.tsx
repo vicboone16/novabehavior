@@ -359,6 +359,36 @@ export function SessionEndFlow({
     );
     setBuildingNote(studentId);
     setStep('note_builder');
+
+    // Update the time_entry CPT code and activity_type to match the note type.
+    // Assessment = 97151, supervision/BCBA direct = 97155, parent training = 97156, RBT/direct = 97153
+    const noteTypeToCpt: Record<ClinicalNoteType, string> = {
+      assessment: '97151',
+      supervision_revision: '97155',
+      parent_training: '97156',
+      clinical: '97155',
+      therapist: '97153',
+    };
+    const noteTypeToActivity: Record<ClinicalNoteType, string> = {
+      assessment: 'aba_assessment',
+      supervision_revision: 'aba_supervision',
+      parent_training: 'parent_training',
+      clinical: 'aba_direct',
+      therapist: 'aba_direct',
+    };
+    const cpt = noteTypeToCpt[noteType];
+    const activity = noteTypeToActivity[noteType];
+    if (currentSessionId) {
+      supabase
+        .from('time_entries')
+        .update({ cpt_code: cpt, activity_type: activity })
+        .eq('session_id', currentSessionId)
+        .eq('student_id', studentId)
+        .eq('status', 'draft')
+        .then(({ error }) => {
+          if (error) console.warn('[SessionEnd] time_entry CPT update failed:', error.message);
+        });
+    }
   };
 
   const handleNoteComplete = (studentId: string) => {
