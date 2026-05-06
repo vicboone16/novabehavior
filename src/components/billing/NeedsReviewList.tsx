@@ -50,6 +50,7 @@ export function NeedsReviewList() {
   const queryClient = useQueryClient();
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Supervisors (admin/super_admin) see all agency entries; staff see their own
   const isSupervisor = userRole === 'admin' || userRole === 'super_admin';
@@ -173,6 +174,48 @@ export function NeedsReviewList() {
     },
   });
 
+  const bulkFinalize = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const targets = entries.filter(e => ids.includes(e.id) && e.session_id);
+      const results = await Promise.allSettled(
+        targets.map(entry =>
+          supabase.rpc('rpc_finalize_and_post_session', {
+            p_session_id: entry.session_id!,
+          })
+        )
+      );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      return { total: targets.length, failed };
+    },
+    onSuccess: ({ total, failed }) => {
+      if (failed === 0) {
+        toast.success(`${total} entr${total !== 1 ? 'ies' : 'y'} finalized and posted`);
+      } else {
+        toast.warning(`${total - failed} posted, ${failed} failed — check individually`);
+      }
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['needs-review-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-for-claim'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Bulk finalize failed');
+    },
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(prev =>
+      prev.size === entries.length ? new Set() : new Set(entries.map(e => e.id))
+    );
+  };
+
   const openDetail = (entry: TimeEntry) => {
     setSelectedEntry(entry);
     setAuthId(entry.authorization_id || '');
@@ -210,12 +253,46 @@ export function NeedsReviewList() {
             </div>
           ) : (
             <div className="space-y-2">
-              {entries.map((entry) => (
+              {/* Bulk action bar */}
+              <div className="flex items-center gap-3 pb-2 border-b">
                 <button
-                  key={entry.id}
-                  onClick={() => openDetail(entry)}
-                  className="w-full text-left p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors flex items-center justify-between gap-4"
+                  onClick={toggleAll}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
                 >
+                  {selectedIds.size === entries.length ? 'Deselect all' : 'Select all'}
+                </button>
+                {selectedIds.size > 0 && (
+                  <>
+                    <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => bulkFinalize.mutate(Array.from(selectedIds))}
+                      disabled={bulkFinalize.isPending}
+                    >
+                      {bulkFinalize.isPending && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                      Finalize &amp; Post {selectedIds.size}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {entries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="w-full p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors flex items-center gap-3"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(entry.id)}
+                    onChange={() => toggleSelect(entry.id)}
+                    onClick={e => e.stopPropagation()}
+                    className="h-4 w-4 rounded border-border cursor-pointer"
+                  />
+                  <button
+                    onClick={() => openDetail(entry)}
+                    className="flex-1 text-left flex items-center justify-between gap-4 min-w-0"
+                  >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium text-sm truncate">
@@ -243,8 +320,9 @@ export function NeedsReviewList() {
                       </p>
                     )}
                   </div>
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                </button>
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                </div>
               ))}
             </div>
           )}

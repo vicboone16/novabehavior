@@ -163,6 +163,35 @@ export function ClearinghouseTab() {
         }
       }
 
+      // Collect unique payer IDs to fetch contract rates per CPT code
+      const payerIds = [...new Set(
+        Array.from(payerByStudent.values())
+          .map((sp: any) => sp.payers?.id)
+          .filter(Boolean)
+      )];
+
+      // Fetch payer_services rates: payer_id + cpt → rate_amount
+      const rateMap = new Map<string, number>(); // key: `${payerId}:${cptCode}`
+      if (payerIds.length > 0) {
+        const { data: payerServices } = await supabase
+          .from('payer_services')
+          .select('payer_id, cpt_hcpcs_code, rate')
+          .in('payer_id', payerIds)
+          .eq('status', 'active');
+
+        for (const svc of (payerServices ?? [])) {
+          const rateAmount = (svc.rate as any)?.rate_amount;
+          if (rateAmount != null) {
+            rateMap.set(`${svc.payer_id}:${svc.cpt_hcpcs_code}`, Number(rateAmount));
+          }
+        }
+      }
+
+      const resolveCharge = (payerId: string | undefined, cptCode: string, units: number): number => {
+        const rate = payerId ? rateMap.get(`${payerId}:${cptCode}`) : undefined;
+        return (rate ?? 12.0) * units;
+      };
+
       // Map diagnosis_cluster to ICD-10 code (common ABA diagnoses)
       const clusterToIcd: Record<string, string> = {
         autism: 'F84.0',
@@ -227,11 +256,15 @@ export function ClearinghouseTab() {
         }
         const session = p.sessions;
         const serviceDate = session?.started_at ?? session?.start_time ?? p.posted_at;
+        const cptCode = p.cpt_code ?? '97153';
+        const units = p.units ?? Math.ceil((p.rounded_minutes ?? p.minutes ?? 60) / 15);
+        const sp = payerByStudent.get(p.student_id);
+        const payerId = sp?.payers?.id;
         claimsMap.get(key)!.serviceLines.push({
-          cptCode: p.cpt_code ?? '97153',
+          cptCode,
           modifiers: p.modifier ? [p.modifier] : [],
-          units: p.units ?? Math.ceil((p.rounded_minutes ?? p.minutes ?? 60) / 15),
-          charge: ((p.units ?? Math.ceil((p.rounded_minutes ?? p.minutes ?? 60) / 15)) * 12.0),
+          units,
+          charge: resolveCharge(payerId, cptCode, units),
           serviceDate: serviceDate ? serviceDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
           diagnosisPointers: [1],
         });
