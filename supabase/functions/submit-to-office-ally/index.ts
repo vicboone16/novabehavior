@@ -120,6 +120,7 @@ serve(async (req: Request) => {
       total_charges: 0,
       status: result.success ? 'uploaded' : 'generated',
       clearinghouse: 'Office Ally',
+      agency_id: batch.agency_id,
       submitted_by: user.id,
       response_data: {
         batch_id: batchId,
