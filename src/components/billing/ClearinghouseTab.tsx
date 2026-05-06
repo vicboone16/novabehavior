@@ -79,7 +79,7 @@ export function ClearinghouseTab() {
             id, session_id, student_id, cpt_code, modifier, units, rounded_minutes, minutes,
             authorization_id, is_billable, posted_at,
             sessions(start_time, started_at, ended_at),
-            students(id, first_name, last_name, date_of_birth, gender)
+            students(id, first_name, last_name, date_of_birth, gender, address_line1, address_line2, city, state, zip_code, diagnosis_cluster)
           )
         `)
         .eq('claim_batch_id', batch.id);
@@ -89,7 +89,7 @@ export function ClearinghouseTab() {
       // Fetch agency/provider info
       const { data: agency } = await supabase
         .from('agencies')
-        .select('name, npi, tax_id, address_line1, billing_address_line1')
+        .select('name, npi, tax_id, address_line1, billing_address_line1, billing_address_city, billing_address_state, billing_address_zip, phone')
         .eq('id', batch.agency_id)
         .maybeSingle();
 
@@ -99,29 +99,83 @@ export function ClearinghouseTab() {
 
       if (postings.length === 0) throw new Error('No postings found in this batch');
 
-      // Group postings by student+payer into claims
+      // Collect unique student IDs to fetch payer assignments in bulk
+      const studentIds = [...new Set(postings.map((p: any) => p.student_id).filter(Boolean))];
+
+      // Fetch primary active payer for each student
+      const { data: studentPayers } = await supabase
+        .from('student_payers')
+        .select('student_id, member_id, group_number, subscriber_name, subscriber_relationship, payers(id, name, payer_id, directory_payer_id)')
+        .in('student_id', studentIds)
+        .eq('is_active', true)
+        .order('billing_order', { ascending: true });
+
+      // Build lookup: studentId → primary payer record
+      const payerByStudent = new Map<string, any>();
+      for (const sp of (studentPayers ?? [])) {
+        if (!payerByStudent.has(sp.student_id)) {
+          payerByStudent.set(sp.student_id, sp);
+        }
+      }
+
+      // Map diagnosis_cluster to ICD-10 code (common ABA diagnoses)
+      const clusterToIcd: Record<string, string> = {
+        autism: 'F84.0',
+        asd: 'F84.0',
+        asperger: 'F84.5',
+        pdd: 'F84.9',
+        adhd: 'F90.9',
+        dd: 'F79',
+        id: 'F79',
+      };
+      const resolveIcd = (cluster: string | null): string => {
+        if (!cluster) return 'F84.0';
+        const lower = cluster.toLowerCase();
+        for (const [key, code] of Object.entries(clusterToIcd)) {
+          if (lower.includes(key)) return code;
+        }
+        return 'F84.0';
+      };
+
+      const billingAddress = [
+        agency?.billing_address_line1 ?? agency?.address_line1 ?? '',
+        [agency?.billing_address_city, agency?.billing_address_state, agency?.billing_address_zip]
+          .filter(Boolean).join(', '),
+      ].filter(Boolean).join(', ') || '123 Agency St';
+
+      // Group postings by student into claims
       const claimsMap = new Map<string, any>();
       for (const p of postings) {
         const student = p.students;
         if (!student) continue;
-        const key = `${student.id}`;
+        const key = student.id;
         if (!claimsMap.has(key)) {
+          const sp = payerByStudent.get(student.id);
+          const payer = sp?.payers;
+          const payerEdiId = payer?.payer_id ?? payer?.directory_payer_id ?? '00000';
+          const patientAddr = [
+            student.address_line1,
+            student.city,
+            student.state,
+            student.zip_code,
+          ].filter(Boolean).join(', ') || '123 Patient St';
+
           claimsMap.set(key, {
             claimNumber: `CLM-${batch.id.slice(0, 8)}-${student.id.slice(0, 6)}`.toUpperCase(),
             patientName: `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim(),
             patientDob: student.date_of_birth ?? '19000101',
             patientGender: student.gender === 'female' ? 'F' : student.gender === 'male' ? 'M' : 'U',
-            patientAddress: '123 Patient St',
-            subscriberId: student.id.slice(0, 12),
-            payerName: 'Insurance Payer',
-            payerId: '00000',
+            patientAddress: patientAddr,
+            subscriberId: sp?.member_id ?? student.id.slice(0, 12),
+            payerName: payer?.name ?? 'Unknown Payer',
+            payerId: payerEdiId,
             renderingProviderNpi: agency?.npi ?? '0000000000',
             renderingProviderName: agency?.name ?? 'Provider',
             billingProviderNpi: agency?.npi ?? '0000000000',
             billingProviderName: agency?.name ?? 'Provider',
             billingProviderTaxId: agency?.tax_id ?? '000000000',
-            billingProviderAddress: agency?.billing_address_line1 ?? agency?.address_line1 ?? '123 Agency St',
-            diagnosisCodes: ['F84.0'],
+            billingProviderAddress: billingAddress,
+            diagnosisCodes: [resolveIcd(student.diagnosis_cluster)],
             placeOfService: '11',
             serviceLines: [],
           });
@@ -354,19 +408,40 @@ export function ClearinghouseTab() {
           </DialogHeader>
 
           {selectedBatch && (
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Batch</span>
-                <span className="font-mono">{selectedBatch.id.slice(0, 8)}…</span>
+            <div className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Batch</span>
+                  <span className="font-mono">{selectedBatch.id.slice(0, 8)}…</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Postings</span>
+                  <span>{selectedBatch.item_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total minutes</span>
+                  <span>{selectedBatch.total_minutes}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Postings</span>
-                <span>{selectedBatch.item_count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total minutes</span>
-                <span>{selectedBatch.total_minutes}</span>
-              </div>
+
+              {/* Pre-flight checks */}
+              {!itemsLoading && batchItems.length > 0 && (() => {
+                const warnings: string[] = [];
+                const postings = batchItems.map((i: any) => i.session_postings).filter(Boolean);
+                const missingCpt = postings.filter((p: any) => !p.cpt_code).length;
+                const missingAuth = postings.filter((p: any) => !p.authorization_id).length;
+                if (missingCpt > 0) warnings.push(`${missingCpt} posting${missingCpt > 1 ? 's' : ''} missing CPT code`);
+                if (missingAuth > 0) warnings.push(`${missingAuth} posting${missingAuth > 1 ? 's' : ''} missing authorization`);
+                if (warnings.length === 0) return null;
+                return (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-1">
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Pre-flight warnings</p>
+                    {warnings.map(w => (
+                      <p key={w} className="text-xs text-amber-600 dark:text-amber-500">• {w} — defaults will be used</p>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
