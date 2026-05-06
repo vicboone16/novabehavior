@@ -83,12 +83,39 @@ export function SessionStartConfirmation({
   const [inProgressAppointment, setInProgressAppointment] = useState<Appointment | null>(null);
   const [startOption, setStartOption] = useState<'continue' | 'link' | 'link-extended' | 'unlink' | 'create'>('link');
   const [adjustAppointmentTime, setAdjustAppointmentTime] = useState(false);
+  const [authWarning, setAuthWarning] = useState<{ units_remaining: number; end_date: string; pct: number } | null>(null);
+
   // Check for matching appointments when dialog opens
   useEffect(() => {
     if (open && student && user) {
       checkForAppointments();
+      checkAuthorization();
     }
   }, [open, student, user]);
+
+  const checkAuthorization = async () => {
+    if (!student) return;
+    const today = new Date().toISOString().split('T')[0];
+    const { data: auth } = await supabase
+      .from('authorizations')
+      .select('units_approved, units_remaining, end_date')
+      .eq('student_id', student.id)
+      .eq('status', 'active')
+      .lte('start_date', today)
+      .gte('end_date', today)
+      .order('is_default', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!auth) return;
+    const pct = auth.units_approved > 0 ? (auth.units_remaining / auth.units_approved) * 100 : 100;
+    const daysLeft = Math.ceil((new Date(auth.end_date).getTime() - Date.now()) / 86400000);
+    if (pct < 15 || daysLeft <= 14) {
+      setAuthWarning({ units_remaining: auth.units_remaining, end_date: auth.end_date, pct: Math.round(pct) });
+    } else {
+      setAuthWarning(null);
+    }
+  };
 
   const checkForAppointments = async () => {
     if (!student || !user) return;
@@ -357,6 +384,23 @@ export function SessionStartConfirmation({
         </DialogHeader>
 
         <div className="py-4 space-y-4">
+          {/* Authorization warning */}
+          {authWarning && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+                {authWarning.pct < 15 && (
+                  <p className="font-medium">Only {authWarning.units_remaining} units remaining ({authWarning.pct}%)</p>
+                )}
+                {(() => {
+                  const daysLeft = Math.ceil((new Date(authWarning.end_date).getTime() - Date.now()) / 86400000);
+                  return daysLeft <= 14 ? <p>Authorization expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''} ({authWarning.end_date})</p> : null;
+                })()}
+                <p className="text-amber-600">Contact the payer to renew before units are exhausted.</p>
+              </div>
+            </div>
+          )}
+
           {/* Student Info */}
           <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg">
             <div 
