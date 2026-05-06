@@ -1,6 +1,4 @@
 
--- Helper: atomically increment authorization units_used.
--- Safe to call concurrently; ignores missing auth IDs.
 CREATE OR REPLACE FUNCTION public.increment_authorization_units(
   p_authorization_id uuid,
   p_units integer
@@ -20,12 +18,6 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.increment_authorization_units(uuid, integer) TO authenticated;
 
--- Core billing RPC: promotes draft time_entries for a session to
--- session_postings (ready_for_claim), marks entries as posted, and
--- deducts units from the matched authorization.
---
--- p_authorization_id  – override; if NULL, uses student's active default auth
--- p_force_billable    – override is_billable flag on the time_entry
 CREATE OR REPLACE FUNCTION public.rpc_finalize_and_post_session(
   p_session_id        uuid,
   p_authorization_id  uuid    DEFAULT NULL,
@@ -37,48 +29,43 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_uid        uuid := auth.uid();
-  v_session    RECORD;
-  v_te         RECORD;
-  v_auth_id    uuid;
-  v_units      integer;
-  v_rounded    integer;
-  v_billable   boolean;
-  v_posted     integer := 0;
+  caller_uid      uuid := auth.uid();
+  rec_session     RECORD;
+  rec_entry       RECORD;
+  resolved_auth   uuid;
+  unit_count      integer;
+  minute_count    integer;
+  billable_flag   boolean;
+  posted_count    integer := 0;
 BEGIN
-  IF v_uid IS NULL THEN
+  IF caller_uid IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated');
   END IF;
 
-  SELECT * INTO v_session FROM public.sessions WHERE id = p_session_id;
+  SELECT * INTO rec_session FROM public.sessions WHERE id = p_session_id;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'session_not_found');
   END IF;
 
-  FOR v_te IN
+  FOR rec_entry IN
     SELECT * FROM public.time_entries
     WHERE session_id = p_session_id
       AND status IN ('draft', 'reserved')
   LOOP
-    -- Duration in whole minutes
-    v_rounded := GREATEST(COALESCE(v_te.duration_minutes,
-                                    v_session.session_length_minutes, 0), 0);
-    -- 15-minute billing units (ceiling)
-    v_units := GREATEST(CEIL(v_rounded::numeric / 15.0)::integer, 1);
+    minute_count := GREATEST(COALESCE(rec_entry.duration_minutes, rec_session.session_length_minutes, 0), 0);
+    unit_count   := GREATEST(CEIL(minute_count::numeric / 15.0)::integer, 1);
 
-    -- Billable flag
     IF p_force_billable IS NOT NULL THEN
-      v_billable := p_force_billable;
+      billable_flag := p_force_billable;
     ELSE
-      v_billable := COALESCE(v_te.is_billable, true);
+      billable_flag := COALESCE(rec_entry.is_billable, true);
     END IF;
 
-    -- Resolve authorization: caller override > student's active default
-    v_auth_id := p_authorization_id;
-    IF v_auth_id IS NULL AND v_te.student_id IS NOT NULL THEN
-      SELECT id INTO v_auth_id
+    resolved_auth := p_authorization_id;
+    IF resolved_auth IS NULL AND rec_entry.student_id IS NOT NULL THEN
+      SELECT id INTO resolved_auth
       FROM public.authorizations
-      WHERE student_id = v_te.student_id
+      WHERE student_id = rec_entry.student_id
         AND COALESCE(status, 'active') = 'active'
         AND is_default IS TRUE
         AND start_date <= CURRENT_DATE
@@ -87,55 +74,69 @@ BEGIN
       LIMIT 1;
     END IF;
 
-    -- Create session_posting (skip if one already exists for this time_entry)
     INSERT INTO public.session_postings (
-      session_id, student_id, time_entry_id,
-      agency_id, appointment_id,
-      cpt_code, modifier,
-      minutes, rounded_minutes, units,
-      is_billable, post_status,
-      posted_by, authorization_id
+      session_id,
+      student_id,
+      time_entry_id,
+      agency_id,
+      appointment_id,
+      cpt_code,
+      modifier,
+      minutes,
+      rounded_minutes,
+      units,
+      is_billable,
+      post_status,
+      posted_by,
+      authorization_id
     )
     SELECT
       p_session_id,
-      v_te.student_id,
-      v_te.id,
-      v_te.agency_id,
-      v_session.appointment_id,
-      v_te.cpt_code,
-      v_te.modifier,
-      v_rounded, v_rounded, v_units,
-      v_billable,
+      rec_entry.student_id,
+      rec_entry.id,
+      rec_entry.agency_id,
+      rec_session.appointment_id,
+      rec_entry.cpt_code,
+      rec_entry.modifier,
+      minute_count,
+      minute_count,
+      unit_count,
+      billable_flag,
       'ready_for_claim',
-      v_uid,
-      v_auth_id
+      caller_uid,
+      resolved_auth
     WHERE NOT EXISTS (
-      SELECT 1 FROM public.session_postings
-      WHERE time_entry_id = v_te.id
+      SELECT 1 FROM public.session_postings sp2
+      WHERE sp2.time_entry_id = rec_entry.id
     );
 
-    -- Promote time_entry
     UPDATE public.time_entries
     SET status = 'posted', updated_at = now()
-    WHERE id = v_te.id;
+    WHERE id = rec_entry.id;
 
-    -- Deduct units from authorization
-    IF v_auth_id IS NOT NULL AND v_billable AND v_units > 0 THEN
-      PERFORM public.increment_authorization_units(v_auth_id, v_units);
+    IF resolved_auth IS NOT NULL AND billable_flag AND unit_count > 0 THEN
+      PERFORM public.increment_authorization_units(resolved_auth, unit_count);
 
       INSERT INTO public.unit_deduction_ledger (
-        session_id, authorization_id, student_id,
-        units_deducted, deduction_reason, performed_by
+        session_id,
+        authorization_id,
+        student_id,
+        units_deducted,
+        deduction_reason,
+        performed_by
       ) VALUES (
-        p_session_id, v_auth_id, v_te.student_id,
-        v_units, 'auto', v_uid
+        p_session_id,
+        resolved_auth,
+        rec_entry.student_id,
+        unit_count,
+        'auto',
+        caller_uid
       );
     END IF;
 
-    v_posted := v_posted + 1;
+    posted_count := posted_count + 1;
   END LOOP;
 
-  -- Reflect new billing status on session
   UPDATE public.sessions
   SET billing_status = 'billable', updated_at = now()
   WHERE id = p_session_id;
@@ -143,7 +144,7 @@ BEGIN
   RETURN jsonb_build_object(
     'ok', true,
     'session_id', p_session_id,
-    'entries_posted', v_posted
+    'entries_posted', posted_count
   );
 END;
 $$;
