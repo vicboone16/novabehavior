@@ -13,7 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Clock, CheckCircle2, FileText, AlertTriangle } from 'lucide-react';
+import { Loader2, Clock, CheckCircle2, FileText, AlertTriangle, PenLine, ShieldCheck } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TimeEntry {
@@ -41,6 +42,10 @@ interface SessionNote {
   session_id: string;
   content: any;
   status: string;
+  review_status: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  reviewer_comments: string | null;
   created_at: string;
 }
 
@@ -51,6 +56,7 @@ export function NeedsReviewList() {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntry | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [cosignComment, setCosignComment] = useState('');
 
   // Supervisors (admin/super_admin) see all agency entries; staff see their own
   const isSupervisor = userRole === 'admin' || userRole === 'super_admin';
@@ -90,14 +96,31 @@ export function NeedsReviewList() {
     enabled: !!user,
   });
 
-  // Load session note when entry is selected
+  // Batch review-status for all list entries (drives badges)
+  const sessionIds = entries.map(e => e.session_id).filter(Boolean) as string[];
+  const { data: noteStatusMap = {} } = useQuery<Record<string, string | null>>({
+    queryKey: ['note-review-status', sessionIds.join(',')],
+    queryFn: async () => {
+      if (sessionIds.length === 0) return {};
+      const { data } = await supabase
+        .from('session_notes')
+        .select('session_id, review_status')
+        .in('session_id', sessionIds);
+      const map: Record<string, string | null> = {};
+      for (const row of data ?? []) map[row.session_id] = row.review_status;
+      return map;
+    },
+    enabled: sessionIds.length > 0,
+  });
+
+  // Load full session note when entry is selected
   const { data: sessionNote, isLoading: noteLoading } = useQuery({
     queryKey: ['session-note', selectedEntry?.session_id],
     queryFn: async () => {
       if (!selectedEntry?.session_id) return null;
       const { data, error } = await supabase
         .from('session_notes')
-        .select('*')
+        .select('id, session_id, content, status, review_status, reviewed_by, reviewed_at, reviewer_comments, created_at')
         .eq('session_id', selectedEntry.session_id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -106,6 +129,31 @@ export function NeedsReviewList() {
       return data as SessionNote | null;
     },
     enabled: !!selectedEntry?.session_id && detailOpen,
+  });
+
+  // Co-sign mutation: mark note as approved by the current supervisor
+  const cosignNote = useMutation({
+    mutationFn: async ({ noteId, comment }: { noteId: string; comment: string }) => {
+      const { error } = await supabase
+        .from('session_notes')
+        .update({
+          review_status: 'approved',
+          reviewed_by: user!.id,
+          reviewed_at: new Date().toISOString(),
+          reviewer_comments: comment || null,
+        })
+        .eq('id', noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Note co-signed and approved');
+      setCosignComment('');
+      queryClient.invalidateQueries({ queryKey: ['session-note', selectedEntry?.session_id] });
+      queryClient.invalidateQueries({ queryKey: ['note-review-status'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Co-sign failed');
+    },
   });
 
   // Load student name
@@ -222,8 +270,13 @@ export function NeedsReviewList() {
     setCptCode(entry.cpt_code || '');
     setModifier(entry.modifier || '');
     setForceBillable(null);
+    setCosignComment('');
     setDetailOpen(true);
   };
+
+  // Finalize is blocked until the note is co-signed (or no note exists)
+  const noteApproved = !sessionNote || sessionNote.review_status === 'approved';
+  const canFinalize = !!selectedEntry?.session_id && noteApproved;
 
   if (isLoading) {
     return (
@@ -313,6 +366,11 @@ export function NeedsReviewList() {
                         : entry.student_id && <span className="truncate text-muted-foreground">{entry.student_id.slice(0, 8)}…</span>
                       }
                       {entry.cpt_code && <span className="font-mono">{entry.cpt_code}</span>}
+                      {entry.session_id && noteStatusMap[entry.session_id] !== 'approved' && noteStatusMap[entry.session_id] !== undefined && (
+                        <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                          <PenLine className="h-3 w-3" />Co-sign needed
+                        </span>
+                      )}
                     </div>
                     {entry.note && typeof entry.note === 'object' && (entry.note as any)?.quick_summary && (
                       <p className="text-xs text-muted-foreground mt-1 truncate">
@@ -405,6 +463,55 @@ export function NeedsReviewList() {
                   </>
                 )}
 
+                {/* Co-sign section */}
+                {sessionNote && isSupervisor && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <PenLine className="h-4 w-4" />
+                        Supervisor Co-sign
+                      </p>
+                      {sessionNote.review_status === 'approved' ? (
+                        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
+                          <ShieldCheck className="h-4 w-4 shrink-0" />
+                          <span>
+                            Co-signed{sessionNote.reviewed_at
+                              ? ` on ${format(new Date(sessionNote.reviewed_at), 'MMM d, yyyy')}`
+                              : ''}
+                            {sessionNote.reviewer_comments && ` — "${sessionNote.reviewer_comments}"`}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            Note requires supervisor co-sign before billing can be finalized.
+                          </div>
+                          <Textarea
+                            placeholder="Optional co-sign comment…"
+                            value={cosignComment}
+                            onChange={e => setCosignComment(e.target.value)}
+                            className="text-sm min-h-[60px]"
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => cosignNote.mutate({ noteId: sessionNote.id, comment: cosignComment })}
+                            disabled={cosignNote.isPending}
+                          >
+                            {cosignNote.isPending
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <ShieldCheck className="h-3 w-3" />}
+                            Co-sign &amp; Approve
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
                 <Separator />
 
                 {/* Editable Fields */}
@@ -456,13 +563,19 @@ export function NeedsReviewList() {
             </ScrollArea>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {!canFinalize && !finalizeAndPost.isPending && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 sm:mr-auto">
+                <AlertTriangle className="h-3 w-3" />
+                Co-sign the note above before finalizing.
+              </p>
+            )}
             <Button variant="outline" onClick={() => setDetailOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={() => selectedEntry && finalizeAndPost.mutate(selectedEntry)}
-              disabled={finalizeAndPost.isPending || !selectedEntry?.session_id}
+              disabled={finalizeAndPost.isPending || !canFinalize}
             >
               {finalizeAndPost.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Finalize & Post
