@@ -58,6 +58,11 @@ export function NeedsReviewList() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cosignComment, setCosignComment] = useState('');
 
+  // Auth options for the selected entry's student
+  const [studentAuthOptions, setStudentAuthOptions] = useState<Array<{
+    id: string; auth_number: string; payer_name: string; units_remaining: number | null;
+  }>>([]);
+
   // Supervisors (admin/super_admin) see all agency entries; staff see their own
   const isSupervisor = userRole === 'admin' || userRole === 'super_admin';
 
@@ -272,6 +277,26 @@ export function NeedsReviewList() {
     setForceBillable(null);
     setCosignComment('');
     setDetailOpen(true);
+    // Load active auths for this student
+    if (entry.student_id) {
+      supabase
+        .from('authorizations')
+        .select('id, auth_number, units_remaining, payer:payers(name)')
+        .eq('student_id', entry.student_id)
+        .eq('status', 'active')
+        .gte('end_date', new Date().toISOString().slice(0, 10))
+        .order('end_date', { ascending: true })
+        .then(({ data }) => {
+          setStudentAuthOptions((data ?? []).map((a: any) => ({
+            id: a.id,
+            auth_number: a.auth_number,
+            payer_name: a.payer?.name ?? '',
+            units_remaining: a.units_remaining,
+          })));
+        });
+    } else {
+      setStudentAuthOptions([]);
+    }
   };
 
   // Finalize is blocked until the note is co-signed (or no note exists)
@@ -517,14 +542,31 @@ export function NeedsReviewList() {
                 {/* Editable Fields */}
                 <div className="space-y-3">
                   <div>
-                    <Label htmlFor="auth_id" className="text-sm">Authorization ID (optional)</Label>
-                    <Input
-                      id="auth_id"
-                      placeholder="UUID or leave empty"
-                      value={authId}
-                      onChange={(e) => setAuthId(e.target.value)}
-                      className="mt-1"
-                    />
+                    <Label htmlFor="auth_id" className="text-sm">Authorization (optional)</Label>
+                    {studentAuthOptions.length > 0 ? (
+                      <select
+                        id="auth_id"
+                        value={authId}
+                        onChange={e => setAuthId(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">— no authorization —</option>
+                        {studentAuthOptions.map(a => (
+                          <option key={a.id} value={a.id}>
+                            {a.auth_number} · {a.payer_name}
+                            {a.units_remaining !== null ? ` · ${a.units_remaining} units left` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id="auth_id"
+                        placeholder="Auth UUID (no active auths found)"
+                        value={authId}
+                        onChange={e => setAuthId(e.target.value)}
+                        className="mt-1"
+                      />
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

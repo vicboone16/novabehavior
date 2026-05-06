@@ -34,11 +34,20 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CalendarIcon, Trash2, X, Users, Sparkles, AlertTriangle, Link2Off } from 'lucide-react';
+import { CalendarIcon, Trash2, X, Users, Sparkles, AlertTriangle, Link2Off, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { SchedulingEngine } from '@/components/scheduling/SchedulingEngine';
 import { checkMultipleStaffSupervision, type SupervisionStatus } from '@/hooks/useSupervisionChain';
 import type { Appointment, CalendarStudent, CalendarStaff } from '@/types/schedule';
+
+interface StudentAuth {
+  id: string;
+  auth_number: string;
+  payer_name: string;
+  units_remaining: number | null;
+  end_date: string;
+}
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -125,6 +134,8 @@ export function AppointmentDialog({
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [studentId, setStudentId] = useState('');
+  const [authorizationId, setAuthorizationId] = useState('');
+  const [studentAuths, setStudentAuths] = useState<StudentAuth[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [isTelehealth, setIsTelehealth] = useState(false);
@@ -202,6 +213,7 @@ export function AppointmentDialog({
       setStartTime(format(start, 'HH:mm'));
       setEndTime(format(end, 'HH:mm'));
       setStudentId(appointment.student_id || '');
+      setAuthorizationId((appointment as any).authorization_id || '');
       setTitle(appointment.title || '');
       
       // Parse category from appointment_type (if it's not 'scheduled' or 'retroactive')
@@ -241,6 +253,8 @@ export function AppointmentDialog({
       setStartTime('09:00');
       setEndTime('10:00');
       setStudentId(defaultStudentId || '');
+      setAuthorizationId('');
+      setStudentAuths([]);
       setSelectedStaffIds([]);
       setNotes('');
       setIsTelehealth(false);
@@ -248,6 +262,31 @@ export function AppointmentDialog({
       setMeetingLink('');
     }
   }, [appointment, open, defaultStudentId]);
+
+  // Load active authorizations for the selected student
+  useEffect(() => {
+    if (!studentId) { setStudentAuths([]); setAuthorizationId(''); return; }
+    supabase
+      .from('authorizations')
+      .select('id, auth_number, units_remaining, end_date, payer:payers(name)')
+      .eq('student_id', studentId)
+      .eq('status', 'active')
+      .gte('end_date', new Date().toISOString().slice(0, 10))
+      .order('end_date', { ascending: true })
+      .then(({ data }) => {
+        const auths: StudentAuth[] = (data ?? []).map((a: any) => ({
+          id: a.id,
+          auth_number: a.auth_number,
+          payer_name: a.payer?.name ?? '',
+          units_remaining: a.units_remaining,
+          end_date: a.end_date,
+        }));
+        setStudentAuths(auths);
+        // Auto-select if only one active auth
+        if (auths.length === 1 && !authorizationId) setAuthorizationId(auths[0].id);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId]);
 
   // Auto-adjust end time when start time changes (keep same duration)
   const handleStartTimeChange = (newStartTime: string) => {
@@ -294,6 +333,7 @@ export function AppointmentDialog({
     onSave({
       title: title.trim() || null,
       student_id: studentId || null,
+      authorization_id: authorizationId || null,
       staff_user_id: selectedStaffIds[0] || null,
       staff_user_ids: selectedStaffIds,
       start_time: startDateTime.toISOString(),
@@ -597,6 +637,50 @@ export function AppointmentDialog({
               Leave empty for staff meetings without a student.
             </p>
           </div>
+
+          {/* Authorization picker — shown when student has active auths */}
+          {studentId && studentAuths.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Authorization
+              </Label>
+              <Select
+                value={authorizationId || '__none__'}
+                onValueChange={v => setAuthorizationId(v === '__none__' ? '' : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select authorization..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No authorization</SelectItem>
+                  {studentAuths.map(a => (
+                    <SelectItem key={a.id} value={a.id}>
+                      <span className="font-mono mr-2">{a.auth_number}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {a.payer_name}
+                        {a.units_remaining !== null ? ` · ${a.units_remaining} units left` : ''}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {authorizationId && (() => {
+                const sel = studentAuths.find(a => a.id === authorizationId);
+                if (!sel) return null;
+                const unitsEstimate = Math.ceil(calculateDuration(startTime, endTime) / 15);
+                const remaining = sel.units_remaining ?? Infinity;
+                const low = remaining < unitsEstimate;
+                return (
+                  <p className={cn('text-xs', low ? 'text-amber-600' : 'text-muted-foreground')}>
+                    {low
+                      ? `⚠ Only ${remaining} units remaining — this session needs ~${unitsEstimate}`
+                      : `~${unitsEstimate} units will be reserved · ${remaining} available`}
+                  </p>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">

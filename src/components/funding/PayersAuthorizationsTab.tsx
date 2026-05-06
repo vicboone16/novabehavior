@@ -75,12 +75,14 @@ interface Authorization {
   start_date: string;
   end_date: string;
   service_codes: string[] | null;
+  service_code_modifiers: Record<string, string> | null;
   units_approved: number;
   units_used: number;
   units_remaining: number;
   unit_type: string | null;
   status: string;
   notes: string | null;
+  allows_rollover: boolean | null;
   payer: Payer;
 }
 
@@ -89,15 +91,27 @@ interface PayersAuthorizationsTabProps {
 }
 
 const SERVICE_CODES = [
+  // ABA CPT codes
   { code: '97151', description: 'Behavior Assessment' },
   { code: '97152', description: 'Behavior Assessment (by technician)' },
   { code: '97153', description: 'Adaptive Behavior Treatment (ABA)' },
   { code: '97154', description: 'Group Adaptive Behavior Treatment' },
-  { code: '97155', description: 'Adaptive Behavior Treatment w/ Protocol Modification' },
-  { code: '97156', description: 'Family Adaptive Behavior Treatment Guidance' },
+  { code: '97155', description: 'Protocol Modification w/ BCBA' },
+  { code: '97156', description: 'Family Adaptive Behavior Guidance' },
   { code: '97157', description: 'Multiple-Family Group' },
-  { code: '97158', description: 'Group Adaptive Behavior Treatment by Protocol Modification' },
+  { code: '97158', description: 'Group Protocol Modification' },
+  // H-codes used by some Medicaid/state plans
+  { code: 'H0031', description: 'Mental Health Assessment' },
+  { code: 'H0032', description: 'Mental Health Service Plan' },
+  { code: 'H0034', description: 'Psychosocial Rehab' },
+  { code: 'H2012', description: 'Behavioral Health Day Treatment' },
+  { code: 'H2014', description: 'Skills Training & Development' },
+  { code: 'H2019', description: 'Therapeutic Behavioral Services (RBT)' },
+  { code: 'H2020', description: 'Therapeutic Behavioral Services (Group)' },
+  { code: 'H2023', description: 'Supported Employment' },
 ];
+
+const COMMON_MODIFIERS = ['HN', 'HO', 'HM', 'HP', 'GT', '95', 'TH', 'U1', 'U2', 'U3', 'HA', 'HB', 'TS'];
 
 export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabProps) {
   const [clientPayers, setClientPayers] = useState<ClientPayer[]>([]);
@@ -132,6 +146,8 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
   const [authUnitsApproved, setAuthUnitsApproved] = useState('');
   const [authUnitType, setAuthUnitType] = useState('15min');
   const [authServiceCodes, setAuthServiceCodes] = useState<string[]>(['97153']);
+  const [authCodeModifiers, setAuthCodeModifiers] = useState<Record<string, string>>({});
+  const [authAllowsRollover, setAuthAllowsRollover] = useState(false);
   const [authNotes, setAuthNotes] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
@@ -158,6 +174,7 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
         .from('authorizations')
         .select(`
           id, payer_id, auth_number, start_date, end_date, service_codes,
+          service_code_modifiers, allows_rollover,
           units_approved, units_used, units_remaining, unit_type, status, notes,
           payer:payers(id, name, payer_type, phone, email)
         `)
@@ -206,6 +223,8 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
     setAuthUnitsApproved('');
     setAuthUnitType('15min');
     setAuthServiceCodes(['97153']);
+    setAuthCodeModifiers({});
+    setAuthAllowsRollover(false);
     setAuthNotes('');
   };
 
@@ -306,6 +325,8 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
         units_approved: parseInt(authUnitsApproved) || 0,
         unit_type: authUnitType,
         service_codes: authServiceCodes,
+        service_code_modifiers: authCodeModifiers,
+        allows_rollover: authAllowsRollover,
         notes: authNotes || null,
         status: 'active',
       };
@@ -383,6 +404,8 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
     setAuthUnitsApproved(auth.units_approved.toString());
     setAuthUnitType(auth.unit_type || '15min');
     setAuthServiceCodes(auth.service_codes || []);
+    setAuthCodeModifiers(auth.service_code_modifiers || {});
+    setAuthAllowsRollover(auth.allows_rollover ?? false);
     setAuthNotes(auth.notes || '');
     setShowAddAuth(true);
   };
@@ -578,12 +601,20 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
                           </DropdownMenu>
                         </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Units: {auth.units_used} / {auth.units_approved}</span>
-                            <span className="text-muted-foreground">
-                              {auth.units_remaining} remaining
-                            </span>
+                        <div className="space-y-1">
+                          <div className="grid grid-cols-3 gap-3 text-xs text-muted-foreground mb-1">
+                            <div>
+                              <span className="block font-medium text-foreground">{auth.units_approved}</span>
+                              Approved
+                            </div>
+                            <div>
+                              <span className="block font-medium text-foreground">{auth.units_used}</span>
+                              Rendered
+                            </div>
+                            <div>
+                              <span className="block font-medium text-foreground">{auth.units_remaining ?? auth.units_approved - auth.units_used}</span>
+                              Available
+                            </div>
                           </div>
                           <Progress value={usagePercent} className="h-2" />
                         </div>
@@ -593,8 +624,14 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
                             {auth.service_codes.map(code => (
                               <Badge key={code} variant="outline" className="text-xs font-mono">
                                 {code}
+                                {auth.service_code_modifiers?.[code] && (
+                                  <span className="ml-1 text-muted-foreground">{auth.service_code_modifiers[code]}</span>
+                                )}
                               </Badge>
                             ))}
+                            {auth.allows_rollover && (
+                              <Badge variant="secondary" className="text-xs">Rollover</Badge>
+                            )}
                           </div>
                         )}
                       </div>
@@ -784,27 +821,57 @@ export function PayersAuthorizationsTab({ studentId }: PayersAuthorizationsTabPr
             </div>
 
             <div>
-              <Label>Service Codes</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto">
+              <Label>Service Codes &amp; Modifiers</Label>
+              <p className="text-xs text-muted-foreground mb-2">Check codes authorized by the payer. Add a modifier per code if required (e.g. HN, HO, GT).</p>
+              <div className="space-y-1 max-h-52 overflow-y-auto border rounded-md p-2">
                 {SERVICE_CODES.map(s => (
-                  <label key={s.code} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <div key={s.code} className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      id={`sc-${s.code}`}
                       checked={authServiceCodes.includes(s.code)}
                       onChange={() => {
                         setAuthServiceCodes(prev =>
-                          prev.includes(s.code)
-                            ? prev.filter(c => c !== s.code)
-                            : [...prev, s.code]
+                          prev.includes(s.code) ? prev.filter(c => c !== s.code) : [...prev, s.code]
                         );
+                        if (authServiceCodes.includes(s.code)) {
+                          setAuthCodeModifiers(prev => { const n = { ...prev }; delete n[s.code]; return n; });
+                        }
                       }}
-                      className="rounded"
+                      className="rounded shrink-0"
                     />
-                    <span className="font-mono">{s.code}</span>
-                  </label>
+                    <label htmlFor={`sc-${s.code}`} className="font-mono text-xs w-14 shrink-0 cursor-pointer">{s.code}</label>
+                    <span className="text-xs text-muted-foreground flex-1 truncate">{s.description}</span>
+                    {authServiceCodes.includes(s.code) && (
+                      <select
+                        value={authCodeModifiers[s.code] ?? ''}
+                        onChange={e => setAuthCodeModifiers(prev => ({
+                          ...prev,
+                          [s.code]: e.target.value,
+                        }))}
+                        className="text-xs rounded border border-input bg-background px-1 py-0.5 w-20 shrink-0"
+                      >
+                        <option value="">No mod</option>
+                        {COMMON_MODIFIERS.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={authAllowsRollover}
+                onChange={e => setAuthAllowsRollover(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium">Allow unit rollover</span>
+              <span className="text-xs text-muted-foreground">(unused units carry over to next auth period)</span>
+            </label>
 
             <div>
               <Label>Notes</Label>
