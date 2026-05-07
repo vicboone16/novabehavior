@@ -113,7 +113,7 @@ export function ClassroomLiveWidget() {
                   variant="default"
                   size="sm"
                   className="h-6 text-[11px] gap-1 px-2"
-                  onClick={() => navigate(`/intelligence/classroom/${room.id}?from=/`)}
+                  onClick={() => navigate(`/classroom/${room.id}/today?from=/`)}
                 >
                   <School className="w-3 h-3" /> Today
                 </Button>

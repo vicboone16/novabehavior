@@ -493,7 +493,7 @@ export default function Intelligence() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/intelligence/clients/${row.client_id}`)}>
+                          <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate(`/clients/${row.client_id}/drilldown`)}>
                             View <ChevronRight className="w-3 h-3" />
                           </Button>
                         </TableCell>
@@ -802,7 +802,7 @@ export default function Intelligence() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {classroomSummaries.map(room => (
-                <Card key={room.id} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => navigate(`/intelligence/classroom/${room.id}?from=/intelligence`)}>
+                <Card key={room.id} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => navigate(`/classroom/${room.id}/today?from=/?view=operations`)}>
                   <CardContent className="py-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -835,7 +835,7 @@ export default function Intelligence() {
                       <Button variant="outline" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); setActiveTab('signals'); }}>
                         <Eye className="w-3 h-3 mr-1" /> Signals
                       </Button>
-                      <Button variant="default" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); navigate(`/intelligence/classroom/${room.id}?from=/intelligence`); }}>
+                      <Button variant="default" size="sm" className="h-6 text-[11px] flex-1" onClick={(e) => { e.stopPropagation(); navigate(`/classroom/${room.id}/today?from=/?view=operations`); }}>
                         <School className="w-3 h-3 mr-1" /> Open Today
                       </Button>
                     </div>
