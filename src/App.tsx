@@ -82,6 +82,7 @@ const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
 const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
+import { ClientIntelligenceRedirect, ClassroomIntelligenceRedirect } from "./pages/IntelligenceRedirect";
 const StaffProfilePage = lazy(() => import("./components/staff-profile").then(m => ({ default: m.StaffProfilePage })));
 const StaffAssignments = lazy(() => import("./pages/StaffAssignments"));
 const IncidentLogs = lazy(() => import("./pages/IncidentLogs"));
