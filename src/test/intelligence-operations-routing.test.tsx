@@ -63,23 +63,23 @@ function renderAt(path: string) {
 
 // ------------------------------------------------------------------------
 describe("Intelligence/Operations routing guardrails", () => {
-  it("legacy /intelligence redirects into the Dashboard intelligence tab", () => {
+  it("legacy /intelligence redirects into the Dashboard intelligence tab", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/intelligence");
     expect(screen.getByTestId("location").textContent).toBe("/?view=intelligence");
-    expect(screen.getByTestId("intelligence-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
   });
 
-  it("legacy /operations redirects into the Dashboard operations tab", () => {
+  it("legacy /operations redirects into the Dashboard operations tab", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/operations");
     expect(screen.getByTestId("location").textContent).toBe("/?view=operations");
-    expect(screen.getByTestId("operations-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("operations-view")).toBeInTheDocument();
   });
 
-  it("legacy /intelligence/clients/:id redirects with clientId preserved", () => {
+  it("legacy /intelligence/clients/:id redirects with clientId preserved", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/intelligence/clients/student-123");
@@ -87,20 +87,20 @@ describe("Intelligence/Operations routing guardrails", () => {
     expect(loc).toContain("/?");
     expect(loc).toContain("view=intelligence");
     expect(loc).toContain("clientId=student-123");
-    expect(screen.getByTestId("intelligence-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
   });
 
-  it("legacy /intelligence/classroom/:id redirects to operations tab with classroomId", () => {
+  it("legacy /intelligence/classroom/:id redirects to operations tab with classroomId", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/intelligence/classroom/room-7");
     const loc = screen.getByTestId("location").textContent || "";
     expect(loc).toContain("view=operations");
     expect(loc).toContain("classroomId=room-7");
-    expect(screen.getByTestId("operations-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("operations-view")).toBeInTheDocument();
   });
 
-  it("user without CID access cannot load Intelligence even via ?view=intelligence", () => {
+  it("user without CID access cannot load Intelligence even via ?view=intelligence", async () => {
     mockUseAuth.mockReturnValue({ userRole: "rbt" }); // no ops, no CID
     mockUseCID.mockReturnValue({ hasCIDAccess: false });
     renderAt("/?view=intelligence");
@@ -108,7 +108,7 @@ describe("Intelligence/Operations routing guardrails", () => {
     expect(screen.getByTestId("widgets-view")).toBeInTheDocument();
   });
 
-  it("user without operations role cannot load Operations even via ?view=operations", () => {
+  it("user without operations role cannot load Operations even via ?view=operations", async () => {
     mockUseAuth.mockReturnValue({ userRole: "rbt" });
     mockUseCID.mockReturnValue({ hasCIDAccess: false });
     renderAt("/?view=operations");
@@ -116,7 +116,7 @@ describe("Intelligence/Operations routing guardrails", () => {
     expect(screen.getByTestId("widgets-view")).toBeInTheDocument();
   });
 
-  it("user with CID but not ops role: ?view=operations falls back to widgets", () => {
+  it("user with CID but not ops role: ?view=operations falls back to widgets", async () => {
     mockUseAuth.mockReturnValue({ userRole: "rbt" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/?view=operations");
@@ -125,18 +125,18 @@ describe("Intelligence/Operations routing guardrails", () => {
     expect(screen.getByTestId("widgets-view")).toBeInTheDocument();
   });
 
-  it("authorized user can view Intelligence tab content", () => {
+  it("authorized user can view Intelligence tab content", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/?view=intelligence");
-    expect(screen.getByTestId("intelligence-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
   });
 
-  it("authorized user can view Operations tab content", () => {
+  it("authorized user can view Operations tab content", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     renderAt("/?view=operations");
-    expect(screen.getByTestId("operations-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("operations-view")).toBeInTheDocument();
   });
 });
 
@@ -178,7 +178,7 @@ describe("Multi-student / multi-interval-type Dashboard tab data scoping", () =>
     );
   }
 
-  it("yields a row for every (student × interval type) pair for Intelligence and Operations", () => {
+  it("yields a row for every (student × interval type) pair for Intelligence and Operations", async () => {
     const students = ["aa58eedf", "bfa3dbea", "1d858ef6"];
     const intervals = ["frequency", "duration", "partial_interval", "whole_interval", "momentary_time_sample"];
 
@@ -196,7 +196,7 @@ describe("Multi-student / multi-interval-type Dashboard tab data scoping", () =>
     }
   });
 
-  it("Dashboard tab view honors clientId from redirected deep links for every selected student", () => {
+  it("Dashboard tab view honors clientId from redirected deep links for every selected student", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     for (const studentId of ["aa58eedf", "bfa3dbea", "1d858ef6"]) {
