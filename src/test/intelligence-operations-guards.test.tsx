@@ -140,7 +140,7 @@ describe("Hard permission guard on Dashboard tab views", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("intelligence-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
 
     // Simulate role downgrade (e.g. token refresh, role revoked).
     act(() => {
@@ -255,7 +255,7 @@ describe("Intelligence & Operations dashboards: multi-student × multi-interval 
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("intelligence-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
   });
 
   it("renders Operations tab content for an authorized user with selected students", () => {
@@ -269,6 +269,6 @@ describe("Intelligence & Operations dashboards: multi-student × multi-interval 
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("operations-view")).toBeInTheDocument();
+    expect(await screen.findByTestId("operations-view")).toBeInTheDocument();
   });
 });
