@@ -82,6 +82,7 @@ const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
 const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
+import { ClientIntelligenceRedirect, ClassroomIntelligenceRedirect } from "./pages/IntelligenceRedirect";
 const StaffProfilePage = lazy(() => import("./components/staff-profile").then(m => ({ default: m.StaffProfilePage })));
 const StaffAssignments = lazy(() => import("./pages/StaffAssignments"));
 const IncidentLogs = lazy(() => import("./pages/IncidentLogs"));
@@ -515,8 +516,10 @@ const App = () => {
               <Route path="/incident-logs" element={<IncidentLogs />} />
               <Route path="/intelligence" element={<Navigate to="/?view=intelligence" replace />} />
               <Route path="/intelligence/ops" element={<Navigate to="/?view=operations" replace />} />
-              <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
-              <Route path="/intelligence/classroom/:classroomId" element={<ClassroomTodayPage />} />
+              <Route path="/intelligence/clients/:clientId" element={<ClientIntelligenceRedirect />} />
+              <Route path="/intelligence/classroom/:classroomId" element={<ClassroomIntelligenceRedirect />} />
+              <Route path="/clients/:clientId/drilldown" element={<ClientDrilldown />} />
+              <Route path="/classroom/:classroomId/today" element={<ClassroomTodayPage />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
               <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />

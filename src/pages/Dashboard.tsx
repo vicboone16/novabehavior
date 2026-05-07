@@ -39,7 +39,14 @@ export default function Dashboard() {
     [userRole]
   );
 
-  const view = searchParams.get('view') || 'widgets';
+  const rawView = searchParams.get('view') || 'widgets';
+  // Permission guard: silently fall back to widgets if user lacks access to the requested view.
+  const view =
+    (rawView === 'intelligence' && !hasCIDAccess) ||
+    (rawView === 'operations' && !canSeeOperations)
+      ? 'widgets'
+      : rawView;
+
   const handleChange = (v: string) => {
     const next = new URLSearchParams(searchParams);
     if (v === 'widgets') next.delete('view');
