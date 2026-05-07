@@ -1,122 +1,78 @@
+# Plan: Canonical Behavior Verification + Multi-Student Session Setup
 
+## Part 1 — Verify canonical behaviors propagate (Lorenzo + ongoing)
 
-## Unified Session Data Collection — Plan
+1. Run a verification query against the DB to confirm:
+   - Lorenzo has 11 canonical `nt_learner_behavior_assignments` rows joined to `nt_behaviors`
+   - Each of the 7 newly-linked behaviors resolves to a name (no UUID fallback) via `behaviorNameResolver.ts`
+   - `behavior_session_data.behavior_id` for Lorenzo maps to a canonical name
+2. Trace the resolver path used by graphs/profiles (`src/lib/behaviorNameResolver.ts`):
+   - It already queries `behaviors` → `student_behavior_map` → `nt_behaviors`. Confirm `nt_behaviors` is reached for newly-canonical IDs.
+   - If graph components cache names per-student, clear cache on canonical sync (`clearStudentBehaviorNameMap`) when a behavior is registered/linked.
+3. Add an **ongoing safeguard**: a lightweight DB trigger or scheduled function so that whenever a row is inserted into `student_behavior_map` with a `behavior_subtype` that doesn't yet exist in `nt_behaviors` + `nt_learner_behavior_assignments`, it is auto-registered (mirrors the manual fix we just ran for Lorenzo).
+   - Trigger: `AFTER INSERT ON student_behavior_map` → `nt_register_canonical_behavior(student_id, behavior_subtype, behavior_entry_id)`.
+   - Idempotent via `NOT EXISTS` checks.
+4. After verification, refresh the resolver cache for Lorenzo on next page load (no UI change needed beyond cache bust on assignment insert).
 
-A single, configurable in-session workspace that handles **behaviors + skills together**, works on **phone / tablet / desktop**, supports **1 to many clients**, and lets the user pick the layout that fits the moment.
+## Part 2 — Multi-student / multi-behavior session setup UI
 
----
+### New component: `MultiStudentSessionBuilder`
+Path: `src/components/sessions/MultiStudentSessionBuilder.tsx`
 
-### 1. New top-level component: `SessionWorkspace`
-
-Route: `/session` (and embedded inside `Clinical` Sessions tab). Replaces the scattered `MobileDataMode` + `ActiveStudentSessions` + `CompactStudentCard` flows with one cohesive shell.
+Layout (3 stages, one screen with progressive disclosure):
 
 ```text
-┌────────────────────────────────────────────────────────────┐
-│ Session Header — timer · totals · rate/min · end session   │ ← sticky stats
-├──────────┬─────────────────────────────────────────────────┤
-│ Client   │  Filter chips: All · Behaviors · Skills        │
-│ Switcher │  ─────────────────────────────────────────────  │
-│  ● Kai   │                                                 │
-│  ● Mia   │   [ Active workspace — layout user-chosen ]    │
-│  ● Sam   │                                                 │
-│  + All   │                                                 │
-├──────────┴─────────────────────────────────────────────────┤
-│  Quick-tally bar (top 3–5 pinned behaviors)  ·  + Note FAB │
-└────────────────────────────────────────────────────────────┘
+[ Stage 1: Select Students ]   ← checkbox list w/ search
+[ Stage 2: Per-student behaviors ]  ← expandable rows; each shows that student's canonical behaviors
+[ Stage 3: Per-behavior config ]   ← inline config card under each selected behavior
+[ Start Session ] button
 ```
 
-### 2. Three layout modes (user picks, persisted per user)
+### Per-behavior configuration card
+For each (student, behavior) pair the clinician can configure:
 
-Toggle in header: **Grid · List · Split**
+- **Methods** (multi-select): Frequency, Duration, Interval, ABC, Latency
+- **If Interval selected:**
+  - Interval type: Whole / Partial / **Momentary**
+  - Sampling time (seconds) — applies to Momentary
+  - Interval length (seconds)
+  - Total session length (minutes)
+  - Sync with other students? (toggle)
+- **If Frequency selected:**
+  - Count rule: per-occurrence vs. bouts
+  - Min IRT (seconds) for new bout
+- **If Duration selected:**
+  - Stopwatch behavior: cumulative vs. per-episode
+  - Auto-stop after N seconds (optional)
 
-- **Grid** — IMG_2250 style. 2-col on phone, 3–4 on tablet, 5+ on desktop. One card per behavior/skill, color-coded, big tap targets.
-- **List** — IMG_2252 style. Stacked rows with abbreviation badge, name, current value, and contextual action (▶ for duration/latency, + for frequency, % for skill).
-- **Split** — Welina style. Skills left, behaviors right. Auto-collapses to tabbed grid below ~900px.
-
-Filter chips (`All · Behaviors · Skills`) work in every layout.
-
-### 3. Client switcher (1 → many)
-
-Left rail (desktop) / horizontal scroll tab strip (mobile):
-
-- **1 client**: switcher hidden, full width.
-- **2–N clients**: tabs with initials + colored dot + unread-count style badge for new entries.
-- **"All" tab**: aggregated roll-up — every client's running counters/timers in compact cards, grouped by client. Tapping any card jumps into that client's focused view.
-- **Split-screen toggle** on tablet/desktop only: pin two clients side-by-side (great for groups of 2).
-- **Drag to reorder** tabs (dnd-kit, already in deps).
-
-### 4. Session-wide stats header (sticky)
-
-Single row, always visible while session active:
-
+### State model
+```ts
+type PerBehaviorConfig = {
+  studentId: string;
+  behaviorId: string;
+  methods: DataCollectionMethod[];
+  interval?: { type: 'whole'|'partial'|'momentary'; samplingSec: number; intervalSec: number; totalMin: number; sync: boolean };
+  frequency?: { mode: 'occurrence'|'bouts'; minIrtSec?: number };
+  duration?: { mode: 'cumulative'|'per_episode'; autoStopSec?: number };
+};
 ```
-⏱ 12:34   |   🎯 8 trials · 75%   |   📊 5 freq · 0.4/min   |   ⏲ 2 timers running   |   [End]
-```
+Persisted to `data_store` as a draft session config (`useDataStore.setMultiStudentDraft`).
 
-Updates live from the `dataStore`. On phone, collapses to: timer · "tap for details".
+### Session launch
+- On Start Session: creates a single shared session record per student; session view renders existing `StudentDataCard` per student in a grid; each `IntervalTracker`/`FrequencyTracker`/`DurationTracker` is initialized with the per-behavior config.
+- Sync mode: if any (student, behavior) has `interval.sync = true`, route them through `SyncedIntervalController` with a shared timer.
 
-### 5. Floating quick-tally bar
+### Integration points
+- Add a "New Multi-Student Session" entry on `/sessions` (or wherever sessions are launched). Confirm route by reading the sessions page next.
+- Reuse `addBehaviorWithMethods` from `dataStore` for any ad-hoc method overrides.
+- Extend `IntervalTracker` props with optional `samplingSec` and `intervalType`; default to existing behavior when not provided.
 
-Pinned bottom strip with the 3–5 most-used (or user-pinned) behaviors for the **active client**. Each pill shows abbreviation + count + tap-to-increment. Survives across filter/layout changes so a clinician can keep tallying aggression while reviewing a skill target.
+## Part 3 — Validation
 
-- Long-press a behavior card → "Pin to quick bar"
-- Auto-suggests top 3 by frequency in last 7 days if user hasn't pinned any.
+1. Run the canonical verification SQL and paste counts in chat.
+2. Manually open a Lorenzo behavior profile page in the preview to confirm names render (no UUIDs).
+3. Open the new builder, select 2 students × 2 behaviors each with mixed methods, start a session, confirm trackers render with per-behavior configs.
 
-### 6. Universal quick-add FAB
-
-Bottom-right floating button, context-aware menu:
-- **+ Note** (tied to active client + current target if any)
-- **+ ABC entry** (uses existing `EnhancedABCPopup`)
-- **+ Behavior on the fly** (uses `MobileAddBehaviorSheet`)
-- **+ Voice note** (uses `VoiceNoteRecorder`)
-
-### 7. Drag-to-reorder
-
-- Client tabs (left rail or top strip) — order persists per user.
-- Behavior/skill cards within each layout — order persists per client per user.
-- Implemented with `@dnd-kit/core` (already used elsewhere).
-
-### 8. Where existing code plugs in
-
-| Need                        | Reuse                                          |
-|-----------------------------|------------------------------------------------|
-| Frequency tally             | `MobileFrequencyTally`                         |
-| Duration / latency timers   | `MobileDurationTracker`, `MobileLatencyTracker`|
-| Interval                    | `MobileIntervalTracker` + `SyncedIntervalController` |
-| ABC                         | `MobileABCEntry` / `EnhancedABCPopup`          |
-| Skill trials                | `SkillSessionRunner` internals (extracted to a `<SkillTargetCard>`) |
-| Session lifecycle           | existing `dataStore`, `SessionTimer`, `EndAllSessionsButton` |
-| Cross-device sync           | existing realtime listeners on `sessions`      |
-
-No new database tables needed — purely a UI/UX consolidation layer over current data hooks.
-
-### 9. New files to create
-
-- `src/components/session-workspace/SessionWorkspace.tsx` (shell)
-- `src/components/session-workspace/SessionStatsHeader.tsx`
-- `src/components/session-workspace/ClientSwitcher.tsx` (tabs + reorder + "All")
-- `src/components/session-workspace/AllClientsOverview.tsx`
-- `src/components/session-workspace/WorkspaceLayoutToggle.tsx`
-- `src/components/session-workspace/layouts/GridLayout.tsx`
-- `src/components/session-workspace/layouts/ListLayout.tsx`
-- `src/components/session-workspace/layouts/SplitLayout.tsx`
-- `src/components/session-workspace/cards/BehaviorCard.tsx` (one card, all 4 methods)
-- `src/components/session-workspace/cards/SkillTargetCard.tsx`
-- `src/components/session-workspace/QuickTallyBar.tsx`
-- `src/components/session-workspace/QuickAddFab.tsx`
-- `src/hooks/useWorkspacePreferences.ts` (layout, pinned behaviors, tab order — persisted to `user_preferences`)
-
-### 10. Rollout
-
-1. **Phase A**: Build `SessionWorkspace` shell + Grid layout + single-client mode → swap into `/session` route behind a "Try new workspace" toggle so old flow stays intact.
-2. **Phase B**: Add List + Split layouts, layout toggle, sticky stats header.
-3. **Phase C**: Multi-client switcher, "All" overview, split-screen pinning.
-4. **Phase D**: Quick-tally bar, quick-add FAB, drag-to-reorder, persisted preferences.
-5. **Phase E**: Make new workspace the default; keep legacy `MobileDataMode` accessible via "Classic mode" for one release, then deprecate.
-
-### 11. Out of scope (flag for later)
-
-- New analytics/graphs in-session (use existing post-session views).
-- Offline queue rework (keeps current IndexedDB sync infra).
-- Tablet-specific gestures (swipe-between-clients) — easy to add in Phase C.
-
+## Out of scope
+- Reworking existing single-student session UI
+- Backfilling other students' historical non-canonical behaviors (the new trigger handles them going forward; happy to backfill on request)

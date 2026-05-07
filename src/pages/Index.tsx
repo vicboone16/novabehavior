@@ -11,12 +11,14 @@ import { DataExportManager } from '@/components/DataExportManager';
 import { TrashRecovery } from '@/components/TrashRecovery';
 import { LocalDataCloudSync } from '@/components/LocalDataCloudSync';
 import { SessionWorkspace } from '@/components/session-workspace/SessionWorkspace';
+import { MultiStudentSessionBuilder } from '@/components/MultiStudentSessionBuilder';
 
 const Index = () => {
   return (
     <div className="space-y-4">
       {/* Quick Tools Bar */}
       <div className="flex gap-1 md:gap-2 items-center overflow-x-auto scrollbar-hide pb-1">
+        <MultiStudentSessionBuilder />
         <LocalDataCloudSync />
         <TrashRecovery />
         <BehaviorGoalsManager />
