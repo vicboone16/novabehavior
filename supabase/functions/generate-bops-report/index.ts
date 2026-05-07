@@ -341,17 +341,24 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-      if (!error && user) userId = user.id;
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+    const userId: string = user.id;
 
     const body = await req.json();
     const {
@@ -377,7 +384,23 @@ serve(async (req) => {
       });
     }
 
-    // 1) Get BOPS dashboard data
+    // Authorization: ensure caller has access to this student
+    const { data: roleRows } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId);
+    const isAdmin = (roleRows || []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+    if (!isAdmin) {
+      const { data: access } = await supabaseAdmin
+        .from("user_student_access")
+        .select("student_id")
+        .eq("user_id", userId)
+        .eq("student_id", student_id)
+        .maybeSingle();
+      if (!access) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { data: dashData } = await supabaseAdmin
       .from("v_student_bops_dashboard")
       .select("*")

@@ -12,36 +12,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth: try user JWT first, fall back to email in body (cross-project calls)
+    // Require a valid Bearer JWT — no more body.email fallback.
     const authHeader = req.headers.get("Authorization");
-    let authenticatedEmail: string | null = null;
-
-    if (authHeader?.startsWith("Bearer ")) {
-      const authClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      try {
-        const { data: userData } = await authClient.auth.getUser();
-        if (userData?.user?.email) {
-          authenticatedEmail = userData.user.email;
-        }
-      } catch (_) {
-        // Not a valid user JWT — may be cross-project anon key call
-      }
-    }
-
-    const body = await req.json().catch(() => ({} as any));
-    const email = authenticatedEmail || body.email;
-    const app_slug = body.app_slug;
-
-    if (!email) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({ error: "No email could be resolved. Provide a valid JWT or email in the body." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Authentication required. Use satellite-gateway for cross-project calls." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: authErr } = await authClient.auth.getUser();
+    if (authErr || !userData?.user?.email) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const email = userData.user.email;
+    const body = await req.json().catch(() => ({} as any));
+    const app_slug = body.app_slug;
 
     // Use service role to bypass RLS
     const supabaseAdmin = createClient(
