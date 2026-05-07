@@ -56,7 +56,24 @@ serve(async (req) => {
       );
     }
 
-    // Fetch student clinical data for AI justification
+    // Authorization: ensure caller has access to this student
+    const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const isAdmin = (roleRows || []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+    if (!isAdmin) {
+      const { data: access } = await supabase
+        .from("user_student_access")
+        .select("student_id")
+        .eq("user_id", user.id)
+        .eq("student_id", studentId)
+        .maybeSingle();
+      if (!access) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Access denied" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select(`
