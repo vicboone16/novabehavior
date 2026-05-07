@@ -344,15 +344,7 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/operations" element={
-              <ProtectedRoute>
-                <ApprovalCheck>
-                  <SyncProvider>
-                    <Operations />
-                  </SyncProvider>
-                </ApprovalCheck>
-              </ProtectedRoute>
-            } />
+            <Route path="/operations" element={<Navigate to="/?view=operations" replace />} />
             <Route path="/behaviors" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
             <Route path="/admin/restored-behavior-cleanup" element={
               <ProtectedRoute>
@@ -521,8 +513,8 @@ const App = () => {
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/incident-logs" element={<IncidentLogs />} />
-              <Route path="/intelligence" element={<Intelligence />} />
-              <Route path="/intelligence/ops" element={<IntelligenceOps />} />
+              <Route path="/intelligence" element={<Navigate to="/?view=intelligence" replace />} />
+              <Route path="/intelligence/ops" element={<Navigate to="/?view=operations" replace />} />
               <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
               <Route path="/intelligence/classroom/:classroomId" element={<ClassroomTodayPage />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
