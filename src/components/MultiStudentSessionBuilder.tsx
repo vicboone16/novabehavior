@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,11 @@ import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/use-toast';
 import type { DataCollectionMethod } from '@/types/behavior';
-import { Users, Settings2, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
+  FileDown, RotateCcw, FileText,
+} from 'lucide-react';
+import jsPDF from 'jspdf';
 
 const METHODS: { value: DataCollectionMethod; label: string }[] = [
   { value: 'frequency', label: 'Frequency' },
@@ -30,6 +35,23 @@ interface BehaviorConfig {
   duration: { mode: DurationMode; autoStopSec: number };
 }
 
+interface ConfigTemplate {
+  id: string;
+  name: string;
+  config: BehaviorConfig;
+  createdAt: number;
+}
+
+interface SavedDraft {
+  at: number;
+  chosenStudents: string[];
+  chosenBehaviors: Record<string, string[]>;
+  configs: Record<string, BehaviorConfig>;
+}
+
+const STORAGE_DRAFT = 'multiStudentSessionConfig';
+const STORAGE_TEMPLATES = 'multiStudentSessionTemplates';
+
 const defaultConfig = (): BehaviorConfig => ({
   methods: ['frequency'],
   interval: { type: 'momentary', samplingSec: 30, intervalSec: 30, totalMin: 15, sync: true },
@@ -39,6 +61,34 @@ const defaultConfig = (): BehaviorConfig => ({
 
 const key = (sid: string, bid: string) => `${sid}::${bid}`;
 
+function loadTemplates(): ConfigTemplate[] {
+  try { return JSON.parse(localStorage.getItem(STORAGE_TEMPLATES) || '[]'); } catch { return []; }
+}
+function saveTemplates(list: ConfigTemplate[]) {
+  localStorage.setItem(STORAGE_TEMPLATES, JSON.stringify(list));
+}
+function loadDraft(): SavedDraft | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_DRAFT);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d?.configs) return null;
+    return d as SavedDraft;
+  } catch { return null; }
+}
+
+function csvCell(v: any) {
+  const s = v == null ? '' : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function downloadFile(filename: string, content: string | Blob, mime = 'text/csv') {
+  const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function MultiStudentSessionBuilder() {
   const { toast } = useToast();
   const students = useDataStore((s) => s.students);
@@ -46,14 +96,31 @@ export function MultiStudentSessionBuilder() {
   const selectedStudentIds = useDataStore((s) => s.selectedStudentIds);
   const addBehaviorWithMethods = useDataStore((s) => s.addBehaviorWithMethods);
   const updateBehaviorMethods = useDataStore((s) => s.updateBehaviorMethods);
+  const abcEntries = useDataStore((s) => s.abcEntries);
+  const frequencyEntries = useDataStore((s) => s.frequencyEntries);
+  const durationEntries = useDataStore((s) => s.durationEntries);
+  const intervalEntries = useDataStore((s) => s.intervalEntries);
 
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<'setup' | 'review' | 'templates'>('setup');
   const [chosenStudents, setChosenStudents] = useState<string[]>([]);
-  const [chosenBehaviors, setChosenBehaviors] = useState<Record<string, string[]>>({}); // sid -> behaviorId[]
-  const [configs, setConfigs] = useState<Record<string, BehaviorConfig>>({}); // sid::bid -> config
+  const [chosenBehaviors, setChosenBehaviors] = useState<Record<string, string[]>>({});
+  const [configs, setConfigs] = useState<Record<string, BehaviorConfig>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
+  const [templateName, setTemplateName] = useState('');
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftAt, setDraftAt] = useState<number | null>(null);
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
+
+  useEffect(() => {
+    if (!open) return;
+    setTemplates(loadTemplates());
+    const d = loadDraft();
+    setHasDraft(!!d);
+    setDraftAt(d?.at ?? null);
+  }, [open]);
 
   const toggleStudent = (sid: string) => {
     setChosenStudents((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
@@ -77,10 +144,25 @@ export function MultiStudentSessionBuilder() {
 
   const totalPairs = chosenStudents.reduce((acc, sid) => acc + (chosenBehaviors[sid]?.length || 0), 0);
 
+  const persistDraft = (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>) => {
+    const d: SavedDraft = { at: Date.now(), chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
+    try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
+  };
+
+  const handleResume = () => {
+    const d = loadDraft();
+    if (!d) return;
+    setChosenStudents(d.chosenStudents || []);
+    setChosenBehaviors(d.chosenBehaviors || {});
+    setConfigs(d.configs || {});
+    const exp: Record<string, boolean> = {};
+    (d.chosenStudents || []).forEach((s) => { exp[s] = true; });
+    setExpanded(exp);
+    toast({ title: 'Session resumed', description: `Restored from ${new Date(d.at).toLocaleString()}.` });
+  };
+
   const handleStart = () => {
     if (chosenStudents.length === 0 || totalPairs === 0) return;
-
-    // Persist per-behavior method config + select students for the active workspace
     chosenStudents.forEach((sid) => {
       if (!selectedStudentIds.includes(sid)) selectStudent(sid);
       const student = students.find((s) => s.id === sid);
@@ -90,24 +172,138 @@ export function MultiStudentSessionBuilder() {
         if (existing) {
           updateBehaviorMethods(sid, bid, cfg.methods);
         } else {
-          // Fallback: shouldn't normally hit (ids come from student.behaviors)
           addBehaviorWithMethods(sid, 'New Behavior', cfg.methods);
         }
       });
     });
-
-    // Stash builder configs in localStorage so trackers can pick up overrides
-    try {
-      localStorage.setItem('multiStudentSessionConfig', JSON.stringify({ at: Date.now(), configs }));
-    } catch {}
-
-    toast({
-      title: 'Session started',
-      description: `${chosenStudents.length} student(s), ${totalPairs} behavior(s) configured.`,
-    });
+    persistDraft(chosenStudents, chosenBehaviors, configs);
+    toast({ title: 'Session started', description: `${chosenStudents.length} student(s), ${totalPairs} behavior(s).` });
     setOpen(false);
   };
 
+  // ----- Templates -----
+  const handleSaveTemplate = (cfg: BehaviorConfig) => {
+    if (!templateName.trim()) {
+      toast({ title: 'Name required', variant: 'destructive' });
+      return;
+    }
+    const next: ConfigTemplate[] = [
+      ...templates,
+      { id: crypto.randomUUID(), name: templateName.trim(), config: cfg, createdAt: Date.now() },
+    ];
+    setTemplates(next);
+    saveTemplates(next);
+    setTemplateName('');
+    toast({ title: 'Template saved' });
+  };
+  const handleDeleteTemplate = (id: string) => {
+    const next = templates.filter((t) => t.id !== id);
+    setTemplates(next); saveTemplates(next);
+  };
+  const handleApplyTemplateToAll = (tpl: ConfigTemplate) => {
+    if (totalPairs === 0) {
+      toast({ title: 'Select students/behaviors first', variant: 'destructive' });
+      return;
+    }
+    const next = { ...configs };
+    chosenStudents.forEach((sid) => {
+      (chosenBehaviors[sid] || []).forEach((bid) => {
+        next[key(sid, bid)] = JSON.parse(JSON.stringify(tpl.config));
+      });
+    });
+    setConfigs(next);
+    toast({ title: `Applied "${tpl.name}"`, description: `${totalPairs} behavior(s) updated.` });
+  };
+
+  // ----- Review -----
+  const reviewRows = useMemo(() => {
+    const rows: Array<{
+      sid: string; sname: string; bid: string; bname: string;
+      freq: number; durSec: number; intMarked: number; intTotal: number; abc: number;
+    }> = [];
+    chosenStudents.forEach((sid) => {
+      const student = students.find((s) => s.id === sid);
+      (chosenBehaviors[sid] || []).forEach((bid) => {
+        const beh = student?.behaviors.find((b) => b.id === bid);
+        const fEntries = frequencyEntries.filter((e) => e.studentId === sid && e.behaviorId === bid);
+        const dEntries = durationEntries.filter((e) => e.studentId === sid && e.behaviorId === bid);
+        const iEntries = intervalEntries.filter((e) => e.studentId === sid && e.behaviorId === bid);
+        const aEntries = abcEntries.filter((e) => e.studentId === sid && e.behaviorId === bid);
+        rows.push({
+          sid, sname: student?.displayName || student?.name || sid,
+          bid, bname: beh?.name || bid,
+          freq: fEntries.reduce((sum, e) => sum + (e.count || 0), 0),
+          durSec: dEntries.reduce((sum, e) => sum + (e.duration || 0), 0),
+          intMarked: iEntries.filter((e) => e.occurred && !e.voided).length,
+          intTotal: iEntries.filter((e) => !e.voided).length,
+          abc: aEntries.length,
+        });
+      });
+    });
+    return rows;
+  }, [chosenStudents, chosenBehaviors, students, frequencyEntries, durationEntries, intervalEntries, abcEntries]);
+
+  // ----- Exports -----
+  const exportCSV = (sid?: string, bid?: string) => {
+    const rows: string[] = [];
+    rows.push(['Student', 'Behavior', 'Type', 'Timestamp', 'Value', 'Detail'].map(csvCell).join(','));
+    const inScope = (e: any) => (!sid || e.studentId === sid) && (!bid || e.behaviorId === bid);
+    const sname = (id: string) => {
+      const s = students.find((x) => x.id === id);
+      return s?.displayName || s?.name || id;
+    };
+    const bname = (sId: string, bId: string) => {
+      const s = students.find((x) => x.id === sId);
+      return s?.behaviors.find((b) => b.id === bId)?.name || bId;
+    };
+    frequencyEntries.filter(inScope).forEach((e) => {
+      rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'frequency',
+        new Date(e.timestamp).toISOString(), e.count, e.sessionId || ''].map(csvCell).join(','));
+    });
+    durationEntries.filter(inScope).forEach((e) => {
+      rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'duration',
+        new Date(e.startTime).toISOString(), `${e.duration}s`, e.endTime ? new Date(e.endTime).toISOString() : ''].map(csvCell).join(','));
+    });
+    intervalEntries.filter(inScope).forEach((e) => {
+      rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'interval',
+        new Date(e.timestamp).toISOString(), e.occurred ? 'occurred' : 'no',
+        `interval ${e.intervalNumber}${e.voided ? ' (voided)' : ''}`].map(csvCell).join(','));
+    });
+    abcEntries.filter(inScope).forEach((e) => {
+      rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'abc',
+        new Date(e.timestamp).toISOString(), e.behavior,
+        `A:${e.antecedent} | C:${e.consequence}`].map(csvCell).join(','));
+    });
+    const fname = `session_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
+    downloadFile(fname, rows.join('\n'));
+    toast({ title: 'CSV exported', description: fname });
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    let y = 14;
+    doc.setFontSize(14); doc.text('Multi-Student Session Summary', 14, y); y += 8;
+    doc.setFontSize(9);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y); y += 6;
+    doc.text(`Students: ${chosenStudents.length}  ·  Behaviors: ${totalPairs}`, 14, y); y += 8;
+    doc.setFontSize(10);
+    doc.text('Student / Behavior', 14, y);
+    doc.text('Freq', 110, y); doc.text('Dur(s)', 130, y); doc.text('Int', 155, y); doc.text('ABC', 175, y);
+    y += 4; doc.line(14, y, 196, y); y += 5;
+    reviewRows.forEach((r) => {
+      if (y > 280) { doc.addPage(); y = 14; }
+      doc.text(`${r.sname} — ${r.bname}`.slice(0, 60), 14, y);
+      doc.text(String(r.freq), 110, y);
+      doc.text(String(r.durSec), 130, y);
+      doc.text(`${r.intMarked}/${r.intTotal}`, 155, y);
+      doc.text(String(r.abc), 175, y);
+      y += 6;
+    });
+    doc.save(`session_summary_${Date.now()}.pdf`);
+    toast({ title: 'PDF exported' });
+  };
+
+  // ----- Render -----
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -119,112 +315,117 @@ export function MultiStudentSessionBuilder() {
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>New Multi-Student Session</DialogTitle>
+          <DialogTitle>Multi-Student Session</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-          {/* Stage 1 */}
-          <section className="space-y-2">
-            <Label className="text-sm font-semibold">1. Select Students</Label>
-            <div className="border rounded-lg p-2 max-h-48 overflow-y-auto">
-              {activeStudents.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-2">No active students.</p>
-              ) : (
-                activeStudents.map((s) => (
-                  <label key={s.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer">
-                    <Checkbox
-                      checked={chosenStudents.includes(s.id)}
-                      onCheckedChange={() => toggleStudent(s.id)}
-                    />
-                    <span className="text-sm">{s.displayName || s.name}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {s.behaviors.length} behavior(s)
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-          </section>
+        {hasDraft && (
+          <div className="flex items-center justify-between bg-muted/40 border rounded p-2 text-xs">
+            <span>
+              <RotateCcw className="w-3 h-3 inline mr-1" />
+              Saved draft from {draftAt ? new Date(draftAt).toLocaleString() : ''}
+            </span>
+            <Button size="sm" variant="ghost" onClick={handleResume}>Resume</Button>
+          </div>
+        )}
 
-          {/* Stage 2 + 3: per student */}
-          {chosenStudents.length > 0 && (
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="self-start">
+            <TabsTrigger value="setup">Setup</TabsTrigger>
+            <TabsTrigger value="review">Review ({reviewRows.length})</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
+          </TabsList>
+
+          {/* SETUP */}
+          <TabsContent value="setup" className="flex-1 overflow-y-auto space-y-4 mt-2">
             <section className="space-y-2">
-              <Label className="text-sm font-semibold">2. Choose Behaviors & Configure</Label>
-              <div className="space-y-3">
-                {chosenStudents.map((sid) => {
-                  const student = students.find((s) => s.id === sid);
-                  if (!student) return null;
-                  const isOpen = expanded[sid] !== false;
-                  return (
-                    <div key={sid} className="border rounded-lg">
-                      <button
-                        type="button"
-                        className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30"
-                        onClick={() => setExpanded((p) => ({ ...p, [sid]: !isOpen }))}
-                      >
-                        {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        <span className="font-medium text-sm">{student.displayName || student.name}</span>
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {(chosenBehaviors[sid] || []).length}/{student.behaviors.length} selected
-                        </span>
-                      </button>
-                      {isOpen && (
-                        <div className="p-3 pt-0 space-y-2">
-                          {student.behaviors.length === 0 ? (
-                            <p className="text-xs text-muted-foreground py-2">
-                              No behaviors. Use Manage Behaviors to add some first.
-                            </p>
-                          ) : (
-                            student.behaviors.filter((b) => !b.isArchived).map((b) => {
+              <Label className="text-sm font-semibold">1. Select Students</Label>
+              <div className="border rounded-lg p-2 max-h-48 overflow-y-auto">
+                {activeStudents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-2">No active students.</p>
+                ) : activeStudents.map((s) => (
+                  <label key={s.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer">
+                    <Checkbox checked={chosenStudents.includes(s.id)} onCheckedChange={() => toggleStudent(s.id)} />
+                    <span className="text-sm">{s.displayName || s.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{s.behaviors.length} behavior(s)</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {chosenStudents.length > 0 && templates.length > 0 && (
+              <section className="space-y-2">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Layers className="w-4 h-4" /> Quick-apply template
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {templates.map((t) => (
+                    <Button key={t.id} size="sm" variant="secondary" onClick={() => handleApplyTemplateToAll(t)}>
+                      {t.name}
+                    </Button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {chosenStudents.length > 0 && (
+              <section className="space-y-2">
+                <Label className="text-sm font-semibold">2. Choose Behaviors & Configure</Label>
+                <div className="space-y-3">
+                  {chosenStudents.map((sid) => {
+                    const student = students.find((s) => s.id === sid);
+                    if (!student) return null;
+                    const isOpen = expanded[sid] !== false;
+                    return (
+                      <div key={sid} className="border rounded-lg">
+                        <button type="button"
+                          className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30"
+                          onClick={() => setExpanded((p) => ({ ...p, [sid]: !isOpen }))}>
+                          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          <span className="font-medium text-sm">{student.displayName || student.name}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {(chosenBehaviors[sid] || []).length}/{student.behaviors.length} selected
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div className="p-3 pt-0 space-y-2">
+                            {student.behaviors.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-2">No behaviors configured.</p>
+                            ) : student.behaviors.filter((b) => !b.isArchived).map((b) => {
                               const isChosen = (chosenBehaviors[sid] || []).includes(b.id);
                               const cfg = configs[key(sid, b.id)] || defaultConfig();
                               return (
                                 <div key={b.id} className="border rounded-md">
                                   <label className="flex items-center gap-2 p-2 cursor-pointer">
-                                    <Checkbox
-                                      checked={isChosen}
-                                      onCheckedChange={() => toggleBehavior(sid, b.id)}
-                                    />
+                                    <Checkbox checked={isChosen} onCheckedChange={() => toggleBehavior(sid, b.id)} />
                                     <span className="text-sm flex-1">{b.name}</span>
                                     {isChosen && <Settings2 className="w-3 h-3 text-muted-foreground" />}
                                   </label>
                                   {isChosen && (
                                     <div className="px-3 pb-3 space-y-3 border-t bg-muted/20">
-                                      {/* Methods */}
                                       <div className="pt-3">
                                         <Label className="text-xs">Methods</Label>
                                         <div className="flex flex-wrap gap-2 mt-1">
                                           {METHODS.map((m) => (
                                             <label key={m.value} className="flex items-center gap-1 text-xs cursor-pointer">
-                                              <Checkbox
-                                                checked={cfg.methods.includes(m.value)}
-                                                onCheckedChange={() =>
-                                                  updateConfig(sid, b.id, (c) => ({
-                                                    ...c,
-                                                    methods: c.methods.includes(m.value)
-                                                      ? c.methods.filter((x) => x !== m.value)
-                                                      : [...c.methods, m.value],
-                                                  }))
-                                                }
-                                              />
+                                              <Checkbox checked={cfg.methods.includes(m.value)}
+                                                onCheckedChange={() => updateConfig(sid, b.id, (c) => ({
+                                                  ...c, methods: c.methods.includes(m.value)
+                                                    ? c.methods.filter((x) => x !== m.value)
+                                                    : [...c.methods, m.value],
+                                                }))} />
                                               {m.label}
                                             </label>
                                           ))}
                                         </div>
                                       </div>
 
-                                      {/* Interval config */}
                                       {cfg.methods.includes('interval') && (
                                         <div className="grid grid-cols-2 gap-2 p-2 bg-background rounded border">
                                           <div className="col-span-2 text-xs font-semibold text-muted-foreground">Interval</div>
                                           <div>
                                             <Label className="text-xs">Type</Label>
-                                            <Select
-                                              value={cfg.interval.type}
-                                              onValueChange={(v: IntervalType) =>
-                                                updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, type: v } }))
-                                              }
-                                            >
+                                            <Select value={cfg.interval.type}
+                                              onValueChange={(v: IntervalType) => updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, type: v } }))}>
                                               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                               <SelectContent>
                                                 <SelectItem value="whole">Whole</SelectItem>
@@ -235,70 +436,34 @@ export function MultiStudentSessionBuilder() {
                                           </div>
                                           <div>
                                             <Label className="text-xs">Sampling (sec)</Label>
-                                            <Input
-                                              type="number"
-                                              className="h-8"
-                                              value={cfg.interval.samplingSec}
-                                              onChange={(e) =>
-                                                updateConfig(sid, b.id, (c) => ({
-                                                  ...c,
-                                                  interval: { ...c.interval, samplingSec: Number(e.target.value) },
-                                                }))
-                                              }
-                                            />
+                                            <Input type="number" className="h-8" value={cfg.interval.samplingSec}
+                                              onChange={(e) => updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, samplingSec: Number(e.target.value) } }))} />
                                           </div>
                                           <div>
                                             <Label className="text-xs">Interval (sec)</Label>
-                                            <Input
-                                              type="number"
-                                              className="h-8"
-                                              value={cfg.interval.intervalSec}
-                                              onChange={(e) =>
-                                                updateConfig(sid, b.id, (c) => ({
-                                                  ...c,
-                                                  interval: { ...c.interval, intervalSec: Number(e.target.value) },
-                                                }))
-                                              }
-                                            />
+                                            <Input type="number" className="h-8" value={cfg.interval.intervalSec}
+                                              onChange={(e) => updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, intervalSec: Number(e.target.value) } }))} />
                                           </div>
                                           <div>
                                             <Label className="text-xs">Total (min)</Label>
-                                            <Input
-                                              type="number"
-                                              className="h-8"
-                                              value={cfg.interval.totalMin}
-                                              onChange={(e) =>
-                                                updateConfig(sid, b.id, (c) => ({
-                                                  ...c,
-                                                  interval: { ...c.interval, totalMin: Number(e.target.value) },
-                                                }))
-                                              }
-                                            />
+                                            <Input type="number" className="h-8" value={cfg.interval.totalMin}
+                                              onChange={(e) => updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, totalMin: Number(e.target.value) } }))} />
                                           </div>
                                           <div className="col-span-2 flex items-center justify-between">
                                             <Label className="text-xs">Sync with other students</Label>
-                                            <Switch
-                                              checked={cfg.interval.sync}
-                                              onCheckedChange={(v) =>
-                                                updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, sync: v } }))
-                                              }
-                                            />
+                                            <Switch checked={cfg.interval.sync}
+                                              onCheckedChange={(v) => updateConfig(sid, b.id, (c) => ({ ...c, interval: { ...c.interval, sync: v } }))} />
                                           </div>
                                         </div>
                                       )}
 
-                                      {/* Frequency config */}
                                       {cfg.methods.includes('frequency') && (
                                         <div className="grid grid-cols-2 gap-2 p-2 bg-background rounded border">
                                           <div className="col-span-2 text-xs font-semibold text-muted-foreground">Frequency</div>
                                           <div>
                                             <Label className="text-xs">Count rule</Label>
-                                            <Select
-                                              value={cfg.frequency.mode}
-                                              onValueChange={(v: FrequencyMode) =>
-                                                updateConfig(sid, b.id, (c) => ({ ...c, frequency: { ...c.frequency, mode: v } }))
-                                              }
-                                            >
+                                            <Select value={cfg.frequency.mode}
+                                              onValueChange={(v: FrequencyMode) => updateConfig(sid, b.id, (c) => ({ ...c, frequency: { ...c.frequency, mode: v } }))}>
                                               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                               <SelectContent>
                                                 <SelectItem value="occurrence">Per occurrence</SelectItem>
@@ -309,34 +474,20 @@ export function MultiStudentSessionBuilder() {
                                           {cfg.frequency.mode === 'bouts' && (
                                             <div>
                                               <Label className="text-xs">Min IRT (sec)</Label>
-                                              <Input
-                                                type="number"
-                                                className="h-8"
-                                                value={cfg.frequency.minIrtSec}
-                                                onChange={(e) =>
-                                                  updateConfig(sid, b.id, (c) => ({
-                                                    ...c,
-                                                    frequency: { ...c.frequency, minIrtSec: Number(e.target.value) },
-                                                  }))
-                                                }
-                                              />
+                                              <Input type="number" className="h-8" value={cfg.frequency.minIrtSec}
+                                                onChange={(e) => updateConfig(sid, b.id, (c) => ({ ...c, frequency: { ...c.frequency, minIrtSec: Number(e.target.value) } }))} />
                                             </div>
                                           )}
                                         </div>
                                       )}
 
-                                      {/* Duration config */}
                                       {cfg.methods.includes('duration') && (
                                         <div className="grid grid-cols-2 gap-2 p-2 bg-background rounded border">
                                           <div className="col-span-2 text-xs font-semibold text-muted-foreground">Duration</div>
                                           <div>
                                             <Label className="text-xs">Stopwatch</Label>
-                                            <Select
-                                              value={cfg.duration.mode}
-                                              onValueChange={(v: DurationMode) =>
-                                                updateConfig(sid, b.id, (c) => ({ ...c, duration: { ...c.duration, mode: v } }))
-                                              }
-                                            >
+                                            <Select value={cfg.duration.mode}
+                                              onValueChange={(v: DurationMode) => updateConfig(sid, b.id, (c) => ({ ...c, duration: { ...c.duration, mode: v } }))}>
                                               <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                               <SelectContent>
                                                 <SelectItem value="cumulative">Cumulative</SelectItem>
@@ -346,45 +497,122 @@ export function MultiStudentSessionBuilder() {
                                           </div>
                                           <div>
                                             <Label className="text-xs">Auto-stop (sec, 0=off)</Label>
-                                            <Input
-                                              type="number"
-                                              className="h-8"
-                                              value={cfg.duration.autoStopSec}
-                                              onChange={(e) =>
-                                                updateConfig(sid, b.id, (c) => ({
-                                                  ...c,
-                                                  duration: { ...c.duration, autoStopSec: Number(e.target.value) },
-                                                }))
-                                              }
-                                            />
+                                            <Input type="number" className="h-8" value={cfg.duration.autoStopSec}
+                                              onChange={(e) => updateConfig(sid, b.id, (c) => ({ ...c, duration: { ...c.duration, autoStopSec: Number(e.target.value) } }))} />
                                           </div>
                                         </div>
                                       )}
+
+                                      <div className="flex gap-2 items-center">
+                                        <Input placeholder="Save as template…" className="h-8 text-xs"
+                                          value={templateName} onChange={(e) => setTemplateName(e.target.value)} />
+                                        <Button size="sm" variant="outline" onClick={() => handleSaveTemplate(cfg)}>
+                                          <Save className="w-3 h-3 mr-1" /> Save
+                                        </Button>
+                                      </div>
                                     </div>
                                   )}
                                 </div>
                               );
-                            })
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </TabsContent>
+
+          {/* REVIEW */}
+          <TabsContent value="review" className="flex-1 overflow-y-auto mt-2">
+            {reviewRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                Select students and behaviors in Setup to see captured data here.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => exportCSV()}>
+                    <FileDown className="w-3 h-3 mr-1" /> Export all CSV
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={exportPDF}>
+                    <FileText className="w-3 h-3 mr-1" /> Export PDF
+                  </Button>
+                </div>
+                <div className="border rounded">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-2">Student</th>
+                        <th className="text-left p-2">Behavior</th>
+                        <th className="text-right p-2">Freq</th>
+                        <th className="text-right p-2">Dur (s)</th>
+                        <th className="text-right p-2">Interval</th>
+                        <th className="text-right p-2">ABC</th>
+                        <th className="text-right p-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reviewRows.map((r) => (
+                        <tr key={`${r.sid}-${r.bid}`} className="border-t">
+                          <td className="p-2">{r.sname}</td>
+                          <td className="p-2">{r.bname}</td>
+                          <td className="p-2 text-right">{r.freq}</td>
+                          <td className="p-2 text-right">{r.durSec}</td>
+                          <td className="p-2 text-right">{r.intMarked}/{r.intTotal}</td>
+                          <td className="p-2 text-right">{r.abc}</td>
+                          <td className="p-2 text-right">
+                            <Button size="sm" variant="ghost" onClick={() => exportCSV(r.sid, r.bid)}>
+                              <FileDown className="w-3 h-3" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </section>
-          )}
-        </div>
+            )}
+          </TabsContent>
+
+          {/* TEMPLATES */}
+          <TabsContent value="templates" className="flex-1 overflow-y-auto mt-2 space-y-2">
+            {templates.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                No templates yet. Save a configuration from Setup to reuse it across students/behaviors.
+              </p>
+            ) : templates.map((t) => (
+              <div key={t.id} className="border rounded p-3 flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t.config.methods.join(', ')} ·
+                    {t.config.methods.includes('interval') &&
+                      ` ${t.config.interval.type} ${t.config.interval.intervalSec}s`}
+                  </div>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => handleApplyTemplateToAll(t)}>
+                  Apply to selected
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => handleDeleteTemplate(t.id)}>
+                  Delete
+                </Button>
+              </div>
+            ))}
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-between items-center pt-3 border-t">
           <span className="text-xs text-muted-foreground">
             {chosenStudents.length} student(s) · {totalPairs} behavior(s)
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleStart} disabled={totalPairs === 0}>
-              Start Session
-            </Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+            {tab === 'setup' && (
+              <Button onClick={handleStart} disabled={totalPairs === 0}>Start Session</Button>
+            )}
           </div>
         </div>
       </DialogContent>
