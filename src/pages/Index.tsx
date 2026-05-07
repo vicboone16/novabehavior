@@ -11,6 +11,7 @@ import { DataExportManager } from '@/components/DataExportManager';
 import { TrashRecovery } from '@/components/TrashRecovery';
 import { LocalDataCloudSync } from '@/components/LocalDataCloudSync';
 import { SessionWorkspace } from '@/components/session-workspace/SessionWorkspace';
+import { MultiStudentSessionBuilder } from '@/components/MultiStudentSessionBuilder';
 
 const Index = () => {
   return (
