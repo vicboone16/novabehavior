@@ -1,0 +1,1 @@
+UPDATE app_navigation_structure SET is_visible = false WHERE nav_key IN ('intelligence','operations');

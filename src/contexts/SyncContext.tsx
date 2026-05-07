@@ -1500,7 +1500,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
         if (resolvedAuthId) liveSessionPayload.authorization_id = resolvedAuthId;
 
         const { error: sessionError } = await supabase.from('sessions').upsert(
-          liveSessionPayload,
+          liveSessionPayload as any,
           { onConflict: 'id' },
         );
 
