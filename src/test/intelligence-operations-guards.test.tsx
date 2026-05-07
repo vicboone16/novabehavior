@@ -244,7 +244,7 @@ describe("Intelligence & Operations dashboards: multi-student × multi-interval 
     }
   });
 
-  it("renders Intelligence tab content for an authorized user with selected students", () => {
+  it("renders Intelligence tab content for an authorized user with selected students", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     const selected = STUDENTS.join(",");
@@ -258,7 +258,7 @@ describe("Intelligence & Operations dashboards: multi-student × multi-interval 
     expect(await screen.findByTestId("intelligence-view")).toBeInTheDocument();
   });
 
-  it("renders Operations tab content for an authorized user with selected students", () => {
+  it("renders Operations tab content for an authorized user with selected students", async () => {
     mockUseAuth.mockReturnValue({ userRole: "admin" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     const selected = STUDENTS.join(",");
