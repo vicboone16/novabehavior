@@ -384,7 +384,23 @@ serve(async (req) => {
       });
     }
 
-    // 1) Get BOPS dashboard data
+    // Authorization: ensure caller has access to this student
+    const { data: roleRows } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId);
+    const isAdmin = (roleRows || []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+    if (!isAdmin) {
+      const { data: access } = await supabaseAdmin
+        .from("user_student_access")
+        .select("student_id")
+        .eq("user_id", userId)
+        .eq("student_id", student_id)
+        .maybeSingle();
+      if (!access) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { data: dashData } = await supabaseAdmin
       .from("v_student_bops_dashboard")
       .select("*")
