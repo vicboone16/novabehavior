@@ -130,7 +130,7 @@ describe("Hard permission guard on Dashboard tab views", () => {
     expect(screen.getByTestId("widgets-view")).toBeInTheDocument();
   });
 
-  it("role downgrade mid-session: previously authorized view stops rendering on re-render", () => {
+  it("role downgrade mid-session: previously authorized view stops rendering on re-render", async () => {
     mockUseAuth.mockReturnValue({ userRole: "bcba" });
     mockUseCID.mockReturnValue({ hasCIDAccess: true });
     const { rerender } = render(
