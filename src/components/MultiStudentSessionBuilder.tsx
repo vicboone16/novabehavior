@@ -194,36 +194,40 @@ export function MultiStudentSessionBuilder() {
   const warningCount = issues.filter((i) => i.level === 'warning').length;
 
   // Load drafts (local + cloud) on open
+  const loadCloudDrafts = useCallback(async () => {
+    setLoadingDrafts(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setCloudDrafts([]); return; }
+      const { data, error } = await supabase
+        .from('multi_student_session_drafts' as any)
+        .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(50);
+      if (error || !data) { setCloudDrafts([]); return; }
+      const list: SavedDraft[] = (data as any[]).map((d) => ({
+        at: new Date(d.updated_at).getTime(),
+        sessionId: d.session_id,
+        chosenStudents: d.chosen_students || [],
+        chosenBehaviors: d.chosen_behaviors || {},
+        configs: d.configs || {},
+      }));
+      setCloudDrafts(list);
+    } catch {
+      setCloudDrafts([]);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     setTemplates(loadTemplates());
     const d = loadDraft();
     setHasDraft(!!d);
     setDraftAt(d?.at ?? null);
-
-    // Try cloud draft (most recent)
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data, error } = await supabase
-          .from('multi_student_session_drafts' as any)
-          .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error || !data) return;
-        const cd: SavedDraft = {
-          at: new Date((data as any).updated_at).getTime(),
-          sessionId: (data as any).session_id,
-          chosenStudents: (data as any).chosen_students || [],
-          chosenBehaviors: (data as any).chosen_behaviors || {},
-          configs: (data as any).configs || {},
-        };
-        setCloudDraft(cd);
-      } catch {}
-    })();
-  }, [open]);
+    loadCloudDrafts();
+  }, [open, loadCloudDrafts]);
 
   const toggleStudent = (sid: string) => {
     setChosenStudents((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
