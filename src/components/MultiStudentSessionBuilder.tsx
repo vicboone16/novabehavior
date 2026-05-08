@@ -481,13 +481,55 @@ export function MultiStudentSessionBuilder() {
           <DialogTitle>Multi-Student Session</DialogTitle>
         </DialogHeader>
 
+        {/* Session ID — referenced by every captured record & export */}
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs">
+          <span className="flex items-center gap-2">
+            <span className="font-semibold text-muted-foreground">Session ID:</span>
+            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border">
+              {sessionId}
+            </code>
+          </span>
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
+            {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          </Button>
+        </div>
+
         {hasDraft && (
           <div className="flex items-center justify-between bg-muted/40 border rounded p-2 text-xs">
             <span>
               <RotateCcw className="w-3 h-3 inline mr-1" />
-              Saved draft from {draftAt ? new Date(draftAt).toLocaleString() : ''}
+              Local draft from {draftAt ? new Date(draftAt).toLocaleString() : ''}
             </span>
             <Button size="sm" variant="ghost" onClick={handleResume}>Resume</Button>
+          </div>
+        )}
+
+        {cloudDraft && cloudDraft.sessionId !== sessionId && (
+          <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 rounded p-2 text-xs">
+            <span>
+              <RotateCcw className="w-3 h-3 inline mr-1" />
+              Cloud draft from {new Date(cloudDraft.at).toLocaleString()} (resumable from any device)
+            </span>
+            <Button size="sm" variant="ghost" onClick={handleResumeCloud}>Resume from cloud</Button>
+          </div>
+        )}
+
+        {(errorCount > 0 || warningCount > 0) && (
+          <div className={`border rounded p-2 text-xs space-y-1 ${errorCount > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+            <div className="flex items-center gap-1 font-semibold">
+              <AlertTriangle className="w-3 h-3" />
+              {errorCount > 0 && <span>{errorCount} error{errorCount === 1 ? '' : 's'}</span>}
+              {errorCount > 0 && warningCount > 0 && <span>·</span>}
+              {warningCount > 0 && <span>{warningCount} warning{warningCount === 1 ? '' : 's'}</span>}
+            </div>
+            <ul className="list-disc list-inside space-y-0.5 max-h-24 overflow-y-auto">
+              {issues.slice(0, 6).map((i, idx) => (
+                <li key={idx} className={i.level === 'error' ? 'text-destructive' : 'text-amber-700 dark:text-amber-400'}>
+                  <span className="font-medium">{i.field}:</span> {i.message}
+                </li>
+              ))}
+              {issues.length > 6 && <li className="text-muted-foreground">+ {issues.length - 6} more…</li>}
+            </ul>
           </div>
         )}
 
