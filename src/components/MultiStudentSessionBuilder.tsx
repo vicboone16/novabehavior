@@ -462,7 +462,7 @@ export function MultiStudentSessionBuilder() {
       doc.text(String(r.abc), 175, y);
       y += 6;
     });
-    doc.save(`session_summary_${Date.now()}.pdf`);
+    doc.save(`session_${sessionId.slice(0, 8)}_summary.pdf`);
     toast({ title: 'PDF exported' });
   };
 
