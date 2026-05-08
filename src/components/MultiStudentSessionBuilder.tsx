@@ -552,6 +552,7 @@ export function MultiStudentSessionBuilder() {
           <TabsList className="self-start">
             <TabsTrigger value="setup">Setup</TabsTrigger>
             <TabsTrigger value="review">Review ({reviewRows.length})</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts ({cloudDrafts.length})</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
