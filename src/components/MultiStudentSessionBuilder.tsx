@@ -302,8 +302,17 @@ export function MultiStudentSessionBuilder() {
     if (d) applyDraft(d);
   };
 
-  const handleResumeCloud = () => {
-    if (cloudDraft) applyDraft(cloudDraft);
+  const handleDeleteCloudDraft = async (sid: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('multi_student_session_drafts' as any)
+        .delete().eq('user_id', user.id).eq('session_id', sid);
+      setCloudDrafts((prev) => prev.filter((d) => d.sessionId !== sid));
+      toast({ title: 'Draft deleted' });
+    } catch {
+      toast({ title: 'Failed to delete draft', variant: 'destructive' });
+    }
   };
 
   const copySessionId = async () => {
