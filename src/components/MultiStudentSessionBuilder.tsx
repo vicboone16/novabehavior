@@ -162,7 +162,7 @@ export function MultiStudentSessionBuilder() {
   const startSessionInStore = useDataStore((s) => s.startSession);
 
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<'setup' | 'review' | 'templates'>('setup');
+  const [tab, setTab] = useState<'setup' | 'review' | 'drafts' | 'templates'>('setup');
   const [chosenStudents, setChosenStudents] = useState<string[]>([]);
   const [chosenBehaviors, setChosenBehaviors] = useState<Record<string, string[]>>({});
   const [configs, setConfigs] = useState<Record<string, BehaviorConfig>>({});
@@ -172,8 +172,10 @@ export function MultiStudentSessionBuilder() {
   const [hasDraft, setHasDraft] = useState(false);
   const [draftAt, setDraftAt] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
-  const [cloudDraft, setCloudDraft] = useState<SavedDraft | null>(null);
+  const [cloudDrafts, setCloudDrafts] = useState<SavedDraft[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [exportSessionId, setExportSessionId] = useState<string>('current');
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
