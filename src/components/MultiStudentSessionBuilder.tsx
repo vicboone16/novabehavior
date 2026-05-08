@@ -62,6 +62,62 @@ const defaultConfig = (): BehaviorConfig => ({
 
 const key = (sid: string, bid: string) => `${sid}::${bid}`;
 
+// ---- Validation ----
+export interface ValidationIssue {
+  level: 'error' | 'warning';
+  pairKey: string;
+  field: string;
+  message: string;
+}
+
+function validateConfig(pairKey: string, cfg: BehaviorConfig): ValidationIssue[] {
+  const out: ValidationIssue[] = [];
+  if (cfg.methods.length === 0) {
+    out.push({ level: 'error', pairKey, field: 'methods', message: 'Select at least one data method.' });
+  }
+  if (cfg.methods.includes('interval')) {
+    const { samplingSec, intervalSec, totalMin, type } = cfg.interval;
+    if (!Number.isFinite(samplingSec) || samplingSec < 1) {
+      out.push({ level: 'error', pairKey, field: 'samplingSec', message: 'Sampling must be ≥ 1 second.' });
+    } else if (samplingSec > 600) {
+      out.push({ level: 'warning', pairKey, field: 'samplingSec', message: 'Sampling > 10 min is unusually long.' });
+    }
+    if (!Number.isFinite(intervalSec) || intervalSec < 1) {
+      out.push({ level: 'error', pairKey, field: 'intervalSec', message: 'Interval must be ≥ 1 second.' });
+    } else if (intervalSec > 600) {
+      out.push({ level: 'warning', pairKey, field: 'intervalSec', message: 'Interval > 10 min is unusually long.' });
+    }
+    if (type === 'momentary' && samplingSec > intervalSec) {
+      out.push({ level: 'error', pairKey, field: 'samplingSec', message: 'Momentary sampling must be ≤ interval length.' });
+    }
+    if (!Number.isFinite(totalMin) || totalMin < 1) {
+      out.push({ level: 'error', pairKey, field: 'totalMin', message: 'Total session must be ≥ 1 minute.' });
+    } else if (totalMin > 240) {
+      out.push({ level: 'warning', pairKey, field: 'totalMin', message: 'Total session > 4 hours — confirm.' });
+    }
+    const expectedIntervals = Math.floor((totalMin * 60) / Math.max(intervalSec, 1));
+    if (expectedIntervals < 3) {
+      out.push({ level: 'warning', pairKey, field: 'totalMin', message: `Only ${expectedIntervals} intervals will be sampled.` });
+    }
+  }
+  if (cfg.methods.includes('duration')) {
+    const { autoStopSec } = cfg.duration;
+    if (!Number.isFinite(autoStopSec) || autoStopSec < 0) {
+      out.push({ level: 'error', pairKey, field: 'autoStopSec', message: 'Auto-stop must be ≥ 0 (0 = off).' });
+    } else if (autoStopSec > 0 && autoStopSec < 5) {
+      out.push({ level: 'warning', pairKey, field: 'autoStopSec', message: 'Auto-stop < 5s may end episodes prematurely.' });
+    } else if (autoStopSec > 3600) {
+      out.push({ level: 'warning', pairKey, field: 'autoStopSec', message: 'Auto-stop > 1 hour is unusually long.' });
+    }
+  }
+  if (cfg.methods.includes('frequency') && cfg.frequency.mode === 'bouts') {
+    if (!Number.isFinite(cfg.frequency.minIrtSec) || cfg.frequency.minIrtSec < 0) {
+      out.push({ level: 'error', pairKey, field: 'minIrtSec', message: 'Min IRT must be ≥ 0.' });
+    }
+  }
+  return out;
+}
+
 function loadTemplates(): ConfigTemplate[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_TEMPLATES) || '[]'); } catch { return []; }
 }
