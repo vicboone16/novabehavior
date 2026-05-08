@@ -33509,6 +33509,39 @@ export type Database = {
           },
         ]
       }
+      multi_student_session_drafts: {
+        Row: {
+          chosen_behaviors: Json
+          chosen_students: Json
+          configs: Json
+          created_at: string
+          id: string
+          session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chosen_behaviors?: Json
+          chosen_students?: Json
+          configs?: Json
+          created_at?: string
+          id?: string
+          session_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          chosen_behaviors?: Json
+          chosen_students?: Json
+          configs?: Json
+          created_at?: string
+          id?: string
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       note_requirements: {
         Row: {
           created_at: string
