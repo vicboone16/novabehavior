@@ -418,11 +418,25 @@ export function MultiStudentSessionBuilder() {
     return rows;
   }, [chosenStudents, chosenBehaviors, students, frequencyEntries, durationEntries, intervalEntries, abcEntries]);
 
+  // Available session ids across all entry types (for per-session exports)
+  const availableSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    [...frequencyEntries, ...durationEntries, ...intervalEntries, ...abcEntries]
+      .forEach((e: any) => { if (e.sessionId) ids.add(e.sessionId); });
+    ids.add(sessionId); // always include current
+    return Array.from(ids);
+  }, [frequencyEntries, durationEntries, intervalEntries, abcEntries, sessionId]);
+
   // ----- Exports -----
-  const exportCSV = (sid?: string, bid?: string) => {
+  // sessionFilter: undefined = current session id; '__all__' = no filter; specific id = that session only
+  const exportCSV = (sid?: string, bid?: string, sessionFilter?: string) => {
+    const effectiveSession = sessionFilter === undefined ? sessionId : sessionFilter;
+    const matchSession = (e: any) =>
+      effectiveSession === '__all__' ? true : (e.sessionId || '') === effectiveSession;
     const rows: string[] = [];
-    rows.push(['Student', 'Behavior', 'Type', 'Timestamp', 'Value', 'Detail'].map(csvCell).join(','));
-    const inScope = (e: any) => (!sid || e.studentId === sid) && (!bid || e.behaviorId === bid);
+    rows.push(['Student', 'Behavior', 'Type', 'Timestamp', 'Value', 'Detail', 'SessionId'].map(csvCell).join(','));
+    const inScope = (e: any) =>
+      (!sid || e.studentId === sid) && (!bid || e.behaviorId === bid) && matchSession(e);
     const sname = (id: string) => {
       const s = students.find((x) => x.id === id);
       return s?.displayName || s?.name || id;
@@ -433,27 +447,28 @@ export function MultiStudentSessionBuilder() {
     };
     frequencyEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'frequency',
-        new Date(e.timestamp).toISOString(), e.count, e.sessionId || ''].map(csvCell).join(','));
+        new Date(e.timestamp).toISOString(), e.count, '', e.sessionId || ''].map(csvCell).join(','));
     });
     durationEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'duration',
-        new Date(e.startTime).toISOString(), `${e.duration}s`, e.endTime ? new Date(e.endTime).toISOString() : ''].map(csvCell).join(','));
+        new Date(e.startTime).toISOString(), `${e.duration}s`,
+        e.endTime ? new Date(e.endTime).toISOString() : '', e.sessionId || ''].map(csvCell).join(','));
     });
     intervalEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'interval',
         new Date(e.timestamp).toISOString(), e.occurred ? 'occurred' : 'no',
-        `interval ${e.intervalNumber}${e.voided ? ' (voided)' : ''}`].map(csvCell).join(','));
+        `interval ${e.intervalNumber}${e.voided ? ' (voided)' : ''}`, e.sessionId || ''].map(csvCell).join(','));
     });
     abcEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'abc',
         new Date(e.timestamp).toISOString(), e.behavior,
-        `A:${e.antecedent} | C:${e.consequence}`].map(csvCell).join(','));
+        `A:${e.antecedent} | C:${e.consequence}`, e.sessionId || ''].map(csvCell).join(','));
     });
-    // Include the session id header so each export references the same session
-    const fname = `session_${sessionId.slice(0, 8)}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
-    const header = `# Session ID: ${sessionId}\n# Generated: ${new Date().toISOString()}\n`;
+    const sessionTag = effectiveSession === '__all__' ? 'all-sessions' : effectiveSession.slice(0, 8);
+    const fname = `session_${sessionTag}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
+    const header = `# Session ID: ${effectiveSession}\n# Generated: ${new Date().toISOString()}\n# Records: ${rows.length - 1}\n`;
     downloadFile(fname, header + rows.join('\n'));
-    toast({ title: 'CSV exported', description: fname });
+    toast({ title: 'CSV exported', description: `${fname} · ${rows.length - 1} record(s)` });
   };
 
   const exportPDF = () => {
