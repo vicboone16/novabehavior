@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
-  FileDown, RotateCcw, FileText,
+  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
