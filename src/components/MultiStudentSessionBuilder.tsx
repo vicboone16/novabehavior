@@ -434,8 +434,10 @@ export function MultiStudentSessionBuilder() {
         new Date(e.timestamp).toISOString(), e.behavior,
         `A:${e.antecedent} | C:${e.consequence}`].map(csvCell).join(','));
     });
-    const fname = `session_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
-    downloadFile(fname, rows.join('\n'));
+    // Include the session id header so each export references the same session
+    const fname = `session_${sessionId.slice(0, 8)}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
+    const header = `# Session ID: ${sessionId}\n# Generated: ${new Date().toISOString()}\n`;
+    downloadFile(fname, header + rows.join('\n'));
     toast({ title: 'CSV exported', description: fname });
   };
 
