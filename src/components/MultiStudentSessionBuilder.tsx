@@ -519,13 +519,13 @@ export function MultiStudentSessionBuilder() {
           </div>
         )}
 
-        {cloudDraft && cloudDraft.sessionId !== sessionId && (
+        {cloudDrafts.length > 0 && (
           <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 rounded p-2 text-xs">
             <span>
-              <RotateCcw className="w-3 h-3 inline mr-1" />
-              Cloud draft from {new Date(cloudDraft.at).toLocaleString()} (resumable from any device)
+              <Cloud className="w-3 h-3 inline mr-1" />
+              {cloudDrafts.length} cloud draft{cloudDrafts.length === 1 ? '' : 's'} available
             </span>
-            <Button size="sm" variant="ghost" onClick={handleResumeCloud}>Resume from cloud</Button>
+            <Button size="sm" variant="ghost" onClick={() => setTab('drafts')}>Open Drafts</Button>
           </div>
         )}
 
