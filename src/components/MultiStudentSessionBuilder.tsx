@@ -45,6 +45,7 @@ interface ConfigTemplate {
 
 interface SavedDraft {
   at: number;
+  sessionId: string;
   chosenStudents: string[];
   chosenBehaviors: Record<string, string[]>;
   configs: Record<string, BehaviorConfig>;
