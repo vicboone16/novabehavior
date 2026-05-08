@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
-  FileDown, RotateCcw, FileText,
+  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -44,6 +45,7 @@ interface ConfigTemplate {
 
 interface SavedDraft {
   at: number;
+  sessionId: string;
   chosenStudents: string[];
   chosenBehaviors: Record<string, string[]>;
   configs: Record<string, BehaviorConfig>;
@@ -60,6 +62,62 @@ const defaultConfig = (): BehaviorConfig => ({
 });
 
 const key = (sid: string, bid: string) => `${sid}::${bid}`;
+
+// ---- Validation ----
+export interface ValidationIssue {
+  level: 'error' | 'warning';
+  pairKey: string;
+  field: string;
+  message: string;
+}
+
+function validateConfig(pairKey: string, cfg: BehaviorConfig): ValidationIssue[] {
+  const out: ValidationIssue[] = [];
+  if (cfg.methods.length === 0) {
+    out.push({ level: 'error', pairKey, field: 'methods', message: 'Select at least one data method.' });
+  }
+  if (cfg.methods.includes('interval')) {
+    const { samplingSec, intervalSec, totalMin, type } = cfg.interval;
+    if (!Number.isFinite(samplingSec) || samplingSec < 1) {
+      out.push({ level: 'error', pairKey, field: 'samplingSec', message: 'Sampling must be ≥ 1 second.' });
+    } else if (samplingSec > 600) {
+      out.push({ level: 'warning', pairKey, field: 'samplingSec', message: 'Sampling > 10 min is unusually long.' });
+    }
+    if (!Number.isFinite(intervalSec) || intervalSec < 1) {
+      out.push({ level: 'error', pairKey, field: 'intervalSec', message: 'Interval must be ≥ 1 second.' });
+    } else if (intervalSec > 600) {
+      out.push({ level: 'warning', pairKey, field: 'intervalSec', message: 'Interval > 10 min is unusually long.' });
+    }
+    if (type === 'momentary' && samplingSec > intervalSec) {
+      out.push({ level: 'error', pairKey, field: 'samplingSec', message: 'Momentary sampling must be ≤ interval length.' });
+    }
+    if (!Number.isFinite(totalMin) || totalMin < 1) {
+      out.push({ level: 'error', pairKey, field: 'totalMin', message: 'Total session must be ≥ 1 minute.' });
+    } else if (totalMin > 240) {
+      out.push({ level: 'warning', pairKey, field: 'totalMin', message: 'Total session > 4 hours — confirm.' });
+    }
+    const expectedIntervals = Math.floor((totalMin * 60) / Math.max(intervalSec, 1));
+    if (expectedIntervals < 3) {
+      out.push({ level: 'warning', pairKey, field: 'totalMin', message: `Only ${expectedIntervals} intervals will be sampled.` });
+    }
+  }
+  if (cfg.methods.includes('duration')) {
+    const { autoStopSec } = cfg.duration;
+    if (!Number.isFinite(autoStopSec) || autoStopSec < 0) {
+      out.push({ level: 'error', pairKey, field: 'autoStopSec', message: 'Auto-stop must be ≥ 0 (0 = off).' });
+    } else if (autoStopSec > 0 && autoStopSec < 5) {
+      out.push({ level: 'warning', pairKey, field: 'autoStopSec', message: 'Auto-stop < 5s may end episodes prematurely.' });
+    } else if (autoStopSec > 3600) {
+      out.push({ level: 'warning', pairKey, field: 'autoStopSec', message: 'Auto-stop > 1 hour is unusually long.' });
+    }
+  }
+  if (cfg.methods.includes('frequency') && cfg.frequency.mode === 'bouts') {
+    if (!Number.isFinite(cfg.frequency.minIrtSec) || cfg.frequency.minIrtSec < 0) {
+      out.push({ level: 'error', pairKey, field: 'minIrtSec', message: 'Min IRT must be ≥ 0.' });
+    }
+  }
+  return out;
+}
 
 function loadTemplates(): ConfigTemplate[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_TEMPLATES) || '[]'); } catch { return []; }
@@ -101,6 +159,8 @@ export function MultiStudentSessionBuilder() {
   const durationEntries = useDataStore((s) => s.durationEntries);
   const intervalEntries = useDataStore((s) => s.intervalEntries);
 
+  const startSessionInStore = useDataStore((s) => s.startSession);
+
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'setup' | 'review' | 'templates'>('setup');
   const [chosenStudents, setChosenStudents] = useState<string[]>([]);
@@ -111,15 +171,56 @@ export function MultiStudentSessionBuilder() {
   const [templateName, setTemplateName] = useState('');
   const [hasDraft, setHasDraft] = useState(false);
   const [draftAt, setDraftAt] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [cloudDraft, setCloudDraft] = useState<SavedDraft | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
+  // Validate all selected pairs
+  const issues = useMemo<ValidationIssue[]>(() => {
+    const list: ValidationIssue[] = [];
+    chosenStudents.forEach((sid) => {
+      (chosenBehaviors[sid] || []).forEach((bid) => {
+        const k = key(sid, bid);
+        list.push(...validateConfig(k, configs[k] || defaultConfig()));
+      });
+    });
+    return list;
+  }, [chosenStudents, chosenBehaviors, configs]);
+  const errorCount = issues.filter((i) => i.level === 'error').length;
+  const warningCount = issues.filter((i) => i.level === 'warning').length;
+
+  // Load drafts (local + cloud) on open
   useEffect(() => {
     if (!open) return;
     setTemplates(loadTemplates());
     const d = loadDraft();
     setHasDraft(!!d);
     setDraftAt(d?.at ?? null);
+
+    // Try cloud draft (most recent)
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error } = await supabase
+          .from('multi_student_session_drafts' as any)
+          .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) return;
+        const cd: SavedDraft = {
+          at: new Date((data as any).updated_at).getTime(),
+          sessionId: (data as any).session_id,
+          chosenStudents: (data as any).chosen_students || [],
+          chosenBehaviors: (data as any).chosen_behaviors || {},
+          configs: (data as any).configs || {},
+        };
+        setCloudDraft(cd);
+      } catch {}
+    })();
   }, [open]);
 
   const toggleStudent = (sid: string) => {
@@ -144,14 +245,43 @@ export function MultiStudentSessionBuilder() {
 
   const totalPairs = chosenStudents.reduce((acc, sid) => acc + (chosenBehaviors[sid]?.length || 0), 0);
 
-  const persistDraft = (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>) => {
-    const d: SavedDraft = { at: Date.now(), chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
-    try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
-  };
+  const persistDraft = useCallback(
+    async (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>, sid: string) => {
+      const d: SavedDraft = { at: Date.now(), sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
+      try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
+      // Cloud upsert (best effort, silent on failure)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase
+          .from('multi_student_session_drafts' as any)
+          .upsert(
+            {
+              user_id: user.id,
+              session_id: sid,
+              chosen_students: cs as any,
+              chosen_behaviors: cb as any,
+              configs: cfgs as any,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,session_id' }
+          );
+      } catch {}
+    },
+    []
+  );
 
-  const handleResume = () => {
-    const d = loadDraft();
-    if (!d) return;
+  // Auto-save draft on changes (debounced)
+  useEffect(() => {
+    if (!open || (chosenStudents.length === 0 && Object.keys(configs).length === 0)) return;
+    const t = setTimeout(() => {
+      persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
+
+  const applyDraft = (d: SavedDraft) => {
+    setSessionId(d.sessionId || crypto.randomUUID());
     setChosenStudents(d.chosenStudents || []);
     setChosenBehaviors(d.chosenBehaviors || {});
     setConfigs(d.configs || {});
@@ -161,8 +291,35 @@ export function MultiStudentSessionBuilder() {
     toast({ title: 'Session resumed', description: `Restored from ${new Date(d.at).toLocaleString()}.` });
   };
 
+  const handleResume = () => {
+    const d = loadDraft();
+    if (d) applyDraft(d);
+  };
+
+  const handleResumeCloud = () => {
+    if (cloudDraft) applyDraft(cloudDraft);
+  };
+
+  const copySessionId = async () => {
+    try {
+      await navigator.clipboard.writeText(sessionId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 1500);
+    } catch {}
+  };
+
   const handleStart = () => {
     if (chosenStudents.length === 0 || totalPairs === 0) return;
+    if (errorCount > 0) {
+      toast({
+        title: `Fix ${errorCount} configuration error${errorCount === 1 ? '' : 's'}`,
+        description: 'Resolve the highlighted issues before starting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Set the session id so all captured entries reference it
+    startSessionInStore(undefined, sessionId);
     chosenStudents.forEach((sid) => {
       if (!selectedStudentIds.includes(sid)) selectStudent(sid);
       const student = students.find((s) => s.id === sid);
@@ -176,8 +333,11 @@ export function MultiStudentSessionBuilder() {
         }
       });
     });
-    persistDraft(chosenStudents, chosenBehaviors, configs);
-    toast({ title: 'Session started', description: `${chosenStudents.length} student(s), ${totalPairs} behavior(s).` });
+    persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+    toast({
+      title: 'Session started',
+      description: `Session ${sessionId.slice(0, 8)} · ${chosenStudents.length} student(s), ${totalPairs} behavior(s)${warningCount ? ` · ${warningCount} warning(s)` : ''}.`,
+    });
     setOpen(false);
   };
 
@@ -274,8 +434,10 @@ export function MultiStudentSessionBuilder() {
         new Date(e.timestamp).toISOString(), e.behavior,
         `A:${e.antecedent} | C:${e.consequence}`].map(csvCell).join(','));
     });
-    const fname = `session_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
-    downloadFile(fname, rows.join('\n'));
+    // Include the session id header so each export references the same session
+    const fname = `session_${sessionId.slice(0, 8)}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
+    const header = `# Session ID: ${sessionId}\n# Generated: ${new Date().toISOString()}\n`;
+    downloadFile(fname, header + rows.join('\n'));
     toast({ title: 'CSV exported', description: fname });
   };
 
@@ -284,6 +446,7 @@ export function MultiStudentSessionBuilder() {
     let y = 14;
     doc.setFontSize(14); doc.text('Multi-Student Session Summary', 14, y); y += 8;
     doc.setFontSize(9);
+    doc.text(`Session ID: ${sessionId}`, 14, y); y += 5;
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y); y += 6;
     doc.text(`Students: ${chosenStudents.length}  ·  Behaviors: ${totalPairs}`, 14, y); y += 8;
     doc.setFontSize(10);
@@ -299,7 +462,7 @@ export function MultiStudentSessionBuilder() {
       doc.text(String(r.abc), 175, y);
       y += 6;
     });
-    doc.save(`session_summary_${Date.now()}.pdf`);
+    doc.save(`session_${sessionId.slice(0, 8)}_summary.pdf`);
     toast({ title: 'PDF exported' });
   };
 
@@ -318,13 +481,55 @@ export function MultiStudentSessionBuilder() {
           <DialogTitle>Multi-Student Session</DialogTitle>
         </DialogHeader>
 
+        {/* Session ID — referenced by every captured record & export */}
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs">
+          <span className="flex items-center gap-2">
+            <span className="font-semibold text-muted-foreground">Session ID:</span>
+            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border">
+              {sessionId}
+            </code>
+          </span>
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
+            {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          </Button>
+        </div>
+
         {hasDraft && (
           <div className="flex items-center justify-between bg-muted/40 border rounded p-2 text-xs">
             <span>
               <RotateCcw className="w-3 h-3 inline mr-1" />
-              Saved draft from {draftAt ? new Date(draftAt).toLocaleString() : ''}
+              Local draft from {draftAt ? new Date(draftAt).toLocaleString() : ''}
             </span>
             <Button size="sm" variant="ghost" onClick={handleResume}>Resume</Button>
+          </div>
+        )}
+
+        {cloudDraft && cloudDraft.sessionId !== sessionId && (
+          <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 rounded p-2 text-xs">
+            <span>
+              <RotateCcw className="w-3 h-3 inline mr-1" />
+              Cloud draft from {new Date(cloudDraft.at).toLocaleString()} (resumable from any device)
+            </span>
+            <Button size="sm" variant="ghost" onClick={handleResumeCloud}>Resume from cloud</Button>
+          </div>
+        )}
+
+        {(errorCount > 0 || warningCount > 0) && (
+          <div className={`border rounded p-2 text-xs space-y-1 ${errorCount > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+            <div className="flex items-center gap-1 font-semibold">
+              <AlertTriangle className="w-3 h-3" />
+              {errorCount > 0 && <span>{errorCount} error{errorCount === 1 ? '' : 's'}</span>}
+              {errorCount > 0 && warningCount > 0 && <span>·</span>}
+              {warningCount > 0 && <span>{warningCount} warning{warningCount === 1 ? '' : 's'}</span>}
+            </div>
+            <ul className="list-disc list-inside space-y-0.5 max-h-24 overflow-y-auto">
+              {issues.slice(0, 6).map((i, idx) => (
+                <li key={idx} className={i.level === 'error' ? 'text-destructive' : 'text-amber-700 dark:text-amber-400'}>
+                  <span className="font-medium">{i.field}:</span> {i.message}
+                </li>
+              ))}
+              {issues.length > 6 && <li className="text-muted-foreground">+ {issues.length - 6} more…</li>}
+            </ul>
           </div>
         )}
 
@@ -611,7 +816,9 @@ export function MultiStudentSessionBuilder() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
             {tab === 'setup' && (
-              <Button onClick={handleStart} disabled={totalPairs === 0}>Start Session</Button>
+              <Button onClick={handleStart} disabled={totalPairs === 0 || errorCount > 0}>
+                Start Session{errorCount > 0 ? ` (${errorCount} error${errorCount === 1 ? '' : 's'})` : ''}
+              </Button>
             )}
           </div>
         </div>
