@@ -159,6 +159,8 @@ export function MultiStudentSessionBuilder() {
   const durationEntries = useDataStore((s) => s.durationEntries);
   const intervalEntries = useDataStore((s) => s.intervalEntries);
 
+  const startSessionInStore = useDataStore((s) => s.startSession);
+
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'setup' | 'review' | 'templates'>('setup');
   const [chosenStudents, setChosenStudents] = useState<string[]>([]);
@@ -169,15 +171,56 @@ export function MultiStudentSessionBuilder() {
   const [templateName, setTemplateName] = useState('');
   const [hasDraft, setHasDraft] = useState(false);
   const [draftAt, setDraftAt] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [cloudDraft, setCloudDraft] = useState<SavedDraft | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
+  // Validate all selected pairs
+  const issues = useMemo<ValidationIssue[]>(() => {
+    const list: ValidationIssue[] = [];
+    chosenStudents.forEach((sid) => {
+      (chosenBehaviors[sid] || []).forEach((bid) => {
+        const k = key(sid, bid);
+        list.push(...validateConfig(k, configs[k] || defaultConfig()));
+      });
+    });
+    return list;
+  }, [chosenStudents, chosenBehaviors, configs]);
+  const errorCount = issues.filter((i) => i.level === 'error').length;
+  const warningCount = issues.filter((i) => i.level === 'warning').length;
+
+  // Load drafts (local + cloud) on open
   useEffect(() => {
     if (!open) return;
     setTemplates(loadTemplates());
     const d = loadDraft();
     setHasDraft(!!d);
     setDraftAt(d?.at ?? null);
+
+    // Try cloud draft (most recent)
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error } = await supabase
+          .from('multi_student_session_drafts' as any)
+          .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) return;
+        const cd: SavedDraft = {
+          at: new Date((data as any).updated_at).getTime(),
+          sessionId: (data as any).session_id,
+          chosenStudents: (data as any).chosen_students || [],
+          chosenBehaviors: (data as any).chosen_behaviors || {},
+          configs: (data as any).configs || {},
+        };
+        setCloudDraft(cd);
+      } catch {}
+    })();
   }, [open]);
 
   const toggleStudent = (sid: string) => {
@@ -202,14 +245,43 @@ export function MultiStudentSessionBuilder() {
 
   const totalPairs = chosenStudents.reduce((acc, sid) => acc + (chosenBehaviors[sid]?.length || 0), 0);
 
-  const persistDraft = (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>) => {
-    const d: SavedDraft = { at: Date.now(), chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
-    try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
-  };
+  const persistDraft = useCallback(
+    async (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>, sid: string) => {
+      const d: SavedDraft = { at: Date.now(), sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
+      try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
+      // Cloud upsert (best effort, silent on failure)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase
+          .from('multi_student_session_drafts' as any)
+          .upsert(
+            {
+              user_id: user.id,
+              session_id: sid,
+              chosen_students: cs as any,
+              chosen_behaviors: cb as any,
+              configs: cfgs as any,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,session_id' }
+          );
+      } catch {}
+    },
+    []
+  );
 
-  const handleResume = () => {
-    const d = loadDraft();
-    if (!d) return;
+  // Auto-save draft on changes (debounced)
+  useEffect(() => {
+    if (!open || (chosenStudents.length === 0 && Object.keys(configs).length === 0)) return;
+    const t = setTimeout(() => {
+      persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
+
+  const applyDraft = (d: SavedDraft) => {
+    setSessionId(d.sessionId || crypto.randomUUID());
     setChosenStudents(d.chosenStudents || []);
     setChosenBehaviors(d.chosenBehaviors || {});
     setConfigs(d.configs || {});
@@ -219,8 +291,35 @@ export function MultiStudentSessionBuilder() {
     toast({ title: 'Session resumed', description: `Restored from ${new Date(d.at).toLocaleString()}.` });
   };
 
+  const handleResume = () => {
+    const d = loadDraft();
+    if (d) applyDraft(d);
+  };
+
+  const handleResumeCloud = () => {
+    if (cloudDraft) applyDraft(cloudDraft);
+  };
+
+  const copySessionId = async () => {
+    try {
+      await navigator.clipboard.writeText(sessionId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 1500);
+    } catch {}
+  };
+
   const handleStart = () => {
     if (chosenStudents.length === 0 || totalPairs === 0) return;
+    if (errorCount > 0) {
+      toast({
+        title: `Fix ${errorCount} configuration error${errorCount === 1 ? '' : 's'}`,
+        description: 'Resolve the highlighted issues before starting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Set the session id so all captured entries reference it
+    startSessionInStore(undefined, sessionId);
     chosenStudents.forEach((sid) => {
       if (!selectedStudentIds.includes(sid)) selectStudent(sid);
       const student = students.find((s) => s.id === sid);
@@ -234,8 +333,11 @@ export function MultiStudentSessionBuilder() {
         }
       });
     });
-    persistDraft(chosenStudents, chosenBehaviors, configs);
-    toast({ title: 'Session started', description: `${chosenStudents.length} student(s), ${totalPairs} behavior(s).` });
+    persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+    toast({
+      title: 'Session started',
+      description: `Session ${sessionId.slice(0, 8)} · ${chosenStudents.length} student(s), ${totalPairs} behavior(s)${warningCount ? ` · ${warningCount} warning(s)` : ''}.`,
+    });
     setOpen(false);
   };
 
