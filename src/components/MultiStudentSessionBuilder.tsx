@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
-  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check,
+  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check, Trash2, Cloud,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -162,7 +162,7 @@ export function MultiStudentSessionBuilder() {
   const startSessionInStore = useDataStore((s) => s.startSession);
 
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<'setup' | 'review' | 'templates'>('setup');
+  const [tab, setTab] = useState<'setup' | 'review' | 'drafts' | 'templates'>('setup');
   const [chosenStudents, setChosenStudents] = useState<string[]>([]);
   const [chosenBehaviors, setChosenBehaviors] = useState<Record<string, string[]>>({});
   const [configs, setConfigs] = useState<Record<string, BehaviorConfig>>({});
@@ -172,8 +172,10 @@ export function MultiStudentSessionBuilder() {
   const [hasDraft, setHasDraft] = useState(false);
   const [draftAt, setDraftAt] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
-  const [cloudDraft, setCloudDraft] = useState<SavedDraft | null>(null);
+  const [cloudDrafts, setCloudDrafts] = useState<SavedDraft[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [exportSessionId, setExportSessionId] = useState<string>('current');
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
@@ -192,36 +194,40 @@ export function MultiStudentSessionBuilder() {
   const warningCount = issues.filter((i) => i.level === 'warning').length;
 
   // Load drafts (local + cloud) on open
+  const loadCloudDrafts = useCallback(async () => {
+    setLoadingDrafts(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setCloudDrafts([]); return; }
+      const { data, error } = await supabase
+        .from('multi_student_session_drafts' as any)
+        .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(50);
+      if (error || !data) { setCloudDrafts([]); return; }
+      const list: SavedDraft[] = (data as any[]).map((d) => ({
+        at: new Date(d.updated_at).getTime(),
+        sessionId: d.session_id,
+        chosenStudents: d.chosen_students || [],
+        chosenBehaviors: d.chosen_behaviors || {},
+        configs: d.configs || {},
+      }));
+      setCloudDrafts(list);
+    } catch {
+      setCloudDrafts([]);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     setTemplates(loadTemplates());
     const d = loadDraft();
     setHasDraft(!!d);
     setDraftAt(d?.at ?? null);
-
-    // Try cloud draft (most recent)
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data, error } = await supabase
-          .from('multi_student_session_drafts' as any)
-          .select('session_id, chosen_students, chosen_behaviors, configs, updated_at')
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error || !data) return;
-        const cd: SavedDraft = {
-          at: new Date((data as any).updated_at).getTime(),
-          sessionId: (data as any).session_id,
-          chosenStudents: (data as any).chosen_students || [],
-          chosenBehaviors: (data as any).chosen_behaviors || {},
-          configs: (data as any).configs || {},
-        };
-        setCloudDraft(cd);
-      } catch {}
-    })();
-  }, [open]);
+    loadCloudDrafts();
+  }, [open, loadCloudDrafts]);
 
   const toggleStudent = (sid: string) => {
     setChosenStudents((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
@@ -296,8 +302,17 @@ export function MultiStudentSessionBuilder() {
     if (d) applyDraft(d);
   };
 
-  const handleResumeCloud = () => {
-    if (cloudDraft) applyDraft(cloudDraft);
+  const handleDeleteCloudDraft = async (sid: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('multi_student_session_drafts' as any)
+        .delete().eq('user_id', user.id).eq('session_id', sid);
+      setCloudDrafts((prev) => prev.filter((d) => d.sessionId !== sid));
+      toast({ title: 'Draft deleted' });
+    } catch {
+      toast({ title: 'Failed to delete draft', variant: 'destructive' });
+    }
   };
 
   const copySessionId = async () => {
@@ -403,11 +418,25 @@ export function MultiStudentSessionBuilder() {
     return rows;
   }, [chosenStudents, chosenBehaviors, students, frequencyEntries, durationEntries, intervalEntries, abcEntries]);
 
+  // Available session ids across all entry types (for per-session exports)
+  const availableSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    [...frequencyEntries, ...durationEntries, ...intervalEntries, ...abcEntries]
+      .forEach((e: any) => { if (e.sessionId) ids.add(e.sessionId); });
+    ids.add(sessionId); // always include current
+    return Array.from(ids);
+  }, [frequencyEntries, durationEntries, intervalEntries, abcEntries, sessionId]);
+
   // ----- Exports -----
-  const exportCSV = (sid?: string, bid?: string) => {
+  // sessionFilter: undefined = current session id; '__all__' = no filter; specific id = that session only
+  const exportCSV = (sid?: string, bid?: string, sessionFilter?: string) => {
+    const effectiveSession = sessionFilter === undefined ? sessionId : sessionFilter;
+    const matchSession = (e: any) =>
+      effectiveSession === '__all__' ? true : (e.sessionId || '') === effectiveSession;
     const rows: string[] = [];
-    rows.push(['Student', 'Behavior', 'Type', 'Timestamp', 'Value', 'Detail'].map(csvCell).join(','));
-    const inScope = (e: any) => (!sid || e.studentId === sid) && (!bid || e.behaviorId === bid);
+    rows.push(['Student', 'Behavior', 'Type', 'Timestamp', 'Value', 'Detail', 'SessionId'].map(csvCell).join(','));
+    const inScope = (e: any) =>
+      (!sid || e.studentId === sid) && (!bid || e.behaviorId === bid) && matchSession(e);
     const sname = (id: string) => {
       const s = students.find((x) => x.id === id);
       return s?.displayName || s?.name || id;
@@ -418,27 +447,28 @@ export function MultiStudentSessionBuilder() {
     };
     frequencyEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'frequency',
-        new Date(e.timestamp).toISOString(), e.count, e.sessionId || ''].map(csvCell).join(','));
+        new Date(e.timestamp).toISOString(), e.count, '', e.sessionId || ''].map(csvCell).join(','));
     });
     durationEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'duration',
-        new Date(e.startTime).toISOString(), `${e.duration}s`, e.endTime ? new Date(e.endTime).toISOString() : ''].map(csvCell).join(','));
+        new Date(e.startTime).toISOString(), `${e.duration}s`,
+        e.endTime ? new Date(e.endTime).toISOString() : '', e.sessionId || ''].map(csvCell).join(','));
     });
     intervalEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'interval',
         new Date(e.timestamp).toISOString(), e.occurred ? 'occurred' : 'no',
-        `interval ${e.intervalNumber}${e.voided ? ' (voided)' : ''}`].map(csvCell).join(','));
+        `interval ${e.intervalNumber}${e.voided ? ' (voided)' : ''}`, e.sessionId || ''].map(csvCell).join(','));
     });
     abcEntries.filter(inScope).forEach((e) => {
       rows.push([sname(e.studentId), bname(e.studentId, e.behaviorId), 'abc',
         new Date(e.timestamp).toISOString(), e.behavior,
-        `A:${e.antecedent} | C:${e.consequence}`].map(csvCell).join(','));
+        `A:${e.antecedent} | C:${e.consequence}`, e.sessionId || ''].map(csvCell).join(','));
     });
-    // Include the session id header so each export references the same session
-    const fname = `session_${sessionId.slice(0, 8)}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
-    const header = `# Session ID: ${sessionId}\n# Generated: ${new Date().toISOString()}\n`;
+    const sessionTag = effectiveSession === '__all__' ? 'all-sessions' : effectiveSession.slice(0, 8);
+    const fname = `session_${sessionTag}_${sid ? sname(sid).replace(/\W+/g, '_') : 'all'}${bid ? '_' + bname(sid!, bid).replace(/\W+/g, '_') : ''}.csv`;
+    const header = `# Session ID: ${effectiveSession}\n# Generated: ${new Date().toISOString()}\n# Records: ${rows.length - 1}\n`;
     downloadFile(fname, header + rows.join('\n'));
-    toast({ title: 'CSV exported', description: fname });
+    toast({ title: 'CSV exported', description: `${fname} · ${rows.length - 1} record(s)` });
   };
 
   const exportPDF = () => {
@@ -504,13 +534,13 @@ export function MultiStudentSessionBuilder() {
           </div>
         )}
 
-        {cloudDraft && cloudDraft.sessionId !== sessionId && (
+        {cloudDrafts.length > 0 && (
           <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/30 rounded p-2 text-xs">
             <span>
-              <RotateCcw className="w-3 h-3 inline mr-1" />
-              Cloud draft from {new Date(cloudDraft.at).toLocaleString()} (resumable from any device)
+              <Cloud className="w-3 h-3 inline mr-1" />
+              {cloudDrafts.length} cloud draft{cloudDrafts.length === 1 ? '' : 's'} available
             </span>
-            <Button size="sm" variant="ghost" onClick={handleResumeCloud}>Resume from cloud</Button>
+            <Button size="sm" variant="ghost" onClick={() => setTab('drafts')}>Open Drafts</Button>
           </div>
         )}
 
@@ -537,6 +567,7 @@ export function MultiStudentSessionBuilder() {
           <TabsList className="self-start">
             <TabsTrigger value="setup">Setup</TabsTrigger>
             <TabsTrigger value="review">Review ({reviewRows.length})</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts ({cloudDrafts.length})</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
@@ -738,13 +769,28 @@ export function MultiStudentSessionBuilder() {
               </p>
             ) : (
               <div className="space-y-2">
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => exportCSV()}>
-                    <FileDown className="w-3 h-3 mr-1" /> Export all CSV
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={exportPDF}>
-                    <FileText className="w-3 h-3 mr-1" /> Export PDF
-                  </Button>
+                <div className="flex flex-wrap items-center gap-2 justify-between bg-muted/30 border rounded p-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Label className="text-xs whitespace-nowrap">Export Session:</Label>
+                    <Select value={exportSessionId} onValueChange={setExportSessionId}>
+                      <SelectTrigger className="h-8 w-[260px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="current">Current ({sessionId.slice(0, 8)})</SelectItem>
+                        <SelectItem value="__all__">All sessions</SelectItem>
+                        {availableSessionIds.filter((id) => id !== sessionId).map((id) => (
+                          <SelectItem key={id} value={id}>{id.slice(0, 8)}…</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => exportCSV(undefined, undefined, exportSessionId === 'current' ? undefined : exportSessionId)}>
+                      <FileDown className="w-3 h-3 mr-1" /> Export CSV
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={exportPDF}>
+                      <FileText className="w-3 h-3 mr-1" /> Export PDF
+                    </Button>
+                  </div>
                 </div>
                 <div className="border rounded">
                   <table className="w-full text-xs">
@@ -769,7 +815,8 @@ export function MultiStudentSessionBuilder() {
                           <td className="p-2 text-right">{r.intMarked}/{r.intTotal}</td>
                           <td className="p-2 text-right">{r.abc}</td>
                           <td className="p-2 text-right">
-                            <Button size="sm" variant="ghost" onClick={() => exportCSV(r.sid, r.bid)}>
+                            <Button size="sm" variant="ghost" title="Export this row for selected session"
+                              onClick={() => exportCSV(r.sid, r.bid, exportSessionId === 'current' ? undefined : exportSessionId)}>
                               <FileDown className="w-3 h-3" />
                             </Button>
                           </td>
@@ -780,6 +827,61 @@ export function MultiStudentSessionBuilder() {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* DRAFTS */}
+          <TabsContent value="drafts" className="flex-1 overflow-y-auto mt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Saved multi-student session drafts (cloud-synced, resumable from any device).
+              </p>
+              <Button size="sm" variant="ghost" onClick={loadCloudDrafts} disabled={loadingDrafts}>
+                {loadingDrafts ? 'Loading…' : 'Refresh'}
+              </Button>
+            </div>
+            {hasDraft && draftAt && (
+              <div className="border rounded p-3 flex items-center gap-3 bg-muted/20">
+                <RotateCcw className="w-4 h-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">Local draft (this device)</div>
+                  <div className="text-xs text-muted-foreground">
+                    Last updated {new Date(draftAt).toLocaleString()}
+                  </div>
+                </div>
+                <Button size="sm" variant="secondary" onClick={handleResume}>Resume</Button>
+              </div>
+            )}
+            {cloudDrafts.length === 0 && !loadingDrafts ? (
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                No saved drafts. Configure a session in Setup — it auto-saves as you work.
+              </p>
+            ) : cloudDrafts.map((d) => {
+              const studentCount = d.chosenStudents.length;
+              const behaviorCount = Object.values(d.chosenBehaviors).reduce((a, b) => a + (b?.length || 0), 0);
+              const isCurrent = d.sessionId === sessionId;
+              return (
+                <div key={d.sessionId} className={`border rounded p-3 flex items-center gap-3 ${isCurrent ? 'border-primary/40 bg-primary/5' : ''}`}>
+                  <Cloud className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border truncate">
+                        {d.sessionId}
+                      </code>
+                      {isCurrent && <span className="text-[10px] uppercase font-semibold text-primary">Current</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {studentCount} student{studentCount === 1 ? '' : 's'} · {behaviorCount} behavior{behaviorCount === 1 ? '' : 's'} · updated {new Date(d.at).toLocaleString()}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => applyDraft(d)} disabled={isCurrent}>
+                    Resume
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleDeleteCloudDraft(d.sessionId)} title="Delete draft">
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              );
+            })}
           </TabsContent>
 
           {/* TEMPLATES */}
