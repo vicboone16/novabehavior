@@ -769,13 +769,28 @@ export function MultiStudentSessionBuilder() {
               </p>
             ) : (
               <div className="space-y-2">
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="outline" onClick={() => exportCSV()}>
-                    <FileDown className="w-3 h-3 mr-1" /> Export all CSV
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={exportPDF}>
-                    <FileText className="w-3 h-3 mr-1" /> Export PDF
-                  </Button>
+                <div className="flex flex-wrap items-center gap-2 justify-between bg-muted/30 border rounded p-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <Label className="text-xs whitespace-nowrap">Export Session:</Label>
+                    <Select value={exportSessionId} onValueChange={setExportSessionId}>
+                      <SelectTrigger className="h-8 w-[260px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="current">Current ({sessionId.slice(0, 8)})</SelectItem>
+                        <SelectItem value="__all__">All sessions</SelectItem>
+                        {availableSessionIds.filter((id) => id !== sessionId).map((id) => (
+                          <SelectItem key={id} value={id}>{id.slice(0, 8)}…</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => exportCSV(undefined, undefined, exportSessionId === 'current' ? undefined : exportSessionId)}>
+                      <FileDown className="w-3 h-3 mr-1" /> Export CSV
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={exportPDF}>
+                      <FileText className="w-3 h-3 mr-1" /> Export PDF
+                    </Button>
+                  </div>
                 </div>
                 <div className="border rounded">
                   <table className="w-full text-xs">
@@ -800,7 +815,8 @@ export function MultiStudentSessionBuilder() {
                           <td className="p-2 text-right">{r.intMarked}/{r.intTotal}</td>
                           <td className="p-2 text-right">{r.abc}</td>
                           <td className="p-2 text-right">
-                            <Button size="sm" variant="ghost" onClick={() => exportCSV(r.sid, r.bid)}>
+                            <Button size="sm" variant="ghost" title="Export this row for selected session"
+                              onClick={() => exportCSV(r.sid, r.bid, exportSessionId === 'current' ? undefined : exportSessionId)}>
                               <FileDown className="w-3 h-3" />
                             </Button>
                           </td>
@@ -811,6 +827,61 @@ export function MultiStudentSessionBuilder() {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* DRAFTS */}
+          <TabsContent value="drafts" className="flex-1 overflow-y-auto mt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Saved multi-student session drafts (cloud-synced, resumable from any device).
+              </p>
+              <Button size="sm" variant="ghost" onClick={loadCloudDrafts} disabled={loadingDrafts}>
+                {loadingDrafts ? 'Loading…' : 'Refresh'}
+              </Button>
+            </div>
+            {hasDraft && draftAt && (
+              <div className="border rounded p-3 flex items-center gap-3 bg-muted/20">
+                <RotateCcw className="w-4 h-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">Local draft (this device)</div>
+                  <div className="text-xs text-muted-foreground">
+                    Last updated {new Date(draftAt).toLocaleString()}
+                  </div>
+                </div>
+                <Button size="sm" variant="secondary" onClick={handleResume}>Resume</Button>
+              </div>
+            )}
+            {cloudDrafts.length === 0 && !loadingDrafts ? (
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                No saved drafts. Configure a session in Setup — it auto-saves as you work.
+              </p>
+            ) : cloudDrafts.map((d) => {
+              const studentCount = d.chosenStudents.length;
+              const behaviorCount = Object.values(d.chosenBehaviors).reduce((a, b) => a + (b?.length || 0), 0);
+              const isCurrent = d.sessionId === sessionId;
+              return (
+                <div key={d.sessionId} className={`border rounded p-3 flex items-center gap-3 ${isCurrent ? 'border-primary/40 bg-primary/5' : ''}`}>
+                  <Cloud className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded border truncate">
+                        {d.sessionId}
+                      </code>
+                      {isCurrent && <span className="text-[10px] uppercase font-semibold text-primary">Current</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {studentCount} student{studentCount === 1 ? '' : 's'} · {behaviorCount} behavior{behaviorCount === 1 ? '' : 's'} · updated {new Date(d.at).toLocaleString()}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => applyDraft(d)} disabled={isCurrent}>
+                    Resume
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleDeleteCloudDraft(d.sessionId)} title="Delete draft">
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              );
+            })}
           </TabsContent>
 
           {/* TEMPLATES */}
