@@ -816,7 +816,9 @@ export function MultiStudentSessionBuilder() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
             {tab === 'setup' && (
-              <Button onClick={handleStart} disabled={totalPairs === 0}>Start Session</Button>
+              <Button onClick={handleStart} disabled={totalPairs === 0 || errorCount > 0}>
+                Start Session{errorCount > 0 ? ` (${errorCount} error${errorCount === 1 ? '' : 's'})` : ''}
+              </Button>
             )}
           </div>
         </div>
