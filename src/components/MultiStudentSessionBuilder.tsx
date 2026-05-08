@@ -446,6 +446,7 @@ export function MultiStudentSessionBuilder() {
     let y = 14;
     doc.setFontSize(14); doc.text('Multi-Student Session Summary', 14, y); y += 8;
     doc.setFontSize(9);
+    doc.text(`Session ID: ${sessionId}`, 14, y); y += 5;
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y); y += 6;
     doc.text(`Students: ${chosenStudents.length}  ·  Behaviors: ${totalPairs}`, 14, y); y += 8;
     doc.setFontSize(10);
