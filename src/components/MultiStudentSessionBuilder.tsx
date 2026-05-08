@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
-  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check,
+  FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check, Trash2, Cloud,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
