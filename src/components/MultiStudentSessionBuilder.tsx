@@ -262,6 +262,7 @@ export function MultiStudentSessionBuilder() {
       try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
 
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        enqueueDraft({ sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs as any, queuedAt: Date.now() });
         pendingSyncRef.current = true;
         setSyncStatus('offline');
         return;
@@ -288,10 +289,13 @@ export function MultiStudentSessionBuilder() {
             { onConflict: 'user_id,session_id' }
           );
         if (error) throw error;
+        dequeue(sid);
         pendingSyncRef.current = false;
         setLastSyncedAt(Date.now());
         setSyncStatus('saved');
       } catch {
+        // Persist to offline queue so it syncs on next app open
+        enqueueDraft({ sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs as any, queuedAt: Date.now() });
         pendingSyncRef.current = true;
         setSyncStatus('error');
       }
@@ -308,12 +312,20 @@ export function MultiStudentSessionBuilder() {
     return () => clearTimeout(t);
   }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
 
-  // Retry sync when coming back online or tab becomes visible
+  // Track queued (pending offline) drafts so the UI can surface them.
+  const [queuedCount, setQueuedCount] = useState(0);
+  useEffect(() => subscribeQueue(setQueuedCount), []);
+
+  // Drain queue on mount/open and when connectivity returns.
   useEffect(() => {
     if (!open) return;
+    void drainQueue();
     const retry = () => {
-      if (pendingSyncRef.current && (typeof navigator === 'undefined' || navigator.onLine)) {
-        persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void drainQueue();
+        if (pendingSyncRef.current) {
+          persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+        }
       }
     };
     const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
