@@ -550,16 +550,28 @@ export function MultiStudentSessionBuilder() {
         </DialogHeader>
 
         {/* Session ID — referenced by every captured record & export */}
-        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs">
-          <span className="flex items-center gap-2">
-            <span className="font-semibold text-muted-foreground">Session ID:</span>
-            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border">
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs gap-2">
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="font-semibold text-muted-foreground shrink-0">Session ID:</span>
+            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border truncate">
               {sessionId}
             </code>
           </span>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
-            {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          </Button>
+          <span className="flex items-center gap-2 shrink-0">
+            <span
+              className="flex items-center gap-1 text-[11px] text-muted-foreground"
+              title={lastSyncedAt ? `Last synced ${new Date(lastSyncedAt).toLocaleTimeString()}` : 'Auto-syncs as you edit'}
+            >
+              {syncStatus === 'saving' && (<><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>)}
+              {syncStatus === 'saved' && (<><Cloud className="w-3 h-3 text-green-600" /> Saved{lastSyncedAt ? ` ${new Date(lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</>)}
+              {syncStatus === 'offline' && (<><CloudOff className="w-3 h-3 text-amber-600" /> Offline — will sync</>)}
+              {syncStatus === 'error' && (<><CloudOff className="w-3 h-3 text-destructive" /> Sync failed — retrying</>)}
+              {syncStatus === 'idle' && (<><Cloud className="w-3 h-3 opacity-50" /> Auto-sync on</>)}
+            </span>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
+              {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            </Button>
+          </span>
         </div>
 
         {hasDraft && (
