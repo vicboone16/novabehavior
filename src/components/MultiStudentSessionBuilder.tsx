@@ -580,6 +580,14 @@ export function MultiStudentSessionBuilder() {
               {syncStatus === 'offline' && (<><CloudOff className="w-3 h-3 text-amber-600" /> Offline — will sync</>)}
               {syncStatus === 'error' && (<><CloudOff className="w-3 h-3 text-destructive" /> Sync failed — retrying</>)}
               {syncStatus === 'idle' && (<><Cloud className="w-3 h-3 opacity-50" /> Auto-sync on</>)}
+              {queuedCount > 0 && (
+                <span
+                  className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[10px] font-medium"
+                  title={`${queuedCount} draft${queuedCount > 1 ? 's' : ''} waiting to sync`}
+                >
+                  <CloudOff className="w-2.5 h-2.5" /> {queuedCount} queued
+                </span>
+              )}
             </span>
             <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
               {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
