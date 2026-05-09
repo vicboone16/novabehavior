@@ -259,11 +259,21 @@ export function MultiStudentSessionBuilder() {
     async (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>, sid: string) => {
       const d: SavedDraft = { at: Date.now(), sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
       try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
-      // Cloud upsert (best effort, silent on failure)
+
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        pendingSyncRef.current = true;
+        setSyncStatus('offline');
+        return;
+      }
+
+      setSyncStatus('saving');
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        await supabase
+        if (!user) {
+          setSyncStatus('idle');
+          return;
+        }
+        const { error } = await supabase
           .from('multi_student_session_drafts' as any)
           .upsert(
             {
@@ -276,7 +286,14 @@ export function MultiStudentSessionBuilder() {
             },
             { onConflict: 'user_id,session_id' }
           );
-      } catch {}
+        if (error) throw error;
+        pendingSyncRef.current = false;
+        setLastSyncedAt(Date.now());
+        setSyncStatus('saved');
+      } catch {
+        pendingSyncRef.current = true;
+        setSyncStatus('error');
+      }
     },
     []
   );
@@ -288,6 +305,23 @@ export function MultiStudentSessionBuilder() {
       persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
     }, 800);
     return () => clearTimeout(t);
+  }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
+
+  // Retry sync when coming back online or tab becomes visible
+  useEffect(() => {
+    if (!open) return;
+    const retry = () => {
+      if (pendingSyncRef.current && (typeof navigator === 'undefined' || navigator.onLine)) {
+        persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
+    window.addEventListener('online', retry);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('online', retry);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
 
   const applyDraft = (d: SavedDraft) => {
