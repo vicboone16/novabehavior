@@ -177,6 +177,9 @@ export function MultiStudentSessionBuilder() {
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [exportSessionId, setExportSessionId] = useState<string>('current');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const pendingSyncRef = useRef(false);
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
