@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
   FileDown, RotateCcw, FileText, AlertTriangle, Copy, Check, Trash2, Cloud,
+  CloudOff, Loader2,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 
@@ -176,6 +177,9 @@ export function MultiStudentSessionBuilder() {
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [exportSessionId, setExportSessionId] = useState<string>('current');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const pendingSyncRef = useRef(false);
 
   const activeStudents = useMemo(() => students.filter((s) => !s.isArchived), [students]);
 
@@ -255,11 +259,21 @@ export function MultiStudentSessionBuilder() {
     async (cs: string[], cb: Record<string, string[]>, cfgs: Record<string, BehaviorConfig>, sid: string) => {
       const d: SavedDraft = { at: Date.now(), sessionId: sid, chosenStudents: cs, chosenBehaviors: cb, configs: cfgs };
       try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify(d)); } catch {}
-      // Cloud upsert (best effort, silent on failure)
+
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        pendingSyncRef.current = true;
+        setSyncStatus('offline');
+        return;
+      }
+
+      setSyncStatus('saving');
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        await supabase
+        if (!user) {
+          setSyncStatus('idle');
+          return;
+        }
+        const { error } = await supabase
           .from('multi_student_session_drafts' as any)
           .upsert(
             {
@@ -272,7 +286,14 @@ export function MultiStudentSessionBuilder() {
             },
             { onConflict: 'user_id,session_id' }
           );
-      } catch {}
+        if (error) throw error;
+        pendingSyncRef.current = false;
+        setLastSyncedAt(Date.now());
+        setSyncStatus('saved');
+      } catch {
+        pendingSyncRef.current = true;
+        setSyncStatus('error');
+      }
     },
     []
   );
@@ -284,6 +305,23 @@ export function MultiStudentSessionBuilder() {
       persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
     }, 800);
     return () => clearTimeout(t);
+  }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
+
+  // Retry sync when coming back online or tab becomes visible
+  useEffect(() => {
+    if (!open) return;
+    const retry = () => {
+      if (pendingSyncRef.current && (typeof navigator === 'undefined' || navigator.onLine)) {
+        persistDraft(chosenStudents, chosenBehaviors, configs, sessionId);
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
+    window.addEventListener('online', retry);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('online', retry);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [open, chosenStudents, chosenBehaviors, configs, sessionId, persistDraft]);
 
   const applyDraft = (d: SavedDraft) => {
@@ -512,16 +550,28 @@ export function MultiStudentSessionBuilder() {
         </DialogHeader>
 
         {/* Session ID — referenced by every captured record & export */}
-        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs">
-          <span className="flex items-center gap-2">
-            <span className="font-semibold text-muted-foreground">Session ID:</span>
-            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border">
+        <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded p-2 text-xs gap-2">
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="font-semibold text-muted-foreground shrink-0">Session ID:</span>
+            <code className="font-mono text-[11px] bg-background px-1.5 py-0.5 rounded border truncate">
               {sessionId}
             </code>
           </span>
-          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
-            {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          </Button>
+          <span className="flex items-center gap-2 shrink-0">
+            <span
+              className="flex items-center gap-1 text-[11px] text-muted-foreground"
+              title={lastSyncedAt ? `Last synced ${new Date(lastSyncedAt).toLocaleTimeString()}` : 'Auto-syncs as you edit'}
+            >
+              {syncStatus === 'saving' && (<><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>)}
+              {syncStatus === 'saved' && (<><Cloud className="w-3 h-3 text-green-600" /> Saved{lastSyncedAt ? ` ${new Date(lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</>)}
+              {syncStatus === 'offline' && (<><CloudOff className="w-3 h-3 text-amber-600" /> Offline — will sync</>)}
+              {syncStatus === 'error' && (<><CloudOff className="w-3 h-3 text-destructive" /> Sync failed — retrying</>)}
+              {syncStatus === 'idle' && (<><Cloud className="w-3 h-3 opacity-50" /> Auto-sync on</>)}
+            </span>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={copySessionId}>
+              {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            </Button>
+          </span>
         </div>
 
         {hasDraft && (
