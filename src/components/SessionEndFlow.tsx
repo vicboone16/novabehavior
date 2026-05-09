@@ -213,7 +213,7 @@ export function SessionEndFlow({
         }
       }
 
-      // Mark the parent session as completed
+      // Mark the parent session as completed with billing intake
       if (currentSessionId && user?.id) {
         try {
           await supabase
@@ -228,12 +228,74 @@ export function SessionEndFlow({
                 session_length_minutes: Math.round(sessionMinutes),
                 student_ids: targetStudentIds,
                 status: 'completed',
+                billing_status: 'needs_review',
+                collected_by: user.id,
               } as any,
               { onConflict: 'id' }
             );
         } catch (e) {
           console.error('[SessionEnd] session upsert failed:', e);
           errors.push('Session record');
+        }
+
+        // Create a time_entry per student so sessions surface in the billing review queue.
+        // Each entry is pre-populated with the student's active authorization and CPT code
+        // so BCBAs can finalize without re-entering data.
+        const today = sessionStart.toISOString().split('T')[0];
+        for (const student of targetStudents) {
+          try {
+            const sessionStatus = getStudentSessionStatus(student.id);
+            const effectiveMinutes = sessionStatus?.effectiveSessionMinutes ||
+              Math.max(1, (now.getTime() - sessionStart.getTime()) / 60000);
+
+            // Look up active authorization for this student on the session date
+            const { data: auth } = await supabase
+              .from('authorizations')
+              .select('id, service_codes, payer_id')
+              .eq('student_id', student.id)
+              .eq('status', 'active')
+              .lte('start_date', today)
+              .gte('end_date', today)
+              .order('is_default', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            // Resolve CPT code: prefer first service_code on auth, fall back to 97153 (direct ABA)
+            let cptCode = auth?.service_codes?.[0] ?? '97153';
+
+            // If we have a payer, try to find the matching payer_service for direct therapy
+            if (auth?.payer_id) {
+              const { data: payerSvc } = await supabase
+                .from('payer_services')
+                .select('cpt_hcpcs_code')
+                .eq('payer_id', auth.payer_id)
+                .eq('status', 'active')
+                .ilike('service_category', '%direct%')
+                .limit(1)
+                .maybeSingle();
+              if (payerSvc?.cpt_hcpcs_code) cptCode = payerSvc.cpt_hcpcs_code;
+            }
+
+            // Insert time_entry (ignore if already exists for this session+student)
+            await supabase.from('time_entries').insert({
+              user_id: user.id,
+              agency_id: currentAgency?.id ?? null,
+              session_id: currentSessionId,
+              student_id: student.id,
+              authorization_id: auth?.id ?? null,
+              activity_type: 'aba_direct',
+              entry_kind: 'session',
+              started_at: sessionStart.toISOString(),
+              ended_at: now.toISOString(),
+              duration_minutes: Math.round(effectiveMinutes),
+              cpt_code: cptCode,
+              is_billable: true,
+              status: 'draft',
+            });
+          } catch (e: any) {
+            // Non-fatal — billing entry can be created manually from NeedsReviewList
+            console.warn(`[SessionEnd] time_entry creation failed for ${student.id}:`, e?.message);
+          }
         }
       }
 
@@ -297,6 +359,36 @@ export function SessionEndFlow({
     );
     setBuildingNote(studentId);
     setStep('note_builder');
+
+    // Update the time_entry CPT code and activity_type to match the note type.
+    // Assessment = 97151, supervision/BCBA direct = 97155, parent training = 97156, RBT/direct = 97153
+    const noteTypeToCpt: Record<ClinicalNoteType, string> = {
+      assessment: '97151',
+      supervision_revision: '97155',
+      parent_training: '97156',
+      clinical: '97155',
+      therapist: '97153',
+    };
+    const noteTypeToActivity: Record<ClinicalNoteType, string> = {
+      assessment: 'aba_assessment',
+      supervision_revision: 'aba_supervision',
+      parent_training: 'parent_training',
+      clinical: 'aba_direct',
+      therapist: 'aba_direct',
+    };
+    const cpt = noteTypeToCpt[noteType];
+    const activity = noteTypeToActivity[noteType];
+    if (currentSessionId) {
+      supabase
+        .from('time_entries')
+        .update({ cpt_code: cpt, activity_type: activity })
+        .eq('session_id', currentSessionId)
+        .eq('student_id', studentId)
+        .eq('status', 'draft')
+        .then(({ error }) => {
+          if (error) console.warn('[SessionEnd] time_entry CPT update failed:', error.message);
+        });
+    }
   };
 
   const handleNoteComplete = (studentId: string) => {

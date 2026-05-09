@@ -20,13 +20,68 @@ import { ReadyForClaimQueue } from '@/components/billing/ReadyForClaimQueue';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsFilters } from '@/components/analytics/AnalyticsFilters';
 import { subDays } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAgencyContext } from '@/hooks/useAgencyContext';
+
 export default function Billing() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { userRole } = useAuth();
+  const { currentAgency } = useAgencyContext();
   const initialTab = searchParams.get('tab') || 'dashboard';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showClaimGenerator, setShowClaimGenerator] = useState(false);
+  const [priorAuthStudentId, setPriorAuthStudentId] = useState('');
+  const [eligibilityStudentId, setEligibilityStudentId] = useState('');
+
+  // Load students for Prior Auth tab
+  const { data: students = [] } = useQuery({
+    queryKey: ['billing-students', currentAgency?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('students')
+        .select('id, name, first_name, last_name')
+        .order('name', { ascending: true });
+      return (data ?? []) as Array<{ id: string; name: string; first_name: string | null; last_name: string | null }>;
+    },
+    enabled: !!currentAgency?.id,
+  });
+
+  // Load payers for the selected student (via student_payers)
+  const { data: studentPayers = [] } = useQuery({
+    queryKey: ['student-payers-for-auth', priorAuthStudentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('student_payers')
+        .select('payer_id, payers(id, name)')
+        .eq('student_id', priorAuthStudentId)
+        .eq('is_active', true)
+        .order('billing_order', { ascending: true });
+      return (data ?? []).map((sp: any) => ({ id: sp.payers?.id, name: sp.payers?.name })).filter(p => p.id);
+    },
+    enabled: !!priorAuthStudentId,
+  });
+
+  // Load payers for the eligibility student
+  const { data: eligibilityStudentPayers = [] } = useQuery({
+    queryKey: ['student-payers-for-eligibility', eligibilityStudentId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('student_payers')
+        .select('id, member_id, payer_id, payers(id, name, payer_id)')
+        .eq('student_id', eligibilityStudentId)
+        .eq('is_active', true)
+        .order('billing_order', { ascending: true });
+      return (data ?? []).map((sp: any) => ({
+        id: sp.id,
+        payer_id: sp.payers?.payer_id ?? sp.payer_id ?? '',
+        member_id: sp.member_id ?? '',
+        payer: { name: sp.payers?.name ?? '' },
+      }));
+    },
+    enabled: !!eligibilityStudentId,
+  });
 
   // Analytics state
   const [analyticsTab, setAnalyticsTab] = useState('overview');
@@ -159,15 +214,38 @@ export default function Billing() {
                 <CardHeader>
                   <CardTitle>Insurance Eligibility Verification</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Real-time eligibility checking via pVerify. Select a patient to verify their insurance coverage.
-                  </p>
-                  <EligibilityChecker 
-                    studentId="demo" 
-                    studentName="Demo Patient"
-                    clientPayers={[]}
-                  />
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Select Client</label>
+                    <select
+                      value={eligibilityStudentId}
+                      onChange={e => setEligibilityStudentId(e.target.value)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">— choose a client —</option>
+                      {students.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {eligibilityStudentId ? (
+                    <EligibilityChecker
+                      studentId={eligibilityStudentId}
+                      studentName={
+                        (() => {
+                          const s = students.find(x => x.id === eligibilityStudentId);
+                          return s ? (s.name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()) : '';
+                        })()
+                      }
+                      clientPayers={eligibilityStudentPayers}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Select a client above to check their insurance eligibility.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -179,15 +257,38 @@ export default function Billing() {
                 <CardHeader>
                   <CardTitle>AI-Powered Prior Authorization</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    Generate clinical justifications for prior authorization requests using AI.
-                  </p>
-                  <PriorAuthGenerator 
-                    studentId="demo" 
-                    studentName="Demo Patient"
-                    payers={[]}
-                  />
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Select Client</label>
+                    <select
+                      value={priorAuthStudentId}
+                      onChange={e => setPriorAuthStudentId(e.target.value)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">— choose a client —</option>
+                      {students.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {priorAuthStudentId ? (
+                    <PriorAuthGenerator
+                      studentId={priorAuthStudentId}
+                      studentName={
+                        (() => {
+                          const s = students.find(x => x.id === priorAuthStudentId);
+                          return s ? (s.name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()) : '';
+                        })()
+                      }
+                      payers={studentPayers}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Select a client above to generate a prior authorization request.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>

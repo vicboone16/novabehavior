@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Student, DataCollectionMethod, METHOD_LABELS, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
+import { Student, Behavior, DataCollectionMethod, METHOD_LABELS, calculateAge, getZodiacSign, ZODIAC_SYMBOLS, ZODIAC_LABELS } from '@/types/behavior';
 import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
+import { ABCQuickSheet } from './ABCQuickSheet';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
 import { CompactSkillTracker } from './CompactSkillTracker';
 import { SkillTargetSessionSelector } from './SkillTargetSessionSelector';
@@ -22,7 +23,8 @@ import {
   Square,
   Clock,
   Target,
-  Expand
+  Expand,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -77,6 +79,8 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
     getTrackerOrder(student.id) || DEFAULT_ORDER
   );
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [isMinimalMode, setIsMinimalMode] = useState(false);
+  const [abcSheetBehavior, setAbcSheetBehavior] = useState<Behavior | null>(null);
   // Only show targets in active phases during sessions — hides baseline, generalization, mastered
   const skillTargets = (student.skillTargets || []).filter(
     t => t.status === 'acquisition' || t.status === 'maintenance'
@@ -209,13 +213,22 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
           )}
         </div>
         <CollapsibleContent>
-          {TrackerComponent && (
-            <TrackerComponent 
-              studentId={student.id}
-              behavior={behavior}
-              studentColor={student.color}
-            />
-          )}
+          {TrackerComponent && (() => {
+            const base = { studentId: student.id, behavior, studentColor: student.color };
+            if (method === 'frequency') {
+              return (
+                <FrequencyTracker
+                  {...base}
+                  minimal={isMinimalMode}
+                  onTwoFingerTap={() => setAbcSheetBehavior(behavior)}
+                />
+              );
+            }
+            if (method === 'duration') {
+              return <DurationTracker {...base} minimal={isMinimalMode} />;
+            }
+            return <TrackerComponent {...base} />;
+          })()}
         </CollapsibleContent>
       </Collapsible>
     );
@@ -421,6 +434,23 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
         {/* Method Filter & Collapse/Expand buttons */}
         <TooltipProvider>
           <div className="flex gap-1">
+            {/* Minimal / Analyst Mode Toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isMinimalMode ? 'default' : 'ghost'}
+                  size="sm"
+                  className={`h-6 w-6 p-0 ${isMinimalMode ? 'bg-amber-500 text-white hover:bg-amber-600' : ''}`}
+                  onClick={() => setIsMinimalMode(m => !m)}
+                >
+                  <Zap className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {isMinimalMode ? 'Exit quick-entry mode' : 'Quick-entry mode (2-finger tap = ABC)'}
+              </TooltipContent>
+            </Tooltip>
+
             {/* Method Filter Popover */}
             <Popover>
               <Tooltip>
@@ -649,6 +679,17 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
           </div>
         )}
       </div>
+
+      {/* ABC Quick Sheet — triggered by two-finger tap on any frequency tracker */}
+      {abcSheetBehavior && (
+        <ABCQuickSheet
+          open={!!abcSheetBehavior}
+          onOpenChange={(open) => { if (!open) setAbcSheetBehavior(null); }}
+          studentId={student.id}
+          behavior={abcSheetBehavior}
+          studentColor={student.color}
+        />
+      )}
 
       {/* End Session Flow */}
       <SessionEndFlow

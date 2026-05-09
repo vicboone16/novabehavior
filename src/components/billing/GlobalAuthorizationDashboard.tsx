@@ -51,15 +51,12 @@ interface Authorization {
   units_used: number;
   units_remaining: number;
   unit_type: string | null;
+  allows_rollover: boolean | null;
+  service_codes: string[] | null;
   student_id: string;
-  student: {
-    id: string;
-    name: string;
-  };
-  payer: {
-    id: string;
-    name: string;
-  } | null;
+  student: { id: string; name: string };
+  payer: { id: string; name: string } | null;
+  scheduled_units?: number; // computed from upcoming appointments
 }
 
 export function GlobalAuthorizationDashboard() {
@@ -81,15 +78,35 @@ export function GlobalAuthorizationDashboard() {
       const { data, error } = await supabase
         .from('authorizations')
         .select(`
-          id, auth_number, start_date, end_date, status, 
-          units_approved, units_used, units_remaining, unit_type, student_id,
+          id, auth_number, start_date, end_date, status,
+          units_approved, units_used, units_remaining, unit_type,
+          allows_rollover, service_codes, student_id,
           student:students(id, name),
           payer:payers(id, name)
         `)
         .order('end_date', { ascending: true });
 
       if (error) throw error;
-      setAuthorizations((data as unknown as Authorization[]) || []);
+      const auths = (data as unknown as Authorization[]) || [];
+
+      // Fetch scheduled (upcoming) units for each auth from appointments
+      const authIds = auths.map(a => a.id);
+      let scheduledMap: Record<string, number> = {};
+      if (authIds.length > 0) {
+        const { data: appts } = await supabase
+          .from('appointments')
+          .select('authorization_id, duration_minutes')
+          .in('authorization_id', authIds)
+          .gte('start_time', new Date().toISOString())
+          .eq('status', 'scheduled');
+        for (const appt of appts ?? []) {
+          const authId = (appt as any).authorization_id as string;
+          const mins = (appt as any).duration_minutes as number ?? 0;
+          scheduledMap[authId] = (scheduledMap[authId] ?? 0) + Math.ceil(mins / 15);
+        }
+      }
+
+      setAuthorizations(auths.map(a => ({ ...a, scheduled_units: scheduledMap[a.id] ?? 0 })));
     } catch (error) {
       console.error('Error fetching authorizations:', error);
     } finally {
@@ -390,23 +407,50 @@ export function GlobalAuthorizationDashboard() {
                         <CollapsibleContent asChild>
                           <TableRow className="bg-muted/30">
                             <TableCell colSpan={8}>
-                              <div className="py-4 px-6 space-y-3">
-                                <div className="grid grid-cols-3 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-muted-foreground">Unit Type:</span>
-                                    <span className="ml-2 font-medium">{auth.unit_type || 'Not specified'}</span>
+                              <div className="py-4 px-6 space-y-4">
+                                {/* Unit breakdown */}
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                                  <div className="text-center p-2 rounded bg-background border">
+                                    <p className="text-lg font-bold">{auth.units_approved}</p>
+                                    <p className="text-xs text-muted-foreground">Approved</p>
                                   </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Remaining:</span>
-                                    <span className="ml-2 font-medium">{auth.units_remaining ?? 'N/A'} units</span>
+                                  <div className="text-center p-2 rounded bg-background border">
+                                    <p className="text-lg font-bold">{auth.units_used}</p>
+                                    <p className="text-xs text-muted-foreground">Rendered</p>
                                   </div>
-                                  <div>
-                                    <span className="text-muted-foreground">Days Left:</span>
-                                    <span className="ml-2 font-medium">
-                                      {Math.max(0, differenceInDays(parseISO(auth.end_date), new Date()))} days
-                                    </span>
+                                  <div className="text-center p-2 rounded bg-background border">
+                                    <p className="text-lg font-bold text-amber-600">{auth.scheduled_units ?? 0}</p>
+                                    <p className="text-xs text-muted-foreground">Scheduled</p>
+                                  </div>
+                                  <div className="text-center p-2 rounded bg-background border">
+                                    <p className="text-lg font-bold text-green-700">
+                                      {Math.max(0, auth.units_approved - auth.units_used - (auth.scheduled_units ?? 0))}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Available</p>
+                                  </div>
+                                  <div className="text-center p-2 rounded bg-background border">
+                                    <p className="text-lg font-bold">
+                                      {Math.max(0, differenceInDays(parseISO(auth.end_date), new Date()))}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Days Left</p>
                                   </div>
                                 </div>
+
+                                {/* Metadata row */}
+                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                  {auth.unit_type && <span>Unit type: <strong>{auth.unit_type}</strong></span>}
+                                  {auth.allows_rollover && (
+                                    <Badge variant="secondary" className="text-xs">Rollover enabled</Badge>
+                                  )}
+                                  {auth.service_codes && auth.service_codes.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {auth.service_codes.map(c => (
+                                        <Badge key={c} variant="outline" className="text-xs font-mono">{c}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
                                 <div className="flex gap-2">
                                   <Button variant="outline" size="sm" asChild>
                                     <Link to={`/students/${auth.student_id}`}>

@@ -18,6 +18,8 @@ interface DashboardStats {
   authExpiring14Days: number;
   authExpiring30Days: number;
   clientsAtRisk: number;
+  draftBillingEntries: number;
+  readyForClaim: number;
 }
 
 export function ARReadinessDashboard() {
@@ -78,6 +80,19 @@ export function ARReadinessDashboard() {
         .gte('end_date', format(today, 'yyyy-MM-dd'))
         .eq('status', 'active');
 
+      // Billing stats
+      const { count: draftEntries } = await supabase
+        .from('time_entries')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['draft', 'reserved'])
+        .not('ended_at', 'is', null);
+
+      const { count: readyForClaim } = await supabase
+        .from('session_postings')
+        .select('id', { count: 'exact', head: true })
+        .eq('post_status', 'ready_for_claim')
+        .eq('is_billable', true);
+
       setStats({
         sessionsMissingNotes: missingNotes || 0,
         sessionsPendingReview: pendingReview || 0,
@@ -85,6 +100,8 @@ export function ARReadinessDashboard() {
         authExpiring14Days: auth14 || 0,
         authExpiring30Days: auth30 || 0,
         clientsAtRisk: 0,
+        draftBillingEntries: draftEntries || 0,
+        readyForClaim: readyForClaim || 0,
       });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -152,6 +169,35 @@ export function ARReadinessDashboard() {
                 <p className="text-3xl font-bold">{stats.authExpiring14Days}</p>
               </div>
               <AlertTriangle className={`h-8 w-8 ${stats.authExpiring14Days > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Billing Stats */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className={stats.draftBillingEntries > 0 ? 'border-blue-300' : ''}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Billing — Needs Review</p>
+                <p className="text-3xl font-bold">{stats.draftBillingEntries}</p>
+                <p className="text-xs text-muted-foreground mt-1">Draft time entries awaiting BCBA approval</p>
+              </div>
+              <DollarSign className={`h-8 w-8 ${stats.draftBillingEntries > 0 ? 'text-blue-500' : 'text-muted-foreground'}`} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={stats.readyForClaim > 0 ? 'border-green-300' : ''}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Billing — Ready for Claim</p>
+                <p className="text-3xl font-bold">{stats.readyForClaim}</p>
+                <p className="text-xs text-muted-foreground mt-1">Postings ready to be batched and submitted</p>
+              </div>
+              <TrendingUp className={`h-8 w-8 ${stats.readyForClaim > 0 ? 'text-green-500' : 'text-muted-foreground'}`} />
             </div>
           </CardContent>
         </Card>

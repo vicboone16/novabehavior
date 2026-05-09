@@ -20,28 +20,39 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useGestureData, FEEDBACK_STYLES } from '@/hooks/useGestureData';
+import { cn } from '@/lib/utils';
 
 interface FrequencyTrackerProps {
   studentId: string;
   behavior: Behavior;
   studentColor: string;
+  minimal?: boolean;
+  onTwoFingerTap?: () => void;
 }
 
-export function FrequencyTracker({ studentId, behavior, studentColor }: FrequencyTrackerProps) {
-  const { 
-    incrementFrequency, 
-    decrementFrequency, 
-    resetFrequency, 
+export function FrequencyTracker({ studentId, behavior, studentColor, minimal = false, onTwoFingerTap }: FrequencyTrackerProps) {
+  const {
+    incrementFrequency,
+    decrementFrequency,
+    resetFrequency,
     getFrequencyCount,
     frequencyEntries,
     markDataCollected,
     isDataCollected,
   } = useDataStore();
-  
+
   const count = getFrequencyCount(studentId, behavior.id);
   const dataCollected = isDataCollected(studentId, behavior.id);
   const [showEntries, setShowEntries] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  const { swipeHandlers, twoFingerProps, feedback } = useGestureData({
+    onSwipeRight: () => incrementFrequency(studentId, behavior.id),
+    onSwipeLeft: () => count > 0 ? decrementFrequency(studentId, behavior.id) : undefined,
+    onSwipeUp: () => incrementFrequency(studentId, behavior.id),
+    onTwoFingerTap,
+  });
 
   // Get entry for this student/behavior
   const entry = frequencyEntries.find(
@@ -65,65 +76,76 @@ export function FrequencyTracker({ studentId, behavior, studentColor }: Frequenc
 
   return (
     <div className="bg-secondary/30 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-foreground">{behavior.name}</span>
-        <div className="flex gap-1">
-          {timestamps.length > 0 && (
+      {!minimal && (
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-foreground">{behavior.name}</span>
+          <div className="flex gap-1">
+            {timestamps.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1"
+                onClick={() => setShowEntries(true)}
+              >
+                <Clock className="w-3 h-3" />
+                View
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs gap-1"
-              onClick={() => setShowEntries(true)}
+              className="h-6 w-6 p-0"
+              onClick={() => count > 0 ? setConfirmReset(true) : null}
+              disabled={count === 0}
             >
-              <Clock className="w-3 h-3" />
-              View
+              <RotateCcw className="w-3 h-3 text-muted-foreground" />
             </Button>
-          )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 w-6 p-0"
-            onClick={() => count > 0 ? setConfirmReset(true) : null}
+          </div>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        {!minimal && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 w-10 p-0"
+            onClick={() => decrementFrequency(studentId, behavior.id)}
             disabled={count === 0}
           >
-            <RotateCcw className="w-3 h-3 text-muted-foreground" />
+            <Minus className="w-4 h-4" />
           </Button>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-10 w-10 p-0"
-          onClick={() => decrementFrequency(studentId, behavior.id)}
-          disabled={count === 0}
-        >
-          <Minus className="w-4 h-4" />
-        </Button>
-        <div 
-          className="flex-1 h-12 rounded-lg flex items-center justify-center counter-display text-foreground font-bold"
-          style={{ 
-            backgroundColor: `${studentColor}20`,
-            border: `2px solid ${studentColor}40`
+        )}
+        {/* Gesture-enabled counter — swipe right=+1, left=-1, up=prompted */}
+        <div
+          {...swipeHandlers}
+          {...twoFingerProps}
+          className={cn(
+            'flex-1 rounded-lg flex items-center justify-center counter-display text-foreground font-bold transition-all select-none touch-pan-y',
+            minimal ? 'h-16 text-2xl' : 'h-12',
+            feedback && FEEDBACK_STYLES[feedback]
+          )}
+          style={{
+            backgroundColor: feedback ? undefined : `${studentColor}20`,
+            border: `2px solid ${feedback ? 'transparent' : `${studentColor}40`}`,
           }}
         >
+          {feedback === 'correct' && <span className="text-green-600 text-sm mr-1">✓</span>}
+          {feedback === 'incorrect' && <span className="text-red-500 text-sm mr-1">✗</span>}
+          {feedback === 'prompted' && <span className="text-amber-500 text-sm mr-1">P</span>}
           {count}
         </div>
         <Button
           size="sm"
-          className="h-10 w-10 p-0"
-          style={{ 
-            backgroundColor: studentColor,
-            color: 'white'
-          }}
+          className={cn('p-0', minimal ? 'h-16 w-16 text-xl' : 'h-10 w-10')}
+          style={{ backgroundColor: studentColor, color: 'white' }}
           onClick={() => incrementFrequency(studentId, behavior.id)}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className={minimal ? 'w-6 h-6' : 'w-4 h-4'} />
         </Button>
       </div>
 
-      {/* Data Collected Toggle - only show when count is 0 */}
-      {count === 0 && (
+      {/* Data Collected Toggle - only show when count is 0 and not minimal */}
+      {count === 0 && !minimal && (
         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
           <TooltipProvider>
             <Tooltip>
