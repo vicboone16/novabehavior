@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { enqueueDraft, dequeue, drainQueue, subscribeQueue } from '@/lib/multiStudentDraftQueue';
 import type { DataCollectionMethod } from '@/types/behavior';
 import {
   Users, Settings2, ChevronDown, ChevronRight, Save, Layers,
