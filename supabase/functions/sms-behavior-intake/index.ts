@@ -115,6 +115,23 @@ function parseSMS(body: string): ParsedSMS {
   return { entryType: "unknown", loggedAt };
 }
 
+async function validateTwilioSignature(req: Request, rawBody: string, params: URLSearchParams): Promise<boolean> {
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  if (!authToken) return true; // not configured — skip (dev/local)
+  const signature = req.headers.get("x-twilio-signature");
+  if (!signature) return false;
+  // Per Twilio: sort params, append key+value to URL, HMAC-SHA1, base64
+  const url = req.url;
+  const sortedKeys = Array.from(params.keys()).sort();
+  let data = url;
+  for (const k of sortedKeys) data += k + (params.get(k) || "");
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(authToken), { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  const expected = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return expected === signature;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -125,10 +142,18 @@ serve(async (req) => {
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const formData = await req.text();
       const params = new URLSearchParams(formData);
+      const ok = await validateTwilioSignature(req, formData, params);
+      if (!ok) {
+        return new Response("Invalid Twilio signature", { status: 403 });
+      }
       body = params.get("Body") || "";
       from = params.get("From") || "";
       messageSid = params.get("MessageSid") || "";
     } else {
+      // Reject non-Twilio JSON callers in production when token is configured
+      if (Deno.env.get("TWILIO_AUTH_TOKEN")) {
+        return new Response("Unsupported content type", { status: 415 });
+      }
       const json = await req.json();
       body = json.Body || json.body || "";
       from = json.From || json.from || "";

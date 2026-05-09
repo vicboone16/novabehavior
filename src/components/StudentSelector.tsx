@@ -60,9 +60,10 @@ export function StudentSelector() {
 
   const { participants, joinSession: addParticipant } = useSessionParticipants(currentSessionId);
 
-  // Students with ACTIVE sessions (selected and not ended)
+  // Students with ACTIVE sessions (selected, not archived, and not ended)
   const activeSessionStudents = students.filter(s =>
     selectedStudentIds.includes(s.id) &&
+    !s.isArchived &&
     !getStudentSessionStatus(s.id)?.hasEnded
   );
 

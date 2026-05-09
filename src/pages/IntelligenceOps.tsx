@@ -107,7 +107,7 @@ export default function IntelligenceOps() {
     <div className="min-h-screen bg-background p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/intelligence")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/?view=intelligence")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>

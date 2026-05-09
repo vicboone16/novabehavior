@@ -38,6 +38,7 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const previousGoalsRef = useRef<string>('');
   const previousSessionsRef = useRef<string>('');
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
+  const liveDataChannelRef = useRef<RealtimeChannel | null>(null);
   const isProcessingRealtimeRef = useRef(false);
   
   // IMPORTANT: Use a SINGLE batched selector with useShallow instead of 15 individual selectors.
@@ -94,21 +95,35 @@ export function SyncProvider({ children }: SyncProviderProps) {
     if (!currentSessionId || !sessionStartTime || selectedStudentIds.length === 0) return;
 
     try {
+      // Attach authorization if available for the primary student
+      const primaryStudentId = selectedStudentIds[0];
+      const today = new Date().toISOString().split('T')[0];
+      const { data: authRow } = await supabase
+        .from('authorizations')
+        .select('id')
+        .eq('student_id', primaryStudentId)
+        .eq('status', 'active')
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const presencePayload: Record<string, unknown> = {
+        id: currentSessionId,
+        user_id: user.id,
+        name: 'Active Session',
+        start_time: new Date(sessionStartTime).toISOString(),
+        session_length_minutes: sessionLengthMinutes,
+        interval_length_seconds: 15,
+        student_ids: selectedStudentIds,
+        status: 'active',
+      };
+      if (authRow?.id) presencePayload.authorization_id = authRow.id;
+
       const { error } = await supabase
         .from('sessions')
-        .upsert(
-          {
-            id: currentSessionId,
-            user_id: user.id,
-            name: 'Active Session',
-            start_time: new Date(sessionStartTime).toISOString(),
-            session_length_minutes: sessionLengthMinutes,
-            interval_length_seconds: 15,
-            student_ids: selectedStudentIds,
-            status: 'active',
-          } as any,
-          { onConflict: 'id' }
-        );
+        .upsert(presencePayload as any, { onConflict: 'id' });
 
       if (error) {
         console.error('[Sync] Failed to sync live session presence:', error);
@@ -124,17 +139,80 @@ export function SyncProvider({ children }: SyncProviderProps) {
   const markLiveSessionCompleted = useCallback(async (sessionId: string) => {
     if (!user) return;
     try {
+      const endTime = new Date();
       const { error } = await supabase
         .from('sessions')
-        .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+        .update({ status: 'completed', end_time: endTime.toISOString() } as any)
         .eq('id', sessionId)
         .eq('user_id', user.id);
 
       if (error) console.error('[Sync] Failed to mark session completed:', error);
+
+      // Decrement authorization units_used for the session duration
+      try {
+        const { data: sessionRow } = await supabase
+          .from('sessions')
+          .select('authorization_id, start_time, session_length_minutes')
+          .eq('id', sessionId)
+          .maybeSingle();
+
+        if (sessionRow?.authorization_id && sessionRow?.start_time) {
+          const startMs = new Date(sessionRow.start_time).getTime();
+          const durationMinutes = Math.round((endTime.getTime() - startMs) / 60000);
+          // 1 unit = 15 minutes (standard ABA billing)
+          const unitsToCharge = Math.ceil(durationMinutes / 15);
+          if (unitsToCharge > 0) {
+            await supabase.rpc('increment_authorization_units', {
+              p_authorization_id: sessionRow.authorization_id,
+              p_units: unitsToCharge,
+            }).then(({ error: rpcErr }) => {
+              if (rpcErr) {
+                // Fallback: manual increment
+                supabase
+                  .from('authorizations')
+                  .select('units_used')
+                  .eq('id', sessionRow.authorization_id!)
+                  .maybeSingle()
+                  .then(({ data: auth }) => {
+                    if (auth) {
+                      supabase
+                        .from('authorizations')
+                        .update({ units_used: (auth.units_used || 0) + unitsToCharge })
+                        .eq('id', sessionRow.authorization_id!)
+                        .then();
+                    }
+                  });
+              }
+            });
+          }
+        }
+      } catch (unitErr) {
+        console.warn('[Sync] Unit tracking failed (non-critical):', unitErr);
+      }
     } catch (e) {
       console.error('[Sync] Mark completed threw:', e);
     }
   }, [user]);
+
+  // Look up the active authorization for a student on today's date
+  const lookupActiveAuthorization = useCallback(async (studentId: string): Promise<string | null> => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('authorizations')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.id ?? null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const clearLocalCache = useCallback(() => {
     // On some mobile browsers / privacy modes, localStorage can throw.
@@ -715,6 +793,34 @@ export function SyncProvider({ children }: SyncProviderProps) {
       if (activeSessionData) {
         console.log('[Sync] Found active session, loading live data...');
 
+        // Check if user explicitly ended a session on this device recently.
+        // If so, do NOT auto-resume — close the stale DB session instead.
+        let sessionExplicitlyEnded = false;
+        try {
+          const endedAt = localStorage.getItem('nova_session_explicitly_ended');
+          if (endedAt) {
+            const elapsedSinceEnd = Date.now() - parseInt(endedAt, 10);
+            // Consider the flag valid for 5 minutes (handles page reloads right after ending)
+            if (elapsedSinceEnd < 5 * 60 * 1000) {
+              sessionExplicitlyEnded = true;
+            }
+            localStorage.removeItem('nova_session_explicitly_ended');
+          }
+        } catch {}
+
+        if (sessionExplicitlyEnded) {
+          console.log('[Sync] User explicitly ended session — closing stale DB session:', activeSessionData.id);
+          await supabase
+            .from('sessions')
+            .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+            .eq('id', activeSessionData.id);
+          setLastSyncTime(new Date());
+          setSyncStatus('success');
+          hasFetched.current = true;
+          setIsLoading(false);
+          return;
+        }
+
         // Staleness check: auto-close sessions older than 4 hours to prevent
         // ghost sessions from persisting across logins indefinitely.
         const sessionAge = Date.now() - new Date(activeSessionData.start_time).getTime();
@@ -753,7 +859,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         // Only resume if user is an active participant in this session.
         // Supervisors/admins who are not participating should NOT have their timer started.
-        const shouldResumeCloudSession = userIsParticipant && (!hasLocalActiveSession || isSameSession);
+        // CRITICAL FIX: On a cold page load, sessionStartTime is always null (not persisted),
+        // so hasLocalActiveSession is always false. We must NOT auto-resume empty cloud sessions
+        // onto a cold device — this caused the "ghost session" infinite restart loop.
+        // Only resume if: (a) we already have this session active locally (warm resume), OR
+        // (b) the cloud session has live data entries worth preserving.
+        // We'll decide shouldResume AFTER loading live entries — so we can check if there's data.
+        let shouldResumeCloudSession = userIsParticipant && isSameSession;
 
         // Load live session data entries (may be empty for a freshly-started session)
         const { data: liveEntries, error: liveEntriesError } = await supabase
@@ -764,6 +876,25 @@ export function SyncProvider({ children }: SyncProviderProps) {
 
         if (liveEntriesError) {
           console.error('[Sync] Error loading live session entries:', liveEntriesError);
+        }
+
+        // Cross-device resume: if we're a participant and the cloud session has actual data,
+        // resume even on a cold device. But NEVER resume an empty session on a cold device
+        // because that's the "ghost session" loop — ended sessions that were never marked
+        // completed in the DB keep getting picked up.
+        if (!shouldResumeCloudSession && userIsParticipant && !hasLocalActiveSession) {
+          const hasCloudData = liveEntries && liveEntries.length > 0;
+          if (hasCloudData) {
+            shouldResumeCloudSession = true;
+            console.log('[Sync] Cross-device resume: cloud session has data, resuming');
+          } else {
+            // Empty cloud session on a cold device — close it instead of resuming
+            console.log('[Sync] Empty cloud session on cold device — auto-closing:', activeSessionData.id);
+            await supabase
+              .from('sessions')
+              .update({ status: 'completed', end_time: new Date().toISOString() } as any)
+              .eq('id', activeSessionData.id);
+          }
         }
 
         if (shouldResumeCloudSession) {
@@ -1349,8 +1480,14 @@ export function SyncProvider({ children }: SyncProviderProps) {
         
         const liveSessionId = currentSessionId;
         
+        // Resolve authorization for the primary student (first selected)
+        const primaryStudentId = selectedStudentIds[0];
+        const resolvedAuthId = primaryStudentId
+          ? await lookupActiveAuthorization(primaryStudentId)
+          : null;
+
         // Create or update the live session record FIRST to satisfy FK constraint
-        const { error: sessionError } = await supabase.from('sessions').upsert({
+        const liveSessionPayload: Record<string, unknown> = {
           id: liveSessionId,
           user_id: user.id,
           name: 'Active Session',
@@ -1359,7 +1496,13 @@ export function SyncProvider({ children }: SyncProviderProps) {
           interval_length_seconds: 15,
           student_ids: selectedStudentIds,
           status: 'active',
-        }, { onConflict: 'id' });
+        };
+        if (resolvedAuthId) liveSessionPayload.authorization_id = resolvedAuthId;
+
+        const { error: sessionError } = await supabase.from('sessions').upsert(
+          liveSessionPayload as any,
+          { onConflict: 'id' },
+        );
 
         if (sessionError) {
           console.error('[Sync] Failed to create/update session:', sessionError);
@@ -1889,13 +2032,154 @@ export function SyncProvider({ children }: SyncProviderProps) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
       }
+      if (liveDataChannelRef.current) {
+        supabase.removeChannel(liveDataChannelRef.current);
+        liveDataChannelRef.current = null;
+      }
     };
   }, [user, hasFetched.current]);
+
+  // Realtime subscription on session_data for the ACTIVE session.
+  // When another staff member records data on the same session, this pushes their
+  // entries into the local Zustand store in real time (without waiting for a manual sync).
+  useEffect(() => {
+    if (!user || !currentSessionId) {
+      if (liveDataChannelRef.current) {
+        supabase.removeChannel(liveDataChannelRef.current);
+        liveDataChannelRef.current = null;
+      }
+      return;
+    }
+
+    // Avoid re-subscribing if already watching this session
+    const channelName = `live-data-${currentSessionId}`;
+    if (liveDataChannelRef.current?.topic === `realtime:${channelName}`) return;
+
+    if (liveDataChannelRef.current) {
+      supabase.removeChannel(liveDataChannelRef.current);
+    }
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'session_data',
+          filter: `session_id=eq.${currentSessionId}`,
+        },
+        (payload) => {
+          try {
+            const row = payload.new as any;
+            // Skip rows we inserted ourselves (our user_id)
+            if (row.user_id === user.id) return;
+
+            const state = useDataStore.getState();
+            const now = row.timestamp ? new Date(row.timestamp) : new Date();
+
+            if (row.event_type === 'frequency') {
+              const exists = state.frequencyEntries.some(e => e.id === row.id);
+              if (!exists) {
+                const count = (row.abc_data as any)?.count ?? 1;
+                useDataStore.setState(s => ({
+                  frequencyEntries: [...s.frequencyEntries, {
+                    id: row.id,
+                    studentId: row.student_id,
+                    behaviorId: row.behavior_id,
+                    behaviorName: row.behavior_name || '',
+                    count,
+                    timestamp: now,
+                    date: now.toISOString().split('T')[0],
+                    sessionId: row.session_id,
+                  }],
+                } as any));
+              }
+            } else if (row.event_type === 'duration') {
+              const exists = state.durationEntries.some(e => e.id === row.id);
+              if (!exists) {
+                useDataStore.setState(s => ({
+                  durationEntries: [...s.durationEntries, {
+                    id: row.id,
+                    studentId: row.student_id,
+                    behaviorId: row.behavior_id,
+                    behaviorName: row.behavior_name || '',
+                    duration: row.duration_seconds ?? 0,
+                    startTime: now,
+                    date: now.toISOString().split('T')[0],
+                    sessionId: row.session_id,
+                  }],
+                } as any));
+              }
+            } else if (row.event_type === 'abc') {
+              const exists = state.abcEntries.some(e => e.id === row.id);
+              if (!exists) {
+                const abcData = (row.abc_data as any) ?? {};
+                useDataStore.setState(s => ({
+                  abcEntries: [...s.abcEntries, {
+                    id: row.id,
+                    studentId: row.student_id,
+                    behaviorId: row.behavior_id,
+                    behaviorName: row.behavior_name || '',
+                    antecedent: abcData.antecedent || '',
+                    behavior: abcData.behavior || '',
+                    consequence: abcData.consequence || '',
+                    timestamp: now,
+                    date: now.toISOString().split('T')[0],
+                    sessionId: row.session_id,
+                  }],
+                } as any));
+              }
+            } else if (row.event_type === 'interval') {
+              const exists = state.intervalEntries.some(e => e.id === row.id);
+              if (!exists) {
+                const abcData = (row.abc_data as any) ?? {};
+                useDataStore.setState(s => ({
+                  intervalEntries: [...s.intervalEntries, {
+                    id: row.id,
+                    studentId: row.student_id,
+                    behaviorId: row.behavior_id,
+                    behaviorName: row.behavior_name || '',
+                    occurred: abcData.occurred ?? false,
+                    intervalNumber: row.interval_index ?? 0,
+                    timestamp: now,
+                    date: now.toISOString().split('T')[0],
+                    sessionId: row.session_id,
+                  }],
+                } as any));
+              }
+            }
+          } catch (e) {
+            console.warn('[Sync] Live session_data realtime handler error:', e);
+          }
+        },
+      )
+      .subscribe();
+
+    liveDataChannelRef.current = channel;
+
+    return () => {
+      if (liveDataChannelRef.current) {
+        supabase.removeChannel(liveDataChannelRef.current);
+        liveDataChannelRef.current = null;
+      }
+    };
+  }, [user, currentSessionId]);
+
+  // Periodic live-session data sync — pushes local taps to Supabase every 15s
+  // so co-collecting staff see fresh data without waiting for a manual save.
+  useEffect(() => {
+    if (!user || !currentSessionId || !sessionStartTime) return;
+
+    const flush = () => void syncToCloud();
+    const interval = setInterval(flush, 15_000);
+    return () => clearInterval(interval);
+  }, [user, currentSessionId, sessionStartTime, syncToCloud]);
 
   // Periodic cross-device session status poll (fallback if realtime misses events)
   useEffect(() => {
     if (!user) return;
-    
+
     const pollSessionStatus = async () => {
       const state = useDataStore.getState();
       if (!state.currentSessionId || !state.sessionStartTime) return;

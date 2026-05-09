@@ -105,7 +105,7 @@ export function ClassroomLiveWidget() {
                   variant="outline"
                   size="sm"
                   className="h-6 text-[11px] gap-1 px-2"
-                  onClick={() => navigate('/intelligence', { state: { tab: 'signals' } })}
+                  onClick={() => navigate('/?view=intelligence', { state: { tab: 'signals' } })}
                 >
                   <Eye className="w-3 h-3" /> Signals
                 </Button>
@@ -113,7 +113,7 @@ export function ClassroomLiveWidget() {
                   variant="default"
                   size="sm"
                   className="h-6 text-[11px] gap-1 px-2"
-                  onClick={() => navigate(`/intelligence/classroom/${room.id}?from=/`)}
+                  onClick={() => navigate(`/classroom/${room.id}/today?from=/`)}
                 >
                   <School className="w-3 h-3" /> Today
                 </Button>
@@ -155,7 +155,7 @@ export function ClassroomLiveWidget() {
           variant="ghost"
           size="sm"
           className="flex-1 h-7 text-xs gap-1"
-          onClick={() => navigate('/intelligence', { state: { tab: 'signals' } })}
+          onClick={() => navigate('/?view=intelligence', { state: { tab: 'signals' } })}
         >
           <Eye className="w-3 h-3" /> View All Signals
         </Button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ClipboardCheck, MessageSquare, Settings2, Info } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, MessageSquare, Settings2, Info, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -8,6 +8,7 @@ import { SupervisorReviewDashboard } from "@/components/admin/SupervisorReviewDa
 import { SMSBehaviorQueue } from "@/components/sms/SMSBehaviorQueue.tsx";
 import { SMSShortcodeSettings } from "@/components/sms/SMSShortcodeSettings.tsx";
 import { SMSStudentCodeSettings } from "@/components/sms/SMSStudentCodeSettings.tsx";
+import { MessagesInboxPanel, PendingChangesPanel } from "@/pages/TeacherComms";
 
 export default function ReviewQueue() {
   const navigate = useNavigate();
@@ -34,12 +35,15 @@ export default function ReviewQueue() {
 
       <div className="container py-4 max-w-3xl">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full">
+          <TabsList className="w-full flex-wrap h-auto">
             <TabsTrigger value="notes" className="flex-1 text-xs gap-1.5">
               <ClipboardCheck className="w-3.5 h-3.5" /> Session Notes
             </TabsTrigger>
             <TabsTrigger value="sms" className="flex-1 text-xs gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" /> SMS Entries
+            </TabsTrigger>
+            <TabsTrigger value="teacher-comms" className="flex-1 text-xs gap-1.5">
+              <Inbox className="w-3.5 h-3.5" /> Teacher Comms
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs gap-1.5">
               <Settings2 className="w-3.5 h-3.5" /> SMS Settings
@@ -84,6 +88,29 @@ export default function ReviewQueue() {
               </AlertDescription>
             </Alert>
             <SMSBehaviorQueue />
+          </TabsContent>
+
+          <TabsContent value="teacher-comms" className="mt-4 space-y-6">
+            <section>
+              <header className="mb-3">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Teacher Messages
+                </h2>
+                <p className="text-xs text-muted-foreground">Inbox of messages from classroom staff</p>
+              </header>
+              <MessagesInboxPanel />
+            </section>
+            <section className="border-t pt-4">
+              <header className="mb-3">
+                <h2 className="text-base font-semibold flex items-center gap-2">
+                  <Inbox className="w-4 h-4 text-primary" />
+                  Pending Student Changes
+                </h2>
+                <p className="text-xs text-muted-foreground">Approve or reject teacher-submitted record updates</p>
+              </header>
+              <PendingChangesPanel />
+            </section>
           </TabsContent>
 
           <TabsContent value="settings" className="mt-4 space-y-6">

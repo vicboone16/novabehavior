@@ -415,7 +415,12 @@ export default function StudentProfile() {
       <Breadcrumbs />
       {/* Header */}
       <div className="flex items-center gap-4 max-sm:gap-2 max-sm:flex-wrap">
-        <Button variant="ghost" size="icon" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/students')}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/students')}
+          aria-label="Back"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div
@@ -558,7 +563,7 @@ export default function StudentProfile() {
           </TabsTrigger>
           <TabsTrigger value="assessments" className="gap-1.5 text-xs whitespace-nowrap">
             <Brain className="w-3.5 h-3.5" />
-            Assessments
+            Assessment History
           </TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5 text-xs whitespace-nowrap">
             <BarChart3 className="w-3.5 h-3.5" />
@@ -570,7 +575,7 @@ export default function StudentProfile() {
           </TabsTrigger>
           <TabsTrigger value="bops" className="gap-1.5 text-xs whitespace-nowrap">
             <Shield className="w-3.5 h-3.5" />
-            BOPS
+            BOPS Profile
           </TabsTrigger>
           <TabsTrigger value="billing" className="gap-1.5 text-xs whitespace-nowrap">
             <CreditCard className="w-3.5 h-3.5" />
