@@ -35,7 +35,7 @@ interface HorizontalStudentRowProps {
 const ALL_METHODS: DataCollectionMethod[] = ['frequency', 'duration', 'interval', 'abc'];
 
 export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true }: HorizontalStudentRowProps) {
-  const { 
+  const {
     syncedIntervalsRunning,
     sessionFocus,
     isSessionBehaviorActive,
@@ -48,17 +48,24 @@ export function HorizontalStudentRow({ student, onExpand, defaultExpanded = true
     getStudentSessionStatus,
     resetStudentSessionStatus,
     addDTTSession,
+    getStudentTargetSelection,
   } = useDataStore();
   const { syncedInterval, syncedTime } = useSyncedIntervalState();
   
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  // Only show targets in active phases during sessions — hides baseline, generalization, mastered
+  const skillTargets = (student.skillTargets || []).filter(
+    t => t.status === 'acquisition' || t.status === 'maintenance'
+  );
   const [activeSkillTargetIds, setActiveSkillTargetIds] = useState<string[]>(
-    () => (student.skillTargets || []).map(t => t.id)
+    () => {
+      const stored = getStudentTargetSelection(student.id);
+      if (stored !== undefined) return stored;
+      return skillTargets.map(t => t.id);
+    }
   );
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['behaviors', 'skills']));
-
-  const skillTargets = student.skillTargets || [];
   const dttSessions = student.dttSessions || [];
 
   const isPaused = isStudentSessionPaused(student.id);

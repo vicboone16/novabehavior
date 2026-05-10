@@ -3,6 +3,7 @@ import {
   Plus, Download, Filter, Pencil, Link2, BookOpen, Building2,
   MoreHorizontal, Trash2, Pause, Play, CheckCircle2, AlertTriangle,
   ListChecks, FolderTree, Activity, Shield, ChevronDown, ChevronRight, ArrowRight,
+  Target as TargetIcon, Table2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,11 @@ import { AddProgramDialog } from './AddProgramDialog';
 import { ImportFromCurriculumDialog } from './ImportFromCurriculumDialog';
 import { BulkImportDialog } from './BulkImportDialog';
 import { ProgramHierarchyView } from './ProgramHierarchyView';
+import { ProgramGridView } from './ProgramGridView';
+import { SessionTargetPicker } from './SessionTargetPicker';
+import { SkillSessionRunner } from './SkillSessionRunner';
 import { BopsProgramsSection } from '@/components/programming/BopsProgramsSection';
+import { useSessionTargetCollection } from '@/hooks/useSessionTargetCollection';
 import type { StudentTarget } from '@/types/curriculum';
 import type { SkillProgram } from '@/types/skillPrograms';
 
@@ -71,7 +76,7 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const { domains } = useDomains();
   const { updateTarget, deleteTarget } = useTargetActions(studentId, refetchTargets);
 
-  const [view, setView] = useState<'programs' | 'legacy'>('programs');
+  const [view, setView] = useState<'tree' | 'grid' | 'legacy'>('tree');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [domainFilter, setDomainFilter] = useState<string>('all');
@@ -84,6 +89,9 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
   const [editingProgram, setEditingProgram] = useState<SkillProgram | null>(null);
   const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [showSessionPicker, setShowSessionPicker] = useState(false);
+
+  const sessionCollection = useSessionTargetCollection(studentId);
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => {
@@ -108,11 +116,14 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ToggleGroup type="single" value={view} onValueChange={v => v && setView(v as any)} className="h-8">
-            <ToggleGroupItem value="programs" className="text-xs h-7 px-3 gap-1">
-              <FolderTree className="w-3 h-3" /> Programs
+            <ToggleGroupItem value="tree" className="text-xs h-7 px-3 gap-1">
+              <FolderTree className="w-3 h-3" /> Tree
+            </ToggleGroupItem>
+            <ToggleGroupItem value="grid" className="text-xs h-7 px-3 gap-1">
+              <Table2 className="w-3 h-3" /> Grid
             </ToggleGroupItem>
             <ToggleGroupItem value="legacy" className="text-xs h-7 px-3 gap-1">
-              <ListChecks className="w-3 h-3" /> Individual Targets
+              <ListChecks className="w-3 h-3" /> Individual
             </ToggleGroupItem>
           </ToggleGroup>
           <Badge variant="outline" className="text-xs">
@@ -124,6 +135,12 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {!sessionCollection.isSessionActive && programs.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => setShowSessionPicker(true)}>
+              <Play className="w-4 h-4 mr-1" />
+              Start Session
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm">
@@ -154,7 +171,38 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
         </div>
       </div>
 
-      {view === 'programs' && (
+      {/* Session Runner */}
+      {sessionCollection.isSessionActive && (
+        <SkillSessionRunner
+          targetList={sessionCollection.targetList}
+          activeTargetId={sessionCollection.activeTargetId}
+          activeIndex={sessionCollection.activeIndex}
+          sessionId={sessionCollection.sessionId}
+          sessionStartTime={sessionCollection.sessionStartTime}
+          onRecordTrial={sessionCollection.recordTrial}
+          onUndoTrial={sessionCollection.undoLastTrial}
+          onSaveFrequency={sessionCollection.saveFrequency}
+          onSaveDuration={sessionCollection.saveDuration}
+          onRecordTAStep={sessionCollection.recordTAStep}
+          onSetFrequencyCount={sessionCollection.setFrequencyCount}
+          onSetTimerState={sessionCollection.setTimerState}
+          onSetActiveTarget={sessionCollection.setActiveTargetId}
+          onNextTarget={sessionCollection.nextTarget}
+          onPrevTarget={sessionCollection.prevTarget}
+          onEndSession={sessionCollection.endSession}
+          onDataRecorded={refetchPrograms}
+        />
+      )}
+
+      {/* Session Target Picker */}
+      <SessionTargetPicker
+        open={showSessionPicker}
+        onOpenChange={setShowSessionPicker}
+        programs={programs}
+        onStart={(selected, linkedId) => sessionCollection.startSession(selected, linkedId)}
+      />
+
+      {(view === 'tree' || view === 'grid') && (
         loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading programs...</div>
         ) : (
@@ -166,16 +214,27 @@ export function TargetsSubTab({ studentId, studentName }: TargetsSubTabProps) {
                 refetchTargets();
               }}
             />
-            <ProgramHierarchyView
-              programs={programs}
-              domains={domains}
-              studentId={studentId}
-              onRefetch={refetchPrograms}
-              onEditProgram={(p) => {
-                setEditingProgram(p);
-                setShowProgramDialog(true);
-              }}
-            />
+            {view === 'tree' && (
+              <ProgramHierarchyView
+                programs={programs}
+                domains={domains}
+                studentId={studentId}
+                onRefetch={refetchPrograms}
+                onEditProgram={(p) => {
+                  setEditingProgram(p);
+                  setShowProgramDialog(true);
+                }}
+              />
+            )}
+            {view === 'grid' && (
+              <ProgramGridView
+                programs={programs}
+                domains={domains}
+                studentId={studentId}
+                onRefetch={refetchPrograms}
+                sparklineKey={0}
+              />
+            )}
           </div>
         )
       )}

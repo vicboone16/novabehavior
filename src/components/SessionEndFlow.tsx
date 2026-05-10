@@ -356,6 +356,45 @@ export function SessionEndFlow({
 
   const completedCount = studentNoteStatuses.filter(s => s.decision !== 'pending' || s.noteCompleted).length;
 
+  // Within-student step pills (Confirm → Decision → Note → Complete)
+  const FLOW_STEPS: { key: FlowStep | FlowStep[]; label: string }[] = [
+    { key: 'confirm', label: 'Confirm' },
+    { key: 'note_decision', label: 'Decision' },
+    { key: ['note_type_select', 'note_builder'], label: 'Note' },
+    { key: 'complete', label: 'Done' },
+  ];
+  const currentStepIndex = FLOW_STEPS.findIndex(s =>
+    Array.isArray(s.key) ? s.key.includes(step) : s.key === step
+  );
+
+  const renderStepPills = () => (
+    <div className="flex items-center gap-1.5" aria-label={`Step ${currentStepIndex + 1} of ${FLOW_STEPS.length}`}>
+      {FLOW_STEPS.map((s, i) => {
+        const isActive = i === currentStepIndex;
+        const isComplete = i < currentStepIndex;
+        return (
+          <div key={s.label} className="flex items-center gap-1.5">
+            <div
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : isComplete
+                  ? 'bg-muted text-muted-foreground border-muted'
+                  : 'bg-transparent text-muted-foreground border-border'
+              }`}
+            >
+              {isComplete && <CheckCircle2 className="w-2.5 h-2.5" />}
+              <span>{s.label}</span>
+            </div>
+            {i < FLOW_STEPS.length - 1 && (
+              <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const renderProgressBar = () => (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground font-medium">
@@ -645,6 +684,25 @@ export function SessionEndFlow({
     onOpenChange(isOpen);
   };
 
+  // Build a human-readable progress label for multi-student note steps
+  const noteStudentIndex = (() => {
+    if (!currentStudent) return null;
+    const allNoteStudents = targetStudents;
+    const idx = allNoteStudents.findIndex(s => s.id === currentStudent.id);
+    return idx >= 0 ? { current: idx + 1, total: allNoteStudents.length } : null;
+  })();
+
+  const stepLabel = (() => {
+    switch (step) {
+      case 'confirm': return 'Step 1 of 3 — Confirm';
+      case 'note_decision': return `Step 2 of 3 — Notes${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'note_type_select': return `Step 2 of 3 — Note Type${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'note_builder': return `Step 2 of 3 — Writing Note${noteStudentIndex && noteStudentIndex.total > 1 ? ` (${noteStudentIndex.current} of ${noteStudentIndex.total} students)` : ''}`;
+      case 'complete': return 'Step 3 of 3 — Done';
+      default: return null;
+    }
+  })();
+
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -681,7 +739,14 @@ export function SessionEndFlow({
               </>
             )}
           </DialogTitle>
+          {stepLabel && (
+            <DialogDescription className="text-xs text-muted-foreground">
+              {stepLabel}
+            </DialogDescription>
+          )}
         </DialogHeader>
+
+        <div className="pb-2">{renderStepPills()}</div>
 
         {targetStudents.length > 1 && step !== 'confirm' && step !== 'complete' && renderProgressBar()}
 

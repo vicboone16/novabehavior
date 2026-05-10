@@ -16,6 +16,8 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary";
 import { FloatingCaptureButton } from "./components/voice-capture/FloatingCaptureButton";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { Loader2 } from "lucide-react";
+import { SubdomainRedirect } from "@/components/SubdomainRedirect";
+import { getRouterBasename } from "@/lib/domainRouting";
 
 // Lazy-loaded page components for code splitting
 const MainLayout = lazy(() => import("./components/MainLayout"));
@@ -26,7 +28,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const AssessmentDashboard = lazy(() => import("./pages/AssessmentDashboard"));
 const Clinical = lazy(() => import("./pages/Clinical"));
 const SkillAcquisition = lazy(() => import("./pages/SkillAcquisition"));
-const NotesReview = lazy(() => import("./pages/NotesReview"));
+const ReviewQueue = lazy(() => import("./pages/ReviewQueue"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const PostLoginRouter = lazy(() => import("./pages/PostLoginRouter"));
@@ -74,11 +76,13 @@ const LibraryRegistryPage = lazy(() => import("./pages/clinical-library/LibraryR
 const GoalBuilderPage = lazy(() => import("./pages/clinical-library/GoalBuilderPage"));
 const DomainMigrationReviewPage = lazy(() => import("./pages/clinical-library/DomainMigrationReviewPage"));
 const TagManagementPage = lazy(() => import("./pages/clinical-library/TagManagementPage"));
+const RestoredBehaviorCleanup = lazy(() => import("./pages/admin/RestoredBehaviorCleanup"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
 const ClassroomTodayPage = lazy(() => import("./pages/ClassroomToday"));
+import { ClientIntelligenceRedirect, ClassroomIntelligenceRedirect } from "./pages/IntelligenceRedirect";
 const StaffProfilePage = lazy(() => import("./components/staff-profile").then(m => ({ default: m.StaffProfilePage })));
 const StaffAssignments = lazy(() => import("./pages/StaffAssignments"));
 const IncidentLogs = lazy(() => import("./pages/IncidentLogs"));
@@ -117,6 +121,11 @@ const RewardStore = lazy(() => import("./pages/RewardStore"));
 const ParentView = lazy(() => import("./pages/ParentView"));
 const ParentPortal = lazy(() => import("./pages/ParentPortal"));
 const LaunchReadiness = lazy(() => import("./pages/LaunchReadiness"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const WelcomeFeatures = lazy(() => import("./pages/WelcomeFeatures"));
+const WelcomeAddOns = lazy(() => import("./pages/WelcomeAddOns"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const ParentMessages = lazy(() => import("./pages/ParentMessages"));
 
 const PageLoader = () => (
@@ -189,11 +198,14 @@ const App = () => {
         <Toaster />
         <Sonner />
         <SessionTimeoutWarning />
-        <BrowserRouter>
+        <BrowserRouter basename={getRouterBasename()}>
+        <SubdomainRedirect />
         <FloatingCaptureButton />
         <Suspense fallback={<PageLoader />}>
         <Routes>
             <Route path="/auth" element={<Auth />} />
+            {/* /login is an alias of /auth, primarily used on data.novabehavior.com/login */}
+            <Route path="/login" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/post-login" element={
               <ProtectedRoute>
@@ -215,6 +227,12 @@ const App = () => {
             {/* Public parent view - no auth required */}
             <Route path="/parent-view" element={<ParentView />} />
             <Route path="/launch-readiness" element={<LaunchReadiness />} />
+            {/* Public welcome / marketing pages */}
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/welcome/features" element={<WelcomeFeatures />} />
+            <Route path="/welcome/add-ons" element={<WelcomeAddOns />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             {/* Public demo routes - no auth required */}
             <Route path="/demo" element={<DemoGateway />} />
             <Route path="/demo-center" element={<DemoCenter />} />
@@ -327,16 +345,17 @@ const App = () => {
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/operations" element={
+            <Route path="/operations" element={<Navigate to="/?view=operations" replace />} />
+            <Route path="/behaviors" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
+            <Route path="/admin/restored-behavior-cleanup" element={
               <ProtectedRoute>
                 <ApprovalCheck>
                   <SyncProvider>
-                    <Operations />
+                    <RestoredBehaviorCleanup />
                   </SyncProvider>
                 </ApprovalCheck>
               </ProtectedRoute>
             } />
-            <Route path="/behaviors" element={<Navigate to="/clinical-library/behavior-bank" replace />} />
             <Route path="/supervision" element={
               <ProtectedRoute>
                 <ApprovalCheck>
@@ -491,14 +510,16 @@ const App = () => {
               <Route path="/clinical" element={<Clinical />} />
               <Route path="/skills" element={<SkillAcquisition />} />
               <Route path="/schedule" element={<Schedule />} />
-              <Route path="/notes-review" element={<NotesReview />} />
+              <Route path="/review-queue" element={<ReviewQueue />} />
               <Route path="/staff/:userId" element={<StaffProfilePage />} />
               <Route path="/staff-assignments" element={<StaffAssignments />} />
               <Route path="/incident-logs" element={<IncidentLogs />} />
-              <Route path="/intelligence" element={<Intelligence />} />
-              <Route path="/intelligence/ops" element={<IntelligenceOps />} />
-              <Route path="/intelligence/clients/:clientId" element={<ClientDrilldown />} />
-              <Route path="/intelligence/classroom/:classroomId" element={<ClassroomTodayPage />} />
+              <Route path="/intelligence" element={<Navigate to="/?view=intelligence" replace />} />
+              <Route path="/intelligence/ops" element={<Navigate to="/?view=operations" replace />} />
+              <Route path="/intelligence/clients/:clientId" element={<ClientIntelligenceRedirect />} />
+              <Route path="/intelligence/classroom/:classroomId" element={<ClassroomIntelligenceRedirect />} />
+              <Route path="/clients/:clientId/drilldown" element={<ClientDrilldown />} />
+              <Route path="/classroom/:classroomId/today" element={<ClassroomTodayPage />} />
               <Route path="/diagnostics" element={<Diagnostics />} />
               <Route path="/teacher-comms" element={<TeacherComms />} />
               <Route path="/academy/lab" element={<BehaviorLabCatalog />} />

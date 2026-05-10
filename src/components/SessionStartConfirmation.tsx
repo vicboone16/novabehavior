@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { format, addMinutes, subMinutes, startOfDay, endOfDay } from 'date-fns';
-import { 
-  Play, 
-  Calendar, 
-  Clock, 
-  Link2, 
-  Unlink, 
+import {
+  Play,
+  Calendar,
+  Clock,
+  Link2,
+  Unlink,
   Plus,
   Loader2,
   AlertCircle,
   CheckCircle2,
-  RefreshCw
+  RefreshCw,
+  Target,
 } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +26,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAgencyContext } from '@/hooks/useAgencyContext';
@@ -43,6 +46,7 @@ interface SessionStartConfirmationProps {
   onConfirm: (options: {
     linkedAppointmentId?: string;
     createAppointment: boolean;
+    selectedTargetIds: string[];
   }) => void;
 }
 
@@ -55,8 +59,23 @@ export function SessionStartConfirmation({
   const { user } = useAuth();
   const { currentAgency } = useAgencyContext();
   const { toast } = useToast();
-  const { currentSessionId, sessionStartTime } = useDataStore();
-  
+  const { currentSessionId, sessionStartTime, students } = useDataStore();
+
+  // Skill targets for this student filtered to active phases only
+  const fullStudent = student ? students.find(s => s.id === student.id) : null;
+  const sessionableTargets = (fullStudent?.skillTargets || []).filter(
+    t => t.status === 'acquisition' || t.status === 'maintenance'
+  );
+
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
+
+  // Re-initialise target selection whenever the dialog opens for a (new) student
+  useEffect(() => {
+    if (open) {
+      setSelectedTargetIds(sessionableTargets.map(t => t.id));
+    }
+  }, [open, student?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [matchingAppointment, setMatchingAppointment] = useState<Appointment | null>(null);
@@ -294,6 +313,7 @@ export function SessionStartConfirmation({
       onConfirm({
         linkedAppointmentId,
         createAppointment: startOption === 'create',
+        selectedTargetIds,
       });
       
       if (startOption !== 'continue' && startOption !== 'link-extended') {
@@ -363,6 +383,65 @@ export function SessionStartConfirmation({
               <span className="ml-2 text-sm text-muted-foreground">
                 Checking for scheduled appointments...
               </span>
+            </div>
+          )}
+
+          {/* Target Selection */}
+          {!loading && sessionableTargets.length > 0 && (
+            <div className="space-y-2">
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-sm font-medium">Skill Targets</span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5">
+                    {selectedTargetIds.length}/{sessionableTargets.length}
+                  </Badge>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 px-2 text-[10px]"
+                    onClick={() => setSelectedTargetIds(sessionableTargets.map(t => t.id))}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 px-2 text-[10px]"
+                    onClick={() => setSelectedTargetIds([])}
+                  >
+                    None
+                  </Button>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Choose which targets to collect data on this session.</p>
+              <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                {sessionableTargets.map(target => (
+                  <div
+                    key={target.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                    onClick={() => setSelectedTargetIds(prev =>
+                      prev.includes(target.id) ? prev.filter(id => id !== target.id) : [...prev, target.id]
+                    )}
+                  >
+                    <Checkbox
+                      checked={selectedTargetIds.includes(target.id)}
+                      onCheckedChange={() => setSelectedTargetIds(prev =>
+                        prev.includes(target.id) ? prev.filter(id => id !== target.id) : [...prev, target.id]
+                      )}
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <span className="text-xs flex-1 truncate">{target.name}</span>
+                    <Badge variant="outline" className="text-[9px] shrink-0 capitalize">
+                      {target.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <Separator />
             </div>
           )}
 

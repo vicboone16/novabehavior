@@ -32,11 +32,11 @@ export function SearchablePersonPicker({ value, onChange, placeholder = 'Selectâ
           setLoading(false);
         });
     } else {
-      supabase.from('students' as any).select('id, first_name, last_name').limit(500)
+      supabase.from('students' as any).select('id, first_name, last_name, display_name').limit(500)
         .then(({ data }) => {
           setItems((data || []).map((s: any) => ({
             id: s.id,
-            label: [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
+            label: s.display_name || [s.first_name, s.last_name].filter(Boolean).join(' ') || 'Unknown',
           })));
           setLoading(false);
         });

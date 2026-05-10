@@ -3,11 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+    <!-- iOS / Android PWA and Home Screen support -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="NovaTrack" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Prevent iOS from auto-detecting phone numbers / emails / dates -->
+    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
+    <!-- Browser chrome color (light / dark) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141c2e" media="(prefers-color-scheme: dark)" />
+    <!-- Home screen icon (replace with real 180×180 icon in /public) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
     <title>NovaTrack</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <meta name="description" content="NovaTrack — Behavior Analysis & Data Collection" />
+    <meta name="author" content="NovaBehavior" />
 
     <meta property="og:title" content="NovaTrack">
     <meta property="og:description" content="Lovable Generated Project" />

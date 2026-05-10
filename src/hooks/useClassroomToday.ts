@@ -250,11 +250,11 @@ export function useClassroomTodayDrilldown(classroomId: string | null) {
       // Get student names
       const { data: studentsData } = await supabase
         .from('students')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, display_name')
         .in('id', studentIds);
       const nameMap = new Map<string, string>();
       for (const s of (studentsData || []) as any[]) {
-        nameMap.set(s.id, `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
+        nameMap.set(s.id, s.display_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Unknown');
       }
 
       // Parallel fetches for today's data (teacher + clinical + signals + incidents + beacon)

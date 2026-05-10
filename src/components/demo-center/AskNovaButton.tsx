@@ -49,7 +49,7 @@ export function AskNovaButton() {
     <>
       {/* Panel */}
       {isOpen && (
-        <Card className="fixed bottom-20 right-6 z-50 w-80 shadow-xl rounded-2xl border">
+        <Card className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-80 max-w-sm shadow-xl rounded-2xl border">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Ask Nova</h3>
@@ -104,7 +104,8 @@ export function AskNovaButton() {
 
       {/* Floating Button */}
       <Button
-        className="fixed bottom-6 right-6 z-40 shadow-lg gap-2 rounded-full px-5 h-12 bg-demo-accent hover:bg-demo-accent/90 text-demo-foreground"
+        className="fixed right-4 sm:right-6 z-40 shadow-lg gap-2 rounded-full px-5 h-12 bg-demo-accent hover:bg-demo-accent/90 text-demo-foreground"
+        style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
         onClick={() => setIsOpen(!isOpen)}
       >
         <MessageCircle className="w-5 h-5" />

@@ -81,13 +81,15 @@ export default function MainLayout() {
       <header className="bg-card border-b border-border sticky top-0 z-20" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="container py-2 md:py-3 px-3 md:px-4">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+            <div className="flex items-center gap-2 md:gap-4 shrink-0 order-1">
               <AgencySwitcher />
             </div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <GlobalSearch />
-              {/* Desktop header buttons – rendered from DB */}
-              <div className="hidden lg:flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 min-w-0 flex-1 justify-end order-2">
+              <div className="min-w-0 max-w-[180px] md:max-w-[260px] xl:max-w-none xl:flex-1">
+                <GlobalSearch />
+              </div>
+              {/* Desktop header buttons – only show at 2xl+ to guarantee the agency switcher always has room. */}
+              <div className="hidden 2xl:flex items-center gap-2 shrink-0">
                 {headerButtons.map(item => {
                   const Icon = getNavIcon(item.icon);
                   return (
@@ -104,8 +106,8 @@ export default function MainLayout() {
                   );
                 })}
               </div>
-              {/* Mobile dropdown – rendered from DB */}
-              <div className="flex lg:hidden">
+              {/* Compact dropdown – shown below 2xl so the agency switcher is never hidden behind buttons. */}
+              <div className="flex 2xl:hidden">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -163,15 +165,16 @@ export default function MainLayout() {
         </div>
       </TabOverflowWrapper>
 
-      {/* Main Content */}
-      <main className="container py-3 md:py-4 px-3 md:px-4">
+      {/* Main Content — extra bottom padding keeps content clear of FABs and home indicator */}
+      <main className="container py-3 md:py-4 px-3 md:px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
       </main>
 
       {showMobileButton && (
         <Button
           onClick={() => setMobilePreference('auto')}
-          className="fixed bottom-4 right-4 z-40 shadow-lg gap-2"
+          className="fixed right-4 z-40 shadow-lg gap-2"
+          style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
           size="sm"
         >
           <Smartphone className="w-4 h-4" />

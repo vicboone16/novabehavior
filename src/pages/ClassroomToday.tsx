@@ -48,7 +48,7 @@ export default function ClassroomToday() {
   const { classroomId } = useParams<{ classroomId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('from') || '/intelligence';
+  const returnTo = searchParams.get('from') || '/?view=intelligence';
 
   const [classroomName, setClassroomName] = useState('Classroom');
   const [agencyId, setAgencyId] = useState<string | null>(null);

@@ -123,6 +123,7 @@ interface DataState {
   studentSessionStatus: StudentSessionStatus[]; // Track pause/end per student
   trash: TrashItem[]; // Recoverable deleted items
   lastSavedDataHash: string | null; // Track when data was last saved to prevent duplicates
+  studentTargetSelections: Record<string, string[]>; // studentId -> target IDs selected at session start
   
   // Global Behavior Bank - persisted custom behaviors promoted to org level
   globalBehaviorBank: GlobalBankBehavior[];
@@ -285,6 +286,8 @@ interface DataState {
   startSession: (linkedAppointmentId?: string, existingSessionId?: string) => void;
   setLinkedAppointmentId: (id: string | null) => void;
   getLinkedAppointmentId: () => string | null;
+  setStudentTargetSelection: (studentId: string, targetIds: string[]) => void;
+  getStudentTargetSelection: (studentId: string) => string[] | undefined;
   resetSession: () => void;
   setSessionLength: (minutes: number) => void;
   setSessionLengthOverride: (override: SessionLengthOverride) => void;
@@ -397,6 +400,7 @@ export const useDataStore = create<DataState>()(
       globalBehaviorBank: [],
       behaviorDefinitionOverrides: {},
       archivedBuiltInBehaviors: [],
+      studentTargetSelections: {},
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -2081,6 +2085,14 @@ export const useDataStore = create<DataState>()(
 
       getLinkedAppointmentId: () => get().linkedAppointmentId,
 
+      setStudentTargetSelection: (studentId, targetIds) => {
+        set((state) => ({
+          studentTargetSelections: { ...state.studentTargetSelections, [studentId]: targetIds },
+        }));
+      },
+
+      getStudentTargetSelection: (studentId) => get().studentTargetSelections[studentId],
+
       resetSession: () => {
         const state = get();
         // Clean stale live entries when resetting session
@@ -2091,8 +2103,10 @@ export const useDataStore = create<DataState>()(
           if (savedSessionIds.has(e.sessionId)) return false;
           return true;
         };
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         
-        set({ 
+        set({
           sessionStartTime: null,
           currentSessionId: null,
           linkedAppointmentId: null,
@@ -2100,6 +2114,7 @@ export const useDataStore = create<DataState>()(
           studentSessionStatus: [],
           studentIntervalStatus: [],
           syncedIntervalsRunning: false,
+          studentTargetSelections: {},
           frequencyEntries: state.frequencyEntries.filter(e => !isStale(e)),
           durationEntries: state.durationEntries.filter(e => !isStale(e as any)),
           abcEntries: state.abcEntries.filter(e => !isStale(e as any)),
@@ -2626,6 +2641,8 @@ export const useDataStore = create<DataState>()(
           ? state.abcEntries.filter(e => e.sessionId !== sessionId)
           : state.abcEntries;
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         set({
           sessionStartTime: null,
           currentSessionId: null,
@@ -2666,6 +2683,7 @@ export const useDataStore = create<DataState>()(
         if (hasBeenSaved) {
           // Current session data was saved - just reset UI state, keep ALL entries
           // (the saved entries will be reloaded from cloud on next sync)
+          try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
           set({
             sessionNotes: '',
             currentSessionId: null,
@@ -2748,6 +2766,8 @@ export const useDataStore = create<DataState>()(
           );
         });
 
+        // Signal to SyncContext: do NOT auto-resume a cloud session on next page load.
+        try { localStorage.setItem('nova_session_explicitly_ended', Date.now().toString()); } catch {}
         // Only clear current session entries, preserve everything else
         set({
           frequencyEntries: otherFrequency,

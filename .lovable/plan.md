@@ -1,117 +1,78 @@
+# Plan: Canonical Behavior Verification + Multi-Student Session Setup
 
-# Fix: Observation Date Reverting and Structured Notes Not Saving
+## Part 1 — Verify canonical behaviors propagate (Lorenzo + ongoing)
 
-## Problem Summary
+1. Run a verification query against the DB to confirm:
+   - Lorenzo has 11 canonical `nt_learner_behavior_assignments` rows joined to `nt_behaviors`
+   - Each of the 7 newly-linked behaviors resolves to a name (no UUID fallback) via `behaviorNameResolver.ts`
+   - `behavior_session_data.behavior_id` for Lorenzo maps to a canonical name
+2. Trace the resolver path used by graphs/profiles (`src/lib/behaviorNameResolver.ts`):
+   - It already queries `behaviors` → `student_behavior_map` → `nt_behaviors`. Confirm `nt_behaviors` is reached for newly-canonical IDs.
+   - If graph components cache names per-student, clear cache on canonical sync (`clearStudentBehaviorNameMap`) when a behavior is registered/linked.
+3. Add an **ongoing safeguard**: a lightweight DB trigger or scheduled function so that whenever a row is inserted into `student_behavior_map` with a `behavior_subtype` that doesn't yet exist in `nt_behaviors` + `nt_learner_behavior_assignments`, it is auto-registered (mirrors the manual fix we just ran for Lorenzo).
+   - Trigger: `AFTER INSERT ON student_behavior_map` → `nt_register_canonical_behavior(student_id, behavior_subtype, behavior_entry_id)`.
+   - Idempotent via `NOT EXISTS` checks.
+4. After verification, refresh the resolver cache for Lorenzo on next page load (no UI change needed beyond cache bust on assignment insert).
 
-Two related bugs are preventing observation data from persisting for students (reported on Jayden Jurado):
+## Part 2 — Multi-student / multi-behavior session setup UI
 
-1. **Observation dates revert to July 22, 2025** after save and refresh
-2. **Structured observation notes disappear** after saving (even when saved twice)
+### New component: `MultiStudentSessionBuilder`
+Path: `src/components/sessions/MultiStudentSessionBuilder.tsx`
 
-## Root Causes
-
-### Cause 1: Stale Closure in Save Callbacks
-In `AssessmentDataCollection.tsx`, the `onSave` callbacks for both StructuredObservationForm and ObservationNotesPanel read `student.narrativeNotes` from the component's render-time closure. When a user saves multiple times without a full re-render, the second save reads the OLD array (before the first save), effectively overwriting and losing the first entry.
-
-### Cause 2: Realtime Subscription Overwrites Local Changes
-After `updateStudentProfile` modifies the local Zustand store and the 2-second debounced sync writes to the database, the Supabase realtime subscription fires back an UPDATE event. For students with large records, the realtime payload can contain stale or incomplete `narrative_notes` data, which then overwrites the local store -- reverting dates and losing unsaved notes.
-
-### Cause 3: No Unsaved Data Guard for Narrative Notes
-The sync system has an `hasUnsavedHistoricalData` guard that prevents realtime from overwriting pending historical data, but no equivalent guard exists for narrative notes. This means the realtime handler always overwrites narrative notes with whatever comes from the database payload.
-
----
-
-## Implementation Plan
-
-### Step 1: Fix stale closure in AssessmentDataCollection.tsx
-
-Change the `onSave` callbacks to read the CURRENT student state from the Zustand store at save time, instead of from the closure:
-
-```
-// Before (stale closure):
-const existingNotes = student.narrativeNotes || [];
-
-// After (fresh read):
-const currentStudent = useDataStore.getState().students.find(s => s.id === student.id);
-const existingNotes = currentStudent?.narrativeNotes || [];
-```
-
-Apply this to both:
-- The StructuredObservationForm `onSave` (line ~1447)
-- The ObservationNotesPanel `onSave` (line ~1478)
-
-### Step 2: Add unsaved narrative notes guard
-
-Create a guard mechanism (similar to `hasUnsavedHistoricalData`) to protect pending narrative note changes from being overwritten by realtime:
-
-- Add a `pendingNarrativeNoteStudents` Set (or ref) in SyncContext
-- When `updateStudentProfile` is called with `narrativeNotes`, mark that student as having pending changes
-- Clear the flag after `syncToCloud` completes successfully
-
-### Step 3: Protect narrative notes in the realtime handler
-
-In the realtime subscription handler (SyncContext.tsx, line ~1456), check the pending flag before overwriting:
-
-```
-// If this student has pending narrative note changes, preserve local data
-narrativeNotes: hasPendingNarrativeNotes(s.id)
-  ? (useDataStore.getState().students.find(st => st.id === s.id)?.narrativeNotes || [])
-  : ((s.narrative_notes || []).map(...))
-```
-
-### Step 4: Fix handleUpdateObservationDate race condition
-
-In `ObservationResultsViewer.tsx`, the date update handler should also read from the current store state rather than the component's `student` prop:
-
-```
-const handleUpdateObservationDate = (obsId: string) => {
-  const currentStudent = useDataStore.getState().students.find(s => s.id === studentId);
-  const updatedNotes = (currentStudent?.narrativeNotes || []).map(note => {
-    // ... existing logic
-  });
-  updateStudentProfile(studentId, { narrativeNotes: updatedNotes });
-};
-```
-
-### Step 5: Prevent duplicate note entries
-
-In the ObservationNotesPanel `onSave`, check if a note with the same ID already exists and update it instead of appending a duplicate:
-
-```
-const existingIndex = existingNotes.findIndex(n => n.id === notes.id);
-const updatedNotes = existingIndex >= 0
-  ? existingNotes.map((n, i) => i === existingIndex ? observationNote : n)
-  : [...existingNotes, observationNote];
-```
-
----
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/AssessmentDataCollection.tsx` | Fix stale closures in both onSave callbacks; add duplicate prevention |
-| `src/components/ObservationResultsViewer.tsx` | Read current store state in handleUpdateObservationDate |
-| `src/contexts/SyncContext.tsx` | Add pending narrative notes guard; protect realtime handler |
-
-## Technical Details
-
-### Pending Notes Guard (SyncContext.tsx)
-
-A module-level `Set<string>` will track student IDs with unsaved narrative note changes:
+Layout (3 stages, one screen with progressive disclosure):
 
 ```text
-pendingNarrativeStudentIds: Set<string>
-
-markNarrativeNotesPending(studentId)  -- called when narrativeNotes updated
-clearNarrativeNotesPending(studentId) -- called after successful sync
-hasPendingNarrativeNotes(studentId)   -- checked in realtime handler
+[ Stage 1: Select Students ]   ← checkbox list w/ search
+[ Stage 2: Per-student behaviors ]  ← expandable rows; each shows that student's canonical behaviors
+[ Stage 3: Per-behavior config ]   ← inline config card under each selected behavior
+[ Start Session ] button
 ```
 
-This mirrors the existing `hasUnsavedHistoricalData` pattern already proven in the codebase.
+### Per-behavior configuration card
+For each (student, behavior) pair the clinician can configure:
 
-### Why This Works
+- **Methods** (multi-select): Frequency, Duration, Interval, ABC, Latency
+- **If Interval selected:**
+  - Interval type: Whole / Partial / **Momentary**
+  - Sampling time (seconds) — applies to Momentary
+  - Interval length (seconds)
+  - Total session length (minutes)
+  - Sync with other students? (toggle)
+- **If Frequency selected:**
+  - Count rule: per-occurrence vs. bouts
+  - Min IRT (seconds) for new bout
+- **If Duration selected:**
+  - Stopwatch behavior: cumulative vs. per-episode
+  - Auto-stop after N seconds (optional)
 
-- Reading from `useDataStore.getState()` at save-time ensures the latest notes array is always used
-- The pending guard prevents realtime from overwriting local changes during the 2-second sync window
-- Duplicate prevention ensures repeated saves update in-place rather than appending
+### State model
+```ts
+type PerBehaviorConfig = {
+  studentId: string;
+  behaviorId: string;
+  methods: DataCollectionMethod[];
+  interval?: { type: 'whole'|'partial'|'momentary'; samplingSec: number; intervalSec: number; totalMin: number; sync: boolean };
+  frequency?: { mode: 'occurrence'|'bouts'; minIrtSec?: number };
+  duration?: { mode: 'cumulative'|'per_episode'; autoStopSec?: number };
+};
+```
+Persisted to `data_store` as a draft session config (`useDataStore.setMultiStudentDraft`).
+
+### Session launch
+- On Start Session: creates a single shared session record per student; session view renders existing `StudentDataCard` per student in a grid; each `IntervalTracker`/`FrequencyTracker`/`DurationTracker` is initialized with the per-behavior config.
+- Sync mode: if any (student, behavior) has `interval.sync = true`, route them through `SyncedIntervalController` with a shared timer.
+
+### Integration points
+- Add a "New Multi-Student Session" entry on `/sessions` (or wherever sessions are launched). Confirm route by reading the sessions page next.
+- Reuse `addBehaviorWithMethods` from `dataStore` for any ad-hoc method overrides.
+- Extend `IntervalTracker` props with optional `samplingSec` and `intervalType`; default to existing behavior when not provided.
+
+## Part 3 — Validation
+
+1. Run the canonical verification SQL and paste counts in chat.
+2. Manually open a Lorenzo behavior profile page in the preview to confirm names render (no UUIDs).
+3. Open the new builder, select 2 students × 2 behaviors each with mixed methods, start a session, confirm trackers render with per-behavior configs.
+
+## Out of scope
+- Reworking existing single-student session UI
+- Backfilling other students' historical non-canonical behaviors (the new trigger handles them going forward; happy to backfill on request)

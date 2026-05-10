@@ -24,10 +24,29 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Validate JWT and require admin/staff
+    const { data: userData, error: userErr } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
     const targetDate = body.date || new Date().toISOString().split("T")[0];
@@ -35,9 +54,39 @@ serve(async (req) => {
     // ── Resolve student list ──
     let studentIds: string[] = [];
 
+    // Authorization: only admins or users with explicit student/agency access
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", callerId);
+    const isAdmin = (roles || []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+
     if (body.student_id) {
       studentIds = [body.student_id];
+      if (!isAdmin) {
+        const { data: access } = await supabase
+          .from("user_student_access")
+          .select("student_id")
+          .eq("user_id", callerId)
+          .eq("student_id", body.student_id)
+          .maybeSingle();
+        if (!access) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     } else if (body.agency_id) {
+      if (!isAdmin) {
+        const { data: agencyAccess } = await supabase
+          .from("user_agency_access")
+          .select("agency_id")
+          .eq("user_id", callerId)
+          .eq("agency_id", body.agency_id)
+          .maybeSingle();
+        if (!agencyAccess) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
       const { data: students } = await supabase
         .from("students")
         .select("id")
