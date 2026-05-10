@@ -84,9 +84,10 @@ export function BehaviorInsightsModule({ studentId, studentName }: BehaviorInsig
           <SummaryCardsRow
             {...kpis}
             behaviorCount={behaviors.length}
-            avgPerDay={summaryRows.length > 0
-              ? Math.round(summaryRows.reduce((s, r) => s + r.avgPerDay, 0) * 10) / 10
-              : 0
+            avgPerDay={
+              kpis.daysWithData > 0
+                ? Math.round((kpis.totalIncidents / kpis.daysWithData) * 10) / 10
+                : 0
             }
             avgPerSession={summaryRows.length > 0
               ? Math.round(summaryRows.reduce((s, r) => s + r.avgPerSession, 0) / summaryRows.length * 10) / 10

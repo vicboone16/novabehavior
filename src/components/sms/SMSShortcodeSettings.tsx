@@ -1,121 +1,196 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+
+interface Shortcode {
+  id: string;
+  code: string;
+  label: string | null;
+  behavior_id: string;
+  student_id: string | null;
+  behaviors: { name: string } | null;
+  students: { first_name: string; last_name: string } | null;
+}
+
+interface BehaviorOpt { id: string; name: string }
+
+interface StudentOpt { id: string; firstName: string; lastName: string }
 
 export function SMSShortcodeSettings() {
-  const queryClient = useQueryClient();
-  const [newCode, setNewCode] = useState("");
-  const [newLabel, setNewLabel] = useState("");
+  const { user } = useAuth();
+  const [students, setStudents] = useState<StudentOpt[]>([]);
+  const [codes, setCodes] = useState<Shortcode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newCode, setNewCode] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [newBehaviorId, setNewBehaviorId] = useState('');
+  const [newStudentId, setNewStudentId] = useState('__global__');
+  const [behaviorOpts, setBehaviorOpts] = useState<BehaviorOpt[]>([]);
+  const [adding, setAdding] = useState(false);
 
-  const { data: shortcodes, isLoading } = useQuery({
-    queryKey: ["sms-behavior-shortcodes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sms_behavior_shortcodes")
-        .select("*")
-        .is("student_id", null)
-        .order("code");
-      if (error) throw error;
-      return data;
-    },
-  });
+  async function load() {
+    setLoading(true);
+    const [codesRes, studentsRes] = await Promise.all([
+      (supabase as any)
+        .from('sms_behavior_shortcodes')
+        .select('id, code, label, behavior_id, student_id, behaviors(name), students(first_name, last_name)')
+        .order('code'),
+      supabase.from('students').select('id, first_name, last_name')
+        .eq('is_archived', false).order('first_name'),
+    ]);
+    setCodes((codesRes.data ?? []) as Shortcode[]);
+    setStudents(
+      (studentsRes.data ?? []).map((s: any) => ({
+        id: s.id,
+        firstName: s.first_name ?? '',
+        lastName: s.last_name ?? '',
+      }))
+    );
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
 
-  const addMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from("sms_behavior_shortcodes")
-        .insert({ code: newCode.toUpperCase().trim(), label: newLabel.trim() });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sms-behavior-shortcodes"] });
-      setNewCode("");
-      setNewLabel("");
-      toast.success("Shortcode added");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
+  useEffect(() => {
+    const sid = newStudentId === '__global__' ? null : newStudentId;
+    if (sid) {
+      supabase.from('student_behavior_map')
+        .select('behavior_entry_id, behaviors(id, name)')
+        .eq('student_id', sid).eq('active', true)
+        .then(({ data }) => {
+          const opts: BehaviorOpt[] = (data ?? [])
+            .map((r: any) => r.behaviors ? { id: r.behaviors.id, name: r.behaviors.name } : null)
+            .filter(Boolean) as BehaviorOpt[];
+          opts.sort((a, b) => a.name.localeCompare(b.name));
+          setBehaviorOpts(opts);
+        });
+    } else {
+      supabase.from('behaviors').select('id, name').order('name')
+        .then(({ data }) => setBehaviorOpts((data ?? []) as BehaviorOpt[]));
+    }
+    setNewBehaviorId('');
+  }, [newStudentId]);
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("sms_behavior_shortcodes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sms-behavior-shortcodes"] });
-      toast.success("Shortcode removed");
-    },
-  });
+  async function handleAdd() {
+    if (!newCode.trim() || !newBehaviorId) { toast.error('Code and behavior are required.'); return; }
+    setAdding(true);
+    const sid = newStudentId === '__global__' ? null : newStudentId;
+    const { error } = await supabase.from('sms_behavior_shortcodes').insert({
+      code: newCode.trim().toUpperCase(),
+      label: newLabel.trim() || null,
+      behavior_id: newBehaviorId,
+      student_id: sid,
+      created_by: user?.id,
+    });
+    if (error) {
+      toast.error(error.message.includes('unique') ? 'That code already exists for this scope.' : error.message);
+    } else {
+      toast.success('Shortcode added.');
+      setNewCode(''); setNewLabel(''); setNewBehaviorId(''); setNewStudentId('__global__');
+      load();
+    }
+    setAdding(false);
+  }
+
+  async function handleDelete(id: string) {
+    const { error } = await supabase.from('sms_behavior_shortcodes').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Deleted.'); load(); }
+  }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Behavior Shortcodes</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Label className="text-xs">Code</Label>
-            <Input
-              placeholder="PA"
-              value={newCode}
-              onChange={(e) => setNewCode(e.target.value)}
-              className="h-8 text-sm"
-            />
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-sm font-semibold">Behavior Shortcodes</h2>
+        <p className="text-xs text-muted-foreground">
+          Map codes like "PA" to behaviors. Student-specific codes override global ones.
+        </p>
+      </div>
+
+      <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+        <p className="text-xs font-medium">Add Shortcode</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Code (e.g. PA)</label>
+            <Input value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())}
+              placeholder="PA" maxLength={10} className="h-8 text-xs font-mono" />
           </div>
-          <div className="flex-1">
-            <Label className="text-xs">Label</Label>
-            <Input
-              placeholder="Physical Aggression"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              className="h-8 text-sm"
-            />
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Display Label (optional)</label>
+            <Input value={newLabel} onChange={e => setNewLabel(e.target.value)}
+              placeholder="Physical Aggression" className="h-8 text-xs" />
           </div>
-          <div className="flex items-end">
-            <Button
-              size="sm"
-              className="h-8"
-              disabled={!newCode.trim() || !newLabel.trim()}
-              onClick={() => addMutation.mutate()}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Student scope</label>
+            <Select value={newStudentId} onValueChange={setNewStudentId}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__global__" className="text-xs">Global (all students)</SelectItem>
+                {students.map(s => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">{s.firstName} {s.lastName}</SelectItem>
+                ))}
+
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Behavior</label>
+            <Select value={newBehaviorId} onValueChange={setNewBehaviorId}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>
+                {behaviorOpts.map(b => (
+                  <SelectItem key={b.id} value={b.id} className="text-xs">{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
+        <Button size="sm" className="h-7 text-xs gap-1 w-full" onClick={handleAdd} disabled={adding}>
+          <Plus className="w-3 h-3" /> Add Shortcode
+        </Button>
+      </div>
 
-        {isLoading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
-        ) : (
-          <div className="space-y-1.5">
-            {shortcodes?.map((sc) => (
-              <div key={sc.id} className="flex items-center justify-between text-sm bg-muted/50 rounded px-2 py-1.5">
-                <span>
-                  <code className="font-mono text-xs bg-muted px-1 rounded">{sc.code}</code>{" "}
-                  <span className="text-muted-foreground">→</span> {sc.label}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => deleteMutation.mutate(sc.id)}
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </Button>
-              </div>
-            ))}
-            {!shortcodes?.length && (
-              <p className="text-xs text-muted-foreground">No shortcodes configured yet.</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {loading ? (
+        <p className="text-xs text-muted-foreground py-4 text-center">Loading…</p>
+      ) : codes.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-4 text-center">No shortcodes yet.</p>
+      ) : (
+        <div className="border rounded-md overflow-hidden text-xs">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-3 py-2 font-medium">Code</th>
+                <th className="text-left px-3 py-2 font-medium">Behavior</th>
+                <th className="text-left px-3 py-2 font-medium">Student</th>
+                <th className="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {codes.map((c, i) => (
+                <tr key={c.id} className={i % 2 === 0 ? '' : 'bg-muted/20'}>
+                  <td className="px-3 py-2 font-mono font-semibold">{c.code}</td>
+                  <td className="px-3 py-2">{c.label || c.behaviors?.name || '—'}</td>
+                  <td className="px-3 py-2">
+                    {c.student_id
+                      ? `${c.students?.first_name ?? ''} ${c.students?.last_name ?? ''}`.trim() || '—'
+                      : <Badge variant="secondary" className="text-[10px]">Global</Badge>}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(c.id)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }

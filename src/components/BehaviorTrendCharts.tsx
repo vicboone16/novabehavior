@@ -94,7 +94,7 @@ export function BehaviorTrendCharts() {
           .from('behavior_session_data')
           .select('id, session_id, behavior_id, frequency, duration_seconds, data_state, created_at, student_id, sessions(start_time, started_at)')
           .in('student_id', unsyncedIds)
-          .eq('data_state', 'measured')
+          .not('data_state', 'eq', 'no_data')
           .order('created_at', { ascending: true })
           .limit(2000);
 
@@ -144,16 +144,16 @@ export function BehaviorTrendCharts() {
             }
           }
 
-          if (r.frequency != null) {
+          if (r.frequency != null || r.data_state === 'observed_zero') {
             const fId = `bsd-${r.id}`;
             if (!existingFreqIds.has(fId)) {
               newFreq.push({
                 id: fId,
                 studentId: r.student_id,
                 behaviorId: r.behavior_id,
-                count: r.frequency,
+                count: r.data_state === 'observed_zero' ? 0 : (r.frequency ?? 0),
                 timestamp: obsDate,
-                notes: r.frequency === 0 ? 'observed_zero' : '',
+                notes: (r.data_state === 'observed_zero' || r.frequency === 0) ? 'observed_zero' : '',
               });
             }
           }

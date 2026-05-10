@@ -11,6 +11,7 @@ interface SummaryCardsRowProps {
   peakDay: string;
   peakCount: number;
   completeness: number;
+  daysWithData?: number;
   lastRecorded: string | null;
   priorityConcern: BehaviorSummaryRow | null;
   behaviorCount?: number;
