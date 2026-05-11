@@ -78,6 +78,9 @@ const DomainMigrationReviewPage = lazy(() => import("./pages/clinical-library/Do
 const TagManagementPage = lazy(() => import("./pages/clinical-library/TagManagementPage"));
 const RestoredBehaviorCleanup = lazy(() => import("./pages/admin/RestoredBehaviorCleanup"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
+const IntegrityCheck = lazy(() => import("./pages/IntegrityCheck"));
+const SessionSummary = lazy(() => import("./pages/SessionSummary"));
+const MultiStudentCapture = lazy(() => import("./pages/MultiStudentCapture"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
