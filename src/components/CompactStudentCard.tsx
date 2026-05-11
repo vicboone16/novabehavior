@@ -4,6 +4,7 @@ import { FrequencyTracker } from './FrequencyTracker';
 import { DurationTracker } from './DurationTracker';
 import { ABCTracker } from './ABCTracker';
 import { ABCQuickSheet } from './ABCQuickSheet';
+import { BehaviorMiniChart } from './BehaviorMiniChart';
 import { CompactIntervalTracker } from './CompactIntervalTracker';
 import { CompactSkillTracker } from './CompactSkillTracker';
 import { SkillTargetSessionSelector } from './SkillTargetSessionSelector';
@@ -24,7 +25,8 @@ import {
   Clock,
   Target,
   Expand,
-  Zap
+  Zap,
+  LineChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -81,6 +83,7 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isMinimalMode, setIsMinimalMode] = useState(false);
   const [abcSheetBehavior, setAbcSheetBehavior] = useState<Behavior | null>(null);
+  const [chartBehavior, setChartBehavior] = useState<Behavior | null>(null);
   // Only show targets in active phases during sessions — hides baseline, generalization, mastered
   const skillTargets = (student.skillTargets || []).filter(
     t => t.status === 'acquisition' || t.status === 'maintenance'
@@ -178,6 +181,14 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
             {isCollapsed && (
               <Badge variant="outline" className="text-[9px] h-4 px-1">hidden</Badge>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+              onClick={() => setChartBehavior(behavior)}
+            >
+              <LineChart className="w-3 h-3" />
+            </Button>
           </div>
           <CollapsibleContent>
             <CompactIntervalTracker 
@@ -211,6 +222,14 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
           {isCollapsed && (
             <Badge variant="outline" className="text-[9px] h-4 px-1">hidden</Badge>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+            onClick={() => setChartBehavior(behavior)}
+          >
+            <LineChart className="w-3 h-3" />
+          </Button>
         </div>
         <CollapsibleContent>
           {TrackerComponent && (() => {
@@ -687,6 +706,17 @@ export function CompactStudentCard({ student, onExpand }: CompactStudentCardProp
           onOpenChange={(open) => { if (!open) setAbcSheetBehavior(null); }}
           studentId={student.id}
           behavior={abcSheetBehavior}
+          studentColor={student.color}
+        />
+      )}
+
+      {/* Behavior Mini Chart — triggered by chart icon on any behavior row */}
+      {chartBehavior && (
+        <BehaviorMiniChart
+          open={!!chartBehavior}
+          onOpenChange={(open) => { if (!open) setChartBehavior(null); }}
+          studentId={student.id}
+          behavior={chartBehavior}
           studentColor={student.color}
         />
       )}
