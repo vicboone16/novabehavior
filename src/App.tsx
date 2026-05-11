@@ -541,6 +541,9 @@ const App = () => {
               <Route path="/district-intelligence" element={<DistrictIntelligence />} />
               <Route path="/reward-store" element={<RewardStore />} />
               <Route path="/parent-portal" element={<ParentPortal />} />
+              <Route path="/integrity-check" element={<IntegrityCheck />} />
+              <Route path="/session-summary" element={<SessionSummary />} />
+              <Route path="/multi-student-capture" element={<MultiStudentCapture />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
