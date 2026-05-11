@@ -691,10 +691,15 @@ export interface StudentSessionStatus {
   effectiveSessionMinutes?: number; // Actual session time minus pauses
 }
 
+export type ScheduleType = 'FI' | 'VI' | 'VR';
+
 export interface SessionConfig {
   intervalLength: number; // in seconds
   totalIntervals: number;
   samplingType: 'whole' | 'partial' | 'momentary';
+  scheduleType?: ScheduleType;
+  viMeanSeconds?: number;  // VI: mean interval length in seconds
+  vrMeanRatio?: number;    // VR: mean responses before reinforcement delivery
 }
 
 export interface SessionLengthOverride {

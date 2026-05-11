@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Check, Settings } from 'lucide-react';
+import { Play, Pause, RotateCcw, Check, Settings, Lightbulb, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDataStore } from '@/store/dataStore';
-import { Behavior } from '@/types/behavior';
+import { Behavior, ScheduleType } from '@/types/behavior';
 import { IntervalGrid } from './IntervalGrid';
+import { useVariableSchedule } from '@/hooks/useVariableSchedule';
+import { useIntervalSmartSuggestion } from '@/hooks/useIntervalSmartSuggestion';
+import { cn } from '@/lib/utils';
 
 interface CompactIntervalTrackerProps {
   studentId: string;
@@ -36,6 +40,22 @@ export function CompactIntervalTracker({
   const [isRunning, setIsRunning] = useState(false);
   const [awaitingResponse, setAwaitingResponse] = useState(false);
   const [markedOccurred, setMarkedOccurred] = useState(false);
+
+  // VI/VR schedule
+  const scheduleType: ScheduleType = sessionConfig.scheduleType ?? 'FI';
+  const { generateSchedule, getIntervalLength, getRatioTarget } = useVariableSchedule(
+    scheduleType,
+    sessionConfig.totalIntervals,
+    sessionConfig.viMeanSeconds,
+    sessionConfig.vrMeanRatio,
+  );
+
+  // VR: count responses accumulated toward next reinforcement
+  const [vrResponseCount, setVrResponseCount] = useState(0);
+  const [vrReinforceNow, setVrReinforceNow] = useState(false);
+
+  // Smart suggestion (Group D)
+  const suggestion = useIntervalSmartSuggestion(studentId, behavior.id, sessionConfig.intervalLength);
 
   const intervalData = getIntervalData(studentId, behavior.id);
   const completedIntervals = intervalData.filter(e => e.occurred !== undefined).length;
@@ -67,6 +87,17 @@ export function CompactIntervalTracker({
     if (syncedMode) {
       recordInterval(studentId, behavior.id, effectiveInterval, true);
     }
+    // VR: accumulate response count
+    if (scheduleType === 'VR') {
+      const next = vrResponseCount + 1;
+      const target = getRatioTarget(currentInterval);
+      if (next >= target) {
+        setVrReinforceNow(true);
+        setVrResponseCount(0);
+      } else {
+        setVrResponseCount(next);
+      }
+    }
   };
 
   const recordResponse = (occurred: boolean) => {
@@ -87,6 +118,9 @@ export function CompactIntervalTracker({
     setTimeInInterval(0);
     setAwaitingResponse(false);
     setMarkedOccurred(false);
+    setVrResponseCount(0);
+    setVrReinforceNow(false);
+    generateSchedule();
   };
 
   useEffect(() => {
@@ -102,12 +136,14 @@ export function CompactIntervalTracker({
 
   useEffect(() => {
     if (syncedMode) return;
-    
+
     let interval: NodeJS.Timeout;
     if (isRunning && !awaitingResponse) {
+      // VI: each interval uses its own scheduled length; FI uses the configured length
+      const currentLength = getIntervalLength(currentInterval, sessionConfig.intervalLength);
       interval = setInterval(() => {
         setTimeInInterval(prev => {
-          if (prev + 1 >= sessionConfig.intervalLength) {
+          if (prev + 1 >= currentLength) {
             handleIntervalComplete();
             return 0;
           }
@@ -116,9 +152,10 @@ export function CompactIntervalTracker({
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, awaitingResponse, sessionConfig.intervalLength, handleIntervalComplete, syncedMode]);
+  }, [isRunning, awaitingResponse, currentInterval, sessionConfig.intervalLength, handleIntervalComplete, syncedMode, getIntervalLength]);
 
-  const progress = (effectiveTime / sessionConfig.intervalLength) * 100;
+  const currentIntervalLength = getIntervalLength(effectiveInterval, sessionConfig.intervalLength);
+  const progress = (effectiveTime / currentIntervalLength) * 100;
   const isComplete = effectiveInterval >= sessionConfig.totalIntervals;
   const currentIntervalEntry = intervalData.find(e => e.intervalNumber === effectiveInterval);
   const hasCurrentResponse = currentIntervalEntry !== undefined;
@@ -171,42 +208,135 @@ export function CompactIntervalTracker({
                   <Settings className="w-3 h-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-48">
-                <div className="space-y-2">
+              <PopoverContent className="w-56 space-y-3">
+                {/* Schedule type */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Schedule</Label>
+                  <Select
+                    value={scheduleType}
+                    onValueChange={(v) => {
+                      updateSessionConfig({ scheduleType: v as ScheduleType });
+                      generateSchedule();
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FI" className="text-xs">FI — Fixed Interval</SelectItem>
+                      <SelectItem value="VI" className="text-xs">VI — Variable Interval</SelectItem>
+                      <SelectItem value="VR" className="text-xs">VR — Variable Ratio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* FI / VI base interval length */}
+                {scheduleType !== 'VR' && (
                   <div className="space-y-1">
-                    <Label className="text-xs">Interval (sec)</Label>
+                    <Label className="text-xs">
+                      {scheduleType === 'VI' ? 'Mean interval (sec)' : 'Interval (sec)'}
+                    </Label>
                     <Input
                       type="number"
-                      value={sessionConfig.intervalLength}
-                      onChange={(e) => updateSessionConfig({ intervalLength: parseInt(e.target.value) || 10 })}
-                      min={5}
-                      max={300}
-                      className="h-7"
+                      value={scheduleType === 'VI'
+                        ? (sessionConfig.viMeanSeconds ?? sessionConfig.intervalLength)
+                        : sessionConfig.intervalLength}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 10;
+                        if (scheduleType === 'VI') {
+                          updateSessionConfig({ viMeanSeconds: val, intervalLength: val });
+                        } else {
+                          updateSessionConfig({ intervalLength: val });
+                        }
+                        generateSchedule();
+                      }}
+                      min={5} max={300} className="h-7"
                     />
                   </div>
+                )}
+
+                {/* VR mean ratio */}
+                {scheduleType === 'VR' && (
                   <div className="space-y-1">
-                    <Label className="text-xs">Total</Label>
+                    <Label className="text-xs">Mean ratio (responses)</Label>
+                    <Input
+                      type="number"
+                      value={sessionConfig.vrMeanRatio ?? 5}
+                      onChange={(e) => {
+                        updateSessionConfig({ vrMeanRatio: parseInt(e.target.value) || 5 });
+                        generateSchedule();
+                      }}
+                      min={2} max={50} className="h-7"
+                    />
+                  </div>
+                )}
+
+                {/* Total intervals */}
+                {scheduleType !== 'VR' && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Total intervals</Label>
                     <Input
                       type="number"
                       value={sessionConfig.totalIntervals}
                       onChange={(e) => updateSessionConfig({ totalIntervals: parseInt(e.target.value) || 6 })}
-                      min={1}
-                      max={60}
-                      className="h-7"
+                      min={1} max={60} className="h-7"
                     />
                   </div>
-                </div>
+                )}
+
+                {/* Smart suggestion */}
+                {suggestion && (
+                  <div className={cn(
+                    'rounded p-2 text-xs flex gap-1.5 items-start',
+                    suggestion.level === 'optimal' ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                  )}>
+                    <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-medium">{suggestion.message}</div>
+                      {suggestion.hint && <div className="opacity-80">{suggestion.hint}</div>}
+                    </div>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
           </div>
         )}
       </div>
 
+      {/* VR reinforcement alert */}
+      {vrReinforceNow && (
+        <div
+          className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold animate-pulse"
+          style={{ backgroundColor: `${studentColor}30`, color: studentColor }}
+        >
+          <Bell className="w-3 h-3" />
+          Reinforce now!
+          <Button
+            size="sm"
+            className="h-5 px-2 text-[10px] ml-auto"
+            style={{ backgroundColor: studentColor, color: 'white' }}
+            onClick={() => setVrReinforceNow(false)}
+          >
+            Done
+          </Button>
+        </div>
+      )}
+
+      {/* VR response counter */}
+      {scheduleType === 'VR' && !vrReinforceNow && (
+        <div className="text-[10px] text-muted-foreground">
+          Responses toward reinf: <strong>{vrResponseCount}/{getRatioTarget(currentInterval)}</strong>
+        </div>
+      )}
+
       {/* Progress bar - minimal */}
       <div className="flex items-center gap-2">
         <Progress value={progress} className="h-1.5 flex-1" />
-        <span className="text-[10px] text-muted-foreground w-16 text-right">
-          {effectiveInterval + 1}/{sessionConfig.totalIntervals} • {formatTime(effectiveTime)}
+        <span className="text-[10px] text-muted-foreground text-right">
+          {scheduleType !== 'VR' ? `${effectiveInterval + 1}/${sessionConfig.totalIntervals} • ` : ''}{formatTime(effectiveTime)}
+          {scheduleType === 'VI' && (
+            <span className="ml-1 opacity-60">/{currentIntervalLength}s</span>
+          )}
         </span>
       </div>
 
