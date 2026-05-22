@@ -25,7 +25,7 @@ interface BulkVoidDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalIntervals: number;
-  onApply: (startInterval: number, endInterval: number, reason: IntervalEntry['voidReason'], customReason?: string) => void;
+  onApply: (startInterval: number, endInterval: number, reason: IntervalEntry['voidReason'], customReason?: string, voidDurationMinutes?: number) => void;
   onClear: (startInterval: number, endInterval: number) => void;
 }
 
@@ -50,6 +50,7 @@ export function BulkVoidDialog({
   const [endInterval, setEndInterval] = useState('1');
   const [reason, setReason] = useState<IntervalEntry['voidReason']>('not_present');
   const [customReason, setCustomReason] = useState('');
+  const [voidDurationMinutes, setVoidDurationMinutes] = useState('');
   const [action, setAction] = useState<'void' | 'clear'>('void');
 
   const handleApply = () => {
@@ -62,8 +63,9 @@ export function BulkVoidDialog({
     }
 
     if (action === 'void') {
-      onApply(start, end, reason, reason === 'other' ? customReason : undefined);
-      toast.success(`Voided intervals ${startInterval} to ${endInterval}`);
+      const durationMins = parseFloat(voidDurationMinutes) || undefined;
+      onApply(start, end, reason, reason === 'other' ? customReason : undefined, durationMins);
+      toast.success(`Voided intervals ${startInterval} to ${endInterval}${durationMins ? ` (${durationMins} min)` : ''}`);
     } else {
       onClear(start, end);
       toast.success(`Restored intervals ${startInterval} to ${endInterval}`);
@@ -78,6 +80,7 @@ export function BulkVoidDialog({
     setEndInterval('1');
     setReason('not_present');
     setCustomReason('');
+    setVoidDurationMinutes('');
     setAction('void');
   };
 
@@ -169,6 +172,22 @@ export function BulkVoidDialog({
                   />
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="void-duration">Disruption Duration (minutes, optional)</Label>
+                <Input
+                  id="void-duration"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={voidDurationMinutes}
+                  onChange={(e) => setVoidDurationMinutes(e.target.value)}
+                  placeholder="e.g. 5 for a 5-minute fire drill"
+                />
+                <p className="text-xs text-muted-foreground">
+                  How long the disruption lasted — used to calculate actual intervention exposure
+                </p>
+              </div>
             </>
           )}
 

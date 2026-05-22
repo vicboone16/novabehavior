@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { 
-  Student, 
-  Behavior, 
-  ABCEntry, 
-  FrequencyEntry, 
-  DurationEntry, 
-  IntervalEntry, 
-  SessionConfig, 
+import {
+  Student,
+  Behavior,
+  ABCEntry,
+  FrequencyEntry,
+  DurationEntry,
+  IntervalEntry,
+  SessionConfig,
   Session,
   TrackerOrder,
   DataCollectionMethod,
@@ -25,6 +25,11 @@ import {
   DTTSession,
   DTTTrial,
   BehaviorDefinition,
+  SessionType,
+  ObservationContext,
+  SettingEvent,
+  IOAEntry,
+  FidelityCheck,
 } from '@/types/behavior';
 import { BehaviorDefinitionOverride, GlobalBankBehavior } from '@/types/behaviorBank';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,6 +110,8 @@ interface DataState {
   durationEntries: DurationEntry[];
   intervalEntries: IntervalEntry[];
   latencyEntries: LatencyEntry[];
+  ioaEntries: IOAEntry[];
+  fidelityChecks: FidelityCheck[];
   sessionConfig: SessionConfig;
   sessions: Session[];
   currentSessionId: string | null;
@@ -124,7 +131,12 @@ interface DataState {
   trash: TrashItem[]; // Recoverable deleted items
   lastSavedDataHash: string | null; // Track when data was last saved to prevent duplicates
   studentTargetSelections: Record<string, string[]>; // studentId -> target IDs selected at session start
-  
+
+  // Session metadata
+  currentSessionType: SessionType | null;
+  currentObservationContext: ObservationContext | null;
+  currentSettingEvents: SettingEvent[];
+
   // Global Behavior Bank - persisted custom behaviors promoted to org level
   globalBehaviorBank: GlobalBankBehavior[];
   // Overrides for built-in behavior definitions
@@ -242,7 +254,7 @@ interface DataState {
   // Interval actions
   recordInterval: (studentId: string, behaviorId: string, intervalNumber: number, occurred: boolean) => void;
   getIntervalData: (studentId: string, behaviorId: string) => IntervalEntry[];
-  voidInterval: (studentId: string, behaviorId: string, intervalNumber: number, reason: IntervalEntry['voidReason'], customReason?: string) => void;
+  voidInterval: (studentId: string, behaviorId: string, intervalNumber: number, reason: IntervalEntry['voidReason'], customReason?: string, voidDurationMinutes?: number) => void;
   unvoidInterval: (studentId: string, behaviorId: string, intervalNumber: number) => void;
   isIntervalVoided: (studentId: string, behaviorId: string, intervalNumber: number) => boolean;
   
@@ -349,7 +361,26 @@ interface DataState {
   updateDTTSession: (studentId: string, sessionId: string, updates: Partial<DTTSession>) => void;
   deleteDTTSession: (studentId: string, sessionId: string) => void;
   addHistoricalDTTSession: (studentId: string, session: Omit<DTTSession, 'id'>) => void;
-  
+
+  // Session metadata actions
+  setSessionType: (type: SessionType | null) => void;
+  setObservationContext: (ctx: ObservationContext | null) => void;
+  addSettingEvent: (event: Omit<SettingEvent, 'id'>) => void;
+  removeSettingEvent: (id: string) => void;
+  clearSettingEvents: () => void;
+
+  // IOA actions
+  addIOAEntry: (entry: Omit<IOAEntry, 'id'>) => void;
+  updateIOAEntry: (id: string, updates: Partial<IOAEntry>) => void;
+  deleteIOAEntry: (id: string) => void;
+  getIOAEntries: (studentId: string, behaviorId?: string) => IOAEntry[];
+
+  // Fidelity check actions
+  addFidelityCheck: (check: Omit<FidelityCheck, 'id'>) => void;
+  updateFidelityCheck: (id: string, updates: Partial<FidelityCheck>) => void;
+  deleteFidelityCheck: (id: string) => void;
+  getFidelityChecks: (studentId: string, skillTargetId?: string) => FidelityCheck[];
+
   // Reset
   resetAllData: () => void;
   resetSessionData: () => void;
@@ -375,6 +406,8 @@ export const useDataStore = create<DataState>()(
       durationEntries: [],
       intervalEntries: [],
       latencyEntries: [],
+      ioaEntries: [],
+      fidelityChecks: [],
       sessionConfig: {
         intervalLength: 10,
         totalIntervals: 6,
@@ -401,6 +434,9 @@ export const useDataStore = create<DataState>()(
       behaviorDefinitionOverrides: {},
       archivedBuiltInBehaviors: [],
       studentTargetSelections: {},
+      currentSessionType: null,
+      currentObservationContext: null,
+      currentSettingEvents: [],
 
       addStudent: (name) => {
         const id = crypto.randomUUID();
@@ -1486,15 +1522,22 @@ export const useDataStore = create<DataState>()(
       },
 
       startDuration: (studentId, behaviorId) => {
+        const id = crypto.randomUUID();
+        const startTime = new Date();
+        // Persist active timer to localStorage so page refresh doesn't lose in-flight duration
+        try {
+          const key = `nova_active_duration_${studentId}_${behaviorId}`;
+          localStorage.setItem(key, JSON.stringify({ id, startTime: startTime.toISOString() }));
+        } catch {}
         set((state) => ({
           durationEntries: [
             ...state.durationEntries,
             {
-              id: crypto.randomUUID(),
+              id,
               studentId,
               behaviorId,
               duration: 0,
-              startTime: new Date(),
+              startTime,
               sessionId: state.currentSessionId || undefined,
             },
           ],
@@ -1504,6 +1547,10 @@ export const useDataStore = create<DataState>()(
       stopDuration: (studentId, behaviorId) => {
         const now = new Date();
         let duration = 0;
+        // Remove persisted active timer
+        try {
+          localStorage.removeItem(`nova_active_duration_${studentId}_${behaviorId}`);
+        } catch {}
         set((state) => {
           const entries = state.durationEntries.map((e) => {
             if (e.studentId === studentId && e.behaviorId === behaviorId && !e.endTime) {
@@ -1648,7 +1695,7 @@ export const useDataStore = create<DataState>()(
         );
       },
 
-      voidInterval: (studentId, behaviorId, intervalNumber, reason, customReason) => {
+      voidInterval: (studentId, behaviorId, intervalNumber, reason, customReason, voidDurationMinutes) => {
         set((state) => {
           const existing = state.intervalEntries.find(
             (e) =>
@@ -1662,7 +1709,7 @@ export const useDataStore = create<DataState>()(
                 e.studentId === studentId &&
                 e.behaviorId === behaviorId &&
                 e.intervalNumber === intervalNumber
-                  ? { ...e, voided: true, voidReason: reason, voidReasonCustom: customReason }
+                  ? { ...e, voided: true, voidReason: reason, voidReasonCustom: customReason, voidDurationMinutes }
                   : e
               ),
             };
@@ -1680,6 +1727,7 @@ export const useDataStore = create<DataState>()(
                 voided: true,
                 voidReason: reason,
                 voidReasonCustom: customReason,
+                voidDurationMinutes,
                 timestamp: new Date(),
                 sessionId: state.currentSessionId || undefined,
               },
@@ -2009,10 +2057,15 @@ export const useDataStore = create<DataState>()(
           studentIds: state.selectedStudentIds,
           sessionLengthMinutes: state.sessionLengthMinutes,
           sessionLengthOverrides: [...state.sessionLengthOverrides],
+          sessionType: state.currentSessionType || undefined,
+          observationContext: state.currentObservationContext || undefined,
+          settingEvents: state.currentSettingEvents.length > 0 ? [...state.currentSettingEvents] : undefined,
           abcEntries: [...state.abcEntries],
           frequencyEntries: [...state.frequencyEntries],
           durationEntries: [...state.durationEntries],
           intervalEntries: [...state.intervalEntries],
+          ioaEntries: state.ioaEntries.filter((e) => e.sessionId === state.currentSessionId),
+          fidelityChecks: state.fidelityChecks.filter((c) => c.sessionId === state.currentSessionId),
         };
 
         // If we already have a currentSessionId, update the existing session instead of creating a new one
@@ -2115,6 +2168,9 @@ export const useDataStore = create<DataState>()(
           studentIntervalStatus: [],
           syncedIntervalsRunning: false,
           studentTargetSelections: {},
+          currentSessionType: null,
+          currentObservationContext: null,
+          currentSettingEvents: [],
           frequencyEntries: state.frequencyEntries.filter(e => !isStale(e)),
           durationEntries: state.durationEntries.filter(e => !isStale(e as any)),
           abcEntries: state.abcEntries.filter(e => !isStale(e as any)),
@@ -2608,6 +2664,72 @@ export const useDataStore = create<DataState>()(
             },
           };
         });
+      },
+
+      // Session metadata
+      setSessionType: (type) => set({ currentSessionType: type }),
+
+      setObservationContext: (ctx) => set({ currentObservationContext: ctx }),
+
+      addSettingEvent: (event) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          currentSettingEvents: [...state.currentSettingEvents, { ...event, id }],
+        }));
+      },
+
+      removeSettingEvent: (id) => {
+        set((state) => ({
+          currentSettingEvents: state.currentSettingEvents.filter((e) => e.id !== id),
+        }));
+      },
+
+      clearSettingEvents: () => set({ currentSettingEvents: [] }),
+
+      // IOA actions
+      addIOAEntry: (entry) => {
+        const id = crypto.randomUUID();
+        set((state) => ({ ioaEntries: [...state.ioaEntries, { ...entry, id }] }));
+      },
+
+      updateIOAEntry: (id, updates) => {
+        set((state) => ({
+          ioaEntries: state.ioaEntries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+        }));
+      },
+
+      deleteIOAEntry: (id) => {
+        set((state) => ({ ioaEntries: state.ioaEntries.filter((e) => e.id !== id) }));
+      },
+
+      getIOAEntries: (studentId, behaviorId) => {
+        return get().ioaEntries.filter(
+          (e) => e.studentId === studentId && (behaviorId ? e.behaviorId === behaviorId : true)
+        );
+      },
+
+      // Fidelity check actions
+      addFidelityCheck: (check) => {
+        const id = crypto.randomUUID();
+        set((state) => ({ fidelityChecks: [...state.fidelityChecks, { ...check, id }] }));
+      },
+
+      updateFidelityCheck: (id, updates) => {
+        set((state) => ({
+          fidelityChecks: state.fidelityChecks.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+        }));
+      },
+
+      deleteFidelityCheck: (id) => {
+        set((state) => ({ fidelityChecks: state.fidelityChecks.filter((c) => c.id !== id) }));
+      },
+
+      getFidelityChecks: (studentId, skillTargetId) => {
+        return get().fidelityChecks.filter(
+          (c) =>
+            c.studentId === studentId &&
+            (skillTargetId ? c.skillTargetId === skillTargetId : true)
+        );
       },
 
       resetAllData: () => {

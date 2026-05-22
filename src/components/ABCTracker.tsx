@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
-import { Check, X, Pencil, Trash2, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { Check, X, Pencil, Trash2, Clock, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
-import { 
-  Behavior, 
-  ANTECEDENT_OPTIONS, 
+import {
+  Behavior,
+  ANTECEDENT_OPTIONS,
   CONSEQUENCE_OPTIONS,
   FUNCTION_OPTIONS,
-  BehaviorFunction 
+  BehaviorFunction,
+  SETTING_EVENT_LABELS,
 } from '@/types/behavior';
 import {
   Dialog,
@@ -28,7 +29,7 @@ interface ABCTrackerProps {
 }
 
 export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProps) {
-  const { addEnhancedABCEntry, abcEntries, updateABCEntry, deleteABCEntry, students, getStudentAntecedents, getStudentConsequences } = useDataStore();
+  const { addEnhancedABCEntry, abcEntries, updateABCEntry, deleteABCEntry, students, getStudentAntecedents, getStudentConsequences, currentSettingEvents } = useDataStore() as any;
   const [selectedAntecedents, setSelectedAntecedents] = useState<string[]>([]);
   const [selectedBehavior, setSelectedBehavior] = useState<string | null>(null);
   const [selectedConsequences, setSelectedConsequences] = useState<string[]>([]);
@@ -161,6 +162,19 @@ export function ABCTracker({ studentId, behavior, studentColor }: ABCTrackerProp
           {behaviorEntries.length} recorded
         </Button>
       </div>
+
+      {/* Setting events from session context */}
+      {currentSettingEvents && currentSettingEvents.length > 0 && (
+        <div className="flex flex-wrap gap-1 pb-1">
+          {currentSettingEvents.map((ev: any) => (
+            <Badge key={ev.id} variant="outline" className="text-[10px] gap-1 border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              {SETTING_EVENT_LABELS[ev.category as keyof typeof SETTING_EVENT_LABELS]}
+              {ev.severity && ` (${ev.severity})`}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {/* Antecedent - Multi-select */}
       <div className="space-y-1.5">
