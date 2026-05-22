@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { format, subMonths, subDays, isAfter, parseISO, isValid, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar } from 'lucide-react';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Filter, Plus, Clock, LineChart as LineChartIcon, Calendar, AlertTriangle } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -209,6 +209,9 @@ export function BehaviorTrendCharts() {
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [showCelerationLine, setShowCelerationLine] = useState(false);
+  const [filterSessionType, setFilterSessionType] = useState<string>('all');
+  const [rateUsedFallback, setRateUsedFallback] = useState(false);
   
   // Historical entry form state
   const [histDate, setHistDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -256,6 +259,7 @@ export function BehaviorTrendCharts() {
 
   // Process data for charts - combine session data AND historical data
   const chartData = useMemo(() => {
+    let anyFallback = false;
     // Collect all data points by date
     const dataByDate = new Map<string, {
       frequencyByBehavior: Record<string, number>;
@@ -287,9 +291,14 @@ export function BehaviorTrendCharts() {
     sessions.forEach(session => {
       const sessionDate = new Date(session.date);
       if (!isInDateRange(sessionDate)) return;
-      
+
+      // Session type filter
+      if (filterSessionType !== 'all' && (session as any).sessionType !== filterSessionType) return;
+
       const dateKey = format(sessionDate, 'yyyy-MM-dd');
       const entry = getOrCreateDateEntry(dateKey);
+      const hasDuration = session.sessionLengthMinutes > 0;
+      if (!hasDuration) anyFallback = true;
       const sessionLengthMinutes = session.sessionLengthMinutes || 30;
       
       // Process frequency entries from sessions
@@ -304,7 +313,9 @@ export function BehaviorTrendCharts() {
         if (wasDataCollected) {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
           
-          const durationMinutes = (freqEntry as any).observationDurationMinutes || sessionLengthMinutes;
+          const freqObsDuration = (freqEntry as any).observationDurationMinutes;
+          if (!freqObsDuration) anyFallback = true;
+          const durationMinutes = freqObsDuration || sessionLengthMinutes;
           const ratePerHour = freqEntry.count / (durationMinutes / 60);
           entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
         }
@@ -356,7 +367,8 @@ export function BehaviorTrendCharts() {
 
         if (freqEntry.count > 0 || (freqEntry as any).notes === 'observed_zero') {
           entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + freqEntry.count;
-          const ratePerHour = freqEntry.count / 0.5; // default 30min session
+          anyFallback = true;
+          const ratePerHour = freqEntry.count / 0.5; // default 30min session — observation duration unavailable
           entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
         }
       });
@@ -398,6 +410,7 @@ export function BehaviorTrendCharts() {
         entry.frequencyByBehavior[key] = (entry.frequencyByBehavior[key] || 0) + histEntry.count;
         
         // Calculate rate if observation duration provided
+        if (!histEntry.observationDurationMinutes) anyFallback = true;
         const durationMinutes = histEntry.observationDurationMinutes || 30;
         const ratePerHour = histEntry.count / (durationMinutes / 60);
         entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
@@ -451,8 +464,11 @@ export function BehaviorTrendCharts() {
     });
 
     // Sort by date
-    return chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, dateRange, resolveName]);
+    const sorted = chartDataArray.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+    // Schedule fallback state update outside render
+    setTimeout(() => setRateUsedFallback(anyFallback), 0);
+    return sorted;
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, filterSessionType, dateRange, resolveName]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
@@ -654,8 +670,34 @@ export function BehaviorTrendCharts() {
               ))}
             </SelectContent>
           </Select>
+
+          {/* Session type filter */}
+          <Select value={filterSessionType} onValueChange={setFilterSessionType}>
+            <SelectTrigger className="w-[120px] h-8">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="teaching">Teaching only</SelectItem>
+              <SelectItem value="probe">Probe only</SelectItem>
+              <SelectItem value="maintenance">Maintenance</SelectItem>
+              <SelectItem value="baseline">Baseline</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Badge variant="outline" className="text-xs">{chartData.length} data points</Badge>
-          
+
+          {/* Celeration line toggle */}
+          <div className="flex items-center gap-1.5">
+            <Switch
+              id="celeration-toggle"
+              checked={showCelerationLine}
+              onCheckedChange={setShowCelerationLine}
+              className="scale-75"
+            />
+            <Label htmlFor="celeration-toggle" className="text-xs cursor-pointer">Trend line</Label>
+          </div>
+
           {/* Chart Type Toggle */}
           <ToggleGroup type="single" value={chartType} onValueChange={(v) => v && setChartType(v as 'line' | 'bar')} size="sm">
             <ToggleGroupItem value="line" aria-label="Line chart" className="gap-1 h-7 px-2">
@@ -778,6 +820,17 @@ export function BehaviorTrendCharts() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Rate fallback warning */}
+        {showRatePerHour && rateUsedFallback && (
+          <div className="mx-1 mb-1 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>
+              Some rate/hour values use an assumed 30-min session length because observation duration was not recorded.
+              Add historical entries with duration, or ensure session length is set for accurate rates.
+            </span>
+          </div>
         )}
 
         {/* Charts */}

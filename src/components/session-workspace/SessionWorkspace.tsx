@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, LayoutGrid, Smartphone } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Smartphone, Settings2, AlertTriangle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore } from '@/store/dataStore';
-import { Student } from '@/types/behavior';
+import { Student, SESSION_TYPE_LABELS, SETTING_LABELS, SETTING_EVENT_LABELS } from '@/types/behavior';
 import { SessionStatsHeader } from './SessionStatsHeader';
 import { GridLayout } from './layouts/GridLayout';
 import { ListLayout } from './layouts/ListLayout';
@@ -17,6 +17,7 @@ import { EndAllSessionsButton } from '@/components/EndAllSessionsButton';
 import { useWorkspacePreferences } from '@/hooks/useWorkspacePreferences';
 import { MobileDataMode } from '@/components/mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { SessionSetupModal } from '@/components/SessionSetupModal';
 
 type FilterChip = 'all' | 'behaviors' | 'skills';
 
@@ -99,6 +100,10 @@ function StudentPane({ student, studentColor, layout, filter, withHeading }: Stu
 export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
   const students = useDataStore((s) => s.students);
   const selectedStudentIds = useDataStore((s) => s.selectedStudentIds);
+  const currentSessionType = useDataStore((s) => s.currentSessionType);
+  const currentObservationContext = useDataStore((s) => s.currentObservationContext);
+  const currentSettingEvents = useDataStore((s) => s.currentSettingEvents);
+  const [setupModalOpen, setSetupModalOpen] = useState(false);
 
   const activeStudentsRaw = useMemo(
     () => students.filter((s) => selectedStudentIds.includes(s.id) && !s.isArchived),
@@ -190,6 +195,11 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
 
   return (
     <div className="rounded-lg border bg-background overflow-hidden relative">
+      <SessionSetupModal
+        open={setupModalOpen}
+        onConfirm={() => setSetupModalOpen(false)}
+        onSkip={() => setSetupModalOpen(false)}
+      />
       <SessionStatsHeader
         studentIds={activeStudents.map((s) => s.id)}
         endAction={
@@ -265,6 +275,52 @@ export function SessionWorkspace({ onClose }: SessionWorkspaceProps) {
           </TooltipProvider>
           <WorkspaceLayoutToggle value={layout} onChange={setLayout} />
         </div>
+      </div>
+
+      {/* Session context strip */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-b text-xs flex-wrap">
+        {currentSessionType ? (
+          <Badge
+            className={`text-[10px] font-semibold text-white ${
+              currentSessionType === 'teaching' ? 'bg-blue-500' :
+              currentSessionType === 'probe' ? 'bg-purple-500' :
+              currentSessionType === 'maintenance' ? 'bg-green-600' : 'bg-slate-500'
+            }`}
+          >
+            {SESSION_TYPE_LABELS[currentSessionType]}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-400 gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            No session type set
+          </Badge>
+        )}
+        {currentObservationContext?.setting && (
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="w-3 h-3" />
+            {currentObservationContext.setting === 'other'
+              ? currentObservationContext.settingCustom || 'Other'
+              : SETTING_LABELS[currentObservationContext.setting]}
+          </span>
+        )}
+        {currentObservationContext?.activity && (
+          <span className="text-muted-foreground">· {currentObservationContext.activity}</span>
+        )}
+        {currentSettingEvents.length > 0 && (
+          <span className="flex items-center gap-1 text-amber-600">
+            <AlertTriangle className="w-3 h-3" />
+            {currentSettingEvents.length} setting event{currentSettingEvents.length > 1 ? 's' : ''}
+          </span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 px-2 ml-auto text-[10px] text-muted-foreground gap-1"
+          onClick={() => setSetupModalOpen(true)}
+        >
+          <Settings2 className="w-3 h-3" />
+          {currentSessionType ? 'Edit' : 'Set context'}
+        </Button>
       </div>
 
       {focusOpen && <MobileDataMode onClose={() => setFocusOpen(false)} />}

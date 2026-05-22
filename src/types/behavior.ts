@@ -11,6 +11,125 @@ export type CaseType = 'school-based' | 'fba-only' | 'direct-services' | 'consul
 
 export type DocumentType = 'fba' | 'bip' | 'iep' | 'psycho-ed' | 'progress-report' | 'medical' | 'intake' | 'teacher-interview' | 'parent-interview' | 'observation-notes' | 'other';
 
+// Session type — distinguishes teaching sessions from probe/maintenance/baseline
+export type SessionType = 'teaching' | 'probe' | 'maintenance' | 'baseline';
+
+export const SESSION_TYPE_LABELS: Record<SessionType, string> = {
+  teaching: 'Teaching',
+  probe: 'Probe',
+  maintenance: 'Maintenance',
+  baseline: 'Baseline',
+};
+
+export const SESSION_TYPE_COLORS: Record<SessionType, string> = {
+  teaching: 'bg-blue-500',
+  probe: 'bg-purple-500',
+  maintenance: 'bg-green-500',
+  baseline: 'bg-slate-500',
+};
+
+// Setting event — distal antecedent (sleep, illness, events earlier in day)
+export interface SettingEvent {
+  id: string;
+  category: 'sleep' | 'eating' | 'illness' | 'medication' | 'social' | 'schedule_change' | 'other';
+  description?: string;
+  severity?: 'mild' | 'moderate' | 'significant';
+  recordedAt: Date;
+}
+
+export const SETTING_EVENT_LABELS: Record<SettingEvent['category'], string> = {
+  sleep: 'Poor Sleep',
+  eating: 'Eating/Hunger Issue',
+  illness: 'Illness/Physical Discomfort',
+  medication: 'Medication Change',
+  social: 'Social Conflict/Disruption',
+  schedule_change: 'Schedule Change',
+  other: 'Other',
+};
+
+// Observation context — setting, activity, personnel stamped onto a session
+export interface ObservationContext {
+  setting?: 'classroom' | 'therapy_room' | 'home' | 'community' | 'cafeteria' | 'gym' | 'hallway' | 'other';
+  settingCustom?: string;
+  activity?: string;
+  personnel?: string[];
+  materials?: string[];
+  notes?: string;
+}
+
+export const SETTING_LABELS: Record<NonNullable<ObservationContext['setting']>, string> = {
+  classroom: 'Classroom',
+  therapy_room: 'Therapy Room',
+  home: 'Home',
+  community: 'Community',
+  cafeteria: 'Cafeteria',
+  gym: 'Gym/PE',
+  hallway: 'Hallway/Transition',
+  other: 'Other',
+};
+
+// IOA Entry — inter-observer agreement data
+export interface IOAEntry {
+  id: string;
+  studentId: string;
+  behaviorId: string;
+  sessionId?: string;
+  date: Date;
+  method: 'total_count' | 'point_by_point' | 'interval';
+  primaryObserverCount?: number;
+  secondaryObserverCount?: number;
+  agreements?: number;
+  disagreements?: number;
+  totalOpportunities?: number;
+  agreementPercentage: number;
+  notes?: string;
+  recordedBy?: string;
+}
+
+// Fidelity check — implementer adherence to protocol
+export interface FidelityCheckItem {
+  id: string;
+  label: string;
+  isRequired: boolean;
+}
+
+export interface FidelityCheck {
+  id: string;
+  studentId: string;
+  skillTargetId?: string;
+  behaviorId?: string;
+  sessionId?: string;
+  date: Date;
+  observerName?: string;
+  items: Array<{
+    itemId: string;
+    label: string;
+    implemented: boolean;
+  }>;
+  overallPercentage: number;
+  notes?: string;
+}
+
+// Generalization context for DTT trials
+export interface GeneralizationContext {
+  person?: string;
+  setting?: string;
+  materials?: string;
+}
+
+// Correction procedure used after an error
+export type CorrectionProcedure = 'errorless' | 'four_step' | 'model' | 'transfer_trial' | 'repeat_sd' | 'none' | 'other';
+
+export const CORRECTION_PROCEDURE_LABELS: Record<CorrectionProcedure, string> = {
+  errorless: 'Errorless (immediate prompt)',
+  four_step: '4-Step Error Correction',
+  model: 'Model & Repeat',
+  transfer_trial: 'Transfer Trial',
+  repeat_sd: 'Repeat SD',
+  none: 'No correction used',
+  other: 'Other',
+};
+
 // DTT Prompt levels - ordered from most intrusive to least
 export type PromptLevel = 'full_physical' | 'partial_physical' | 'model' | 'gestural' | 'verbal' | 'independent';
 
@@ -59,6 +178,8 @@ export interface DTTTrial {
   isCorrect: boolean;
   promptLevel: PromptLevel;
   errorType?: ErrorType;
+  correctionProcedure?: CorrectionProcedure;
+  generalization?: GeneralizationContext;
   notes?: string;
 }
 
@@ -71,6 +192,7 @@ export interface DTTSession {
   trials: DTTTrial[];
   percentCorrect: number;
   percentIndependent: number;
+  sessionType?: SessionType;
   notes?: string;
 }
 
@@ -671,6 +793,7 @@ export interface IntervalEntry {
   voided?: boolean; // True if this interval doesn't count (late arrival/early departure)
   voidReason?: 'late_arrival' | 'early_departure' | 'not_present' | 'fire_drill' | 'break' | 'transition' | 'other';
   voidReasonCustom?: string; // Custom reason text when voidReason is 'other'
+  voidDurationMinutes?: number; // How long the disruption lasted
   sessionId?: string;
   isHistorical?: boolean;
 }
@@ -715,11 +838,16 @@ export interface Session {
   studentIds: string[];
   sessionLengthMinutes: number; // Total session length in minutes
   sessionLengthOverrides?: SessionLengthOverride[]; // Per-student/behavior overrides
+  sessionType?: SessionType;
+  observationContext?: ObservationContext;
+  settingEvents?: SettingEvent[];
   abcEntries: ABCEntry[];
   frequencyEntries: FrequencyEntry[];
   durationEntries: DurationEntry[];
   intervalEntries: IntervalEntry[];
   latencyEntries?: LatencyEntry[];
+  ioaEntries?: IOAEntry[];
+  fidelityChecks?: FidelityCheck[];
 }
 
 export interface TrackerOrder {

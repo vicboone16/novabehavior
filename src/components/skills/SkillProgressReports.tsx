@@ -220,6 +220,8 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
     });
 
     // DB targets (use trial data for actual trend detection)
+    // Phase-aware threshold: probe phase targets are expected to be at/near mastery (80%+),
+    // so a smaller change is meaningful. Acquisition phase uses a larger band.
     dbTargets.forEach(dt => {
       if (dt.status === 'mastered') {
         trending.up.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
@@ -228,9 +230,15 @@ export function SkillProgressReports({ studentId, studentName }: SkillProgressRe
         const older = dt.sessions.slice(-6, -3);
         const avgRecent = recent.reduce((s, sess) => s + sess.percentCorrect, 0) / recent.length;
         const avgOlder = older.length > 0 ? older.reduce((s, sess) => s + sess.percentCorrect, 0) / older.length : avgRecent;
-        if (avgRecent > avgOlder + 5) {
+
+        // Phase-aware threshold: tighter for probe/maintenance (performance should be stable near mastery)
+        const isAdvancedPhase = dt.status === 'maintenance' || dt.status === 'generalization';
+        const isProbePhase = (dt.sessions[dt.sessions.length - 1] as any)?.sessionType === 'probe';
+        const threshold = isAdvancedPhase || isProbePhase ? 3 : 5;
+
+        if (avgRecent > avgOlder + threshold) {
           trending.up.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
-        } else if (avgRecent < avgOlder - 5) {
+        } else if (avgRecent < avgOlder - threshold) {
           trending.down.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });
         } else {
           trending.flat.push({ id: dt.id, title: dt.name, domain: dt.domain ? { name: dt.domain } : null });

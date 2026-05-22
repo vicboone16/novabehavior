@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
-import { 
-  Plus, Minus, Check, X, RotateCcw, ChevronDown, ChevronUp, 
-  Target, TrendingUp, Clock, FileText, Settings
+import {
+  Check, X, RotateCcw, ChevronDown, ChevronUp,
+  Target, TrendingUp, Clock, Settings, AlertTriangle, MapPin, User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -24,16 +25,21 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { 
-  SkillTarget, 
-  DTTTrial, 
+import {
+  SkillTarget,
+  DTTTrial,
   DTTSession,
-  PromptLevel, 
+  PromptLevel,
   ErrorType,
+  CorrectionProcedure,
+  GeneralizationContext,
   PROMPT_LEVEL_LABELS,
   PROMPT_LEVEL_ORDER,
   ERROR_TYPE_LABELS,
+  CORRECTION_PROCEDURE_LABELS,
+  SESSION_TYPE_LABELS,
 } from '@/types/behavior';
+import { useDataStore } from '@/store/dataStore';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,17 +65,21 @@ export function DTTTracker({
   onUpdateTarget,
 }: DTTTrackerProps) {
   const { toast } = useToast();
-  
+  const currentSessionType = useDataStore((s) => s.currentSessionType);
+
   // Current session trials
   const [currentTrials, setCurrentTrials] = useState<DTTTrial[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
-  
+  const [showGeneralizationPanel, setShowGeneralizationPanel] = useState(false);
+  const [generalizationCtx, setGeneralizationCtx] = useState<GeneralizationContext>({});
+
   // Trial entry state
   const [selectedPrompt, setSelectedPrompt] = useState<PromptLevel | string>('verbal');
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [pendingErrorType, setPendingErrorType] = useState<ErrorType | null>(null);
+  const [pendingCorrectionProcedure, setPendingCorrectionProcedure] = useState<CorrectionProcedure>('four_step');
   const [trialNotes, setTrialNotes] = useState('');
 
   // Combine default and custom prompt levels
@@ -130,17 +140,14 @@ export function DTTTracker({
       isCorrect: true,
       promptLevel: selectedPrompt as PromptLevel,
       notes: trialNotes || undefined,
+      generalization: (generalizationCtx.person || generalizationCtx.setting || generalizationCtx.materials)
+        ? { ...generalizationCtx }
+        : undefined,
     };
-    
-    setCurrentTrials(prev => [...prev, trial]);
+    setCurrentTrials((prev) => [...prev, trial]);
     onAddTrial(skillTarget.id, trial);
     setTrialNotes('');
-    
-    // Quick feedback
-    toast({
-      title: '✓ Correct',
-      description: `${PROMPT_LEVEL_LABELS[selectedPrompt as PromptLevel] || selectedPrompt}`,
-    });
+    toast({ title: '✓ Correct', description: `${PROMPT_LEVEL_LABELS[selectedPrompt as PromptLevel] || selectedPrompt}` });
   };
 
   const handleIncorrectTrial = () => {
@@ -154,32 +161,43 @@ export function DTTTracker({
       isCorrect: false,
       promptLevel: selectedPrompt as PromptLevel,
       errorType: pendingErrorType || 'incorrect',
+      correctionProcedure: pendingCorrectionProcedure,
       notes: trialNotes || undefined,
+      generalization: (generalizationCtx.person || generalizationCtx.setting || generalizationCtx.materials)
+        ? { ...generalizationCtx }
+        : undefined,
     };
-    
-    setCurrentTrials(prev => [...prev, trial]);
+    setCurrentTrials((prev) => [...prev, trial]);
     onAddTrial(skillTarget.id, trial);
     setTrialNotes('');
     setShowErrorDialog(false);
     setPendingErrorType(null);
-    
+    setPendingCorrectionProcedure('four_step');
     toast({
       title: '✗ Incorrect',
-      description: ERROR_TYPE_LABELS[pendingErrorType || 'incorrect'],
+      description: `${ERROR_TYPE_LABELS[pendingErrorType || 'incorrect']} · ${CORRECTION_PROCEDURE_LABELS[pendingCorrectionProcedure]}`,
       variant: 'destructive',
     });
   };
 
   const handleUndoLastTrial = () => {
     if (currentTrials.length === 0) return;
-    setCurrentTrials(prev => prev.slice(0, -1));
+    setCurrentTrials((prev) => prev.slice(0, -1));
   };
+
+  const minTrials = skillTarget.masteryCriteria?.minTrials ?? 0;
+  const trialsShortfall = minTrials > 0 ? Math.max(0, minTrials - currentTrials.length) : 0;
 
   const handleSaveSession = () => {
     if (currentTrials.length === 0) {
+      toast({ title: 'No trials to save', description: 'Record at least one trial before saving.', variant: 'destructive' });
+      return;
+    }
+    // Enforce minimum trials per mastery criteria
+    if (trialsShortfall > 0) {
       toast({
-        title: 'No trials to save',
-        description: 'Record at least one trial before saving.',
+        title: `${trialsShortfall} more trial${trialsShortfall > 1 ? 's' : ''} needed`,
+        description: `Mastery criteria requires ≥${minTrials} trials per session. Record ${trialsShortfall} more before saving.`,
         variant: 'destructive',
       });
       return;
@@ -192,26 +210,24 @@ export function DTTTracker({
       trials: currentTrials,
       percentCorrect: sessionStats.percentCorrect,
       percentIndependent: sessionStats.percentIndependent,
+      sessionType: currentSessionType || undefined,
       notes: sessionNotes || undefined,
     };
 
     onSaveSession(session);
     setCurrentTrials([]);
     setSessionNotes('');
-    
     toast({
       title: 'Session saved',
-      description: `${currentTrials.length} trials recorded at ${sessionStats.percentCorrect}% correct`,
+      description: `${currentTrials.length} trials · ${sessionStats.percentCorrect}% correct${currentSessionType ? ` · ${SESSION_TYPE_LABELS[currentSessionType]}` : ''}`,
     });
-
-    // Check mastery criteria
     checkMasteryCriteria();
   };
 
   const checkMasteryCriteria = () => {
     if (!skillTarget.masteryCriteria) return;
 
-    const targetSessions = [...sessions.filter(s => s.skillTargetId === skillTarget.id)];
+    const targetSessions = [...sessions.filter((s) => s.skillTargetId === skillTarget.id)];
     // Add current session stats for checking
     targetSessions.push({
       id: 'temp',
@@ -221,33 +237,40 @@ export function DTTTracker({
       trials: currentTrials,
       percentCorrect: sessionStats.percentCorrect,
       percentIndependent: sessionStats.percentIndependent,
+      sessionType: currentSessionType || undefined,
     });
 
+    // For probe/mastery evaluation: only count probe sessions if session type is designated
+    const hasSesionTypes = targetSessions.some((s) => s.sessionType);
+    const evalSessions = hasSesionTypes
+      ? targetSessions.filter((s) => !s.sessionType || s.sessionType === 'probe' || s.sessionType === 'teaching')
+      : targetSessions;
+
     const criteria = skillTarget.masteryCriteria;
+    const requiredMinTrials = criteria.minTrials || 0;
     let isMastered = false;
 
+    const meetsMinTrials = (s: DTTSession) =>
+      requiredMinTrials === 0 || s.trials.length >= requiredMinTrials;
+
     if (criteria.type === 'percent_correct' && criteria.percentCorrect) {
-      // Check if last N sessions meet criteria
       const checkCount = criteria.consecutiveSessions || 3;
-      const recentSessions = targetSessions.slice(-checkCount);
-      
+      const qualifyingSessions = evalSessions.filter(meetsMinTrials);
+      const recentSessions = qualifyingSessions.slice(-checkCount);
       if (recentSessions.length >= checkCount) {
-        isMastered = recentSessions.every(s => s.percentCorrect >= (criteria.percentCorrect || 80));
+        isMastered = recentSessions.every((s) => s.percentCorrect >= (criteria.percentCorrect || 80));
       }
     } else if (criteria.type === 'consecutive_sessions' && criteria.consecutiveSessions) {
-      const recentSessions = targetSessions.slice(-criteria.consecutiveSessions);
       const threshold = criteria.percentCorrect || 80;
-      
+      const qualifyingSessions = evalSessions.filter(meetsMinTrials);
+      const recentSessions = qualifyingSessions.slice(-criteria.consecutiveSessions);
       if (recentSessions.length >= criteria.consecutiveSessions) {
-        isMastered = recentSessions.every(s => s.percentCorrect >= threshold);
+        isMastered = recentSessions.every((s) => s.percentCorrect >= threshold);
       }
     }
 
     if (isMastered && skillTarget.status !== 'mastered') {
-      toast({
-        title: '🎉 Mastery Achieved!',
-        description: `${skillTarget.name} has met mastery criteria!`,
-      });
+      toast({ title: '🎉 Mastery Achieved!', description: `${skillTarget.name} has met mastery criteria!` });
       onUpdateTarget(skillTarget.id, { status: 'mastered', masteredDate: new Date() });
     }
   };
@@ -270,20 +293,31 @@ export function DTTTracker({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader 
+      <CardHeader
         className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Target className="w-4 h-4" style={{ color: studentColor }} />
             <CardTitle className="text-base">{skillTarget.name}</CardTitle>
             {getStatusBadge()}
+            {currentSessionType && (
+              <Badge
+                className={`text-[10px] text-white ${
+                  currentSessionType === 'teaching' ? 'bg-blue-500' :
+                  currentSessionType === 'probe' ? 'bg-purple-500' :
+                  currentSessionType === 'maintenance' ? 'bg-green-600' : 'bg-slate-500'
+                }`}
+              >
+                {SESSION_TYPE_LABELS[currentSessionType]}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {currentTrials.length > 0 && (
               <Badge variant="outline" className="text-xs">
-                {currentTrials.length} trials
+                {currentTrials.length} trials{minTrials > 0 ? `/${minTrials}` : ''}
               </Badge>
             )}
             {isExpanded ? (
@@ -293,7 +327,7 @@ export function DTTTracker({
             )}
           </div>
         </div>
-        
+
         {/* Mini stats when collapsed */}
         {!isExpanded && recentStats && (
           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -368,6 +402,80 @@ export function DTTTracker({
             </Button>
           </div>
 
+          {/* Min-trials progress bar */}
+          {minTrials > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  Trials required by mastery criteria
+                </span>
+                <span className={trialsShortfall > 0 ? 'text-amber-600 font-medium' : 'text-green-600 font-medium'}>
+                  {currentTrials.length}/{minTrials}
+                </span>
+              </div>
+              <Progress
+                value={Math.min(100, (currentTrials.length / minTrials) * 100)}
+                className="h-1.5"
+              />
+              {trialsShortfall > 0 && (
+                <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Need {trialsShortfall} more trial{trialsShortfall > 1 ? 's' : ''} before saving
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Generalization context panel */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+              onClick={() => setShowGeneralizationPanel((p) => !p)}
+            >
+              <MapPin className="w-3 h-3" />
+              Generalization context
+              {(generalizationCtx.person || generalizationCtx.setting || generalizationCtx.materials) && (
+                <Badge variant="secondary" className="text-[10px] ml-1">Active</Badge>
+              )}
+            </button>
+            {showGeneralizationPanel && (
+              <div className="grid grid-cols-3 gap-2 bg-muted/30 rounded-md p-2">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" /> Person
+                  </Label>
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Who's present"
+                    value={generalizationCtx.person || ''}
+                    onChange={(e) => setGeneralizationCtx((p) => ({ ...p, person: e.target.value || undefined }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> Setting
+                  </Label>
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Location"
+                    value={generalizationCtx.setting || ''}
+                    onChange={(e) => setGeneralizationCtx((p) => ({ ...p, setting: e.target.value || undefined }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">Materials</Label>
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Set A/B…"
+                    value={generalizationCtx.materials || ''}
+                    onChange={(e) => setGeneralizationCtx((p) => ({ ...p, materials: e.target.value || undefined }))}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Quick actions */}
           <div className="flex items-center justify-between">
             <Button
@@ -379,22 +487,20 @@ export function DTTTracker({
               <RotateCcw className="w-4 h-4 mr-1" />
               Undo
             </Button>
-            
+
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowSettings(true)}>
                 <Settings className="w-4 h-4" />
               </Button>
               <Button
                 size="sm"
                 onClick={handleSaveSession}
                 disabled={currentTrials.length === 0}
-                style={{ backgroundColor: studentColor }}
+                style={{ backgroundColor: trialsShortfall > 0 ? undefined : studentColor }}
+                variant={trialsShortfall > 0 ? 'outline' : 'default'}
+                className={trialsShortfall > 0 ? 'border-amber-400 text-amber-600' : ''}
               >
-                Save Session
+                {trialsShortfall > 0 ? `Need ${trialsShortfall} more` : 'Save Session'}
               </Button>
             </div>
           </div>
@@ -447,33 +553,48 @@ export function DTTTracker({
         </CardContent>
       )}
 
-      {/* Error Type Dialog */}
+      {/* Error Type + Correction Procedure Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
-        <DialogContent className="max-w-xs">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Error Type</DialogTitle>
+            <DialogTitle>Incorrect Trial</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-2">
-            {(Object.entries(ERROR_TYPE_LABELS) as [ErrorType, string][]).map(([type, label]) => (
-              <Button
-                key={type}
-                variant={pendingErrorType === type ? 'default' : 'outline'}
-                className="h-12"
-                onClick={() => setPendingErrorType(type)}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Error Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.entries(ERROR_TYPE_LABELS) as [ErrorType, string][]).map(([type, label]) => (
+                  <Button
+                    key={type}
+                    variant={pendingErrorType === type ? 'default' : 'outline'}
+                    className="h-10 text-sm"
+                    onClick={() => setPendingErrorType(type)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Correction Procedure</Label>
+              <Select
+                value={pendingCorrectionProcedure}
+                onValueChange={(v) => setPendingCorrectionProcedure(v as CorrectionProcedure)}
               >
-                {label}
-              </Button>
-            ))}
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(CORRECTION_PROCEDURE_LABELS) as [CorrectionProcedure, string][]).map(([val, label]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowErrorDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmIncorrectTrial}
-              disabled={!pendingErrorType}
-            >
+            <Button variant="outline" onClick={() => setShowErrorDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmIncorrectTrial} disabled={!pendingErrorType}>
               Record Error
             </Button>
           </DialogFooter>
