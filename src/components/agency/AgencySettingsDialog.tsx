@@ -38,6 +38,7 @@ import {
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { AgencyInviteCodesTab } from './AgencyInviteCodesTab';
+import { AgencyDataCollectionTab } from './AgencyDataCollectionTab';
 
 interface AgencyLocation {
   id: string;
@@ -323,10 +324,11 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="info">Basic Info</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="locations">Locations</TabsTrigger>
+              <TabsTrigger value="data-collection">Data Collection</TabsTrigger>
               <TabsTrigger value="invites">Invite Codes</TabsTrigger>
             </TabsList>
 
@@ -696,6 +698,11 @@ export function AgencySettingsDialog({ open, onOpenChange }: AgencySettingsDialo
                     </div>
                   </DialogContent>
                 </Dialog>
+              </TabsContent>
+
+              {/* Data Collection Tab */}
+              <TabsContent value="data-collection" className="m-0">
+                <AgencyDataCollectionTab />
               </TabsContent>
 
               {/* Invite Codes Tab */}

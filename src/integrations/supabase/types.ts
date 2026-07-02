@@ -3253,6 +3253,66 @@ export type Database = {
         }
         Relationships: []
       }
+      agency_data_collection_settings: {
+        Row: {
+          agency_id: string
+          created_at: string
+          default_mastery_consecutive_sessions: number
+          default_mastery_min_trials: number
+          default_mastery_percent: number
+          default_mastery_type: string
+          default_session_length_minutes: number
+          fidelity_threshold_percent: number
+          id: string
+          ioa_threshold_percent: number
+          require_session_type: boolean
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          default_mastery_consecutive_sessions?: number
+          default_mastery_min_trials?: number
+          default_mastery_percent?: number
+          default_mastery_type?: string
+          default_session_length_minutes?: number
+          fidelity_threshold_percent?: number
+          id?: string
+          ioa_threshold_percent?: number
+          require_session_type?: boolean
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          default_mastery_consecutive_sessions?: number
+          default_mastery_min_trials?: number
+          default_mastery_percent?: number
+          default_mastery_type?: string
+          default_session_length_minutes?: number
+          fidelity_threshold_percent?: number
+          id?: string
+          ioa_threshold_percent?: number
+          require_session_type?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_data_collection_settings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_data_collection_settings_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: true
+            referencedRelation: "v_agency_overview"
+            referencedColumns: ["agency_id"]
+          },
+        ]
+      }
       agency_locations: {
         Row: {
           address_line1: string | null

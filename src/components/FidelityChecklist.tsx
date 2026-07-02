@@ -18,6 +18,7 @@ import {
 import { useDataStore } from '@/store/dataStore';
 import { FidelityCheck } from '@/types/behavior';
 import { format } from 'date-fns';
+import { useAgencyDataCollectionSettings } from '@/hooks/useAgencyDataCollectionSettings';
 
 interface FidelityChecklistProps {
   studentId: string;
@@ -26,8 +27,6 @@ interface FidelityChecklistProps {
   defaultItems?: string[];
   studentColor?: string;
 }
-
-const FIDELITY_THRESHOLD = 80;
 
 const DEFAULT_DTT_ITEMS = [
   'SD was delivered clearly and consistently',
@@ -47,6 +46,8 @@ export function FidelityChecklist({
   studentColor,
 }: FidelityChecklistProps) {
   const { addFidelityCheck, getFidelityChecks, deleteFidelityCheck } = useDataStore() as any;
+  const { settings } = useAgencyDataCollectionSettings();
+  const FIDELITY_THRESHOLD = settings.fidelityThresholdPercent;
   const [showDialog, setShowDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -190,7 +191,7 @@ export function FidelityChecklist({
               {currentPercentage < FIDELITY_THRESHOLD && totalCount > 0 && (
                 <p className="text-xs text-amber-600 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  Below 80% — sessions with low fidelity should not count toward mastery
+                  Below {FIDELITY_THRESHOLD}% — sessions with low fidelity should not count toward mastery
                 </p>
               )}
             </div>

@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { useDataStore } from '@/store/dataStore';
 import { IOAEntry } from '@/types/behavior';
 import { format } from 'date-fns';
+import { useAgencyDataCollectionSettings } from '@/hooks/useAgencyDataCollectionSettings';
 
 interface IOAEntryPanelProps {
   studentId: string;
@@ -38,10 +39,10 @@ const METHOD_LABELS: Record<IOAEntry['method'], string> = {
   interval: 'Interval-by-Interval (interval agreement)',
 };
 
-const IOA_THRESHOLD = 80;
-
 export function IOAEntryPanel({ studentId, behaviorId, behaviorName, studentColor }: IOAEntryPanelProps) {
   const { addIOAEntry, getIOAEntries, deleteIOAEntry } = useDataStore() as any;
+  const { settings } = useAgencyDataCollectionSettings();
+  const IOA_THRESHOLD = settings.ioaThresholdPercent;
   const [showDialog, setShowDialog] = useState(false);
 
   const [method, setMethod] = useState<IOAEntry['method']>('total_count');
@@ -234,7 +235,7 @@ export function IOAEntryPanel({ studentId, behaviorId, behaviorName, studentColo
                     {calculatedIOA < IOA_THRESHOLD && (
                       <p className="text-xs text-red-600 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
-                        Below 80% threshold — data may not be reliable
+                        Below {IOA_THRESHOLD}% threshold — data may not be reliable
                       </p>
                     )}
                   </div>
