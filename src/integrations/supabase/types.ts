@@ -82806,6 +82806,7 @@ export type Database = {
       effective_staff_can_review:
         | { Args: { _client_id: string }; Returns: boolean }
         | { Args: { _client_id: string; _user_id: string }; Returns: boolean }
+      email_queue_dispatch: { Args: never; Returns: undefined }
       enable_bops_assessment: {
         Args: {
           p_rater_name?: string
