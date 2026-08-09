@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
 import { toast } from 'sonner';
 import { getStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+import { useAgencyDataCollectionSettings } from '@/hooks/useAgencyDataCollectionSettings';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -32,6 +33,8 @@ type DateRangePreset = '1month' | '3months' | '6months' | 'all' | 'custom';
 
 export function BehaviorTrendCharts() {
   const { sessions, students, frequencyEntries, durationEntries, addHistoricalFrequency } = useDataStore();
+  const { settings: dataCollectionSettings } = useAgencyDataCollectionSettings();
+  const fallbackSessionLengthMinutes = dataCollectionSettings.defaultSessionLengthMinutes;
   const syncedIdsRef = useRef<Set<string>>(new Set());
 
   // Async-resolved behavior name map: behaviorId → display name
@@ -299,7 +302,7 @@ export function BehaviorTrendCharts() {
       const entry = getOrCreateDateEntry(dateKey);
       const hasDuration = session.sessionLengthMinutes > 0;
       if (!hasDuration) anyFallback = true;
-      const sessionLengthMinutes = session.sessionLengthMinutes || 30;
+      const sessionLengthMinutes = session.sessionLengthMinutes || fallbackSessionLengthMinutes;
       
       // Process frequency entries from sessions
       session.frequencyEntries.forEach(freqEntry => {
@@ -411,7 +414,7 @@ export function BehaviorTrendCharts() {
         
         // Calculate rate if observation duration provided
         if (!histEntry.observationDurationMinutes) anyFallback = true;
-        const durationMinutes = histEntry.observationDurationMinutes || 30;
+        const durationMinutes = histEntry.observationDurationMinutes || fallbackSessionLengthMinutes;
         const ratePerHour = histEntry.count / (durationMinutes / 60);
         entry.rateByBehavior[key] = (entry.rateByBehavior[key] || 0) + ratePerHour;
       });
@@ -468,7 +471,7 @@ export function BehaviorTrendCharts() {
     // Schedule fallback state update outside render
     setTimeout(() => setRateUsedFallback(anyFallback), 0);
     return sorted;
-  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, filterSessionType, dateRange, resolveName]);
+  }, [sessions, students, frequencyEntries, durationEntries, filterStudent, filterBehavior, filterSessionType, dateRange, resolveName, fallbackSessionLengthMinutes]);
 
   // Aggregate data for pie chart - includes historical data
   const aggregateData = useMemo(() => {
@@ -538,7 +541,7 @@ export function BehaviorTrendCharts() {
     }
     
     const count = parseInt(histCount) || 1;
-    const durationMinutes = parseFloat(histDuration) || 30;
+    const durationMinutes = parseFloat(histDuration) || fallbackSessionLengthMinutes;
     const timestamp = new Date(`${histDate}T12:00:00`);
     
     addHistoricalFrequency({
@@ -552,7 +555,7 @@ export function BehaviorTrendCharts() {
     toast.success(`Added ${count} occurrences (${(count / (durationMinutes / 60)).toFixed(2)}/hr)`);
     setShowAddHistorical(false);
     setHistCount('1');
-    setHistDuration('30');
+    setHistDuration(String(fallbackSessionLengthMinutes));
   };
 
   // Get behaviors for selected student
@@ -805,7 +808,7 @@ export function BehaviorTrendCharts() {
                 <div className="space-y-1">
                   <Label className="text-xs">Calculated Rate</Label>
                   <div className="h-8 px-3 flex items-center bg-muted rounded-md text-sm font-medium">
-                    {((parseInt(histCount) || 0) / ((parseFloat(histDuration) || 30) / 60)).toFixed(2)} per hour
+                    {((parseInt(histCount) || 0) / ((parseFloat(histDuration) || fallbackSessionLengthMinutes) / 60)).toFixed(2)} per hour
                   </div>
                 </div>
               </div>
@@ -827,7 +830,7 @@ export function BehaviorTrendCharts() {
           <div className="mx-1 mb-1 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
-              Some rate/hour values use an assumed 30-min session length because observation duration was not recorded.
+              Some rate/hour values use an assumed {fallbackSessionLengthMinutes}-min session length because observation duration was not recorded.
               Add historical entries with duration, or ensure session length is set for accurate rates.
             </span>
           </div>
