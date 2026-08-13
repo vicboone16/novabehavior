@@ -11,6 +11,9 @@ import {
   AlertTriangle,
   FlaskConical,
   History,
+  Lock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,35 +33,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GuardedDeleteDialog } from '@/components/cleanup/GuardedDeleteDialog';
 import { clearStudentBehaviorNameMap } from '@/lib/behaviorNameResolver';
+import { useAuth } from '@/contexts/AuthContext';
+import { logAuditEvent, logDataAccess, flushPendingLogs } from '@/lib/auditLogger';
+import {
+  selectRestoredRecords,
+  paginate,
+  pageCount,
+  type CleanupCriteria,
+  type CleanupMapRow,
+  type CleanupDataRow,
+} from '@/lib/restoredCleanupSelection';
 
 const db = supabase as any;
 
 interface StudentOpt {
   id: string;
   name: string;
-}
-
-interface MapRow {
-  id: string;
-  behavior_subtype: string | null;
-  behavior_entry_id: string | null;
-  bank_behavior_id: string | null;
-  archived_reason: string | null;
-  archived_at: string | null;
-  notes: string | null;
-  created_at: string;
-  active: boolean;
-}
-
-interface DataRow {
-  id: string;
-  session_id: string;
-  behavior_id: string;
-  behavior_name: string | null;
-  frequency: number | null;
-  duration_seconds: number | null;
-  observation_minutes: number | null;
-  created_at: string | null;
 }
 
 interface AuditRow {
@@ -76,6 +66,9 @@ interface AuditRow {
 }
 
 const RETENTION_DAYS = 30;
+const PAGE_SIZES = [25, 50, 100, 250];
+/** Roles permitted to view or purge education records under FERPA least-privilege. */
+const ALLOWED_ROLES = ['super_admin', 'admin'];
 
 const maskUuid = (id?: string | null) => (id ? `${id.slice(0, 8)}…` : '—');
 
@@ -96,6 +89,7 @@ function downloadCsv(filename: string, rows: (string | number | null)[][]) {
 }
 
 export default function RestoredCleanup() {
+  const { userRole, roleLoading, user } = useAuth();
   const [students, setStudents] = useState<StudentOpt[]>([]);
   const [studentId, setStudentId] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -116,13 +110,18 @@ export default function RestoredCleanup() {
   const [toDate, setToDate] = useState('');
   const [useMissingCanonical, setUseMissingCanonical] = useState(false);
 
-  const [mapRows, setMapRows] = useState<MapRow[]>([]);
-  const [dataRows, setDataRows] = useState<DataRow[]>([]);
+  const [mapRows, setMapRows] = useState<CleanupMapRow[]>([]);
+  const [dataRows, setDataRows] = useState<CleanupDataRow[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [totals, setTotals] = useState({ freq: 0, dur: 0, obs: 0 });
   const [scanned, setScanned] = useState(false);
   const [audits, setAudits] = useState<AuditRow[]>([]);
+  const [purpose, setPurpose] = useState('');
+
+  const allowed = ALLOWED_ROLES.includes(userRole ?? '');
 
   useEffect(() => {
+    if (!allowed) return;
     db.from('students')
       .select('id, name, first_name, last_name, is_archived')
       .order('first_name')
@@ -137,7 +136,7 @@ export default function RestoredCleanup() {
           })),
         );
       });
-  }, []);
+  }, [allowed]);
 
   const loadAudits = useCallback(async () => {
     const { data } = await db
@@ -149,21 +148,24 @@ export default function RestoredCleanup() {
   }, []);
 
   useEffect(() => {
-    loadAudits();
-  }, [loadAudits]);
+    if (allowed) loadAudits();
+  }, [allowed, loadAudits]);
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === studentId),
     [students, studentId],
   );
 
-  const criteria = useMemo(
+  const criteria: CleanupCriteria = useMemo(
     () => ({
-      name_pattern: useNamePattern ? namePattern.trim() : null,
-      archived_reason_contains: useReason ? reasonPattern.trim() : null,
-      created_from: useDateRange ? fromDate || null : null,
-      created_to: useDateRange ? toDate || null : null,
-      missing_canonical_link: useMissingCanonical,
+      useNamePattern,
+      namePattern,
+      useReason,
+      reasonPattern,
+      useDateRange,
+      fromDate,
+      toDate,
+      useMissingCanonical,
     }),
     [
       useNamePattern,
@@ -177,20 +179,30 @@ export default function RestoredCleanup() {
     ],
   );
 
-  const inRange = useCallback(
-    (iso?: string | null) => {
-      if (!useDateRange) return true;
-      if (!iso) return false;
-      const t = new Date(iso).getTime();
-      if (fromDate && t < new Date(`${fromDate}T00:00:00`).getTime()) return false;
-      if (toDate && t > new Date(`${toDate}T23:59:59`).getTime()) return false;
-      return true;
-    },
-    [useDateRange, fromDate, toDate],
+  const criteriaRecord = useMemo(
+    () => ({
+      name_pattern: useNamePattern ? namePattern.trim() : null,
+      archived_reason_contains: useReason ? reasonPattern.trim() : null,
+      created_from: useDateRange ? fromDate || null : null,
+      created_to: useDateRange ? toDate || null : null,
+      missing_canonical_link: useMissingCanonical,
+      purpose: purpose.trim() || null,
+    }),
+    [
+      useNamePattern,
+      namePattern,
+      useReason,
+      reasonPattern,
+      useDateRange,
+      fromDate,
+      toDate,
+      useMissingCanonical,
+      purpose,
+    ],
   );
 
   const scan = useCallback(async () => {
-    if (!studentId) return;
+    if (!studentId || !allowed) return;
     setLoading(true);
     setScanned(false);
     try {
@@ -210,7 +222,7 @@ export default function RestoredCleanup() {
         db.from('nt_behaviors').select('id'),
       ]);
 
-      const canonIds = new Set((canon ?? []).map((r: any) => r.id));
+      const canonicalIds = new Set<string>((canon ?? []).map((r: any) => r.id));
 
       const behaviorIds = [
         ...new Set((bsd ?? []).map((r: any) => r.behavior_id).filter(Boolean)),
@@ -224,128 +236,44 @@ export default function RestoredCleanup() {
         (defs ?? []).forEach((d: any) => nameById.set(d.id, d.name));
       }
 
-      const pat = namePattern.trim().toLowerCase();
-      const reason = reasonPattern.trim().toLowerCase();
+      const result = selectRestoredRecords({
+        criteria,
+        mapRows: (sbm ?? []) as CleanupMapRow[],
+        dataRows: (bsd ?? []) as any[],
+        nameById,
+        canonicalIds,
+      });
 
-      const matchesFilters = (label: string | null, r: any, created?: string | null) => {
-        const criteriaHits: boolean[] = [];
-        if (useNamePattern) {
-          criteriaHits.push(!!pat && (label ?? '').toLowerCase().includes(pat));
-        }
-        if (useReason) {
-          criteriaHits.push(
-            !!reason && (r?.archived_reason ?? '').toLowerCase().includes(reason),
-          );
-        }
-        if (useMissingCanonical) {
-          const canonicalId = r?.bank_behavior_id ?? r?.behavior_id ?? null;
-          criteriaHits.push(!canonicalId || !canonIds.has(canonicalId));
-        }
-        if (criteriaHits.length === 0) return false;
-        if (!criteriaHits.some(Boolean)) return false;
-        return inRange(created ?? r?.created_at ?? null);
-      };
-
-      const matchedMaps: MapRow[] = (sbm ?? []).filter((r: any) =>
-        matchesFilters(r.behavior_subtype, r, r.created_at),
-      );
-
-      const matchedMapBehaviorIds = new Set(
-        matchedMaps.flatMap((m) =>
-          [m.bank_behavior_id, m.behavior_entry_id].filter(Boolean),
-        ) as string[],
-      );
-
-      const matchedData: DataRow[] = (bsd ?? [])
-        .filter((r: any) => {
-          const label = nameById.get(r.behavior_id) ?? null;
-          return (
-            matchedMapBehaviorIds.has(r.behavior_id) ||
-            matchesFilters(label, r, r.created_at)
-          );
-        })
-        .map((r: any) => ({
-          ...r,
-          behavior_name: nameById.get(r.behavior_id) ?? null,
-        }));
-
-      // ── Inline integrity warnings ─────────────────────────────
-      const w: string[] = [];
-      const unnamed = matchedData.filter((r) => !r.behavior_name).length;
-      if (unnamed > 0) {
-        w.push(
-          `${unnamed} session row(s) have no resolvable behavior name — they are already orphaned.`,
-        );
-      }
-      const noCanonical = matchedMaps.filter((m) => !m.bank_behavior_id).length;
-      if (noCanonical > 0) {
-        w.push(
-          `${noCanonical} behavior mapping(s) have no canonical registry link (bank_behavior_id is empty).`,
-        );
-      }
-      const matchedDataIds = new Set(matchedData.map((r) => r.id));
-      const survivingBehaviorIds = new Set(
-        (bsd ?? [])
-          .filter((r: any) => !matchedDataIds.has(r.id))
-          .map((r: any) => r.behavior_id),
-      );
-      const orphaning = [...matchedMapBehaviorIds].filter((id) =>
-        survivingBehaviorIds.has(id),
-      );
-      if (orphaning.length > 0) {
-        w.push(
-          `${orphaning.length} behavior(s) would lose their mapping while session data remains — those rows will become orphans.`,
-        );
-      }
-      const activeMaps = matchedMaps.filter((m) => m.active).length;
-      if (activeMaps > 0) {
-        w.push(
-          `${activeMaps} matched mapping(s) are still marked active and may be in use by current sessions.`,
-        );
-      }
-      const withData = matchedData.filter(
-        (r) => (r.frequency ?? 0) > 0 || (r.duration_seconds ?? 0) > 0,
-      ).length;
-      if (withData > 0) {
-        w.push(`${withData} session row(s) contain real recorded frequency or duration data.`);
-      }
-
-      setWarnings(w);
-      setMapRows(matchedMaps);
-      setDataRows(matchedData);
+      setWarnings(result.warnings);
+      setMapRows(result.matchedMapRows);
+      setDataRows(result.matchedDataRows);
+      setTotals(result.totals);
       setScanned(true);
+
+      // FERPA: every look at an education record is a logged disclosure.
+      logDataAccess(studentId, 'view', 'behaviors', {
+        surface: 'restored_cleanup_preview',
+        criteria: criteriaRecord,
+        matched: result.previewCount,
+      });
     } catch (e: any) {
       toast.error(e?.message ?? 'Scan failed');
     } finally {
       setLoading(false);
     }
-  }, [
-    studentId,
-    namePattern,
-    reasonPattern,
-    useNamePattern,
-    useReason,
-    useMissingCanonical,
-    inRange,
-  ]);
+  }, [studentId, allowed, criteria, criteriaRecord]);
 
   const totalRecords = mapRows.length + dataRows.length;
 
-  const totals = useMemo(() => {
-    let freq = 0;
-    let dur = 0;
-    let obs = 0;
-    dataRows.forEach((r) => {
-      freq += r.frequency ?? 0;
-      dur += r.duration_seconds ?? 0;
-      obs += Number(r.observation_minutes ?? 0);
-    });
-    return { freq, dur, obs };
-  }, [dataRows]);
-
-  const exportPreviewCsv = () => {
+  const exportPreviewCsv = async () => {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     const rows: (string | number | null)[][] = [
+      [
+        'CONFIDENTIAL — FERPA-protected education record. Redisclosure without written consent is prohibited (34 CFR 99.33).',
+      ],
+      [
+        `Exported by ${user?.email ?? 'unknown'} on ${new Date().toISOString()} — purpose: ${purpose.trim() || 'not stated'}`,
+      ],
       [
         'record_type',
         'record_id',
@@ -394,7 +322,20 @@ export default function RestoredCleanup() {
       `restored-cleanup-preview_${(selectedStudent?.name ?? 'client').replace(/\s+/g, '-')}_${stamp}.csv`,
       rows,
     );
-    toast.success('Preview exported');
+
+    // FERPA §99.32 disclosure record for the export itself.
+    logDataAccess(studentId, 'export', 'behaviors', {
+      surface: 'restored_cleanup_csv',
+      rows: totalRecords,
+      purpose: purpose.trim() || null,
+    });
+    try {
+      await writeAudit('export');
+      await loadAudits();
+    } catch {
+      /* export already succeeded — audit failure is surfaced by the logger */
+    }
+    toast.success('Preview exported — disclosure recorded');
   };
 
   const writeAudit = async (mode: string) => {
@@ -407,7 +348,7 @@ export default function RestoredCleanup() {
         performed_by: auth?.user?.id ?? null,
         performed_by_email: auth?.user?.email ?? null,
         mode,
-        criteria,
+        criteria: criteriaRecord,
         preview_count: totalRecords,
         deleted_map_ids: mapRows.map((r) => r.id),
         deleted_data_ids: dataRows.map((r) => r.id),
@@ -510,6 +451,24 @@ export default function RestoredCleanup() {
       }
 
       clearStudentBehaviorNameMap(studentId);
+      logAuditEvent(
+        'delete',
+        'behavior',
+        studentId,
+        selectedStudent?.name,
+        {
+          mode: softDelete ? 'archive' : 'hard_delete',
+          count: totalRecords,
+          criteria: criteriaRecord,
+          audit_log_id: auditId,
+        },
+      );
+      logDataAccess(studentId, 'edit', 'behaviors', {
+        surface: 'restored_cleanup_delete',
+        count: totalRecords,
+      });
+      await flushPendingLogs();
+
       toast.success(
         softDelete
           ? `Archived ${totalRecords} record${totalRecords === 1 ? '' : 's'} — restorable for ${RETENTION_DAYS} days`
@@ -534,6 +493,10 @@ export default function RestoredCleanup() {
       const restored =
         (data?.restored_map_rows ?? 0) + (data?.restored_data_rows ?? 0);
       if (studentId) clearStudentBehaviorNameMap(studentId);
+      logAuditEvent('unarchive', 'behavior', studentId || undefined, selectedStudent?.name, {
+        audit_log_id: auditId,
+        restored,
+      });
       toast.success(
         restored > 0
           ? `Restored ${restored} record${restored === 1 ? '' : 's'}`
@@ -556,8 +519,38 @@ export default function RestoredCleanup() {
     if (c.created_from || c.created_to)
       parts.push(`created ${c.created_from || '…'} → ${c.created_to || '…'}`);
     if (c.missing_canonical_link) parts.push('missing canonical link');
+    if (c.purpose) parts.push(`purpose: ${c.purpose}`);
     return parts.length ? parts.join(' · ') : 'no criteria';
   };
+
+  if (roleLoading) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">Checking permissions…</div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-4 md:p-6 max-w-2xl mx-auto">
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Lock className="w-4 h-4 text-destructive" />
+              Restricted — education records
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>
+              This tool permanently removes student education records. Under FERPA
+              least-privilege rules it is limited to administrators with a legitimate
+              educational interest.
+            </p>
+            <p>Ask an administrator if you need records cleaned up for a client.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
@@ -582,13 +575,24 @@ export default function RestoredCleanup() {
         </Button>
       </div>
 
+      <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
+        <Lock className="w-3.5 h-3.5 mt-0.5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span>
+          <strong className="text-foreground">FERPA notice.</strong> These are protected
+          education records. Access is limited to the minimum necessary, every preview,
+          export and deletion is recorded as a disclosure with your identity and stated
+          purpose, exports carry a no-redisclosure header, and archived records are
+          purged automatically after {RETENTION_DAYS} days.
+        </span>
+      </div>
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Users className="w-4 h-4" /> Client
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <Select
             value={studentId || '__none__'}
             onValueChange={(v) => {
@@ -611,6 +615,17 @@ export default function RestoredCleanup() {
               ))}
             </SelectContent>
           </Select>
+          <div className="space-y-1.5 max-w-sm">
+            <Label htmlFor="purpose" className="text-xs">
+              Legitimate educational interest (recorded with the disclosure)
+            </Label>
+            <Input
+              id="purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="e.g. removing duplicate restored behaviors before IEP review"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -925,6 +940,7 @@ export default function RestoredCleanup() {
           softDelete
             ? `A restorable copy is kept for ${RETENTION_DAYS} days`
             : 'No copy is kept — this cannot be undone',
+          'This action is recorded against your account as a FERPA disclosure.',
           ...warnings,
         ]}
         preview={
@@ -935,15 +951,92 @@ export default function RestoredCleanup() {
   );
 }
 
+function Pager({
+  total,
+  page,
+  pageSize,
+  onPage,
+  onPageSize,
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  onPage: (p: number) => void;
+  onPageSize: (n: number) => void;
+}) {
+  const pages = pageCount(total, pageSize);
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(total, page * pageSize);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
+      <span>
+        Showing {start}–{end} of {total}
+      </span>
+      <div className="flex items-center gap-2">
+        <Select value={String(pageSize)} onValueChange={(v) => onPageSize(Number(v))}>
+          <SelectTrigger className="h-7 w-[92px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="z-[10000]">
+            {PAGE_SIZES.map((n) => (
+              <SelectItem key={n} value={String(n)}>
+                {n} / page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2"
+          disabled={page <= 1}
+          onClick={() => onPage(page - 1)}
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </Button>
+        <span>
+          Page {page} of {pages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2"
+          disabled={page >= pages}
+          onClick={() => onPage(page + 1)}
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PreviewTables({
   mapRows,
   dataRows,
   totals,
 }: {
-  mapRows: MapRow[];
-  dataRows: DataRow[];
+  mapRows: CleanupMapRow[];
+  dataRows: CleanupDataRow[];
   totals: { freq: number; dur: number; obs: number };
 }) {
+  const [mapPage, setMapPage] = useState(1);
+  const [mapSize, setMapSize] = useState(25);
+  const [dataPage, setDataPage] = useState(1);
+  const [dataSize, setDataSize] = useState(50);
+
+  useEffect(() => setMapPage(1), [mapRows, mapSize]);
+  useEffect(() => setDataPage(1), [dataRows, dataSize]);
+
+  const visibleMaps = useMemo(
+    () => paginate(mapRows, mapPage, mapSize),
+    [mapRows, mapPage, mapSize],
+  );
+  const visibleData = useMemo(
+    () => paginate(dataRows, dataPage, dataSize),
+    [dataRows, dataPage, dataSize],
+  );
+
   return (
     <div className="space-y-5">
       <div>
@@ -953,38 +1046,47 @@ function PreviewTables({
         {mapRows.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="py-1.5 pr-4">Label</th>
-                  <th className="py-1.5 pr-4">Definition / notes</th>
-                  <th className="py-1.5 pr-4">Archived reason</th>
-                  <th className="py-1.5 pr-4">Canonical</th>
-                  <th className="py-1.5 pr-4">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mapRows.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-1.5 pr-4 text-foreground">
-                      {r.behavior_subtype ?? '—'}
-                    </td>
-                    <td className="py-1.5 pr-4 text-xs max-w-[16rem] truncate">
-                      {r.notes ?? '—'}
-                    </td>
-                    <td className="py-1.5 pr-4 text-xs">{r.archived_reason ?? '—'}</td>
-                    <td className="py-1.5 pr-4 font-mono text-xs">
-                      {maskUuid(r.bank_behavior_id)}
-                    </td>
-                    <td className="py-1.5 pr-4 text-xs">
-                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr>
+                    <th className="py-1.5 pr-4">Label</th>
+                    <th className="py-1.5 pr-4">Definition / notes</th>
+                    <th className="py-1.5 pr-4">Archived reason</th>
+                    <th className="py-1.5 pr-4">Canonical</th>
+                    <th className="py-1.5 pr-4">Created</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {visibleMaps.map((r) => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="py-1.5 pr-4 text-foreground">
+                        {r.behavior_subtype ?? '—'}
+                      </td>
+                      <td className="py-1.5 pr-4 text-xs max-w-[16rem] truncate">
+                        {r.notes ?? '—'}
+                      </td>
+                      <td className="py-1.5 pr-4 text-xs">{r.archived_reason ?? '—'}</td>
+                      <td className="py-1.5 pr-4 font-mono text-xs">
+                        {maskUuid(r.bank_behavior_id)}
+                      </td>
+                      <td className="py-1.5 pr-4 text-xs">
+                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager
+              total={mapRows.length}
+              page={mapPage}
+              pageSize={mapSize}
+              onPage={setMapPage}
+              onPageSize={setMapSize}
+            />
+          </>
         )}
       </div>
 
@@ -996,40 +1098,49 @@ function PreviewTables({
         {dataRows.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="py-1.5 pr-4">Behavior</th>
-                  <th className="py-1.5 pr-4">Session</th>
-                  <th className="py-1.5 pr-4 text-right">Freq</th>
-                  <th className="py-1.5 pr-4 text-right">Dur (s)</th>
-                  <th className="py-1.5 pr-4 text-right">Obs (min)</th>
-                  <th className="py-1.5 pr-4">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dataRows.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="py-1.5 pr-4 text-foreground">
-                      {r.behavior_name ?? maskUuid(r.behavior_id)}
-                    </td>
-                    <td className="py-1.5 pr-4 font-mono text-xs">
-                      {maskUuid(r.session_id)}
-                    </td>
-                    <td className="py-1.5 pr-4 text-right">{r.frequency ?? 0}</td>
-                    <td className="py-1.5 pr-4 text-right">{r.duration_seconds ?? 0}</td>
-                    <td className="py-1.5 pr-4 text-right">
-                      {r.observation_minutes ?? 0}
-                    </td>
-                    <td className="py-1.5 pr-4 text-xs">
-                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr>
+                    <th className="py-1.5 pr-4">Behavior</th>
+                    <th className="py-1.5 pr-4">Session</th>
+                    <th className="py-1.5 pr-4 text-right">Freq</th>
+                    <th className="py-1.5 pr-4 text-right">Dur (s)</th>
+                    <th className="py-1.5 pr-4 text-right">Obs (min)</th>
+                    <th className="py-1.5 pr-4">Created</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {visibleData.map((r) => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="py-1.5 pr-4 text-foreground">
+                        {r.behavior_name ?? maskUuid(r.behavior_id)}
+                      </td>
+                      <td className="py-1.5 pr-4 font-mono text-xs">
+                        {maskUuid(r.session_id)}
+                      </td>
+                      <td className="py-1.5 pr-4 text-right">{r.frequency ?? 0}</td>
+                      <td className="py-1.5 pr-4 text-right">{r.duration_seconds ?? 0}</td>
+                      <td className="py-1.5 pr-4 text-right">
+                        {r.observation_minutes ?? 0}
+                      </td>
+                      <td className="py-1.5 pr-4 text-xs">
+                        {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pager
+              total={dataRows.length}
+              page={dataPage}
+              pageSize={dataSize}
+              onPage={setDataPage}
+              onPageSize={setDataSize}
+            />
+          </>
         )}
       </div>
     </div>
