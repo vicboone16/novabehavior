@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ShieldAlert, RefreshCw, CheckCircle2, AlertTriangle, Link2Off, Database } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShieldAlert, RefreshCw, CheckCircle2, AlertTriangle, Link2Off, Database, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
