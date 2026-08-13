@@ -51,7 +51,6 @@ export function ABCQuickSheet({
       behavior: behavior.name,
       consequences,
       functions: [],
-      timestamp: new Date().toISOString(),
     });
     setAntecedents([]);
     setConsequences([]);
