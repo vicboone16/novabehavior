@@ -1206,32 +1206,64 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                         updatedAt: new Date(t.updated_at || Date.now()),
                       }))}
                       studentColor={student.color}
-                      onSaveSession={(session: ColdProbeSession) => {
-                        toast.success(`Cold probe session saved with ${session.trials.length} trials`);
+                      onSaveSession={async (session: ColdProbeSession) => {
+                        const localSession = {
+                          id: session.id,
+                          skillTargetId: session.trials[0]?.skillTargetId || '',
+                          studentId: student.id,
+                          date: session.date,
+                          trials: session.trials.map(t => ({
+                            id: t.id,
+                            timestamp: t.timestamp,
+                            isCorrect: t.isCorrect,
+                            promptLevel: t.promptLevel || 'independent',
+                            notes: t.note,
+                          })),
+                          percentCorrect: Math.round(
+                            (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
+                          ),
+                          percentIndependent: Math.round(
+                            (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
+                          ),
+                          notes: session.notes,
+                        };
                         const existingData = student.dttSessions || [];
                         updateStudentProfile(student.id, {
-                          dttSessions: [...existingData, {
-                            id: session.id,
-                            skillTargetId: session.trials[0]?.skillTargetId || '',
-                            studentId: student.id,
-                            date: session.date,
-                            trials: session.trials.map(t => ({
-                              id: t.id,
-                              timestamp: t.timestamp,
-                              isCorrect: t.isCorrect,
-                              promptLevel: t.promptLevel || 'independent',
-                              notes: t.note,
-                            })),
-                            percentCorrect: Math.round(
-                              (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
-                            ),
-                            percentIndependent: Math.round(
-                              (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
-                            ),
-                            notes: session.notes,
-                          }],
+                          dttSessions: [...existingData, localSession],
                         });
+
+                        // Write-through to the database so data survives device/session loss
+                        const trialRows = session.trials.map((t, i) => ({
+                          target_id: t.skillTargetId,
+                          trial_index: i,
+                          outcome: t.isCorrect ? 'correct' : (t.promptNeeded ? 'prompted' : 'incorrect'),
+                          prompt_success: !t.promptNeeded,
+                          recorded_at: new Date(t.timestamp).toISOString(),
+                          session_type: 'probe',
+                          data_state: 'final',
+                          notes: t.note || null,
+                        })).filter(r => !!r.target_id);
+
+                        let trialsSaved = false;
+                        if (trialRows.length > 0) {
+                          const { error } = await (supabase as any).from('target_trials').insert(trialRows);
+                          if (error) console.error('[ColdProbe] trial insert failed:', error);
+                          else trialsSaved = true;
+                        }
+
+                        const result = await saveCapture({
+                          studentId: student.id,
+                          recordType: 'cold_probe_session',
+                          recordKey: session.id,
+                          observationDate: session.date,
+                          payload: { ...localSession, trialsSavedToTargets: trialsSaved },
+                        });
+
+                        if (result.ok) {
+                          toast.success(`Cold probe session saved to the cloud (${session.trials.length} trials)`);
+                        }
                       }}
+
                     />
                   </div>
                 ) : null;
