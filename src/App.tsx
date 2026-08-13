@@ -82,6 +82,7 @@ const IntegrityCheck = lazy(() => import("./pages/IntegrityCheck"));
 const RestoredCleanup = lazy(() => import("./pages/RestoredCleanup"));
 const SessionSummary = lazy(() => import("./pages/SessionSummary"));
 const MultiStudentCapture = lazy(() => import("./pages/MultiStudentCapture"));
+const BehaviorTrends = lazy(() => import("./pages/BehaviorTrends"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
 const IntelligenceOps = lazy(() => import("./pages/IntelligenceOps"));
 const ClientDrilldown = lazy(() => import("./pages/ClientDrilldown"));
@@ -546,6 +547,7 @@ const App = () => {
               <Route path="/restored-cleanup" element={<RestoredCleanup />} />
               <Route path="/session-summary" element={<SessionSummary />} />
               <Route path="/multi-student-capture" element={<MultiStudentCapture />} />
+              <Route path="/behavior-trends" element={<BehaviorTrends />} />
             </Route>
             {/* Capture Live & Review - outside MainLayout for full-screen experience */}
             <Route path="/capture/live/:recordingId" element={
