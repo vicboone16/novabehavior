@@ -259,6 +259,7 @@ const INTERVENTION_TEMPLATES: Record<string, {
 
 export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
   const { students, abcEntries, updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   const [selectedStudentId, setSelectedStudentId] = useState<string>(propStudent?.id || '');
   const [activeTab, setActiveTab] = useState('import');
   

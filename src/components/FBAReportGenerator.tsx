@@ -280,6 +280,7 @@ function clearFBADraft() {
 
 export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportGeneratorProps) {
   const { students, abcEntries, frequencyEntries, sessions, behaviorGoals, updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   
   // Restore draft on mount
   const draft = useMemo(() => loadFBADraft(), []);

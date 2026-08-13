@@ -73,6 +73,7 @@ interface BriefTeacherInputManagerProps {
 
 export function BriefTeacherInputManager({ student, onSendQuestionnaire }: BriefTeacherInputManagerProps) {
   const { updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<BriefTeacherInputSaved | null>(null);

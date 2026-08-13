@@ -69,6 +69,7 @@ interface BriefRecordReviewManagerProps {
 
 export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerProps) {
   const { updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
