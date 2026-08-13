@@ -48,8 +48,11 @@ export function ABCQuickSheet({
       studentId,
       behaviorId: behavior.id,
       antecedents,
+      antecedent: antecedents.join(', '),
       behavior: behavior.name,
       consequences,
+      consequence: consequences.join(', '),
+      frequencyCount: 1,
       functions: [],
     });
     setAntecedents([]);
