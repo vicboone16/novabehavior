@@ -14985,6 +14985,107 @@ export type Database = {
           },
         ]
       }
+      cleanup_archived_records: {
+        Row: {
+          archived_by: string | null
+          audit_log_id: string
+          created_at: string
+          id: string
+          payload: Json
+          record_id: string
+          restored_at: string | null
+          retention_until: string
+          source_table: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_by?: string | null
+          audit_log_id: string
+          created_at?: string
+          id?: string
+          payload: Json
+          record_id: string
+          restored_at?: string | null
+          retention_until?: string
+          source_table: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_by?: string | null
+          audit_log_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          record_id?: string
+          restored_at?: string | null
+          retention_until?: string
+          source_table?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cleanup_archived_records_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "cleanup_audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cleanup_audit_logs: {
+        Row: {
+          created_at: string
+          criteria: Json
+          deleted_data_ids: string[]
+          deleted_map_ids: string[]
+          id: string
+          integrity_warnings: Json
+          mode: string
+          performed_by: string | null
+          performed_by_email: string | null
+          preview_count: number
+          restored_at: string | null
+          student_id: string | null
+          student_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          deleted_data_ids?: string[]
+          deleted_map_ids?: string[]
+          id?: string
+          integrity_warnings?: Json
+          mode?: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          preview_count?: number
+          restored_at?: string | null
+          student_id?: string | null
+          student_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          deleted_data_ids?: string[]
+          deleted_map_ids?: string[]
+          id?: string
+          integrity_warnings?: Json
+          mode?: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          preview_count?: number
+          restored_at?: string | null
+          student_id?: string | null
+          student_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clearinghouse_submissions: {
         Row: {
           agency_id: string | null
@@ -84753,6 +84854,10 @@ export type Database = {
           p_quantity?: number
           p_reward_id: string
         }
+        Returns: Json
+      }
+      restore_cleanup_archive: {
+        Args: { _audit_log_id: string }
         Returns: Json
       }
       restore_reward: { Args: { p_reward_id: string }; Returns: Json }
