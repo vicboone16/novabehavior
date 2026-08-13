@@ -35,6 +35,9 @@ import {
 } from '@/types/behavior';
 import { toast } from 'sonner';
 import { useSessionKeepalive } from '@/hooks/useSessionKeepalive';
+import { supabase } from '@/integrations/supabase/client';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
+
 
 interface AssessmentDataCollectionProps {
   student: Student;
