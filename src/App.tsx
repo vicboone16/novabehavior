@@ -79,6 +79,7 @@ const TagManagementPage = lazy(() => import("./pages/clinical-library/TagManagem
 const RestoredBehaviorCleanup = lazy(() => import("./pages/admin/RestoredBehaviorCleanup"));
 const Intelligence = lazy(() => import("./pages/Intelligence"));
 const IntegrityCheck = lazy(() => import("./pages/IntegrityCheck"));
+const RestoredCleanup = lazy(() => import("./pages/RestoredCleanup"));
 const SessionSummary = lazy(() => import("./pages/SessionSummary"));
 const MultiStudentCapture = lazy(() => import("./pages/MultiStudentCapture"));
 const DistrictIntelligence = lazy(() => import("./pages/DistrictIntelligence"));
