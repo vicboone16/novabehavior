@@ -291,10 +291,10 @@ export function ClearinghouseTab() {
         .update({ status: 'generated', submitted_at: new Date().toISOString() })
         .eq('id', batch.id);
 
-      return { content: fnData.fileContent as string, filename: fnData.filename as string, claimCount: claims.length };
+      return { content: fnData.fileContent as string, filename: fnData.filename as string, claimCount: claims.length, batchId: batch.id as string };
     },
     onSuccess: (result) => {
-      setGeneratedFile({ content: result.content, filename: result.filename, batchId: batch.id });
+      setGeneratedFile({ content: result.content, filename: result.filename, batchId: result.batchId });
       setConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ['claim-batches'] });
       toast.success(`837P generated: ${result.claimCount} claim${result.claimCount !== 1 ? 's' : ''}`);

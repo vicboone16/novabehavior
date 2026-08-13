@@ -14,7 +14,8 @@ interface SmsEntry {
   id: string;
   raw_body: string;
   from_phone: string;
-  received_at: string;
+  received_at?: string | null;
+  created_at?: string | null;
   entry_type: 'frequency' | 'duration' | 'observed_zero' | 'no_behaviors' | 'abc';
   parsed_student_code: string | null;
   parsed_behavior_code: string | null;
@@ -25,11 +26,11 @@ interface SmsEntry {
   staff_id: string | null;
   count: number;
   duration_seconds: number | null;
-  observation_minutes: number | null;
+  observation_minutes?: number | null;
   logged_at: string;
-  abc_antecedent: string | null;
-  abc_behavior_raw: string | null;
-  abc_consequence: string | null;
+  abc_antecedent?: string | null;
+  abc_behavior_raw?: string | null;
+  abc_consequence?: string | null;
   notes: string | null;
   status: 'pending' | 'needs_student' | 'approved' | 'rejected';
 }
@@ -161,7 +162,7 @@ function QueueCard({
           .from('students')
           .update({ historical_data: { ...hd, abcEntries: [...existing, newEntry] } })
           .eq('id', studentId);
-        await supabase.from('sms_behavior_log').update({ ...updates, abc_antecedent: antecedent, abc_behavior_raw: behaviorText, abc_consequence: consequence }).eq('id', entry.id);
+        await supabase.from('sms_behavior_log').update({ ...updates, raw_body: [antecedent, behaviorText, consequence].filter(Boolean).join(' | ') }).eq('id', entry.id);
         toast.success('ABC entry logged.');
         onApproved(entry.id);
         return;
@@ -210,7 +211,7 @@ function QueueCard({
       if (bsdErr) throw bsdErr;
 
       await (supabase as any).rpc('rebuild_behavior_daily_aggregates', { p_student_id: studentId }).catch(() => {});
-      await supabase.from('sms_behavior_log').update({ ...updates, count: countNum, duration_seconds: durSecs, observation_minutes: obsMin, session_id: sessionId, bsd_row_id: bsdRow.id }).eq('id', entry.id);
+      await supabase.from('sms_behavior_log').update({ ...updates, count: countNum, duration_seconds: durSecs, session_id: sessionId, bsd_row_id: bsdRow.id }).eq('id', entry.id);
       window.dispatchEvent(new CustomEvent('behavior-data-edited', { detail: { studentId } }));
       toast.success('Entry approved and logged.');
       onApproved(entry.id);
@@ -274,7 +275,7 @@ function QueueCard({
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {format(parseISO(entry.received_at), 'M/d h:mm a')}
+              {format(parseISO(entry.received_at ?? entry.created_at ?? new Date().toISOString()), 'M/d h:mm a')}
             </span>
           </div>
         </div>
@@ -400,13 +401,18 @@ export function SMSBehaviorQueue() {
     const statuses = showHistory ? ['pending', 'needs_student', 'approved', 'rejected'] : ['pending', 'needs_student'];
     const [entriesRes, staffRes, studentsRes] = await Promise.all([
       supabase.from('sms_behavior_log').select('*')
-        .in('status', statuses).order('received_at', { ascending: false }).limit(60),
-      supabase.from('profiles').select('id, full_name').order('full_name'),
+        .in('status', statuses).order('created_at', { ascending: false }).limit(60),
+      supabase.from('profiles').select('user_id, display_name, first_name, last_name').order('display_name'),
       supabase.from('students').select('id, first_name, last_name')
         .eq('is_archived', false).order('first_name'),
     ]);
-    setEntries((entriesRes.data ?? []) as SmsEntry[]);
-    setStaffList((staffRes.data ?? []) as StaffOpt[]);
+    setEntries((entriesRes.data ?? []) as unknown as SmsEntry[]);
+    setStaffList(
+      (staffRes.data ?? []).map((p: any) => ({
+        id: p.user_id,
+        full_name: p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown',
+      })) as StaffOpt[],
+    );
     setStudents(
       (studentsRes.data ?? []).map((s: any) => ({
         id: s.id,
@@ -463,7 +469,7 @@ export function SMSBehaviorQueue() {
                   <Badge variant="outline" className={e.status === 'approved' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}>
                     {e.status}
                   </Badge>
-                  <span className="shrink-0">{format(parseISO(e.received_at), 'M/d h:mm a')}</span>
+                  <span className="shrink-0">{format(parseISO(e.received_at ?? e.created_at ?? new Date().toISOString()), 'M/d h:mm a')}</span>
                 </div>
               ))}
             </div>

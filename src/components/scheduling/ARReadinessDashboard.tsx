@@ -31,6 +31,8 @@ export function ARReadinessDashboard() {
     authExpiring14Days: 0,
     authExpiring30Days: 0,
     clientsAtRisk: 0,
+    draftBillingEntries: 0,
+    readyForClaim: 0,
   });
   const [loading, setLoading] = useState(true);
 
