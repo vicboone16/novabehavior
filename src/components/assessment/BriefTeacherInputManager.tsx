@@ -196,6 +196,14 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
         briefTeacherInputs: updatedResponses,
       });
 
+      void saveCapture({
+        studentId: student.id,
+        recordType: 'brief_teacher_input',
+        recordKey: savedData.id,
+        observationDate: new Date(),
+        payload: savedData,
+      });
+
       toast.success('Brief Teacher Input saved to student profile');
     } catch (error) {
       console.error('Error saving Brief Teacher Input:', error);

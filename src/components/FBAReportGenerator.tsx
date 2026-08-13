@@ -727,7 +727,15 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     };
 
     updateStudentProfile(selectedStudentId, { fbaFindings: findings });
-    toast.success('FBA findings saved to student profile');
+    void saveCapture({
+      studentId: selectedStudentId,
+      recordType: 'fba_findings',
+      recordKey: findings.id,
+      observationDate: new Date(),
+      payload: findings,
+    }).then((r) => {
+      if (r.ok) toast.success('FBA findings saved to student record');
+    });
   };
 
   // Auto-save FBA findings when analysis data changes

@@ -201,6 +201,14 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
         briefRecordReviews: undefined,
       });
 
+      void saveCapture({
+        studentId: student.id,
+        recordType: 'brief_record_review',
+        recordKey: savedData.id,
+        observationDate: new Date(),
+        payload: savedData,
+      });
+
       setShowForm(false);
       setIsEditing(false);
       toast.success(
