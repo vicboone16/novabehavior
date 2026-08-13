@@ -1512,7 +1512,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
           <StructuredObservationForm
             studentId={student.id}
             studentName={student.displayName || student.name}
-            onSave={(data: StructuredObservationData) => {
+            onSave={async (data: StructuredObservationData) => {
               // Save structured observation to student's narrative notes or a dedicated field
               const observationNote = {
                 id: crypto.randomUUID(),
@@ -1527,8 +1527,16 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: [...existingNotes, observationNote],
               });
-              toast.success('Structured observation saved to student profile');
+              const result = await saveCapture({
+                studentId: student.id,
+                recordType: 'fba_structured_observation',
+                recordKey: observationNote.id,
+                observationDate: (data as any)?.observationDate || new Date(),
+                payload: data,
+              });
+              if (result.ok) toast.success('Structured observation saved to the cloud');
             }}
+
           />
         </TabsContent>
 
