@@ -35,6 +35,9 @@ import {
 } from '@/types/behavior';
 import { toast } from 'sonner';
 import { useSessionKeepalive } from '@/hooks/useSessionKeepalive';
+import { supabase } from '@/integrations/supabase/client';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
+
 
 interface AssessmentDataCollectionProps {
   student: Student;
@@ -73,6 +76,8 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
   // Fetch skill targets from Supabase instead of local student.skillTargets
   const { targets: supabaseSkillTargets, loading: targetsLoading, refetch: refetchTargets } = useStudentTargets(student.id);
+  const { saveCapture } = useAssessmentCapture();
+
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   
@@ -1206,32 +1211,64 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                         updatedAt: new Date(t.updated_at || Date.now()),
                       }))}
                       studentColor={student.color}
-                      onSaveSession={(session: ColdProbeSession) => {
-                        toast.success(`Cold probe session saved with ${session.trials.length} trials`);
+                      onSaveSession={async (session: ColdProbeSession) => {
+                        const localSession = {
+                          id: session.id,
+                          skillTargetId: session.trials[0]?.skillTargetId || '',
+                          studentId: student.id,
+                          date: session.date,
+                          trials: session.trials.map(t => ({
+                            id: t.id,
+                            timestamp: t.timestamp,
+                            isCorrect: t.isCorrect,
+                            promptLevel: t.promptLevel || 'independent',
+                            notes: t.note,
+                          })),
+                          percentCorrect: Math.round(
+                            (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
+                          ),
+                          percentIndependent: Math.round(
+                            (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
+                          ),
+                          notes: session.notes,
+                        };
                         const existingData = student.dttSessions || [];
                         updateStudentProfile(student.id, {
-                          dttSessions: [...existingData, {
-                            id: session.id,
-                            skillTargetId: session.trials[0]?.skillTargetId || '',
-                            studentId: student.id,
-                            date: session.date,
-                            trials: session.trials.map(t => ({
-                              id: t.id,
-                              timestamp: t.timestamp,
-                              isCorrect: t.isCorrect,
-                              promptLevel: t.promptLevel || 'independent',
-                              notes: t.note,
-                            })),
-                            percentCorrect: Math.round(
-                              (session.trials.filter(t => t.isCorrect).length / session.trials.length) * 100
-                            ),
-                            percentIndependent: Math.round(
-                              (session.trials.filter(t => !t.promptNeeded).length / session.trials.length) * 100
-                            ),
-                            notes: session.notes,
-                          }],
+                          dttSessions: [...existingData, localSession],
                         });
+
+                        // Write-through to the database so data survives device/session loss
+                        const trialRows = session.trials.map((t, i) => ({
+                          target_id: t.skillTargetId,
+                          trial_index: i,
+                          outcome: t.isCorrect ? 'correct' : (t.promptNeeded ? 'prompted' : 'incorrect'),
+                          prompt_success: !t.promptNeeded,
+                          recorded_at: new Date(t.timestamp).toISOString(),
+                          session_type: 'probe',
+                          data_state: 'measured',
+                          notes: t.note || null,
+                        })).filter(r => !!r.target_id);
+
+                        let trialsSaved = false;
+                        if (trialRows.length > 0) {
+                          const { error } = await (supabase as any).from('target_trials').insert(trialRows);
+                          if (error) console.error('[ColdProbe] trial insert failed:', error);
+                          else trialsSaved = true;
+                        }
+
+                        const result = await saveCapture({
+                          studentId: student.id,
+                          recordType: 'cold_probe_session',
+                          recordKey: session.id,
+                          observationDate: session.date,
+                          payload: { ...localSession, trialsSavedToTargets: trialsSaved },
+                        });
+
+                        if (result.ok) {
+                          toast.success(`Cold probe session saved to the cloud (${session.trials.length} trials)`);
+                        }
                       }}
+
                     />
                   </div>
                 ) : null;
@@ -1475,7 +1512,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
           <StructuredObservationForm
             studentId={student.id}
             studentName={student.displayName || student.name}
-            onSave={(data: StructuredObservationData) => {
+            onSave={async (data: StructuredObservationData) => {
               // Save structured observation to student's narrative notes or a dedicated field
               const observationNote = {
                 id: crypto.randomUUID(),
@@ -1490,8 +1527,16 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: [...existingNotes, observationNote],
               });
-              toast.success('Structured observation saved to student profile');
+              const result = await saveCapture({
+                studentId: student.id,
+                recordType: 'fba_structured_observation',
+                recordKey: observationNote.id,
+                observationDate: (data as any)?.observationDate || new Date(),
+                payload: data,
+              });
+              if (result.ok) toast.success('Structured observation saved to the cloud');
             }}
+
           />
         </TabsContent>
 
@@ -1508,7 +1553,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 narrativeNotes: draft.narrativeNotes,
               };
             }}
-            onSave={(notes: ObservationNotes) => {
+            onSave={async (notes: ObservationNotes) => {
               // Save observation notes to student profile
               const noteContent = {
                 type: 'observation-notes',
@@ -1535,8 +1580,18 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: updatedNotes,
               });
-              pendingNotesRef.current = null;
+              const result = await saveCapture({
+                studentId: student.id,
+                recordType: 'observation_notes',
+                recordKey: notes.id,
+                observationDate: notes.observationDate || new Date(),
+                payload: noteContent,
+              });
+              if (result.ok) {
+                pendingNotesRef.current = null;
+              }
             }}
+
           />
         </TabsContent>
       </Tabs>

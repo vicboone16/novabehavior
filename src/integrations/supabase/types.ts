@@ -4252,6 +4252,42 @@ export type Database = {
           },
         ]
       }
+      assessment_capture_records: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          observation_date: string | null
+          payload: Json
+          record_key: string
+          record_type: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          observation_date?: string | null
+          payload?: Json
+          record_key: string
+          record_type: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          observation_date?: string | null
+          payload?: Json
+          record_key?: string
+          record_type?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assessment_catalog: {
         Row: {
           assessment_slug: string
