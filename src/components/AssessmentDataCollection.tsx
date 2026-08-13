@@ -1245,7 +1245,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                           prompt_success: !t.promptNeeded,
                           recorded_at: new Date(t.timestamp).toISOString(),
                           session_type: 'probe',
-                          data_state: 'final',
+                          data_state: 'measured',
                           notes: t.note || null,
                         })).filter(r => !!r.target_id);
 
