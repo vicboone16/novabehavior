@@ -165,12 +165,20 @@ export default function IntegrityCheck() {
             </p>
           </div>
         </div>
-        <Button onClick={run} disabled={loading} variant="outline" size="sm">
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="destructive" size="sm">
+            <Link to="/restored-cleanup">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Cleanup restored behaviors
+            </Link>
+          </Button>
+          <Button onClick={run} disabled={loading} variant="outline" size="sm">
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
