@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { FidelityCheck } from '@/types/behavior';
 import { format } from 'date-fns';
 
@@ -47,6 +48,7 @@ export function FidelityChecklist({
   studentColor,
 }: FidelityChecklistProps) {
   const { addFidelityCheck, getFidelityChecks, deleteFidelityCheck } = useDataStore() as any;
+  const { saveCapture } = useAssessmentCapture();
   const [showDialog, setShowDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -81,7 +83,7 @@ export function FidelityChecklist({
   };
 
   const handleSave = () => {
-    addFidelityCheck({
+    const check = {
       studentId,
       skillTargetId,
       date: new Date(),
@@ -93,6 +95,14 @@ export function FidelityChecklist({
       })),
       overallPercentage: currentPercentage,
       notes: notes.trim() || undefined,
+    };
+    addFidelityCheck(check);
+    void saveCapture({
+      studentId,
+      recordType: 'fidelity_check',
+      recordKey: `${skillTargetId || 'general'}:${new Date().toISOString()}`,
+      observationDate: new Date(),
+      payload: { ...check, skillTargetName },
     });
     // Reset form
     setCheckedItems(Object.fromEntries(items.map((item) => [item, false])));

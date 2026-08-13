@@ -39,6 +39,7 @@ import { format } from 'date-fns';
 import { BriefTeacherInput, BriefTeacherInputData } from './BriefTeacherInput';
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { Student, BriefTeacherInputSaved } from '@/types/behavior';
 import { 
   exportBriefTeacherInputToDocx, 
@@ -72,6 +73,7 @@ interface BriefTeacherInputManagerProps {
 
 export function BriefTeacherInputManager({ student, onSendQuestionnaire }: BriefTeacherInputManagerProps) {
   const { updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState<BriefTeacherInputSaved | null>(null);
@@ -192,6 +194,14 @@ export function BriefTeacherInputManager({ student, onSendQuestionnaire }: Brief
 
       updateStudentProfile(student.id, {
         briefTeacherInputs: updatedResponses,
+      });
+
+      void saveCapture({
+        studentId: student.id,
+        recordType: 'brief_teacher_input',
+        recordKey: savedData.id,
+        observationDate: new Date(),
+        payload: savedData,
       });
 
       toast.success('Brief Teacher Input saved to student profile');

@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { BriefRecordReviewForm, BriefRecordReviewData } from './BriefRecordReviewForm';
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { Student, BriefRecordReviewSavedData } from '@/types/behavior';
 import { 
   exportBriefRecordReviewToDocx, 
@@ -68,6 +69,7 @@ interface BriefRecordReviewManagerProps {
 
 export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerProps) {
   const { updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -197,6 +199,14 @@ export function BriefRecordReviewManager({ student }: BriefRecordReviewManagerPr
         briefRecordReview: savedData,
         // Clear legacy array
         briefRecordReviews: undefined,
+      });
+
+      void saveCapture({
+        studentId: student.id,
+        recordType: 'brief_record_review',
+        recordKey: savedData.id,
+        observationDate: new Date(),
+        payload: savedData,
       });
 
       setShowForm(false);

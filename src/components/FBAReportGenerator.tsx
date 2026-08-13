@@ -24,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { 
   Student, 
   ABCEntry, 
@@ -279,6 +280,7 @@ function clearFBADraft() {
 
 export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportGeneratorProps) {
   const { students, abcEntries, frequencyEntries, sessions, behaviorGoals, updateStudentProfile } = useDataStore();
+  const { saveCapture } = useAssessmentCapture();
   
   // Restore draft on mount
   const draft = useMemo(() => loadFBADraft(), []);
@@ -725,7 +727,15 @@ export function FBAReportGenerator({ student: propStudent, onClose }: FBAReportG
     };
 
     updateStudentProfile(selectedStudentId, { fbaFindings: findings });
-    toast.success('FBA findings saved to student profile');
+    void saveCapture({
+      studentId: selectedStudentId,
+      recordType: 'fba_findings',
+      recordKey: findings.id,
+      observationDate: new Date(),
+      payload: findings,
+    }).then((r) => {
+      if (r.ok) toast.success('FBA findings saved to student record');
+    });
   };
 
   // Auto-save FBA findings when analysis data changes
