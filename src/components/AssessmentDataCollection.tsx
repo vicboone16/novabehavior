@@ -76,6 +76,8 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
 
   // Fetch skill targets from Supabase instead of local student.skillTargets
   const { targets: supabaseSkillTargets, loading: targetsLoading, refetch: refetchTargets } = useStudentTargets(student.id);
+  const { saveCapture } = useAssessmentCapture();
+
   const [activeMode, setActiveMode] = useState<RecordingMode>('abc');
   const [expandedBehaviors, setExpandedBehaviors] = useState<Set<string>>(new Set());
   
