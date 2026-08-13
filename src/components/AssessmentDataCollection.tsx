@@ -1553,7 +1553,7 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
                 narrativeNotes: draft.narrativeNotes,
               };
             }}
-            onSave={(notes: ObservationNotes) => {
+            onSave={async (notes: ObservationNotes) => {
               // Save observation notes to student profile
               const noteContent = {
                 type: 'observation-notes',
@@ -1580,8 +1580,18 @@ export function AssessmentDataCollection({ student, onObservationChange }: Asses
               updateStudentProfile(student.id, {
                 narrativeNotes: updatedNotes,
               });
-              pendingNotesRef.current = null;
+              const result = await saveCapture({
+                studentId: student.id,
+                recordType: 'observation_notes',
+                recordKey: notes.id,
+                observationDate: notes.observationDate || new Date(),
+                payload: noteContent,
+              });
+              if (result.ok) {
+                pendingNotesRef.current = null;
+              }
             }}
+
           />
         </TabsContent>
       </Tabs>
