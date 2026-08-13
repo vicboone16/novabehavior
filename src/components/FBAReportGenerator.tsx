@@ -24,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { 
   Student, 
   ABCEntry, 

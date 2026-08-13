@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { BriefRecordReviewForm, BriefRecordReviewData } from './BriefRecordReviewForm';
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { Student, BriefRecordReviewSavedData } from '@/types/behavior';
 import { 
   exportBriefRecordReviewToDocx, 

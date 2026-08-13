@@ -39,6 +39,7 @@ import { format } from 'date-fns';
 import { BriefTeacherInput, BriefTeacherInputData } from './BriefTeacherInput';
 import { AssessmentErrorBoundary } from './AssessmentErrorBoundary';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { Student, BriefTeacherInputSaved } from '@/types/behavior';
 import { 
   exportBriefTeacherInputToDocx, 

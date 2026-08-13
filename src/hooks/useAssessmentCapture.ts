@@ -6,7 +6,14 @@ import { toast } from 'sonner';
 export type AssessmentCaptureType =
   | 'fba_structured_observation'
   | 'cold_probe_session'
-  | 'observation_notes';
+  | 'observation_notes'
+  | 'fba_findings'
+  | 'bip_document'
+  | 'fidelity_check'
+  | 'brief_record_review'
+  | 'brief_teacher_input'
+  | 'historical_observation'
+  | 'abc_function_tags';
 
 export interface AssessmentCaptureRecord {
   id: string;

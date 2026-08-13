@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useDataStore } from '@/store/dataStore';
+import { useAssessmentCapture } from '@/hooks/useAssessmentCapture';
 import { 
   Student, 
   BehaviorFunction, 
@@ -486,7 +487,7 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
     }
   };
 
-  const saveBIP = () => {
+  const saveBIP = async () => {
     if (!selectedStudent) return;
 
     const bipData: BIPData = {
@@ -509,7 +510,15 @@ export function BIPGenerator({ student: propStudent }: BIPGeneratorProps) {
     };
 
     updateStudentProfile(selectedStudentId, { bipData });
-    toast.success('BIP saved to student profile');
+
+    const result = await saveCapture({
+      studentId: selectedStudentId,
+      recordType: 'bip_document',
+      recordKey: bipData.id,
+      observationDate: new Date(),
+      payload: bipData,
+    });
+    if (result.ok) toast.success('BIP saved to student record');
   };
 
   const generateWordDocument = async () => {
